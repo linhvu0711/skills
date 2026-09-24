@@ -21,15 +21,14 @@ of operations.
 `scripts/devin.sh` is the only thing that talks to Devin: `create`,
 `status`, `say`, `watch`, `last`, `upload`. Run it with no arguments for
 the usage. It reads the key itself. The API caps prompt length and a
-brief with its plan runs far past it, so `create` and `say` never send
-the file as the prompt: they upload it as an attachment and send a short
-prompt, the head lines plus an `ATTACHMENT:"<url>"` line, and Devin
-reads the file whole. Always, not only past the cap. A session made by
-API runs on the org default agent, whatever it is set to; the prompt
-carries the repo, so nothing is picked by hand. Nothing is posted on GitHub, apart from size labels
-the repo lacks (step 3). Sessions are never
-archived: an archived session stops answering PR comments, and that
-kills the review loop.
+brief with its plan runs far past it, so `create` and `say` always
+upload the file as an attachment and send a short prompt: the head
+lines plus an `ATTACHMENT:"<url>"` line. Devin reads the file whole. A
+session made by API runs on the org default agent, whatever it is set
+to; the prompt carries the repo, so nothing is picked by hand. Nothing
+is posted on GitHub, apart from size labels the repo lacks (step 3).
+Sessions are never archived: an archived session stops answering PR
+comments, and that kills the review loop.
 
 Devin's machine needs a `GH_TOKEN` secret (the user's GitHub token,
 set in Devin's Secrets on 2026-09-16): its own `gh` login is Devin's
@@ -141,8 +140,8 @@ handoff-cursor.
    usual why), or `pr <url>`. On each line, tell the user the state and
    Devin's message in one or two lines. A session that waits too long
    goes `suspended:inactivity` or `finished` with no PR; `say` wakes it,
-   so treat both as blocked. Without a Monitor (a background shell only reports when the
-   process ends), add `--once`: the watch then exits on the first
+   so treat both as blocked. Without a Monitor (a background shell
+   reports only when the process ends), add `--once`: the watch then exits on the first
    event, and you start it again after you answer. In Codex there is no
    Monitor: print `scripts/devin.sh status <session_id>` as the way to
    check. Stop.
