@@ -25,11 +25,11 @@ Read the conversation and create `${CODEX_HOME:-$HOME/.codex}/artifacts/mockup/<
 
 Write the findings to `tokens.md` next to `scope.md`. Nothing is written into the repo.
 
-**From scratch.** No incumbent. Load `impeccable`, choose a direction from its relevant design guidance, and record it in `tokens.md`.
+**From scratch.** No incumbent. Use `impeccable` if it is installed: load it and choose a direction from its relevant design guidance. Without it, choose a direction from the project's design system, or by your own judgement when it has none. Record the direction in `tokens.md`.
 
 ## 3. Build
 
-Use `impeccable` for the visual implementation, then write one file at `${CODEX_HOME:-$HOME/.codex}/artifacts/mockup/<slug>/<slug>.html`. Keep that path for the life of the mock so follow-up changes update the same page.
+Use `impeccable` for the visual implementation if it is installed, then write one file at `${CODEX_HOME:-$HOME/.codex}/artifacts/mockup/<slug>/<slug>.html`. Keep that path for the life of the mock so follow-up changes update the same page.
 
 - The real shell wraps the feature. Out-of-scope shell areas are present with real labels and stay static.
 - Every scope line works: a dropdown opens and choosing changes what is shown; tabs switch; a form validates in the app's error style; a dialog opens, closes, and closes on Esc; a toast appears and dismisses; the active nav item is right; hover, focus, and disabled are styled.
