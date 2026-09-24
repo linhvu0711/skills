@@ -32,4 +32,4 @@ Entry points (UI, API, CLI) on the left or top. Domain components in the middle.
 ## Pitfalls
 
 - Folders as components. A folder with no public surface is not a component; fold it into its parent.
-- Drawing every import. Draw the interface a component relies on, once, with its name.
+- Every import drawn. Draw the interface a component relies on, once, with its name.

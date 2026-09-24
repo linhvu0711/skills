@@ -36,5 +36,5 @@ Order participants by first use, left to right. That alone removes most crossing
 
 ## Pitfalls
 
-- Every getter as a step. Show the calls that cross a boundary or change state.
+- Every getter drawn as a step. Show only the calls that cross a boundary or change state.
 - Missing the error path. One `alt` frame with the failing branch is often the whole reason to draw this.

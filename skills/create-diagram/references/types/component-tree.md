@@ -35,5 +35,5 @@ Root at top center. Each depth level is one row. Siblings share a row, ordered a
 
 ## Pitfalls
 
-- Every div. Components with a name and a file, not markup.
+- Every div drawn. Draw components with a name and a file, not markup.
 - State drawn as a leaf. State is a node with edges from every reader; that fan-in is the point of the diagram.

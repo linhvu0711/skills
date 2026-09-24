@@ -1,6 +1,6 @@
 # Catalog
 
-Pick the type by the question, not by the artifact the user named. "Draw the architecture" is a question in disguise; find it first.
+Pick the type by the question behind the ask, not by the artifact the user named. "Draw the architecture" hides a question; find it first.
 
 ## Question to type
 
@@ -35,4 +35,4 @@ Two types are right when the question has a structure half and a behavior half (
 | Component, C4 container, deployment, data flow, activity | 6 to 16 | 24 |
 | Dependency graph, component tree | 8 to 24 | 40 |
 
-Over budget means the scope is too wide, not the page. Cut by one of these, in order: drop nodes with one edge that do not answer the question; collapse a cluster into one group-sized node; split into two diagrams (overview plus one zoomed in) and publish both.
+Over budget means the scope is too wide for one page. Cut in this order: drop nodes with one edge that do not answer the question; collapse a cluster into one group-sized node; split into two diagrams (overview plus one zoomed in) and publish both.

@@ -8,7 +8,7 @@ Answers: where things run and how they reach each other. Hosts, containers, func
 - Artifacts deployed on each node: images, bundles, functions, static sites. `path` to the build output definition.
 - Managed services: databases, queues, object stores, identity, CDN.
 - Network paths: protocol and port, load balancers, ingress rules, private links. Direction is who opens the connection.
-- Environment differences only when the question is about them; else draw production.
+- Environment differences only when the question is about them; otherwise draw production.
 
 ## Draw it
 

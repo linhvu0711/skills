@@ -26,7 +26,7 @@ Sources on the left, sinks on the right. Stores on a row below the processes the
 
 ## Budget
 
-6 to 16 nodes. Every process must have at least one flow in and one out; a process with only inputs is a store or a sink in disguise.
+6 to 16 nodes. Every process has at least one flow in and one out; a process with only inputs is really a store or a sink.
 
 ## Pitfalls
 

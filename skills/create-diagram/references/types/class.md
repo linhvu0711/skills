@@ -35,4 +35,4 @@ Parents above children. Owners left of parts. Keep each `sections` list to the f
 ## Pitfalls
 
 - Listing every field turns the diagram into the source file. Keep 3 to 6 rows per section.
-- Utilities and DTOs with no relationships are noise; leave them out.
+- Utilities and DTOs with no relationships add noise; leave them out.

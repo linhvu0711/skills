@@ -34,5 +34,5 @@ Lanes as columns (`x: 0, 1, 2 ...`), time runs top to bottom (`y` increases). A 
 
 ## Pitfalls
 
-- Everything in one lane means this is a flowchart; switch types.
+- Everything in one lane: it is a flowchart; switch types.
 - A lane with one step is usually an external system; make it an `external` node in a neighbor lane instead.
