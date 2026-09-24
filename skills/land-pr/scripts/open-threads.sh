@@ -22,7 +22,7 @@ done
 [ -n "$me" ] || me="$(gh api user -q .login)"
 owner="${repo%%/*}"; name="${repo##*/}"
 
-q='query($o:String!,$r:String!,$n:Int!,$after:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$after){pageInfo{hasNextPage endCursor}nodes{id isResolved path line comments(first:50){nodes{author{login}body}}}}}}}'
+q='query($o:String!,$r:String!,$n:Int!,$after:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$after){pageInfo{hasNextPage endCursor}nodes{id isResolved path line opener:comments(first:1){nodes{body}}latest:comments(last:1){nodes{author{login}body}}}}}}}'
 
 all='[]'; after=""
 while :; do
@@ -34,8 +34,9 @@ done
 
 jq -r --arg me "$me" '
   [ .[] | select(.isResolved | not)
-        | select((.comments.nodes | last | .author.login) != $me)
-        | select((.comments.nodes | last | .body) | test("^\\s*✅ \\*\\*Resolved\\*\\*") | not) ]
+        | .latest.nodes[0] as $l
+        | select($l.author.login != $me)
+        | select($l.body | test("^\\s*✅ \\*\\*Resolved\\*\\*") | not) ]
   | "OPEN=\(length)",
-    (.[] | "\(.id) \(.path):\(.line // "-") last=\(.comments.nodes | last | .author.login) :: \(.comments.nodes | first | .body | gsub("<!--[^>]*-->"; "") | gsub("\\s+"; " ") | .[:120])")
+    (.[] | "\(.id) \(.path):\(.line // "-") last=\(.latest.nodes[0].author.login) :: \(.opener.nodes[0].body | gsub("<!--[^>]*-->"; "") | gsub("\\s+"; " ") | .[:120])")
 ' <<<"$all"
