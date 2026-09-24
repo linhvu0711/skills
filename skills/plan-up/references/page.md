@@ -74,11 +74,11 @@ EOF
 `$JSON` is the `DATA` object saved as `plan-<slug>.json` in the same
 folder, so a rebuild after an edit is one command.
 
-Serve with `scripts/serve.sh`, in this skill's folder. It prints the
-page URL. `file://` is not the review path.
+Serve with the script. It prints the page URL. `file://` is not the
+review path.
 
 ```sh
-URL=$(scripts/serve.sh "$DIR" "plan-<slug>.html")
+URL=$(~/.agents/skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
 ```
 
 It reuses a server only when that server gives back this exact file.
