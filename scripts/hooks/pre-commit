@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# pre-commit: stop a commit that adds a leak. Installed by
+# `git config core.hooksPath scripts/hooks`; `git commit --no-verify` skips it.
+exec bash "$(git rev-parse --show-toplevel)/scripts/check.sh" --staged
