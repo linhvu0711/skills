@@ -5,7 +5,7 @@ description: "Load a Codex CLI chat session into the current conversation by its
 
 # load-co — Load a Codex CLI Session Into This Chat
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 Codex CLI stores every session as a *rollout* JSONL file:
 - `~/.codex/sessions/YYYY/MM/DD/rollout-<timestamp>-<session-id>.jsonl`

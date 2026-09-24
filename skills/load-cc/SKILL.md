@@ -5,7 +5,7 @@ description: "Load another Claude Code chat session into the current conversatio
 
 # load-cc — Load a Claude Code Session Into This Chat
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 Claude Code stores every conversation as a JSONL transcript at
 `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl`. This skill turns one of

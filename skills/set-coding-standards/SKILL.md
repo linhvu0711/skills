@@ -4,7 +4,7 @@ description: "Run the coding-standards audit, grill the user on its findings, th
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 You establish one source of truth for how code is written in this repo:
 `CODING_STANDARDS.md` at the root, enforced by the tools the project already

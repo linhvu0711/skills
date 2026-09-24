@@ -4,7 +4,7 @@ description: "Find the root cause of a bug, or the hot spot behind a slow thing,
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 Read `references/method.md` and `references/categories.md` first. This file
 is the order of operations.

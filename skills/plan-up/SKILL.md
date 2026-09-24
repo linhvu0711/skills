@@ -4,7 +4,7 @@ description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 Read `references/plan.md` first. It holds the plan shape, how each block
 is filled, and the done rule. Read `references/executor.md` too: it

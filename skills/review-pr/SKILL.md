@@ -4,7 +4,7 @@ description: "Review a pull request on the three fixed axes (logic, scope, stand
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 You review one pull request. The checks are fixed: **Logic**, **Scope**,
 **Standards**, as written in

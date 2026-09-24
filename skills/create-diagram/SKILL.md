@@ -3,7 +3,7 @@ name: create-diagram
 description: "Draw a code or architecture diagram as an interactive HTML page, built from facts found in the code, and open it in the browser for review. Use when the user asks to diagram, draw, map, or visualize how a feature, module, system, app, data model, request, or deployment works or fits together, or asks how the code will look after a planned change. Covers flowchart, sequence, state machine, class, ERD, data flow, component, deployment, C4, use case, activity, UI component tree, and dependency graph."
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 One page answers one question. The page is `assets/shell.html`: it draws nodes, edges, and groups from a `DATA` object and gives the reader pan, zoom, search, a detail panel with file paths, and a current/planned switch. The work is choosing the type, gathering facts from the code, and laying them out.
 

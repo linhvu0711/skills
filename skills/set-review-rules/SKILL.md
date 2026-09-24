@@ -4,7 +4,7 @@ description: "Write REVIEW.md for a repo: the fixed three-axis review (logic, sc
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 You set what a reviewer checks on every pull request in this repo:
 `REVIEW.md` at the root, pointed at from `CLAUDE.md` and `AGENTS.md`. The
