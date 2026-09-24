@@ -10,7 +10,7 @@ set -eu
 dir=$1 file=$2
 [ -f "$dir/$file" ] || { echo "$dir/$file: not found" >&2; exit 1; }
 
-serves() { curl -sf "http://127.0.0.1:$1/$file" 2>/dev/null | cmp -s - "$dir/$file"; }
+serves() { curl -sf --max-time 2 "http://127.0.0.1:$1/$file" 2>/dev/null | cmp -s - "$dir/$file"; }
 
 for port in $(seq 8765 8784); do
   if serves "$port"; then
