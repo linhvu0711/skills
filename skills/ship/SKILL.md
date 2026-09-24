@@ -18,9 +18,8 @@ command runs as `cd "$WT" && …` inside one call.
 
 ## Forms
 
-The arguments are `/plan-up`'s, passed to it unchanged. Every form
-plan-up takes, `/ship` takes; the form decides only where the build
-runs (step 2).
+The arguments are `/plan-up`'s, every form of them, passed to it
+unchanged. The form decides only where the build runs (step 2).
 
 - `/ship <issue-url>`: one ticket, one PR. Local when the plan has no
   UI walks; Devin cloud when it has.
@@ -41,9 +40,9 @@ runs (step 2).
    rule, page. Its stop points are yours: a tree that is not clean, a
    gate that fails, a `manual` ticket, a stale step, and every big fork
    (one question per message, wait). Two changes at step 8: build and
-   open the page and print the summary, then go on at once, `ok` is
-   given; and `Ready for /handoff-devin.` is not said. Done when the
-   plan `.md` exists at the path the summary names and you hold it.
+   open the page, print the summary, and go on at once as if `ok` were
+   given; `Ready for /handoff-devin.` is left out. Done when the plan
+   `.md` exists at the path the summary names and you hold it.
 
 2. **Route.** Read the plan. Cloud when it has a `## Stack` block, or
    its Facts line `UI:` is anything but `none`. Local otherwise. Say it
