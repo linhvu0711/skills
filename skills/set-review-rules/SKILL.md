@@ -10,8 +10,8 @@ You set what a reviewer checks on every pull request in this repo:
 `REVIEW.md` at the root, pointed at from `CLAUDE.md` and `AGENTS.md`. The
 file has two parts. The **general block** is fixed, the same for every
 repo, and lives in `../../shared-skill-core/review/general-rules.md`. The **repo rules** are
-what this repo alone cares about. The find step proposes them. The grill
-settles them. Then you write.
+what this repo alone cares about. Steps 2 to 4 propose them, the grill
+settles them, then you write.
 
 `REVIEW.md` says what to check, never how to hand findings back. Each
 reviewer has its own channel.
@@ -43,8 +43,8 @@ Explore agents retrieve, short lookups are yours.
    git log --since=6.months --grep=fix --grep=revert -i --name-only --format= | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -5
    ```
 
-   The five folders that fix and revert commits touch most. Each one is a
-   proposal for the Logic axis: "changes under `<folder>` get a second
+   It lists the five folders that fix and revert commits touch most. Each
+   is a proposal for the Logic axis: "changes under `<folder>` get a second
    pass on <what breaks there>". Done when the five lines are written
    down, or the command returns nothing and you say so.
 
