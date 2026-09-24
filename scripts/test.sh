@@ -116,6 +116,13 @@ t_flags_private_word_in_path() {
   has stderr "skills/secretskill/SKILL.md: private word in path: skills/secretskill" "$err"
 }
 
+t_no_verify_skips_hook() {
+  hooked "$word"; printf 'hello\na %s here\n' "$Word" > notes.md; git add notes.md
+  run git commit --no-verify -m test
+  eq exit 0 "$code"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -126,6 +133,7 @@ cases=(
   "hook lets through a word on a line the commit does not add|t_hook_lets_old_word_through"
   "hook stops a commit that adds a home path|t_hook_stops_home_path"
   "flags a private word in an added path|t_flags_private_word_in_path"
+  "no-verify skips the hook|t_no_verify_skips_hook"
 )
 
 pass=0; fail=0
