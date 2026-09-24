@@ -16,7 +16,7 @@ It needs a clean tree on the base branch. A ticket that fails the gate comes bac
 
 ## What you get
 
-A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds one Proof row per Done-when line, the seams, one slice per test in tracer-bullet order (each with Given, When, and a literal Then), UI walks and videos when the ticket has a screen, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
+A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then), UI walks and videos when the ticket has a screen, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
 
 Chat gets only a summary:
 
