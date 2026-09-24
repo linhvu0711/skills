@@ -10,9 +10,9 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
 ## Steps
 
-1. **Gate.** The readiness gate, applied to the whole piece of work. Then the
-   mirror check: if the work fits one ticket under the ceiling, stop and say
-   `to-issue` is the tool. Fail: list the gaps, stop.
+1. **Gate.** The readiness gate, applied to the whole piece of work. Fail:
+   list the gaps, stop. Then the mirror check: work that fits one ticket
+   under the ceiling stops here, with `to-issue` named as the tool.
 
 2. **Repo convention.** Load or learn. Done when `style`, `size`,
    and (if named) the priority label are known.
@@ -42,8 +42,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
    Any reply that is not an approve word (`approve`, `approved`, `go`,
    `create`, `ship it`) is a change request: apply it, show the full
-   breakdown again, ask the three questions again. Loop until the approve
-   word. Nothing exists on GitHub before it.
+   breakdown again, ask the three questions again. Nothing exists on GitHub
+   before the approve word.
 
 6. **Duplicate check.** One search on the epic's keywords. Same work, not a
    seed: show it, stop. Origin seed: remember it.
@@ -58,8 +58,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    2. Phase 1 tickets: `--parent <P>`, size label, body per the rules file
       with `Part of #P`. XS tickets carry Steps and `--label handoff-ready`.
       S tickets carry both only when the steps are free, per the rules file.
-      An XS ticket whose Steps cannot be written is really S. Drop Steps and
-      `handoff-ready`, use the S size label. A `task` ticket, in this or any
+      An XS ticket whose Steps cannot be written is really S: no Steps, no
+      `handoff-ready`, the S size label. A `task` ticket, in this or any
       phase: `--parent <P>`, `--label manual`, no size label, body per the
       rules file § Task body. A task the code needs first: the code ticket
       carries `--blocked-by` the task's number. A task that follows the

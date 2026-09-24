@@ -22,8 +22,8 @@ report. This file is the order of operations.
    table. When a size fact is unknown, run the one lookup round, then decide.
    When the ticket looks XS or S, the same round also fetches the lines, the
    pattern to copy, and the test, so Steps can be written.
-   XL: stop. Say which facts push it over the ceiling and that `to-epic` is
-   the tool for it. Nothing is created.
+   XL: say which facts push it over the ceiling and that `to-epic` is the
+   tool for it, and stop. Nothing is created.
    `task`: no size, no XL check. The lookup round goes to the platform's
    docs instead, per the rules file § Lookup, so Steps can be written.
 
@@ -35,10 +35,10 @@ report. This file is the order of operations.
    the code. For `feat` and `fix`, walk the five unhappy-path states per the
    rules file: copy the repo's pattern, else default and mark Open, else the
    gate fails and you ask in one block. XS also gets Steps, per the Steps
-   rules. S gets Steps only when
-   every step comes from a line that was seen and no choice is open. If a
-   step needs a decision the chat never made: XS becomes S, and S gets no
-   Steps. `task`: body per the rules file § Task body, Steps always. Go on.
+   rules. S gets Steps only when every step comes from a line that was seen
+   and no choice is open. A step that needs a decision the chat never made:
+   XS becomes S, and S gets no Steps. `task`: body per the rules file § Task
+   body, Steps always.
 
 6. **Create.**
 
@@ -56,8 +56,8 @@ report. This file is the order of operations.
 
 7. **Close the origin seed**, when there is one.
 
-8. **Report.** URL on the clipboard, one line. Add the size and type in the
-   same line, nothing else.
+8. **Report.** One line: the URL, also put on the clipboard, then the size
+   and the type.
 
 ## Examples
 

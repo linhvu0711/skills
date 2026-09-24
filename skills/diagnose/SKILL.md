@@ -46,8 +46,7 @@ Runner answers with `VERDICT`, `EVIDENCE`, `REPRO`, `CLEANUP`, plus any extra
 field you asked for (first bad commit, a measured number). It never edits
 files and never touches git state beyond the bisect you asked for.
 
-One short command with ten lines of output is yours; do not spawn an agent
-for it. A loop that runs many times, a bisect, or a measurement repeated for
+One short command with ten lines of output is yours. A loop that runs many times, a bisect, or a measurement repeated for
 a stable number goes to Runner.
 
 ## Gate
@@ -79,10 +78,10 @@ nothing.
    sources in the table. That gives the category in `categories.md`. The
    category sets what you look at and what the exit is.
 
-3. **Cheap path first.** Fetch the code on the symptom's path: the handler,
-   the helper, the callers, the test. Read it. If the cause is visible,
-   confirm it with one probe (a command, a test, a log line) and go to
-   step 6. Most bugs end here.
+3. **Cheap path first.** Fetch and read the code on the symptom's path: the
+   handler, the helper, the callers, the test. A visible cause: confirm it
+   with one probe (a command, a test, a log line) and go to step 6. Most
+   bugs end here.
 
 4. **Hard path.** Build a repro that runs in seconds and fails on the exact
    symptom. Shrink it until nothing left is optional. Then halve, per
@@ -93,12 +92,11 @@ nothing.
    each with the one check that kills it. Run the checks. A must-know row
    still empty after you looked and asked once: stop. The exit is a `spike`.
 
-6. **Confirm.** One probe that flips the symptom: change the one thing,
-   symptom gone; change it back, symptom returns. For perf, the number moves.
+6. **Confirm.** One probe flips the symptom both ways, per `method.md`
+   § Confirm.
 
-7. **Clean up.** Remove every debug line, every throwaway file, every
-   changed setting. `git status` is what it was. Shared systems, live
-   environments, and databases were read-only the whole time.
+7. **Clean up.** Per `method.md` § Clean: every debug line, throwaway file,
+   and changed setting goes, and `git status` is what it was.
 
 8. **Report.** In chat, in this shape:
 

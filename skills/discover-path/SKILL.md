@@ -32,8 +32,8 @@ work already decided. The map comes first.
 - **Refer by name.** In chat and on the map a ticket is its title with the
   link inside: `[[grill] Which plan model?](url)`.
 - **Titles follow the repo.** The prefix style (`[grill] …` or `grill: …`)
-  is the repo's, learned per `references/map.md` § Titles before the first
-  `gh issue create` of a run, in Chart and in Work alike. Never assumed.
+  is learned from the repo per `references/map.md` § Titles before the
+  first `gh issue create` of a run, in Chart and in Work alike.
 - **Re-read before write.** Other runs edit the tracker at the same time.
   Fetch the map body right before each edit, change one thing, write once.
 - **Chart what is sharp.** Every question that can be phrased precisely now
@@ -107,8 +107,7 @@ work already decided. The map comes first.
    `gh issue close <seed> --comment "Grew into #<map>"`.
 
 7. **Report.** Map URL on its own line, and on the clipboard when `pbcopy`
-   exists. One line per ticket: name, type,
-   blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
+   exists. One line per ticket: name, type, blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
    one.` Stop. Charting resolves nothing.
 
 ## Work
@@ -123,7 +122,7 @@ work already decided. The map comes first.
 
 3. **Claim.** `gh issue edit <n> --add-assignee @me`, the first write.
 
-4. **Resolve**, by type. Zoom into a closed ticket only when the question
+4. **Resolve**, by type. Read a closed ticket in full only when the question
    rests on it.
    - **grill**: invoke `grill` with the Skill tool. Seed: the ticket's
      question, the map's Destination, and Decisions so far. Open decisions:
@@ -151,9 +150,8 @@ work already decided. The map comes first.
 
 6. **Advance the map.** A question the answer made sharp becomes a ticket,
    titled with the `t` helper, create then wire, and its fog line leaves
-   Not yet specified. A ticket the
-   answer pushed past the destination: close it, one line under Out of
-   scope. A closed decision the answer made wrong: the revisit flow below.
+   Not yet specified. A ticket the answer pushed past the destination:
+   close it, one line under Out of scope. A closed decision the answer made wrong: the revisit flow below.
    Done when no fog line and no ticket contradicts the new answer.
 
 7. **Clear check, or report.** Open tickets remain: say `Closed <name>. Next

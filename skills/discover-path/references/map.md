@@ -26,8 +26,8 @@ or its tickets.
 `<prefix><text>`, under 70 characters, no trailing period. The prefix is the
 type word in the repo's title style. The prefix and the label agree.
 
-**Learn the style once per run**, before the first `gh issue create`. It is
-the same rule `to-issue` uses (`../../shared-skill-core/issue-rules.md` § Repo
+**Learn the style once per run**, before the first `gh issue create`, by
+the rule `to-issue` uses (`../../shared-skill-core/issue-rules.md` § Repo
 convention): most existing titles look like `[bug] …` gives `bracket`;
 `bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives
 `bracket`.
@@ -56,10 +56,9 @@ characters of the result; over 70, shorten the text, never the prefix.
 | Revisit | `t grill "Which plan model? (revisit)"` | `[grill] Which plan model? (revisit)` |
 
 A question ends with `?`. A task does not. A second revisit gets
-`(revisit 2)`. In chat and on the map a ticket is its title with the link
-inside, prefix included: `[[grill] Which plan model?](url)`. On the map body,
-a bare `#n` also works: GitHub renders the current title, so it never goes
-stale.
+`(revisit 2)`. A link to a ticket keeps the prefix in its text (SKILL.md,
+Refer by name). On the map body a bare `#n` also works: GitHub renders the
+current title, so it never goes stale.
 
 ## Map body
 

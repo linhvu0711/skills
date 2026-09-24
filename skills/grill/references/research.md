@@ -8,7 +8,7 @@ Send the question to an Explore agent with web search on. In Claude Code, put th
 
 ## Sources
 
-Cite the source that owns the claim: the official docs, the spec, the source code, the first-party API. Follow every claim back to its owner. A blog post or a summary is a lead to the owner, never the citation itself.
+Cite the source that owns the claim: the official docs, the spec, the source code, the first-party API. A blog post or a summary is a lead to the owner, never the citation itself.
 
 Prefer a doc tool that serves the library's own docs over a general web search. When the claim is about behaviour, the library's source or test suite is the owner.
 
@@ -36,7 +36,7 @@ For: {feature or sprint this serves}
 
 ## Where it lives
 
-Match the repo's convention for such notes if one exists. If there is none, use `docs/research/<slug>.md`. Say where you put it when you report back.
+Follow the repo's convention for such notes; with none, use `docs/research/<slug>.md`. Say where you put it when you report back.
 
 ## Using an existing note
 

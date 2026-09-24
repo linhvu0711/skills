@@ -15,32 +15,26 @@ Write one small GitHub issue that holds a raw thing. Two kinds:
   has decided how it must behave after a fix; that is what `/to-issue`
   writes when it turns the bug into a `fix` ticket.
 
-Both are raw. Neither is a real, typed ticket. `[bug]` is not `[fix]`.
-
-The whole point is speed and low noise. Get in, file it, get out.
+Both are raw: neither is a typed ticket, and `[bug]` is not `[fix]`. The
+point is speed and low noise. File it and get out.
 
 ## Hard rules
 
-- **Seed or bug, nothing else.** Never classify as one of the real
-  types (`feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`,
-  `spike`, `task`, the nine in
-  `../../shared-skill-core/issue-rules.md` § Types) or as
-  `improve` or any other word. Those words mean "decided". A seed and a
-  bug are not decided. A bug becomes a `fix` ticket only through
-  `/to-issue`, once the behaviour after the fix is written down.
+- **Seed or bug, nothing else.** The nine real types (`feat`, `fix`,
+  `docs`, `refactor`, `perf`, `test`, `chore`, `spike`, `task`, per
+  `../../shared-skill-core/issue-rules.md` § Types), `improve`, and every
+  other word mean "decided". A seed and a bug are not decided.
 - **The kind comes from the words.** It is a bug when the text says
   something behaves wrong today: `bug:`, "broken", "wrong", "crashes",
   "fails", "shows X but should Y", a stack trace, a review finding that
   is true. Anything else is a seed. Not sure: seed.
-- **Priority is optional.** If the user states one of p0, p1, p2, p3, it
-  becomes the priority label. If they did not, file the seed with no priority
-  label. Do not ask for it, and never guess it.
+- **Priority is optional.** A priority the user stated (step 2) becomes the
+  priority label. None stated: no priority label, no question, no guess.
 - **No diagnosis. No plan.** Do not root-cause, estimate, propose an approach,
   or write acceptance criteria.
-- **No digging.** Do not read code or run searches to "understand it better".
-  Use only what is already in the conversation.
-- **One question allowed, at most.** "Which repo?" when it cannot be
-  determined. Nothing else. Never ask about priority.
+- **No digging.** Use only what is already in the conversation: no code
+  reads, no searches.
+- **One question at most:** "Which repo?", when it cannot be determined.
 - **Learn the repo convention once.** It is saved per repo. Do not re-read old
   issues on a repo that already has a saved entry.
 - **Labels:** the kind's label, `seed` or `bug`, plus one priority
@@ -58,10 +52,9 @@ The whole point is speed and low noise. Get in, file it, get out.
 gh repo view --json nameWithOwner -q .nameWithOwner
 ```
 
-If this fails, use the repo the conversation is clearly about. If still
-unknown, ask the user which `owner/repo`.
-
-If `gh` is not authenticated, stop and tell the user to run `gh auth login`.
+It fails: use the repo the conversation is clearly about. Still unknown: ask
+the user which `owner/repo`. `gh` not authenticated: stop and tell the user
+to run `gh auth login`.
 
 ### 2. Get the priority (optional)
 
@@ -74,8 +67,7 @@ Read the user's words onto one level:
 | p2, medium, normal                          | p2    |
 | p3, low, someday, nice to have, whenever    | p3    |
 
-If none of that is present, there is no priority. Do not ask and do not
-stop: continue, and file it with the kind's label only.
+None of these: no priority. Continue with the kind's label only.
 
 ### 3. Load or learn the repo convention
 
@@ -86,15 +78,14 @@ python3 "$CONV" get owner/repo
 
 **Hit** (exit 0, prints JSON with `prefix`, `seed_label`, `bug_label`, and
 `priority.p0..p3` when the repo has priority labels): use those values and go
-to step 4. Do not run the learning commands. The bug prefix is the seed
+to step 4, skipping the learning commands. The bug prefix is the seed
 prefix with the word swapped: `[seed] ` gives `[bug] `, `seed: ` gives
 `bug: `.
 
-The priority labels live in a general, tool-agnostic store
-(`~/.config/gh-issues/priority-labels.json`), separate from the seed naming, so
-any issue tool can reuse them. The seed `prefix` and `seed_label` live in the
-capture store (`~/.config/capture/conventions.json`). This script reads and
-writes both; you do not touch the files directly.
+The script keeps the priority labels in a store any issue tool can reuse
+(`~/.config/gh-issues/priority-labels.json`), and the seed `prefix` and
+`seed_label` in capture's own store (`~/.config/capture/conventions.json`).
+It reads and writes both; leave the files to it.
 
 **Miss** (prints `MISS`, exit 3), or the user said `--relearn` / "relearn":
 learn it now, once.
@@ -136,7 +127,7 @@ python3 "$CONV" set owner/repo --prefix "[seed] " --seed-label seed --bug-label 
 ```
 
 Save only when at least 5 titles were seen. With fewer, use the defaults
-above for this run and do not save, so the repo gets learned again once it
+above for this run and save nothing, so the repo is learned again once it
 has real history.
 
 ### 4. Quick duplicate check
@@ -147,8 +138,8 @@ One search, 2 or 3 keywords from the idea:
 gh issue list --state open --search "<keywords>" --limit 10 --json number,title,url
 ```
 
-If one of the results is clearly the same thing, show it to the user and stop.
-Do not create a second one. If nothing matches, continue.
+A result that is clearly the same thing: show it to the user and stop.
+Otherwise continue.
 
 ### 5. Write the title and body
 
@@ -189,9 +180,8 @@ Bug only. Not triaged, not planned. Becomes a `fix` ticket through
 /to-issue once the behaviour after the fix is written.
 ```
 
-Do not add steps, approach, root cause, acceptance criteria, estimates,
-or open questions. If the user gave more detail than fits, keep it in
-`## Seed` or `## Bug` as plain prose. Do not expand it.
+Detail the user gave beyond this stays in `## Seed` or `## Bug` as plain
+prose, as they said it.
 
 ### 6. Create the issue
 
@@ -245,8 +235,8 @@ Nothing else. No summary of the body, no next steps.
 ## Edge cases, handled
 
 - **Store file missing or corrupt.** Either store is treated as empty; a
-  corrupt file is moved aside to `<name>.bak-<time>` and the get returns `MISS`. Just
-  learn again.
+  corrupt file is moved aside to `<name>.bak-<time>` and the get returns
+  `MISS`. Learn again.
 - **Label renamed or deleted in the repo.** Step 6 catches the create error,
   forgets the entry, learns again, retries once.
 - **Repo renamed or moved.** `gh repo view` returns the new name, which is a

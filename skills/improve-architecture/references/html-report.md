@@ -35,7 +35,7 @@ Artifact rules that shape the file:
 
 ## Header
 
-Repo name, branch, commit, date, and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. No introduction paragraph. Straight into the candidates.
+Repo name, branch, commit, date, and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. The candidates follow at once, with no introduction paragraph.
 
 ## Candidate card
 
@@ -52,7 +52,7 @@ Each candidate is one `<article class="card rounded-xl border p-6">`:
 - **Wins**: bullets, six words or fewer each. "Tests hit one interface", "Pricing stops leaking", "Delete 4 shallow wrappers".
 - **ADR callout** (when it applies): one line in an amber-tinted box.
 
-If the diagram needs a paragraph to be understood, redraw the diagram.
+A diagram that needs a paragraph to be understood gets redrawn.
 
 ## Diagram patterns
 

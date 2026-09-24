@@ -74,8 +74,8 @@ EOF
 `$JSON` is the `DATA` object saved as `plan-<slug>.json` in the same
 folder, so a rebuild after an edit is one command.
 
-Serve with the script. It prints the page URL. `file://` is not the
-review path.
+Serve with the script, which prints the page URL; the review path is
+that URL, not `file://`.
 
 ```sh
 URL=$(../skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
@@ -103,7 +103,7 @@ Then, in this order:
 2. **The review**, in the person's own browser: `open "<url>"` on macOS,
    `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the check
    passes. This is the step the person sees. Run it on the first build
-   and after every rebuild, with the new `v`.
+   and after every rebuild.
 
 Bump `v` on every rebuild, or the browser shows the old page. Leave the
 page open. Do not open the page with browser tools: `shell.html` is

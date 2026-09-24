@@ -176,10 +176,9 @@ test("exports one order as CSV", async () => {
 4. Only then, record every video under `Videos`, each once: its
    numbered steps, nothing more. A recording starts as step 1 begins and
    stops when the last step is on screen. No lead-in from an earlier
-   walk, no tail. Record it the way a real person tries the app for the
-   first time. Real speed, never sped up, no time-lapse. Move at a human
-   pace. After each action, hold and wait long enough for the result to
-   be read. Let pages load, let content and animations settle, pause a
+   walk, no tail. Record it the way a person tries the app for the first
+   time, at real speed: no speed-up, no time-lapse. After each action,
+   hold long enough for the result to be read. Let pages load, let content and animations settle, pause a
    beat on the state that matters before the next step. A viewer must be
    able to follow what happens and why. An overlay caption per step is
    welcome; its text is the step number and the step line from the plan,
@@ -458,7 +457,7 @@ Then the verdict:
 
 `fix later` means an issue exists before you reply. Never "noted",
 "out of scope", or "flagged to the owner" without a URL: those leave a
-real problem with no home, and that is not allowed. A true finding is
+real problem with no home. A true finding is
 a bug, so the issue is a `[bug]`: a raw record of what is broken, not
 a fix ticket. File it with:
 

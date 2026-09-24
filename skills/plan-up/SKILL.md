@@ -6,16 +6,15 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-Read `references/plan.md` first. It holds the plan shape, how each block
-is filled, and the done rule. Read `references/executor.md` too: it
-says what the executor has and how it works a plan, so the plan fits
-it. `../../shared-skill-core/plan-page.md` says where the plan is written and how it is
-shown; read it at step 8. Who the executor is belongs to `/handoff-devin`; the plan never names
-it. This file is the order of operations.
+Read `references/plan.md` first: the plan shape, how each block is
+filled, and the done rule. Read `references/executor.md` too: what the
+executor has and how it works a plan, so the plan fits it. At step 8,
+read `../../shared-skill-core/plan-page.md`: where the plan is written
+and how it is shown. This file is the order of operations.
 
-You plan. You do not build. The repo is left as you found it. Facts come
-from reading. Big forks go to the user. Everything else you decide and
-write down.
+You plan; you do not build, and the repo is left as you found it. Facts
+come from reading. Big forks go to the user. Everything else you decide
+and write down.
 
 ## Facts
 

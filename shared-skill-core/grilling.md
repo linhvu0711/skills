@@ -14,17 +14,17 @@ B. <option>
 C. <option>
 ```
 
-Options sit on their own lines, labelled A, B, C, D, as many as there are real ways. Two is the usual case, four is the ceiling. Your pick is always A, and line A starts with the ✅ emoji and ends with `— my pick:` and the reason, so the pick stands out at a glance. Lines B, C, D carry no emoji. Never leave the marker off.
+Options sit on their own lines, labelled A, B, C, D, as many as there are real ways. Two is the usual case, four is the ceiling. Your pick is always A, and line A starts with the ✅ emoji and ends with `— my pick:` and the reason, so the pick stands out at a glance. Lines B, C, D carry no emoji.
 
 Each answer reshapes the tree. Settled decisions push the frontier outward and unblock the questions that depended on them. Recompute the frontier and ask the next question. A question waits only when its answer truly depends on one still open. When it could go either way, ask it now as a conditional ("if the last answer is A, then ..."). Every branch gets asked; one more question is cheaper than a branch left silent.
 
 Keep a running list of settled decisions, so the summary at the end is one paste.
 
-Finding facts is your job, never the user's. `facts.md` in this folder says how to fetch them and how a running fetch fits into the frontier. The decisions are the user's. Put each one to them and wait.
+Finding facts is your job; the decisions are the user's. `facts.md` in this folder says how to fetch facts and how a running fetch fits into the frontier.
 
 ## Branches that are always in the tree
 
-The tree comes from the work, and most of it is free. But a few branches are missed by reflex, and a later stage needs each of them. So these rows are always in the tree. Each one is settled, or you say "not applicable" out loud. Silence is not an answer.
+Most of the tree comes from the work. A few branches are missed by reflex, and a later stage needs each of them, so these rows are always in the tree: each one is settled, or you say "not applicable" out loud.
 
 | Grill must settle | Who needs it |
 |---|---|
