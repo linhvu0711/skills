@@ -60,10 +60,26 @@ t_passes_clean_file() {
   eq stdout "check: clean" "$out"
 }
 
+t_flags_email() {
+  repo; printf 'mail %s\n' "$email" > notes.md
+  run bash scripts/check.sh notes.md
+  eq exit 1 "$code"
+  eq "stderr line 1" "notes.md:1: email: $email" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_allows_bot_email() {
+  repo; printf '`Cursor Agent <cursoragent@cursor.com>`\n' > notes.md
+  run bash scripts/check.sh notes.md
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
   "passes a clean file|t_passes_clean_file"
+  "flags an email|t_flags_email"
+  "allows the listed bot email|t_allows_bot_email"
 )
 
 pass=0; fail=0
