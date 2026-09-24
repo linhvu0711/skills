@@ -39,8 +39,8 @@ Explore agents retrieve, short lookups are yours.
    Read `CONTEXT.md` and every ADR that touches the area. Done when you can
    name the paths in scope and the decisions already made about them.
 
-2. **Explore.** Dispatch Explore agents, all in one message, one per
-   hot spot or subsystem, each with its full brief inline. A brief holds:
+2. **Explore.** Dispatch Explore agents per `facts.md`, one per hot spot
+   or subsystem. A brief holds:
    the paths in scope, the glossary from `references/codebase-design.md`
    pasted in, the domain terms from `CONTEXT.md`, and these questions:
 
