@@ -193,6 +193,79 @@ t_adopt_stops_on_bad_name() {
   eq "ls skills" "" "$(ls skills)"
 }
 
+t_flags_missing_own_path() {
+  repo; mkdir -p skills/demo/scripts; printf 'hi\n' > skills/demo/scripts/ok.sh
+  printf 'run `scripts/ok.sh`\nrun `scripts/nope.sh`\n' > skills/demo/SKILL.md
+  run bash scripts/check.sh skills
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md:2: missing path: scripts/nope.sh" "$(printf '%s\n' "$err" | sed -n 1p)"
+  eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
+}
+
+t_passes_skill_and_core_paths() {
+  repo; mkdir -p skills/a skills/b shared-skill-core
+  printf 'hi\n' > skills/b/SKILL.md; printf 'hi\n' > shared-skill-core/x.md
+  printf 'read `../b/SKILL.md:3` and ../../shared-skill-core/x.md.\n' > skills/a/SKILL.md
+  run bash scripts/check.sh skills shared-skill-core
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_missing_skill_path() {
+  repo; mkdir -p skills/a; printf 'read `../nope/SKILL.md`\n' > skills/a/SKILL.md
+  run bash scripts/check.sh skills
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/a/SKILL.md:1: missing path: ../nope/SKILL.md" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_reads_core_path_from_own_folder() {
+  repo; mkdir -p shared-skill-core/handoff; printf 'hi\n' > shared-skill-core/size.md
+  printf '<!-- include ../size.md -->\nsee `../gone.md`\n' > shared-skill-core/handoff/rules.md
+  run bash scripts/check.sh shared-skill-core
+  eq exit 1 "$code"
+  eq "stderr line 1" "shared-skill-core/handoff/rules.md:2: missing path: ../gone.md" "$(printf '%s\n' "$err" | sed -n 1p)"
+  eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
+}
+
+t_skips_placeholders_and_other_folders() {
+  repo; mkdir -p skills/demo/references; printf 'hi\n' > skills/demo/references/a.md
+  printf 'see `references/types/<type>.md`, `./src/x.md`, and `scripts/sync-repos.sh`\n' > skills/demo/SKILL.md
+  run bash scripts/check.sh skills
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_allows_listed_path() {
+  repo; mkdir -p skills/embed-source/scripts; printf 'hi\n' > skills/embed-source/scripts/status.sh
+  printf 'writes `scripts/sync-repos.sh` in your repo\n' > skills/embed-source/SKILL.md
+  run bash scripts/check.sh skills
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_missing_here_path() {
+  repo; mkdir -p skills/a/scripts
+  printf 'python3 "$here/../../b/scripts/x.py"\n' > skills/a/scripts/run.sh
+  run bash scripts/check.sh skills
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/a/scripts/run.sh:1: missing path: ../../b/scripts/x.py" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_ignores_paths_elsewhere() {
+  repo; mkdir docs; printf 'see `../nope.md`\n' > docs/notes.md
+  run bash scripts/check.sh docs
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_hook_stops_missing_path() {
+  hooked; mkdir -p skills/demo; printf 'see `../nope/SKILL.md`\n' > skills/demo/SKILL.md; git add skills
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md:1: missing path: ../nope/SKILL.md" "$err"
+  eq commits 1 "$(git rev-list --count HEAD)"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -212,6 +285,15 @@ cases=(
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
   "stops on a missing path|t_stops_on_missing_path"
   "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
+  "flags a missing path in a skill|t_flags_missing_own_path"
+  "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
+  "flags a missing path to another skill|t_flags_missing_skill_path"
+  "reads a shared core path from its own folder|t_reads_core_path_from_own_folder"
+  "skips placeholders and folders a skill does not have|t_skips_placeholders_and_other_folders"
+  "allows a listed path in the user's repo|t_allows_listed_path"
+  "flags a missing path after \$here in a script|t_flags_missing_here_path"
+  "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
+  "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
 )
 
 pass=0; fail=0

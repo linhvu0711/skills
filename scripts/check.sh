@@ -10,7 +10,13 @@
 # ${PRIVATE_WORDS:-<git common dir>/info/private-words}: one word or regex per
 # line, case-insensitive, blank and `#` lines skipped. The list is local and
 # never tracked; without it that check is skipped. Private words are matched
-# against file paths too.
+# against file paths too. Last, a relative path in a `.md`, `.sh`, or `.py` file
+# under skills/ or shared-skill-core/ must point to a file: a path in a skill
+# starts at the skill's folder, a path in the shared core at the file's own
+# folder, and `$here/` in a script at the script's folder. A path is read when
+# it starts with `../` or its first folder exists there; a path that starts
+# with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
+# skipped.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
@@ -25,6 +31,9 @@ home_re='(^|[^A-Za-z0-9._-])/(Users|home)/[A-Za-z0-9._-]+'
 email_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 # Public addresses the skills name on purpose, one per line.
 allowed_emails='cursoragent@cursor.com'
+# Paths a skill names in the user's repo, not in its own folder, as
+# `<skill folder> <path>`, one per line.
+allowed_paths='skills/embed-source scripts/sync-repos.sh'
 
 staged=0; paths=()
 while [ $# -gt 0 ]; do
@@ -102,6 +111,32 @@ scan() {
 
 scan "home path" "" -E -e "$home_re"
 scan "email" "$allowed_emails" -E -e "$email_re"
+
+# Each relative path must exist in the work tree. The text is read from root,
+# so --staged reads only the added lines; the files they name are looked up
+# from the repo top, where this script now runs.
+for f in ${files[@]+"${files[@]}"}; do
+  case "$f" in
+    skills/*/*) base="${f#skills/}"; base="skills/${base%%/*}" ;;
+    shared-skill-core/*) base="$(dirname "$f")" ;;
+    *) continue ;;
+  esac
+  case "$f" in *.md|*.sh|*.py) ;; *) continue ;; esac
+  while IFS=$'\t' read -r line tok; do
+    case "$tok" in
+      '$here/'*) case "$f" in *.sh) ;; *) continue ;; esac
+                 p="${tok#\$here/}"; from="$(dirname "$f")" ;;
+      /*|./*) continue ;;
+      ../*) p="$tok"; from="$base" ;;
+      *) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+    esac
+    case "$p" in *[\<\>{}*\$~]*) continue ;; esac
+    while [ "${p%.}" != "$p" ]; do p="${p%.}"; done
+    printf '%s\n' "$allowed_paths" | grep -qxF -e "$base $p" && continue
+    [ -e "$from/$p" ] || problems+=("$f:$line: missing path: $p")
+  done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
+                  for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$root/$f")
+done
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"
   if [ ${#names[@]} -gt 0 ]; then
