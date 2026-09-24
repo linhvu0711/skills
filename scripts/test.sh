@@ -171,6 +171,28 @@ t_tree_scans_tracked_files() {
   has stderr "b.md:1: email: $email" "$err"
 }
 
+t_scans_path_from_subfolder() {
+  repo; mkdir sub; printf 'hello\n' > notes.md; printf 'mail %s\n' "$email" > sub/notes.md
+  cd sub; run bash ../scripts/check.sh notes.md
+  eq exit 1 "$code"
+  eq "stderr line 1" "sub/notes.md:1: email: $email" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_stops_on_missing_path() {
+  repo; run bash scripts/check.sh nope
+  eq exit 1 "$code"
+  eq stderr "stop: no such path: nope" "$err"
+}
+
+t_adopt_stops_on_bad_name() {
+  skills_home "# demo"
+  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh ..
+  eq exit 1 "$code"
+  eq stderr "stop: not a skill name: .." "$err"
+  eq "ls home" demo "$(ls "$T/home")"
+  eq "ls skills" "" "$(ls skills)"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -187,6 +209,9 @@ cases=(
   "adopt stops on a missing skill|t_adopt_stops_on_missing"
   "adopt stops on a skill already adopted|t_adopt_stops_on_adopted"
   "tree mode scans every tracked file|t_tree_scans_tracked_files"
+  "scans a path given from a subfolder|t_scans_path_from_subfolder"
+  "stops on a missing path|t_stops_on_missing_path"
+  "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
 )
 
 pass=0; fail=0

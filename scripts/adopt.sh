@@ -17,6 +17,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 [ $# -eq 1 ] && [ -n "$1" ] || die "usage: adopt.sh <name>"
 name="$1"
+[[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "not a skill name: $name"
 home="${SKILLS_HOME:-$HOME/.agents/skills}"
 repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
 
