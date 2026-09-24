@@ -7,11 +7,11 @@
 | ref | effect@{version} |
 | version_file | packages/effect/package.json |
 
-Tags look like `effect@3.14.0`. Sub-packages (`@effect/platform`, `@effect/sql`, `@effect/ai`) ship from the same monorepo, so one subtree covers all of them. The ref follows the core `effect` version; a sub-package may lag the installed version by a patch or two, which is fine.
+Tags look like `effect@3.14.0`. The sub-packages (`@effect/platform`, `@effect/sql`, `@effect/ai`) ship from the same monorepo, so one clone covers them all. The ref follows the core `effect` version; a sub-package that lags its installed version by a patch or two is fine.
 
 ## Where the good examples live
 
-Tests are the real usage. Docs are for humans.
+Tests show real usage; the docs are written for people.
 
 | topic | read first |
 | --- | --- |
@@ -25,7 +25,7 @@ Tests are the real usage. Docs are for humans.
 
 ## Idiom files to generate
 
-Generate these four by default. Add `effect-platform.md` or `effect-sql.md` only when the project already depends on `@effect/platform` or `@effect/sql`.
+Write these four by default. Add `effect-platform.md` or `effect-sql.md` only when the project already depends on `@effect/platform` or `@effect/sql`.
 
 - `docs/idioms/effect-schema.md`: `Schema.Struct`, `Schema.Class`, `Schema.decodeUnknown`, transforms, filters, `Schema.TaggedError`.
 - `docs/idioms/effect-services.md`: `Context.Tag` and `Effect.Service`, `Layer.succeed`/`Layer.effect`, composing with `Layer.provide`, test layers.

@@ -32,5 +32,5 @@ Initial state at the left or top. Happy path along one row. Failure and cancel s
 
 ## Pitfalls
 
-- Drawing the status enum but not finding every write site. The value of this diagram is the transition list; a missing transition is the bug the reader was looking for.
+- The status enum drawn, but not every write site found. The transition list is what this diagram is for; a missing transition is the bug the reader was looking for.
 - Guards written as prose. Copy the condition from the code.

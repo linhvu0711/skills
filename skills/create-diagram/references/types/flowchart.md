@@ -34,4 +34,4 @@ Top to bottom. One column for the happy path, `x: 1`. Failure exits on `x: 2`, a
 ## Pitfalls
 
 - A decision with one outgoing edge is a step, not a decision.
-- Do not draw the language's control flow (every `if`). Draw the decisions a product person would recognize.
+- Draw the decisions a product person would recognize, not the language's control flow (every `if`).

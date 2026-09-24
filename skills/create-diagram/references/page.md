@@ -1,6 +1,6 @@
 # Page data
 
-`assets/shell.html` draws everything from one `DATA` object. Replace the line `const DATA = {};` with the object. Two shapes exist: **graph** (default) and **sequence** (`type: "sequence"`).
+`assets/shell.html` draws everything from one `DATA` object. Replace the line `const DATA = {};` with the object. It takes one of two shapes: **graph** (default) and **sequence** (`type: "sequence"`).
 
 ## Common fields
 
@@ -29,9 +29,9 @@ groups: [{ id, label, sub, kind, members, pad, change }]
 - `label` may hold `\n` for a second line. Keep labels to three words.
 - `sub` is a second line in mono type: a tech, a path, a cardinality.
 - `tag` is a small uppercase eyebrow: `service`, `hook`, `table`. `component` and `container` kinds show their kind as the tag by default.
-- `path` is a `file:line` string or an array of them. It is shown in the panel when the node is clicked.
+- `path` is a `file:line` string or an array of them. The panel shows it when the node is clicked.
 - `sections` is for `table` only: `[["id uuid PK", "email text"], ["save()", "verify()"]]`. One inner array per section; a rule separates sections.
-- `w`, `h` override size. Leave them out unless a label wraps badly.
+- `w`, `h` override the size. Set them only when a label wraps badly.
 - `href` makes a click open that URL in a new tab instead of the panel. Use it on a `note` node placed beside the part it zooms into, with an arrow character in the label, so a sibling diagram is one click away on the canvas.
 
 **Node kinds**
@@ -58,7 +58,7 @@ groups: [{ id, label, sub, kind, members, pad, change }]
 - `label` is a verb or a message: `reads`, `POST /orders`, `emits`, `1..*`. Every edge gets one.
 - `kind`: `solid` (default), `dashed` (async, dependency, return), `dotted` (weak or optional).
 - `head`: `arrow` (default), `stick` (async), `open` (inheritance), `diamond` (aggregation), `fdiamond` (composition), `dot`, `none`. `tail` takes the same values and sits at `from`.
-- Two edges between the same pair fan out on their own. A self edge loops on the right.
+- Two edges between the same pair fan out by themselves. A self edge loops on the right.
 
 **Group**
 

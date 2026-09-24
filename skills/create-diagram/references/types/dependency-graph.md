@@ -32,5 +32,5 @@ Layered top to bottom: units with no dependents on top, leaves at the bottom. Co
 
 ## Pitfalls
 
-- Node modules and the standard library as units. Only the code the user owns, plus at most a few third-party units that matter to the question.
+- Node modules and the standard library drawn as units. Draw the code the user owns, plus at most a few third-party units that matter to the question.
 - Transitive edges. Draw direct dependencies; the reader follows the chain.

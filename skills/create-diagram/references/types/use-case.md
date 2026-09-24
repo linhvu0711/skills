@@ -1,6 +1,6 @@
 # Use case
 
-Answers: who uses the system and what they get done with it. Scope and requirements. Good early, and good when a feature adds a new kind of user or a new external system.
+Answers: who uses the system and what they get done with it: scope and requirements. Good early, and when a feature adds a new kind of user or a new external system.
 
 ## Facts to collect
 

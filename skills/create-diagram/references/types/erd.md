@@ -7,7 +7,7 @@ Answers: what the data model is: tables or collections, their keys, and how rows
 - Entities in scope: table, collection, or model. `path` to the migration, schema file, or model class.
 - Primary key and the columns that carry the answer: foreign keys, status, timestamps the plan touches, unique constraints.
 - Relationships with cardinality on both ends: `1`, `0..1`, `1..*`, `0..*`. Read it from the foreign key placement and nullability, not from the ORM name.
-- Join tables. Show them as entities only when they carry extra columns; else draw a many-to-many edge.
+- Join tables. Show one as an entity only when it carries extra columns; otherwise draw a many-to-many edge.
 - Indexes only when the question is about a query path.
 
 ## Draw it
