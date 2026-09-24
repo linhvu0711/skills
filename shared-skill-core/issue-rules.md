@@ -86,7 +86,7 @@ Priority and size never appear in the title. They are labels.
 
 ## Size
 
-The ruler is `~/.agents/shared-skill-core/size.md`. Read it. It is one
+The ruler is `size.md`. Read it. It is one
 table, XS to L under the ceiling, shared with the handoff rules that size
 the PR, so the ticket's label and the PR's label mean the same thing. Judge
 by its facts, not by hours. XL is over the ceiling and never a ticket label.
@@ -386,7 +386,7 @@ every fact you listed came back or came back as "not found". No second round.
 Load once per repo:
 
 ```bash
-CONV="$HOME/.agents/skills/to-issue/scripts/conventions.py"
+CONV="../skills/to-issue/scripts/conventions.py"
 python3 "$CONV" get owner/repo
 ```
 
@@ -408,7 +408,7 @@ gh label list --limit 200 --json name,description -q '.[] | "\(.name)\t\(.descri
   `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL
   label, when the repo has one, is the PR-only label the handoff skills own;
   it stays out of the map.
-- Priority: the shared store. `python3 "$HOME/.agents/skills/capture/scripts/conventions.py" priority-get owner/repo`.
+- Priority: the shared store. `python3 "../skills/capture/scripts/conventions.py" priority-get owner/repo`.
   On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or
   `priority: …` family, or words: p0 = critical else high, p1 = high,
   p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created

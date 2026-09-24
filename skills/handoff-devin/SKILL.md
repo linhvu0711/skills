@@ -5,12 +5,12 @@ disable-model-invocation: true
 ---
 
 The prompt skeleton and the rules block are shared with
-`/handoff-cursor` and live in `~/.agents/shared-skill-core/handoff/`
+`/handoff-cursor` and live in `../../shared-skill-core/handoff/`
 as templates. Read the prompt rules first, rendered for Devin:
-`bash ~/.agents/shared-skill-core/handoff/render.sh devin prompt`
+`bash ../../shared-skill-core/handoff/render.sh devin prompt`
 (the prompt skeleton, where each block comes from, and the follow-up
 shape). The rules block is
-`bash ~/.agents/shared-skill-core/handoff/render.sh devin rules`, pasted
+`bash ../../shared-skill-core/handoff/render.sh devin rules`, pasted
 verbatim into every first prompt. Never paste the raw templates: their
 marker lines and `{{words}}` are for the renderer. An edit to a rule
 goes into the template, so both skills get it. This file is the order
@@ -49,7 +49,7 @@ handoff-cursor.
 
 1. **Source.** A plan the user said `ok` to in this chat: read its
    `.md` file, the path `/plan-up` gave in its summary
-   (`~/.agents/artifacts/plan/plan-<slug>.md`, per
+   (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
    `../../shared-skill-core/plan-page.md`). No plan: say
    `Run /plan-up first.` and stop. A `handoff-ready` issue is no
    exception; `/plan-up` takes its short path on that label and still
@@ -62,7 +62,7 @@ handoff-cursor.
    the `What to build`, `Done when`, and `Scope` sections verbatim. The
    issue's size letter, XS to L: its size label, read through the repo
    convention's `size` map,
-   `python3 ~/.agents/skills/to-issue/scripts/conventions.py get owner/repo`.
+   `python3 ../to-issue/scripts/conventions.py get owner/repo`.
    On `MISS`, match the label by eye the way
    `../../shared-skill-core/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
@@ -132,7 +132,7 @@ handoff-cursor.
    when the user names one.
 
 7. **Watch.** In Claude Code, start a Monitor, `persistent: true`,
-   command `bash ~/.agents/skills/handoff-devin/scripts/devin.sh watch
+   command `bash scripts/devin.sh watch
    <session_id>`, description `Devin #<n>`. It prints one line per
    event and nothing between: `blocked` (Devin asked and waits),
    `finished`, `error`, `suspended:<why>` (asleep; `inactivity` is the
@@ -149,7 +149,7 @@ handoff-cursor.
    next. You are the brain that wrote the plan; you answer, not the
    user. First get the whole question: the watch line cuts it, so run
    `scripts/devin.sh status <session_id>` and read the message whole.
-   Then sort it by the two tests in `~/.agents/skills/plan-up/SKILL.md`
+   Then sort it by the two tests in `../plan-up/SKILL.md`
    step 5, the same sort § Follow-up step 1 uses:
    - **Small fork**: the plan, the issue, or the repo holds the answer.
      Fetch the code with Explore when you need a `file:line`. Decide,
@@ -205,7 +205,7 @@ handoff-cursor.
 
 1. **Sort the note.** Fetch the code it touches with Explore. A choice
    it leaves open is a fork; sort it by the two tests in
-   `~/.agents/skills/plan-up/SKILL.md` step 5. A big fork goes to the user
+   `../plan-up/SKILL.md` step 5. A big fork goes to the user
    first. Anything else: shape it as is. A note that answers a big fork
    from First prompt step 8 is an answer: `prompt.md` § Answer, not
    § Follow-up.
@@ -232,7 +232,7 @@ handoff-cursor.
 **User:** `/handoff-devin https://github.com/acme/shop/issues/42` after a
 `/plan-up` ended with `Ready for /handoff-devin.`
 
-Plan read from `~/.agents/artifacts/plan/plan-acme-shop-42.md`. Repo `acme/shop`, base `main`, issue labelled
+Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-42.md`. Repo `acme/shop`, base `main`, issue labelled
 `size/M`. Labels: `size/XS` to `size/L` exist, `size/XL`
 created. Prompt assembled: Repo, base, Size labels, issue with `size M`,
 Task with the issue's What to build, Done when verbatim, Plan blocks
@@ -248,7 +248,7 @@ more.
 short-path `/plan-up` (issue carries `handoff-ready`) ended with
 `Ready for /handoff-devin.`
 
-Plan read from `~/.agents/artifacts/plan/plan-acme-shop-57.md`: one
+Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-57.md`: one
 slice, two Proof rows, no walks, no videos. Prompt assembled with the
 `UI walks` and `Videos` blocks dropped, `create`, watch, stop.
 

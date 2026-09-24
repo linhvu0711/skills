@@ -13,7 +13,7 @@ way; they only lack the status. Short lookups are yours; the judging is
 `/validate-pr-review`'s, read and followed. Facts per
 `../../shared-skill-core/facts.md`. Never merge.
 
-`~/.agents/skills/land-pr/scripts/` holds four helpers; each prints its
+`scripts/` holds four helpers; each prints its
 usage with no arguments.
 In Claude Code every Bash call starts in the session's directory: git
 runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
@@ -25,7 +25,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Steps
 
-1. **Resolve.** `bash ~/.agents/skills/land-pr/scripts/pr-facts.sh <arg>` (no arg: the current
+1. **Resolve.** `bash scripts/pr-facts.sh <arg>` (no arg: the current
    branch's PR; add `--repo owner/repo` when the argument is a number
    and you are not in the repo). Hold every line. `STATE` is not `OPEN`:
    say so, stop. `FORK=true`: say `fork PRs are not mine`, stop.
@@ -34,13 +34,13 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
    `WT` is that directory. Otherwise find the main checkout the way
-   `~/.agents/skills/kickoff/scripts/kickoff.sh` does (the map at
+   `../kickoff/scripts/kickoff.sh` does (the map at
    `~/.config/kickoff/repos.tsv`, then the current directory's origin,
    then a search under `~/development`; a `.git` directory, not a
    file), and:
 
    ```bash
-   bash ~/.agents/shared-skill-core/worktree.sh <main-checkout> <HEAD>
+   bash ../../shared-skill-core/worktree.sh <main-checkout> <HEAD>
    ```
 
    `stop:` on stderr: show it, stop. `WT` is its `WORKTREE=`. Done when
@@ -51,7 +51,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 3. **Wait.** Round `r` starts here, `r` from 1.
 
    ```bash
-   bash ~/.agents/skills/land-pr/scripts/wait-review.sh <REPO> <SHA>
+   bash scripts/wait-review.sh <REPO> <SHA>
    ```
 
    Run it in the background in Claude Code; in Codex or a Devin CLI
@@ -60,10 +60,10 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    go on. Exit 1: say the state and the PR URL, stop; the user decides.
    Exit 2 (pending for thirty minutes): say so, stop.
 
-4. **Open?** `bash ~/.agents/skills/land-pr/scripts/open-threads.sh <REPO> <NUMBER> --me <me>`.
+4. **Open?** `bash scripts/open-threads.sh <REPO> <NUMBER> --me <me>`.
    `OPEN=0`: step 6. Else hold the lines.
 
-5. **Judge and apply.** Read `~/.agents/skills/validate-pr-review/SKILL.md`.
+5. **Judge and apply.** Read `../validate-pr-review/SKILL.md`.
    Follow its steps 1 to 6 with `NUMBER` as the argument, in `$WT`; then
    its § After go whole, `go` given, push included: the fixes, one
    commit each per `/make-commit`, `/capture` for every `fix later`,
@@ -85,7 +85,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    - **Before the push.** `git -C "$WT" fetch origin <BASE>`. The push
      is rejected, or `MERGE_STATE` was `DIRTY`: `git -C "$WT" rebase
      origin/<BASE>`; a conflict is
-     `~/.agents/skills/fix-conflicts/SKILL.md`, followed whole; then
+     `../fix-conflicts/SKILL.md`, followed whole; then
      `git -C "$WT" push --force-with-lease`. Devin re-reviews the new
      head; old threads go `outdated` and stay resolved.
 
@@ -95,7 +95,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 6. **Ready.**
 
    ```bash
-   bash ~/.agents/skills/land-pr/scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
    ```
 
    `READY`: step 7. `NOT READY`, by reason:

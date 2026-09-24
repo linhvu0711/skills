@@ -64,7 +64,7 @@ the `.md` line and the `DATA` field, rebuild.
 Build: copy the shell and replace its empty `DATA`.
 
 ```sh
-python3 - "$JSON" ~/.agents/skills/plan-up/assets/shell.html "$OUT" <<'EOF'
+python3 - "$JSON" ../skills/plan-up/assets/shell.html "$OUT" <<'EOF'
 import json, sys
 data = json.load(open(sys.argv[1])); shell = open(sys.argv[2]).read()
 open(sys.argv[3], 'w').write(shell.replace('const DATA = {};', 'const DATA = ' + json.dumps(data, ensure_ascii=False, indent=1) + ';'))
@@ -78,7 +78,7 @@ Serve with the script. It prints the page URL. `file://` is not the
 review path.
 
 ```sh
-URL=$(~/.agents/skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
+URL=$(../skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
 ```
 
 It reuses a server only when that server gives back this exact file.
@@ -94,7 +94,7 @@ Then, in this order:
    embeds and compares it with the `.md`.
 
    ```sh
-   python3 ~/.agents/skills/plan-up/scripts/check-page.py "$OUT" "$DIR/plan-<slug>.md"
+   python3 ../skills/plan-up/scripts/check-page.py "$OUT" "$DIR/plan-<slug>.md"
    ```
 
    It prints `page ok` or one line per problem: a count that differs
@@ -127,7 +127,7 @@ After the page is open, chat gets this and nothing more:
 Plan: #42 Export orders as CSV · size/M · base main
 6 done-when · 6 slices · 3 walks · 2 videos · 1 fork answered (A, stream)
 http://127.0.0.1:8765/plan-acme-shop-42.html
-~/.agents/artifacts/plan/plan-acme-shop-42.md
+$HOME/.agents/artifacts/plan/plan-acme-shop-42.md
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 

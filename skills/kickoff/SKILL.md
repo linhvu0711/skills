@@ -7,7 +7,7 @@ disable-model-invocation: true
 One script does the whole job. You run it and relay what it says.
 
 ```bash
-~/.agents/skills/kickoff/scripts/kickoff.sh <args as the user typed them>
+scripts/kickoff.sh <args as the user typed them>
 ```
 
 The arguments are `/plan-up`'s, passed through unchanged:

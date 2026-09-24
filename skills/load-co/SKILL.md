@@ -29,7 +29,7 @@ ask for one, or list recent sessions with
 1. **Peek.** Confirm the ID resolves and see the size:
 
    ```bash
-   python3 ~/.agents/skills/load-co/extract_session.py <id> --list
+   python3 extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: relay the script's message and stop. The peek
@@ -42,7 +42,7 @@ ask for one, or list recent sessions with
    (`mkdir -p` the folder first).
 
    ```bash
-   python3 ~/.agents/skills/load-co/extract_session.py <id> --summary > <out>
+   python3 extract_session.py <id> --summary > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in the same message.**
@@ -52,7 +52,7 @@ ask for one, or list recent sessions with
    with it (`fork_turns = "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 ~/.agents/skills/load-co/extract_session.py <id> --skeleton
+   python3 extract_session.py <id> --skeleton
    ```
 
    The skeleton is the deterministic part (first prompt, files patched, last

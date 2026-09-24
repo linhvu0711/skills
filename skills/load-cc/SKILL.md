@@ -25,7 +25,7 @@ one, or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
 1. **Peek.** Confirm the ID resolves and see the size:
 
    ```bash
-   python3 ~/.agents/skills/load-cc/extract_session.py <id> --list
+   python3 extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: relay the script's message and stop.
@@ -36,7 +36,7 @@ one, or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 ~/.agents/skills/load-cc/extract_session.py <id> --summary --after-compact > <out>
+   python3 extract_session.py <id> --summary --after-compact > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in the same message.**
@@ -46,7 +46,7 @@ one, or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 ~/.agents/skills/load-cc/extract_session.py <id> --skeleton
+   python3 extract_session.py <id> --skeleton
    ```
 
    The skeleton is the deterministic part (title, first prompt, recap rows,

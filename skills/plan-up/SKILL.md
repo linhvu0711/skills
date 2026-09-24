@@ -46,7 +46,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    Checked out on it, `git status --porcelain` empty:
    `git pull --ff-only`. Anything else: say what is off, stop.
 
-   Then prune old plans: `bash ~/.agents/skills/plan-up/scripts/prune.sh`.
+   Then prune old plans: `bash scripts/prune.sh`.
    It deletes the files of every plan whose issues are all closed. Its
    result never stops the run. Chat gets its last line only when it
    pruned something or printed a `stray` line; name the strays.

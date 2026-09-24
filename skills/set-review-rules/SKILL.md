@@ -7,7 +7,7 @@ disable-model-invocation: true
 You set what a reviewer checks on every pull request in this repo:
 `REVIEW.md` at the root, pointed at from `CLAUDE.md` and `AGENTS.md`. The
 file has two parts. The **general block** is fixed, the same for every
-repo, and lives in `~/.agents/shared-skill-core/review/general-rules.md`. The **repo rules** are
+repo, and lives in `../../shared-skill-core/review/general-rules.md`. The **repo rules** are
 what this repo alone cares about. The find step proposes them. The grill
 settles them. Then you write.
 
@@ -29,7 +29,7 @@ Explore agents retrieve, short lookups are yours.
 2. **Find the rules.** Search the repo for every file that says how code
    is reviewed. The list of paths and the three bins (review rule, bot
    config, not a rule) are in
-   `~/.agents/shared-skill-core/review/rule-sources.md`. Read it, look
+   `../../shared-skill-core/review/rule-sources.md`. Read it, look
    for every path, sort every hit.
 
    Done when every path in the list has been looked for and every hit is
@@ -70,7 +70,7 @@ Explore agents retrieve, short lookups are yours.
 6. **Write.** Files in the working tree, nothing else:
 
    - `REVIEW.md` at the root, in the shape under `File shape`. The general
-     block is `~/.agents/shared-skill-core/review/general-rules.md` copied in full, markers
+     block is `../../shared-skill-core/review/general-rules.md` copied in full, markers
      included. On a rerun, only the text between the markers is replaced;
      everything below the end marker is left as the grill settled it.
    - Files that held review prose the user chose to fold in: the prose is
@@ -93,7 +93,7 @@ Explore agents retrieve, short lookups are yours.
 ## File shape
 
 ```
-<general block, verbatim from ~/.agents/shared-skill-core/review/general-rules.md, markers included>
+<general block, verbatim from ../../shared-skill-core/review/general-rules.md, markers included>
 
 ## Repo rules
 
@@ -118,7 +118,7 @@ line: "None yet."
 
 - **Axis**: one of the three independent checks, Logic, Scope, Standards.
 - **General block**: the fixed text between the two markers. Same in
-  every repo. Owned by `~/.agents/shared-skill-core/review/general-rules.md`.
+  every repo. Owned by `../../shared-skill-core/review/general-rules.md`.
 - **Repo rule**: a line below the end marker. Owned by the repo.
 - **Task**: what the PR is supposed to do. The linked issue and its epic,
   else the PR description.

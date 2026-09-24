@@ -128,7 +128,7 @@ work already decided. The map comes first.
      the question and the terms it touches. Then continue at step 5.
      `CONTEXT.md` and ADRs are grill's.
    - **research**: one Explore agent, `SEARCH=on`, brief inline. The note
-     lands at `docs/research/<slug>.md` per `grill/references/research.md`,
+     lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
      committed with `/make-commit`.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library

@@ -78,7 +78,7 @@ stop: continue, and file it with the kind's label only.
 ### 3. Load or learn the repo convention
 
 ```bash
-CONV="$HOME/.agents/skills/capture/scripts/conventions.py"
+CONV="scripts/conventions.py"
 python3 "$CONV" get owner/repo
 ```
 

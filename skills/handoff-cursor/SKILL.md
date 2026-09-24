@@ -5,12 +5,12 @@ disable-model-invocation: true
 ---
 
 The prompt skeleton and the rules block are shared with
-`/handoff-devin` and live in `~/.agents/shared-skill-core/handoff/`
+`/handoff-devin` and live in `../../shared-skill-core/handoff/`
 as templates. Read the prompt rules first, rendered for Cursor:
-`bash ~/.agents/shared-skill-core/handoff/render.sh cursor prompt`
+`bash ../../shared-skill-core/handoff/render.sh cursor prompt`
 (the prompt skeleton, where each block comes from, and the follow-up
 shape). The rules block is
-`bash ~/.agents/shared-skill-core/handoff/render.sh cursor rules`,
+`bash ../../shared-skill-core/handoff/render.sh cursor rules`,
 pasted verbatim into every first prompt. Never paste the raw templates:
 their marker lines and `{{words}}` are for the renderer. An edit to a
 rule goes into the template, so both skills get it. This file is the
@@ -57,7 +57,7 @@ id: print the list and stop.
 
 1. **Source.** A plan the user said `ok` to in this chat: read its
    `.md` file, the path `/plan-up` gave in its summary
-   (`~/.agents/artifacts/plan/plan-<slug>.md`, per
+   (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
    `../../shared-skill-core/plan-page.md`). No plan: say
    `Run /plan-up first.` and stop. A `handoff-ready` issue is no
    exception; `/plan-up` takes its short path on that label and still
@@ -75,7 +75,7 @@ id: print the list and stop.
    the `What to build`, `Done when`, and `Scope` sections verbatim. The
    issue's size letter, XS to L: its size label, read through the repo
    convention's `size` map,
-   `python3 ~/.agents/skills/to-issue/scripts/conventions.py get owner/repo`.
+   `python3 ../to-issue/scripts/conventions.py get owner/repo`.
    On `MISS`, match the label by eye the way
    `../../shared-skill-core/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
@@ -130,7 +130,7 @@ id: print the list and stop.
    after all; report the byte count and stop.
 
 7. **Watch.** In Claude Code, start a Monitor, `persistent: true`,
-   command `bash ~/.agents/skills/handoff-cursor/scripts/cursor.sh watch
+   command `bash scripts/cursor.sh watch
    <agent_id> --repo owner/name --issue <n>`, description `Cursor #<n>`
    (a run: the first layer's issue number; each later layer's PR shows
    up in the finish message). It prints one line per event and nothing
@@ -153,7 +153,7 @@ id: print the list and stop.
    wrote the plan; you answer, not the user. First get the whole
    message: the watch line cuts it, so run `scripts/cursor.sh status
    <agent_id>` and read it whole. Then sort it by the two tests in
-   `~/.agents/skills/plan-up/SKILL.md` step 5, the same sort § Follow-up
+   `../plan-up/SKILL.md` step 5, the same sort § Follow-up
    step 1 uses:
    - **Small fork**: the plan, the issue, or the repo holds the answer.
      Fetch the code with Explore when you need a `file:line`. Decide,
@@ -206,7 +206,7 @@ id: print the list and stop.
 
 1. **Sort the note.** Fetch the code it touches with Explore. A choice
    it leaves open is a fork; sort it by the two tests in
-   `~/.agents/skills/plan-up/SKILL.md` step 5. A big fork goes to the user
+   `../plan-up/SKILL.md` step 5. A big fork goes to the user
    first. Anything else: shape it as is. A note that answers a big fork
    from First prompt step 8 is an answer: `prompt.md` § Answer, not
    § Follow-up.
@@ -273,7 +273,7 @@ id: print the list and stop.
 **User:** `/handoff-cursor https://github.com/acme/shop/issues/42` after a
 `/plan-up` ended with `Ready for /handoff-cursor.`
 
-Plan read from `~/.agents/artifacts/plan/plan-acme-shop-42.md`. Repo
+Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-42.md`. Repo
 `acme/shop`, base `main`, in `cursor.sh repos`, issue labelled
 `size/M`. Labels: `size/XS` to `size/L` exist, `size/XL`
 created. Prompt assembled: Repo, base, Size labels, issue with `size M`,
@@ -295,7 +295,7 @@ Same, with `--model claude-opus-5` on `create`.
 short-path `/plan-up` (issue carries `handoff-ready`) ended with
 `Ready for /handoff-cursor.`
 
-Plan read from `~/.agents/artifacts/plan/plan-acme-shop-57.md`: one
+Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-57.md`: one
 slice, two Proof rows, no walks, no videos. Prompt assembled with the
 `UI walks` and `Videos` blocks dropped, `create`, watch, stop.
 

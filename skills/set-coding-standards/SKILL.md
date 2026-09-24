@@ -62,7 +62,7 @@ Explore agents retrieve, short lookups are yours.
 
 `CODING_STANDARDS.md` reads as rules, one per line, grouped by area heading in
 the order of the `Areas` table in
-`~/.agents/skills/audit-coding-standards/SKILL.md`. Each rule states the
+`../audit-coding-standards/SKILL.md`. Each rule states the
 positive form: "Files are `kebab-case`", "Errors are returned, never thrown
 across a module edge". A rule a tool checks names the tool in brackets at
 the end: `[prettier]`, `[ruff E501]`. A rule with a reason that is not
