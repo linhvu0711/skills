@@ -48,7 +48,7 @@ INDEX_PATHS = (
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
 INDEX_PATH = INDEX_PATHS[0]
-INDEX_VERSION = 2
+INDEX_VERSION = 3  # 3: prompts is a list, so a multiline prompt stays one prompt
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
@@ -160,7 +160,7 @@ def parse_content(path: Path) -> dict:
         "first_prompt": cap(first),
         "last_prompt": cap(last),
         "n_prompts": n_user,
-        "prompts": "\n".join(prompts),
+        "prompts": prompts,
         "body": "\n".join(body),
     }
 
@@ -267,7 +267,7 @@ def tokenize(query: str) -> list[str]:
 def score_session(s: dict, tokens: list[str], phrase: str) -> int:
     """Presence of query words in the user's prompts is the signal; the assistant
     body is a faint tiebreaker so volume cannot win."""
-    prompts = s["prompts"].lower()
+    prompts = "\n".join(s["prompts"]).lower()
     body = s["body"].lower()
     score = 0
     matched = 0
@@ -350,10 +350,10 @@ def show_session(id_prefix: str, idx: dict) -> int:
         e.update(parse_content(Path(key)))
     print(f"{e['id']}  cwd={e.get('cwd')}  started={e.get('timestamp')}  prompts={e.get('n_prompts')}")
     print(f"path: {key}\n")
-    for i, p in enumerate(e["prompts"].split("\n"), 1):
-        p = p.strip()
-        if p:
-            print(f"[{i}] {p[:600]}{'…' if len(p) > 600 else ''}")
+    for i, p in enumerate(e["prompts"], 1):
+        head = f"[{i}] "
+        text = p[:600] + ("…" if len(p) > 600 else "")
+        print(head + text.replace("\n", "\n" + " " * len(head)))
     return 0
 
 
