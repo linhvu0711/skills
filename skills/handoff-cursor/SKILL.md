@@ -4,6 +4,8 @@ description: "Build the Cursor prompt from the plan file /plan-up wrote in this 
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 The prompt skeleton and the rules block are shared with
 `/handoff-devin` and live in `../../shared-skill-core/handoff/`
 as templates. Read the prompt rules first, rendered for Cursor:

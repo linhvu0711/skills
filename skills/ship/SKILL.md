@@ -4,6 +4,8 @@ description: "Take any target (one issue, a run of epic tickets, a set, a whole 
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 A chain of skills, run as one. You read each skill's `SKILL.md` and
 follow it step by step, gates and forks as written; the Skill tool
 cannot fire them. Facts come from reading, per

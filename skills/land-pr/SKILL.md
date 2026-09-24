@@ -4,6 +4,8 @@ description: "Take an open PR to ready-to-merge: wait for Devin Review on the he
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 You own one PR until it is ready. Devin Review is the reviewer: a
 commit status named `Devin Review` that turns pending after each push,
 `success` a few minutes later, and posts a review only when it found

@@ -4,6 +4,8 @@ description: "Open a new herdr pane beside this one and run /plan-up there on an
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 One script does the whole job. You run it and relay what it says.
 
 ```bash

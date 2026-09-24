@@ -4,6 +4,8 @@ description: "Embed a dependency's full source next to the repo (fetched on inst
 argument-hint: "<lib> | update <lib> | check"
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 Agents read code well and docs badly. A library's tests show the shapes the docs only describe. This skill fetches a library into `repos/<lib>` with a shallow clone of the tag that matches the version the project installs, keeps it out of git and out of the toolchain, and leaves short idiom files that quote the shapes the project uses. Every step is safe to run twice. The manifest, file headers, and marker comments carry the state, so there is no state file to drift.
 
 Modes: `add` (default), `update <lib>`, `check`. Read the preset in `presets/<lib>.md` when one exists. Without a preset, ask for the repo URL, the npm package name, the path of that package's `package.json` inside the repo, and the tag format; default the tag to `v{version}` and the file to `package.json`.

@@ -3,6 +3,8 @@ name: grill
 description: A relentless interview to sharpen a plan or design, which also creates docs (ADRs and glossary) as we go. Fires only when the user types /grill or says "grill me on this" in so many words, or when another skill hands over a seed. A plan or design discussion with no such words stays a normal conversation.
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 Read `../../shared-skill-core/grilling.md`, `references/domain-modeling.md`, and `../../shared-skill-core/facts.md` before you start, then follow all three at the same time:
 
 - `grilling.md` is the interview method (design tree, frontier, one question per message, the branches that are always in the tree, and the done rule).

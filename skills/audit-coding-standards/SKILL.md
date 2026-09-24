@@ -3,6 +3,8 @@ name: audit-coding-standards
 description: "Read-only audit of a repo's coding conventions: outdated rules, drift (code that breaks a live rule, with file:line evidence), gaps per area, or proposals when no rules file exists. Prints a report with a verdict and stops. Use for '/audit-coding-standards', 'audit our conventions', 'check for drift against CODING_STANDARDS.md', or when set-coding-standards needs its audit. Writing the standard is set-coding-standards."
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 You find what is true about how code is written in this repo, and report
 it. Nothing is changed. `set-coding-standards` calls you for its audit and
 takes the report from there; on your own, the report is the whole job.

@@ -5,6 +5,8 @@ description: "Capture a raw idea or a noticed bug as a lightweight GitHub issue 
 
 # capture
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 Write one small GitHub issue that holds a raw thing. Two kinds:
 
 - a **seed**: an idea. A feature, a refactor, a cleanup, anything that

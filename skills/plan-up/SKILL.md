@@ -4,6 +4,8 @@ description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 Read `references/plan.md` first. It holds the plan shape, how each block
 is filled, and the done rule. Read `references/executor.md` too: it
 says what the executor has and how it works a plan, so the plan fits

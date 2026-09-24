@@ -4,6 +4,8 @@ description: "Build the Devin prompt from the plan file /plan-up wrote in this c
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 The prompt skeleton and the rules block are shared with
 `/handoff-cursor` and live in `../../shared-skill-core/handoff/`
 as templates. Read the prompt rules first, rendered for Devin:

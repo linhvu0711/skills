@@ -4,6 +4,8 @@ description: "Judge each finding in a PR review (GitHub comments, a bot review, 
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 You take a review of one pull request and judge every finding in it. The
 reviewer may be a person, a bot, or a pasted block of text. You do not
 trust any of them. You open the code, settle each finding on three

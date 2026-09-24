@@ -4,6 +4,8 @@ description: "Review a pull request on the three fixed axes (logic, scope, stand
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 You review one pull request. The checks are fixed: **Logic**, **Scope**,
 **Standards**, as written in
 `../../shared-skill-core/review/general-rules.md`. The repo can add

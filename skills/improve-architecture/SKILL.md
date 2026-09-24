@@ -4,6 +4,8 @@ description: "Scan a codebase for shallow modules worth deepening, show the cand
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`.
+
 Read `references/codebase-design.md` first. It holds the vocabulary
 (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**,
 **locality**) and the principles (the deletion test, "the interface is the
