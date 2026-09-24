@@ -19,4 +19,4 @@ In Codex there are no sub-agents: use the read tools yourself, in the same order
 
 ## A fact that arrives late
 
-An answer, a review, or a later step can name a file, a service, an API, or a behaviour that nothing you fetched covers. Dispatch for it at once and keep going. A running fetch is an unsettled prerequisite. Only the work downstream of it waits.
+An answer, a review, or a later step can name a file, a service, an API, or a behaviour that nothing you fetched covers. Dispatch for it at once and keep going: a running fetch is an unsettled prerequisite, and only the work downstream of it waits.

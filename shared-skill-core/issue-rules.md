@@ -86,10 +86,9 @@ Priority and size never appear in the title. They are labels.
 
 ## Size
 
-The ruler is `size.md`. Read it. It is one
-table, XS to L under the ceiling, shared with the handoff rules that size
-the PR, so the ticket's label and the PR's label mean the same thing. Judge
-by its facts, not by hours. XL is over the ceiling and never a ticket label.
+The ruler is `size.md`; read it. It is one table, shared with the handoff
+rules that size the PR, so the ticket's label and the PR's label mean the
+same thing. XL is never a ticket label.
 
 XL in `to-issue`: stop, state which facts push it over (files, seams,
 packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut
@@ -114,20 +113,19 @@ it S, and drop Steps and the label.
 S gets Steps only when they are free. Free means every step names a file and
 line that the chat or the lookup actually showed, and no step needs a choice
 the chat did not make. Then write Steps and add `handoff-ready`, same as XS.
-One step that would be a guess: no Steps, no label. Never pad an S ticket
-with steps to earn the label. M and L never carry Steps.
+One step that would be a guess: no Steps, no label. M and L never carry
+Steps.
 
 ## Labels
 
 - **Size**: always one, from the convention's `size` map.
 - **Priority**: only when the user named one in this request. Words map as in
   the table below. Never ask for one, never infer one.
-- **Handoff**: `handoff-ready`, on every ticket that carries Steps. Always
-  XS, sometimes S, never M or L. It says the Steps are final: every
-  `file:line` was seen, no choice is open. `plan-up` reads it as "trust
-  the Steps" and takes its short path
-  (`../skills/plan-up/references/plan.md` § Handoff-ready); the ticket still gets a
-  plan before it goes to an executor. Created on first use. Never on a
+- **Handoff**: `handoff-ready`, on every ticket that carries Steps (see
+  Size). It says the Steps are final. `plan-up` reads it as "trust the
+  Steps" and takes its short path
+  (`../skills/plan-up/references/plan.md` § Handoff-ready); the ticket
+  still gets a plan before it goes to an executor. Created on first use. Never on a
   `task`, even though a task always carries Steps: the label means code
   steps a plan can be built from.
 - **Manual**: `manual`, on every `task` and on nothing else. It is the one
@@ -324,10 +322,9 @@ Open when it still needs proof.
 
 ### Steps (XS always, S when free)
 
-Three to seven numbered steps a worker can follow cold, in order. For S,
-every file and line in the steps must have been seen, in the chat or in the
-lookup. A line you did not see is a guess, and one guess means no Steps. A
-`task` has its own Steps rules under Task body.
+Three to seven numbered steps a worker can follow cold, in order, each
+from a line seen in the chat or the lookup (see Size). A `task` has its own
+Steps rules under Task body.
 
 - Each step names one file and line, one concrete change, and, when it is not
   obvious, how to see it worked.
@@ -337,8 +334,6 @@ lookup. A line you did not see is a guess, and one guess means no Steps. A
   it.
 - Concrete words only. Name the route, the field, the label text, the enum
   values. "Nicer", "cleaner", "handle errors properly" are not steps.
-- If a step needs a decision the chat did not make: an XS ticket becomes S,
-  an S ticket gets no Steps.
 
 Bad:
 
@@ -402,9 +397,9 @@ gh label list --limit 200 --json name,description -q '.[] | "\(.name)\t\(.descri
 - `words`: when the repo's titles use a different word for one of our types
   (`bug` for `fix`, `feature` for `feat`), record it.
 - `size`: labels that clearly denote size (`size/S`, `Size: Small`,
-  `effort-large`, bare `S`), matched case-insensitively across separators
-  mapped onto XS, S, M, L. A repo that
-  has three sizes but no XS: map XS to its smallest. A repo with none:
+  `effort-large`, bare `S`), matched case-insensitively across separators,
+  mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS
+  to its smallest. A repo with none:
   `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL
   label, when the repo has one, is the PR-only label the handoff skills own;
   it stays out of the map.
@@ -433,10 +428,9 @@ Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`,
 a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by
 `capture`.
 
-One hue per family: size teal, priority red to yellow,
+One hue per family, never reused: size teal, priority red to yellow,
 handoff-ready green, manual grey, seed light blue, bug purple,
-`discovery/*` pink
-(`../skills/discover-path/references/map.md`). Never reuse a family hue.
+`discovery/*` pink (`../skills/discover-path/references/map.md`).
 
 A label the convention names that no longer exists: `forget` the repo, learn
 again, retry once.
