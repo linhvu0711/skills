@@ -4,6 +4,8 @@ description: "Judge each finding in a PR review (GitHub comments, a bot review, 
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 You take a review of one pull request and judge every finding in it. The
 reviewer may be a person, a bot, or a pasted block of text. You do not
 trust any of them. You open the code, settle each finding on three
@@ -12,7 +14,7 @@ fixed, filed, or posted until the user says go.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first. Short lookups
+Read `../../shared-skill-core/facts.md` first. Short lookups
 (`gh pr view`, one `rg` count) are yours.
 
 Judge agents answer the three questions, one agent per file group.

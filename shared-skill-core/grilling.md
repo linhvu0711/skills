@@ -30,7 +30,7 @@ The tree comes from the work, and most of it is free. But a few branches are mis
 |---|---|
 | Who does what, and what they see at the end | `to-issue` What to build |
 | The done list: one observable outcome per line | `to-issue` Done when |
-| The five unhappy states for each user action, per `~/.agents/skills/to-issue/references/issue-rules.md` § Unhappy paths. Each one settled, or named as out | `to-issue` Done when and Scope Out |
+| The five unhappy states for each user action, per `issue-rules.md` § Unhappy paths. Each one settled, or named as out | `to-issue` Done when and Scope Out |
 | What is near but out | `to-issue` Scope Out |
 | Files, seams, schema or API change, migrations, packages touched | `to-issue` size; `to-epic` cutting |
 | For work over one ticket: what gates what | `to-epic` phases and edges |

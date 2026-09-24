@@ -4,10 +4,12 @@ description: "Open a new herdr pane beside this one and run /plan-up there on an
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 One script does the whole job. You run it and relay what it says.
 
 ```bash
-~/.agents/skills/kickoff/scripts/kickoff.sh <args as the user typed them>
+scripts/kickoff.sh <args as the user typed them>
 ```
 
 The arguments are `/plan-up`'s, passed through unchanged:

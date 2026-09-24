@@ -4,6 +4,8 @@ description: "Run the coding-standards audit, grill the user on its findings, th
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 You establish one source of truth for how code is written in this repo:
 `CODING_STANDARDS.md` at the root, enforced by the tools the project already
 has, pointed at from `CLAUDE.md` and `AGENTS.md`. The audit finds what is
@@ -11,7 +13,7 @@ true. The grill settles what is wanted. Then you write.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first: you are the brain,
+Read `../../shared-skill-core/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps
@@ -62,7 +64,7 @@ Explore agents retrieve, short lookups are yours.
 
 `CODING_STANDARDS.md` reads as rules, one per line, grouped by area heading in
 the order of the `Areas` table in
-`~/.agents/skills/audit-coding-standards/SKILL.md`. Each rule states the
+`../audit-coding-standards/SKILL.md`. Each rule states the
 positive form: "Files are `kebab-case`", "Errors are returned, never thrown
 across a module edge". A rule a tool checks names the tool in brackets at
 the end: `[prettier]`, `[ruff E501]`. A rule with a reason that is not

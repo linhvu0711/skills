@@ -13,6 +13,8 @@
 # check passed; a pane that exists but did not start stays for a look.
 set -euo pipefail
 
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*" >&2; }
 
@@ -81,7 +83,7 @@ fi
 
 if [ -n "$target_tab" ]; then
   new_pane="$(herdr pane split --pane "$split_pane" --direction right --ratio 0.5 --cwd "$wt" --no-focus | jq -r .result.pane.pane_id)"
-  python3 "$HOME/.agents/skills/kickoff/scripts/equalize_columns.py" "$new_pane" >/dev/null
+  python3 "$here/../../kickoff/scripts/equalize_columns.py" "$new_pane" >/dev/null
   placed="split in $target_tab"
 else
   created="$(herdr tab create --workspace "$ws" --cwd "$wt" --label "$label" --no-focus)"

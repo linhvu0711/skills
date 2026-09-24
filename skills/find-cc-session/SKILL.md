@@ -12,7 +12,7 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
 ## Steps
 
 1. **Run the finder.**
-   `python3 ~/.agents/skills/find-cc-session/find_sessions.py "<description>"`
+   `python3 find_sessions.py "<description>"`
    No description given: ask for one, or run `--all` to list recent sessions so the user can recognize it. Another project: `--project-dir <path>`. `--help` lists the rest.
 
 2. **Judge the candidates.** The score is a keyword heuristic; read each title, opening prompt, and snippet. A wide gap between #1 and #2 means one match. A tight cluster means the description is ambiguous. A low top score that shares only incidental words means no match. In Claude Code, set the `← current session` line aside unless the description clearly names it. In Codex that line never appears.

@@ -4,10 +4,12 @@ description: "Take any target (one issue, a run of epic tickets, a set, a whole 
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 A chain of skills, run as one. You read each skill's `SKILL.md` and
 follow it step by step, gates and forks as written; the Skill tool
 cannot fire them. Facts come from reading, per
-`~/.agents/skills/grill/references/facts.md`. Big forks go to the user.
+`../../shared-skill-core/facts.md`. Big forks go to the user.
 Everything else you decide, write down, and go on. Never merge.
 
 In Claude Code every Bash call starts in the session's directory. Every
@@ -34,7 +36,7 @@ runs (step 2).
 
 ## Steps
 
-1. **Plan.** Read `~/.agents/skills/plan-up/SKILL.md` and follow its
+1. **Plan.** Read `../plan-up/SKILL.md` and follow its
    steps 1 to 8 whole: fresh tree, issue, gate, facts, forks, plan, done
    rule, page. Its stop points are yours: a tree that is not clean, a
    gate that fails, a `manual` ticket, a stale step, and every big fork
@@ -48,11 +50,11 @@ runs (step 2).
    in one line: `Route: cloud (UI walks)`, `Route: cloud (stack of 3)`,
    or `Route: local (no UI, one ticket)`.
 
-3. **Cloud.** Read `~/.agents/skills/handoff-devin/SKILL.md` and follow
+3. **Cloud.** Read `../handoff-devin/SKILL.md` and follow
    § First prompt whole, steps 1 to 9: prompt, send, watch, answer
    Devin's questions (small forks yourself, big forks to the user),
    finish check. The PRs stay Devin's. On `finished` with a PR, run the
-   Ready step of `~/.agents/skills/land-pr/SKILL.md` on each PR, bottom
+   Ready step of `../land-pr/SKILL.md` on each PR, bottom
    of the stack first: `READY` on every one, go to step 8. Anything open
    goes back to the session as a follow-up per handoff-devin
    § Follow-up, naming the PR and what is open; watch again; at most
@@ -64,7 +66,7 @@ runs (step 2).
    as in `fix/133-uninstall-reverses-setup`. Then:
 
    ```bash
-   bash ~/.agents/shared-skill-core/worktree.sh <main-checkout> <branch> --base <base>
+   bash ../../shared-skill-core/worktree.sh <main-checkout> <branch> --base <base>
    ```
 
    `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=` line.
@@ -73,7 +75,7 @@ runs (step 2).
 
 5. **Local: prompt.** Follow handoff-devin § First prompt steps 2
    (facts) and 3 (labels) as written. Then assemble the file per
-   `bash ~/.agents/shared-skill-core/handoff/render.sh local prompt`:
+   `bash ../../shared-skill-core/handoff/render.sh local prompt`:
    the head lines with `Branch` and `Worktree`, the issue's `Task` and
    `Done when` verbatim, the plan's blocks, and the rules block from
    `render.sh local rules` pasted whole, unchanged, once. No `UI walks`,
@@ -92,7 +94,7 @@ runs (step 2).
    - Otherwise:
 
      ```bash
-     bash ~/.agents/skills/ship/scripts/pane.sh "$WT" <label> <prompt-path>
+     bash scripts/pane.sh "$WT" <label> <prompt-path>
      ```
 
      The label is the first four words of the issue title in kebab
@@ -109,7 +111,7 @@ runs (step 2).
      It returns on `idle`, `blocked`, or `done`. Read the tail,
      `herdr agent read <AGENT> --source visible --lines 80`, and sort:
      - The last message starts with `QUESTION`: sort it by the two
-       tests in `~/.agents/skills/plan-up/SKILL.md` step 5, as
+       tests in `../plan-up/SKILL.md` step 5, as
        handoff-devin step 8 does. **Small fork**: the plan, the issue,
        or the repo holds the answer; fetch the `file:line` with
        Explore, shape it per `render.sh local prompt` § Answer, write
@@ -133,7 +135,7 @@ runs (step 2).
    label. Its § Surprises are yours: stop and ask the user where it says
    stop and ask. It ends at § After the PR opens, which is step 7.
 
-7. **Land.** Read `~/.agents/skills/land-pr/SKILL.md`.
+7. **Land.** Read `../land-pr/SKILL.md`.
    - The pane built: it already ran land-pr (rules § After the PR
      opens). Run only its Ready step on the PR. `READY`: step 8.
      `NOT READY`: shape a follow-up per `render.sh local prompt`

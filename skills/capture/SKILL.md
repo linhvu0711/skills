@@ -5,6 +5,8 @@ description: "Capture a raw idea or a noticed bug as a lightweight GitHub issue 
 
 # capture
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 Write one small GitHub issue that holds a raw thing. Two kinds:
 
 - a **seed**: an idea. A feature, a refactor, a cleanup, anything that
@@ -22,7 +24,7 @@ The whole point is speed and low noise. Get in, file it, get out.
 - **Seed or bug, nothing else.** Never classify as one of the real
   types (`feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`,
   `spike`, `task`, the nine in
-  `~/.agents/skills/to-issue/references/issue-rules.md` § Types) or as
+  `../../shared-skill-core/issue-rules.md` § Types) or as
   `improve` or any other word. Those words mean "decided". A seed and a
   bug are not decided. A bug becomes a `fix` ticket only through
   `/to-issue`, once the behaviour after the fix is written down.
@@ -78,7 +80,7 @@ stop: continue, and file it with the kind's label only.
 ### 3. Load or learn the repo convention
 
 ```bash
-CONV="$HOME/.agents/skills/capture/scripts/conventions.py"
+CONV="scripts/conventions.py"
 python3 "$CONV" get owner/repo
 ```
 
@@ -218,7 +220,7 @@ once:
 
   Colors: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a
   heat ramp. These names and colors are owned by
-  `~/.agents/skills/to-issue/references/issue-rules.md` § Labels and
+  `../../shared-skill-core/issue-rules.md` § Labels and
   § Repo convention; change them there first.
 
 - The missing label is anything else (the repo renamed or deleted it): the

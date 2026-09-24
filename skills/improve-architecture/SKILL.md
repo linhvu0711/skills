@@ -4,6 +4,8 @@ description: "Scan a codebase for shallow modules worth deepening, show the cand
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 Read `references/codebase-design.md` first. It holds the vocabulary
 (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**,
 **locality**) and the principles (the deletion test, "the interface is the
@@ -19,7 +21,7 @@ report and a grill.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first: you are the brain,
+Read `../../shared-skill-core/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps

@@ -12,7 +12,7 @@ Sibling: **find-cc-session** does the same for Claude Code sessions. Both run in
 ## Steps
 
 1. **Run the finder.**
-   `python3 ~/.agents/skills/find-co-session/find_session.py "<description>"`
+   `python3 find_session.py "<description>"`
    Turn a relative date in the description into a flag first ("yesterday" is `--date yesterday`, "last week" is `--days 7`). No description given: ask for one, or run `--all` to list recent sessions so the user can recognize it. Another project: `--cwd <path>`; a parent folder with `--include-subdirs`. `--help` lists the rest. The first run for a project parses its rollouts once and caches them under `~/.cache/find-co-session/`, or `/tmp/find-co-session/` when the Codex sandbox keeps the home cache read-only; later runs take well under a second.
 
 2. **Judge the candidates.** The score is a keyword heuristic; read each opening prompt and snippet. A wide gap between #1 and #2 means one match. A tight cluster means the description is ambiguous. A low top score that shares only incidental words means no match. To see a candidate's full prompt list, run `--show <id>`; that prints only the user's prompts, so it stays small. In Codex, the session you are in right now is also a rollout; set it aside unless the description clearly names it.

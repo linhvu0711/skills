@@ -5,6 +5,8 @@ disable-model-invocation: true
 argument-hint: "<idea, seed url, or map url>"
 ---
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 Read `references/map.md` first: bodies, labels, titles, and every `gh`
 command live there. This file is the flow.
 
@@ -128,12 +130,12 @@ work already decided. The map comes first.
      the question and the terms it touches. Then continue at step 5.
      `CONTEXT.md` and ADRs are grill's.
    - **research**: one Explore agent, `SEARCH=on`, brief inline. The note
-     lands at `docs/research/<slug>.md` per `grill/references/research.md`,
+     lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
      committed with `/make-commit`.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library
      do X". Iterate; the user picks and says done. What was proven becomes
-     `Known` lines per `to-issue/references/issue-rules.md` § Known.
+     `Known` lines per `../../shared-skill-core/issue-rules.md` § Known.
    - **task**: do it where the agent can; otherwise hand the user a
      checklist and wait. Record what was done and the facts later tickets
      need: where a credential lives, never its value; new URLs; counts.
@@ -158,7 +160,7 @@ work already decided. The map comes first.
    free: <names>. Run /discover-path <map-url> again.` and stop.
 
    No open ticket and no fog: walk the readiness gate in
-   `to-issue/references/issue-rules.md` § Readiness gate over the whole
+   `../../shared-skill-core/issue-rules.md` § Readiness gate over the whole
    Decisions so far list, unhappy paths included. Each gap becomes one
    ticket, created now, then report as above. No gap: print `Map clear.`,
    the Decisions so far list in full, and `Run /to-epic in this chat.`
