@@ -35,7 +35,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ "$staged" = 0 ] || [ ${#paths[@]} -eq 0 ] || die "--staged takes no paths"
-cd "$(git rev-parse --show-toplevel)" || die "not inside a git repo"
+# Paths are given from the caller's folder; the scan runs from the repo root.
+prefix="$(git rev-parse --show-prefix)" || die "not inside a git repo"
+for i in ${paths[@]+"${!paths[@]}"}; do
+  [ -e "${paths[$i]}" ] || die "no such path: ${paths[$i]}"
+  case "${paths[$i]}" in /*) ;; *) paths[$i]="$prefix${paths[$i]}" ;; esac
+done
+cd "$(git rev-parse --show-toplevel)"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
