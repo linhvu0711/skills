@@ -10,9 +10,9 @@ You have docs, a README, a blog post, or any other non-code text that should rea
 
 The same text, same meaning, without the tells: no "pivotal", "delve", or "testament to", no em dashes, no "It's not just X, it's Y", no forced lists of three, no "I hope this helps!".
 
-> Before: "This powerful tool serves as a testament to modern engineering, seamlessly enhancing your workflow."
+> Before: "This powerful tool serves as a testament to modern engineering, seamlessly cutting your build time in half."
 >
-> After: "The tool makes your workflow faster."
+> After: "The tool cuts your build time in half."
 
 It also adds voice back: opinions, varied rhythm, specific detail.
 
