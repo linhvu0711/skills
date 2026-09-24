@@ -23,6 +23,9 @@
 # THIRD_PARTY_NOTICES.md needs its upstream's license next to it:
 # `skills/<name>/LICENSE` for a skill, `shared-skill-core/LICENSE-<owner>` for a
 # shared core file, <owner> from the section's `## <owner>/<repo>` heading.
+# Each skill with a SKILL.md needs a README.md with the headings `## Use it
+# when`, `## What you get`, `## Needs`, and `## Fits with`, plus `## Credits`
+# when THIRD_PARTY_NOTICES.md lists it.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
@@ -147,20 +150,39 @@ done
 # in_index <path>: the path is in the index, so the commit holds it.
 in_index() { git cat-file -e ":$1" 2>/dev/null; }
 
-if [ ${#paths[@]} -eq 0 ] && in_index THIRD_PARTY_NOTICES.md; then
-  while IFS=$'\t' read -r line owner p; do
+if [ ${#paths[@]} -eq 0 ]; then
+  # rows: `<line>\t<owner>\t<path>\t<level>` for each table row of
+  # THIRD_PARTY_NOTICES.md whose first cell is one backticked path.
+  rows=""
+  if in_index THIRD_PARTY_NOTICES.md; then
+    rows="$(git show :THIRD_PARTY_NOTICES.md | awk '
+      /^## / { split($2, o, "/"); owner = o[1]; next }
+      /^\|/  { n = split($0, c, "|"); p = c[2]; lv = c[n - 1]
+               gsub(/^[ \t]+|[ \t]+$/, "", p); gsub(/^[ \t]+|[ \t]+$/, "", lv)
+               if (p !~ /^`[^`]+`$/) next
+               gsub(/`/, "", p); print FNR "\t" owner "\t" p "\t" lv }')"
+  fi
+  while IFS=$'\t' read -r line owner p level; do
+    case "$level" in copy*|"heavy adaptation"*) ;; *) continue ;; esac
     case "$p" in
       skills/*) p="${p#skills/}"; lic="skills/${p%%/*}/LICENSE" ;;
       shared-skill-core/*) lic="shared-skill-core/LICENSE-$owner" ;;
       *) continue ;;
     esac
     in_index "$lic" || problems+=("THIRD_PARTY_NOTICES.md:$line: missing license: $lic")
-  done < <(git show :THIRD_PARTY_NOTICES.md | awk '
-    /^## / { split($2, o, "/"); owner = o[1]; next }
-    /^\|/  { n = split($0, c, "|"); p = c[2]; lv = c[n - 1]
-             gsub(/^[ \t]+|[ \t]+$/, "", p); gsub(/^[ \t]+|[ \t]+$/, "", lv)
-             if (p !~ /^`[^`]+`$/ || lv !~ /^(copy|heavy adaptation)/) next
-             gsub(/`/, "", p); print FNR "\t" owner "\t" p }')
+  done <<< "$rows"
+
+  while IFS= read -r skill; do
+    if ! in_index "$skill/README.md"; then
+      problems+=("$skill: missing file: README.md"); continue
+    fi
+    headings=("Use it when" "What you get" "Needs" "Fits with")
+    printf '%s\n' "$rows" | cut -f3 | grep -qxF -e "$skill" && headings+=("Credits")
+    readme="$(git show ":$skill/README.md")"
+    for h in "${headings[@]}"; do
+      printf '%s\n' "$readme" | grep -qxF -e "## $h" || problems+=("$skill/README.md: missing heading: ## $h")
+    done
+  done < <(git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }')
 fi
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"

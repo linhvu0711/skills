@@ -267,12 +267,17 @@ t_hook_stops_missing_path() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+# readme <heading>...: skills/demo with a SKILL.md and a README that has
+# these `## ` headings.
+readme() {
+  mkdir -p skills/demo; printf '# demo\n' > skills/demo/SKILL.md
+  printf '# demo\n' > skills/demo/README.md
+  for h in "$@"; do printf '\n## %s\n' "$h" >> skills/demo/README.md; done
+}
+
 # demo_skill: skills/demo with a SKILL.md and a README that has the template
 # headings, Credits included.
-demo_skill() {
-  mkdir -p skills/demo; printf '# demo\n' > skills/demo/SKILL.md
-  printf '# demo\n\n## Use it when\n\n## What you get\n\n## Needs\n\n## Fits with\n\n## Credits\n' > skills/demo/README.md
-}
+demo_skill() { readme "Use it when" "What you get" "Needs" "Fits with" "Credits"; }
 
 # notices <path> <level>: THIRD_PARTY_NOTICES.md for upstream acme/tools with
 # one row, on line 5, for that path at that level.
@@ -310,6 +315,35 @@ t_hook_stops_row_without_license() {
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "THIRD_PARTY_NOTICES.md:5: missing license: skills/demo/LICENSE" "$err"
   eq commits 1 "$(git rev-list --count HEAD)"
+}
+
+t_flags_skill_without_readme() {
+  repo; mkdir -p skills/demo; printf '# demo\n' > skills/demo/SKILL.md; git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo: missing file: README.md" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_missing_heading() {
+  repo; readme "Use it when" "What you get" "Fits with"; git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/README.md: missing heading: ## Needs" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_listed_without_credits() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"; printf 'MIT\n' > skills/demo/LICENSE
+  notices skills/demo copy; git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/README.md: missing heading: ## Credits" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_passes_readme_with_headings() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"; git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
 }
 
 t_render_names_land_pr() {
@@ -355,6 +389,10 @@ cases=(
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"
   "hook stops a notices row with no license|t_hook_stops_row_without_license"
+  "flags a skill with no README|t_flags_skill_without_readme"
+  "flags a README with a missing heading|t_flags_missing_heading"
+  "flags a listed skill with no Credits|t_flags_listed_without_credits"
+  "passes a README with its headings|t_passes_readme_with_headings"
 )
 
 pass=0; fail=0
