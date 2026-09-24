@@ -66,17 +66,14 @@ What the script decides, so you can answer questions about it:
 
 The user need not paste a URL. They may say `/kickoff on this`, `/kickoff that
 issue`, or just `/kickoff` right after making an issue. Before you run the
-script, turn that reference into the URL and `#numbers` the script takes.
+script, turn that reference into the URL and `#numbers` it takes: look
+back through the session for the issue or epic they mean (one just made
+with `/to-issue` or `/capture`, a link pasted earlier, the PR the work
+sits on).
 
-Look back through the session for the issue or epic they mean: one just
-made with `/to-issue` or `/capture`, a link pasted earlier, the PR the work
-sits on. Resolve it to the exact args and pass those to the script
-unchanged.
-
-Run the script only when one target is clear. If nothing in the session
-matches, or more than one could, do not guess and do not run it. Say what
-you found, name the candidates, and ask which one. The word `on` is
-overloaded: `/kickoff on this` can mean "target this issue" or the `on
+Run the script only when one target is clear. None or several match:
+say what you found, name the candidates, and ask which one. The word
+`on` is overloaded: `/kickoff on this` can mean "target this issue" or the `on
 <pr-url>` stack form. When that is unclear, ask before running.
 
 ## Examples
