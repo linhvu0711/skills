@@ -23,8 +23,8 @@ and its script differ.
 `scripts/cursor.sh` is the only thing that talks to Cursor: `create`,
 `status`, `say`, `watch`, `last`, `models`, `repos`. Run it with no
 arguments for the usage. It reads the key itself. The prompt file goes
-whole into the API as the prompt text; Cursor has no attachment and no
-documented length cap, so nothing is uploaded and nothing is split.
+whole into the API as the prompt text: Cursor has no attachments and no
+documented length cap.
 
 Cursor's shape: an **agent** (`bc-…`) is the durable session, one
 workspace, one conversation. Each prompt to it is a **run** (`run-…`);
@@ -127,9 +127,9 @@ id: print the list and stop.
    `~/.config/dispatch/cursor-sessions.tsv`. The prompt never goes in
    chat: it is hundreds of lines the user already saw as the plan and
    the issue. Chat gets two lines: `Prompt: <file path> (<n> lines)`
-   and `Agent started: <url>`. A
-   `validation_error` on the prompt: the text was too long for Cursor
-   after all; report the byte count and stop.
+   and `Agent started: <url>`. A `validation_error` on the prompt means
+   the text was too long for Cursor after all: report the byte count and
+   stop.
 
 7. **Watch.** In Claude Code, start a Monitor, `persistent: true`,
    command `bash scripts/cursor.sh watch
@@ -137,9 +137,9 @@ id: print the list and stop.
    (a run: the first layer's issue number; each later layer's PR shows
    up in the finish message). It prints one line per event and nothing
    between: `pr <url>` (a PR whose head branch starts with `<type>/<n>-`,
-   asked from GitHub, since Cursor's own git snapshot only tracks its
-   `cursor/…` workspace branch), `finished`, `error`,
-   `cancelled`, or `expired`, each with the run's last message. On each
+   read from GitHub, since Cursor's own git snapshot tracks only its
+   `cursor/…` workspace branch), `finished`, `error`, `cancelled`, or
+   `expired`, each with the run's last message. On each
    line, tell the user the state and the agent's message in one or two
    lines. Cursor has no `blocked` state: an agent that needs an answer
    ends its run with the question as its message, so `finished` is
