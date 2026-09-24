@@ -17,7 +17,7 @@ Open: the button still has no loading state
 Next step: wire the button to the endpoint
 ```
 
-Codex encrypts its reasoning on disk, so the brief shows how many reasoning blocks there were, never what they said.
+Codex encrypts its reasoning on disk, so nothing here can show what Codex was thinking. A full transcript counts the reasoning blocks and stops there.
 
 ## Needs
 
