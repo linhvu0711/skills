@@ -12,7 +12,7 @@ The same text, same meaning, without the tells: no "pivotal", "delve", or "testa
 
 > Before: "This powerful tool serves as a testament to modern engineering, seamlessly enhancing your workflow."
 >
-> After: "The tool saves you about ten minutes per deploy."
+> After: "The tool makes your workflow faster."
 
 It also adds voice back: opinions, varied rhythm, specific detail.
 
