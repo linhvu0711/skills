@@ -352,8 +352,8 @@ def show_session(id_prefix: str, idx: dict) -> int:
     print(f"path: {key}\n")
     for i, p in enumerate(e["prompts"], 1):
         head = f"[{i}] "
-        text = p[:600] + ("…" if len(p) > 600 else "")
-        print(head + text.replace("\n", "\n" + " " * len(head)))
+        lines = [ln[:600] + ("…" if len(ln) > 600 else "") for ln in p.split("\n")]
+        print(head + ("\n" + " " * len(head)).join(lines))
     return 0
 
 
