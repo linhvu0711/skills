@@ -1,6 +1,6 @@
 # Domain modeling
 
-Build and sharpen the project's domain model as you design. Challenge terms, invent edge-case scenarios, and write the glossary and decisions down the moment they settle.
+Build and sharpen the project's domain model as you design, and write it down the moment it settles.
 
 ## Files
 
@@ -26,12 +26,10 @@ When the user states how something works, check whether the code agrees, or the 
 
 ### Update CONTEXT.md inline
 
-Update `CONTEXT.md` the moment a term is resolved, in the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md). `CONTEXT.md` is a glossary and holds terms only. Implementation detail lives in code and ADRs.
+Update `CONTEXT.md` the moment a term is resolved. It holds terms only; implementation detail lives in code and ADRs.
 
 The glossary work is done when every term the session used is in `CONTEXT.md` or was judged a general programming concept.
 
 ### Offer ADRs
 
-Offer an ADR only when all three conditions in [ADR-FORMAT.md](./ADR-FORMAT.md) hold. If any one is missing, skip it.
-
-When the decision rests on a researched fact, the ADR cites the primary source, never the research note. Notes are removed when the feature ships; the ADR must still stand.
+Offer an ADR only when all three conditions in [ADR-FORMAT.md](./ADR-FORMAT.md) hold. When the decision rests on a researched fact, the ADR cites the primary source, per `research.md` § Using an existing note.
