@@ -7,21 +7,21 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 You take a review of one pull request and judge every finding in it. The
-reviewer may be a person, a bot, or a pasted block of text. You do not
-trust any of them. You open the code, settle each finding on three
-questions, and hand back a table with one verdict per row. Nothing is
-fixed, filed, or posted until the user says go.
+reviewer may be a person, a bot, or a pasted block of text; trust none
+of them. Open the code, settle each finding on three questions, and hand
+back a table with one verdict per row. Nothing is fixed, filed, or
+posted until the user says go.
 
 ## Facts
 
 Read `../../shared-skill-core/facts.md` first. Short lookups
 (`gh pr view`, one `rg` count) are yours.
 
-Judge agents answer the three questions, one agent per file group.
-Answering means tracing callers, running a test, and running blame,
-so a judge is a `general-purpose` agent, not Explore. Explore
-retrieves; a judge decides. The verdict and the reply text stay with
-you: the verdict is a table lookup, the reply is your voice.
+One judge agent per file group answers the three questions. That
+means tracing callers, running a test, and running blame, so a judge is
+a `general-purpose` agent; Explore only retrieves. The verdict and the
+reply text stay with you: the verdict is a table lookup, the reply is
+your voice.
 
 In Codex there are no subagents: run each judge brief yourself, one
 after the other, and keep the same return shape.
