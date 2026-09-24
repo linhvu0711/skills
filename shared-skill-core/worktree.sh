@@ -10,13 +10,20 @@
 # - The branch exists locally: the worktree checks it out.
 # - It exists only on origin: fetched and tracked.
 # - It exists nowhere: made from --base (fetched from origin first).
-# - The folder is already that worktree, clean, on that branch: reused.
+# - The folder is already a worktree of <main-checkout>, clean, on that
+#   branch: reused. A worktree of another repo there (same name) stops.
 #
 # Exit 0: one line, `WORKTREE=<dir> BRANCH=<b> STATE=<created|reused> FROM=<what>`.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+# The .git directory a checkout or worktree belongs to, symlinks resolved.
+common_dir() {
+  local d
+  d="$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && [ -n "$d" ] || return 1
+  (cd "$d" && pwd -P)
+}
 
 repo=""; branch=""; base=""; dry=0
 while [ $# -gt 0 ]; do
@@ -41,6 +48,8 @@ dir="$root/$name/$(printf '%s' "$branch" | tr '/' '-')"
 # Already a worktree there?
 if [ -e "$dir" ]; then
   [ -f "$dir/.git" ] || die "$dir exists and is not a worktree"
+  owner="$(common_dir "$dir")" || die "$dir is a worktree whose repo is gone"
+  [ "$owner" = "$(common_dir "$repo")" ] || die "$dir is a worktree of ${owner%/.git}, not $repo"
   cur="$(git -C "$dir" branch --show-current 2>/dev/null || true)"
   [ "$cur" = "$branch" ] || die "$dir is on '$cur', not '$branch'"
   dirty="$(git -C "$dir" status --porcelain)"
