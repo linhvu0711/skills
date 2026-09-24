@@ -1,0 +1,3 @@
+interface:
+  display_name: "Set Review Rules"
+  short_description: "Write REVIEW.md: three-axis review plus repo rules"

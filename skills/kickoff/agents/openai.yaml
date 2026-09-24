@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kickoff"
+  short_description: "Open a herdr pane and run /plan-up there"
+  default_prompt: "$kickoff"

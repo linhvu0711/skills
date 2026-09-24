@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plain"
+  short_description: "Rewrite the last answer in simple language"
+  default_prompt: "Use $plain to rewrite your last answer in plain, simple language."

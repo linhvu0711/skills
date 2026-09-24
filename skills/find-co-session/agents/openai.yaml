@@ -1,0 +1,6 @@
+interface:
+  display_name: "Find Codex Session"
+  short_description: "Find a Codex session in this project by description."
+  default_prompt: "$find-co-session ..."
+policy:
+  allow_implicit_invocation: false

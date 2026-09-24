@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dispatch to Cursor"
+  short_description: "Build the Cursor prompt from the plan and start the cloud agent"
+  default_prompt: "$handoff-cursor"

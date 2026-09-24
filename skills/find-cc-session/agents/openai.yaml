@@ -1,0 +1,6 @@
+interface:
+  display_name: "Find Claude Code Session"
+  short_description: "Find a Claude Code session in this project by description."
+  default_prompt: "$find-cc-session ..."
+policy:
+  allow_implicit_invocation: false

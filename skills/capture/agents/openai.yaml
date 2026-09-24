@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture"
+  short_description: "Capture a raw idea as a GitHub seed issue, optional priority, no diagnosis or plan"
+  default_prompt: "$capture"

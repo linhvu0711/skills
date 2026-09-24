@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose"
+  short_description: "Find the root cause of a bug or the hot spot behind a slow thing, then stop"
+  default_prompt: "$diagnose"

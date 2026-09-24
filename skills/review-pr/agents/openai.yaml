@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review PR"
+  short_description: "Review a pull request on logic, scope, standards, plus the repo's own rules"
+  default_prompt: "$review-pr"

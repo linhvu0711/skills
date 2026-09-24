@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dispatch"
+  short_description: "Build the Devin prompt from the plan and start the Devin session"
+  default_prompt: "$handoff-devin"
