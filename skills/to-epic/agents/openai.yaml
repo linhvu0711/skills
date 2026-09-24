@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Epic"
+  short_description: "Cut large work into a phased GitHub epic with native sub-issues and blocked-by edges, approved in chat first"
+  default_prompt: "$to-epic"

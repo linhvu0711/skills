@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagram"
+  short_description: "Draw a code-backed interactive diagram"
+  default_prompt: "$diagram"

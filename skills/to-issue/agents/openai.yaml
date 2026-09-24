@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Issue"
+  short_description: "Turn the conversation into one typed, sized GitHub issue an agent can pick up cold"
+  default_prompt: "$to-issue"

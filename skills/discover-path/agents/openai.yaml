@@ -1,0 +1,6 @@
+interface:
+  display_name: "Discover path"
+  short_description: "Map a big effort as decision tickets on GitHub"
+  default_prompt: "$discover-path"
+policy:
+  allow_implicit_invocation: false

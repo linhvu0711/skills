@@ -1,0 +1,6 @@
+interface:
+  display_name: "Codex Session Loader"
+  short_description: "Load a Codex session as a state brief."
+  default_prompt: "$load-co <session-id>"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Plan</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2230; --muted: #5d6675; --line: #e2e6ec;
+    --accent: #2f6fed; --accent-ink: #ffffff; --soft: #eef3ff;
+    --ok: #1f8a4c; --ok-soft: #e6f5ec; --warn: #b3660b; --warn-soft: #fff4e3; --neutral-soft: #f1f3f6;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
+      --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
+      --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
+    --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
+    --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); padding: 0 20px 64px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .path { font-family: var(--mono); font-size: 12.5px; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  header { padding: 28px 0 14px; }
+  .kicker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 8px 0 6px; letter-spacing: -.01em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); }
+  .badge.size { background: var(--soft); color: var(--accent); border-color: transparent; }
+  .badge.kind { background: var(--neutral-soft); }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+
+  .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); cursor: pointer; }
+  .stat:hover { border-color: var(--accent); }
+  .stat b { display: block; font-size: 22px; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: 12.5px; }
+
+  .layers { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+  .layers button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .layers button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  nav.tabs { position: sticky; top: 0; z-index: 5; background: var(--bg); display: flex; gap: 4px; overflow-x: auto; padding: 12px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  nav.tabs button { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+  nav.tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); border: 1px solid var(--line); }
+  nav.tabs .spacer { flex: 1; }
+  nav.tabs .tool { color: var(--accent); font-weight: 500; }
+
+  section[role="tabpanel"] { display: none; }
+  section[role="tabpanel"].on { display: block; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+  .card > summary { list-style: none; cursor: pointer; padding: 12px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .card > summary::-webkit-details-marker { display: none; }
+  .card > summary::before { content: "▸"; color: var(--muted); font-size: 12px; width: 12px; transition: transform .15s; }
+  .card[open] > summary::before { transform: rotate(90deg); }
+  .card > summary h3 { margin: 0; font-size: 15px; flex: 1; min-width: 200px; }
+  .card .body { padding: 4px 16px 16px 38px; border-top: 1px solid var(--line); }
+  .ref { font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: var(--neutral-soft); border-radius: 6px; padding: 2px 6px; }
+  .proves { color: var(--muted); font-size: 13px; }
+
+  .kv { display: grid; grid-template-columns: 84px 1fr; gap: 6px 12px; margin: 10px 0 0; font-size: 14px; }
+  .kv dt { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
+  .kv dd { margin: 0; }
+  .test { border-left: 3px solid var(--line); padding: 8px 0 8px 14px; margin: 12px 0 0; }
+  .test .name { font-weight: 600; font-size: 14px; }
+  .test .name code { font-weight: 500; }
+  .gwt { display: grid; grid-template-columns: 56px 1fr; gap: 4px 10px; margin-top: 6px; font-size: 14px; }
+  .gwt b { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
+  .gwt .then { color: var(--ok); font-weight: 500; }
+
+  .path { display: inline-block; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; cursor: copy; white-space: nowrap; }
+  .path:hover { border-color: var(--accent); }
+  .path.copied { background: var(--ok-soft); border-color: var(--ok); }
+
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; background: var(--neutral-soft); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { color: var(--muted); font-family: var(--mono); width: 40px; }
+
+  ol.steps { margin: 8px 0 0; padding-left: 22px; }
+  ol.steps li { margin: 4px 0; }
+  ul.plain { margin: 6px 0 0; padding-left: 20px; }
+  ul.plain li { margin: 4px 0; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .facts div { display: grid; grid-template-columns: 90px 1fr; gap: 8px; font-size: 14px; align-items: baseline; }
+  .facts > div > span:first-child { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
+  .facts .path { white-space: normal; }
+  .note { background: var(--soft); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
+  .note > b { display: block; margin-bottom: 4px; }
+  .decided li { margin: 8px 0; }
+  .decided .why { color: var(--muted); display: block; font-size: 13.5px; }
+  .empty { color: var(--muted); font-style: italic; }
+  .footer { margin-top: 28px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }
+  kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 21px; }
+    .card .body { padding-left: 16px; }
+    .kv, .gwt { grid-template-columns: 1fr; gap: 2px; }
+    .path { white-space: normal; }
+  }
+  @media print {
+    nav.tabs, .layers, .stat { display: none !important; }
+    section[role="tabpanel"] { display: block !important; page-break-inside: avoid; }
+    .card { break-inside: avoid; }
+    details { open: true; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+    <div class="strip" id="strip"></div>
+    <div class="layers" id="layers" hidden></div>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <main id="panels"></main>
+  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span> or <span class="ref">W1</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
+</div>
+
+<script>
+const DATA = {};
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const el = (tag, attrs, ...kids) => {
+    const e = document.createElement(tag);
+    for (const k in attrs || {}) {
+      if (attrs[k] == null) continue;
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'html') e.innerHTML = attrs[k];
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
+    for (const kid of kids.flat(Infinity)) if (kid != null) e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    return e;
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // Inline markup: `path:line` becomes a copy chip, **x** bold.
+  const rich = (s) => {
+    if (s == null) return '';
+    let h = esc(s);
+    h = h.replace(/`([^`]+)`/g, (_, code) => `<span class="path" title="click to copy" data-copy="${code}">${code}</span>`);
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+    return h;
+  };
+  const R = (s) => el('span', { html: rich(s) });
+  // One chip for a bare value; a value that already carries backticks keeps its own markup.
+  const code = (s) => /`/.test(s ?? '') ? String(s) : `\`${s ?? ''}\``;
+
+  const d = DATA;
+  const layers = d.layers || [];
+  const isRun = layers.length > 1;
+  let cur = 0;
+
+  document.title = `Plan · ${d.issue?.number ? '#' + d.issue.number + ' ' : ''}${d.title || ''}`;
+  // Header
+  const kick = $('#kicker');
+  if (d.issue?.number) kick.append(el('a', { href: d.issue.url, target: '_blank' }, `#${d.issue.number}`));
+  if (d.issue?.size) kick.append(el('span', { class: 'badge size' }, d.issue.size));
+  if (d.issue?.kind) kick.append(el('span', { class: 'badge kind' }, d.issue.kind));
+  if (isRun) kick.append(el('span', { class: 'badge' }, `run · ${layers.length} layers`));
+  $('#title').textContent = d.title || 'Plan';
+  $('#meta').append(R([d.facts?.repo && `repo ${code(d.facts.repo)}`, d.facts?.base && `base ${code(d.facts.base)}`, d.date].filter(Boolean).join('  ·  ')));
+
+  // Tabs
+  const TABS = [
+    isRun && { id: 'stack', label: 'Stack' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'proof', label: 'Proof' },
+    { id: 'slices', label: 'Slices' },
+    { id: 'walks', label: 'UI walks' },
+    { id: 'videos', label: 'Videos' },
+    { id: 'gates', label: 'Gates' },
+    { id: 'decided', label: 'Decided' },
+    { id: 'out', label: 'Out of scope' },
+  ].filter(Boolean);
+  const tabs = $('#tabs'), panels = $('#panels');
+  const show = (id) => {
+    for (const b of tabs.querySelectorAll('button[role=tab]')) b.setAttribute('aria-selected', b.dataset.id === id);
+    for (const p of panels.children) p.classList.toggle('on', p.dataset.id === id);
+    history.replaceState(null, '', '#' + id);
+    window.scrollTo({ top: 0 });
+  };
+  for (const t of TABS) tabs.append(el('button', { role: 'tab', 'data-id': t.id, onclick: () => show(t.id) }, t.label));
+  tabs.append(el('span', { class: 'spacer' }));
+  tabs.append(el('button', { class: 'tool', onclick: () => toggleAll(true) }, 'Expand all'));
+  tabs.append(el('button', { class: 'tool', onclick: () => toggleAll(false) }, 'Collapse all'));
+  const toggleAll = (open) => { for (const x of panels.querySelectorAll('details')) x.open = open; };
+
+  // Layer switcher (runs only)
+  const layerBar = $('#layers');
+  if (isRun) {
+    layerBar.hidden = false;
+    layers.forEach((L, i) => layerBar.append(el('button', { 'aria-pressed': i === 0, onclick: () => { cur = i; render(); } }, `Layer ${i + 1} · #${L.issue?.number ?? ''} ${L.title || ''}`)));
+  }
+
+  function stat(n, label, tab) { return el('div', { class: 'stat', onclick: () => show(tab) }, el('b', {}, n), el('span', {}, label)); }
+
+  function render() {
+    const L = layers[cur] || {};
+    for (const b of layerBar.querySelectorAll('button')) b.setAttribute('aria-pressed', [...layerBar.children].indexOf(b) === cur);
+    const strip = $('#strip'); strip.innerHTML = '';
+    strip.append(
+      stat((L.proof || []).length, 'done-when lines', 'proof'),
+      stat((L.slices || []).length, 'slices', 'slices'),
+      stat((L.walks || []).length, 'UI walks', 'walks'),
+      stat((L.videos || []).length, 'videos', 'videos'),
+      stat((L.decided || []).length, 'decided', 'decided'),
+    );
+    panels.innerHTML = '';
+    if (isRun) panels.append(panel('stack', 'Stack', 'One PR per layer. Each PR targets the branch below it.', stackView()));
+    panels.append(panel('overview', 'Overview', L.summary || 'What the plan does, in a few lines.', overviewView(L)));
+    panels.append(panel('proof', 'Proof', 'One row per Done-when line, and the artifact that shows it holds.', proofView(L)));
+    panels.append(panel('slices', 'Slices', 'One change and its tests. Slice 1 is the tracer bullet: thinnest path end to end. Each next slice widens it.', slicesView(L)));
+    panels.append(panel('walks', 'UI walks', 'Scripted passes through the running app, by hand.', walksView(L)));
+    panels.append(panel('videos', 'Videos', 'One recording per Setup. Every walk is in exactly one video.', videosView(L)));
+    panels.append(panel('gates', 'Gates', 'What green means for a slice and for the whole task.', gatesView(L)));
+    panels.append(panel('decided', 'Decided', 'Small forks the repo settled. Each with the file that settles it.', decidedView(L)));
+    panels.append(panel('out', 'Out of scope', 'Named so nobody builds it by accident.', listView(L.out, 'O')));
+    const want = location.hash.slice(1);
+    show(TABS.some((t) => t.id === want) ? want : TABS[0].id);
+  }
+
+  function panel(id, title, lead, body) {
+    return el('section', { role: 'tabpanel', 'data-id': id }, el('h2', {}, title), el('p', { class: 'lead', html: rich(lead) }), body);
+  }
+  function card(ref, title, proves, body, open) {
+    return el('details', { class: 'card', open: open ? '' : null },
+      el('summary', {}, el('span', { class: 'ref' }, ref), el('h3', { html: rich(title) }), proves ? el('span', { class: 'proves' }, proves) : null),
+      el('div', { class: 'body' }, body));
+  }
+  const provesText = (arr) => arr?.length ? 'proves ' + arr.map((n) => '#' + n).join(', ') : '';
+  const empty = (msg) => el('p', { class: 'empty' }, msg);
+
+  function stackView() {
+    const rows = layers.map((L, i) => el('tr', {},
+      el('td', { class: 'num' }, i + 1),
+      el('td', {}, el('a', { href: L.issue?.url, target: '_blank' }, `#${L.issue?.number ?? ''}`), ' ', L.title || ''),
+      el('td', {}, R(L.targets ? code(L.targets) : (i === 0 ? code(d.facts?.base || '') : `layer ${i}`))),
+      el('td', {}, L.issue?.size || ''),
+      el('td', { class: 'num' }, L.points ?? '')));
+    return el('div', {},
+      el('div', { class: 'tablewrap' }, el('table', {},
+        el('thead', {}, el('tr', {}, el('th', {}, 'Layer'), el('th', {}, 'Ticket'), el('th', {}, 'Base'), el('th', {}, 'Size'), el('th', {}, 'Points'))),
+        el('tbody', {}, rows))),
+      d.points ? el('p', { class: 'lead', style: 'margin-top:10px' }, R(d.points)) : null);
+  }
+
+  function overviewView(L) {
+    const f = d.facts || {};
+    const keys = [['repo', 'Repo'], ['base', 'Base'], ['test', 'Test'], ['typecheck', 'Typecheck'], ['lint', 'Lint'], ['build', 'Build'], ['run', 'Run'], ['ui', 'UI'], ['open', 'Open'], ['screen', 'Screen'], ['platform', 'Platform'], ['standards', 'Standards']];
+    const facts = el('div', { class: 'facts' }, keys.filter(([k]) => f[k]).map(([k, lab]) => el('div', {}, el('span', {}, lab), R(k === 'ui' || k === 'platform' || k === 'screen' || k === 'open' ? f[k] : code(f[k])))));
+    const first = (L.slices || [])[0];
+    const path = first ? el('div', { class: 'note' }, el('b', {}, 'Read this first'), R(`Slice 1 goes through **${first.seam}**${first.proves?.length ? ' and ' + provesText(first.proves) : ''}. ${first.change?.[0] ? 'First change: ' + first.change[0] : ''}`)) : null;
+    const forks = (L.forks || []).length ? el('div', { class: 'note' }, el('b', {}, 'Big forks you answered'), el('ul', { class: 'plain' }, L.forks.map((x) => el('li', {}, R(`**${x.pick}** — ${x.question}`))))) : null;
+    const seams = (L.seams || []).length ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Seams'), el('ul', { class: 'plain' }, L.seams.map((s) => el('li', {}, R(`**${s.name}**: ${code(s.at)} — ${s.why}`))))) : null;
+    return el('div', {}, path, forks, facts, seams);
+  }
+
+  function proofView(L) {
+    if (!(L.proof || []).length) return empty('No Done-when lines.');
+    const badge = (t, cls) => t ? el('span', { class: 'badge ' + cls, html: rich(t) }) : el('span', { class: 'empty' }, '—');
+    const rows = L.proof.map((p, i) => el('tr', {},
+      el('td', { class: 'num' }, i + 1),
+      el('td', {}, R(p.line)),
+      el('td', {}, p.test ? R(`${code(p.test.file)} "${p.test.name}"`) : el('span', { class: 'empty' }, 'none')),
+      el('td', {}, badge(p.walk && 'walk ' + p.walk, 'kind')),
+      el('td', {}, badge(p.video, 'kind')),
+      el('td', {}, badge(p.artifact, p.artifact === 'test' ? 'ok' : 'warn'))));
+    return el('div', { class: 'tablewrap' }, el('table', {},
+      el('thead', {}, el('tr', {}, el('th', {}, '#'), el('th', {}, 'Done-when line'), el('th', {}, 'Test'), el('th', {}, 'UI walk'), el('th', {}, 'Video'), el('th', {}, 'Artifact'))),
+      el('tbody', {}, rows)));
+  }
+
+  function slicesView(L) {
+    if (!(L.slices || []).length) return empty('No slices.');
+    return el('div', {}, L.slices.map((s, i) => {
+      const changes = el('dl', { class: 'kv' }, (s.change || []).map((c) => [el('dt', {}, 'Change'), el('dd', {}, R(c))]));
+      const tests = (s.tests || []).map((t, j) => el('div', { class: 'test' },
+        el('div', { class: 'name' }, el('span', { class: 'ref' }, `S${i + 1}.T${j + 1}`), ' ', R(`${code(t.file)} "${t.name}"`)),
+        el('div', { class: 'gwt' },
+          el('b', {}, 'Given'), R(t.given),
+          el('b', {}, 'When'), R(t.when),
+          el('b', {}, 'Then'), el('span', { class: 'then', html: rich(t.then) }))));
+      return card(`S${i + 1}`, `Slice ${i + 1} · ${s.seam}`, provesText(s.proves), el('div', {}, changes, tests), i === 0);
+    }));
+  }
+
+  function walksView(L) {
+    if (!(L.walks || []).length) return empty('No screen in this ticket. No walks.');
+    return el('div', {}, L.walks.map((w, i) => card(`W${i + 1}`, `Walk ${i + 1} · ${w.title || w.where || ''}`, provesText(w.proves),
+      el('dl', { class: 'kv' },
+        el('dt', {}, 'Setup'), el('dd', {}, R(w.setup)),
+        el('dt', {}, 'Where'), el('dd', {}, R(w.where)),
+        el('dt', {}, 'Steps'), el('dd', {}, el('ol', { class: 'steps', style: 'margin:0' }, (w.steps || []).map((s) => el('li', {}, R(s))))),
+        el('dt', {}, 'See'), el('dd', {}, R(w.see)),
+        el('dt', {}, 'Must not'), el('dd', {}, R(w.mustNot))), i === 0)));
+  }
+
+  function videosView(L) {
+    if (!(L.videos || []).length) return empty('No videos.');
+    return el('div', {}, L.videos.map((v, i) => card(`V${i + 1}`, `Video ${i + 1} · ${v.title || ''}`, v.walks?.length ? 'shows walks ' + v.walks.join(', ') : '',
+      el('div', {},
+        el('dl', { class: 'kv' }, el('dt', {}, 'Setup'), el('dd', {}, R(v.setup))),
+        el('ol', { class: 'steps' }, (v.steps || []).map((s) => el('li', {}, R(s)))),
+        el('dl', { class: 'kv' }, el('dt', {}, 'Shows'), el('dd', {}, R(v.shows)))), true)));
+  }
+
+  function gatesView(L) {
+    const g = L.gates || {};
+    return el('div', {},
+      el('div', { class: 'note' }, el('b', {}, 'Slice done'), R(g.slice || 'its test green, typecheck green.')),
+      el('div', { class: 'note' }, el('b', {}, 'Task done'), R(g.task || 'every Proof row has its artifact, full suite green, lint green, build green.'),
+        (g.untouched || []).length ? el('div', {}, el('div', { style: 'margin-top:8px;color:var(--muted);font-size:13px' }, 'Existing tests that stay untouched and green:'), el('ul', { class: 'plain' }, g.untouched.map((t) => el('li', {}, R(code(t)))))) : null));
+  }
+
+  function decidedView(L) {
+    if (!(L.decided || []).length) return empty('Nothing decided. The issue and the repo left no small forks.');
+    return el('ul', { class: 'plain decided' }, L.decided.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `D${i + 1}`), ' ', R(`**${x.what}**`), el('span', { class: 'why', html: rich(`${x.why}${x.at ? ' — ' + code(x.at) : ''}`) }))));
+  }
+
+  function listView(items, prefix) {
+    if (!(items || []).length) return empty('Nothing listed.');
+    return el('ul', { class: 'plain' }, items.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `${prefix}${i + 1}`), ' ', R(x))));
+  }
+
+  // Copy chips
+  document.addEventListener('click', (e) => {
+    const p = e.target.closest('.path'); if (!p) return;
+    navigator.clipboard?.writeText(p.dataset.copy).then(() => { p.classList.add('copied'); setTimeout(() => p.classList.remove('copied'), 700); });
+  });
+  // Keys
+  document.addEventListener('keydown', (e) => {
+    if (e.target.matches('input,textarea')) return;
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= TABS.length) show(TABS[n - 1].id);
+    if (e.key === 'e') toggleAll(true);
+    if (e.key === 'c') toggleAll(false);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

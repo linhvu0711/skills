@@ -1,0 +1,6 @@
+interface:
+  display_name: "Mockup"
+  short_description: "Build a final-fidelity interactive UI mock"
+  default_prompt: "$mockup"
+policy:
+  allow_implicit_invocation: false

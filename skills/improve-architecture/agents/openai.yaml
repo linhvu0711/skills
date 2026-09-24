@@ -1,0 +1,6 @@
+interface:
+  display_name: "Improve Architecture"
+  short_description: "Find deepening candidates, show them in a report, grill the one you pick"
+  default_prompt: "$improve-architecture"
+policy:
+  allow_implicit_invocation: false
