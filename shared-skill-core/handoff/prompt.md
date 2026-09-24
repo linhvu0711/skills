@@ -36,7 +36,7 @@ Author: Name <email>
 <!-- /cursor -->
 <!-- local -->
 Branch: feat/42-export-orders-csv
-Worktree: /Users/me/development/worktrees/shop/feat-42-export-orders-csv
+Worktree: ~/development/worktrees/shop/feat-42-export-orders-csv
 <!-- /local -->
 Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
 Issue: #42 <title> (<url>) · size M

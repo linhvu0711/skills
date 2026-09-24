@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # check.sh: find leaks before they reach the public repo.
 #
+#   check.sh               scan every tracked file (the Repo check on GitHub)
 #   check.sh <path>...     scan every file under these paths, tracked or not
 #   check.sh --staged      scan only the lines and paths the index adds (the pre-commit hook)
 #
@@ -18,7 +19,9 @@ set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-home_re='/(Users|home)/[A-Za-z0-9._-]+'
+# A home path is not part of a longer name: it does not follow a letter or a
+# digit, so example.com/home/x is not one. The char before it is cut from the match.
+home_re='(^|[^A-Za-z0-9._-])/(Users|home)/[A-Za-z0-9._-]+'
 email_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 # Public addresses the skills name on purpose, one per line.
 allowed_emails='cursoragent@cursor.com'
@@ -31,11 +34,7 @@ while [ $# -gt 0 ]; do
     *) paths+=("$1"); shift ;;
   esac
 done
-if [ "$staged" = 1 ]; then
-  [ ${#paths[@]} -eq 0 ] || die "--staged takes no paths"
-else
-  [ ${#paths[@]} -gt 0 ] || die "usage: check.sh <path>... | --staged"
-fi
+[ "$staged" = 0 ] || [ ${#paths[@]} -eq 0 ] || die "--staged takes no paths"
 cd "$(git rev-parse --show-toplevel)" || die "not inside a git repo"
 
 tmp="$(mktemp -d)"
@@ -64,6 +63,9 @@ if [ "$staged" = 1 ]; then
     files+=("$f")
   done < <(cut -f1 "$tmp/added" | sort -u)
   while IFS= read -r f; do names+=("$f"); done < <(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACR)
+elif [ ${#paths[@]} -eq 0 ]; then
+  while IFS= read -r f; do [ -f "$f" ] && files+=("$f"); done < <(git -c core.quotePath=false ls-files)
+  names=(${files[@]+"${files[@]}"})
 else
   while IFS= read -r f; do files+=("$f"); done < <(find "${paths[@]}" -type f -not -path '*/.git/*')
   names=(${files[@]+"${files[@]}"})
@@ -83,9 +85,12 @@ problems=()
 scan() {
   local kind="$1" allowed="$2" hit; shift 2
   [ ${#files[@]} -gt 0 ] || return 0
+  local file line match
   while IFS= read -r hit; do
-    [ -n "$allowed" ] && printf '%s\n' "$allowed" | grep -qxF -e "${hit#*:*:}" && continue
-    problems+=("$(printf '%s' "$hit" | sed -E "s/^([^:]*):([0-9]+):/\1:\2: $kind: /")")
+    file="${hit%%:*}"; line="${hit#*:}"; line="${line%%:*}"; match="${hit#*:*:}"
+    case "$kind:$match" in "home path:/"[Uh]*) ;; "home path:"*) match="${match:1}" ;; esac
+    [ -n "$allowed" ] && printf '%s\n' "$allowed" | grep -qxF -e "$match" && continue
+    problems+=("$file:$line: $kind: $match")
   done < <(cd "$root" && grep -nHIo "$@" -- "${files[@]}" || true)
 }
 

@@ -163,6 +163,14 @@ t_adopt_stops_on_adopted() {
   eq stderr "stop: $T/home/demo is already a link" "$err"
 }
 
+t_tree_scans_tracked_files() {
+  repo; printf 'hello\n' > a.md; printf 'mail %s\n' "$email" > b.md
+  git add a.md b.md; git commit -qm files
+  run env PRIVATE_WORDS=/dev/null bash scripts/check.sh
+  eq exit 1 "$code"
+  has stderr "b.md:1: email: $email" "$err"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -178,6 +186,7 @@ cases=(
   "adopt reports a leak in the adopted skill|t_adopt_reports_leak"
   "adopt stops on a missing skill|t_adopt_stops_on_missing"
   "adopt stops on a skill already adopted|t_adopt_stops_on_adopted"
+  "tree mode scans every tracked file|t_tree_scans_tracked_files"
 )
 
 pass=0; fail=0
