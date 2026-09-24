@@ -133,7 +133,7 @@ work already decided. The map comes first.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library
      do X". Iterate; the user picks and says done. What was proven becomes
-     `Known` lines per `to-issue/references/issue-rules.md` § Known.
+     `Known` lines per `../../shared-skill-core/issue-rules.md` § Known.
    - **task**: do it where the agent can; otherwise hand the user a
      checklist and wait. Record what was done and the facts later tickets
      need: where a credential lives, never its value; new URLs; counts.
@@ -158,7 +158,7 @@ work already decided. The map comes first.
    free: <names>. Run /discover-path <map-url> again.` and stop.
 
    No open ticket and no fog: walk the readiness gate in
-   `to-issue/references/issue-rules.md` § Readiness gate over the whole
+   `../../shared-skill-core/issue-rules.md` § Readiness gate over the whole
    Decisions so far list, unhappy paths included. Each gap becomes one
    ticket, created now, then report as above. No gap: print `Map clear.`,
    the Decisions so far list in full, and `Run /to-epic in this chat.`

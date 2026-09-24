@@ -3,7 +3,7 @@ name: to-issue
 description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview."
 ---
 
-Read `references/issue-rules.md` first. It holds the gate, types, sizes,
+Read `../../shared-skill-core/issue-rules.md` first. It holds the gate, types, sizes,
 labels, body template, lookup rule, repo convention, duplicate check, and
 report. This file is the order of operations.
 

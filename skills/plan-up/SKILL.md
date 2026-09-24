@@ -7,7 +7,7 @@ disable-model-invocation: true
 Read `references/plan.md` first. It holds the plan shape, how each block
 is filled, and the done rule. Read `references/executor.md` too: it
 says what the executor has and how it works a plan, so the plan fits
-it. `references/page.md` says where the plan is written and how it is
+it. `../../shared-skill-core/plan-page.md` says where the plan is written and how it is
 shown; read it at step 8. Who the executor is belongs to `/handoff-devin`; the plan never names
 it. This file is the order of operations.
 
@@ -17,7 +17,7 @@ write down.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first: you are the brain,
+Read `../../shared-skill-core/facts.md` first: you are the brain,
 Explore agents retrieve, `SEARCH=on` for outside facts.
 
 ## Five forms
@@ -78,7 +78,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    § Handoff-ready, and its facts round asks only what that section lists.
 
 3. **Gate.** Apply `## Readiness gate` from
-   `~/.agents/skills/to-issue/references/issue-rules.md` to the issue
+   `../../shared-skill-core/issue-rules.md` to the issue
    text, each ticket of a run on its own. Pass: continue. Fail: name the
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/diagnose`, stop. Nothing is planned.
@@ -127,7 +127,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
    Either holds: **big fork**. Ask the user, one question per message, in
    the question format of
-   `~/.agents/skills/grill/references/grilling.md`, each option with
+   `../../shared-skill-core/grilling.md`, each option with
    the `file:line` behind it. Wait. Big forks look like:
    a schema or stored data, a public API, auth, input a user controls,
    a secret, data that leaves the system,
@@ -167,11 +167,11 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
 
-8. **Present.** Per `references/page.md`: write the plan to its `.md`,
+8. **Present.** Per `../../shared-skill-core/plan-page.md`: write the plan to its `.md`,
    fill `DATA`, build the page, serve it with `scripts/serve.sh`, check it with
    `scripts/check-page.py`, open it in the browser, or publish it on a
    headless host. Chat
-   gets the summary block from `page.md` § Chat, nothing more. Wait. An
+   gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md` and `DATA`, rebuild, bump `v`, show the summary
    again. `ok`: say `Ready for /handoff-devin.` and stop.
 

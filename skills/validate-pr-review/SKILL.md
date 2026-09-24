@@ -12,7 +12,7 @@ fixed, filed, or posted until the user says go.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first. Short lookups
+Read `../../shared-skill-core/facts.md` first. Short lookups
 (`gh pr view`, one `rg` count) are yours.
 
 Judge agents answer the three questions, one agent per file group.

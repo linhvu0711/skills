@@ -11,7 +11,7 @@ something. A push that fixes a thread gets its `✅ Resolved` reply and
 the thread is closed by Devin itself. People's comments count the same
 way; they only lack the status. Short lookups are yours; the judging is
 `/validate-pr-review`'s, read and followed. Facts per
-`~/.agents/skills/grill/references/facts.md`. Never merge.
+`../../shared-skill-core/facts.md`. Never merge.
 
 `~/.agents/skills/land-pr/scripts/` holds four helpers; each prints its
 usage with no arguments.
@@ -73,7 +73,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    rules on top:
    - **Stop points.** A row under `## Unclear`: one question to the
      user per row, in the format of
-     `~/.agents/skills/grill/references/grilling.md`, wait. A `fix here`
+     `../../shared-skill-core/grilling.md`, wait. A `fix here`
      whose change touches a seam, a Done-when line, a schema, an API,
      or a `Decided` line of the plan: ask before the fix, not after.
      In a Devin CLI pane, asking is `QUESTION` first, per the rules the

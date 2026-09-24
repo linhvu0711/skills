@@ -9,7 +9,7 @@ takes the report from there; on your own, the report is the whole job.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first: you are the brain,
+Read `../../shared-skill-core/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps

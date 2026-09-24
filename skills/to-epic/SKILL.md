@@ -3,7 +3,7 @@ name: to-epic
 description: "Cut a large piece of work into a phased GitHub epic: one parent, native sub-issues, native blocked-by edges. Breakdown is approved in chat before anything is created."
 ---
 
-Read `$HOME/.agents/skills/to-issue/references/issue-rules.md` first. Every
+Read `../../shared-skill-core/issue-rules.md` first. Every
 sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
 ## Steps

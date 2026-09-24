@@ -50,7 +50,7 @@ handoff-cursor.
 1. **Source.** A plan the user said `ok` to in this chat: read its
    `.md` file, the path `/plan-up` gave in its summary
    (`~/.agents/artifacts/plan/plan-<slug>.md`, per
-   `~/.agents/skills/plan-up/references/page.md`). No plan: say
+   `../../shared-skill-core/plan-page.md`). No plan: say
    `Run /plan-up first.` and stop. A `handoff-ready` issue is no
    exception; `/plan-up` takes its short path on that label and still
    writes the plan file. A run always needs the plan; an epic URL, or a
@@ -64,7 +64,7 @@ handoff-cursor.
    convention's `size` map,
    `python3 ~/.agents/skills/to-issue/scripts/conventions.py get owner/repo`.
    On `MISS`, match the label by eye the way
-   `~/.agents/skills/to-issue/references/issue-rules.md` § Repo convention
+   `../../shared-skill-core/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
    carries the letter per layer.
 

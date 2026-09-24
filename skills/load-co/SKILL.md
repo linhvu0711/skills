@@ -14,7 +14,7 @@ open, files, next step) plus the last three user turns verbatim, so the work
 can continue here.
 
 Sibling: **load-cc** does the same for Claude Code sessions. Both share
-`~/.agents/skills/load-cc/references/brief.md`. Both run in Claude Code and
+`../../shared-skill-core/session-brief.md`. Both run in Claude Code and
 in Codex; step 2 and step 3 name the difference.
 
 ## Input
@@ -46,7 +46,7 @@ ask for one, or list recent sessions with
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in the same message.**
-   Build the prompt from `~/.agents/skills/load-cc/references/brief.md`
+   Build the prompt from `../../shared-skill-core/session-brief.md`
    § Dispatch with the transcript path and `Codex CLI` filled in. In Claude
    Code, send it to the Explore agent. In Codex, spawn one `explorer` agent
    with it (`fork_turns = "none"`) and `wait_agent`. In the same message run:
@@ -58,7 +58,7 @@ ask for one, or list recent sessions with
    The skeleton is the deterministic part (first prompt, files patched, last
    reply) followed by the last 3 user turns verbatim.
 
-4. **Show the brief and wait.** Take the brief the way `brief.md` § Return
+4. **Show the brief and wait.** Take the brief the way `session-brief.md` § Return
    says for your harness, show it to the user as-is, then one line: the
    loaded session's folder, and "say go to start the Next step". Then stop.
    The last 3 turns are already in your context from step 3.

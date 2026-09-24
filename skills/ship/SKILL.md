@@ -7,7 +7,7 @@ disable-model-invocation: true
 A chain of skills, run as one. You read each skill's `SKILL.md` and
 follow it step by step, gates and forks as written; the Skill tool
 cannot fire them. Facts come from reading, per
-`~/.agents/skills/grill/references/facts.md`. Big forks go to the user.
+`../../shared-skill-core/facts.md`. Big forks go to the user.
 Everything else you decide, write down, and go on. Never merge.
 
 In Claude Code every Bash call starts in the session's directory. Every

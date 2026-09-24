@@ -27,7 +27,7 @@ or its tickets.
 type word in the repo's title style. The prefix and the label agree.
 
 **Learn the style once per run**, before the first `gh issue create`. It is
-the same rule `to-issue` uses (`to-issue/references/issue-rules.md` § Repo
+the same rule `to-issue` uses (`../../shared-skill-core/issue-rules.md` § Repo
 convention): most existing titles look like `[bug] …` gives `bracket`;
 `bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives
 `bracket`.

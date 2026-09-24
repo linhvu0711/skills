@@ -14,7 +14,7 @@ a separate command.
 
 ## Facts
 
-Read `~/.agents/skills/grill/references/facts.md` first. Short lookups
+Read `../../shared-skill-core/facts.md` first. Short lookups
 (`git`, `gh pr view`, one `ls`) are yours.
 
 The axis agents are judges, so they are `general-purpose` agents, not

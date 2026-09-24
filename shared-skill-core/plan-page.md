@@ -12,12 +12,12 @@ needed. Slug: `<owner>-<repo>-<n>`, the first ticket's number; a run
 adds `-run`.
 
 - `plan-<slug>.md`: the plan, verbatim per `plan.md`.
-- `plan-<slug>.html`: `assets/shell.html` with `DATA` filled.
+- `plan-<slug>.html`: `../skills/plan-up/assets/shell.html` with `DATA` filled.
 
 The folder holds only `plan-<slug>.*` and `/ship`'s `prompt-<slug>.md`.
 A script or draft you write to build the page goes in a temp folder
 (the session scratchpad, or `mktemp -d`), never here. The `.md` keeps
-its `Repo: owner/repo` line in Facts: `scripts/prune.sh` reads it to
+its `Repo: owner/repo` line in Facts: `../skills/plan-up/scripts/prune.sh` reads it to
 know when the plan's issues are closed and its files can go.
 
 ## DATA

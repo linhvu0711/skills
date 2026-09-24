@@ -126,7 +126,7 @@ with steps to earn the label. M and L never carry Steps.
   XS, sometimes S, never M or L. It says the Steps are final: every
   `file:line` was seen, no choice is open. `plan-up` reads it as "trust
   the Steps" and takes its short path
-  (`plan-up/references/plan.md` § Handoff-ready); the ticket still gets a
+  (`../skills/plan-up/references/plan.md` § Handoff-ready); the ticket still gets a
   plan before it goes to an executor. Created on first use. Never on a
   `task`, even though a task always carries Steps: the label means code
   steps a plan can be built from.
@@ -436,7 +436,7 @@ a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by
 One hue per family: size teal, priority red to yellow,
 handoff-ready green, manual grey, seed light blue, bug purple,
 `discovery/*` pink
-(`discover-path/references/map.md`). Never reuse a family hue.
+(`../skills/discover-path/references/map.md`). Never reuse a family hue.
 
 A label the convention names that no longer exists: `forget` the repo, learn
 again, retry once.
