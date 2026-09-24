@@ -9,14 +9,12 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 You own one PR until it is ready. Devin Review is the reviewer: a
 commit status named `Devin Review` that turns pending after each push,
 `success` a few minutes later, and posts a review only when it found
-something. A push that fixes a thread gets its `✅ Resolved` reply and
-the thread is closed by Devin itself. People's comments count the same
-way; they only lack the status. Short lookups are yours; the judging is
-`/validate-pr-review`'s, read and followed. Facts per
-`../../shared-skill-core/facts.md`. Never merge.
+something. When a push fixes a thread, Devin replies `✅ Resolved` and
+closes it. People's comments count the same way, without the status.
+Short lookups are yours; the judging is `/validate-pr-review`'s, read
+and followed. Facts per `../../shared-skill-core/facts.md`. Never merge.
 
-`scripts/` holds four helpers; each prints its
-usage with no arguments.
+`scripts/` holds four helpers; each prints its usage with no arguments.
 In Claude Code every Bash call starts in the session's directory: git
 runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
