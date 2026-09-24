@@ -25,7 +25,7 @@
 # shared core file, <owner> from the section's `## <owner>/<repo>` heading.
 # Each skill with a SKILL.md needs a README.md with the headings `## Use it
 # when`, `## What you get`, `## Needs`, and `## Fits with`, plus `## Credits`
-# when THIRD_PARTY_NOTICES.md lists it.
+# when THIRD_PARTY_NOTICES.md lists it or a file inside it.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
@@ -177,7 +177,9 @@ if [ ${#paths[@]} -eq 0 ]; then
       problems+=("$skill: missing file: README.md"); continue
     fi
     headings=("Use it when" "What you get" "Needs" "Fits with")
-    printf '%s\n' "$rows" | cut -f3 | grep -qxF -e "$skill" && headings+=("Credits")
+    # A row for the skill, or for a file inside it, asks for Credits.
+    printf '%s\n' "$rows" | awk -F '\t' -v s="$skill" '$3 == s || index($3, s "/") == 1 { f = 1 } END { exit !f }' \
+      && headings+=("Credits")
     readme="$(git show ":$skill/README.md")"
     for h in "${headings[@]}"; do
       printf '%s\n' "$readme" | grep -qxF -e "## $h" || problems+=("$skill/README.md: missing heading: ## $h")

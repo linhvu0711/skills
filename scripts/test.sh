@@ -339,6 +339,14 @@ t_flags_listed_without_credits() {
   eq "stderr line 1" "skills/demo/README.md: missing heading: ## Credits" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_flags_listed_file_without_credits() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"; printf 'MIT\n' > skills/demo/LICENSE
+  notices skills/demo/references/x.md copy; git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/README.md: missing heading: ## Credits" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 t_passes_readme_with_headings() {
   repo; readme "Use it when" "What you get" "Needs" "Fits with"; git add -A; git commit -qm files
   run bash scripts/check.sh
@@ -392,6 +400,7 @@ cases=(
   "flags a skill with no README|t_flags_skill_without_readme"
   "flags a README with a missing heading|t_flags_missing_heading"
   "flags a listed skill with no Credits|t_flags_listed_without_credits"
+  "flags a skill with a listed file and no Credits|t_flags_listed_file_without_credits"
   "passes a README with its headings|t_passes_readme_with_headings"
 )
 
