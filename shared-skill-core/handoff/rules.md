@@ -398,7 +398,7 @@ test("exports one order as CSV", async () => {
 <!-- local -->
 Devin Review runs on the PR and posts comments; people may too. The
 review loop is the `land-pr` skill's: read
-`~/.agents/skills/land-pr/SKILL.md` and follow it on your PR, whole,
+`{{skills}}/land-pr/SKILL.md` and follow it on your PR, whole,
 from its first step, in this worktree. It waits for the Devin Review
 status, judges every finding on the three questions it holds, fixes
 what is `fix here`, files what is `fix later`, replies and resolves,

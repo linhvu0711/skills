@@ -12,11 +12,14 @@
 # and goes. A line `<!-- include <path> -->` is replaced by that file,
 # path relative to this directory; its `<!-- template` lines go too.
 # `{{app}}`, `{{me}}`, `{{session}}`, `{{here}}`, and `{{caller}}` are
-# words that differ per executor; see the case below.
+# words that differ per executor; see the case below. `{{skills}}` is the
+# absolute path of the skills folder, for a rendered prompt that is read
+# outside any skill folder.
 set -euo pipefail
 
 ex=${1:-}; f=${2:-}
 dir=$(cd "$(dirname "$0")" && pwd)
+skills=$(cd "$dir/../../skills" && pwd -P)
 usage="usage: render.sh <devin|cursor|local> <rules|prompt>"
 case "$ex" in devin|cursor|local) ;; *) echo "$usage" >&2; exit 64 ;; esac
 case "$f" in rules|prompt) ;; *) echo "$usage" >&2; exit 64 ;; esac
@@ -36,4 +39,4 @@ awk -v ex="$ex" -v dir="$dir" '
   /^<!-- include .* -->$/      { if (!skip) { f = dir "/" $3; while ((getline l < f) > 0) if (l !~ /^<!-- template/) print l; close(f) } next }
   !skip                         { print }
 ' "$dir/$f.md" \
-| sed -e "s/{{app}}/$app/g" -e "s/{{me}}/$ex/g" -e "s/{{session}}/$session/g" -e "s/{{here}}/$here/g" -e "s#{{caller}}#$caller#g"
+| sed -e "s/{{app}}/$app/g" -e "s/{{me}}/$ex/g" -e "s/{{session}}/$session/g" -e "s/{{here}}/$here/g" -e "s#{{caller}}#$caller#g" -e "s#{{skills}}#$skills#g"

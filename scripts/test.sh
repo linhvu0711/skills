@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# test.sh: the tests for check.sh, the pre-commit hook, and adopt.sh.
+# test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, and the
+# handoff render.sh.
 #
 #   test.sh
 #
 # Each case builds its own git repo in a temp folder, copies this scripts/
-# folder in, and runs the command there. Every leak string below is joined
+# folder in, and runs the command there; the render case runs in this checkout. Every leak string below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
 # Prints `ok <case>` or `FAIL <case>: <why>` per case, then
@@ -266,6 +267,16 @@ t_hook_stops_missing_path() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+t_render_names_land_pr() {
+  T="$(mktemp -d)"
+  run bash "$here/../shared-skill-core/handoff/render.sh" local rules
+  eq exit 0 "$code"
+  eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
+  eq "lines with the land-pr path" 1 "$(printf '%s\n' "$out" | grep -c '/land-pr/SKILL.md' || true)"
+  f="$(printf '%s\n' "$out" | grep -o '`[^`]*/land-pr/SKILL.md`' | tr -d '`')"
+  [ -f "$f" ] || eq "land-pr path" "a file" "$f"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -294,6 +305,7 @@ cases=(
   "flags a missing path after \$here in a script|t_flags_missing_here_path"
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
+  "render puts the land-pr path in local rules|t_render_names_land_pr"
 )
 
 pass=0; fail=0
