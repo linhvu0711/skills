@@ -123,6 +123,46 @@ t_no_verify_skips_hook() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
+# skills_home <skill-text>: repo with an empty skills/, and a local skills
+# folder at $T/home holding demo/SKILL.md with that text.
+skills_home() {
+  repo; mkdir skills; mkdir -p "$T/home/demo"
+  printf '%s\n' "$1" > "$T/home/demo/SKILL.md"
+}
+
+t_adopt_moves_links_checks() {
+  skills_home "# demo"
+  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh demo
+  eq exit 0 "$code"
+  eq stdout "$(printf 'adopted demo\ncheck: clean')" "$out"
+  [ -f skills/demo/SKILL.md ] || eq "skills/demo/SKILL.md" "a file" "missing"
+  eq link "$R/skills/demo" "$(readlink "$T/home/demo")"
+}
+
+t_adopt_reports_leak() {
+  skills_home "see $mac_home/x"
+  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh demo
+  eq exit 1 "$code"
+  has stderr "skills/demo/SKILL.md:1: home path: $mac_home" "$err"
+  [ -f skills/demo/SKILL.md ] || eq "skills/demo/SKILL.md" "a file" "missing"
+}
+
+t_adopt_stops_on_missing() {
+  skills_home "# demo"
+  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh nope
+  eq exit 1 "$code"
+  eq stderr "stop: no skill named nope in $T/home" "$err"
+  eq "ls home" demo "$(ls "$T/home")"
+  eq "ls skills" "" "$(ls skills)"
+}
+
+t_adopt_stops_on_adopted() {
+  skills_home "# demo"; mv "$T/home/demo" skills/demo; ln -s "$R/skills/demo" "$T/home/demo"
+  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh demo
+  eq exit 1 "$code"
+  eq stderr "stop: $T/home/demo is already a link" "$err"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -134,6 +174,10 @@ cases=(
   "hook stops a commit that adds a home path|t_hook_stops_home_path"
   "flags a private word in an added path|t_flags_private_word_in_path"
   "no-verify skips the hook|t_no_verify_skips_hook"
+  "adopt moves, links, and checks a skill|t_adopt_moves_links_checks"
+  "adopt reports a leak in the adopted skill|t_adopt_reports_leak"
+  "adopt stops on a missing skill|t_adopt_stops_on_missing"
+  "adopt stops on a skill already adopted|t_adopt_stops_on_adopted"
 )
 
 pass=0; fail=0
