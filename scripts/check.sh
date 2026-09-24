@@ -18,6 +18,12 @@
 # with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
 # skipped.
 #
+# In tree and --staged mode, two whole-repo checks read the index, so the hook
+# sees what the commit holds. Each `copy` or `heavy adaptation` row in
+# THIRD_PARTY_NOTICES.md needs its upstream's license next to it:
+# `skills/<name>/LICENSE` for a skill, `shared-skill-core/LICENSE-<owner>` for a
+# shared core file, <owner> from the section's `## <owner>/<repo>` heading.
+#
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
 # then `check: <n> problem(s) found`.
@@ -137,6 +143,25 @@ for f in ${files[@]+"${files[@]}"}; do
   done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
                   for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$root/$f")
 done
+
+# in_index <path>: the path is in the index, so the commit holds it.
+in_index() { git cat-file -e ":$1" 2>/dev/null; }
+
+if [ ${#paths[@]} -eq 0 ] && in_index THIRD_PARTY_NOTICES.md; then
+  while IFS=$'\t' read -r line owner p; do
+    case "$p" in
+      skills/*) p="${p#skills/}"; lic="skills/${p%%/*}/LICENSE" ;;
+      shared-skill-core/*) lic="shared-skill-core/LICENSE-$owner" ;;
+      *) continue ;;
+    esac
+    in_index "$lic" || problems+=("THIRD_PARTY_NOTICES.md:$line: missing license: $lic")
+  done < <(git show :THIRD_PARTY_NOTICES.md | awk '
+    /^## / { split($2, o, "/"); owner = o[1]; next }
+    /^\|/  { n = split($0, c, "|"); p = c[2]; lv = c[n - 1]
+             gsub(/^[ \t]+|[ \t]+$/, "", p); gsub(/^[ \t]+|[ \t]+$/, "", lv)
+             if (p !~ /^`[^`]+`$/ || lv !~ /^(copy|heavy adaptation)/) next
+             gsub(/`/, "", p); print FNR "\t" owner "\t" p }')
+fi
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"
   if [ ${#names[@]} -gt 0 ]; then
