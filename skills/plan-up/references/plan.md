@@ -1,9 +1,8 @@
 # Plan rules
 
-The plan is what the executor follows. `executor.md` says what it has,
-what it lacks, and how it works a plan. It has no taste and no strategic
-view. Every decision that needs judgment is made here. What is left for
-the executor is small and low-risk.
+The plan is what the executor follows; `executor.md` says what it has,
+what it lacks, and how it works a plan. Every decision that needs
+judgment is made here.
 
 ## Vocabulary
 
@@ -199,13 +198,12 @@ fixture that does the job or part of it is called or widened, never
 written twice. A new one is added only when the nearest existing one
 is named and the line that keeps it from serving is quoted, under
 `Decided`. A job the repo has never done gets a new thing; that is the
-plain case, and `Decided` says so in one clause. A new thing that is a
-dependency (a package, a tool, an outside service the repo does not
-hold) is never the plain case: it is a big fork every time, asked and
-answered before the `Change` names it, per `SKILL.md` step 5.
+plain case, and `Decided` says so in one clause. A new dependency is
+never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
+answered before the `Change` names it.
 Unhappy paths are tests like any other, usually in the same slice as the
-happy path of their seam. Mocks only at borders, named in `Given`. A border the repo already
-mocks: copy that mock. A border the repo has never mocked: decide the
+happy path of their seam. Mocks only at borders, named in `Given`. A
+border the repo already mocks: copy that mock. A border the repo has never mocked: decide the
 shape here, one function per outside call and the client passed in, and
 write it in `Change`. `Change` follows the rules under `Standards`. A
 rule the copied `file:line` breaks, or one no line shows, is quoted in
