@@ -4,15 +4,17 @@ Agent skills for Claude Code and Codex, from planning an issue to a pull request
 
 ## The flow
 
-The main skills hand work to each other in this order.
+Settle the work and write the issue, then `/ship` runs the rest: it plans, builds, and lands the pull request. It never merges. [review-pr](skills/review-pr/) is a separate review you run by hand.
 
 ```mermaid
 flowchart LR
   grill --> toissue[to-issue]
   grill --> toepic[to-epic]
-  toissue --> planup[plan-up]
-  toepic --> planup
-  planup --> ship --> reviewpr[review-pr] --> landpr[land-pr]
+  toissue --> ship
+  toepic --> ship
+  subgraph ship
+    planup[plan-up] --> build[handoff-devin or local build] --> landpr[land-pr]
+  end
 ```
 
 ## Skills
