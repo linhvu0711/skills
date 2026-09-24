@@ -27,8 +27,7 @@ Explore agents retrieve, short lookups are yours.
    and issue templates under `.github/`.
 
    Read each hit. Keep the ones with real rules about code (names, layout,
-   patterns, tests, commits). A file that only says how to install or how
-   to open a PR is not a rules file. Done when every path in the list has
+   patterns, tests, commits); install steps and PR how-tos are not rules. Done when every path in the list has
    been looked for and every hit is sorted into rules or not.
 
 2. **Size the repo.** Count source files, ignoring vendored and generated
@@ -62,9 +61,8 @@ Explore agents retrieve, short lookups are yours.
    **Rules file exists.** Three checks on the rules found, in this order:
 
    - **Outdated**: a rule that names a tool, path, version, or link that no
-     longer exists in the repo. Age is a hint, from `git log -1` on the
-     rules file against the code: it points where to look, it is never the
-     verdict.
+     longer exists in the repo. `git log -1` on the rules file against the
+     code gives its age: a hint where to look, never the verdict.
    - **Drift**: the code breaks a live rule. For each rule a search can
      check, get a count and three `file:line` examples. Drift is a code
      problem by default: the rule stands.
@@ -88,8 +86,7 @@ Explore agents retrieve, short lookups are yours.
 
    `clean` means a rules file exists and outdated, drift, and gaps are all
    "none". Then list the areas checked. Otherwise `needs work`. Either
-   way, stop here. The report is the whole output; the caller decides what
-   happens next.
+   way, stop: the caller decides what happens next.
 
 ## Areas
 
