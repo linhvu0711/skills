@@ -147,11 +147,11 @@ runs (step 2).
 8. **Report.** Chat gets this and nothing more:
 
    ```
-   Shipped: #133 uninstall reverses setup · fix/133-uninstall-reverses-setup · S: 4 files, 1 package, 96 lines
+   Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
    Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
-   Worktree: ~/development/worktrees/clocktrace/fix-133-uninstall-reverses-setup
-   Clean up after merge: git -C ~/development/projects/clocktrace worktree remove ~/development/worktrees/clocktrace/fix-133-uninstall-reverses-setup
-   READY https://github.com/linhvu0711/clocktrace/pull/134
+   Worktree: ~/code/worktrees/app/feat-42-login
+   Clean up after merge: git -C ~/code/app worktree remove ~/code/worktrees/app/feat-42-login
+   READY https://github.com/acme/app/pull/43
    ```
 
    A cloud route: `Route: cloud (UI walks) · session: <url>` and no
