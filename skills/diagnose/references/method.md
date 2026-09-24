@@ -5,10 +5,10 @@ did not settle it.
 
 ## Cheap path
 
-Read the code on the symptom's path. Handler, helper, callers, the test that
+Read the code on the symptom's path: handler, helper, callers, the test that
 covers the place. Most bugs are visible from there: a missing call, a wrong
-field, a branch that never runs. When you see it, confirm it with one probe
-and stop. Do not build a loop you do not need.
+field, a branch that never runs. One probe confirms it. Build a loop only on
+the hard path.
 
 ## Hard path
 
@@ -29,8 +29,8 @@ Still no loop: stop, exit as a `spike`.
 ### Shrink
 
 Remove one thing at a time from the repro. Keep it out when the symptom
-stays. Put it back when the symptom goes. What is left is load-bearing.
-Small repros make the next step cheap.
+stays; put it back when the symptom goes. What is left is load-bearing, and
+a small repro makes the next step cheap.
 
 ### Halve
 
@@ -57,7 +57,7 @@ without a killing check is a guess; do not write it.
 
 ## Perf
 
-Measure, do not log. Three numbers before anything else: the metric, the
+Measure with a profiler or timers, not log lines. Three numbers before anything else: the metric, the
 baseline, the target. The metric and the baseline are yours to measure. The
 target is the user's; ask once with a default.
 
