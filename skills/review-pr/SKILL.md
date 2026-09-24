@@ -19,9 +19,9 @@ a separate command.
 Read `../../shared-skill-core/facts.md` first. Short lookups
 (`git`, `gh pr view`, one `ls`) are yours.
 
-The axis agents are judges, so they are `general-purpose` agents, not
-Explore. Explore retrieves. A review axis has to trace a branch, weigh a
-smell, and match a hunk to a task line. That is the main model's work.
+The axis agents are `general-purpose` agents, not Explore. Explore only
+retrieves; an axis judges: it traces a branch, weighs a smell, and
+matches a hunk to a task line.
 
 In Codex there are no subagents: run the three briefs yourself, one after
 the other, and keep the same return shape.
@@ -84,8 +84,8 @@ the other, and keep the same return shape.
    - Nothing comes back: no repo rules. The review runs on the general
      rules alone. The report's `## Notes` carries one line: "no repo
      review rules found; general rules only. /set-review-rules writes
-     them." That line is a notice, not a step. This skill reviews the
-     PR and never runs the other skill.
+     them." That line is a notice; this skill reviews the PR and leaves
+     `/set-review-rules` to the user.
 
    Per axis, the rule text is the general section followed by
    `## Repo rules` and that axis's lines, or "None." Done when three
