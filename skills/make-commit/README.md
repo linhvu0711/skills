@@ -1,44 +1,30 @@
-# git-commit
+# make-commit
 
-Terse Conventional Commits. Why over what.
+Writes a short Conventional Commits message for your staged change, focused on why, not what.
 
-## What it does
+## Use it when
 
-Generates commit messages in Conventional Commits format. Subject ≤50 chars, hard cap 72. Imperative mood. Body only when the *why* is non-obvious or there are breaking changes. No AI attribution, no "this commit does X", no emoji unless the project uses them. Body always required for breaking changes, security fixes, data migrations, and reverts — future debuggers need the context.
+You need a commit message: "write a commit", "commit message", `/make-commit`, `/commit`, or `/git-commit`. The agent can also pick it up on its own from those phrases.
 
-Outputs only the message. Does not stage, commit, or amend.
+## What you get
 
-## How to invoke
-
-```
-/git-commit
-```
-
-Also triggers on phrases like "write a commit", "commit message", "generate commit".
-
-## Example output
-
-Diff: new endpoint for user profile.
+One message in a code block, ready to paste. The subject is `type(scope): summary`, imperative, 50 characters when it can be and never over 72. A body only when the why is not obvious, and always for breaking changes, security fixes, data migrations, and reverts. It does not stage, commit, or amend.
 
 ```
 feat(api): add GET /users/:id/profile
 
 Mobile client needs profile data without the full user payload
 to reduce LTE bandwidth on cold-launch screens.
-
-Closes #128
 ```
 
-Diff: breaking API rename.
+## Needs
 
-```
-feat(api)!: rename /v1/orders to /v1/checkout
+Nothing but the agent. It reads the change you describe or the diff in front of it and runs no tools.
 
-BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
-before 2026-06-01. Old route returns 410 after that date.
-```
+## Fits with
 
-## See also
+Called by [land-pr](../land-pr/) for its fix commits, [validate-pr-review](../validate-pr-review/) after you say go, [set-coding-standards](../set-coding-standards/) and [set-review-rules](../set-review-rules/) as their last step, and [discover-path](../discover-path/).
 
-- [`SKILL.md`](./SKILL.md) — full LLM-facing instructions
-- [Caveman README](../../README.md) — repo overview
+## Credits
+
+A copy of the `caveman-commit` skill from [juliusbrussee/caveman](https://github.com/juliusbrussee/caveman) (`skills/caveman-commit`), MIT license. The skill text is upstream's, plus one line added here that says its paths start at its folder.

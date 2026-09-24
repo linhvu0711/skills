@@ -6,10 +6,10 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-You establish one source of truth for how code is written in this repo:
+You write one source of truth for how code is written in this repo:
 `CODING_STANDARDS.md` at the root, enforced by the tools the project already
 has, pointed at from `CLAUDE.md` and `AGENTS.md`. The audit finds what is
-true. The grill settles what is wanted. Then you write.
+true, the grill settles what is wanted, then you write.
 
 ## Facts
 
@@ -40,12 +40,10 @@ Explore agents retrieve, short lookups are yours.
      settled rule is in it. Rules folded in from other files are removed
      from those files.
    - `.editorconfig`, written or updated to match.
-   - Configs of tools the project already has, updated so each rule a tool
-     can check is checked. New tools and CI changes become issues in step 4.
+   - Configs of the tools the project already has, so each rule a tool can
+     check is checked. New tools and CI changes become issues in step 4.
    - `CLAUDE.md` and `AGENTS.md`, where they exist: one line, "Read
-     `CODING_STANDARDS.md` before you write or review code." Code rules that
-     lived in these files now live in `CODING_STANDARDS.md` and are gone from
-     here.
+     `CODING_STANDARDS.md` before you write or review code."
 
    Done when every settled rule is in `CODING_STANDARDS.md` exactly once, every
    tool-checkable one is in a config, and `git status` lists only the files
