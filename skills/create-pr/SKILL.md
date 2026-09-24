@@ -3,6 +3,8 @@ name: create-pr
 description: Create a GitHub pull request following project conventions. Use when the user asks to create a PR, submit changes for review, or open a pull request. Handles commit analysis, branch management, PR template usage, and PR creation using the gh CLI tool.
 ---
 
+<!-- Changed from cline/cline .agents/skills/create-pull-request at 091cf94: renamed to create-pr, retitled "Create PR", and the "Add labels if needed" step dropped. Apache-2.0, see LICENSE. -->
+
 # Create PR
 
 This skill guides you through creating a well-structured GitHub pull request that follows project conventions and best practices.
