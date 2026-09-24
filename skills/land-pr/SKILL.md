@@ -113,12 +113,12 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 7. **Report.** Chat gets this and nothing more:
 
    ```
-   Landed: feat(cli): add uninstall that reverses setup (#134)
+   Landed: feat(auth): add login (#43)
    Rounds: 2 · Devin Review: success on 9e18c16 · open threads: 0 · merge state: CLEAN
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
-   Worktree: ~/development/worktrees/clocktrace/feat-133-uninstall
-   READY https://github.com/linhvu0711/clocktrace/pull/134
+   Worktree: ~/code/worktrees/app/feat-42-login
+   READY https://github.com/acme/app/pull/43
    ```
 
    One line per finding over every round, id, verdict, SHA or URL.
@@ -128,12 +128,12 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Examples
 
-**User:** `/land-pr 134` in the clocktrace checkout, on `feat/133-uninstall`.
+**User:** `/land-pr 43` in the app checkout, on `feat/42-login`.
 
 Facts: open, not a fork, head `d6221e2`, `DEVIN=PENDING`. Tree clean on
 the branch, so `WT` is here. `wait-review.sh` in the background returns
 `DEVIN=success` after four minutes. `open-threads.sh`: `OPEN=1`, a 🟡
-finding at `apps/cli/src/uninstall.ts:212`. Validate: one `fix here`,
+finding at `src/auth/login.ts:212`. Validate: one `fix here`,
 `ours`, `should`. Fix, commit, fetch, push. Round 2: wait, success,
 `OPEN=0`. Ready: `READY`. Report with the one finding and its SHA.
 
