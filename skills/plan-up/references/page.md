@@ -74,12 +74,19 @@ EOF
 `$JSON` is the `DATA` object saved as `plan-<slug>.json` in the same
 folder, so a rebuild after an edit is one command.
 
-Serve the folder on `127.0.0.1`, port 8765; taken: the next free one.
-`file://` is not the review path.
+Serve with the script. It prints the page URL. `file://` is not the
+review path.
 
 ```sh
-lsof -iTCP:8765 -sTCP:LISTEN >/dev/null 2>&1 || (cd "$DIR" && nohup python3 -m http.server 8765 --bind 127.0.0.1 >/dev/null 2>&1 &)
+URL=$(~/.agents/skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
 ```
+
+It reuses a server only when that server gives back this exact file.
+A server on 8765 that holds another folder is left running, and the
+page gets the next free port. Never start `http.server` by hand: a
+port that is only in use is not a port that serves this folder, and the
+person gets a 404. Run the script again after every rebuild; the port
+can differ between plans, so use the URL it prints.
 
 Then, in this order:
 
@@ -94,8 +101,7 @@ Then, in this order:
    from the `.md`, `[object`, or a string with an odd number of
    backticks. Fix the `DATA`, rebuild, run it again.
 2. **The review**, in the person's own browser: `open "<url>"` on macOS,
-   `xdg-open "<url>"` on Linux, with
-   `http://127.0.0.1:<port>/plan-<slug>.html?v=<n>`, after the check
+   `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the check
    passes. This is the step the person sees. Run it on the first build
    and after every rebuild, with the new `v`.
 

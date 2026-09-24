@@ -168,7 +168,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    back to step 4 or 5.
 
 8. **Present.** Per `references/page.md`: write the plan to its `.md`,
-   fill `DATA`, build the page, serve it, check it with
+   fill `DATA`, build the page, serve it with `scripts/serve.sh`, check it with
    `scripts/check-page.py`, open it in the browser, or publish it on a
    headless host. Chat
    gets the summary block from `page.md` § Chat, nothing more. Wait. An
