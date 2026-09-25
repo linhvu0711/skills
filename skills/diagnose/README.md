@@ -4,7 +4,7 @@ Finds the root cause of a bug, or the hot spot behind something slow, and stops 
 
 ## Use it when
 
-Something is broken or slow, and you don't know why yet. Type `/diagnose` with what you see (`$diagnose` in Codex), as in `/diagnose the CSV export shows dates as big numbers`. You can also name an issue, as in `/diagnose #42`; it reads the issue and its comments. It needs the symptom and nothing else; "something is off" gets one question back.
+Something is broken or slow, and you don't know why yet. Type `/diagnose` with what you see (`$diagnose` in Codex), as in `/diagnose the CSV export shows dates as big numbers`. You can also name an issue, as in `/diagnose #42` or its URL; it reads the issue and its comments. It needs the symptom and nothing else; "something is off" gets one question back.
 
 ## What you get
 

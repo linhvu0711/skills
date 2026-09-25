@@ -73,7 +73,8 @@ nothing.
 ## Steps
 
 1. **Gate.** An issue named (`#12` or its URL): read it first,
-   `gh issue view <n> --json number,title,body,labels,comments`. Read the
+   `gh issue view <number-or-url> --json number,title,body,labels,comments`
+   (a URL as given, so an issue in another repo stays in its repo). Read the
    comments too; a later comment can change the symptom, the repro, or
    where it fails. Symptom stated, in the chat or the issue: continue.
    Not stated: ask, stop.
