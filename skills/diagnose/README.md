@@ -4,7 +4,7 @@ Finds the root cause of a bug, or the hot spot behind something slow, and stops 
 
 ## Use it when
 
-Something is broken or slow, and you don't know why yet. Type `/diagnose` with what you see (`$diagnose` in Codex), as in `/diagnose the CSV export shows dates as big numbers`. It needs the symptom and nothing else; "something is off" gets one question back.
+Something is broken or slow, and you don't know why yet. Type `/diagnose` with what you see (`$diagnose` in Codex), as in `/diagnose the CSV export shows dates as big numbers`. You can also name an issue, as in `/diagnose #42`; it reads the issue and its comments. It needs the symptom and nothing else; "something is off" gets one question back.
 
 ## What you get
 
@@ -24,6 +24,7 @@ For a slow thing the cause line is a hot spot with its share of the time, like `
 ## Needs
 
 - `git`, for the log and for `git bisect`.
+- `gh`, when you name an issue.
 - Sub-agents: Explore agents to read and Runner agents to run repro loops and bisects, in Claude Code. In Codex it does both itself.
 - `pbcopy`, optional, for the fix command on a local-env bug.
 - [grill](../grill/), when a decision is open.
