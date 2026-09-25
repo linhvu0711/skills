@@ -58,8 +58,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    Steps are trusted. Step 4 asks only what that section lists, step 5
    closes only the issue's `Open` lines, steps 6 to 8 run as written.
 
-   A run: read the parent and every ticket. A set: no parent, read
-   every ticket, first URL first. A bare epic URL: list the
+   A run: read the parent and every ticket, each with its comments, by
+   the command above. A set: no parent, read every ticket the same way,
+   first URL first. A bare epic URL: list the
    tickets first, `gh issue view <P> --json subIssues -q '.subIssues.nodes[] | select(.state == "OPEN") | .number'`,
    and put them in the parent body's order (the `## Phases` tables, top
    to bottom). Say the list before you go on, so the user sees what the

@@ -51,8 +51,8 @@ a stable number goes to Runner.
 
 ## Gate
 
-One thing must be stated: the symptom, what the user sees. "The CSV dates
-look wrong" passes. "Something is broken" does not. Ask for the symptom and
+One thing must be stated: the symptom, what the user sees, in the chat or
+in an issue the user names. "The CSV dates look wrong" passes. "Something is broken" does not. Ask for the symptom and
 stop. Nothing else is required to start.
 
 ## Must know
@@ -63,7 +63,7 @@ nothing.
 
 | Must know | Who finds it |
 |---|---|
-| The symptom | The user. The gate. |
+| The symptom | The user, or the issue they name. The gate. |
 | Expected instead | Code, spec, or test. The user only if those disagree or are silent. |
 | A repro | You build one. Ask for a log, screenshot, or steps only if you cannot. |
 | Where it works and where it does not | CI, git log, deploy log. The user if those do not say. |
@@ -72,7 +72,12 @@ nothing.
 
 ## Steps
 
-1. **Gate.** Symptom stated: continue. Not stated: ask, stop.
+1. **Gate.** An issue named (`#12` or its URL): read it first,
+   `gh issue view <number-or-url> --json number,title,body,labels,comments`
+   (a URL as given, so an issue in another repo stays in its repo). Read the
+   comments too; a later comment can change the symptom, the repro, or
+   where it fails. Symptom stated, in the chat or the issue: continue.
+   Not stated: ask, stop.
 
 2. **Place it.** Answer "where does it work, where does it not" from the
    sources in the table. That gives the category in `categories.md`. The
@@ -176,6 +181,12 @@ Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code
 issue. Fix command on the clipboard. Last line: `Ready for /to-issue` only
 if the setup docs never mentioned the variable, as a `docs` ticket; else
 nothing to file.
+
+**User:** `/diagnose #42`
+
+Read issue 42 with its comments. The body says "checkout button does
+nothing"; the last comment says it only fails in Safari. Gate passes, and
+"where it does not work" is already Safari. Go on at step 2.
 
 **User:** `/diagnose something is off`
 

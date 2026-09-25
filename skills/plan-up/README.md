@@ -12,7 +12,7 @@ You have a ticket that passes the readiness gate and you want it built by an age
 - `/plan-up <epic-url>`: every open ticket in the epic.
 - `/plan-up <issue-url> on <pr-url>`: one more layer on an open stack.
 
-It needs a clean tree on the base branch. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [diagnose](../diagnose/).
+It reads every ticket with its comments, since a later comment can change what the ticket asks. It needs a clean tree on the base branch. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [diagnose](../diagnose/).
 
 ## What you get
 
