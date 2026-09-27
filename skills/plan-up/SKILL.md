@@ -100,7 +100,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      mocks its borders;
    - when any line is on a screen: the UI kind and how it is opened,
      the mockup the issue links, and the repo's look rules: `DESIGN.md`,
-     tokens, the shared component folder, the nearest existing screen;
+     tokens, the shared component folder, the nearest existing screen,
+     and, for a screen that exists on the base, what it shows there
+     now, for the walk's `Before` line;
    - the repo's own words and code rules, wherever they live:
      `CONTEXT.md`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`,
      `CONVENTIONS.md`, `STYLE*.md`, `docs/**`, ADRs, `AGENTS.md`,
@@ -225,7 +227,10 @@ Round 1: both commands print through `format.ts:219`, and
 in a terminal, so both are on a screen: `UI: terminal`, `Screen: 60 x
 24`, `Open: tally status`. Each row gets its test at width 60 and a
 walk: `Setup` a 60-column terminal, `Steps` run the command, `See` the
-wrapped hint, the whole id. Plan: two slices, two walks, one video.
+wrapped hint, the whole id. Both screens exist on the base, so each
+walk's `Before` names the same command and the old output: the hint
+cut at column 60, the id cut short. Plan: two slices, two walks, one
+video.
 Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
 
 **User:** `/plan-up https://github.com/acme/shop/issues/61` (body has What

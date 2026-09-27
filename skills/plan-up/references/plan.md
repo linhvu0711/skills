@@ -24,6 +24,10 @@ judgment is made here.
   UI walk's screenshot plus the video that shows it.
 - **UI walk**: a scripted pass through the running app, by hand in the
   executor's desktop: web in a browser, a desktop app, or a terminal.
+- **Before shot**: a screenshot of a walk's screen on the base, taken
+  before any change, so a reader of the PR sees what changed. Only a
+  walk whose screen exists on the base, and looks or acts different
+  after the change, has one.
 - **Video**: one recording of one or more walks, in order, from one
   `Setup`. Every walk is in exactly one video.
 - **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
@@ -74,6 +78,7 @@ Walk 1, proves #1
   Steps:    <click "Export CSV", type ..., press Enter; exact labels>
   See:      <exact text or element>
   Must not: <console errors, failed requests, error text in the log>
+  Before:   <none | as walk n | the steps on the base that reach the same screen; what it shows there now>
 
 ## Videos
 Video 1, Setup of walk 1, shows walks 1, 3
@@ -236,6 +241,23 @@ whose `See` matches another walk's proves nothing on its own. Change the
 steps until each walk ends in its own state; a `Cancel` walk first types
 a new value, then cancels, and `See` names the old value.
 
+**Before shots.** A walk's `Before` line names steps when
+its screen exists on the base and the change alters what a person sees
+there: a fix for a bug on a screen, a new look, layout, or text, or new
+behavior on a screen that exists, such as a new sort order or a new
+button on an old page. The line names the steps, from the walk's
+`Setup`, that reach the same screen on the base, and what the screen
+shows there now, as exact as `See`; for a bug, the wrong state. A step
+that needs what the change adds is left out: the base has no `Undo`
+button, so the shot is the screen before that click. `Before: none` for
+a new page, a new dialog, or new output where there was none: there
+is nothing to compare. Two walks whose
+before shots would be the same picture: the first names the steps, the
+rest say `as walk n` and share its shot. The shot uses the walk's `Setup` data and the `Screen`
+size, so the two pictures line up. In a run, a layer's base is the
+branch of the layer below, so its before shot shows the screen as that
+layer left it.
+
 **Videos.** The fewest recordings that show every walk. Walks that share
 a `Setup` go in one video, ordered so each walk's end state is the next
 walk's start state, or with a reset step between them. Start a new video
@@ -275,6 +297,9 @@ facts or forks.
   walk has `Setup` and `Must not`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on
   which line it proves.
+- Every walk has a `Before` line: `none`, `as walk n` for an earlier
+  walk of the same layer that names steps, or steps that work on the base and the exact
+  state they reach.
 - Every walk is in exactly one video; no two videos share a `Setup`;
   every walk's Proof row names its video and step.
 - No Open line remains. Every big fork was put to the user and answered.

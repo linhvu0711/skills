@@ -44,7 +44,7 @@ const DATA = {
       proof: [ { line, test: { file, name } | null, walk: 1 | null, video: "video 1 @ step 4" | null, artifact: "test" | "screenshot 1" } ],
       slices: [ { seam, proves: [1, 2], change: ["`path:line`, what. Copy the shape of `path:line`."],
                   tests: [ { file, name, given, when, then } ] } ],
-      walks: [ { title, proves: [1], setup, where, steps: ["..."], see, mustNot } ],
+      walks: [ { title, proves: [1], setup, where, steps: ["..."], see, mustNot, before: "none" | "as walk 1" | "<steps; what it shows now>" } ],
       videos: [ { title, setup: "walk 1", walks: [1, 3], steps: ["..."], shows: "#1 at step 4" } ],
       gates: { slice, task, untouched: ["file \"case\""] },
       decided: [ { what, why, at: "path:line" } ],

@@ -323,7 +323,8 @@ const DATA = {};
         el('dt', {}, 'Where'), el('dd', {}, R(w.where)),
         el('dt', {}, 'Steps'), el('dd', {}, el('ol', { class: 'steps', style: 'margin:0' }, (w.steps || []).map((s) => el('li', {}, R(s))))),
         el('dt', {}, 'See'), el('dd', {}, R(w.see)),
-        el('dt', {}, 'Must not'), el('dd', {}, R(w.mustNot))), i === 0)));
+        el('dt', {}, 'Must not'), el('dd', {}, R(w.mustNot)),
+        w.before != null ? [el('dt', {}, 'Before'), el('dd', {}, R(w.before))] : null), i === 0)));
   }
 
   function videosView(L) {

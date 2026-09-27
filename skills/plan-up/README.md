@@ -16,7 +16,7 @@ It reads every ticket with its comments, since a later comment can change what t
 
 ## What you get
 
-A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then), UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
+A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then), UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), a before shot for each walk that changes a screen that exists already, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
 
 Chat gets only a summary:
 
