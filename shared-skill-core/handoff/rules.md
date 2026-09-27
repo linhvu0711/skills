@@ -94,6 +94,22 @@ The word `devin` never appears in a branch name, in any case or spelling.
 One layer, one PR.
 <!-- /local -->
 
+<!-- cloud -->
+## Before shots
+
+A walk under `UI walks` whose `Before` line names steps needs a
+picture of its screen as the base shows it. A line that says `none` or
+`as walk n` takes no shot of its own. Take it before the layer's
+first slice, while the branch holds no change of this layer: run the
+app with the `Run` and `Open` lines under `Facts`, do the walk's
+`Setup`, go to `Where`, do the steps the `Before` line names, and take
+a screenshot of the screen they end on, at the `Screen` size, the same
+way you walk the walks later. Save it as `before-<walk number>.png`,
+check that it shows what the line says, then stop the app. A `Before`
+line whose steps do not work on the base, or whose screen does not show
+what the line says, is a surprise (see below).
+
+<!-- /cloud -->
 ## How to work
 
 - Work one slice at a time, in the order given. For each slice: write
@@ -186,7 +202,8 @@ test("exports one order as CSV", async () => {
    the viewport, with the page pushed down by the bar's height
    (`document.body.style.paddingTop`), so the page's own header stays
    in view. At each step the video's `Shows` line names, take
-   that walk's screenshot: the frame that shows its `See`. Every walk's
+   that walk's screenshot: the frame that shows its `See`. Save it as
+   `after-<walk number>.png`. Every walk's
    screenshot comes from its video this way, so a walk with no `Shows`
    step in any video is a gap; stop and ask.
 <!-- /cloud -->
@@ -289,23 +306,49 @@ test("exports one order as CSV", async () => {
   proves gets the URL of the Actions run on the head commit instead (the
   words `see the Actions run` with no URL are not proof); a line whose
   Proof row names a command instead of a case gets that command and its
-  output, in a fenced block, run on the head commit. `Screenshot` is the
-  image that shows the line holding, then `<br>` and a caption in plain
-  words that says what is on screen. A line with no screen leaves the
-  cell empty. A screenshot shared by two lines is shown once; the other
-  row says `same as #n`. `Video` is the plan's `video n @ step m` for
-  the line, copied from the Proof table; a line with no screen leaves
-  it empty.
+  output, in a fenced block, run on the head commit. `Screenshot` holds
+  no image: it names the screenshot below that shows the line holding,
+  as `Screenshot n`. Two lines one screenshot shows both name it. A
+  line with no screen leaves the cell empty. `Video` is the plan's
+  `video n @ step m` for the line, copied from the Proof table; a line
+  with no screen leaves it empty.
 
   ```markdown
   ## Proof
 
   | # | Behavior | Test | Screenshot | Video |
   |---|---|---|---|---|
-  | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case on the branch) | ![](./proof-1.png)<br>Three rows: `Sooner 2099-01-01`, `Soon 2099-12-30`, `Later`. | video 1 @ step 4 |
-  | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | same as #1 | video 1 @ step 4 |
-  | 3 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | | |
+  | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case on the branch) | Screenshot 1 | video 1 @ step 4 |
+  | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 | video 1 @ step 4 |
+  | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 | video 1 @ step 6 |
+  | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | | |
   ```
+
+  The screenshots go after the table, under `### Screenshots`, numbered
+  in the order the table first names them, one block per walk. A block
+  opens with `**Screenshot n.**` and one or two plain sentences on what
+  is on screen. A walk with a before shot says what changed, then shows
+  the two side by side in a two-column table; a walk with none shows its
+  one image on its own line. A walk whose `Before` says `as walk n`
+  shows its one image too, after a line `Before: as in Screenshot m.`,
+  where m is the block of walk n. Each image is in the body once.
+
+  ```markdown
+  ### Screenshots
+
+  **Screenshot 1.** Before, rows kept the order they were added in. After, they are sorted by due date: `Sooner 2099-01-01`, `Soon 2099-12-30`, `Later`.
+
+  | Before | After |
+  |---|---|
+  | ![](./before-1.png) | ![](./after-1.png) |
+
+  **Screenshot 2.** The `Due` field opens a date picker on today's month.
+
+  ![](./after-2.png)
+  ```
+
+  A `Screenshot` cell that names no block, or a walk whose `Before`
+  line names steps and whose block has no before image, is a gap.
 
   The videos go after the table, under `### Videos`, in plan order, one
   block each: one line in plain words, `Video n:` then what it shows,
@@ -338,7 +381,7 @@ test("exports one order as CSV", async () => {
   body. Then, from that directory:
 
   ```bash
-  gh pr edit <n> --body-file pr-body.md --attach proof-1.png --attach video-1.mp4 …
+  gh pr edit <n> --body-file pr-body.md --attach before-1.png --attach after-1.png --attach video-1.mp4 …
   ```
 
   One `--attach` per file the body references, up to 50 per command.

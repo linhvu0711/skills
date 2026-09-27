@@ -35,6 +35,9 @@ belong to `/handoff-devin`; the plan never names it.
 
 ## How it works the plan
 
+- Before the first slice of a layer, with no change made yet: each walk
+  whose `Before` line names steps, walked on the base as the line says, and a screenshot of the screen it ends on. So a `Before`
+  line must name steps that work on the base.
 - One slice at a time, in order. Tests under the slice first, red;
   then the smallest change that makes them green; then commit. So each
   slice must be one change with the tests that prove it, and every
@@ -49,8 +52,10 @@ belong to `/handoff-devin`; the plan never names it.
   each `Shows` step a screenshot of that walk's `See`. So every walk
   must end in its own picture, and every walk must sit in a video.
 - One PR per layer. The PR carries a Proof table, one row per Done-when
-  line, with the test, the screenshot, and the video step. A row with
-  nothing in it is a gap the plan left.
+  line, with the test, the screenshot it names, and the video step. A
+  row with nothing in it is a gap the plan left. The screenshots follow
+  the table, each one once, and a walk with a before shot shows it next
+  to the after shot. The videos come last.
 - A run: layers in stack order, each PR on the branch of the layer
   below. A `layer n, slice m` pointer in the plan means code that
   earlier layer made; it is on that branch under the name the plan
