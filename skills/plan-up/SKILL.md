@@ -215,6 +215,18 @@ the ISO date from the issue. Two Proof rows: row 1 the case, row 2 the
 `export.test.ts` cases. Decided: none, the issue had no `Open` line.
 Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
 
+**User:** `/plan-up https://github.com/acme/tally/issues/12` (size/S fix,
+a CLI; Done when: `status` wraps its hints on a narrow terminal, `rules
+list` prints each id whole)
+
+Round 1: both commands print through `format.ts:219`, and
+`status.test.ts:83` already sets a fake width. A person reads both lines
+in a terminal, so both are on a screen: `UI: terminal`, `Screen: 60 x
+24`, `Open: tally status`. Each row gets its test at width 60 and a
+walk: `Setup` a 60-column terminal, `Steps` run the command, `See` the
+wrapped hint, the whole id. Plan: two slices, two walks, one video.
+Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
+
 **User:** `/plan-up https://github.com/acme/shop/issues/61` (body has What
 to build, no Done when)
 
