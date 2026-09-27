@@ -13,10 +13,17 @@ judgment is made here.
   change of its own rides in the slice whose change covers it.
 - **Tracer bullet**: the first slice runs the thinnest path end to end, so
   every later slice widens a path that already works.
+- **On a screen**: a Done-when line a person checks by looking at the
+  running app: text, layout, color, wrap, width, order, a dialog. A web
+  page, a desktop window, and a command's printed output in a terminal
+  all count, so a CLI that prints lines is `UI: terminal`. A line only a
+  program reads (a return value, `--json`, an API or MCP field, a file)
+  is off a screen.
 - **Proof**: the artifact that shows a Done-when line holds: a test case,
-  or a UI walk's screenshot plus the video that shows it.
+  or the reason no test can see the line; for a line on a screen, also a
+  UI walk's screenshot plus the video that shows it.
 - **UI walk**: a scripted pass through the running app, by hand in the
-  executor's desktop: web in a browser, a desktop app, or a terminal UI.
+  executor's desktop: web in a browser, a desktop app, or a terminal.
 - **Video**: one recording of one or more walks, in order, from one
   `Setup`. Every walk is in exactly one video.
 - **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
@@ -25,8 +32,9 @@ judgment is made here.
 
 ## Shape
 
-Write every block in this order. Drop a block only when the issue has no
-screen (`UI walks`, `Videos`) or nothing was decided (`Decided`).
+Write every block in this order. Drop a block only when no Done-when
+line is on a screen (`UI walks`, `Videos`) or nothing was decided
+(`Decided`).
 
 ```markdown
 ## Facts
@@ -172,15 +180,18 @@ In a run, a labelled layer is built the same way.
 
 **Facts.** Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
-fresh machine: a URL after `Run`, a window that appears, a command that
-draws the terminal UI. `Platform` and `Screen` fit the executor as
+fresh machine: a URL after `Run`, a window that appears, a command to
+type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk.
 
 **Proof.** One row per Done-when line, verbatim. A row names a test, or
-says in the Test column why a test cannot see the line; then the UI walk
-and the video step that shows its `See` are the proof. A row with neither
-is a gap.
+says in the Test column why a test cannot see the line. A row on a
+screen also names its UI walk and the video step that shows its `See`,
+even when its test passes: the test proves the code gives the right
+output, the walk proves a person sees it right, at the real width, in
+the real colors, with the real dialog. A row with no test and no reason
+is a gap; a row on a screen with no walk is a gap.
 
 **Seams.** A seam is public: something a caller, a user, or a client
 reaches without knowing the inside. Prefer the seam the repo already
@@ -219,7 +230,7 @@ rule to copy: a big fork, ask.
 **UI walks.** Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
 fixture the repo has. `Must not` is the negative check the screenshot
-cannot show. One walk per screen-visible row, happy and unhappy. No two
+cannot show. One walk per row on a screen, happy and unhappy. No two
 walks end in the same picture: the screenshot is the proof, so a walk
 whose `See` matches another walk's proves nothing on its own. Change the
 steps until each walk ends in its own state; a `Cancel` walk first types
@@ -244,8 +255,9 @@ with one word. A choice the user made in a question goes here too, marked
 The plan is done when every line below holds. A miss sends you back to
 facts or forks.
 
-- Every Done-when line has a Proof row, and every row has a test or a
-  stated reason plus a walk.
+- Every Done-when line has a Proof row; every row has a test or a
+  stated reason why no test can see it; every row on a screen also has
+  a walk.
 - Every seam is at a `file:line` seen this session, or at an earlier
   layer's slice.
 - Every `Then` is a literal.
