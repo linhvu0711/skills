@@ -206,6 +206,23 @@ test("exports one order as CSV", async () => {
    `after-<walk number>.png`. Every walk's
    screenshot comes from its video this way, so a walk with no `Shows`
    step in any video is a gap; stop and ask.
+<!-- devin -->
+   Your screen recorder speeds up idle and typing time by itself; a
+   badge like `▶▶ 19.1x` in a corner of the frame is that. Do not use
+   it. Record the display at 1x:
+   `ffmpeg -f x11grab -framerate 24 -video_size 1600x1200 -i "$DISPLAY"
+   -c:v libx264 -pix_fmt yuv420p video.mp4`. Type with
+   `xdotool type --delay 60`, and hold about 2 s after each result.
+   Click inside a window before you type; an unfocused window drops the
+   keys. A terminal walk runs in xterm
+   (`xterm -geometry 100x30 -fa Monospace -fs 12`), not konsole: after
+   `clear`, konsole can leave new lines off the screen. Take each
+   screenshot from the video, `ffmpeg -ss <t> -i video.mp4 -frames:v 1
+   after-<walk number>.png`, so the screenshots and the video agree.
+<!-- /devin -->
+   Before you attach a video, check it: its length (`ffprobe`) is at
+   least the time its steps take by hand, and no frame shows a speed
+   badge. A video that fails is recorded again.
 <!-- /cloud -->
 
 ## The pull request
