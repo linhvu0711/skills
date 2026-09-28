@@ -206,6 +206,33 @@ test("exports one order as CSV", async () => {
    `after-<walk number>.png`. Every walk's
    screenshot comes from its video this way, so a walk with no `Shows`
    step in any video is a gap; stop and ask.
+<!-- devin -->
+   Your screen recorder speeds up idle and typing time by itself; a
+   badge like `▶▶ 19.1x` in a corner of the frame is that. Do not use
+   it. Record the whole display at 1x with `ffmpeg`, one file per
+   video, `video-<n>.mp4`, where `n` is the video's number:
+   - linux: `ffmpeg -y -f x11grab -framerate 24 -video_size "$(xdpyinfo
+     | awk '/dimensions/{print $2}')" -i "$DISPLAY" -c:v libx264
+     -pix_fmt yuv420p video-<n>.mp4`
+   - macos-outpost: `ffmpeg -y -f avfoundation -framerate 24 -i
+     "<screen>:none" -c:v libx264 -pix_fmt yuv420p video-<n>.mp4`;
+     `ffmpeg -f avfoundation -list_devices true -i ""` names the screen.
+   - windows: `ffmpeg -y -f gdigrab -framerate 24 -i desktop -c:v
+     libx264 -pix_fmt yuv420p video-<n>.mp4`
+   Type at a person's pace, about 16 characters a second (on linux,
+   `xdotool type --delay 60`), and hold about 2 s after each result.
+   Click inside a window before you type; an unfocused window drops the
+   keys. A terminal walk opens at the `Screen` size under `Facts`. On
+   linux it runs in xterm
+   (`xterm -geometry <cols>x<rows> -fa Monospace -fs 12`), not konsole:
+   after `clear`, konsole can leave new lines off the screen. Take each
+   screenshot from the video, `ffmpeg -ss <t> -i video-<n>.mp4
+   -frames:v 1 after-<walk number>.png`, so the screenshots and the
+   video agree.
+<!-- /devin -->
+   Before you attach a video, check it: its length (`ffprobe`) is at
+   least the time its steps take by hand, and no frame shows a speed
+   badge. A video that fails is recorded again.
 <!-- /cloud -->
 
 ## The pull request
