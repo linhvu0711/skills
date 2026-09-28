@@ -31,7 +31,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    Steps and lead time, and every code ticket is pure (rules file, Types).
 
 4. **Cut.** Apply the cutting rules below. Output: phases, and per ticket a
-   title, type, size, blocked-by list, and one line of what it delivers.
+   title, type, size, blocked-by list, one line of what it delivers, and
+   the stand-ins it leaves with the ticket that removes each.
 
 5. **Approve in chat.** Show the breakdown in the format below. End with the
    three questions, verbatim:
@@ -113,6 +114,13 @@ sibling that owns it: `#N owns retry. Do not build it here.` This is the fence
 that keeps a worker from building a sibling's ticket. Only siblings that
 gate it, that it gates, or that own such work are named.
 
+**Stand-ins.** A ticket may build a stand-in that a later ticket replaces: a
+fake, a hard-coded value, or wiring that fits only what exists so far. Its
+`Noted for later` names each stand-in and the ticket that removes it:
+`Stand-in: the provider list lives in src/fake/. #7 removes it.` That later
+ticket gets a Done-when line that checks the stand-in is gone. A stand-in
+with no owner is a gap in the cut: add it to a ticket, or make one.
+
 **Outside the repo.** A thing a ticket needs that lives in a platform, not
 in code, is a `task` ticket, never a note in the parent and never a line in
 a code ticket. Every ticket is pure: all code, or all human work (rules
@@ -155,6 +163,7 @@ and let the user choose before going on.
 ### Phase 1 · <what this phase lays down>
 1. **<title>** · <type> · <size> · blocked by: none
    Delivers: <end-to-end behaviour, one line>
+   Leaves: <stand-in>, removed by 3
 
 ### Phase 2 · <…>
 3. **<title>** · <type> · <size> · blocked by: 1
@@ -162,6 +171,9 @@ and let the user choose before going on.
 4. **<title>** · task · lead time: <wait or none> · blocked by: none
    Delivers: <what exists at the end, and which ticket it unblocks>
 ```
+
+A `Leaves` line appears only on a ticket that builds a stand-in (Cutting
+rules, Stand-ins), so the approve step shows the cleanup beside the shortcut.
 
 A task shows `task` in the type slot and its lead time where size would be,
 so the approve step shows the human work beside the agent work.
@@ -181,6 +193,7 @@ The end-to-end behaviour the whole epic makes work, from the user's view.
 ## Scope
 **In:** … **Out:** …
 (Wide refactor: call-site counts per package. Fallback: `Lands as one stack. Green is promised only in #N.`)
+**Stand-ins:** each one is named in its ticket with the ticket that removes it. A stand-in found during the work that no ticket owns goes into the PR body and onto the ticket that should own it.
 
 ## Phases
 Work the frontier: any ticket whose "after" tickets are closed. Start a phase when the one before it is done.

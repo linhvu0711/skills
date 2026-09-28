@@ -8,7 +8,7 @@ The work is settled but too big for one PR. [to-issue](../to-issue/) sized it XL
 
 ## What you get
 
-First, a breakdown in chat: phases, and per ticket a title, type, size, blocked-by list, and one line of what it delivers. Each ticket is a thin vertical slice that can be verified alone. Work outside the repo, like an account or a key, is its own `task` ticket, never a note. It ends with three questions about granularity, edges, and splits, and loops on your changes until you say `go`.
+First, a breakdown in chat: phases, and per ticket a title, type, size, blocked-by list, and one line of what it delivers. Each ticket is a thin vertical slice that can be verified alone. A ticket that leaves a stand-in, like a fake or a hard-coded value, names the later ticket that removes it, and that ticket checks it is gone. Work outside the repo, like an account or a key, is its own `task` ticket, never a note. It ends with three questions about granularity, edges, and splits, and loops on your changes until you say `go`.
 
 Then the parent and every sub-issue are created in phase order, with the edges wired, and the parent body rewritten with real numbers:
 
