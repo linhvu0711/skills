@@ -21,7 +21,7 @@ Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
 Agent started: https://cursor.com/agents/bc-…
 ```
 
-The PR the agent opens shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk.
+The PR the agent opens shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk. The agent records each video at real speed and checks its length before it attaches it.
 
 Then it watches. Cursor has no "waiting for you" state, so a run that ends with a question is treated as one: this chat answers from the plan and the repo, and only brings you the big decisions. When the agent finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed.
 
