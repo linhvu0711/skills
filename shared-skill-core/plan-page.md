@@ -100,8 +100,9 @@ Then, in this order:
    ```
 
    It prints `page ok` or one line per problem: a count that differs
-   from the `.md`, `[object`, or a string with an odd number of
-   backticks. Fix the `DATA`, rebuild, run it again.
+   from the `.md`, a slice whose `docs` name other files, a `Proved`
+   line with another date or `Used by`, `[object`, or a string with an
+   odd number of backticks. Fix the `DATA`, rebuild, run it again.
 2. **The review**, in the person's own browser: `open "<url>"` on macOS,
    `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the check
    passes. This is the step the person sees. Run it on the first build
