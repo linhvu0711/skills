@@ -36,4 +36,4 @@ A dirty tree stops it before any pane is made, with the files listed.
 
 - Starts [plan-up](../plan-up/) in the new pane.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- [make-pr-ready](../make-pr-ready/) finds a checkout the way this script does, and [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.
+- [ready-pr](../ready-pr/) finds a checkout the way this script does, and [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.

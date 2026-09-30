@@ -5,7 +5,7 @@
 #
 # The folder is ${WORKTREES_ROOT:-$HOME/development/worktrees}/<repo>/<branch>,
 # with every `/` in the branch written as `-`. <repo> is the origin's repo
-# name. Shared by /ship and /make-pr-ready.
+# name. Shared by /ship and /ready-pr.
 #
 # - The branch exists locally: the worktree checks it out.
 # - It exists only on origin: fetched and tracked.

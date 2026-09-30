@@ -1,10 +1,10 @@
-# make-pr-ready
+# ready-pr
 
 Takes an open pull request to ready-to-merge: waits for Devin Review, judges every comment, fixes, replies, rebases, and repeats until the PR is green with no open thread. It never merges.
 
 ## Use it when
 
-A PR is open and you want it cleaned up for merge without babysitting the review rounds. `/make-pr-ready 43`, `/make-pr-ready <pr-url>`, or `/make-pr-ready` for the PR of the current branch. It only runs when you call it.
+A PR is open and you want it cleaned up for merge without babysitting the review rounds. `/ready-pr 43`, `/ready-pr <pr-url>`, or `/ready-pr` for the PR of the current branch. It only runs when you call it.
 
 ## What you get
 

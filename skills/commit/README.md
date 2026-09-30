@@ -23,7 +23,7 @@ Nothing but the agent. It reads the change you describe or the diff in front of 
 
 ## Fits with
 
-Called by [make-pr-ready](../make-pr-ready/) for its fix commits, [validate-pr-review](../validate-pr-review/) after you say go, [set-coding-standards](../set-coding-standards/) and [set-review-rules](../set-review-rules/) as their last step, and [discover-path](../discover-path/).
+Called by [ready-pr](../ready-pr/) for its fix commits, [validate-pr-review](../validate-pr-review/) after you say go, [set-coding-standards](../set-coding-standards/) and [set-review-rules](../set-review-rules/) as their last step, and [discover-path](../discover-path/).
 
 ## Credits
 

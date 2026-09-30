@@ -26,7 +26,7 @@ It is a seed (an idea nobody has decided to do) or a bug (something seen broken 
 ## Fits with
 
 - A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [to-issue](../to-issue/), which rewrite the `[bug]` into the ticket in place.
-- Called by [make-pr-ready](../make-pr-ready/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) to file a bug.
+- Called by [ready-pr](../ready-pr/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) to file a bug.
 - Named by [kickoff](../kickoff/) and [set-coding-standards](../set-coding-standards/). The shared core's issue rules read the priority labels through its `scripts/conventions.py`.
 
 ## Credits
