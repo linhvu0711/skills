@@ -24,5 +24,5 @@ Ready for /commit
 ## Fits with
 
 - Calls [audit-coding-standards](../audit-coding-standards/) and [grill](../grill/).
-- Hands off to [commit](../commit/) or [create-pr](../create-pr/).
+- Hands off to [commit](../commit/) or [make-pr](../make-pr/).
 - [audit-coding-standards](../audit-coding-standards/) points here when you want the standard written, not just checked.

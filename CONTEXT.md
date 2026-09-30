@@ -8,6 +8,10 @@ Agent skills for Claude Code and Codex.
 The `shared-skill-core/` folder: files that two or more skills read. A file read by more than one skill lives here, not inside one of the skills.
 _Avoid_: common, utils, lib
 
+**PR shape**:
+The title and body that every pull request opened by these skills follows. It is kept once, in `shared-skill-core/pr-shape.md`.
+_Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
+
 ## Credit
 
 **Upstream**:

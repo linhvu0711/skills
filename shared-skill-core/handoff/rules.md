@@ -76,11 +76,9 @@ gives. No `Stack` table: one layer, one PR, the blocks as written.
 
 ## Branch names
 
-Name each branch `type/<issue>-summary`: the same `type` as a commit
-(`feat`, `fix`, `test`, `refactor`, `chore`, `docs`), the layer's issue
-number, then a short summary of the change, as in `feat/42-undo-delete`.
-Lower case, words joined by `-`, no spaces, no other punctuation. In a
-run, each layer gets its own branch in this shape from its own issue.
+Each branch has the shape under § The pull request, Branch, with the
+layer's issue number. In a run, each layer gets its own branch in this
+shape from its own issue.
 <!-- cursor -->
 Make the branch yourself, `git checkout -b <name> <base>`, before the
 first commit; the branch the workspace opened on is not the one. The
@@ -239,51 +237,22 @@ test("exports one order as CSV", async () => {
 
 ## The pull request
 
+<!-- include ../pr-shape.md -->
+
+### For this build
+
+- The core change under `Where to look` is the seam the plan names. A
+  surprise that changed what the code does is a bullet there (see
+  Surprises).
 <!-- local -->
 - One PR, ready for review, against the branch named under `Base branch`.
   Open it from the worktree with `gh pr create --base <base> --head
-  <branch> --title … --body-file pr-body.md`. The title has the same
-  shape as a commit summary, `type(scope): summary`, and names the whole
-  change, as in `feat(todos): undo delete, clear done, due badges`. Same
-  rules as a commit summary: imperative, lower case, no period, 72
-  characters at most. The body opens with `Closes #<the issue>`, then a
-  `Summary`: what the change does, why, and how to try it, in a few
-  plain sentences. The PR is written for a reader who never saw the
-  plan: plan words such as `slice 2` or `step 3` mean nothing to them,
-  so the body names behavior and tests. A surprise that changed what
-  the code does (see below) is one sentence here.
-- Then a `Proof` section: one table, one row per Done-when line, in
-  Proof table order. Columns: `#`, `Behavior`, `Test`. `Behavior` is the
-  Done-when line verbatim. `Test` is the case name, linked to the test
-  on the branch; a line whose Proof row names a command instead of a
-  case gets that command and its output, in a fenced block, run on the
-  head commit; a line that only a CI run proves gets the URL of the run
-  on the head commit (the words `see the Actions run` with no URL are
-  not proof).
-
-  ```markdown
-  ## Proof
-
-  | # | Behavior | Test |
-  |---|---|---|
-  | 1 | `uninstall` removes the launch agent and says so. | [`apps/cli/src/uninstall.test.ts` "removes the launch agent"](link to the test case on the branch) |
-  | 2 | `bun test` passes. | `bun test` on `9e18c16`: `116 pass, 0 fail` |
-  ```
+  <branch> --title … --body-file pr-body.md`.
 <!-- /local -->
 <!-- cloud -->
 <!-- devin -->
 - One PR per layer, ready for review, against the branch named under
-  `Base` for that layer. The title has the
-  same shape as a commit summary, `type(scope): summary`, and names the
-  whole change, as in `feat(todos): undo delete, clear done, due badges`.
-  Same rules as a commit summary: imperative, lower case, no period, 72
-  characters at most. The body opens with `Closes #<the layer's issue>`,
-  then a `Summary`: what the change does, why, and how to try it, in a
-  few plain sentences. The PR is written for a reader who never saw the
-  plan: plan words such as `walk 1`, `slice 2`, or `step 3` mean
-  nothing to them, so the body names behavior, tests, and what is on
-  screen. A surprise that changed what the code does (see below) is one
-  sentence here.
+  `Base` for that layer.
 - A run: before the first PR, announce the stack in the session by the
   epic's title. Stacking on GitHub is the `gh stack` extension; install
   it once per session, `gh extension install github/gh-stack`. Open each
@@ -299,17 +268,7 @@ test("exports one order as CSV", async () => {
   so every comment, review, and check result on it reaches you as a
   new turn; say the PR URL and `subscribed` in your reply. Mark it ready,
   `gh pr ready <n>`, only when every gate holds, every Done-when line
-  has its proof, the size label is on, and every check is green. The
-  title has the same shape as a commit summary, `type(scope): summary`,
-  and names the whole change, as in `feat(todos): undo delete, clear
-  done, due badges`. Same rules as a commit summary: imperative, lower
-  case, no period, 72 characters at most. The body opens with
-  `Closes #<the layer's issue>`, then a `Summary`: what the change does,
-  why, and how to try it, in a few plain sentences. The PR is written
-  for a reader who never saw the plan: plan words such as `walk 1`,
-  `slice 2`, or `step 3` mean nothing to them, so the body names
-  behavior, tests, and what is on screen. A surprise that changed what
-  the code does (see below) is one sentence here.
+  has its proof, the size label is on, and every check is green.
 - CI. After every push, `gh pr checks <n> --watch`. A red check is work,
   the same as a red test: read the log, fix, push, watch again. A check
   that is red for a reason outside the plan's slices is a surprise;
@@ -328,16 +287,9 @@ test("exports one order as CSV", async () => {
   Two PRs open makes the stack; each later call adds the new PR. Then
   start the next layer. The PR body covers that layer's Done-when lines
   only.
-- Then a `Proof` section: one table, one row per Done-when line, in
-  Proof table order. Columns: `#`, `Behavior`, `Test`, `Screenshot`,
-  `Video`. `Behavior` is the Done-when line verbatim. `Test` is the case
-  name, linked to the test on the branch; a line that only the CI run
-  proves gets the URL of the Actions run on the head commit instead (the
-  words `see the Actions run` with no URL are not proof); a line whose
-  Proof row names a command instead of a case gets that command and its
-  output, in a fenced block, run on the head commit. `Screenshot` holds
-  no image: it names the screenshot below that shows the line holding,
-  as `Screenshot n`. Two lines one screenshot shows both name it. A
+- The Proof table has two more columns after `Test`: `Screenshot` and
+  `Video`. `Screenshot` holds no image: it names the screenshot below
+  that shows the line holding, as `Screenshot n`. Two lines one screenshot shows both name it. A
   line with no screen leaves the cell empty. `Video` is the plan's
   `video n @ step m` for the line, copied from the Proof table; a line
   with no screen leaves it empty.
@@ -404,10 +356,8 @@ test("exports one order as CSV", async () => {
   to GitHub and rewrites the `./<file>` reference in the body to the
   uploaded asset's URL, a `github.com/user-attachments` link that never
   expires. An image then shows inline and a video plays in a player,
-  and only people with access to the repo can see them. Keep the PR
-  body in one file, say `pr-body.md`, next to the media files, and
-  write it whole each time: `gh pr edit --body-file` replaces the whole
-  body. Then, from that directory:
+  and only people with access to the repo can see them. Keep
+  `pr-body.md` next to the media files. Then, from that directory:
 
   ```bash
   gh pr edit <n> --body-file pr-body.md --attach before-1.png --attach after-1.png --attach video-1.mp4 …
@@ -554,7 +504,9 @@ and retry. No priority label, no assignee, no plan, no root cause, no
 approach in the body. One issue per finding; two findings with the
 same cause share one issue. Search
 `gh issue list --state open --search "<two words>"` first and reuse an
-open issue that is clearly the same thing.
+open issue that is clearly the same thing. Each issue filed or reused
+gets its line under `## Follow-ups` in the PR body: write `pr-body.md`
+again and `gh pr edit <n> --body-file pr-body.md`.
 
 Every reply carries its proof: `fix here` the commit SHA, `fix later`
 the issue URL, `push back` the fact, `won't fix` the reason. Resolve a
@@ -643,8 +595,8 @@ Sort each one:
   Say what is red, what you tried, and what you think is wrong.
 - Anything else: **pick the nearest existing pattern**, go on, and say
   so {{here}} in one line: plan said X, code had Y, did Z. When it
-  changed what the code does, it is also one sentence in the PR
-  `Summary`.
+  changed what the code does, it is also a bullet under `Where to look`
+  in the PR.
 
 ## Finish
 

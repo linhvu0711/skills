@@ -56,7 +56,7 @@ Explore agents retrieve, short lookups are yours.
      issue you recommend for it (`fix` ticket, or a `chore` when it is a
      sweep). Name `/to-issue` for one, `/capture` for a seed.
    - New tools or CI the rules need: one recommended issue each.
-   - Last line: `Ready for /commit` or `Ready for /create-pr`.
+   - Last line: `Ready for /commit` or `Ready for /make-pr`.
 
 ## File shape
 
@@ -99,7 +99,7 @@ into `CODING_STANDARDS.md` (yes), the view rule (keep, enforce), Logging (add:
 `CODING_STANDARDS.md`, strip the section from `CONTRIBUTING.md`, strip the
 rules from `CLAUDE.md` and leave the pointer line, update `ruff.toml`.
 Hand off: one `chore` issue for the 61 function views, `Ready for
-/create-pr`.
+/make-pr`.
 
 **User:** `/set-coding-standards` in a repo with a good `CODING_STANDARDS.md`, touched
 last month, no drift, no gaps.
