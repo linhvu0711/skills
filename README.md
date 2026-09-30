@@ -4,7 +4,7 @@ Agent skills for Claude Code and Codex, from planning an issue to a pull request
 
 ## The flow
 
-Settle the work and write the issue, then `/ship` runs the rest: it plans, builds, and lands the pull request. It never merges. [review-pr](skills/review-pr/) is a separate review you run by hand.
+Settle the work and write the issue, then `/ship` runs the rest: it plans, builds, and makes the pull request ready to merge. It never merges. [review-pr](skills/review-pr/) is a separate review you run by hand.
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
   toissue --> ship
   toepic --> ship
   subgraph ship
-    planup[plan-up] --> build[handoff-devin or local build] --> landpr[land-pr]
+    planup[plan-up] --> build[handoff-devin or local build] --> makeprready[make-pr-ready]
   end
 ```
 
@@ -45,7 +45,7 @@ flowchart LR
 | [make-commit](skills/make-commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [create-pr](skills/create-pr/) | Opens a pull request for the current branch, with a body that follows the repo's PR template. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
-| [land-pr](skills/land-pr/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
+| [make-pr-ready](skills/make-pr-ready/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
 
 ### Review and standards
 
@@ -79,13 +79,13 @@ flowchart LR
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff](skills/kickoff/), [handoff-devin](skills/handoff-devin/), [handoff-cursor](skills/handoff-cursor/), [land-pr](skills/land-pr/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff](skills/kickoff/), [handoff-devin](skills/handoff-devin/), [handoff-cursor](skills/handoff-cursor/), [make-pr-ready](skills/make-pr-ready/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff](skills/kickoff/), and [ship](skills/ship/) when it builds in a pane.
-- Devin: [handoff-devin](skills/handoff-devin/), [ship](skills/ship/) on its cloud route, and Devin Review for [land-pr](skills/land-pr/).
+- Devin: [handoff-devin](skills/handoff-devin/), [ship](skills/ship/) on its cloud route, and Devin Review for [make-pr-ready](skills/make-pr-ready/).
 - Cursor: [handoff-cursor](skills/handoff-cursor/).
 - The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).

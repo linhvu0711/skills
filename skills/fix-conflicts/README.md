@@ -17,7 +17,7 @@ For each conflict it reads the history, the commits, and the linked PRs and issu
 
 ## Fits with
 
-Called by [land-pr](../land-pr/) when a rebase onto the base branch conflicts.
+Called by [make-pr-ready](../make-pr-ready/) when a rebase onto the base branch conflicts.
 
 ## Credits
 

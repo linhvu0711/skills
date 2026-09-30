@@ -1,5 +1,5 @@
 ---
-name: land-pr
+name: make-pr-ready
 description: "Take an open PR to ready-to-merge: wait for Devin Review on the head commit, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
 disable-model-invocation: true
 ---
@@ -20,8 +20,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Forms
 
-- `/land-pr <pr-url|number>`: that PR.
-- `/land-pr`: the PR of the current branch.
+- `/make-pr-ready <pr-url|number>`: that PR.
+- `/make-pr-ready`: the PR of the current branch.
 
 ## Steps
 
@@ -113,7 +113,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 7. **Report.** Chat gets this and nothing more:
 
    ```
-   Landed: feat(auth): add login (#43)
+   PR: feat(auth): add login (#43)
    Rounds: 2 · Devin Review: success on 9e18c16 · open threads: 0 · merge state: CLEAN
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
@@ -128,7 +128,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Examples
 
-**User:** `/land-pr 43` in the app checkout, on `feat/42-login`.
+**User:** `/make-pr-ready 43` in the app checkout, on `feat/42-login`.
 
 Facts: open, not a fork, head `d6221e2`, `DEVIN=PENDING`. Tree clean on
 the branch, so `WT` is here. `wait-review.sh` in the background returns
@@ -137,7 +137,7 @@ finding at `src/auth/login.ts:212`. Validate: one `fix here`,
 `ours`, `should`. Fix, commit, fetch, push. Round 2: wait, success,
 `OPEN=0`. Ready: `READY`. Report with the one finding and its SHA.
 
-**User:** `/land-pr https://github.com/acme/shop/pull/61` in a chat with
+**User:** `/make-pr-ready https://github.com/acme/shop/pull/61` in a chat with
 no checkout.
 
 Main checkout found under `~/development`; `worktree.sh` tracks

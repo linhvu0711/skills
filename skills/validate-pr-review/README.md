@@ -26,5 +26,5 @@ After you say go, it makes the fixes, files each `fix later` as an issue, posts 
 ## Fits with
 
 - Calls [make-commit](../make-commit/) and [capture](../capture/) after go.
-- Called by [land-pr](../land-pr/), which runs it on every review round.
+- Called by [make-pr-ready](../make-pr-ready/), which runs it on every review round.
 - [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) sort a cloud agent's review questions with the same verdict table.
