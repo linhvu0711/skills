@@ -12,7 +12,7 @@ One report in chat, then it stops. Drift comes with a count and three `file:line
 
 Each proposal cites what it came from: a page read on this run, or what most of the code already does. The research reads the owner's docs first (react.dev, docs.djangoproject.com), then groups that maintain a core part of the stack (Vercel for Next.js and React). Blog posts only lead to those. It covers only what your project uses or plans to add, found in the manifest, the code, open issues, ADRs, and plan docs. It never proposes a rule from the model's memory: an area with no source says so, and you decide. The details are in [research.md](research.md).
 
-A later run reads the Sources table at the end of `CODING_STANDARDS.md` and checks a source again only after a major version bump or after 6 months.
+A later run reads the Sources table at the end of `CODING_STANDARDS.md`, which has a row for each stack part checked, also a part that gave no rules. It checks a part again only after a major version bump, after 6 months, or when the part has no row yet.
 
 ```
 Stack: Python, Django, ruff       Size: big, 900 files, 6 authors
