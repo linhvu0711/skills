@@ -1,6 +1,6 @@
 # State brief
 
-Shared by `load-cc` and `load-co`. A research agent writes the brief; the
+Shared by `load-cc-session` and `load-co-session`. A research agent writes the brief; the
 main agent shows it and waits.
 
 ## Dispatch

@@ -63,8 +63,8 @@ flowchart LR
 |---|---|
 | [find-cc-session](skills/find-cc-session/) | Finds a past Claude Code session in this project from a rough description. |
 | [find-co-session](skills/find-co-session/) | Finds a past Codex CLI session in this project from a rough description. |
-| [load-cc](skills/load-cc/) | Pulls an earlier Claude Code session into this chat as a short state brief. |
-| [load-co](skills/load-co/) | Pulls an earlier Codex CLI session into this chat as a short state brief. |
+| [load-cc-session](skills/load-cc-session/) | Pulls an earlier Claude Code session into this chat as a short state brief. |
+| [load-co-session](skills/load-co-session/) | Pulls an earlier Codex CLI session into this chat as a short state brief. |
 
 ### Writing and search
 
