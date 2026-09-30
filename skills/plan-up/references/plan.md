@@ -35,6 +35,10 @@ judgment is made here.
   after the change, has one.
 - **Video**: one recording of one or more walks, in order, from one
   `Setup`. Every walk is in exactly one video.
+- **Review block**: the plan in the words a person needs to approve it:
+  what changes, how, what it touches, the choices, the risks, how we
+  know it works, and the scope. The page shows it as the Review view,
+  its first tab. Everything under it is for the executor.
 - **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
   ticket is one **layer**; layer 1's PR targets the base, each later
   layer's PR targets the branch of the layer below.
@@ -46,6 +50,27 @@ Write every block in this order. Drop a block only when no probe ran
 nothing was decided (`Decided`).
 
 ```markdown
+## Review
+Change:   <before> → <after>, at most 4 lines
+Approach: <how it is built, and why not the other way>, at most 4 lines
+Blast radius:
+  Touches:    <the modules or packages the change reaches, comma list>
+  Dependency: none | <name>, D<n>
+  Schema:     none | <table, column, migration>
+  API:        none | <route, command, tool, or export a caller uses>
+  Config:     none | <env var, config key, flag>
+  CI:         none | <workflow, job>
+Choices:
+  - Fork: <question> → <pick> (user)
+  - D<n>: <the decision>. Risk: <what a wrong pick costs>
+Risks:
+  - <what we believe>. If wrong: <what breaks>. Proved: P<n> | not proved
+Works when:
+  - #1 <Done-when line 1 in plain words>
+  - #2 <...>
+In:  <what the plan builds>, at most 4 lines
+Out: <what it leaves, with O refs>, at most 4 lines
+
 ## Facts
 Repo: owner/name        Base: main
 Test: <cmd>             Typecheck: <cmd>      Lint: <cmd>       Build: <cmd>
@@ -112,7 +137,7 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 
 ## Run
 
-A run is one plan with the blocks above written once per layer. Two
+A run is one plan with the blocks above written once per layer. Three
 blocks come first and once:
 
 ```markdown
@@ -123,6 +148,10 @@ blocks come first and once:
 | 2 | #73 Add a member | layer 1 | S | 2 |
 Points: 6 (XS 1, S 2, M 4, L 8)
 
+## Review
+<the stack's: Change, Approach, Blast radius, Risks, In, Out, as above,
+for the whole stack>
+
 ## Facts
 <as above, once; Base is the stack's base>
 
@@ -131,8 +160,11 @@ Points: 6 (XS 1, S 2, M 4, L 8)
 ```
 
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
-and under it Proof, Seams, Slices, UI walks, Videos, Gates, Decided, Out
-of scope, exactly as for one ticket. Proof rows number from 1 in each
+and under it a small `## Review` block, then Proof, Seams, Slices, UI
+walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
+The layer's Review holds three parts: `Change`, at most 2 lines, what
+this layer's PR adds to the stack; `Choices`, its forks and decisions;
+`Works when`, its Proof rows. Proof rows number from 1 in each
 layer. Each layer's videos are its own PR's proof.
 
 A seam or a `Change` in layer n may name code that an earlier layer's
@@ -184,6 +216,8 @@ block above, and the Done rule holds whole.
   that stay as they are. Nothing else is decided here; the Steps decided
   it.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
+- **Review.** As for any plan, from the blocks above. `Choices` holds
+  only the `Decided` lines the issue's `Open` lines left.
 
 Two things end the short path:
 
@@ -199,6 +233,29 @@ Two things end the short path:
 In a run, a labelled layer is built the same way.
 
 ## Filling the blocks
+
+**Review.** Written last, from the blocks under it, and placed first.
+It is for a person who approves the plan and never reads a slice, so it
+uses the issue's words and the repo's names, and no plan words (`slice
+2`, `walk 1`); refs (`D2`, `P1`, `#3`, `O1`) are fine, since the page
+links them. Each part keeps its limit; a part that needs more says less.
+- `Change` says what a user or a caller sees before and after, not which
+  files move.
+- `Approach` names the way the plan builds it and the way it does not,
+  with the reason in one clause.
+- `Blast radius` has all six lines. `none` is a finding: it tells the
+  reader the plan checked. `Dependency` names every package the plan
+  adds or bumps, with its `Decided` ref.
+- `Choices` lists every big fork, marked `(user)`, then at most 3 lines
+  from `Decided`: the ones whose wrong pick costs the most. Nothing was
+  forked or decided: one line, `- none`.
+- `Risks` holds at most 3 beliefs the plan rests on, the ones with the
+  worst failure, each with what breaks if it is wrong and the `P` line
+  that proves it, or `not proved`. No belief carries a risk: `- none`.
+- `Works when` has one line per Proof row, in order, the Done-when line
+  in plain words.
+- `In` and `Out` are the scope. `Out` names the `Out of scope` lines by
+  their `O` ref.
 
 **Facts.** Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
@@ -348,3 +405,8 @@ facts or forks.
 - Gates name the existing tests on the touched seams.
 - A run: the Stack block lists every layer with its base, and the order
   respects every `Blocked by` edge.
+- The Review block has every part, each in its limit: `Change`,
+  `Approach`, `In`, and `Out` at most 4 lines, a run layer's `Change`
+  at most 2; `Blast radius` all six lines; `Choices` every big fork and
+  at most 3 `Decided` lines; `Risks` at most 3; `Works when` one line
+  per Proof row. A run: one stack Review, and one small Review per layer.

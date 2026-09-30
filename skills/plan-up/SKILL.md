@@ -185,9 +185,12 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    Done-when line. Then the slices, one per test, in tracer-bullet order:
    the thinnest path end to end first, each next slice widening it, each
    with the `Docs` lines its change makes stale. Then UI walks, videos,
-   gates, decided, out of scope. A run: `plan.md` § Run,
-   one Stack block, one Facts block, then the blocks above once per
-   layer, in stack order. `Proved` sits under `Facts`, once.
+   gates, decided, out of scope. Last, the Review block, from the blocks
+   you just wrote, placed first in the file: the part a person reads to
+   approve the plan. A run: `plan.md` § Run, one Stack block, one stack
+   Review, one Facts block, then the blocks above once per layer, each
+   with its small Review, in stack order. `Proved` sits under `Facts`,
+   once.
 
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
@@ -227,7 +230,10 @@ User: `A`. Both go under Decided marked `(user)`. Small forks under
 Decided: stream, since `export.ts:31` does; the file response goes
 through `lib/download.ts:8`, which already sets the headers, so no new
 helper; file name `orders-<date>.csv`; delimiter `,`.
-Plan: one Proved line, six Proof rows, six slices (slice 1 carries
+Plan: a Review block on top (Change: orders export as JSON only → as
+JSON or CSV; Blast radius flags `Dependency: csv-stringify, D2` and
+nothing else; one risk, backed by P1), one Proved line, six Proof rows,
+six slices (slice 1 carries
 `Docs: README.md:88`, CSV next to JSON), three UI walks (happy, empty,
 failed), two videos: happy and failed from the seeded shop, empty from
 an empty seed.
