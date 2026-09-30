@@ -11,6 +11,11 @@ judgment is made here.
 - **Slice**: one change and the tests that prove it. One seam, one
   change, one commit. Each test has one `Then`. A test that needs no
   change of its own rides in the slice whose change covers it.
+- **Probe**: a small run, outside the repo's tree, that settles a fact
+  reading cannot, per `references/probes.md`. Its answer is a `Proved` line.
+- **Stale doc**: a doc that says what the code did before the change: a
+  README section, a guide, a `CHANGELOG`, an ADR, `--help` text, an
+  `.env.example`. A doc the change needs and nobody wrote is stale too.
 - **Tracer bullet**: the first slice runs the thinnest path end to end, so
   every later slice widens a path that already works.
 - **On a screen**: a Done-when line a person checks by looking at the
@@ -36,9 +41,9 @@ judgment is made here.
 
 ## Shape
 
-Write every block in this order. Drop a block only when no Done-when
-line is on a screen (`UI walks`, `Videos`) or nothing was decided
-(`Decided`).
+Write every block in this order. Drop a block only when no probe ran
+(`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`), or
+nothing was decided (`Decided`).
 
 ```markdown
 ## Facts
@@ -49,6 +54,10 @@ Open: <how the executor reaches the UI after Run>
 Screen: <web: 1440 and 375 wide | desktop: window size | terminal: cols x rows>
 Platform: linux | windows | macos-outpost
 Standards: <the files that hold the rules, or "the code">
+
+## Proved
+- P1 <the fact, with the value, shape, or limit the build needs>: <what ran,
+  one clause>, <YYYY-MM-DD>. Used by <S2, D1>.
 
 ## Proof
 | # | Done-when line | Test (file, case) | UI walk | Video | Artifact |
@@ -62,6 +71,7 @@ Standards: <the files that hold the rules, or "the code">
 ## Slices
 Slice 1, proves #1 and #2: <seam name>
   Change: `file:line`, <what>. Copy the shape of `file:line`.
+  Docs:   `README.md:88`, <what the doc says after this slice>.
   Test `orders.test.ts` "exports csv"
     Given:  <fixtures, data, login state, exact values>
     When:   <the one call through the seam>
@@ -115,6 +125,9 @@ Points: 6 (XS 1, S 2, M 4, L 8)
 
 ## Facts
 <as above, once; Base is the stack's base>
+
+## Proved
+<as above, once, every layer's probes; `Used by` names the layer, `L2 S1`>
 ```
 
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
@@ -158,14 +171,18 @@ block above, and the Done rule holds whole.
   XS rarely does.
 - **Facts.** One Explore round, and only this: the commands from CI,
   scripts, or README; the seam each changed line sits behind; the tests
-  that already cover those seams; the standards files; the UI kind and
-  how it opens when a line is on a screen. Every field of `Facts` is
-  filled.
+  that already cover those seams; the standards files; the docs the
+  Steps make stale; the UI kind and how it opens when a line is on a
+  screen. Every field of `Facts` is filled. No probe, unless an `Open`
+  line needs one.
+- **Docs.** Each stale doc is a `Docs` line in the slice of the step
+  that makes it stale. The Steps need not name it.
 - **Seams and Gates.** From that round. A seam is the public thing the
   changed line sits behind, the one its existing test uses.
 - **Decided.** Only the issue's `Open` lines, each closed by a fact from
-  the round or by a question to the user. Nothing else is decided here;
-  the Steps decided it.
+  the round or by a question to the user, and the docs the round found
+  that stay as they are. Nothing else is decided here; the Steps decided
+  it.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 
 Two things end the short path:
@@ -189,6 +206,13 @@ fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk.
+
+**Proved.** One line per probe, numbered `P1`, `P2`. The fact first, as
+exact as a `Then`: the value, the shape, the limit, the error. Then what
+ran, in one clause, and the day. `Used by` names each slice, walk, or
+`Decided` line that rests on it; a probe nothing uses was not needed,
+and its line goes. A big fork's option that a probe backs names its
+`P` line.
 
 **Proof.** One row per Done-when line, verbatim. A row names a test, or
 says in the Test column why a test cannot see the line. A row on a
@@ -224,6 +248,15 @@ shape here, one function per outside call and the client passed in, and
 write it in `Change`. `Change` follows the rules under `Standards`. A
 rule the copied `file:line` breaks, or one no line shows, is quoted in
 `Change`.
+Each stale doc is a `Docs` line in the slice whose change makes it
+stale, so the code and its doc land in one commit. The line names the
+`file:line`, or the new file, and what the doc says after the slice, as
+exact as a `Change`. A doc that is wrong on the base about code a slice
+touches goes in the first slice that touches that code. A doc that is
+wrong about code no slice touches is not this plan's: it goes under
+`Out of scope` with its `file:line`. A doc the facts round found that
+stays true goes under `Decided`, one line, with why. `Docs` lines need
+no test and no Proof row, unless a Done-when line is about the doc.
 
 **Look.** The executor has no taste, so the plan holds every look
 decision. A slice on a screen names in `Change` the mockup frame it
@@ -277,6 +310,13 @@ with one word. A choice the user made in a question goes here too, marked
 The plan is done when every line below holds. A miss sends you back to
 facts or forks.
 
+- Every `Proved` line has its fact, what ran, the day, and a `Used by`
+  that names a slice, a walk, or a `Decided` line. Every probe left the
+  repo's tree and worktree list as step 1 found them.
+- Every doc the facts round or a probe named is a `Docs` line in a
+  slice, a `Decided` line that says why it stays, or an `Out of scope`
+  line when it covers code no slice touches. A slice whose change makes
+  a doc stale carries its `Docs` line.
 - Every Done-when line has a Proof row; every row has a test or a
   stated reason why no test can see it; every row on a screen also has
   a walk.

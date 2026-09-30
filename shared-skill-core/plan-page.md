@@ -32,6 +32,7 @@ const DATA = {
   issue: { number: 42, url: "<issue url>", size: "size/M", kind: "feat" },
   date: "YYYY-MM-DD",
   facts: { repo, base, test, typecheck, lint, build, run, ui, open, screen, platform, standards },
+  proved: [ { fact, ran, date: "YYYY-MM-DD", usedBy: "S2, D1" } ],   // one per probe; [] when none ran
   points: "Points: 6 (XS 1, S 2, M 4, L 8)",                        // runs only
   layers: [ /* one per ticket; a single ticket is one layer */
     {
@@ -43,6 +44,7 @@ const DATA = {
       seams: [ { name, at: "path:line", why } ],
       proof: [ { line, test: { file, name } | null, walk: 1 | null, video: "video 1 @ step 4" | null, artifact: "test" | "screenshot 1" } ],
       slices: [ { seam, proves: [1, 2], change: ["`path:line`, what. Copy the shape of `path:line`."],
+                  docs: ["`README.md:88`, what the doc says after."],   // [] when the slice makes no doc stale
                   tests: [ { file, name, given, when, then } ] } ],
       walks: [ { title, proves: [1], setup, where, steps: ["..."], see, mustNot, before: "none" | "as walk 1" | "<steps; what it shows now>" } ],
       videos: [ { title, setup: "walk 1", walks: [1, 3], steps: ["..."], shows: "#1 at step 4" } ],
@@ -54,8 +56,8 @@ const DATA = {
 };
 ```
 
-Refs the page shows, and the user names in chat: `S2` slice 2, `S2.T1`
-its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
+Refs the page shows, and the user names in chat: `P1` proved 1, `S2`
+slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
 scope 1, `#4` Proof row 4. An edit request names one of these; change
 the `.md` line and the `DATA` field, rebuild.
 
@@ -125,7 +127,7 @@ After the page is open, chat gets this and nothing more:
 
 ```
 Plan: #42 Export orders as CSV · size/M · base main
-6 done-when · 6 slices · 3 walks · 2 videos · 1 fork answered (A, stream)
+6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
 http://127.0.0.1:8765/plan-acme-shop-42.html
 $HOME/.agents/artifacts/plan/plan-acme-shop-42.md
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
@@ -133,4 +135,5 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 
 A run: one line per layer under the first. A `handoff-ready` ticket
 adds `· short path` after the size, so the user knows the Steps were
-trusted. The whole plan never goes in chat.
+trusted. `doc` counts `Docs` lines and `probe` counts `Proved` lines;
+each drops when it is 0. The whole plan never goes in chat.

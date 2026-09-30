@@ -6,6 +6,7 @@
 Reads the DATA the page embeds and checks:
 - it parses and holds at least one layer;
 - its Proof rows, slices, walks, videos and decided items match the .md, summed over layers;
+- its proved lines match the .md `## Proved` block, and its slice `docs` match the .md `Docs:` lines;
 - each walk has a `before` that is the same kind as its .md `Before` line: none, as walk n, or steps;
   no `Before` is blank, and `as walk n` names an earlier walk of the same layer whose `Before` names steps;
 - no string holds `[object`;
@@ -39,7 +40,7 @@ def before_kind(value):
 
 def md_counts(md_path):
     md = open(md_path, encoding="utf-8").read()
-    counts = {"proof": 0, "slices": 0, "walks": 0, "videos": 0, "decided": 0}
+    counts = {"proof": 0, "slices": 0, "walks": 0, "videos": 0, "decided": 0, "docs": 0, "proved": 0}
     walks = []
     layer = 1
     block = None
@@ -53,6 +54,10 @@ def md_counts(md_path):
             counts["proof"] += 1
         elif block == "slices" and re.match(r"Slice \d+", line):
             counts["slices"] += 1
+        elif block == "slices" and re.match(r"\s+Docs:", line):
+            counts["docs"] += 1
+        elif block == "proved" and re.match(r"- P\d+", line):
+            counts["proved"] += 1
         elif block == "ui walks" and (m := re.match(r"Walk (\d+)", line)):
             counts["walks"] += 1
             walks.append({"layer": layer, "n": int(m.group(1)), "kind": None})
@@ -103,6 +108,8 @@ def main():
 
     want, md_walks = md_counts(sys.argv[2])
     have = {k: sum(len(L.get(k) or []) for L in layers) for k in want}
+    have["docs"] = sum(len(s.get("docs") or []) for L in layers for s in L.get("slices") or [])
+    have["proved"] = len(data.get("proved") or [])
     for k in want:
         if have[k] != want[k]:
             problems.append(f"{k}: page has {have[k]}, .md has {want[k]}")

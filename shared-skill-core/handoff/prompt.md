@@ -50,6 +50,9 @@ Issue: #42 <title> (<url>) · size M
 # Facts
 <the plan's Facts block>
 
+# Proved
+<the plan's Proved block; drop when no probe ran>
+
 # Proof
 <the plan's Proof table>
 
@@ -107,7 +110,7 @@ lands on another size than the forecast.
 ## Run
 
 A run stacks several layers in one prompt. The head names the stack,
-`Facts` and `Rules` appear once, and every other block appears once per
+`Facts`, `Proved`, and `Rules` appear once, and every other block appears once per
 layer under a layer heading. The rules block reads the stack from
 `# Stack`.
 
@@ -127,6 +130,9 @@ Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
 
 # Facts
 <the plan's Facts block>
+
+# Proved
+<the plan's Proved block, once; drop when no probe ran>
 
 # Layer 1 · #71 Team entity
 ## Task

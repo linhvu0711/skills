@@ -1,6 +1,6 @@
 ---
 name: plan-up
-description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, or a whole epic, stacked as PRs, into a plan an executor can follow cold: seams, tests, slices, UI walks, video scripts. Read-only. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff-devin."
+description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, or a whole epic, stacked as PRs, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff-devin."
 disable-model-invocation: true
 ---
 
@@ -10,11 +10,13 @@ Read `references/plan.md` first: the plan shape, how each block is
 filled, and the done rule. Read `references/executor.md` too: what the
 executor has and how it works a plan, so the plan fits it. At step 8,
 read `../../shared-skill-core/plan-page.md`: where the plan is written
-and how it is shown. This file is the order of operations.
+and how it is shown. At step 4, read `references/probes.md` before the
+first probe. This file is the order of operations.
 
 You plan; you do not build, and the repo is left as you found it. Facts
-come from reading. Big forks go to the user. Everything else you decide
-and write down.
+come from reading, and from a probe when reading leaves a doubt the plan
+hangs on. Big forks go to the user. Everything else you decide and write
+down.
 
 ## Facts
 
@@ -85,7 +87,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/triage`, stop. Nothing is planned.
 
-4. **Facts, round 1.** One message, one Explore agent per concern, and
+4. **Facts.** Round 1 is one message, one Explore agent per concern, and
    in a run per ticket and concern:
    - the code each Done-when line touches, with tests, and every caller
      with what it assumes: the shape it reads, the error it expects, the
@@ -111,7 +113,11 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      layout, errors, logging, tests. The plan's names and every `Change`
      follow them;
    - each Open line in the issue's Context, as its own ask;
-   - the docs for each library the work leans on, `SEARCH=on`.
+   - the docs for each library the work leans on, `SEARCH=on`;
+   - the docs that describe what each Done-when line changes: `README`,
+     `docs/**`, guides, `CHANGELOG`, ADRs, API docs, `--help` text,
+     `.env.example`, and the rules files above. The plan updates each
+     one in the slice that makes it stale, per `plan.md` § Slices.
 
    Known lines in the issue's Context are facts in hand, proved by a run.
    Take them as read. Ask for nothing a Known line settles. In a run, a
@@ -119,8 +125,19 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    layer's plan, and a later layer points there (see `plan.md` § Run).
 
    A round ends when every ask came back, or came back "not found". You
-   hold the picture: run another round for whatever it still lacks. A
-   gap no reading can close becomes a question.
+   hold the picture: run another round for whatever it still lacks.
+
+   **Probes.** A doubt that reading leaves, and the plan hangs on, is
+   run, per `references/probes.md`: does the tool do it, what does the
+   API return, where is the limit. Probe only what changes the plan;
+   never to be thorough. Probes fan out like Explore agents, one
+   sub-agent each, in one message, beside any round still open. A free
+   probe runs without asking; one that costs money, needs a credential,
+   or touches anything shared waits for a yes. Each answer is a
+   `Proved` line. A doc a probe finds wrong or missing joins the docs
+   the plan updates.
+
+   A gap that neither reading nor a probe can close becomes a question.
 
 5. **Forks.** Sort every choice the facts leave open by two tests:
    - the right pick needs a fact the repo does not hold: data size,
@@ -146,8 +163,8 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    `Cargo.toml`, `Gemfile`, a lockfile, a Dockerfile, a CI config, or a
    new SDK and API key. A version bump of one already there counts too.
    Ask before the plan names it. The question holds at least two
-   options: `A` the dependency, with the docs fact from round 1 that
-   says it does the job; `B` the nearest thing the repo already has, with
+   options: `A` the dependency, with the docs fact from round 1, or the
+   `Proved` line from its probe, that says it does the job; `B` the nearest thing the repo already has, with
    its `file:line` and the line that keeps it from serving, or hand-written
    code when the repo has nothing. Wait. The answer goes under `Decided`,
    marked `(user)`. A plan that adds a dependency the user did not pick
@@ -158,15 +175,19 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    shape, which seam to test at, and extend-or-add (`plan.md` § Slices)
    are small forks.
 
+   A probe can settle either test. A big fork asked after a probe carries
+   its `Proved` line in the option it backs.
+
    Every Open line from the issue closes here, by a fact or by a question.
    None survives into the plan.
 
 6. **Write the plan** per `plan.md`. Proof table first, one row per
    Done-when line. Then the slices, one per test, in tracer-bullet order:
-   the thinnest path end to end first, each next slice widening it. Then
-   UI walks, videos, gates, decided, out of scope. A run: `plan.md` § Run,
+   the thinnest path end to end first, each next slice widening it, each
+   with the `Docs` lines its change makes stale. Then UI walks, videos,
+   gates, decided, out of scope. A run: `plan.md` § Run,
    one Stack block, one Facts block, then the blocks above once per
-   layer, in stack order.
+   layer, in stack order. `Proved` sits under `Facts`, once.
 
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
@@ -187,20 +208,27 @@ export orders as CSV, six Done-when lines)
 Tree is clean on `main`, pulled. Gate passes. Round 1: five agents fetch
 `orders/export.ts` and its callers, the `orders.test.ts` seam, the
 `pnpm test` and `pnpm typecheck` scripts, how `ErrorToast.tsx:12` shows
-errors, and the `csv-stringify` docs. Two big forks. First: a big shop
+errors, the `csv-stringify` docs, and the docs on export:
+`README.md:88` lists JSON as the only export format. The docs say
+`csv-stringify` escapes quotes but are silent on newlines inside a
+field, and order notes hold newlines. One free probe, in a temp
+folder: install `csv-stringify`, stream three rows, one note with a
+newline. It comes back quoted and whole: a `Proved` line. Two big forks. First: a big shop
 can hold more orders than one request should carry, and the repo has no
 background jobs. Question with `A` stream the file in one request
 (pick, `export.ts:31` streams JSON the same way) and `B` a job queue,
 new to the repo. User: `A`. Second: `csv-stringify` is not in
 `package.json`, a new dependency, so it is asked no matter what.
 Question with `A` add `csv-stringify` (its docs show a stream API that
-fits `export.ts:31`) and `B` a hand-written `toCsvRow()` next to
+fits `export.ts:31`, and the probe shows a note with a newline comes
+through whole) and `B` a hand-written `toCsvRow()` next to
 `lib/format.ts:14`, which already quotes strings but has no escaping.
 User: `A`. Both go under Decided marked `(user)`. Small forks under
 Decided: stream, since `export.ts:31` does; the file response goes
 through `lib/download.ts:8`, which already sets the headers, so no new
 helper; file name `orders-<date>.csv`; delimiter `,`.
-Plan: six Proof rows, six slices, three UI walks (happy, empty,
+Plan: one Proved line, six Proof rows, six slices (slice 1 carries
+`Docs: README.md:88`, CSV next to JSON), three UI walks (happy, empty,
 failed), two videos: happy and failed from the seeded shop, empty from
 an empty seed.
 Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
@@ -211,9 +239,10 @@ Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
 Step 2 sees the label: short path. One Explore round: `pnpm test` and
 `pnpm typecheck` from `package.json`, the seam of `export.ts:57` is
 `exportOrders()` and `export.test.ts` already tests it, `CODING_STANDARDS.md`
-exists, no screen. Steps 1 and 2 become slice 1 (`Change` at
+exists, no screen, `docs/export.md:12` shows the old date format. Steps 1 and 2 become slice 1 (`Change` at
 `export.ts:57`, copy `export.ts:49`) with the test from step 3, `Then`
-the ISO date from the issue. Two Proof rows: row 1 the case, row 2 the
+the ISO date from the issue, and `Docs: docs/export.md:12`, the ISO
+date. No probe: the Steps leave no doubt. Two Proof rows: row 1 the case, row 2 the
 `pnpm test export` command. No walks, no videos. Gates: the existing
 `export.test.ts` cases. Decided: none, the issue had no `Open` line.
 Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
