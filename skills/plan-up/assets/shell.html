@@ -91,7 +91,7 @@
   .gwt b { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
   .gwt .then { color: var(--ok); font-weight: 500; }
 
-  .path { display: inline-block; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; cursor: copy; white-space: nowrap; }
+  .path { display: inline-block; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; cursor: copy; max-width: 100%; overflow-wrap: anywhere; }
   .path:hover { border-color: var(--accent); }
   .path.copied { background: var(--ok-soft); border-color: var(--ok); }
 
@@ -109,7 +109,6 @@
   .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
   .facts div { display: grid; grid-template-columns: 90px 1fr; gap: 8px; font-size: 14px; align-items: baseline; }
   .facts > div > span:first-child { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
-  .facts .path { white-space: normal; }
   .note { background: var(--soft); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
   .note > b { display: block; margin-bottom: 4px; }
   .decided li { margin: 8px 0; }
@@ -146,7 +145,6 @@
     h1 { font-size: 21px; }
     .card .body { padding-left: 16px; }
     .kv, .gwt { grid-template-columns: 1fr; gap: 2px; }
-    .path { white-space: normal; }
   }
   @media print {
     nav.tabs, .layers, .stat { display: none !important; }
