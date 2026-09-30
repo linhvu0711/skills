@@ -112,6 +112,10 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      configs; and where no file rules, the shape the code keeps: names,
      layout, errors, logging, tests. The plan's names and every `Change`
      follow them;
+   - the parts around each seam the work touches, for the Change map:
+     each part's job in the repo's words (`CONTEXT.md`, then the code),
+     who asks whom, what data moves between them, which app or package
+     holds each, and the files behind each part;
    - each Open line in the issue's Context, as its own ask;
    - the docs for each library the work leans on, `SEARCH=on`;
    - the docs that describe what each Done-when line changes: `README`,
@@ -185,12 +189,12 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    Done-when line. Then the slices, one per test, in tracer-bullet order:
    the thinnest path end to end first, each next slice widening it, each
    with the `Docs` lines its change makes stale. Then UI walks, videos,
-   gates, decided, out of scope. Last, the Review block, from the blocks
-   you just wrote, placed first in the file: the part a person reads to
-   approve the plan. A run: `plan.md` § Run, one Stack block, one stack
-   Review, one Facts block, then the blocks above once per layer, each
-   with its small Review, in stack order. `Proved` sits under `Facts`,
-   once.
+   gates, decided, out of scope. Last, the Review block and the Change
+   map, from the blocks you just wrote, placed first in the file: the
+   part a person reads to approve the plan. A run: `plan.md` § Run, one
+   Stack block, one stack Review, one Change map, one Facts block, then
+   the blocks above once per layer, each with its small Review, in stack
+   order. `Proved` sits under `Facts`, once.
 
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
