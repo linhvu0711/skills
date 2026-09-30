@@ -140,7 +140,7 @@
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <main id="panels"></main>
-  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span> or <span class="ref">W1</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
+  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span>, <span class="ref">W1</span>, or <span class="ref">P1</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
 </div>
 
 <script>
@@ -282,8 +282,11 @@ const DATA = {};
     const first = (L.slices || [])[0];
     const path = first ? el('div', { class: 'note' }, el('b', {}, 'Read this first'), R(`Slice 1 goes through **${first.seam}**${first.proves?.length ? ' and ' + provesText(first.proves) : ''}. ${first.change?.[0] ? 'First change: ' + first.change[0] : ''}`)) : null;
     const forks = (L.forks || []).length ? el('div', { class: 'note' }, el('b', {}, 'Big forks you answered'), el('ul', { class: 'plain' }, L.forks.map((x) => el('li', {}, R(`**${x.pick}** — ${x.question}`))))) : null;
+    const proved = (d.proved || []).length ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Proved by a probe'),
+      el('ul', { class: 'plain decided' }, d.proved.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `P${i + 1}`), ' ', R(`**${x.fact}**`),
+        el('span', { class: 'why', html: rich([x.ran, x.date, x.usedBy && 'used by ' + x.usedBy].filter(Boolean).join(' · ')) }))))) : null;
     const seams = (L.seams || []).length ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Seams'), el('ul', { class: 'plain' }, L.seams.map((s) => el('li', {}, R(`**${s.name}**: ${code(s.at)} — ${s.why}`))))) : null;
-    return el('div', {}, path, forks, facts, seams);
+    return el('div', {}, path, forks, facts, proved, seams);
   }
 
   function proofView(L) {
@@ -304,7 +307,8 @@ const DATA = {};
   function slicesView(L) {
     if (!(L.slices || []).length) return empty('No slices.');
     return el('div', {}, L.slices.map((s, i) => {
-      const changes = el('dl', { class: 'kv' }, (s.change || []).map((c) => [el('dt', {}, 'Change'), el('dd', {}, R(c))]));
+      const changes = el('dl', { class: 'kv' }, (s.change || []).map((c) => [el('dt', {}, 'Change'), el('dd', {}, R(c))]),
+        (s.docs || []).map((c) => [el('dt', {}, 'Docs'), el('dd', {}, R(c))]));
       const tests = (s.tests || []).map((t, j) => el('div', { class: 'test' },
         el('div', { class: 'name' }, el('span', { class: 'ref' }, `S${i + 1}.T${j + 1}`), ' ', R(`${code(t.file)} "${t.name}"`)),
         el('div', { class: 'gwt' },

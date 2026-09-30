@@ -1,6 +1,6 @@
 # plan-up
 
-Turns a ready GitHub issue, or a run of tickets from an epic, into a plan that a coding agent can follow cold: seams, tests, slices, UI walks, and video scripts. It plans and never builds.
+Turns a ready GitHub issue, or a run of tickets from an epic, into a plan that a coding agent can follow cold: seams, tests, slices, doc updates, UI walks, and video scripts. It plans and never builds, and it leaves your repo as it found it.
 
 ## Use it when
 
@@ -16,13 +16,15 @@ It reads every ticket with its comments, since a later comment can change what t
 
 ## What you get
 
-A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then), UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), a before shot for each walk that changes a screen that exists already, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
+A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. It holds the facts it proved by a probe, one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then) and the docs its change makes stale, so code and docs land in one commit, UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), a before shot for each walk that changes a screen that exists already, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time.
+
+When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
 
 Chat gets only a summary:
 
 ```
 Plan: #42 Export orders as CSV · size/M · base main
-6 done-when · 6 slices · 3 walks · 2 videos · 1 fork answered (A, stream)
+6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
 http://127.0.0.1:8765/plan-acme-shop-42.html
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
@@ -34,7 +36,7 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 - `gh`, signed in, and `git`.
 - `python3`, to build, serve, and check the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
-- Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself).
+- Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
 - From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, and [plan-page.md](../../shared-skill-core/plan-page.md) for the page.
 
 ## Fits with

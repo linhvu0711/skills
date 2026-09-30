@@ -115,7 +115,8 @@ what the line says, is a surprise (see below).
 - Work one slice at a time, in the order given. For each slice: write
   every test listed under it first and run them; they are red. Write the
   smallest change that makes them all green. Run the test file and the
-  typecheck; both green. Commit.
+  typecheck; both green. Make the slice's `Docs` lines, so the doc lands
+  with the code it describes. Commit.
 - Green ends the slice. Tidying comes later, from review. The next slice
   starts.
 - One slice is one commit. The layer's PR reads in slice order.
@@ -128,7 +129,8 @@ what the line says, is a surprise (see below).
   change says so in the commit body, not the summary.
 - Build what the plan says and only that. Code outside the slices stays
   as it is, including code that looks like it could be tidier.
-- The `Decided` block is closed. Follow it.
+- The `Decided` block is closed. Follow it. `Proved` lines are facts
+  that were run before the plan; build on them, do not run them again.
 - Anything under `Out of scope` stays out, even when it is one line away.
 
 ## Tests

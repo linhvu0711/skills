@@ -8,7 +8,7 @@ You have a plan you said `ok` to and want Devin to build it in the cloud, with i
 
 - `/handoff-devin <issue-url>`: the first prompt for one ticket.
 - `/handoff-devin <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
-- `/handoff-devin <note>`: a follow-up or an answer for the session this chat started. A plan for a new layer on the open stack goes this way too.
+- `/handoff-devin <note>`: a follow-up or an answer for the session this chat started. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
 
 It only runs when you call it.
 

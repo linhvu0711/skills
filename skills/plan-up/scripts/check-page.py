@@ -6,6 +6,8 @@
 Reads the DATA the page embeds and checks:
 - it parses and holds at least one layer;
 - its Proof rows, slices, walks, videos and decided items match the .md, summed over layers;
+- each slice's `docs` name the same files, in order, as that slice's .md `Docs:` lines;
+- its proved lines match the .md `## Proved` block, in order, by date and `Used by`;
 - each walk has a `before` that is the same kind as its .md `Before` line: none, as walk n, or steps;
   no `Before` is blank, and `as walk n` names an earlier walk of the same layer whose `Before` names steps;
 - no string holds `[object`;
@@ -37,10 +39,21 @@ def before_kind(value):
     return f"as walk {m.group(1)}" if m else "steps"
 
 
+def first_code(s):
+    m = re.search(r"`([^`]+)`", s or "")
+    return m.group(1) if m else (s or "").strip()
+
+
+def proved_key(date, used_by):
+    return (str(date or "").strip(), re.sub(r"\s+", " ", str(used_by or "")).strip(" ."))
+
+
 def md_counts(md_path):
     md = open(md_path, encoding="utf-8").read()
-    counts = {"proof": 0, "slices": 0, "walks": 0, "videos": 0, "decided": 0}
+    counts = {"proof": 0, "slices": 0, "walks": 0, "videos": 0, "decided": 0, "docs": 0, "proved": 0}
     walks = []
+    docs = []  # per slice, in order over layers: the file each Docs line names
+    proved = []  # the text of each P line, wrapped lines joined
     layer = 1
     block = None
     for line in md.splitlines():
@@ -53,6 +66,15 @@ def md_counts(md_path):
             counts["proof"] += 1
         elif block == "slices" and re.match(r"Slice \d+", line):
             counts["slices"] += 1
+            docs.append([])
+        elif block == "slices" and docs and (m := re.match(r"\s+Docs:\s*(.*)", line)):
+            counts["docs"] += 1
+            docs[-1].append(first_code(m.group(1)))
+        elif block == "proved" and re.match(r"- P\d+", line):
+            counts["proved"] += 1
+            proved.append(line)
+        elif block == "proved" and proved and line.startswith("  "):
+            proved[-1] += " " + line.strip()
         elif block == "ui walks" and (m := re.match(r"Walk (\d+)", line)):
             counts["walks"] += 1
             walks.append({"layer": layer, "n": int(m.group(1)), "kind": None})
@@ -62,7 +84,11 @@ def md_counts(md_path):
             counts["videos"] += 1
         elif block == "decided" and line.startswith("- "):
             counts["decided"] += 1
-    return counts, walks
+    keys = []
+    for p in proved:
+        m = re.search(r"(\d{4}-\d{2}-\d{2})\.?\s*Used by\s+(.*)$", p)
+        keys.append(proved_key(m.group(1), m.group(2)) if m else ("?", p))
+    return counts, walks, docs, keys
 
 
 def md_before_problems(walks):
@@ -101,11 +127,23 @@ def main():
     if not layers:
         problems.append("DATA.layers is empty")
 
-    want, md_walks = md_counts(sys.argv[2])
+    want, md_walks, md_docs, md_proved = md_counts(sys.argv[2])
     have = {k: sum(len(L.get(k) or []) for L in layers) for k in want}
+    have["docs"] = sum(len(s.get("docs") or []) for L in layers for s in L.get("slices") or [])
+    have["proved"] = len(data.get("proved") or [])
     for k in want:
         if have[k] != want[k]:
             problems.append(f"{k}: page has {have[k]}, .md has {want[k]}")
+
+    slices = [x for L in layers for x in L.get("slices") or []]
+    for i, (want_docs, sl) in enumerate(zip(md_docs, slices), 1):
+        have_docs = [first_code(x) for x in sl.get("docs") or []]
+        if have_docs != want_docs:
+            problems.append(f"slice {i} docs: page names {have_docs}, .md names {want_docs}")
+    for i, (want_p, p) in enumerate(zip(md_proved, data.get("proved") or []), 1):
+        have_p = proved_key(p.get("date"), p.get("usedBy"))
+        if have_p != want_p:
+            problems.append(f"P{i}: page has {have_p}, .md has {want_p}")
 
     problems.extend(md_before_problems(md_walks))
     walks = [w for L in layers for w in L.get("walks") or []]

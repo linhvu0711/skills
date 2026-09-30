@@ -39,9 +39,13 @@ belong to `/handoff-devin`; the plan never names it.
   whose `Before` line names steps, walked on the base as the line says, and a screenshot of the screen it ends on. So a `Before`
   line must name steps that work on the base.
 - One slice at a time, in order. Tests under the slice first, red;
-  then the smallest change that makes them green; then commit. So each
-  slice must be one change with the tests that prove it, and every
-  `Then` a literal it can compare against.
+  then the smallest change that makes them green; then the slice's
+  `Docs` lines; then commit. So each slice must be one change with the
+  tests that prove it and the docs it makes stale, and every `Then` a
+  literal it can compare against. A doc no `Docs` line names stays as
+  it is.
+- `Proved` lines are facts someone ran. It builds on them and does not
+  run them again.
 - Tests look through the seam the slice names and never at internals.
   Mocks only at the borders `Given` names.
 - Existing tests under `Gates` stay untouched and green.
