@@ -91,7 +91,7 @@
   .gwt b { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
   .gwt .then { color: var(--ok); font-weight: 500; }
 
-  .path { display: inline-block; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; cursor: copy; white-space: nowrap; }
+  .path { display: inline-block; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; cursor: copy; max-width: 100%; overflow-wrap: anywhere; }
   .path:hover { border-color: var(--accent); }
   .path.copied { background: var(--ok-soft); border-color: var(--ok); }
 
@@ -109,7 +109,6 @@
   .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
   .facts div { display: grid; grid-template-columns: 90px 1fr; gap: 8px; font-size: 14px; align-items: baseline; }
   .facts > div > span:first-child { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
-  .facts .path { white-space: normal; }
   .note { background: var(--soft); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
   .note > b { display: block; margin-bottom: 4px; }
   .decided li { margin: 8px 0; }
@@ -146,7 +145,6 @@
     h1 { font-size: 21px; }
     .card .body { padding-left: 16px; }
     .kv, .gwt { grid-template-columns: 1fr; gap: 2px; }
-    .path { white-space: normal; }
   }
   @media print {
     nav.tabs, .layers, .stat { display: none !important; }
@@ -346,6 +344,10 @@ const DATA = {};
   const tone = (c) => TONE[c] || TONE.same;
   const SIGN = { new: '+ ', removed: '− ' };
   const CW = 330, RH = 130, NW = 190, NH = 56, PAD = 34;
+  const boxRect = (q, m) => ({ x1: q.cx - q.w / 2 - m, y1: q.cy - q.h / 2 - m, x2: q.cx + q.w / 2 + m, y2: q.cy + q.h / 2 + m });
+  const overlap = (r, s) => Math.max(0, Math.min(r.x2, s.x2) - Math.max(r.x1, s.x1)) * Math.max(0, Math.min(r.y2, s.y2) - Math.max(r.y1, s.y1));
+  const measure = document.createElement('canvas').getContext('2d');
+  const textWidth = (s, font) => { measure.font = `${font} ${getComputedStyle(document.body).fontFamily}`; return measure.measureText(s).width; };
 
   function mapSvg(m, id) {
     const parts = m.parts || [], flows = m.flows || [];
@@ -362,32 +364,142 @@ const DATA = {};
     const pos = {};
     for (const p of parts) pos[p.ref] = { cx: PAD + p.x * CW + CW / 2, cy: PAD / 2 + p.y * RH + RH / 2, w: NW, h: NH };
     const groups = sv('g', {}), edges = sv('g', {}), boxes = sv('g', {}), labels = sv('g', {});
+    // What a flow must keep clear of: every box, and every group title.
+    const walls = parts.map((p) => ({ ref: p.ref, ...boxRect(pos[p.ref], 6) }));
     const byGroup = {};
     for (const p of parts) if (p.group) (byGroup[p.group] = byGroup[p.group] || []).push(pos[p.ref]);
     for (const [name, ps] of Object.entries(byGroup)) {
       const x1 = Math.min(...ps.map((q) => q.cx - q.w / 2)) - 14, x2 = Math.max(...ps.map((q) => q.cx + q.w / 2)) + 14;
       const y1 = Math.min(...ps.map((q) => q.cy - q.h / 2)) - 30, y2 = Math.max(...ps.map((q) => q.cy + q.h / 2)) + 14;
+      const title = name.toUpperCase();
       groups.append(sv('rect', { x: x1, y: y1, width: x2 - x1, height: y2 - y1, rx: 12, style: 'fill:var(--neutral-soft);stroke:var(--line)' }));
-      groups.append(sv('text', { x: x1 + 12, y: y1 + 19, 'font-size': 12, 'font-weight': 650, 'letter-spacing': '.04em', style: 'fill:var(--muted)' }, name.toUpperCase()));
+      groups.append(sv('text', { x: x1 + 12, y: y1 + 19, 'font-size': 12, 'font-weight': 650, 'letter-spacing': '.04em', style: 'fill:var(--muted)' }, title));
+      walls.push({ x1: x1 + 8, y1: y1 + 4, x2: x1 + 16 + textWidth(title, '650 12px') + title.length * 0.48, y2: y1 + 26 });
     }
     const clip = (q, tx, ty) => {
       const dx = tx - q.cx, dy = ty - q.cy;
       const k = Math.min(Math.abs((q.w / 2 + 4) / (dx || 1e-9)), Math.abs((q.h / 2 + 4) / (dy || 1e-9)));
       return [q.cx + dx * k, q.cy + dy * k];
     };
+    const curve = (a, b, qx, qy) => {
+      const [x1, y1] = clip(a, qx, qy), [x2, y2] = clip(b, qx, qy);
+      const at = (t) => [(1 - t) ** 2 * x1 + 2 * (1 - t) * t * qx + t * t * x2, (1 - t) ** 2 * y1 + 2 * (1 - t) * t * qy + t * t * y2];
+      return { d: `M${x1},${y1} Q${qx},${qy} ${x2},${y2}`, at, n: Math.ceil((Math.hypot(x2 - x1, y2 - y1) + Math.hypot(qx - (x1 + x2) / 2, qy - (y1 + y2) / 2)) / 6) };
+    };
+    // How much of a path runs through a wall or off the map; the flow's own two boxes do not count.
+    const blocked = (c, f) => {
+      let n = 0;
+      for (let i = 1; i < c.n; i++) {
+        const [x, y] = c.at(i / c.n);
+        if (x < 0 || y < 0 || x > W || y > H) n++;
+        for (const r of walls) if (r.ref !== f.from && r.ref !== f.to && x > r.x1 && x < r.x2 && y > r.y1 && y < r.y2) n++;
+      }
+      return n;
+    };
+    const segment = ([x1, y1], [x2, y2]) => ({ at: (t) => [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t], n: Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 6) });
+    // A line through points, with round corners. `at` walks the line as drawn, corners included.
+    const polyline = (pts) => {
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      const trace = [pts[0]];
+      for (let i = 1; i < pts.length - 1; i++) {
+        const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1];
+        const r = Math.min(14, Math.hypot(x - px, y - py) / 2, Math.hypot(nx - x, ny - y) / 2);
+        const u = (ax, ay) => { const l = Math.hypot(ax - x, ay - y) || 1; return [x + (ax - x) / l * r, y + (ay - y) / l * r]; };
+        const [p1, p2] = [u(px, py), u(nx, ny)];
+        d += ` L${p1.join(',')} Q${x},${y} ${p2.join(',')}`;
+        trace.push(p1, [(p1[0] + 2 * x + p2[0]) / 4, (p1[1] + 2 * y + p2[1]) / 4], p2);
+      }
+      trace.push(pts.at(-1));
+      const segs = trace.slice(1).map((q, i) => Math.hypot(q[0] - trace[i][0], q[1] - trace[i][1])), total = segs.reduce((x, y) => x + y, 0);
+      const at = (t) => {
+        let left = t * total, i = 0;
+        while (i < segs.length - 1 && left > segs[i]) left -= segs[i++];
+        const k = left / (segs[i] || 1);
+        return [trace[i][0] + (trace[i + 1][0] - trace[i][0]) * k, trace[i][1] + (trace[i + 1][1] - trace[i][1]) * k];
+      };
+      return { d: d + ` L${pts.at(-1).join(',')}`, at };
+    };
+    // The lanes: lines across the whole map, on the half-cell grid, that touch no wall.
+    const clear = (v, lo, hi) => !walls.some((r) => v > r[lo] && v < r[hi]);
+    const laneX = [], laneY = [];
+    for (let x = PAD; x <= W - PAD; x += CW / 2) if (clear(x, 'x1', 'x2')) laneX.push(x);
+    for (let y = PAD / 2; y <= H - PAD / 2; y += RH / 2) if (clear(y, 'y1', 'y2')) laneY.push(y);
+    // The shortest route along the lanes, with few turns: a short, clear straight leg from the first
+    // box to a nearby lane crossing, lane to lane, and a short, clear leg into the second. None: null.
+    const laneRoute = (f, a, b) => {
+      const nx = laneX.length, xy = (n) => [laneX[n % nx], laneY[Math.floor(n / nx)]];
+      const nodes = Array.from({ length: nx * laneY.length }, (_, n) => n);
+      const leg = (q, n) => {
+        const p = xy(n), s = clip(q, ...p);
+        if (Math.abs(p[0] - q.cx) > CW || Math.abs(p[1] - q.cy) > RH || blocked(segment(s, p), f)) return Infinity;
+        return 2 * Math.hypot(p[0] - s[0], p[1] - s[1]);
+      };
+      const into = new Map(nodes.map((n) => [n, leg(b, n)]).filter(([, c]) => c < Infinity));
+      const cost = new Map(), back = new Map(), queue = [];
+      for (const n of nodes) { const c = leg(a, n); if (c < Infinity) { cost.set(`${n}|-1`, c); queue.push([c, n, -1]); } }
+      let best = null;
+      while (queue.length) {
+        queue.sort((u, v) => u[0] - v[0]);
+        const [c, n, dir] = queue.shift();
+        if (c > cost.get(`${n}|${dir}`)) continue;
+        if (into.has(n) && (!best || c + into.get(n) < best[0])) best = [c + into.get(n), `${n}|${dir}`];
+        const i = n % nx, j = Math.floor(n / nx);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj], d) => {
+          if (i + di < 0 || j + dj < 0 || i + di >= nx || j + dj >= laneY.length) return;
+          const m = n + di + dj * nx, [x0, y0] = xy(n), [x1, y1] = xy(m);
+          const nc = c + Math.hypot(x1 - x0, y1 - y0) + (dir >= 0 && dir !== d ? 40 : 0);
+          if (nc < (cost.get(`${m}|${d}`) ?? Infinity)) { cost.set(`${m}|${d}`, nc); back.set(`${m}|${d}`, `${n}|${dir}`); queue.push([nc, m, d]); }
+        });
+      }
+      if (!best) return null;
+      const pts = [];
+      for (let k = best[1]; k; k = back.get(k)) pts.unshift(xy(+k.split('|')[0]));
+      const turns = pts.filter((p, i) => i === 0 || i === pts.length - 1 || (p[0] - pts[i - 1][0]) * (pts[i + 1][1] - p[1]) !== (p[1] - pts[i - 1][1]) * (pts[i + 1][0] - p[0]));
+      return polyline([clip(a, ...turns[0]), ...turns, clip(b, ...turns.at(-1))]);
+    };
+    const BENDS = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180, -180, 220, -220];
+    const SPOTS = [0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85];
+    // A label as one line, then as two lines of near equal width.
+    const layouts = (t) => {
+      const words = t.split(' ');
+      if (words.length < 2) return [[t]];
+      const halves = words.slice(1).map((_, k) => [words.slice(0, k + 1).join(' '), words.slice(k + 1).join(' ')]);
+      return [[t], halves.reduce((p, q) => (Math.max(...q.map((l) => textWidth(l, '12px'))) < Math.max(...p.map((l) => textWidth(l, '12px'))) ? q : p))];
+    };
+    const placed = [];
     for (const f of flows) {
       const a = pos[f.from], b = pos[f.to];
       if (!a || !b) continue;
       const c = f.change || 'same', [ink] = tone(c);
-      const len = Math.hypot(b.cx - a.cx, b.cy - a.cy) || 1, bend = f.bend || 0;
-      const qx = (a.cx + b.cx) / 2 - (b.cy - a.cy) / len * bend, qy = (a.cy + b.cy) / 2 + (b.cx - a.cx) / len * bend;
-      const [x1, y1] = clip(a, qx, qy), [x2, y2] = clip(b, qx, qy);
-      edges.append(sv('path', { d: `M${x1},${y1} Q${qx},${qy} ${x2},${y2}`, fill: 'none', 'stroke-width': c === 'same' ? 1.5 : 2, 'marker-end': `url(#${id}-${c})`, style: `stroke:${ink}` }));
-      const lx = (x1 + 2 * qx + x2) / 4, ly = (y1 + 2 * qy + y2) / 4;
+      const len = Math.hypot(b.cx - a.cx, b.cy - a.cy) || 1, mx = (a.cx + b.cx) / 2, my = (a.cy + b.cy) / 2;
+      const bent = (bend) => curve(a, b, mx - (b.cy - a.cy) / len * bend, my + (b.cx - a.cx) / len * bend);
+      // A flow with no `bend` of its own takes the gentlest curve that clears every wall; when none
+      // does, it runs along the lanes; with no lane route either, the curve that crosses least.
+      let path;
+      if (f.bend) path = bent(f.bend);
+      else {
+        const tries = BENDS.map((bend) => { const k = bent(bend); return [k, blocked(k, f)]; });
+        path = tries.find(([, n]) => !n)?.[0] || laneRoute(f, a, b) || tries.reduce((p, q) => (q[1] < p[1] ? q : p))[0];
+      }
+      edges.append(sv('path', { d: path.d, fill: 'none', 'stroke-width': c === 'same' ? 1.5 : 2, 'marker-end': `url(#${id}-${c})`, style: `stroke:${ink}` }));
+      // The label sits on its flow at the spot nearest the middle that covers no box, title, or other
+      // label: on one line where one fits, else on two.
       const t = (f.layer ? f.layer + ' · ' : '') + (SIGN[c] || '') + (f.label || '');
-      const tw = t.length * 6.2 + 10;
-      labels.append(sv('rect', { x: lx - tw / 2, y: ly - 10, width: tw, height: 20, rx: 4, style: 'fill:var(--panel)' }));
-      labels.append(sv('text', { x: lx, y: ly + 4, 'text-anchor': 'middle', 'font-size': 12, style: `fill:${c === 'same' ? 'var(--muted)' : ink}` }, t));
+      let spot, least = Infinity;
+      search: for (const lines of layouts(t)) {
+        const tw = Math.max(...lines.map((l) => textWidth(l, '12px'))) + 10, th = lines.length * 14 + 6;
+        for (const s of SPOTS) {
+          const [lx, ly] = path.at(s), r = { x1: lx - tw / 2, y1: ly - th / 2, x2: lx + tw / 2, y2: ly + th / 2 };
+          const cover = [...walls, ...placed].reduce((sum, w) => sum + overlap(r, w), 0) + (r.x1 < 0 || r.x2 > W ? tw * 20 : 0);
+          if (cover < least) { spot = { lx, ly, r, lines }; least = cover; }
+          if (!cover) break search;
+        }
+      }
+      placed.push(spot.r);
+      labels.append(sv('rect', { x: spot.r.x1, y: spot.r.y1, width: spot.r.x2 - spot.r.x1, height: spot.r.y2 - spot.r.y1, rx: 4, style: 'fill:var(--panel)' }));
+      const text = sv('text', { x: spot.lx, y: spot.ly + 4 - (spot.lines.length - 1) * 7, 'text-anchor': 'middle', 'font-size': 12, style: `fill:${c === 'same' ? 'var(--muted)' : ink}` });
+      spot.lines.forEach((l, i) => text.append(sv('tspan', { x: spot.lx, dy: i ? 14 : null }, l)));
+      labels.append(text);
     }
     for (const p of parts) {
       const q = pos[p.ref], c = p.change || 'same', [ink, soft] = tone(c), x = q.cx - q.w / 2, y = q.cy - q.h / 2;

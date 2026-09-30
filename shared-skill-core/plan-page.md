@@ -42,7 +42,7 @@ const DATA = {
       parts: [ { ref: "M1", name, job, change: "new" | "changed" | "removed" | "same",
                  group: "CLI" | "", kind: "part" | "store" | "outside",
                  at: ["apps/cli/src/setup.ts"] | "S2" | [], x: 0, y: 1, layer: "L1" | null } ],
-      flows: [ { from: "M1", to: "M2", label, change, layer: "L1" | null, bend: 0 } ] }   // bend: optional, pixels
+      flows: [ { from: "M1", to: "M2", label, change, layer: "L1" | null } ] }
   ],
   facts: { repo, base, test, typecheck, lint, build, run, ui, open, screen, platform, standards },
   proved: [ { fact, ran, date: "YYYY-MM-DD", usedBy: "S2, D1" } ],   // one per probe; [] when none ran
@@ -77,8 +77,9 @@ The Review tab comes first and shows `review`, then each layer's
 and one small block per layer. The Change map sits under Blast radius,
 drawn from `maps` with a key of the marks it uses; a run's layer blocks
 list the `M` refs their layer makes. `x` and `y` are the `Grid` cell.
-`bend` curves a flow that would cross a box; it is page layout only, and
-the `.md` has no field for it.
+The page routes each flow around the boxes and puts its label where it
+covers no box, so `bend` is left out. A `bend` forces that curve instead;
+it is page layout only, and the `.md` has no field for it.
 
 Refs the page shows, and the user names in chat: `M1` map part 1, `P1`
 proved 1, `S2` slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
