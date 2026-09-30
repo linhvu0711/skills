@@ -58,9 +58,10 @@ rest is this skill's.
    it. Done when HEAD is on the PR's branch.
 
 5. **Commit.** One commit per logical change, each message by
-   `../commit/SKILL.md`. Commit by path, `git commit -F <message-file>
-   -- <files>`: git commits only those paths, and any other staged file
-   stays staged and out of the PR. Done when `git status --short` lists
+   `../commit/SKILL.md`. Stage the change's files, then commit by path:
+   `git add -- <files> && git commit -F <message-file> -- <files>`.
+   The add lets a new file in; the path on the commit keeps any other
+   staged file staged and out of the PR. Done when `git status --short` lists
    none of the PR's files and `git diff --name-only
    origin/<base>...HEAD` lists only this work's files.
 
