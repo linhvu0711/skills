@@ -257,7 +257,9 @@ The pane keeps the rules it already has. When the user made the pick
 A plan prepped `on` the top PR of the running stack goes in as a
 follow-up that adds one layer. `Changed` says which PR it stacks on;
 `Stack` carries the layer whole, in the shape of a layer block from
-§ Run, with its own Task and Done when; `Check` names its gates.
+§ Run, with its own Task and Done when; `Proved` carries the plan's
+`Proved` block, its `Used by` refs named for the new layer (`L4 S1`),
+and drops when no probe ran; `Check` names its gates.
 
 ```markdown
 # Changed
@@ -267,6 +269,9 @@ Layer 4 goes on top of PR #80. Nothing below changes.
 | Layer | Issue | Base | Size |
 |---|---|---|---|
 | 4 | #75 Team switcher (<url>) | PR #80 | S |
+
+# Proved
+<the plan's Proved block; drop when no probe ran>
 
 # Layer 4 · #75 Team switcher
 ## Task

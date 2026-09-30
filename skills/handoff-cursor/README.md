@@ -8,7 +8,7 @@ You have a plan you said `ok` to and want a Cursor cloud agent to build it inste
 
 - `/handoff-cursor <issue-url> [--model <id>]`: the first prompt for one ticket.
 - `/handoff-cursor <epic-url> [--model <id>]`: the first prompt for a run, one PR per ticket, stacked.
-- `/handoff-cursor <note>`: a follow-up or an answer for the agent this chat started, including a new layer on its stack.
+- `/handoff-cursor <note>`: a follow-up or an answer for the agent this chat started, including a new layer on its stack, with the facts its probes proved.
 
 It only runs when you call it.
 

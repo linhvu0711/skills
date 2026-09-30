@@ -215,8 +215,9 @@ handoff-cursor.
    `file:line`, which Proof rows it touches, which video a changed walk
    sits in, how to check. A new layer:
    `prompt.md` § New layer, the layer's plan whole under `# Stack`, its
-   Stack row with the size letter. The rules block stays out; the
-   session already has it, and the size labels with it.
+   Stack row with the size letter, and its `Proved` block, if any. The
+   rules block stays out; the session already has it, and the size labels
+   with it.
 
 3. **Send.** The session is the one this chat started; a chat without
    one uses `scripts/devin.sh last <issue-url>`. Write the note to a
