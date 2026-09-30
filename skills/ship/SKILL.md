@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then: a single no-UI ticket is built in a worktree under ~/development/worktrees (a Devin CLI pane on SWE-2 when this session runs on Fable, else this session) and landed with /land-pr; a plan with UI walks, or any stack, is built by Devin cloud through /handoff-devin. Stops only at the plan's big forks and the build's surprises."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then: a single no-UI ticket is built in a worktree under ~/development/worktrees (a Devin CLI pane on SWE-2 when this session runs on Fable, else this session) and made ready with /make-pr-ready; a plan with UI walks, or any stack, is built by Devin cloud through /handoff-devin. Stops only at the plan's big forks and the build's surprises."
 disable-model-invocation: true
 ---
 
@@ -53,7 +53,7 @@ unchanged. The form decides only where the build runs (step 2).
    § First prompt whole, steps 1 to 9: prompt, send, watch, answer
    Devin's questions (small forks yourself, big forks to the user),
    finish check. The PRs stay Devin's. On `finished` with a PR, run the
-   Ready step of `../land-pr/SKILL.md` on each PR, bottom
+   Ready step of `../make-pr-ready/SKILL.md` on each PR, bottom
    of the stack first: `READY` on every one, go to step 8. Anything open
    goes back to the session as a follow-up per handoff-devin
    § Follow-up, naming the PR and what is open; watch again; at most
@@ -134,15 +134,15 @@ unchanged. The form decides only where the build runs (step 2).
    label. Its § Surprises are yours: stop and ask the user where it says
    stop and ask. It ends at § After the PR opens, which is step 7.
 
-7. **Land.** Read `../land-pr/SKILL.md`.
-   - The pane built: it already ran land-pr (rules § After the PR
+7. **Make ready.** Read `../make-pr-ready/SKILL.md`.
+   - The pane built: it already ran make-pr-ready (rules § After the PR
      opens). Run only its Ready step on the PR. `READY`: step 8.
      `NOT READY`: shape a follow-up per `render.sh local prompt`
      § Follow-up, `# Changed` naming what is open and `# Check` naming
-     the land-pr steps to run again, `herdr-send <PANE> --file <file>`
+     the make-pr-ready steps to run again, `herdr-send <PANE> --file <file>`
      (it waits), then Ready again. Three times, then step 8 with what
      is open.
-   - You built, or step 4 found an open PR: follow land-pr whole from
+   - You built, or step 4 found an open PR: follow make-pr-ready whole from
      its first step, in `$WT`. It ends with `READY` or a stop point.
 
 8. **Report.** Chat gets this and nothing more:

@@ -1,6 +1,6 @@
 # ship
 
-Takes an issue from plan to a pull request that is ready to merge, in one run: plan it, build it, land it. It never merges.
+Takes an issue from plan to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges.
 
 ## Use it when
 
@@ -19,7 +19,7 @@ It only runs when you call it.
 
 First the plan, from [plan-up](../plan-up/), open in your browser. Then the route:
 
-- **Local**, for one ticket with no screen to check: a git worktree under `~/development/worktrees`, a build prompt, and a build. On Fable inside herdr, a Devin CLI pane builds it; on any other model, this chat builds it. Then [land-pr](../land-pr/) takes the PR through review.
+- **Local**, for one ticket with no screen to check: a git worktree under `~/development/worktrees`, a build prompt, and a build. On Fable inside herdr, a Devin CLI pane builds it; on any other model, this chat builds it. Then [make-pr-ready](../make-pr-ready/) takes the PR through review.
 - **Cloud**, for a plan with UI walks or a stack: a Devin cloud session through [handoff-devin](../handoff-devin/).
 
 It stops only for the plan's big decisions and the build's surprises. The last message:
@@ -35,14 +35,14 @@ READY https://github.com/acme/app/pull/43
 ## Needs
 
 - `gh` (signed in), `git`, `jq`, and `python3`.
-- The skills it chains: [plan-up](../plan-up/), [handoff-devin](../handoff-devin/), and [land-pr](../land-pr/), and what they need.
+- The skills it chains: [plan-up](../plan-up/), [handoff-devin](../handoff-devin/), and [make-pr-ready](../make-pr-ready/), and what they need.
 - The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, and `../../shared-skill-core/handoff/render.sh`.
 - For a Devin CLI pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Devin CLI `devin`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
 - For the cloud route: a Devin account, as [handoff-devin](../handoff-devin/) describes.
 
 ## Fits with
 
-- Calls [plan-up](../plan-up/), then [handoff-devin](../handoff-devin/) or a local build, then [land-pr](../land-pr/).
+- Calls [plan-up](../plan-up/), then [handoff-devin](../handoff-devin/) or a local build, then [make-pr-ready](../make-pr-ready/).
 - Uses [kickoff](../kickoff/)'s `equalize_columns.py` to even out pane widths.
 - A failed readiness gate sends you to [grill](../grill/) first.
 - Nothing calls this skill; you run it.

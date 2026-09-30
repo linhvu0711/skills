@@ -22,7 +22,7 @@ gh pr edit --add-reviewer USERNAME
 ## Fits with
 
 - [set-coding-standards](../set-coding-standards/) can end with `Ready for /create-pr`.
-- Nothing else in this repo calls it; [land-pr](../land-pr/) takes over once the PR is open.
+- Nothing else in this repo calls it; [make-pr-ready](../make-pr-ready/) takes over once the PR is open.
 
 ## Credits
 

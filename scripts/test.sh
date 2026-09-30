@@ -354,14 +354,14 @@ t_passes_readme_with_headings() {
   eq stdout "check: clean" "$out"
 }
 
-t_render_names_land_pr() {
+t_render_names_make_pr_ready() {
   T="$(mktemp -d)"
   run bash "$here/../shared-skill-core/handoff/render.sh" local rules
   eq exit 0 "$code"
   eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
-  eq "lines with the land-pr path" 1 "$(printf '%s\n' "$out" | grep -c '/land-pr/SKILL.md' || true)"
-  f="$(printf '%s\n' "$out" | grep -o '`[^`]*/land-pr/SKILL.md`' | tr -d '`')"
-  [ -f "$f" ] || eq "land-pr path" "a file" "$f"
+  eq "lines with the make-pr-ready path" 1 "$(printf '%s\n' "$out" | grep -c '/make-pr-ready/SKILL.md' || true)"
+  f="$(printf '%s\n' "$out" | grep -o '`[^`]*/make-pr-ready/SKILL.md`' | tr -d '`')"
+  [ -f "$f" ] || eq "make-pr-ready path" "a file" "$f"
 }
 
 cases=(
@@ -392,7 +392,7 @@ cases=(
   "flags a missing path after \$here in a script|t_flags_missing_here_path"
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
-  "render puts the land-pr path in local rules|t_render_names_land_pr"
+  "render puts the make-pr-ready path in local rules|t_render_names_make_pr_ready"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"
