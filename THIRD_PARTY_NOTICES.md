@@ -313,7 +313,7 @@ SOFTWARE.
 | `shared-skill-core/grilling.md` | the same five as `skills/grill` | heavy adaptation |
 | `shared-skill-core/facts.md` | the same five as `skills/grill` | heavy adaptation |
 | `skills/improve-architecture` | `skills/engineering/improve-codebase-architecture`, `skills/engineering/codebase-design` | heavy adaptation (`references/codebase-design.md`, `references/deepening.md`, and `references/design-it-twice.md` are copies from `skills/engineering/codebase-design`) |
-| `skills/diagnose` | `skills/engineering/diagnosing-bugs` | heavy adaptation |
+| `skills/triage` | `skills/engineering/diagnosing-bugs` | heavy adaptation |
 | `skills/discover-path` | `skills/engineering/wayfinder` | heavy adaptation |
 | `skills/to-epic` | `skills/engineering/to-tickets` | heavy adaptation |
 | `shared-skill-core/review/general-rules.md` | `skills/engineering/code-review` | heavy adaptation |

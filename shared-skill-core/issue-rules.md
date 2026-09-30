@@ -32,7 +32,7 @@ top of the repo. Unhappy paths do not apply.
 
 Any one missing: stop. List the gaps in one short block, each as the question
 whose answer would close it. Name `/grill` as the way to close many at once,
-or `/diagnose` when the ticket is a `fix` or `perf` and the cause is not yet
+or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet
 known. Write nothing on GitHub.
 
 ## Types
@@ -447,15 +447,36 @@ gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number
   stop. Nothing is created.
 - A result that is clearly the same work and carries the `seed` or `bug`
   label, or a seed or bug number the conversation named: it is the
-  **origin seed** (a `[bug]` grows into a `fix`). Continue, and after the
-  create succeeds close it:
+  **origin**. Continue.
 
-  ```bash
-  gh issue close <seed> --comment "Grew into #<new>"
-  ```
+### Origin bug
 
-  For an epic, `<new>` is the parent. Only issues labelled `seed` or `bug`
-  are ever closed this way.
+A `bug` label, or a bug issue the conversation named, like the one
+`/triage #42` read. `to-issue` does not create a new issue. It rewrites
+the bug into the ticket, so the number, the comments, and the links stay:
+
+```bash
+gh issue edit <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
+  --add-label "<size label>" [--add-label "<handoff-ready label>"] \
+  [--add-label "<priority label>"] [--type <Name>]
+```
+
+The new body keeps the reporter's words: the old body goes at the end of
+Context, in `<details><summary>Original report</summary>…</details>`. Skip
+it when the old body only restates the new one, as a short `[bug]` from
+`capture` does. Remove `bug` only when the issue carries it.
+
+### Origin seed
+
+A `seed` label, or a bug that grows into an epic. Create the new issue, then
+close the origin:
+
+```bash
+gh issue close <seed> --comment "Grew into #<new>"
+```
+
+For an epic, `<new>` is the parent. Only issues labelled `seed` or `bug`
+are ever closed this way.
 
 ## Report
 

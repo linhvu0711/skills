@@ -83,7 +83,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    `../../shared-skill-core/issue-rules.md` to the issue
    text, each ticket of a run on its own. Pass: continue. Fail: name the
    ticket, list the gaps, each as the question that closes it, name
-   `/grill` or `/diagnose`, stop. Nothing is planned.
+   `/grill` or `/triage`, stop. Nothing is planned.
 
 4. **Facts, round 1.** One message, one Explore agent per concern, and
    in a run per ticket and concern:

@@ -36,7 +36,7 @@ Most of the tree comes from the work. A few branches are missed by reflex, and a
 | For work over one ticket: what gates what | `to-epic` phases and edges |
 | Terms | `CONTEXT.md`, per `domain-modeling.md` |
 
-Bugs and slow things are not grilled from scratch. `/diagnose` finds the cause first and says whether a grill is needed. When it is, the tree starts from the open decision it named.
+Bugs and slow things are not grilled from scratch. `/triage` finds the cause first and says whether a grill is needed. When it is, the tree starts from the open decision it named.
 
 ## Done
 

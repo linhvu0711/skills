@@ -4,7 +4,7 @@ Turns what the conversation already settled into one typed, sized GitHub issue t
 
 ## Use it when
 
-You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/to-issue` (`$to-issue` in Codex). If the chat is missing who does what, what "done" means, or which repo, it lists those gaps as questions and stops. [grill](../grill/) closes them, or [diagnose](../diagnose/) for a bug whose cause is unknown.
+You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/to-issue` (`$to-issue` in Codex). If the chat is missing who does what, what "done" means, or which repo, it lists those gaps as questions and stops. [grill](../grill/) closes them, or [triage](../triage/) for a bug whose cause is unknown.
 
 ## What you get
 
@@ -26,8 +26,8 @@ https://github.com/acme/shop/issues/42 · size/M · feat
 
 ## Fits with
 
-- Fed by [grill](../grill/), [diagnose](../diagnose/) (`Ready for /to-issue.`), and [discover-path](../discover-path/).
-- Turns a `[bug]` from [capture](../capture/) into a `fix` ticket and closes the bug.
+- Fed by [grill](../grill/) and [discover-path](../discover-path/). Called by [triage](../triage/) as its last step.
+- Turns a `[bug]` from [capture](../capture/), or any bug issue the chat names, into the ticket in place: same number, new title and body. A `seed` still gets a new issue and is closed.
 - Sends XL work to [to-epic](../to-epic/).
 - Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff](../kickoff/). [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) read the size labels through its `scripts/conventions.py`.
 

@@ -282,4 +282,5 @@ one.
 
 Not this skill. That asks for a real, typed issue: a `fix` through
 `/to-issue`, which writes what the behaviour must be after the fix. A
-`[bug]` that already exists is its origin; `/to-issue` closes it.
+`[bug]` that already exists is its origin; `/to-issue` rewrites it into
+the `fix` ticket.

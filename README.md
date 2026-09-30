@@ -26,7 +26,7 @@ flowchart LR
 | [grill](skills/grill/) | Interviews you on a plan or a design, one question at a time, and writes the glossary and ADRs as answers settle. |
 | [capture](skills/capture/) | Files a raw idea or a bug you just saw as a small GitHub issue, so it is not lost. |
 | [discover-path](skills/discover-path/) | Turns an idea too big for one grill into a map on GitHub: a parent issue whose child tickets are the questions to settle. |
-| [diagnose](skills/diagnose/) | Finds the root cause of a bug, or the hot spot behind something slow, and stops there. |
+| [triage](skills/triage/) | Finds the root cause of a bug, or the hot spot behind something slow, then turns the bug into a fix ticket. |
 | [improve-architecture](skills/improve-architecture/) | Finds shallow modules worth deepening, shows them in a visual report, then grills you on the one you pick. |
 | [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
 | [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |

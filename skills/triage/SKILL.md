@@ -1,6 +1,6 @@
 ---
-name: diagnose
-description: "Find the root cause of a bug, or the hot spot behind a slow thing, and stop there. No fix. When a real decision is open it runs the grill skill itself, then ends ready for /to-issue. Use for 'diagnose', 'debug this', 'why is X broken', 'why is X slow'."
+name: triage
+description: "Find the root cause of a bug, or the hot spot behind a slow thing, then file the fix ticket. No code fix. When a real decision is open it runs the grill skill first. A bug issue it starts from becomes the ticket. Use for 'triage', 'diagnose', 'debug this', 'why is X broken', 'why is X slow'."
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,7 @@ Read `references/method.md` and `references/categories.md` first. This file
 is the order of operations.
 
 You find what is true. You do not fix it. The output is a cause with a
-`file:line`, or a hot spot with a number, written so a worker can pick it up
+`file:line`, or a hot spot with a number, then a ticket a worker can pick up
 cold. The repo is left exactly as you found it.
 
 ## Brain and hands
@@ -120,20 +120,28 @@ nothing.
 
 9. **Grill.** Test the report against § When grill fits. It fits: write
    the seed block in the same message, right after the report, and invoke
-   the grill skill with the Skill tool. The seed is the report; the open
-   decisions are the choices you found. After `Grill done.`, go to step 10.
-   It does not fit: go to step 10.
+   the grill skill with the Skill tool. The seed is the report, and the bug
+   issue when there is one; the open decisions are the choices you found.
+   After `Grill done.`, go to step 10. It does not fit: go to step 10, with
+   no question to the user. The report is the agreement.
 
-10. **Hand off.** One last line:
+10. **File.** Invoke the to-issue skill with the Skill tool, in the same
+    turn. Do not ask first, and do not end with `Ready for /to-issue`.
 
-   - `Ready for /to-issue.` After a grill, precede it with the settled
-     decisions, one line each.
-   - `Cause not found. Ready for /to-issue as a spike: <the open question>.`
+    - Cause found: a `fix` or `perf` ticket from the report, and the
+      settled decisions after a grill.
+    - Cause not found: a `spike` ticket on the open question.
+    - Local env: nothing to file, unless the setup docs never name the
+      missing piece; then a `docs` ticket.
+
+    The bug issue from step 1 is the origin: to-issue rewrites it into the
+    ticket, per `../../shared-skill-core/issue-rules.md` § Origin bug. No
+    new issue, nothing closed. The to-issue gate fails: show its gaps and
+    stop. The report stays in chat.
 
 ## When grill fits
 
-Run the grill skill when any one of these holds. Otherwise the report is
-ready for /to-issue as it stands.
+Run the grill skill when any one of these holds.
 
 - More than one fix, and they differ in blast radius. Fix the helper and
   touch three callers, or patch one line.
@@ -144,9 +152,11 @@ ready for /to-issue as it stands.
 For perf: grill when the fix is a trade-off, like cache it or drop the
 join.
 
+None holds: you know the fix. Skip the grill and file.
+
 The seed block, verbatim, filled in: `Invoke the grill skill with the Skill
-tool. Seed: <the report>. Open decisions: <the list>. Then continue at
-step 10.` The grill owns the interview and its docs. You wait for
+tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
+list>. Then continue at step 10.` The grill owns the interview and its docs. You wait for
 `Grill done.`
 
 ## Secrets
@@ -156,15 +166,16 @@ chat or an agent brief. Never paste a token, a key, or a signed URL.
 
 ## Examples
 
-**User:** `/diagnose the CSV export shows dates as big numbers`
+**User:** `/triage the CSV export shows dates as big numbers`
 
 Gate passes. Explore fetches `src/orders/export.ts`, the date helper, its
 callers, the export test. Reading shows `export.ts:57` writes the raw
 `createdAt` and never calls `formatDate`, unlike line 49. One probe: the
 existing test with an ISO assertion fails on that field. Report with
-Category `Our code`, last line `Ready for /to-issue.`
+Category `Our code`. One fix, no open decision: no grill. Invoke to-issue
+right away; it creates an XS `fix` ticket.
 
-**User:** `/diagnose orders page is slow`
+**User:** `/triage orders page is slow`
 
 Gate passes. Metric and baseline are not stated: measure the page, p95 is
 1.2 s. Target is the user's: one question, default "under 300 ms". Then a
@@ -172,22 +183,23 @@ timer around the handler shows the orders query runs 41 times per page,
 900 of the 1200 ms. Hot spot found. The fix is a trade-off, batch the query
 or cache it. Report, then the seed block with open decision "batch or
 cache", and invoke the grill skill. After `Grill done.`, list the settled
-decision and end with `Ready for /to-issue.`
+decision and invoke to-issue for the `perf` ticket.
 
-**User:** `/diagnose login fails on my machine`
+**User:** `/triage login fails on my machine`
 
 Where does it work: CI is green, a teammate is fine. Category `Local env`.
 Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code
-issue. Fix command on the clipboard. Last line: `Ready for /to-issue` only
-if the setup docs never mentioned the variable, as a `docs` ticket; else
-nothing to file.
+issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket
+only if the setup docs never mention the variable; else nothing to file.
 
-**User:** `/diagnose #42`
+**User:** `/triage #42`
 
 Read issue 42 with its comments. The body says "checkout button does
 nothing"; the last comment says it only fails in Safari. Gate passes, and
-"where it does not work" is already Safari. Go on at step 2.
+"where it does not work" is already Safari. Go on at step 2. At step 10,
+to-issue rewrites #42 into the `fix` ticket: new title, new body, the
+old body kept under Original report. Same number, nothing closed.
 
-**User:** `/diagnose something is off`
+**User:** `/triage something is off`
 
 Gate fails. Ask: "What do you see, and where?" Stop.

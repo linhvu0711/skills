@@ -28,7 +28,7 @@ report. This file is the order of operations.
    docs instead, per the rules file § Lookup, so Steps can be written.
 
 4. **Duplicate check.** One search. Same work, not a seed: show it, stop.
-   Origin seed found: remember its number.
+   Origin found: remember its number, and whether it is a bug or a seed.
 
 5. **Write.** Title per the title rule. Body per the template, with the type
    variant when it applies. Every Done-when line is observable from outside
@@ -40,7 +40,9 @@ report. This file is the order of operations.
    XS becomes S, and S gets no Steps. `task`: body per the rules file § Task
    body, Steps always.
 
-6. **Create.**
+6. **Create.** Origin bug: rewrite it instead, per the rules file § Origin
+   bug, with the same labels and `--repo`. Nothing new is created.
+   Otherwise:
 
    ```bash
    gh issue create --repo owner/repo --title "<title>" --body-file "$f" \
@@ -54,7 +56,8 @@ report. This file is the order of operations.
    A missing label from the rules file: create it, retry once. Any other
    failure: show the error, stop.
 
-7. **Close the origin seed**, when there is one.
+7. **Close the origin seed**, when there is one. A rewritten bug stays open:
+   it is the ticket now.
 
 8. **Report.** One line: the URL, also put on the clipboard, then the size
    and the type.
@@ -81,6 +84,14 @@ two Done-when boxes, and three Steps: wrap the value at `export.ts:57` in
 `formatDate` like `export.ts:49` already does, add case `formats createdAt
 as ISO date` to `export.test.ts`, run `pnpm test export`. One line back with
 the URL.
+
+**User:** `/to-issue` after a chat that found why `[bug] Checkout button does
+nothing` (#42) fails in Safari.
+
+#42 is the origin bug. Same fix body as above, but `gh issue edit 42`: new
+title `[FIX] Checkout button does nothing in Safari`, `bug` label off, size
+label on, the old body kept under Original report. One line back with the
+URL of #42.
 
 **User:** `/to-issue` after a chat about a login bug, with no repro steps.
 
