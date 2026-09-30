@@ -1,0 +1,4 @@
+interface:
+  display_name: "Triage"
+  short_description: "Find the root cause of a bug or slow thing, then file the fix ticket"
+  default_prompt: "$triage"

@@ -50,6 +50,7 @@ After `Grill done.` and the settled list, track the files the grill left behind 
 
 Edge cases:
 
+- The seed came from triage (a bug report, with or without an issue): file no seed. Name the branch `docs/grill-<bug>-<slug>`, or `docs/grill-<slug>` with no issue, and end the PR body with `Refs #<bug>`, not `Closes`. Triage turns the bug into the fix ticket next, and the fix PR closes it.
 - The seed needs no file change at all (the grill only confirmed what the docs already say): comment the outcome on the seed with `gh issue comment` and leave it open for the user to close.
 - The grill also filed tickets or edited an epic: list them in the PR body so the seed points at all of them.
 - The user says to skip the PR: leave the files uncommitted and say which ones.

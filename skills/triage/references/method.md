@@ -24,7 +24,7 @@ the timing window. Do not halve on a loop that passes half the time.
 
 No loop can be built without something only the user has (a log, a
 screenshot, a HAR, the steps they took): ask for it, one thing per message.
-Still no loop: stop, exit as a `spike`.
+Still no loop: stop looking, exit as a `spike` (`SKILL.md` step 5).
 
 ### Shrink
 
