@@ -1,4 +1,4 @@
-<!-- template: one ruler for tickets and PRs. to-issue and to-epic read it through issue-rules.md § Size; render.sh pastes it into the handoff rules under ## Size. Edit here only. -->
+<!-- template: one ruler for tickets and PRs. to-issue and to-epic read it through issue-rules.md § Size; render.sh pastes it into the handoff rules under ## Size; make-pr reads it for the PR size label. Edit here only. -->
 One ruler sizes a ticket and the PR that ships it. Judge by the facts in
 the table, never by hours and never by lines changed.
 
