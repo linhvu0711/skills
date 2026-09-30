@@ -55,7 +55,8 @@ Explore agents retrieve, short lookups are yours.
 5. **Audit.** Two branches, by what step 1 found. For middle and big
    repos, first send Explore agents to sample the code per area, one
    agent per group of areas, each returning the pattern seen, a count,
-   and three `file:line` examples.
+   and three `file:line` examples. In a small repo, read the code
+   yourself for the same.
 
    **No rules file.** Build the proposal per area in `Areas` below.
    Small: the research's rule, with its source. Middle and big: the
@@ -80,7 +81,8 @@ Explore agents retrieve, short lookups are yours.
      by itself; the team may have made it.
    - **Gaps**: an area in `Areas` with no rule, and a stack part in use or
      planned with no rule. Also rules scattered across more than one
-     file.
+     file. A topic file under `docs/standards/` that `CODING_STANDARDS.md`
+     links to is part of the standard, not scattered.
 
    Done when every rule has been checked for outdated, drift, and behind
    current practice, every area and stack part for a gap, and each
@@ -98,12 +100,13 @@ Explore agents retrieve, short lookups are yours.
    Proposals: <area>: <rule> (<URL> | <file:line> ×3 | model's view, no source: <reason> | no source)   (no-rules branch only)
    Conflicts: <area>: level 1 <rule> (<URL>) vs level 2 <rule> (<URL>)   (or "none")
    Agent-ready: <name> (<URL>)                   (or "none")
-   Sources: <name> | <URL> | <version> | <date checked>, one per line
+   Sources: <part> | <name> | <URL> | <version> | <date checked>, one per line
    Not researched: <stack part> — <reason>      (or "none")
    Verdict: clean | needs work
    ```
 
-   `Sources` lists every source a rule or finding cites, so the caller
+   `Sources` lists every source a rule or finding cites, and the main
+   page searched for each stack part that gave no rule, so the caller
    can write the Sources table. A page that held an instruction is named
    under `Not researched` with `page held an instruction`.
 

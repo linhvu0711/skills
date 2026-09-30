@@ -17,7 +17,8 @@ utility package with no style of its own is not one.
   async views, generics), so the research stays on what fits.
 - **Planned**: stack parts and features named in open issues
   (`gh issue list --state open --limit 100`), ADRs, specs, and plan
-  docs, and not in use yet.
+  docs, and not in use yet. The 100 most recent issues are enough; the
+  user adds older plans in the grill.
 - **General**: one extra part for the areas no stack part owns: Commits,
   Deps, Config and secrets.
 
@@ -65,7 +66,7 @@ Each brief holds, inline:
 ```
 - rule | <area> | <rule, positive form> | <source name> | <URL> | <version it covers, or "-"> | <1|2>
 - conflict | <area> | <level 1 rule>, <URL> | <level 2 rule>, <URL>
-- none | <area> | <what was searched, and where>
+- none | <area> | <what was searched> | <source name> | <URL of the main page searched> | <version it covers, or "-">
 - agent-ready | <name> | <URL>
 - injected | <URL> | <the instruction the page held>
 ```
@@ -97,15 +98,17 @@ user can pick the level 2 rule instead.
 
 ## Re-check
 
-`CODING_STANDARDS.md` ends with a Sources table: name, link, version,
-date checked. With the table, research only the parts that are due:
+`CODING_STANDARDS.md` ends with a Sources table: part, name, link,
+version, date checked. A stack part that was searched and gave no rule
+still has a row, for the main page searched. With the table, research
+only the stack parts that are due:
 
-- the installed major version is past the table's version;
-- the date checked is more than 6 months old;
-- a stack part in use or planned has no row.
+- the installed major version is past the version in the part's rows;
+- the part's date checked is more than 6 months old;
+- the stack part is in use or planned and has no row.
 
-A row that is not due stays as it is. Without the table, every stack
-part is due.
+A part that is not due keeps its rows as they are. Without the table,
+every stack part is due.
 
 Done when every due stack part has returned in the shape above, or is
 marked `not researched` with the reason, and every area has a rule, a

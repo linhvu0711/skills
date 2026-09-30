@@ -26,8 +26,9 @@ Explore agents retrieve, short lookups are yours.
 
    - Empty repo: repeat what the audit said. Stop.
    - `clean`: say it is clean, repeat the areas checked. When the audit
-     re-checked sources, set their date checked in the Sources table to
-     today; that file is the only change. Stop.
+     re-checked sources, update their rows in the Sources table from the
+     report's `Sources` line: the version it read and today's date. That
+     file is the only change. Stop.
    - `needs work`: continue at step 2 with the report as the seed.
 
    Done when the report is in chat with a verdict.
@@ -102,14 +103,17 @@ The file ends with the one Sources table, for all rules in all files:
 ```
 ## Sources
 
-| Name | Link | Version | Checked |
-|---|---|---|---|
-| react-docs | https://react.dev/reference/rules | 19 | 2026-09-30 |
+| Part | Name | Link | Version | Checked |
+|---|---|---|---|---|
+| react | react-docs | https://react.dev/reference/rules | 19 | 2026-09-30 |
+| general | conventional-commits | https://www.conventionalcommits.org/en/v1.0.0/ | 1.0.0 | 2026-09-30 |
 ```
 
-`Version` is the stack part's version the source covers, or `-` when it
-has none. `Checked` is the date the audit read it. A later audit reads
-this table to know which sources are due.
+`Part` is the stack part, or `general`. `Version` is the stack part's
+version the source covers, or `-` when it has none. `Checked` is the
+date the audit read it. A stack part that was searched and gave no rule
+still gets a row, for the main page searched. A later audit reads this
+table to know which stack parts are due.
 
 ## Secrets
 
@@ -157,7 +161,7 @@ The audit's verdict is clean. Say so, repeat the areas checked, stop.
 checked 7 months ago; the sources still agree with every rule.
 
 The audit re-checks those sources and its verdict is clean. Set their
-date checked to today, say so, stop.
+date checked to today and their version to the one read, say so, stop.
 
 **User:** `/set-coding-standards` in a repo with only a README.
 
