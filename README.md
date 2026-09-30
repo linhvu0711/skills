@@ -4,18 +4,61 @@ Agent skills for Claude Code and Codex, from planning an issue to a pull request
 
 ## The flow
 
-Settle the work and write the issue, then `/ship` runs the rest: it plans, builds, and makes the pull request ready to merge. It never merges. [review-pr](skills/review-pr/) is a separate review you run by hand.
+Work moves in two parts. First you settle what to do and write it as a GitHub issue. Then you build it and take the pull request to ready-to-merge. No skill merges; you do.
+
+### 1. Settle the work
 
 ```mermaid
 flowchart LR
+  capture -->|seed| grill
+  capture -->|bug| triage
+  improve[improve-architecture] --> grill
+  grill -->|a bug| triage
+  grill -->|too big| discover[discover-path]
+  discover -->|each question| grill
   grill --> toissue[to-issue]
   grill --> toepic[to-epic]
-  toissue --> ship
-  toepic --> ship
-  subgraph ship
-    planup[plan-up] --> build[handoff-devin or local build] --> readypr[ready-pr]
-  end
+  discover --> toissue
+  discover --> toepic
+  triage --> toissue
+  toissue -->|XL| toepic
 ```
+
+- Start with [grill](skills/grill/) when you have a plan or a design to settle.
+- [capture](skills/capture/) parks an idea or a bug as an issue for later. A seed grows through grill. A bug goes to [triage](skills/triage/), which finds the cause and writes the fix ticket.
+- [discover-path](skills/discover-path/) takes work too big for one grill and splits it into questions, each one settled by grill.
+- [improve-architecture](skills/improve-architecture/) finds code worth reshaping, then grills you on the part you pick.
+- [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
+- The work ends as one ticket from [to-issue](skills/to-issue/), or as a phased epic from [to-epic](skills/to-epic/).
+
+### 2. Build and ship
+
+```mermaid
+flowchart LR
+  ticket([issue or epic]) --> ship
+  ticket --> kickoff
+  ticket --> planup[plan-up]
+  kickoff -->|new pane| planup
+  subgraph ship [ship: one run]
+    direction LR
+    sp[plan-up] --> sb[handoff-devin or local build] --> sr[ready-pr]
+  end
+  planup --> hd[handoff-devin]
+  planup --> hc[handoff-cursor]
+  planup --> hand[build by hand]
+  hand --> gitcommit[commit] --> makepr[make-pr] --> readypr[ready-pr]
+  ship --> done([PR ready: you merge])
+  hd --> done
+  hc --> done
+  readypr --> done
+  readypr -.-> vpr[validate-pr-review]
+  readypr -.-> fc[fix-conflicts]
+```
+
+- [ship](skills/ship/) does the whole path in one run: plan, build, then ready the PR. Use it when you do not need to watch each step.
+- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it in a new pane. Then give the plan to [handoff-devin](skills/handoff-devin/) or [handoff-cursor](skills/handoff-cursor/), or build it by hand.
+- After a build by hand, [commit](skills/commit/) and [make-pr](skills/make-pr/) open the PR, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
+- [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
 
 ## Skills
 
