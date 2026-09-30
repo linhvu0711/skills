@@ -1,9 +1,9 @@
 ---
-name: load-co
-description: "Load a Codex CLI chat session into the current conversation by its session ID, so you can reference, continue, or build on that Codex session's work here. Use this skill when the user invokes '/load-co ID' in Claude Code or '$load-co ID' in Codex, or asks to load / pull in / import / bring in / resume / continue a Codex session or Codex chat by its UUID — e.g. 'load codex session 019e631d-3177-7e53-9692-41ccdb481761', 'pull that codex chat in here', 'what did codex do in session ID', 'continue from codex session ID'. The argument is a Codex session/rollout UUID (full or a unique prefix). This reads Codex CLI rollout files under ~/.codex — NOT Claude Code sessions (use load-cc for those). Do NOT trigger for loading files, datasets, web pages, env vars, or non-session 'load' requests."
+name: load-co-session
+description: "Load a Codex CLI chat session into the current conversation by its session ID, so you can reference, continue, or build on that Codex session's work here. Use this skill when the user invokes '/load-co-session ID' in Claude Code or '$load-co-session ID' in Codex, or asks to load / pull in / import / bring in / resume / continue a Codex session or Codex chat by its UUID — e.g. 'load codex session 019e631d-3177-7e53-9692-41ccdb481761', 'pull that codex chat in here', 'what did codex do in session ID', 'continue from codex session ID'. The argument is a Codex session/rollout UUID (full or a unique prefix). This reads Codex CLI rollout files under ~/.codex — NOT Claude Code sessions (use load-cc-session for those). Do NOT trigger for loading files, datasets, web pages, env vars, or non-session 'load' requests."
 ---
 
-# load-co: load a Codex CLI session into this chat
+# load-co-session: load a Codex CLI session into this chat
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
@@ -15,7 +15,7 @@ This skill turns one into a **state brief** (goal, done, decisions, open,
 files, next step) plus the last three user turns verbatim, so the work
 continues here.
 
-Sibling: **load-cc** does the same for Claude Code sessions. Both read
+Sibling: **load-cc-session** does the same for Claude Code sessions. Both read
 `../../shared-skill-core/session-brief.md`, and both run in Claude Code and
 in Codex; steps 2 and 3 name the difference.
 
@@ -39,7 +39,7 @@ for one, or list recent sessions with
    anyway, since the user asked for it.
 
 2. **Render the transcript for the brief writer** in summary mode. `<out>` is
-   `<scratchpad>/load-co-<id8>.md` in Claude Code and `/tmp/load-co/<id8>.md`
+   `<scratchpad>/load-co-session-<id8>.md` in Claude Code and `/tmp/load-co-session/<id8>.md`
    in Codex (`mkdir -p` the folder first).
 
    ```bash

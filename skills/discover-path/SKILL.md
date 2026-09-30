@@ -130,7 +130,7 @@ work already decided. The map comes first.
      `CONTEXT.md` and ADRs are grill's.
    - **research**: one Explore agent, `SEARCH=on`, brief inline. The note
      lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
-     committed with `/make-commit`.
+     committed with `/commit`.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library
      do X". Iterate; the user picks and says done. What was proven becomes

@@ -1,10 +1,10 @@
-# load-cc
+# load-cc-session
 
 Pulls an earlier Claude Code session into the chat you're in, as a short state brief you can pick up from.
 
 ## Use it when
 
-You want to continue, or build on, work from another Claude Code session and you have its ID. `/load-cc 6090081d` in Claude Code, `$load-cc 6090081d` in Codex, or "pull that other chat in here". A unique prefix of the ID is enough.
+You want to continue, or build on, work from another Claude Code session and you have its ID. `/load-cc-session 6090081d` in Claude Code, `$load-cc-session 6090081d` in Codex, or "pull that other chat in here". A unique prefix of the ID is enough.
 
 ## What you get
 
@@ -31,4 +31,4 @@ The last three things you typed in that session come along word for word. Say "g
 ## Fits with
 
 - [find-cc-session](../find-cc-session/) finds the ID when you only remember what the session was about, then offers this skill.
-- [load-co](../load-co/) does the same for Codex sessions.
+- [load-co-session](../load-co-session/) does the same for Codex sessions.

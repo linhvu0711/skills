@@ -183,7 +183,7 @@ check: a path and line, a test name, a command that shows it.
 Only after the user says go, in this order.
 
 1. `fix here` rows: make each change, run the test the judge named,
-   commit with `/make-commit`, one commit per finding or one for the
+   commit with `/commit`, one commit per finding or one for the
    set when they touch the same hunk. Push only if the user's go said
    so.
 2. `fix later` rows: `/capture` each one, with the finding's claim and

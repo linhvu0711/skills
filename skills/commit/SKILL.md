@@ -1,5 +1,5 @@
 ---
-name: make-commit
+name: commit
 description: "Write a Conventional Commits message compressed to intent only. Use for 'write a commit', 'commit message', /commit or /git-commit."
 ---
 

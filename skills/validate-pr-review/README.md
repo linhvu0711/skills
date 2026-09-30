@@ -20,11 +20,11 @@ After you say go, it makes the fixes, files each `fix later` as an issue, posts 
 
 - `git` and `gh`, signed in (it reads review comments with `gh api` and resolves threads with `gh api graphql`).
 - An agent that can start subagents, one judge per group of files. In Codex it runs them one after the other.
-- The [make-commit](../make-commit/) skill for the fixes and the [capture](../capture/) skill for the `fix later` issues.
+- The [commit](../commit/) skill for the fixes and the [capture](../capture/) skill for the `fix later` issues.
 - The shared core file `../../shared-skill-core/facts.md`.
 
 ## Fits with
 
-- Calls [make-commit](../make-commit/) and [capture](../capture/) after go.
+- Calls [commit](../commit/) and [capture](../capture/) after go.
 - Called by [make-pr-ready](../make-pr-ready/), which runs it on every review round.
 - [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) sort a cloud agent's review questions with the same verdict table.

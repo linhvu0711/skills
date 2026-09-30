@@ -24,5 +24,5 @@ Words like "yesterday" or "last week" narrow the search by date. When a few sess
 
 ## Fits with
 
-- [load-co](../load-co/) loads the session it finds; the skill offers it after a match.
+- [load-co-session](../load-co-session/) loads the session it finds; the skill offers it after a match.
 - [find-cc-session](../find-cc-session/) is the same search for Claude Code sessions.

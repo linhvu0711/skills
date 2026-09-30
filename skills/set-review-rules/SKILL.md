@@ -90,7 +90,7 @@ Explore agents retrieve, short lookups are yours.
    - Files changed, one line each.
    - Bot configs found, one line each, with the pointer line you
      recommend adding to each. You did not edit them.
-   - Last line: `Ready for /make-commit`.
+   - Last line: `Ready for /commit`.
 
 ## File shape
 
@@ -143,7 +143,7 @@ commits); Scope, none; Standards, none. Grill: accept both, fold the
 `CONTRIBUTING.md` section in, user adds "Scope: a PR that touches
 `config/routes.rb` names the issue that owns the route". Write
 `REVIEW.md`, strip the section from `CONTRIBUTING.md`, leave the pointer,
-one line in `CLAUDE.md`. Hand off: `Ready for /make-commit`.
+one line in `CLAUDE.md`. Hand off: `Ready for /commit`.
 
 **User:** `/set-review-rules` in a repo with a `REVIEW.md` from last
 quarter.
@@ -157,4 +157,4 @@ the rest untouched. Hand off lists `REVIEW.md` only.
 
 Zero source files. Write `REVIEW.md` with the general block and three
 empty axis headings, create `AGENTS.md` with the pointer line. Say repo
-rules can come later. `Ready for /make-commit`.
+rules can come later. `Ready for /commit`.

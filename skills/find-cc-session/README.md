@@ -24,5 +24,5 @@ When a few sessions fit, it lists them and asks you to pick. When nothing fits, 
 
 ## Fits with
 
-- [load-cc](../load-cc/) loads the session it finds; the skill offers it after a match.
+- [load-cc-session](../load-cc-session/) loads the session it finds; the skill offers it after a match.
 - [find-co-session](../find-co-session/) is the same search for Codex sessions.

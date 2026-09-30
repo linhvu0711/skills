@@ -1,10 +1,10 @@
-# load-co
+# load-co-session
 
 Pulls an earlier Codex CLI session into the chat you're in, as a short state brief you can pick up from.
 
 ## Use it when
 
-You want to continue, or build on, work from a Codex session and you have its ID. `/load-co 019e631d` in Claude Code, `$load-co 019e631d` in Codex, or "what did codex do in that session?" A unique prefix of the ID is enough.
+You want to continue, or build on, work from a Codex session and you have its ID. `/load-co-session 019e631d` in Claude Code, `$load-co-session 019e631d` in Codex, or "what did codex do in that session?" A unique prefix of the ID is enough.
 
 ## What you get
 
@@ -29,4 +29,4 @@ Codex encrypts its reasoning on disk, so nothing here can show what Codex was th
 ## Fits with
 
 - [find-co-session](../find-co-session/) finds the ID when you only remember what the session was about, then offers this skill.
-- [load-cc](../load-cc/) does the same for Claude Code sessions.
+- [load-cc-session](../load-cc-session/) does the same for Claude Code sessions.

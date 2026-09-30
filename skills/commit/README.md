@@ -1,10 +1,10 @@
-# make-commit
+# commit
 
 Writes a short Conventional Commits message for your staged change, focused on why, not what.
 
 ## Use it when
 
-You need a commit message: "write a commit", "commit message", `/make-commit`, `/commit`, or `/git-commit`. The agent can also pick it up on its own from those phrases.
+You need a commit message: "write a commit", "commit message", `/commit` or `/git-commit`. The agent can also pick it up on its own from those phrases.
 
 ## What you get
 

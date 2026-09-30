@@ -23,12 +23,12 @@ A repo without Devin Review still works: it says so once and judges the comments
 
 - `gh` (signed in), `git`, and `jq`.
 - [Devin Review](https://devin.ai) installed on the repo, for the review status. Optional, see above.
-- The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [make-commit](../make-commit/), and [capture](../capture/).
+- The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
 - The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, and `../../shared-skill-core/grilling.md`.
 - For a PR with no local checkout: the repo map at `~/.config/kickoff/repos.tsv` or a clone under `~/development`, found the way [kickoff](../kickoff/) finds one.
 
 ## Fits with
 
-- Calls [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [make-commit](../make-commit/), and [capture](../capture/).
+- Calls [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
 - Finds a checkout the way [kickoff](../kickoff/)'s script does.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.

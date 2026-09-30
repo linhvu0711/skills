@@ -1,6 +1,6 @@
 ---
 name: find-co-session
-description: "Find a past Codex CLI session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Fires on '/find-co-session ...' in Claude Code, '$find-co-session ...' in Codex, 'find the codex session where we fixed CI', 'which codex chat did I do X in'. Not for loading a session whose ID is already known (that is load-co), and not for Claude Code sessions (that is find-cc-session)."
+description: "Find a past Codex CLI session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Fires on '/find-co-session ...' in Claude Code, '$find-co-session ...' in Codex, 'find the codex session where we fixed CI', 'which codex chat did I do X in'. Not for loading a session whose ID is already known (that is load-co-session), and not for Claude Code sessions (that is find-cc-session)."
 ---
 
 # find-co-session
@@ -22,4 +22,4 @@ Sibling: **find-cc-session** does the same for Claude Code sessions. Both run in
    - Several: list them (opening prompt, age, prompts, ID), ask which one, and copy the pick. A tie-breaker in the description ("the most recent") settles it without asking.
    - None: say so, show the closest one or two, and suggest a rephrase, `--all`, `--include-subdirs`, or a check that this is the right project folder.
 
-Done when the ID is on the clipboard, or the user knows there is no match. After a copy, offer `/load-co <id>` in Claude Code or `$load-co <id>` in Codex; load only on request.
+Done when the ID is on the clipboard, or the user knows there is no match. After a copy, offer `/load-co-session <id>` in Claude Code or `$load-co-session <id>` in Codex; load only on request.
