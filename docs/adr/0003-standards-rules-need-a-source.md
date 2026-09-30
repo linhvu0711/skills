@@ -1,0 +1,3 @@
+# A coding-standards rule needs a source, never the model's memory
+
+`audit-coding-standards` used to propose "the stack's well-known defaults" from what the model remembered, and it named a source it never read. Training data goes stale, so a wrong default could enter `CODING_STANDARDS.md` and be copied by every later change. Each proposed rule now cites a level 1 or level 2 source read on that run, the repo's own code, or the user. When the model thinks a pattern is bad and no source says so, it shows that as "model's view, no source" and the user decides. With no web access, the research is marked not done instead of falling back to memory. It is slower than proposing from memory. We accept that.
