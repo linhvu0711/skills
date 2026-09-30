@@ -95,7 +95,8 @@ nothing.
 
 5. **Stuck.** Halving cannot cut further: write at most two hypotheses,
    each with the one check that kills it. Run the checks. A must-know row
-   still empty after you looked and asked once: stop. The exit is a `spike`.
+   still empty after you looked and asked once, or no loop per `method.md`:
+   stop looking. Skip step 6, go to step 7, and the exit is a `spike`.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
    § Confirm.
@@ -109,14 +110,15 @@ nothing.
    Expected: <one line>
    Actual: <one line>
    Repro: <command or numbered steps>
-   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms)
+   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; spike: Not found, <the open question>)
    Category: <from categories.md>
    Evidence: <the probe, and what it showed>
    ```
 
    When the category is local env, show the fix command in a code block and
    put it on the clipboard when `pbcopy` exists. The user runs it. You do
-   not change their machine.
+   not change their machine. The same holds for the ops fix of live env and
+   the data fix of data: name it in the report, the user does it.
 
 9. **Grill.** Test the report against § When grill fits. It fits: write
    the seed block in the same message, right after the report, and invoke
@@ -128,11 +130,14 @@ nothing.
 10. **File.** Invoke the to-issue skill with the Skill tool, in the same
     turn. Do not ask first, and do not end with `Ready for /to-issue`.
 
-    - Cause found: a `fix` or `perf` ticket from the report, and the
-      settled decisions after a grill.
+    - Cause found: the ticket is the Exit of the category in
+      `references/categories.md`: its type and its work, or nothing when
+      the exit says so. A perf hot spot is a `perf` ticket. Only the code
+      part of an exit is filed; the user's part stays in the report.
+      Carry the settled decisions after a grill.
     - Cause not found: a `spike` ticket on the open question.
-    - Local env: nothing to file, unless the setup docs never name the
-      missing piece; then a `docs` ticket.
+    - Nothing to file: say why in one line and stop. The bug issue from
+      step 1, if any, stays as it is.
 
     The bug issue from step 1 is the origin: to-issue rewrites it into the
     ticket, per `../../shared-skill-core/issue-rules.md` § Origin bug. No
