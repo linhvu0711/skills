@@ -60,4 +60,4 @@ An audit finding that the code, or a rule, differs from what a level 1 or level 
 _Avoid_: outdated (that is a rule that names a tool, path, or version the repo no longer has)
 
 **Sources table**:
-The table at the end of `CODING_STANDARDS.md` that lists each source a rule cites: name, link, version, and the date it was checked. The audit uses it to know which sources to check again.
+The table at the end of `CODING_STANDARDS.md` that lists each source a rule cites, and the main page searched for a stack part that gave no rule: stack part, name, link, version, and the date it was checked. The audit uses it to know which stack parts to check again.
