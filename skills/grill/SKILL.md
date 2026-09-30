@@ -39,18 +39,17 @@ Each answer can expose a fact you have not seen: an answer names a file, a servi
 
 After `Grill done.` and the settled list, track the files the grill left behind (`CONTEXT.md`, a new ADR, sometimes `docs/spec` or `docs/cli.md`) the same way every time:
 
-1. Check the tree. `git status --short` on the files the grill touched. Nothing changed: say so and stop. No seed, no PR.
-2. Find the seed number.
-   - The grill started from a seed issue: that number.
-   - The grill started from an idea in chat: run the capture skill now, with the idea as the thing. Title is the idea in one line. The seed it files is the number. Do not write acceptance criteria into it; the PR carries the decisions.
-3. Branch from main, named `docs/grill-<seed>-<slug>`. If already on a non-main branch that the user made for this work, stay on it.
-4. Commit only the grill files. One commit, Conventional Commits, `docs:` type. Run the unslop skill on the prose first. No AI attribution trailer.
-5. Push and open the PR against main with `gh pr create`. Body: the settled decisions list from the summary, the tickets the grill filed if any, then `Closes #<seed>` on its own line.
-6. Print the PR link. Never merge: the merge waits for the user's explicit go-ahead.
+1. Check the tree. `git status --short` on the files the grill touched. Nothing changed: say so and stop. No PR.
+2. Run the unslop skill on the prose of those files.
+3. Invoke the make-pr skill with the Skill tool, with its four caller settings:
+   - Branch: `docs/grill-<seed>-<slug>`, or `docs/grill-<slug>` when the grill started from an idea in chat. Already on a non-main branch that the user made for this work: that branch.
+   - Files: only the grill files, in one `docs:` commit.
+   - Issue line: `Closes #<seed>` for a seed issue. A grill that started from an idea in chat has no issue, so no line.
+   - Summary: the settled decisions list. Follow-ups: the tickets the grill filed, and an epic it edited.
+4. Print the PR link. Never merge: the merge waits for the user's explicit go-ahead.
 
 Edge cases:
 
-- The seed came from triage (a bug report, with or without an issue): file no seed. Name the branch `docs/grill-<bug>-<slug>`, or `docs/grill-<slug>` with no issue, and end the PR body with `Refs #<bug>`, not `Closes`. Triage turns the bug into the fix ticket next, and the fix PR closes it.
-- The seed needs no file change at all (the grill only confirmed what the docs already say): comment the outcome on the seed with `gh issue comment` and leave it open for the user to close.
-- The grill also filed tickets or edited an epic: list them in the PR body so the seed points at all of them.
+- The seed came from triage (a bug report, with or without an issue): the branch is `docs/grill-<bug>-<slug>`, or `docs/grill-<slug>` with no issue, and the issue line is `Refs #<bug>`, not `Closes`. Triage turns the bug into the fix ticket next, and the fix PR closes it.
+- A seed issue that needs no file change at all (the grill only confirmed what the docs already say): comment the outcome on the seed with `gh issue comment` and leave it open for the user to close.
 - The user says to skip the PR: leave the files uncommitted and say which ones.

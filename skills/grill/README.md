@@ -8,7 +8,7 @@ You have a plan with decisions still open, and you want them found and settled b
 
 ## What you get
 
-One question per message, each with its options and a recommended pick, until you agree the plan is understood. New terms go into `CONTEXT.md` as they settle. A decision that is hard to reverse, surprising, and the result of a real trade-off becomes an ADR in `docs/adr/`. At the end you get the settled list and a docs PR that closes the seed issue:
+One question per message, each with its options and a recommended pick, until you agree the plan is understood. New terms go into `CONTEXT.md` as they settle. A decision that is hard to reverse, surprising, and the result of a real trade-off becomes an ADR in `docs/adr/`. At the end you get the settled list and a docs PR, opened by [make-pr](../make-pr/). It closes the seed issue when the grill started from one:
 
 ```
 Grill done.
@@ -21,16 +21,16 @@ It never merges the PR.
 
 ## Needs
 
-- `gh`, signed in, for seed issues and the PR.
+- `gh`, signed in, for seed issues.
 - `git`.
 - Sub-agents that read code (Explore agents in Claude Code). Codex has none, so there it reads the files itself.
-- [capture](../capture/), to file a seed when the grill started from a chat.
+- [make-pr](../make-pr/), for the docs PR.
 - [unslop](../unslop/), run on the prose before the commit.
 - From the shared core: [grilling.md](../../shared-skill-core/grilling.md) and [facts.md](../../shared-skill-core/facts.md).
 
 ## Fits with
 
-- Calls [capture](../capture/) and [unslop](../unslop/).
+- Calls [unslop](../unslop/) and [make-pr](../make-pr/).
 - Sends a bug to [triage](../triage/) first, and work too big for one session to [discover-path](../discover-path/).
 - Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), [set-coding-standards](../set-coding-standards/), and [set-review-rules](../set-review-rules/).
 - Named as the next step when a gate fails in [to-issue](../to-issue/), [to-epic](../to-epic/), [plan-up](../plan-up/), and [create-mockup](../create-mockup/).
