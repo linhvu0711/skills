@@ -11,7 +11,7 @@ You want one file that says how code is written here, and tools that check it. T
 A `CODING_STANDARDS.md` at the root, one rule per line, grouped by area. Rules a tool can check name the tool, as in `Lines are at most 88 characters [ruff E501]`. It also updates `.editorconfig` and the configs of the tools you already have, and adds one line to `CLAUDE.md` and `AGENTS.md` that points at the file. Rules it folds in are removed from where they lived. Nothing is committed. The chat ends with the files changed, the drift left as code problems, and:
 
 ```
-Ready for /make-commit
+Ready for /commit
 ```
 
 ## Needs
@@ -24,5 +24,5 @@ Ready for /make-commit
 ## Fits with
 
 - Calls [audit-coding-standards](../audit-coding-standards/) and [grill](../grill/).
-- Hands off to [make-commit](../make-commit/) or [create-pr](../create-pr/).
+- Hands off to [commit](../commit/) or [create-pr](../create-pr/).
 - [audit-coding-standards](../audit-coding-standards/) points here when you want the standard written, not just checked.

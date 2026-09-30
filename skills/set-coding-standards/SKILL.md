@@ -56,7 +56,7 @@ Explore agents retrieve, short lookups are yours.
      issue you recommend for it (`fix` ticket, or a `chore` when it is a
      sweep). Name `/to-issue` for one, `/capture` for a seed.
    - New tools or CI the rules need: one recommended issue each.
-   - Last line: `Ready for /make-commit` or `Ready for /create-pr`.
+   - Last line: `Ready for /commit` or `Ready for /create-pr`.
 
 ## File shape
 
@@ -85,7 +85,7 @@ the Next.js and TypeScript defaults, one per area. Verdict: needs work.
 Grill: each proposal is a question with the default as the recommended
 answer. Write `CODING_STANDARDS.md`, `.editorconfig`, tighten
 `tsconfig.json` strictness as agreed. No `CLAUDE.md` exists, so none is
-written. Last line: `Ready for /make-commit`.
+written. Last line: `Ready for /commit`.
 
 **User:** `/set-coding-standards` in a 3-year-old Django monolith, 900 files, 6
 authors.

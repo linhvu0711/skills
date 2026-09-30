@@ -24,13 +24,13 @@ When no ticket and no fog is left, it prints `Map clear.`, the full list of deci
 - Sub-agents for research tickets (Explore agents with web search in Claude Code).
 - `pbcopy`, optional, to put the map URL on the clipboard.
 - [grill](../grill/) for the charting and every grill ticket.
-- [make-commit](../make-commit/) to commit research notes.
+- [commit](../commit/) to commit research notes.
 - [create-mockup](../create-mockup/) and [create-diagram](../create-diagram/) for experiment tickets.
 - From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md). From grill: [research.md](../grill/references/research.md).
 
 ## Fits with
 
-- Calls [grill](../grill/), [make-commit](../make-commit/), [create-mockup](../create-mockup/), and [create-diagram](../create-diagram/).
+- Calls [grill](../grill/), [commit](../commit/), [create-mockup](../create-mockup/), and [create-diagram](../create-diagram/).
 - Hands a clear map to [to-epic](../to-epic/), or to [to-issue](../to-issue/) when the work fits one ticket.
 - Suggested by [grill](../grill/) when the work will not settle in one session.
 

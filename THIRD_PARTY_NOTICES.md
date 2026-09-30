@@ -233,7 +233,7 @@ Each copied or adapted skill folder holds its upstream's `LICENSE`. The shared c
 
 | Skill or file | Upstream path | Level |
 |---|---|---|
-| `skills/make-commit` | `skills/caveman-commit` | copy |
+| `skills/commit` | `skills/caveman-commit` | copy |
 
 The upstream `LICENSE` opens with a scope note: some of its folders are under the Business Source License 1.1. Its `LICENSING.md` puts `skills/` under MIT, so the text below is the MIT part of that file.
 

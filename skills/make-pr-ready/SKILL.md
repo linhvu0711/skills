@@ -66,7 +66,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 5. **Judge and apply.** Read `../validate-pr-review/SKILL.md`.
    Follow its steps 1 to 6 with `NUMBER` as the argument, in `$WT`; then
    its § After go whole, `go` given, push included: the fixes, one
-   commit each per `/make-commit`, `/capture` for every `fix later`,
+   commit each per `/commit`, `/capture` for every `fix later`,
    the replies by source, the resolves. No subagent tool here (Codex,
    a Devin CLI pane): each judge brief is yours, one after the other,
    same return shape, as validate-pr-review says for Codex. Three

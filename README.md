@@ -42,7 +42,7 @@ flowchart LR
 | [ship](skills/ship/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
 | [handoff-devin](skills/handoff-devin/) | Sends the plan to a Devin cloud session and watches it until the PR is ready. |
 | [handoff-cursor](skills/handoff-cursor/) | Sends the plan to a Cursor cloud agent and watches it until the PR is ready. |
-| [make-commit](skills/make-commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
+| [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [create-pr](skills/create-pr/) | Opens a pull request for the current branch, with a body that follows the repo's PR template. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
 | [make-pr-ready](skills/make-pr-ready/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
