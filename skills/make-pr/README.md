@@ -13,7 +13,7 @@ From a dirty tree to an open PR in one run. It makes a branch when you are on `m
 ```
 PR: feat(export): write ISO dates (#61) · size S · checks: 2 green
 https://github.com/acme/shop/pull/61
-Next: /make-pr-ready
+Next: /ready-pr
 ```
 
 It never merges.
@@ -27,7 +27,7 @@ It never merges.
 
 ## Fits with
 
-- Hands off to [make-pr-ready](../make-pr-ready/), which takes the open PR to ready-to-merge.
+- Hands off to [ready-pr](../ready-pr/), which takes the open PR to ready-to-merge.
 - Called by [grill](../grill/) for its docs PR at the close-out.
 - Named by [set-coding-standards](../set-coding-standards/) as the next step.
 - Shares the PR shape with [ship](../ship/), [handoff-devin](../handoff-devin/), and [handoff-cursor](../handoff-cursor/), whose builders open their own PRs.

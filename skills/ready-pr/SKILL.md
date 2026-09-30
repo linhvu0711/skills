@@ -1,5 +1,5 @@
 ---
-name: make-pr-ready
+name: ready-pr
 description: "Take an open PR to ready-to-merge: wait for Devin Review on the head commit, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
 disable-model-invocation: true
 ---
@@ -20,8 +20,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Forms
 
-- `/make-pr-ready <pr-url|number>`: that PR.
-- `/make-pr-ready`: the PR of the current branch.
+- `/ready-pr <pr-url|number>`: that PR.
+- `/ready-pr`: the PR of the current branch.
 
 ## Steps
 
@@ -133,7 +133,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Examples
 
-**User:** `/make-pr-ready 43` in the app checkout, on `feat/42-login`.
+**User:** `/ready-pr 43` in the app checkout, on `feat/42-login`.
 
 Facts: open, not a fork, head `d6221e2`, `DEVIN=PENDING`. Tree clean on
 the branch, so `WT` is here. `wait-review.sh` in the background returns
@@ -142,7 +142,7 @@ finding at `src/auth/login.ts:212`. Validate: one `fix here`,
 `ours`, `should`. Fix, commit, fetch, push. Round 2: wait, success,
 `OPEN=0`. Ready: `READY`. Report with the one finding and its SHA.
 
-**User:** `/make-pr-ready https://github.com/acme/shop/pull/61` in a chat with
+**User:** `/ready-pr https://github.com/acme/shop/pull/61` in a chat with
 no checkout.
 
 Main checkout found under `~/development`; `worktree.sh` tracks

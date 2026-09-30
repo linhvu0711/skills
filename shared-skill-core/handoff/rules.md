@@ -418,8 +418,8 @@ test("exports one order as CSV", async () => {
 
 <!-- local -->
 Devin Review runs on the PR and posts comments; people may too. The
-review loop is the `make-pr-ready` skill's: read
-`{{skills}}/make-pr-ready/SKILL.md` and follow it on your PR, whole,
+review loop is the `ready-pr` skill's: read
+`{{skills}}/ready-pr/SKILL.md` and follow it on your PR, whole,
 from its first step, in this worktree. It waits for the Devin Review
 status, judges every finding on the three questions it holds, fixes
 what is `fix here`, files what is `fix later`, replies and resolves,
@@ -630,14 +630,14 @@ out of the PR, the commits, the screenshots, and the videos.
 <!-- /cursor -->
 <!-- local -->
 When every gate holds, every Done-when line has its proof, and
-`make-pr-ready` printed `READY`: size the diff once more, since review fixes
+`ready-pr` printed `READY`: size the diff once more, since review fixes
 moved it, and when the size changed swap the label (`--remove-label`
 the old, `--add-label` the new). Then end the turn with one message:
 the PR URL, the size with its facts and line count, then every
 surprise and every review comment, one line each with its verdict and
 its SHA or issue URL, a `Filed:` line listing every issue URL you
 created (or `Filed: none`), and as the last line `READY <pr-url>`.
-`make-pr-ready` stopped short of ready and you could not close the gap: the
+`ready-pr` stopped short of ready and you could not close the gap: the
 same message, last line `NOT READY <pr-url>: <what is open>`. The
 proof is already in the PR. Secrets, tokens, and keys stay out of the
 PR and the commits.

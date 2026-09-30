@@ -1,6 +1,6 @@
 ---
 name: make-pr
-description: "Open or update the pull request for the work in this checkout, in the shared PR shape: branch, commit, run the repo's checks, push, open, size label. Use for 'make a PR', 'open a PR', 'put this up for review', /make-pr in Claude Code, $make-pr in Codex, and when another skill hands over its files for a PR. Stops at the open PR; the review loop is /make-pr-ready."
+description: "Open or update the pull request for the work in this checkout, in the shared PR shape: branch, commit, run the repo's checks, push, open, size label. Use for 'make a PR', 'open a PR', 'put this up for review', /make-pr in Claude Code, $make-pr in Codex, and when another skill hands over its files for a PR. Stops at the open PR; the review loop is /ready-pr."
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
@@ -116,7 +116,7 @@ rest is this skill's.
     ```
     PR: feat(export): write ISO dates (#61) · size S · checks: 2 green
     https://github.com/acme/shop/pull/61
-    Next: /make-pr-ready
+    Next: /ready-pr
     ```
 
     An open PR that you updated: `PR (updated): …`.
