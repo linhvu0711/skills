@@ -290,7 +290,8 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, in a few words. `Change` is `new`, `changed` (the job
+  job changes, in a few words: a name at most 20 characters, a job at
+  most 30, so both fit the box. `Change` is `new`, `changed` (the job
   changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
@@ -299,14 +300,15 @@ part or flow changes.`, so the reader sees that the plan checked.
 - `At` is the files of a part that exists now, `file` or `file:line`,
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
-- A flow names what moves or what is asked, never `imports`. `(same)`
-  may be left out.
+- A flow names what moves or what is asked, never `imports`, in at most
+  20 characters. `(same)` may be left out.
 - At most 12 parts. More: merge the `same` parts no changed flow needs,
   then parts of one group whose flows match. Still more: two maps, one
   per area, each block headed `## Change map · <area>`.
-- `Grid` is `column,row`, and no two parts share a cell. Flow goes left
-  to right: people and outside callers on the left, stores on the right.
-  The parts of one group sit in cells next to each other.
+- `Grid` is `column,row`, both 0 or more, and no two parts share a
+  cell. Flow goes left to right: people and outside callers on the left,
+  stores on the right. The parts of one group sit in cells next to each
+  other, with no other part inside the group's area.
 
 **Facts.** Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
@@ -463,7 +465,8 @@ facts or forks.
   per Proof row. A run: one stack Review, and one small Review per layer.
 - The Change map block is there: a map, or the `None` line when no
   part, job, or flow changes. A map has at most 12 parts, each with a
-  job, a `Change`, and a free `Grid` cell; every part but an `outside`
+  job, a `Change`, and a free `Grid` cell outside other groups' areas;
+  names, jobs, and flow labels fit their limits; every part but an `outside`
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.

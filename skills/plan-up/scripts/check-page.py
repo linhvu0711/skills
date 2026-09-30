@@ -273,8 +273,12 @@ def md_maps(md_path):
 
 
 def grid(cell):
-    m = re.match(r"\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$", cell or "")
+    m = re.match(r"\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*$", cell or "")
     return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+# The longest text that fits a map box or a flow label (shell.html NW, CW).
+NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 
 
 def map_problems(blocks, is_run, data):
@@ -284,8 +288,8 @@ def map_problems(blocks, is_run, data):
     if any(b["none"] for b in blocks):
         if len(blocks) > 1 or blocks[0]["parts"] or blocks[0]["flows"]:
             yield "change map: a `None:` line stands alone, with no map beside it"
-        if data.get("maps"):
-            yield f"DATA.maps has {len(data['maps'])} map(s), the .md says `None`"
+        if data.get("maps") != []:
+            yield f"DATA.maps must be [] when the .md says `None`, page has {data.get('maps')!r:.40}"
         return
     if len(blocks) > 2:
         yield f"change map: {len(blocks)} maps, the limit is 2"
@@ -306,6 +310,10 @@ def map_problems(blocks, is_run, data):
             refs[ref] = p
             if not p.get("Part") or not p.get("Job"):
                 yield f"{name}: {ref} needs a part name and a job"
+            if len(p.get("Part") or "") > NAME_MAX:
+                yield f"{name}: {ref} part name is {len(p['Part'])} characters, the limit is {NAME_MAX}"
+            if len(p.get("Job") or "") > JOB_MAX:
+                yield f"{name}: {ref} job is {len(p['Job'])} characters, the limit is {JOB_MAX}"
             if p.get("Change") not in CHANGES:
                 yield f"{name}: {ref} change `{p.get('Change')}` is not new, changed, removed, or same"
             if p.get("Kind") not in KINDS:
@@ -314,13 +322,23 @@ def map_problems(blocks, is_run, data):
                 yield f"{name}: {ref} has no files and no slice in `At`"
             g = grid(p.get("Grid"))
             if g is None:
-                yield f"{name}: {ref} grid `{p.get('Grid')}` is not `column,row`"
+                yield f"{name}: {ref} grid `{p.get('Grid')}` is not `column,row` with both 0 or more"
             elif g in cells:
                 yield f"{name}: {ref} and {cells[g]} share the grid cell {p.get('Grid')}"
             else:
                 cells[g] = ref
             if is_run and p.get("Change") != "same" and not re.match(r"L\d+$", p.get("Layer") or ""):
                 yield f"{name}: {ref} is {p.get('Change')} but names no layer"
+        # A group's gray area spans its cells; a part of no such group inside it misstates the map.
+        groups = {}
+        for p in parts:
+            if p.get("Group") and grid(p.get("Grid")):
+                groups.setdefault(p["Group"], []).append(grid(p["Grid"]))
+        for gname, gcells in groups.items():
+            xs, ys = [c[0] for c in gcells], [c[1] for c in gcells]
+            for c, ref in cells.items():
+                if refs[ref].get("Group") != gname and min(xs) <= c[0] <= max(xs) and min(ys) <= c[1] <= max(ys):
+                    yield f"{name}: {ref} sits inside the area of group `{gname}`; put the group's parts in cells next to each other"
         touched = set()
         for f in b["flows"]:
             if "bad" in f:
@@ -331,6 +349,8 @@ def map_problems(blocks, is_run, data):
                     yield f"{name}: flow {f['from']} → {f['to']} names {end}, which is not a part of this map"
             if not f["label"] or re.fullmatch(r"imports?", f["label"].strip(), re.I):
                 yield f"{name}: flow {f['from']} → {f['to']} must name what moves, not `{f['label']}`"
+            elif len(f["label"].strip()) > LABEL_MAX:
+                yield f"{name}: flow {f['from']} → {f['to']} label is {len(f['label'].strip())} characters, the limit is {LABEL_MAX}"
             if f["change"] != "same":
                 touched.update((f["from"], f["to"]))
                 if is_run and not f["layer"]:
@@ -350,13 +370,13 @@ def map_problems(blocks, is_run, data):
         name = f"DATA.maps[{n - 1}]"
         if (m.get("area") or "") != b["area"]:
             yield f"{name}.area: page `{m.get('area')}`, .md `{b['area']}`"
-        want = [(p.get("Ref"), p.get("Change"), p.get("Kind"), grid(p.get("Grid")), (p.get("Layer") or None)) for p in b["parts"]]
-        have = [(p.get("ref"), p.get("change"), p.get("kind"), (float(p.get("x", -1)), float(p.get("y", -1))), p.get("layer") or None) for p in m.get("parts") or []]
+        want = [(p.get("Ref"), p.get("Part"), p.get("Job"), p.get("Change"), p.get("Group") or None, p.get("Kind"), grid(p.get("Grid")), (p.get("Layer") or None)) for p in b["parts"]]
+        have = [(p.get("ref"), p.get("name"), p.get("job"), p.get("change"), p.get("group") or None, p.get("kind"), (float(p.get("x", -1)), float(p.get("y", -1))), p.get("layer") or None) for p in m.get("parts") or []]
         if have != want:
             diff = next(((w, h) for w, h in zip(want, have) if w != h), (want[len(have):] or None, have[len(want):] or None))
             yield f"{name}.parts differ from the .md: .md {diff[0]}, page {diff[1]}"
-        want_f = [(f["from"], f["to"], f["change"], f["layer"]) for f in b["flows"] if "bad" not in f]
-        have_f = [(f.get("from"), f.get("to"), f.get("change") or "same", f.get("layer") or None) for f in m.get("flows") or []]
+        want_f = [(f["from"], f["to"], f["label"].strip(), f["change"], f["layer"]) for f in b["flows"] if "bad" not in f]
+        have_f = [(f.get("from"), f.get("to"), (f.get("label") or "").strip(), f.get("change") or "same", f.get("layer") or None) for f in m.get("flows") or []]
         if have_f != want_f:
             diff = next(((w, h) for w, h in zip(want_f, have_f) if w != h), (want_f[len(have_f):] or None, have_f[len(want_f):] or None))
             yield f"{name}.flows differ from the .md: .md {diff[0]}, page {diff[1]}"
