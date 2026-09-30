@@ -69,7 +69,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    commit each per `/commit`, `/capture` for every `fix later`,
    the replies by source, the resolves. No subagent tool here (Codex,
    a Devin CLI pane): each judge brief is yours, one after the other,
-   same return shape, as validate-pr-review says for Codex. Three
+   same return shape, as validate-pr-review says for Codex. Four
    rules on top:
    - **Stop points.** A row under `## Unclear`: one question to the
      user per row, in the format of
@@ -78,6 +78,11 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      or a `Decided` line of the plan: ask before the fix, not after.
      In a Devin CLI pane, asking is `QUESTION` first, per the rules the
      pane holds.
+   - **Follow-ups.** Each issue `/capture` files gets its line under
+     `## Follow-ups` in the PR body, by
+     `../../shared-skill-core/pr-shape.md`: read the body with
+     `gh pr view <NUMBER> --json body -q .body`, add the line, and
+     `gh pr edit <NUMBER> --body-file <file>`.
    - **Seen before.** A finding with the same path and the same claim
      as one answered `push back` or `won't fix` earlier in this
      session: the same reply, with a link to the earlier thread, no new
