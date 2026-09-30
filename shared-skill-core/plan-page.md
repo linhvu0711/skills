@@ -31,6 +31,12 @@ const DATA = {
   title: "<issue title>",
   issue: { number: 42, url: "<issue url>", size: "size/M", kind: "feat" },
   date: "YYYY-MM-DD",
+  review: {                                                          // the Review block; a run: the stack's
+    change: "before → after", approach: "how, and why not the other way",
+    blast: { touches: ["<module>"], dependency: "none", schema: "none", api: "none", config: "none", ci: "none" },
+    risks: [ { belief, ifWrong, proved: "P1" | "not proved" } ],     // [] when the .md says `- none`
+    in: "what the plan builds", out: "what it leaves, O refs"
+  },
   facts: { repo, base, test, typecheck, lint, build, run, ui, open, screen, platform, standards },
   proved: [ { fact, ran, date: "YYYY-MM-DD", usedBy: "S2, D1" } ],   // one per probe; [] when none ran
   points: "Points: 6 (XS 1, S 2, M 4, L 8)",                        // runs only
@@ -40,6 +46,9 @@ const DATA = {
       title: "<ticket title>",
       targets: "<base or lower layer branch>", points: 4,         // runs only, from the Stack table
       summary: "2 to 3 lines: what changes, the path slice 1 takes, the counts.",
+      review: { change: "runs only: what this layer adds",           // the layer's Review parts
+                choices: [ { ref: "D2" | null, text } ],            // ref null: a big fork; [] when `- none`
+                works: ["Done-when line 1 in plain words"] },       // one per Proof row, in order
       forks: [ { question, pick, why } ],           // big forks the user answered
       seams: [ { name, at: "path:line", why } ],
       proof: [ { line, test: { file, name } | null, walk: 1 | null, video: "video 1 @ step 4" | null, artifact: "test" | "screenshot 1" } ],
@@ -55,6 +64,10 @@ const DATA = {
   ]
 };
 ```
+
+The Review tab comes first and shows `review`, then each layer's
+`review`: a single ticket reads as one block, a run as the stack's block
+and one small block per layer.
 
 Refs the page shows, and the user names in chat: `P1` proved 1, `S2`
 slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
@@ -101,8 +114,10 @@ Then, in this order:
 
    It prints `page ok` or one line per problem: a count that differs
    from the `.md`, a slice whose `docs` name other files, a `Proved`
-   line with another date or `Used by`, `[object`, or a string with an
-   odd number of backticks. Fix the `DATA`, rebuild, run it again.
+   line with another date or `Used by`, a Review part that is missing,
+   over its limit, or differs from the `.md`, `[object`, or a string
+   with an odd number of backticks. Fix the `DATA` or the `.md`,
+   rebuild, run it again.
 2. **The review**, in the person's own browser: `open "<url>"` on macOS,
    `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the check
    passes. This is the step the person sees. Run it on the first build

@@ -112,6 +112,22 @@
   .decided li { margin: 8px 0; }
   .decided .why { color: var(--muted); display: block; font-size: 13.5px; }
   .empty { color: var(--muted); font-style: italic; }
+
+  .rv-head { color: var(--muted); font-size: 13.5px; margin: -8px 0 16px; }
+  .rv { display: grid; gap: 12px; }
+  .rv-part { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 16px; }
+  .rv-part > h3 { margin: 0 0 6px; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .rv-part > p { margin: 0; }
+  .rv-layer { margin: 22px 0 10px; font-size: 16px; }
+  .flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .flags .badge { font-weight: 500; }
+  .rv-list { margin: 0; padding-left: 0; list-style: none; }
+  .rv-list li { margin: 6px 0; display: flex; gap: 8px; align-items: baseline; }
+  .rv-list .why { color: var(--muted); font-size: 13.5px; }
+  .rv-list button.ref { border: 0; cursor: pointer; }
+  .rv-list button.ref:hover { color: var(--accent); }
+  .scope { display: grid; grid-template-columns: 44px 1fr; gap: 4px 10px; }
+  .scope b { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
   .footer { margin-top: 28px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }
   kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel); }
 
@@ -140,7 +156,7 @@
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <main id="panels"></main>
-  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span>, <span class="ref">W1</span>, or <span class="ref">P1</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
+  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span>, <span class="ref">W1</span>, <span class="ref">D3</span>, or <span class="ref">#4</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
 </div>
 
 <script>
@@ -193,6 +209,7 @@ const DATA = {};
 
   // Tabs
   const TABS = [
+    { id: 'review', label: 'Review' },
     isRun && { id: 'stack', label: 'Stack' },
     { id: 'overview', label: 'Overview' },
     { id: 'proof', label: 'Proof' },
@@ -237,6 +254,7 @@ const DATA = {};
       stat((L.decided || []).length, 'decided', 'decided'),
     );
     panels.innerHTML = '';
+    panels.append(panel('review', 'Review', 'What changes, how, and what it touches: the plan in the words you need to approve it. The tabs after this one are for the executor.', reviewView()));
     if (isRun) panels.append(panel('stack', 'Stack', 'One PR per layer. Each PR targets the branch below it.', stackView()));
     panels.append(panel('overview', 'Overview', L.summary || 'What the plan does, in a few lines.', overviewView(L)));
     panels.append(panel('proof', 'Proof', 'One row per Done-when line, and the artifact that shows it holds.', proofView(L)));
@@ -260,6 +278,48 @@ const DATA = {};
   }
   const provesText = (arr) => arr?.length ? 'proves ' + arr.map((n) => '#' + n).join(', ') : '';
   const empty = (msg) => el('p', { class: 'empty' }, msg);
+
+  // Review: the stack's block (or the one ticket's), then each layer's small block.
+  function reviewView() {
+    const r = d.review || {};
+    const slices = layers.reduce((n, L) => n + (L.slices || []).length, 0);
+    const head = el('p', { class: 'rv-head', html: rich([d.issue?.size, d.facts?.base && `base ${code(d.facts.base)}`, `${slices} slice${slices === 1 ? '' : 's'}`, `${layers.length} PR${layers.length === 1 ? '' : 's'}`].filter(Boolean).join('  ·  ')) });
+    const part = (title, ...body) => el('div', { class: 'rv-part' }, el('h3', {}, title), body);
+    const text = (s) => s ? el('p', { html: rich(s) }) : empty('Missing.');
+    const flagNames = [['dependency', 'Dependency'], ['schema', 'Schema'], ['api', 'API'], ['config', 'Config'], ['ci', 'CI']];
+    const b = r.blast || {};
+    const blast = part('Blast radius',
+      (b.touches || []).length ? el('p', {}, 'Touches ', (b.touches || []).map((t, i) => [i ? ', ' : '', R(t)])) : empty('Missing.'),
+      el('div', { class: 'flags' }, flagNames.map(([k, lab]) => {
+        const v = String(b[k] ?? '').trim();
+        const none = /^none\b/i.test(v);
+        return el('span', { class: 'badge ' + (none ? 'kind' : 'warn'), html: rich(`${lab}: ${v || '?'}`) });
+      })));
+    const risks = part('Risks and assumptions', (r.risks || []).length
+      ? el('ul', { class: 'rv-list' }, r.risks.map((x) => el('li', {},
+        el('span', { class: 'badge ' + (/^P\d/.test(x.proved || '') ? 'ok' : 'warn') }, x.proved || 'not proved'),
+        el('span', {}, R(x.belief), ' ', el('span', { class: 'why', html: rich('If wrong: ' + (x.ifWrong || '')) })))))
+      : el('p', { class: 'empty' }, 'None the plan rests on.'));
+    const scope = part('Scope', el('div', { class: 'scope' }, el('b', {}, 'In'), R(r.in || ''), el('b', {}, 'Out'), R(r.out || '')));
+    const choices = (L) => part('Choices for you', ((L.review || {}).choices || []).length
+      ? el('ul', { class: 'rv-list' }, L.review.choices.map((c) => el('li', {}, el('span', { class: 'ref' }, c.ref || 'fork'), R(c.text))))
+      : el('p', { class: 'empty' }, 'No fork, and no decision that carries risk.'));
+    const works = (L, i) => part('How we know it works', ((L.review || {}).works || []).length
+      ? el('ul', { class: 'rv-list' }, L.review.works.map((w, j) => el('li', {},
+        el('button', { class: 'ref', title: 'open this Proof row', onclick: () => { cur = i; render(); show('proof'); } }, `#${j + 1}`), R(w))))
+      : empty('Missing.'));
+    if (!isRun) {
+      const L = layers[0] || {};
+      return el('div', {}, head, el('div', { class: 'rv' },
+        part('The change', text(r.change)), part('Approach', text(r.approach)), blast, choices(L), risks, works(L, 0), scope));
+    }
+    return el('div', {}, head,
+      el('div', { class: 'rv' }, part('The change', text(r.change)), part('Approach', text(r.approach)), blast, risks, scope),
+      layers.map((L, i) => [
+        el('h3', { class: 'rv-layer' }, `Layer ${i + 1} · `, el('a', { href: L.issue?.url, target: '_blank' }, `#${L.issue?.number ?? ''}`), ` ${L.title || ''}`),
+        el('div', { class: 'rv' }, part('This layer adds', text((L.review || {}).change)), choices(L), works(L, i)),
+      ]));
+  }
 
   function stackView() {
     const rows = layers.map((L, i) => el('tr', {},
