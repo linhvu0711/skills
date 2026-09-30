@@ -8,7 +8,7 @@ You made a change by hand in a chat and want it up for review: "make a PR", "ope
 
 ## What you get
 
-From a dirty tree to an open PR in one run. It makes a branch when you are on `main`, commits with the [commit](../commit/) rules, runs the repo's own checks, pushes, and opens the PR ready for review. The branch, the title, the body, and the size label follow the shared [PR shape](../../shared-skill-core/pr-shape.md): `Closes #N` when an issue exists, `Summary`, `Where to look`, `Breaking changes` when something else must happen, `Proof`, and `Follow-ups`. A repo with its own PR template keeps that template's headings. When the branch already has an open PR, it pushes and writes the title and body again for the whole branch. It stops when files that are not part of this work are in the tree, when a check is red, and when the push is rejected. The last message:
+From a dirty tree to an open PR in one run. It makes a branch when you are on `main`, commits with the [commit](../commit/) rules, runs the repo's own checks, pushes, and opens the PR ready for review. The branch, the title, the body, and the size label follow the shared [PR shape](../../shared-skill-core/pr-shape.md): `Closes #N` when an issue exists, `Summary`, `Where to look`, `Breaking changes` when something else must happen, `Proof`, and `Follow-ups`. A repo with its own PR template keeps that template's headings. When the branch already has an open PR, it uses that PR's base, pushes, and writes the title and body again for the whole branch, keeping the `Follow-ups` lines. It stops when files that are not part of this work are in the tree, when a check is red, and when the push is rejected. The last message:
 
 ```
 PR: feat(export): write ISO dates (#61) · size S · checks: 2 green
@@ -22,7 +22,8 @@ It never merges.
 
 - `gh`, signed in, and `git`.
 - [commit](../commit/), for the commit messages.
-- From the shared core: [pr-shape.md](../../shared-skill-core/pr-shape.md) and [size.md](../../shared-skill-core/size.md).
+- From the shared core: [pr-shape.md](../../shared-skill-core/pr-shape.md), [size.md](../../shared-skill-core/size.md), and [issue-rules.md](../../shared-skill-core/issue-rules.md) for the repo's size labels.
+- `python3`, for the saved size-label map in [to-issue](../to-issue/)'s `scripts/conventions.py`.
 
 ## Fits with
 

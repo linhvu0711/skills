@@ -28,13 +28,16 @@ rest is this skill's.
    ```
 
    `gh` missing or not signed in: stop, and give the user
-   `gh auth login`. The base is the default branch, or the branch the
-   user named. `git fetch origin <base>`. Done when you hold the repo,
-   the base, the current branch, and the changed files.
+   `gh auth login`. Then the open PR of this branch, if any:
+   `gh pr list --head <branch> --state open --json number,url,baseRefName`.
+   The base is that PR's `baseRefName`; with no PR, the branch the user
+   named, else the default branch. `git fetch origin <base>`. Done when
+   you hold the repo, the base, the current branch, the open PR or
+   none, and the changed files.
 
 2. **Scope.** The PR holds the work of this chat, or the files a caller
-   named. Read `git status --short` and
-   `git log --oneline origin/<base>..HEAD`.
+   named. Read `git status --short`, which lists staged and unstaged
+   files, and `git log --oneline origin/<base>..HEAD`.
    - No changed file and no commit ahead of the base: say
      `Nothing to put in a PR.` and stop.
    - A changed file that this chat did not touch and no caller named:
@@ -54,15 +57,17 @@ rest is this skill's.
    shape § Branch, or the caller's name. On another branch: stay on
    it. Done when HEAD is on the PR's branch.
 
-5. **Commit.** Stage the files by name, `git add -- <files>`, so only
-   this work goes in. Write each message by `../commit/SKILL.md`, one
-   commit per logical change. Done when `git status --short` lists none
-   of the PR's files.
+5. **Commit.** One commit per logical change, each message by
+   `../commit/SKILL.md`. Commit by path, `git commit -F <message-file>
+   -- <files>`: git commits only those paths, and any other staged file
+   stays staged and out of the PR. Done when `git status --short` lists
+   none of the PR's files and `git diff --name-only
+   origin/<base>...HEAD` lists only this work's files.
 
-6. **Checks.** The repo's checks are the commands `AGENTS.md` or
-   `CLAUDE.md` names; else the `test`, `lint`, and `typecheck` scripts
-   in `package.json`; else the ones `CONTRIBUTING.md` names. Run each
-   one. A check that passed in this session after the last file change
+6. **Checks.** The repo's checks are every command `AGENTS.md` or
+   `CLAUDE.md` names as a check, and every `test`, `lint`, and
+   `typecheck` script in `package.json`, each command once. Neither
+   source has one: the checks `CONTRIBUTING.md` names. Run each one. A check that passed in this session after the last file change
    already counts: use that result and say so. A red check: show its
    failing lines and stop, with the PR not opened. Done when every
    check is green and you hold each command, the short SHA of HEAD, and
@@ -76,24 +81,34 @@ rest is this skill's.
    (`.github/pull_request_template.md`, or `.github/PULL_REQUEST_TEMPLATE/`).
    Write the title and the body by the PR shape, for the whole branch
    against the base (`git diff origin/<base>...HEAD`), to a file
-   outside the tree: `f=$(mktemp)`. Done when every part of the shape
+   outside the tree: `f=$(mktemp)`. An open PR: read its body first,
+   `gh pr view <n> --json body -q .body`, and carry every line under
+   `Follow-ups` into the new body; those issues are not in the diff.
+   Done when every part of the shape
    is written or left out for the reason the shape gives, and no
    placeholder is left.
 
-9. **Open.** `gh pr list --head <branch> --state open --json number,url`.
+9. **Open.** The open PR from step 1 decides.
    - No PR: `gh pr create --base <base> --head <branch> --title
      "<title>" --body-file "$f"`, ready for review.
    - An open PR: `gh pr edit <n> --title "<title>" --body-file "$f"`.
-     The new body covers the whole branch and replaces the old one;
-     GitHub keeps the old one in the edit history.
+     The new body covers the whole branch and replaces the old one,
+     its `Follow-ups` kept; GitHub keeps the old body in the edit
+     history.
 
    Done when `gh pr view <n> --json title,body` shows what you wrote.
 
-10. **Label.** `gh label list --search size --json name -q '.[].name'`.
-    The repo has size labels: size the diff with
+10. **Label.** Find the repo's size labels the way
+    `../../shared-skill-core/issue-rules.md` § Repo convention reads its
+    `size` line: the saved map from `python3
+    ../to-issue/scripts/conventions.py get <owner/repo>`, else the labels
+    that clearly name a size (`size/S`, `Size: Small`, `effort-large`,
+    bare `S`) in `gh label list --limit 200 --json name -q '.[].name'`,
+    plus an XL label when the repo has one. Size the diff with
     `../../shared-skill-core/size.md`, put on the label for that size,
-    and take off any other size label. No size labels: no label. Done
-    when the PR has one size label, or the repo has none.
+    and take off any other size label. No size labels: no label, and
+    none created. Done when the PR has one size label, or the repo has
+    none.
 
 11. **Report.** Chat gets this and nothing more:
 
