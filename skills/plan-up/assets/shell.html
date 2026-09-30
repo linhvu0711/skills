@@ -11,6 +11,7 @@
     --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2230; --muted: #5d6675; --line: #e2e6ec;
     --accent: #2f6fed; --accent-ink: #ffffff; --soft: #eef3ff;
     --ok: #1f8a4c; --ok-soft: #e6f5ec; --warn: #b3660b; --warn-soft: #fff4e3; --neutral-soft: #f1f3f6;
+    --bad: #c23b32; --bad-soft: #fbe9e7;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.06);
@@ -20,6 +21,7 @@
       --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
       --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
       --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
+      --bad: #f07a70; --bad-soft: #3a2220;
       --shadow: none;
     }
   }
@@ -27,6 +29,7 @@
     --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
     --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
     --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
+    --bad: #f07a70; --bad-soft: #3a2220;
     --shadow: none;
   }
   * { box-sizing: border-box; }
@@ -115,6 +118,7 @@
 
   .rv-head { color: var(--muted); font-size: 13.5px; margin: -8px 0 16px; }
   .rv { display: grid; gap: 12px; }
+  .rv > * { min-width: 0; }
   .rv-part { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 16px; }
   .rv-part > h3 { margin: 0 0 6px; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .rv-part > p { margin: 0; }
@@ -126,6 +130,13 @@
   .rv-list .why { color: var(--muted); font-size: 13.5px; }
   .rv-list button.ref { border: 0; cursor: pointer; }
   .rv-list button.ref:hover { color: var(--accent); }
+  .map { margin-top: 12px; }
+  .map h4 { margin: 0 0 6px; font-size: 13px; }
+  .mapkey { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; width: fit-content; max-width: 100%; margin: 0 0 8px auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 12.5px; color: var(--muted); }
+  .mapkey b { color: var(--ink); }
+  .mapkey span { display: inline-flex; align-items: center; gap: 5px; }
+  .mapwrap { overflow-x: auto; }
+  .mapwrap svg { display: block; margin: 0 auto; max-width: 100%; min-width: 620px; height: auto; }
   .scope { display: grid; grid-template-columns: 44px 1fr; gap: 4px 10px; }
   .scope b { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
   .footer { margin-top: 28px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; }
@@ -156,7 +167,7 @@
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <main id="panels"></main>
-  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">S2</span>, <span class="ref">W1</span>, <span class="ref">D3</span>, or <span class="ref">#4</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
+  <div class="footer">Say <b>ok</b> in chat, or name a ref like <span class="ref">M1</span>, <span class="ref">S2</span>, <span class="ref">W1</span>, <span class="ref">D3</span>, or <span class="ref">#4</span> and say what to change. Keys: <kbd>1</kbd>–<kbd>9</kbd> switch tabs, <kbd>e</kbd> expand all, <kbd>c</kbd> collapse all.</div>
 </div>
 
 <script>
@@ -294,7 +305,8 @@ const DATA = {};
         const v = String(b[k] ?? '').trim();
         const none = /^none\b/i.test(v);
         return el('span', { class: 'badge ' + (none ? 'kind' : 'warn'), html: rich(`${lab}: ${v || '?'}`) });
-      })));
+      })),
+      mapView());
     const risks = part('Risks and assumptions', (r.risks || []).length
       ? el('ul', { class: 'rv-list' }, r.risks.map((x) => el('li', {},
         el('span', { class: 'badge ' + (/^P\d/.test(x.proved || '') ? 'ok' : 'warn') }, x.proved || 'not proved'),
@@ -317,8 +329,120 @@ const DATA = {};
       el('div', { class: 'rv' }, part('The change', text(r.change)), part('Approach', text(r.approach)), blast, risks, scope),
       layers.map((L, i) => [
         el('h3', { class: 'rv-layer' }, `Layer ${i + 1} · `, el('a', { href: L.issue?.url, target: '_blank' }, `#${L.issue?.number ?? ''}`), ` ${L.title || ''}`),
-        el('div', { class: 'rv' }, part('This layer adds', text((L.review || {}).change)), choices(L), works(L, i)),
+        el('div', { class: 'rv' }, part('This layer adds', text((L.review || {}).change),
+          layerRefs(i + 1).length ? el('p', { style: 'margin-top:6px' }, 'On the map: ', layerRefs(i + 1).map((r) => [el('span', { class: 'ref' }, r), ' '])) : null), choices(L), works(L, i)),
       ]));
+  }
+
+  // Change map: a box is a part with a job, an arrow is what moves, a gray area is the app or package.
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const sv = (tag, attrs, text) => {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  const TONE = { new: ['var(--ok)', 'var(--ok-soft)'], changed: ['var(--warn)', 'var(--warn-soft)'], removed: ['var(--bad)', 'var(--bad-soft)'], same: ['var(--muted)', 'var(--panel)'] };
+  const tone = (c) => TONE[c] || TONE.same;
+  const SIGN = { new: '+ ', removed: '− ' };
+  const CW = 330, RH = 130, NW = 190, NH = 56, PAD = 34;
+
+  function mapSvg(m, id) {
+    const parts = m.parts || [], flows = m.flows || [];
+    const W = (Math.max(0, ...parts.map((p) => p.x)) + 1) * CW + PAD * 2;
+    const H = (Math.max(0, ...parts.map((p) => p.y)) + 1) * RH + PAD;
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Change map' });
+    const defs = sv('defs', {});
+    for (const c of Object.keys(TONE)) {
+      const mk = sv('marker', { id: `${id}-${c}`, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+      mk.append(sv('path', { d: 'M0,0 L10,5 L0,10 z', style: `fill:${tone(c)[0]}` }));
+      defs.append(mk);
+    }
+    svg.append(defs);
+    const pos = {};
+    for (const p of parts) pos[p.ref] = { cx: PAD + p.x * CW + CW / 2, cy: PAD / 2 + p.y * RH + RH / 2, w: NW, h: NH };
+    const groups = sv('g', {}), edges = sv('g', {}), boxes = sv('g', {}), labels = sv('g', {});
+    const byGroup = {};
+    for (const p of parts) if (p.group) (byGroup[p.group] = byGroup[p.group] || []).push(pos[p.ref]);
+    for (const [name, ps] of Object.entries(byGroup)) {
+      const x1 = Math.min(...ps.map((q) => q.cx - q.w / 2)) - 14, x2 = Math.max(...ps.map((q) => q.cx + q.w / 2)) + 14;
+      const y1 = Math.min(...ps.map((q) => q.cy - q.h / 2)) - 30, y2 = Math.max(...ps.map((q) => q.cy + q.h / 2)) + 14;
+      groups.append(sv('rect', { x: x1, y: y1, width: x2 - x1, height: y2 - y1, rx: 12, style: 'fill:var(--neutral-soft);stroke:var(--line)' }));
+      groups.append(sv('text', { x: x1 + 12, y: y1 + 19, 'font-size': 12, 'font-weight': 650, 'letter-spacing': '.04em', style: 'fill:var(--muted)' }, name.toUpperCase()));
+    }
+    const clip = (q, tx, ty) => {
+      const dx = tx - q.cx, dy = ty - q.cy;
+      const k = Math.min(Math.abs((q.w / 2 + 4) / (dx || 1e-9)), Math.abs((q.h / 2 + 4) / (dy || 1e-9)));
+      return [q.cx + dx * k, q.cy + dy * k];
+    };
+    for (const f of flows) {
+      const a = pos[f.from], b = pos[f.to];
+      if (!a || !b) continue;
+      const c = f.change || 'same', [ink] = tone(c);
+      const len = Math.hypot(b.cx - a.cx, b.cy - a.cy) || 1, bend = f.bend || 0;
+      const qx = (a.cx + b.cx) / 2 - (b.cy - a.cy) / len * bend, qy = (a.cy + b.cy) / 2 + (b.cx - a.cx) / len * bend;
+      const [x1, y1] = clip(a, qx, qy), [x2, y2] = clip(b, qx, qy);
+      edges.append(sv('path', { d: `M${x1},${y1} Q${qx},${qy} ${x2},${y2}`, fill: 'none', 'stroke-width': c === 'same' ? 1.5 : 2, 'marker-end': `url(#${id}-${c})`, style: `stroke:${ink}` }));
+      const lx = (x1 + 2 * qx + x2) / 4, ly = (y1 + 2 * qy + y2) / 4;
+      const t = (f.layer ? f.layer + ' · ' : '') + (SIGN[c] || '') + (f.label || '');
+      const tw = t.length * 6.2 + 10;
+      labels.append(sv('rect', { x: lx - tw / 2, y: ly - 10, width: tw, height: 20, rx: 4, style: 'fill:var(--panel)' }));
+      labels.append(sv('text', { x: lx, y: ly + 4, 'text-anchor': 'middle', 'font-size': 12, style: `fill:${c === 'same' ? 'var(--muted)' : ink}` }, t));
+    }
+    for (const p of parts) {
+      const q = pos[p.ref], c = p.change || 'same', [ink, soft] = tone(c), x = q.cx - q.w / 2, y = q.cy - q.h / 2;
+      const g = sv('g', {});
+      const at = Array.isArray(p.at) ? p.at.join('\n') : (p.at ? `made by ${p.at}` : '');
+      g.append(sv('title', {}, `${p.ref} ${p.name}${at ? '\n' + at : ''}`));
+      const paint = `fill:${soft};stroke:${ink}`;
+      if (p.kind === 'store') {
+        const ry = 7;
+        g.append(sv('path', { d: `M${x},${y + ry} A${q.w / 2},${ry} 0 0 1 ${x + q.w},${y + ry} V${y + q.h - ry} A${q.w / 2},${ry} 0 0 1 ${x},${y + q.h - ry} Z`, 'stroke-width': 1.5, style: paint }));
+        g.append(sv('path', { d: `M${x},${y + ry} A${q.w / 2},${ry} 0 0 0 ${x + q.w},${y + ry}`, fill: 'none', 'stroke-width': 1.5, style: `stroke:${ink}` }));
+      } else {
+        g.append(sv('rect', { x, y, width: q.w, height: q.h, rx: 8, 'stroke-width': 1.5, 'stroke-dasharray': p.kind === 'outside' ? '5 4' : null, style: paint }));
+      }
+      const tagY = y + (p.kind === 'store' ? 23 : 13);
+      g.append(sv('text', { x: x + 7, y: tagY, 'font-size': 10, 'font-family': 'var(--mono)', style: 'fill:var(--muted)' }, p.ref));
+      if (p.layer) g.append(sv('text', { x: x + q.w - 7, y: tagY, 'text-anchor': 'end', 'font-size': 10, 'font-weight': 700, style: `fill:${ink}` }, p.layer));
+      g.append(sv('text', { x: q.cx, y: q.cy + (p.job ? 1 : 6), 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 600, style: 'fill:var(--ink)' }, (SIGN[c] || '') + p.name));
+      if (p.job) g.append(sv('text', { x: q.cx, y: q.cy + 18, 'text-anchor': 'middle', 'font-size': 11.5, style: 'fill:var(--muted)' }, p.job));
+      boxes.append(g);
+    }
+    svg.append(groups, edges, boxes, labels);
+    return svg;
+  }
+
+  // The key names only the marks this map uses.
+  function mapKey(m) {
+    const parts = m.parts || [], flows = m.flows || [];
+    const sw = (paint) => { const s = sv('svg', { width: 30, height: 18, viewBox: '0 0 30 18', 'aria-hidden': 'true' }); paint(s); return s; };
+    const items = [];
+    const partLabel = { new: 'New part', changed: 'Job changed', removed: 'Removed part', same: 'No change' };
+    const flowLabel = { new: 'New flow', changed: 'Changed flow', removed: 'Removed flow', same: 'Flow, no change' };
+    for (const c of Object.keys(TONE)) if (parts.some((p) => (p.change || 'same') === c))
+      items.push([sw((s) => s.append(sv('rect', { x: 2, y: 2, width: 26, height: 14, rx: 3, 'stroke-width': 1.5, style: `fill:${tone(c)[1]};stroke:${tone(c)[0]}` }))), partLabel[c]]);
+    if (parts.some((p) => p.kind === 'store')) items.push([sw((s) => { s.append(sv('path', { d: 'M6,4 A9,2.5 0 0 1 24,4 V14 A9,2.5 0 0 1 6,14 Z', 'stroke-width': 1.3, style: 'fill:var(--panel);stroke:var(--muted)' })); s.append(sv('path', { d: 'M6,4 A9,2.5 0 0 0 24,4', fill: 'none', 'stroke-width': 1.3, style: 'stroke:var(--muted)' })); }), 'Data store']);
+    if (parts.some((p) => p.kind === 'outside')) items.push([sw((s) => s.append(sv('rect', { x: 2, y: 2, width: 26, height: 14, rx: 3, 'stroke-width': 1.5, 'stroke-dasharray': '4 3', style: 'fill:none;stroke:var(--muted)' }))), 'Dashed: outside the repo']);
+    if (parts.some((p) => p.group)) items.push([sw((s) => s.append(sv('rect', { x: 1, y: 1, width: 28, height: 16, rx: 4, style: 'fill:var(--neutral-soft);stroke:var(--line)' }))), 'App or package']);
+    for (const c of Object.keys(TONE)) if (flows.some((f) => (f.change || 'same') === c))
+      items.push([sw((s) => { s.append(sv('line', { x1: 2, y1: 9, x2: 22, y2: 9, 'stroke-width': 2, style: `stroke:${tone(c)[0]}` })); s.append(sv('path', { d: 'M21,5 L28,9 L21,13 z', style: `fill:${tone(c)[0]}` })); }), flowLabel[c]]);
+    return el('div', { class: 'mapkey' }, el('b', {}, 'Key'), items.map(([s, t]) => el('span', {}, s, t)));
+  }
+
+  function mapView() {
+    if (d.maps == null) return null;
+    if (!d.maps.length) return el('p', { class: 'empty', style: 'margin-top:10px' }, 'No change map: no part or flow changes.');
+    return d.maps.map((m, i) => el('div', { class: 'map' }, m.area ? el('h4', {}, m.area) : null, mapKey(m), el('div', { class: 'mapwrap' }, mapSvg(m, `map${i}`))));
+  }
+  // The M refs a run's layer makes: its parts, and the parts its flows touch.
+  function layerRefs(n) {
+    const tag = `L${n}`, refs = new Set();
+    for (const m of d.maps || []) {
+      for (const p of m.parts || []) if (p.layer === tag) refs.add(p.ref);
+      for (const f of m.flows || []) if (f.layer === tag) { refs.add(f.from); refs.add(f.to); }
+    }
+    return [...refs].sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
   }
 
   function stackView() {

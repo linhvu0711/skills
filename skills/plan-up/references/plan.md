@@ -39,6 +39,12 @@ judgment is made here.
   what changes, how, what it touches, the choices, the risks, how we
   know it works, and the scope. The page shows it as the Review view,
   its first tab. Everything under it is for the executor.
+- **Change map**: the one diagram in the Review view. A box is a part
+  with a job, named in the repo's own words (`CONTEXT.md` first); an
+  arrow is what moves between parts, or who asks whom; a group is the
+  app or package the parts live in. A store box names the tables,
+  columns, or keys that change. Files are a box's details, never boxes,
+  and an import is never an arrow.
 - **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
   ticket is one **layer**; layer 1's PR targets the base, each later
   layer's PR targets the branch of the layer below.
@@ -70,6 +76,17 @@ Works when:
   - #2 <...>
 In:  <what the plan builds>, at most 4 lines
 Out: <what it leaves, with O refs>, at most 4 lines
+
+## Change map
+| Ref | Part | Job | Change | Group | Kind | At | Grid |
+|---|---|---|---|---|---|---|---|
+| M1 | setup command | now only asks Lifecycle | changed | CLI | part | `apps/cli/src/setup.ts` | 0,1 |
+| M2 | Lifecycle | install order, restore on fail | new | Collector | part | S1 | 1,1 |
+| M3 | Store | settings: + grant.<browser> keys | same | | store | `core/src/store.ts` | 3,1 |
+| M4 | plutil | macOS tool | new | | outside | | 2,0 |
+Flows:
+- M1 → M2: install (new)
+- M1 → M3: writes agent (removed)
 
 ## Facts
 Repo: owner/name        Base: main
@@ -137,7 +154,7 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 
 ## Run
 
-A run is one plan with the blocks above written once per layer. Three
+A run is one plan with the blocks above written once per layer. These
 blocks come first and once:
 
 ```markdown
@@ -152,6 +169,9 @@ Points: 6 (XS 1, S 2, M 4, L 8)
 <the stack's: Change, Approach, Blast radius, Risks, In, Out, as above,
 for the whole stack>
 
+## Change map
+<as above, for the whole stack, with a Layer column>
+
 ## Facts
 <as above, once; Base is the stack's base>
 
@@ -164,7 +184,13 @@ and under it a small `## Review` block, then Proof, Seams, Slices, UI
 walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
 The layer's Review holds three parts: `Change`, at most 2 lines, what
 this layer's PR adds to the stack; `Choices`, its forks and decisions;
-`Works when`, its Proof rows. Proof rows number from 1 in each
+`Works when`, its Proof rows.
+
+A run has one Change map, after the stack's Review, for the whole stack.
+Each part and flow that is not `same` ends with the layer that makes
+it: a `Layer` column (`L1`) on the parts table, and `, L1` inside a
+flow's brackets, as in `(new, L1)`. The page lists each layer's refs
+under its small Review. Proof rows number from 1 in each
 layer. Each layer's videos are its own PR's proof.
 
 A seam or a `Change` in layer n may name code that an earlier layer's
@@ -218,6 +244,8 @@ block above, and the Done rule holds whole.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
   only the `Decided` lines the issue's `Open` lines left.
+- **Change map.** As for any plan. The Explore round adds one ask: the
+  parts and flows around each seam the Steps touch.
 
 Two things end the short path:
 
@@ -256,6 +284,29 @@ links them. Each part keeps its limit; a part that needs more says less.
   in plain words.
 - `In` and `Out` are the scope. `Out` names the `Out of scope` lines by
   their `O` ref.
+
+**Change map.** Drawn when a part is added or removed, a job moves from
+one part to another, or a flow is added, removed, or changes. A change
+inside one part's job draws no map: the block holds one line, `None: no
+part or flow changes.`, so the reader sees that the plan checked.
+- A part is named in the repo's words and carries its job, or how its
+  job changes, in a few words. `Change` is `new`, `changed` (the job
+  changes), `removed`, or `same`. A `same` part is on the map only when
+  a changed flow touches it.
+- `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
+  what changes in it), or `outside` (a tool, a service, a person, or an
+  app the repo does not hold).
+- `At` is the files of a part that exists now, `file` or `file:line`,
+  comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
+  `outside` part leaves it empty.
+- A flow names what moves or what is asked, never `imports`. `(same)`
+  may be left out.
+- At most 12 parts. More: merge the `same` parts no changed flow needs,
+  then parts of one group whose flows match. Still more: two maps, one
+  per area, each block headed `## Change map · <area>`.
+- `Grid` is `column,row`, and no two parts share a cell. Flow goes left
+  to right: people and outside callers on the left, stores on the right.
+  The parts of one group sit in cells next to each other.
 
 **Facts.** Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
@@ -410,3 +461,9 @@ facts or forks.
   at most 2; `Blast radius` all six lines; `Choices` every big fork and
   at most 3 `Decided` lines; `Risks` at most 3; `Works when` one line
   per Proof row. A run: one stack Review, and one small Review per layer.
+- The Change map block is there: a map, or the `None` line when no
+  part, job, or flow changes. A map has at most 12 parts, each with a
+  job, a `Change`, and a free `Grid` cell; every part but an `outside`
+  one has an `At`; every `same` part is touched by a changed flow; every
+  flow names what moves; in a run, every part and flow that is not
+  `same` names its layer.

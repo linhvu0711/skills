@@ -12,6 +12,8 @@ Reads the DATA the page embeds and checks:
   no `Before` is blank, and `as walk n` names an earlier walk of the same layer whose `Before` names steps;
 - each Review block in the .md has its parts, each in its limit, and the page's `review` fields
   match it: one block for a ticket; a run has the stack's block and one small block per layer;
+- the .md has a `## Change map` block, a `None:` line or at most two maps, and each map keeps
+  the rules of plan.md § Change map; the page's `maps` match it part by part and flow by flow;
 - no string holds `[object`;
 - no string holds an odd number of backticks, which the page would show raw.
 
@@ -225,6 +227,141 @@ def review_problems(reviews, proof_rows, data, layers):
             yield f"{name}.works: page has {len(lr.get('works') or [])}, .md has {md_works}"
 
 
+CHANGES = {"new", "changed", "removed", "same"}
+KINDS = {"part", "store", "outside"}
+FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
+
+
+def md_maps(md_path):
+    """The `## Change map` blocks: None, or a list of maps with their parts and flows."""
+    lines = open(md_path, encoding="utf-8").read().splitlines()
+    is_run = any(l.startswith("## Layer ") or l.startswith("## Stack") for l in lines)
+    blocks, cur, header, in_flows = [], None, None, False
+    for line in lines:
+        if line.startswith("## "):
+            head = line[3:].strip()
+            cur = None
+            if head.lower().startswith("change map"):
+                area = head.split("·", 1)[1].strip() if "·" in head else ""
+                cur = {"area": area, "none": False, "parts": [], "flows": []}
+                blocks.append(cur)
+                header, in_flows = None, False
+            continue
+        if cur is None or not line.strip():
+            continue
+        t = line.strip()
+        if t.lower().startswith("none:"):
+            cur["none"] = True
+        elif t.startswith("|"):
+            cells = [c.strip() for c in t.strip("|").split("|")]
+            if cells and cells[0] == "Ref":
+                header = cells
+            elif header and cells and re.match(r"M\d+$", cells[0]):
+                cur["parts"].append(dict(zip(header, cells)))
+        elif t.lower().startswith("flows:"):
+            in_flows = True
+        elif in_flows and t.startswith("-"):
+            m = FLOW.match(t)
+            if not m:
+                cur["flows"].append({"bad": t})
+                continue
+            tags = [x.strip() for x in (m.group(4) or "").split(",") if x.strip()]
+            change = next((x for x in tags if x in CHANGES), "same")
+            layer = next((x for x in tags if re.match(r"L\d+$", x)), None)
+            cur["flows"].append({"from": m.group(1), "to": m.group(2), "label": m.group(3), "change": change, "layer": layer})
+    return blocks, is_run
+
+
+def grid(cell):
+    m = re.match(r"\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$", cell or "")
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def map_problems(blocks, is_run, data):
+    if not blocks:
+        yield "change map: the .md has no `## Change map` block; write a map, or `None: no part or flow changes.`"
+        return
+    if any(b["none"] for b in blocks):
+        if len(blocks) > 1 or blocks[0]["parts"] or blocks[0]["flows"]:
+            yield "change map: a `None:` line stands alone, with no map beside it"
+        if data.get("maps"):
+            yield f"DATA.maps has {len(data['maps'])} map(s), the .md says `None`"
+        return
+    if len(blocks) > 2:
+        yield f"change map: {len(blocks)} maps, the limit is 2"
+    seen = set()
+    for n, b in enumerate(blocks, 1):
+        name = f"change map {n}" if len(blocks) > 1 else "change map"
+        parts = b["parts"]
+        if not parts:
+            yield f"{name}: no parts"
+        if len(parts) > 12:
+            yield f"{name}: {len(parts)} parts, the limit is 12; merge the `same` ones first"
+        refs, cells = {}, {}
+        for p in parts:
+            ref = p.get("Ref", "?")
+            if ref in seen:
+                yield f"{name}: {ref} is used twice"
+            seen.add(ref)
+            refs[ref] = p
+            if not p.get("Part") or not p.get("Job"):
+                yield f"{name}: {ref} needs a part name and a job"
+            if p.get("Change") not in CHANGES:
+                yield f"{name}: {ref} change `{p.get('Change')}` is not new, changed, removed, or same"
+            if p.get("Kind") not in KINDS:
+                yield f"{name}: {ref} kind `{p.get('Kind')}` is not part, store, or outside"
+            if p.get("Kind") != "outside" and not (p.get("At") or "").strip():
+                yield f"{name}: {ref} has no files and no slice in `At`"
+            g = grid(p.get("Grid"))
+            if g is None:
+                yield f"{name}: {ref} grid `{p.get('Grid')}` is not `column,row`"
+            elif g in cells:
+                yield f"{name}: {ref} and {cells[g]} share the grid cell {p.get('Grid')}"
+            else:
+                cells[g] = ref
+            if is_run and p.get("Change") != "same" and not re.match(r"L\d+$", p.get("Layer") or ""):
+                yield f"{name}: {ref} is {p.get('Change')} but names no layer"
+        touched = set()
+        for f in b["flows"]:
+            if "bad" in f:
+                yield f"{name}: a flow line is not `- M1 → M2: what moves (change)`: {f['bad'][:60]}"
+                continue
+            for end in (f["from"], f["to"]):
+                if end not in refs:
+                    yield f"{name}: flow {f['from']} → {f['to']} names {end}, which is not a part of this map"
+            if not f["label"] or re.fullmatch(r"imports?", f["label"].strip(), re.I):
+                yield f"{name}: flow {f['from']} → {f['to']} must name what moves, not `{f['label']}`"
+            if f["change"] != "same":
+                touched.update((f["from"], f["to"]))
+                if is_run and not f["layer"]:
+                    yield f"{name}: flow {f['from']} → {f['to']} is {f['change']} but names no layer"
+        for ref, p in refs.items():
+            if p.get("Change") == "same" and ref not in touched:
+                yield f"{name}: {ref} has no change and no changed flow touches it; leave it out"
+
+    # The page against the .md.
+    maps = data.get("maps")
+    if maps is None:
+        yield "DATA.maps is missing"
+        return
+    if len(maps) != len(blocks):
+        yield f"DATA.maps has {len(maps)} map(s), the .md has {len(blocks)}"
+    for n, (b, m) in enumerate(zip(blocks, maps), 1):
+        name = f"DATA.maps[{n - 1}]"
+        if (m.get("area") or "") != b["area"]:
+            yield f"{name}.area: page `{m.get('area')}`, .md `{b['area']}`"
+        want = [(p.get("Ref"), p.get("Change"), p.get("Kind"), grid(p.get("Grid")), (p.get("Layer") or None)) for p in b["parts"]]
+        have = [(p.get("ref"), p.get("change"), p.get("kind"), (float(p.get("x", -1)), float(p.get("y", -1))), p.get("layer") or None) for p in m.get("parts") or []]
+        if have != want:
+            diff = next(((w, h) for w, h in zip(want, have) if w != h), (want[len(have):] or None, have[len(want):] or None))
+            yield f"{name}.parts differ from the .md: .md {diff[0]}, page {diff[1]}"
+        want_f = [(f["from"], f["to"], f["change"], f["layer"]) for f in b["flows"] if "bad" not in f]
+        have_f = [(f.get("from"), f.get("to"), f.get("change") or "same", f.get("layer") or None) for f in m.get("flows") or []]
+        if have_f != want_f:
+            diff = next(((w, h) for w, h in zip(want_f, have_f) if w != h), (want_f[len(have_f):] or None, have_f[len(want_f):] or None))
+            yield f"{name}.flows differ from the .md: .md {diff[0]}, page {diff[1]}"
+
+
 def md_before_problems(walks):
     runs = len({w["layer"] for w in walks}) > 1
     for w in walks:
@@ -282,6 +419,8 @@ def main():
     problems.extend(md_before_problems(md_walks))
     reviews, proof_rows = md_reviews(sys.argv[2])
     problems.extend(review_problems(reviews, proof_rows, data, layers))
+    blocks, is_run = md_maps(sys.argv[2])
+    problems.extend(map_problems(blocks, is_run, data))
     walks = [w for L in layers for w in L.get("walks") or []]
     for i, (md_walk, walk) in enumerate(zip(md_walks, walks), 1):
         before = walk.get("before")
@@ -301,7 +440,8 @@ def main():
     if problems:
         print("\n".join(problems))
         sys.exit(1)
-    print("page ok: " + " · ".join(f"{have[k]} {k}" for k in have) + f" · {len(reviews)} review")
+    print("page ok: " + " · ".join(f"{have[k]} {k}" for k in have) + f" · {len(reviews)} review"
+          + f" · {sum(len(b['parts']) for b in blocks)} map parts")
 
 
 if __name__ == "__main__":

@@ -37,6 +37,13 @@ const DATA = {
     risks: [ { belief, ifWrong, proved: "P1" | "not proved" } ],     // [] when the .md says `- none`
     in: "what the plan builds", out: "what it leaves, O refs"
   },
+  maps: [                                                            // the Change map; [] when the .md says `None`
+    { area: "",                                                      // the `· <area>` of a split map, else ""
+      parts: [ { ref: "M1", name, job, change: "new" | "changed" | "removed" | "same",
+                 group: "CLI" | "", kind: "part" | "store" | "outside",
+                 at: ["apps/cli/src/setup.ts"] | "S2" | [], x: 0, y: 1, layer: "L1" | null } ],
+      flows: [ { from: "M1", to: "M2", label, change, layer: "L1" | null, bend: 0 } ] }   // bend: optional, pixels
+  ],
   facts: { repo, base, test, typecheck, lint, build, run, ui, open, screen, platform, standards },
   proved: [ { fact, ran, date: "YYYY-MM-DD", usedBy: "S2, D1" } ],   // one per probe; [] when none ran
   points: "Points: 6 (XS 1, S 2, M 4, L 8)",                        // runs only
@@ -67,10 +74,14 @@ const DATA = {
 
 The Review tab comes first and shows `review`, then each layer's
 `review`: a single ticket reads as one block, a run as the stack's block
-and one small block per layer.
+and one small block per layer. The Change map sits under Blast radius,
+drawn from `maps` with a key of the marks it uses; a run's layer blocks
+list the `M` refs their layer makes. `x` and `y` are the `Grid` cell.
+`bend` curves a flow that would cross a box; it is page layout only, and
+the `.md` has no field for it.
 
-Refs the page shows, and the user names in chat: `P1` proved 1, `S2`
-slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
+Refs the page shows, and the user names in chat: `M1` map part 1, `P1`
+proved 1, `S2` slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of
 scope 1, `#4` Proof row 4. An edit request names one of these; change
 the `.md` line and the `DATA` field, rebuild.
 
@@ -115,7 +126,8 @@ Then, in this order:
    It prints `page ok` or one line per problem: a count that differs
    from the `.md`, a slice whose `docs` name other files, a `Proved`
    line with another date or `Used by`, a Review part that is missing,
-   over its limit, or differs from the `.md`, `[object`, or a string
+   over its limit, or differs from the `.md`, a Change map that breaks a
+   rule of `plan.md` § Change map or differs from the `.md`, `[object`, or a string
    with an odd number of backticks. Fix the `DATA` or the `.md`,
    rebuild, run it again.
 2. **The review**, in the person's own browser: `open "<url>"` on macOS,
