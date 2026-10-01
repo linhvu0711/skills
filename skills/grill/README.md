@@ -32,7 +32,7 @@ It never merges the PR.
 
 - Calls [unslop](../unslop/) and [make-pr](../make-pr/).
 - Sends a bug to [triage](../triage/) first, and work too big for one session to [discover-path](../discover-path/).
-- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), [set-coding-standards](../set-coding-standards/), and [set-review-rules](../set-review-rules/).
+- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), [set-coding-standards](../set-coding-standards/), [audit-coding-standards](../audit-coding-standards/), and [set-review-rules](../set-review-rules/).
 - Named as the next step when a gate fails in [to-issue](../to-issue/), [to-epic](../to-epic/), [plan-up](../plan-up/), and [create-mockup](../create-mockup/).
 
 ## Credits

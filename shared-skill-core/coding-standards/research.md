@@ -55,7 +55,7 @@ Each brief holds, inline:
 
 - The stack part, its installed version, and the features the code uses,
   or "planned" with where it is named.
-- The areas it covers, from the `Areas` table in `SKILL.md`.
+- The areas it covers, from `checks.md` § Areas.
 - The `Source levels` section above, pasted in full.
 - The order: context7 first (`resolve-library-id`, then `query-docs`),
   then web search and fetch on level 1 and level 2 sites.

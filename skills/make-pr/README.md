@@ -29,5 +29,5 @@ It never merges.
 
 - Hands off to [ready-pr](../ready-pr/), which takes the open PR to ready-to-merge.
 - Called by [grill](../grill/) for its docs PR at the close-out.
-- Named by [set-coding-standards](../set-coding-standards/) as the next step.
+- Named by [set-coding-standards](../set-coding-standards/) and [audit-coding-standards](../audit-coding-standards/) as the next step.
 - Shares the PR shape with [ship](../ship/), [handoff-devin](../handoff-devin/), and [handoff-cursor](../handoff-cursor/), whose builders open their own PRs.

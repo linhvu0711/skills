@@ -1,18 +1,17 @@
 ---
 name: set-coding-standards
-description: "Run the coding-standards audit, grill the user on its findings, then write CODING_STANDARDS.md, each rule tied to a source read on the run, plus the tool configs that enforce it. Points CLAUDE.md and AGENTS.md at the file. No commit."
+description: "Make a repo's first CODING_STANDARDS.md: research the stack, read the code and any scattered rules, grill the user, then write the Standard and the tool configs that enforce it. No commit."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-You write one source of truth for how code is written in this repo:
-`CODING_STANDARDS.md` at the root, enforced by the tools the project already
-has, pointed at from `CLAUDE.md` and `AGENTS.md`. The audit finds what is
-true and what current sources say, the grill settles what is wanted,
-then you write. A rule comes from a source the audit read, the code, or
-the user; `../audit-coding-standards/research.md` defines the source
-levels.
+You set up the repo's first Standard: `CODING_STANDARDS.md` at the root,
+enforced by the tools the project already has, pointed at from
+`CLAUDE.md` and `AGENTS.md`. The research finds what current sources
+say, the code shows what is true, scattered rules show what the team
+already wrote, the grill settles what is wanted, then you write. Once
+the Standard exists, `audit-coding-standards` checks and changes it.
 
 ## Facts
 
@@ -21,114 +20,59 @@ Explore agents retrieve, short lookups are yours.
 
 ## Steps
 
-1. **Audit.** Invoke the `audit-coding-standards` skill with the Skill
-   tool and run it to its report. Its verdict decides:
+1. **Gate.** `CODING_STANDARDS.md` exists at the root: say "A Standard
+   already exists. Run `/audit-coding-standards` to check and change
+   it." Stop. Done when you know the root has no `CODING_STANDARDS.md`.
 
-   - Empty repo: repeat what the audit said. Stop.
-   - `clean`: say it is clean, repeat the areas checked. When the audit
-     re-checked sources, update their rows in the Sources table from the
-     report's `Sources` line: the version it read and today's date. That
-     file is the only change. Stop.
-   - `needs work`: continue at step 2 with the report as the seed.
+2. **Find and size.** Read `../../shared-skill-core/coding-standards/checks.md`.
+   Run its `Find the rules` and `Size the repo`. Every rule found is
+   scattered. Empty bucket: say what the table says, stop.
 
-   Done when the report is in chat with a verdict.
+3. **Research.** Read `../../shared-skill-core/coding-standards/research.md`
+   and follow it. With no Sources table, every stack part is due.
+   Done when the done line at the end of `research.md` holds.
 
-2. **Grill.** Invoke the `grill` skill with the Skill tool. Seed: the
-   audit report. Open decisions: fold scattered rules into one
-   `CODING_STANDARDS.md` or keep them where they are; for each drifted
-   rule, keep and enforce, or change the rule; for each gap, add a rule
-   or leave the area out on purpose; for each proposal, accept, change,
-   or drop; for each "behind current practice" finding, change the code
-   (a `chore` issue) or keep the code's way as the rule; for each
-   conflict, the level 1 rule or the level 2 rule, with both links shown;
-   for each `model's view, no source` note, keep the pattern or change
-   it; for each `no source` area, the user writes the rule or leaves the
-   area out. A stack part the user names as planned during the grill is
-   researched per `../audit-coding-standards/research.md` before its
-   areas are settled. Then continue at step 3.
+4. **Read the code and the scattered rules.** Run `Sample the code`.
+   Then run the first three checks of `Check the rules` (outdated,
+   drift, behind current practice) on the scattered rules.
 
-3. **Write.** Files in the working tree, nothing else:
+   Build one proposal per area in `Areas`, the first that applies:
 
-   - `CODING_STANDARDS.md` at the root, in the shape under `File shape`. Every
-     settled rule is in it. Rules folded in from other files are removed
-     from those files.
-   - `docs/standards/<topic>.md` for a topic past about 40 rules, per
-     `File shape`.
-   - `.editorconfig`, written or updated to match.
-   - Configs of the tools the project already has, so each rule a tool can
-     check is checked. New tools and CI changes become issues in step 4.
-   - `CLAUDE.md` and `AGENTS.md`, where they exist: one line, "Read
-     `CODING_STANDARDS.md` before you write or review code."
+   - A scattered rule for the area that is not outdated: that rule,
+     marked `scattered: <path>`, with its drift and behind findings.
+   - Small bucket: the research's rule, with its source.
+   - Middle and big: the code's majority pattern where the code has
+     one, else the research's rule. Where the pattern and the research
+     differ, the pattern is the proposal and the difference is a
+     "behind current practice" finding.
+   - Neither: down `research.md` § No source.
 
-   Done when every settled rule is in `CODING_STANDARDS.md` or one topic
-   file exactly once, every rule from a source names a row of the
-   Sources table, every tool-checkable rule is in a config, and
-   `git status` lists only the files above.
+   Done when every scattered rule is checked, and every area has a
+   proposal with its source or evidence, a `model's view` note, or
+   `no source`.
 
-4. **Hand off.** In chat:
+5. **Report.** Print the report in `checks.md` § Report shape, the set
+   lines. Done when it is in chat.
 
-   - Files changed, one line each.
-   - Drift kept as code problems: one line per rule with count and the
-     issue you recommend for it (`fix` ticket, or a `chore` when it is a
-     sweep). Name `/to-issue` for one, `/capture` for a seed.
-   - New tools or CI the rules need: one recommended issue each.
-   - Agent-ready sources the audit found: one line each, "you can install
-     <name> as an extra: <URL>".
-   - Stack parts under `Not researched`: name them, and say to run
-     `/set-coding-standards` again with web access.
-   - Last line: `Ready for /commit` or `Ready for /make-pr`.
+6. **Grill.** Read `../../shared-skill-core/coding-standards/write.md`
+   and run its `Grill` with the report as the seed. A stopped grill
+   ends the run there.
 
-## File shape
+7. **Write.** Run `write.md` § Write. Every scattered rule the grill
+   folded in leaves its old file.
 
-`CODING_STANDARDS.md` reads as rules, one per line, grouped by area heading in
-the order of the `Areas` table in
-`../audit-coding-standards/SKILL.md`. Each rule states the
-positive form: "Files are `kebab-case`", "Errors are returned, never thrown
-across a module edge". Each rule is in our own words, never the source's
-text copied. A rule from a source ends with the source's name in
-parentheses, then a rule a tool checks names the tool in brackets:
-`Components that use state are Client Components (react-docs) [eslint]`.
-A rule from the code or the user carries no source name. A rule with a
-reason that is not obvious gets one sentence of why under it. Areas left
-out on purpose are listed once at the end under "Not covered", so the
-next reader knows it was a choice.
-
-A topic past about 40 rules (one area, or one stack part's rules) moves
-to `docs/standards/<topic>.md` in the same rule shape. Its heading stays
-in `CODING_STANDARDS.md` with one line: "Rules are in
-`docs/standards/<topic>.md`."
-
-The file ends with the one Sources table, for all rules in all files:
-
-```
-## Sources
-
-| Part | Name | Link | Version | Checked |
-|---|---|---|---|---|
-| react | react-docs | https://react.dev/reference/rules | 19 | 2026-09-30 |
-| general | conventional-commits | https://www.conventionalcommits.org/en/v1.0.0/ | 1.0.0 | 2026-09-30 |
-```
-
-`Part` is the stack part, or `general`. `Version` is the stack part's
-version the source covers, or `-` when it has none. `Checked` is the
-date the audit read it. A stack part that was searched and gave no rule
-still gets a row, for the main page searched. A later audit reads this
-table to know which stack parts are due.
-
-## Secrets
-
-Configs and `.env` files carry secrets. Redact before they enter the chat
-or an agent brief.
+8. **Hand off.** Run `write.md` § Hand off.
 
 ## Examples
 
 **User:** `/set-coding-standards` in a fresh Next.js scaffold, 4 source files.
 
-The audit finds `.eslintrc.json` and `.prettierrc` from the template, no
-prose rules. Small bucket, stack Next.js with TypeScript. Proposals from
-nextjs.org, react.dev, and the TypeScript handbook, one per area, each
-with its link; Vercel's React guide is level 2 and agent-ready. Logging
-is `no source`. Verdict: needs work. Grill: each proposal is a question
+No `CODING_STANDARDS.md`. Find: `.eslintrc.json` and `.prettierrc` from
+the template, no prose rules, so nothing is scattered. Small bucket.
+Research agents for Next.js, React, TypeScript, and general return
+proposals from nextjs.org, react.dev, and the TypeScript handbook, one
+per area, each with its link; Vercel's React guide is level 2 and
+agent-ready. Logging is `no source`. Grill: each proposal is a question
 with the sourced rule as the recommended answer; Logging is left out.
 Write `CODING_STANDARDS.md` with the Sources table, `.editorconfig`,
 tighten `tsconfig.json` strictness as agreed. No `CLAUDE.md` exists, so
@@ -136,34 +80,35 @@ none is written. Hand-off offers Vercel's guide as an extra install.
 Last line: `Ready for /commit`.
 
 **User:** `/set-coding-standards` in a 3-year-old Django monolith, 900 files, 6
-authors.
+authors, no `CODING_STANDARDS.md`.
 
-The audit finds `CONTRIBUTING.md` with a "Code style" section and rules in
-`CLAUDE.md`. Big bucket. Outdated: `CONTRIBUTING.md` names `flake8`, but
-`ruff.toml` replaced it. Drift: "views are class-based", 61 function
-views, three examples. Behind current practice: secrets read at import,
-against the Django deployment checklist. Gaps: Logging, API shape.
-Grill: fold both files into `CODING_STANDARDS.md` (yes), the view rule
-(keep, enforce), Logging (add: `structlog`, agreed fields), secrets
-(change the code), API shape (left out, no public API). Write
-`CODING_STANDARDS.md` with the Sources table, strip the section from
-`CONTRIBUTING.md`, strip the rules from `CLAUDE.md` and leave the pointer
-line, update `ruff.toml`.
-Hand off: one `chore` issue for the 61 function views and one for the
-secrets change, `Ready for /make-pr`.
+Find: `CONTRIBUTING.md` with a "Code style" section and rules in
+`CLAUDE.md`, all scattered. Big bucket. Checks on the scattered rules:
+`CONTRIBUTING.md` names `flake8`, but `ruff.toml` replaced it
+(outdated). "Views are class-based" has 61 function views (drift).
+Secrets are read at import, against the Django deployment checklist
+(behind current practice). Proposals: the scattered rules where they
+hold, the code's pattern for Names and Tests, the research for
+Logging, `no source` for API shape. Grill: fold both files in (yes),
+the view rule (keep, enforce), Logging (add: `structlog`, agreed
+fields), secrets (change the code), API shape (left out, no public API).
+Write `CODING_STANDARDS.md` with the Sources table, strip the section
+from `CONTRIBUTING.md`, strip the rules from `CLAUDE.md` and leave the
+pointer line, update `ruff.toml`. Hand off: one `chore` issue for the
+61 function views and one for the secrets change, `Ready for /make-pr`.
 
-**User:** `/set-coding-standards` in a repo with a good `CODING_STANDARDS.md`, touched
-last month, no drift, no gaps.
+**User:** `/set-coding-standards` in a repo that has `CODING_STANDARDS.md`.
 
-The audit's verdict is clean. Say so, repeat the areas checked, stop.
+Say a Standard already exists, and to run `/audit-coding-standards`.
+Stop.
 
-**User:** `/set-coding-standards` in a repo whose Sources table was
-checked 7 months ago; the sources still agree with every rule.
+**User:** `/set-coding-standards`, and at the fourth grill question:
+"stop, I'll finish this later."
 
-The audit re-checks those sources and its verdict is clean. Set their
-date checked to today and their version to the one read, say so, stop.
+The Standard and configs stay unwritten. Print the three settled
+decisions, one per line, and stop.
 
 **User:** `/set-coding-standards` in a repo with only a README.
 
-The audit reports an empty bucket. Repeat it: no source files, a manifest
-or a first module is what would start the standard. Stop.
+Empty bucket. Say there are no source files, that a manifest or a first
+module is what would start the standard. Stop.
