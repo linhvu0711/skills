@@ -61,3 +61,11 @@ _Avoid_: outdated (that is a rule that names a tool, path, or version the repo n
 
 **Sources table**:
 The table at the end of `CODING_STANDARDS.md` that lists each source a rule cites, and the main page searched for a stack part that gave no rule: stack part, name, link, version, and the date it was checked. The audit uses it to know which stack parts to check again.
+
+**Standard**:
+`CODING_STANDARDS.md` at the repo root, with the `docs/standards/<topic>.md` files it links to. `set-coding-standards` writes it the first time; `audit-coding-standards` checks it and changes it after.
+_Avoid_: style guide, conventions file
+
+**Scattered rules**:
+Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`. `set-coding-standards` checks them and moves them into the Standard.
+_Avoid_: legacy rules, old conventions
