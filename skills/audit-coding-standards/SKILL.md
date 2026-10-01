@@ -87,8 +87,8 @@ name them, stop.
 **User:** `/audit-coding-standards`, then "stop, I only want the
 report" at the first question.
 
-Write nothing. No decision was settled, so say so and stop. The report
-is already in chat.
+No file changes. No decision was settled, so say so and stop. The
+report is already in chat.
 
 **User:** `/audit-coding-standards` in a repo with no
 `CODING_STANDARDS.md`.

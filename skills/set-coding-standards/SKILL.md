@@ -105,8 +105,8 @@ Stop.
 **User:** `/set-coding-standards`, and at the fourth grill question:
 "stop, I'll finish this later."
 
-Write nothing. Print the three settled decisions, one per line, and
-stop.
+The Standard and configs stay unwritten. Print the three settled
+decisions, one per line, and stop.
 
 **User:** `/set-coding-standards` in a repo with only a README.
 

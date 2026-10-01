@@ -27,9 +27,10 @@ A stack part the user names as planned during the grill is researched
 per `research.md` before its areas are settled.
 
 The grill ends with `Grill done.` and the settled list: go on to Write.
-The user stops it first, at the first question or later: write
-nothing. Print the decisions settled so far, one per line, so they can
-go into the next run, and stop.
+The user stops it first, at the first question or later: none of the
+files under Write change. Print the decisions settled so far, one per
+line, so they can go into the next run. Name any file the grill wrote
+itself (a `CONTEXT.md` term, an ADR); those are the grill's. Stop.
 
 ## Write
 
@@ -43,18 +44,20 @@ Files in the working tree, nothing else:
 - `.editorconfig`, written or updated to match.
 - Configs of the tools the project already has, so each rule a tool can
   check is checked. New tools and CI changes become issues in Hand off.
-- `CLAUDE.md` and `AGENTS.md`, where they exist: one line, "Read
-  `CODING_STANDARDS.md` before you write or review code."
+- `CLAUDE.md` and `AGENTS.md`, where they exist: add one line, "Read
+  `CODING_STANDARDS.md` before you write or review code." The rest of
+  each file stays, except the rules the grill folded in.
 
 The Sources table gets a row for every source in the report's
-`Sources` line: a new row, or the version and date of a row already
+`Sources` line, and for every source the research read during the
+grill: a new row, or the version and date of a row already
 there. A row that no rule cites any more and no stack part in use or
 planned needs goes.
 
 Done when every settled rule is in `CODING_STANDARDS.md` or one topic
 file exactly once, every rule from a source names a row of the Sources
 table, every tool-checkable rule is in a config, and `git status` lists
-only the files above.
+only the files above and any the grill wrote itself.
 
 ## File shape
 
