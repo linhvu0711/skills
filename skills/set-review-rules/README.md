@@ -8,7 +8,7 @@ You want reviewers, human or agent, to check the same things on every pull reque
 
 ## What you get
 
-A `REVIEW.md` at the root. The top block is fixed and checks three things: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). Below it go your repo rules, one line each, such as "A migration PR includes the down migration and a dry-run log". It finds rules already in the repo (PR templates, `CONTRIBUTING.md`, bot configs), proposes more from the folders that fix and revert commits touch most, and asks you about each one before it writes. `CLAUDE.md` and `AGENTS.md` get one line that points at the file. Nothing is committed. The chat ends with:
+A `REVIEW.md` at the root. The top block is fixed and checks three things: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). Below it go your repo rules, one line each, such as "A migration PR includes the down migration and a dry-run log". It finds rules already in the repo (PR templates, `CONTRIBUTING.md`, bot configs), proposes more from the folders that fix and revert commits touch most, and asks you about each one before it writes. `CLAUDE.md` and `AGENTS.md` get one line that points at the file. Nothing is committed: `REVIEW.md` and any glossary entry or ADR the grill wrote wait together on your branch. The chat ends with:
 
 ```
 Ready for /commit

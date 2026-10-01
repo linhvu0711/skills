@@ -63,15 +63,16 @@ work already decided. The map comes first.
 1. **Destination.** Invoke the `grill` skill with the Skill tool. Seed: the
    idea. Open decisions: what reaching the end of this map looks like (a
    spec to hand off, a decision to lock, a change made in place); what is
-   near but out. Then continue at step 2. Done when the destination is one
-   or two lines the user agreed to.
+   near but out. Close out: caller. Then continue at step 2. Done when
+   the destination is one or two lines the user agreed to.
 
 2. **Wide grill.** Invoke `grill` again, breadth-first: fan out across the
    whole space, one level deep on every thread. Open decisions: every
    question that must be settled before the work can be cut; which are sharp
    now and which are fog; which need an outside fact (research), a thing to
    react to (experiment), or manual work first (task); what gates what. Then
-   continue at step 3. Done when grill has said `Grill done.` and every
+   continue at step 3. Its close-out PR also holds the files the step 1
+   grill named. Done when grill has said `Grill done.` and every
    settled question carries a type.
 
    No fog, and the whole thing fits one session: say `/grill settled it.

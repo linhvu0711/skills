@@ -67,7 +67,7 @@ Explore agents retrieve, short lookups are yours.
    Skill tool. Seed: this report. Open decisions: for each proposal,
    accept, change, or drop; for each dead rule, drop or fix; for each
    file with review prose, fold it into `REVIEW.md` or leave it; and what
-   rules the user adds. Then continue at step 6.
+   rules the user adds. Close out: caller. Then continue at step 6.
 
 6. **Write.** Files in the working tree, nothing else:
 
@@ -83,11 +83,11 @@ Explore agents retrieve, short lookups are yours.
 
    Done when every settled rule is in `REVIEW.md` exactly once under its
    axis, the markers are present, and `git status` lists only the files
-   above.
+   above and the ones the grill named.
 
 7. **Hand off.** In chat:
 
-   - Files changed, one line each.
+   - Files changed, one line each, the grill's among them.
    - Bot configs found, one line each, with the pointer line you
      recommend adding to each. You did not edit them.
    - Last line: `Ready for /commit`.
