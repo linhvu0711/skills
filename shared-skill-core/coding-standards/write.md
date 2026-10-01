@@ -23,6 +23,9 @@ decisions, one per finding the report holds:
 - `model's view, no source`: keep the pattern, or change it.
 - `no source`: the user writes the rule, or leaves the area out.
 
+End the seed with `Close out: caller.`, so the grill's files wait
+uncommitted next to the files under Write.
+
 A stack part the user names as planned during the grill is researched
 per `research.md` before its areas are settled.
 
@@ -99,7 +102,7 @@ table to know which stack parts are due.
 
 In chat:
 
-- Files changed, one line each.
+- Files changed, one line each, the grill's among them.
 - Drift kept as code problems: one line per rule with count and the
   issue you recommend for it (`fix` ticket, or a `chore` when it is a
   sweep). Name `/to-issue` for one, `/capture` for a seed.

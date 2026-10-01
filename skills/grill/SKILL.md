@@ -15,7 +15,7 @@ Read `../../shared-skill-core/grilling.md`, `references/domain-modeling.md`, and
 
 A **seed** is what another skill hands you when it invokes you: a source (an audit, a report, a card, a diagnosis) and its open decisions, named. A seed can also be a GitHub issue the user points at, most often one the capture skill filed (`/grill #12`, "grill me on issue 12"): read it with `gh issue view <n>`, and its number is the seed number for § Close out. The seed is round 0: build the first frontier from its open decisions, and fan out only for facts it does not carry.
 
-A caller writes one block and nothing more: `Invoke the grill skill with the Skill tool. Seed: <the source>. Open decisions: <the list>. Then continue at step N.` How the interview runs, how it ends, and what it writes are this skill's, not the caller's.
+A caller writes one block and nothing more: `Invoke the grill skill with the Skill tool. Seed: <the source>. Open decisions: <the list>. [Close out: caller.] Then continue at step N.` A caller that writes its own files after the grill adds `Close out: caller.`, so its files and the grill's go in one PR; § Close out says what changes. How the interview runs, how it ends, and what it writes are this skill's, not the caller's.
 
 During a seeded grill, `CONTEXT.md` and the ADRs are yours. New terms land in the glossary. A rejected option with a load-bearing reason becomes an ADR, so a later run of the caller does not suggest it again.
 
@@ -47,6 +47,8 @@ After `Grill done.` and the settled list, track the files the grill left behind 
    - Issue line: `Closes #<seed>` for a seed issue. A grill that started from an idea in chat has no issue, so no line.
    - Summary: the settled decisions list. Follow-ups: the tickets the grill filed, and an epic it edited.
 4. Print the PR link. Never merge: the merge waits for the user's explicit go-ahead.
+
+A seed with `Close out: caller.` runs steps 1 and 2 only. Then list the grill's files under the settled decisions, one per line, and hand back. They stay uncommitted on the branch the run started on, and the caller ships them with its own files.
 
 Edge cases:
 

@@ -21,7 +21,7 @@ Not researched: none
 Verdict: needs work
 ```
 
-On `needs work`, the grill starts at once: one question per finding, with a recommended answer. When it ends, the settled changes go into `CODING_STANDARDS.md` and the tool configs, nothing else moves, and nothing is committed. The chat ends with the files changed, the drift left as code problems, and `Ready for /commit`. To keep only the report, say stop at the first question. Stop later and the Standard and configs stay as they are; the decisions made so far are printed so you can reuse them.
+On `needs work`, the grill starts at once: one question per finding, with a recommended answer. When it ends, the settled changes go into `CODING_STANDARDS.md` and the tool configs, nothing else moves, and nothing is committed: the changes and any glossary entry or ADR the grill wrote wait together on your branch. The chat ends with the files changed, the drift left as code problems, and `Ready for /commit`. To keep only the report, say stop at the first question. Stop later and the Standard and configs stay as they are; the decisions made so far are printed so you can reuse them.
 
 On `clean`, the only change is the date and version on the Sources table rows it checked again.
 

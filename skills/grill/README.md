@@ -17,7 +17,7 @@ Grill done.
 https://github.com/acme/shop/pull/58
 ```
 
-It never merges the PR.
+It never merges the PR. When another skill calls it and writes its own files afterwards (set-review-rules, set-coding-standards, audit-coding-standards), the grill opens no PR. It names its files, and they wait on your branch with that skill's files, so one PR holds all of them.
 
 ## Needs
 
