@@ -12,6 +12,10 @@ _Avoid_: common, utils, lib
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared-skill-core/pr-shape.md`.
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
+**Close-out**:
+The grill's last step after `Grill done.`. It cleans the wording of the files it wrote and opens one PR for them. When the skill that called the grill writes its own files afterwards, that skill takes the PR step instead, so all the files go in one PR.
+_Avoid_: wrap-up, finish
+
 ## Plans
 
 **Review view**:
