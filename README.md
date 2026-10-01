@@ -97,8 +97,8 @@ flowchart LR
 | [review-pr](skills/review-pr/) | Reviews a pull request on three separate checks (logic, scope, standards), with your repo's own rules folded in. |
 | [validate-pr-review](skills/validate-pr-review/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
 | [set-review-rules](skills/set-review-rules/) | Writes a `REVIEW.md` for your repo: the shared three-part review plus the rules only your repo needs. |
-| [set-coding-standards](skills/set-coding-standards/) | Audits how your repo writes code, asks what you want, then writes `CODING_STANDARDS.md` and the tool configs. |
-| [audit-coding-standards](skills/audit-coding-standards/) | Checks your code against the rules your repo says it follows, and reports what is outdated, broken, or missing. |
+| [set-coding-standards](skills/set-coding-standards/) | Makes your repo's first `CODING_STANDARDS.md`: researches your stack, reads your code, asks what you want, then writes the file and the tool configs. |
+| [audit-coding-standards](skills/audit-coding-standards/) | Checks your `CODING_STANDARDS.md` against your code and current docs, asks how to fix what is outdated, broken, or missing, then writes the changes. |
 
 ### Sessions
 

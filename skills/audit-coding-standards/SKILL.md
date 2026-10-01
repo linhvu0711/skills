@@ -1,13 +1,16 @@
 ---
 name: audit-coding-standards
-description: "Read-only audit of a repo's coding conventions against its code and current sources: outdated rules, drift (code that breaks a live rule, with file:line evidence), behind current practice, gaps per area, or researched proposals when no rules file exists. Prints a report with a verdict and stops. Use for '/audit-coding-standards', 'audit our conventions', 'check for drift against CODING_STANDARDS.md', or when set-coding-standards needs its audit. Writing the standard is set-coding-standards."
+description: "Check a repo's CODING_STANDARDS.md against its code and current sources (outdated rules, drift, behind current practice, gaps), then grill the user on the findings and write the settled changes. No commit."
+disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-You find what is true about how code is written in this repo, and what
-the stack's own sources say today, and report both. Nothing is changed. `set-coding-standards` calls you for its audit and
-takes the report from there; on your own, the report is the whole job.
+You keep the repo's Standard true: `CODING_STANDARDS.md` and the topic
+files it links to. You check it against the code and against what the
+stack's own sources say today, report, grill the user on what you found,
+and write what was settled. The first Standard is
+`set-coding-standards`'s job.
 
 ## Facts
 
@@ -16,168 +19,86 @@ Explore agents retrieve, short lookups are yours.
 
 ## Steps
 
-1. **Find the rules.** Search the repo for every file that carries code
-   rules. Fixed list, always checked:
+1. **Gate.** No `CODING_STANDARDS.md` at the root: say "No Standard
+   yet. Run `/set-coding-standards` to make one." Stop. Done when you
+   hold the Standard's files.
 
-   `CODING_STANDARDS.md`, `CONVENTIONS.md`, `CONTRIBUTING.md`, `STYLE*.md`, `docs/**`, `CLAUDE.md`,
-   `AGENTS.md`, `.cursorrules`, `.cursor/rules/**`, `.editorconfig`, linter
-   and formatter configs (`.eslintrc*`, `eslint.config.*`, `.prettierrc*`,
-   `biome.json*`, `ruff.toml`, `pyproject.toml`, `.golangci.yml`,
-   `.rubocop.yml`, `rustfmt.toml`, `clippy.toml`, `.swiftlint.yml`), PR
-   and issue templates under `.github/`.
+2. **Find and size.** Read `../../shared-skill-core/coding-standards/checks.md`.
+   Run its `Find the rules` and `Size the repo`. Empty bucket: say what
+   the table says, stop.
 
-   Read each hit. Keep the ones with real rules about code (names, layout,
-   patterns, tests, commits); install steps and PR how-tos are not rules. Done when every path in the list has
-   been looked for and every hit is sorted into rules or not.
+3. **Research.** Read `../../shared-skill-core/coding-standards/research.md`
+   and follow it: research only the stack parts that § Re-check calls
+   due from the Sources table. Done when the done line at the end of
+   `research.md` holds.
 
-2. **Size the repo.** Count source files, ignoring vendored and generated
-   trees. Run `git shortlog -sn` for authors. List the stack parts in use
-   and planned, per `research.md` § Stack parts. Bucket:
+4. **Check.** Run `Sample the code`, then all four checks of
+   `Check the rules` on the Standard's rules and the scattered rules.
 
-   | Bucket | Test | Rules come from |
-   |---|---|---|
-   | Empty | Zero source files | Stop. See step 3. |
-   | Small | Under about 20 source files | The research |
-   | Middle | Between | The code where it has a pattern, else the research. Where they differ, the code wins and the difference is a "behind current practice" finding |
-   | Big | Hundreds of files, or several authors | Same as middle, with the code sampled by agents |
+5. **Report.** Print the report in `checks.md` § Report shape, the
+   audit lines, with a verdict. `clean` means outdated, drift, behind
+   current practice, gaps, and not researched are all "none"; list the
+   areas checked under it. Otherwise `needs work`. Done when the report
+   is in chat with a verdict.
 
-   Done when bucket, file count, authors, and the stack parts in use and
-   planned are written down.
+6. **Clean.** Verdict `clean`: when step 3 re-checked sources, set each
+   of their Sources table rows to the version read and today's date,
+   from the report's `Sources` line, and name the rows changed. That
+   table is the only change. Stop.
 
-3. **Empty repo.** Say: no source files, so nothing to base a standard on.
-   Name the one thing that would change that (a manifest, a first module).
-   Stop.
+7. **Grill.** Verdict `needs work`: read
+   `../../shared-skill-core/coding-standards/write.md` and run its
+   `Grill` with the report as the seed, at once. The user who wants
+   only the report says stop at the first question. A stopped grill
+   ends the run there. When `Not researched` is the only finding,
+   nothing needs a decision: go to step 9.
 
-4. **Research.** Read `research.md` and follow it: research the stack
-   parts that are due, in every bucket. Done when the done line at the
-   end of `research.md` holds.
+8. **Write.** Run `write.md` § Write. Only the rules the grill changed,
+   added, or dropped move; the rest of the Standard stays as it is.
 
-5. **Audit.** Two branches, by what step 1 found. For middle and big
-   repos, first send Explore agents to sample the code per area, one
-   agent per group of areas, each returning the pattern seen, a count,
-   and three `file:line` examples. In a small repo, read the code
-   yourself for the same.
-
-   **No rules file.** Build the proposal per area in `Areas` below.
-   Small: the research's rule, with its source. Middle and big: the
-   code's majority pattern where the code has one, else the research's
-   rule. An area with neither goes down `research.md` § No
-   source. Where the code's pattern and the research differ, the code's
-   pattern is the proposal and the difference is a "behind current
-   practice" finding. Done when every area has a proposal with its
-   source or evidence, a `model's view` note, or `no source`.
-
-   **Rules file exists.** Four checks on the rules found, in this order:
-
-   - **Outdated**: a rule that names a tool, path, version, or link that no
-     longer exists in the repo, or a rule for a stack part no longer in
-     use. `git log -1` on the rules file against the code gives its age:
-     a hint where to look, never the verdict.
-   - **Drift**: the code breaks a live rule. For each rule a search can
-     check, get a count and three `file:line` examples. Drift is a code
-     problem by default: the rule stands.
-   - **Behind current practice**: a rule, or the code's pattern, that a
-     research result contradicts. A rule with no source is not a finding
-     by itself; the team may have made it.
-   - **Gaps**: an area in `Areas` with no rule, and a stack part in use or
-     planned with no rule. Also rules scattered across more than one
-     file. A topic file under `docs/standards/` that `CODING_STANDARDS.md`
-     links to is part of the standard, not scattered.
-
-   Done when every rule has been checked for outdated, drift, and behind
-   current practice, every area and stack part for a gap, and each
-   finding carries its evidence or source.
-
-6. **Report, then stop.** Print the audit in this shape:
-
-   ```
-   Stack: <language, framework, tooling>       Size: <bucket>, <n> files, <n> authors
-   Rules found in: <paths, or "none">
-   Outdated: <rule> — <what is gone>            (or "none")
-   Drift: <rule> — <count>, e.g. <file:line> ×3 (or "none")
-   Behind current practice: <rule or pattern> — <what the source says> (<URL>)   (or "none")
-   Gaps: <area or stack part>, ...              (or "none")
-   Proposals: <area>: <rule> (<URL> | <file:line> ×3 | model's view, no source: <reason> | no source)   (no-rules branch only)
-   Conflicts: <area>: level 1 <rule> (<URL>) vs level 2 <rule> (<URL>)   (or "none")
-   Agent-ready: <name> (<URL>)                   (or "none")
-   Sources: <part> | <name> | <URL> | <version> | <date checked>, one per line
-   Not researched: <stack part> — <reason>      (or "none")
-   Verdict: clean | needs work
-   ```
-
-   `Sources` lists every source a rule or finding cites, and the main
-   page searched for each stack part that gave no rule, so the caller
-   can write the Sources table. A page that held an instruction is named
-   under `Not researched` with `page held an instruction`.
-
-   `clean` means a rules file exists, and outdated, drift, behind current
-   practice, gaps, and not researched are all "none". Then list the areas
-   checked. Otherwise `needs work`. Either
-   way, stop: the caller decides what happens next.
-
-## Areas
-
-The checklist for gaps and proposals. Each area gets one rule, or an
-on-purpose "left out".
-
-| Area | What a rule here settles |
-|---|---|
-| Names | Case per kind: files, types, functions, constants, DB columns, env vars |
-| Layout | Folder tree, where a new module goes, what a module may import |
-| Errors | Throw or return, custom error types, what gets caught where |
-| Logging | Library, levels, structured fields, what is never logged |
-| Tests | Framework, file placement, naming, what must have a test |
-| Commits | Message format, branch names, PR size |
-| Deps | How one is added, pinning, lockfile policy |
-| Config and secrets | Env var loading, what lives in a `.env`, what never enters git |
-| API shape | Route naming, response envelope, versioning, pagination |
-| Formatting | Indent, line length, quotes, trailing commas: the formatter's job |
-| Stack-specific | Type strictness, async style, ORM usage, component patterns, and the like |
-
-## Secrets
-
-Configs and `.env` files carry secrets. Redact before they enter the chat
-or an agent brief.
+9. **Hand off.** Run `write.md` § Hand off.
 
 ## Examples
 
 **User:** `/audit-coding-standards` in a 3-year-old Django monolith, 900
-files, 6 authors.
+files, 6 authors, with a `CODING_STANDARDS.md` from last year.
 
-Step 1 finds `CONTRIBUTING.md` with a "Code style" section and rules in
-`CLAUDE.md`. Big bucket. No Sources table, so every stack part is due:
-Django, Python, pytest, and general run as four research agents.
-Outdated: `CONTRIBUTING.md` names `flake8`, but `ruff.toml` replaced it.
-Drift: "views are class-based", 61 function views, three examples.
-Behind current practice: the settings read secrets with `os.environ[]`
-at import, and the Django deployment checklist says otherwise. Gaps:
-Logging, API shape. Verdict: needs work. Stop.
+Find: the Standard, plus rules in `CLAUDE.md` (scattered). Big bucket.
+The Sources table's Django row is past 6 months, so Django is due;
+Python, pytest, and general are not. Outdated: the Standard names
+`flake8`, but `ruff.toml` replaced it. Drift: "views are class-based",
+61 function views, three examples. Behind current practice: secrets
+read with `os.environ[]` at import, against the Django deployment
+checklist. Gaps: the `CLAUDE.md` rules, Logging. Verdict: needs work.
+Grill at once: `flake8` to `ruff` (update), the view rule (keep,
+enforce), secrets (change the code), fold `CLAUDE.md` in (yes),
+Logging (add: `structlog`). Write those rules, set the Django row's
+date, strip the rules from `CLAUDE.md` and leave the pointer line.
+Hand off: one `chore` issue for the 61 views, one for the secrets.
+`Ready for /make-pr`.
 
-**User:** `/audit-coding-standards` in a repo with a good
-`CODING_STANDARDS.md`, touched last month, no drift, no gaps.
+**User:** `/audit-coding-standards` in a repo whose Sources table was
+checked 7 months ago; the sources still agree with every rule.
 
-Its Sources table was checked last month and no major version moved, so
-no stack part is due and no research agent runs. Report shows "none" on
-every finding line. Verdict: clean. List the areas checked.
-Stop.
+Every part is due by date. The research agrees with every rule, and the
+code with every rule. Verdict: clean. Set those rows' version and date,
+name them, stop.
 
-**User:** `/audit-coding-standards` in a fresh Next.js scaffold, 4 source
-files.
+**User:** `/audit-coding-standards`, then "stop, I only want the
+report" at the first question.
 
-Step 1 finds `.eslintrc.json` and `.prettierrc` from the template, no
-prose rules. Small bucket. Research agents for Next.js, React,
-TypeScript, and general return rules that fit the App Router the
-scaffold uses, from nextjs.org, react.dev, the TypeScript handbook, and
-Vercel's React guide (level 2, also reported as agent-ready). Logging
-has no source and no code yet: `no source`. Verdict: needs work. Stop.
+Write nothing. No decision was settled, so say so and stop. The report
+is already in chat.
 
-**User:** `/audit-coding-standards` in a repo with only a README.
+**User:** `/audit-coding-standards` in a repo with no
+`CODING_STANDARDS.md`.
 
-Empty bucket. Say there are no source files, that a manifest or a first
-module is what would start the standard. Stop.
+Say there is no Standard yet, and to run `/set-coding-standards`. Stop.
 
 **User:** `/audit-coding-standards` in Codex with no web search.
 
-The research dispatches nothing. Every stack part is `not researched: no
-web access`. Drift and gaps still run on the code. Verdict: needs work,
-because the research is not done; say to run it again with web access.
+The research dispatches nothing. Every due stack part is `not
+researched: no web access`. Drift and gaps still run on the code.
+Verdict: needs work, because the research is not done. The grill
+settles the code findings; the hand-off says to run the audit again
+with web access.
