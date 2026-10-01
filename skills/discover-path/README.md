@@ -8,7 +8,7 @@ The idea is big and foggy, and you can't cut it into tickets yet because too muc
 
 ## What you get
 
-The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. The glossary entries and ADRs the grill writes while charting go in one docs PR. Nothing reaches GitHub until you approve. After that you get a map issue labelled `discovery/map` and one child ticket per question, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
+The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. Nothing reaches GitHub until you approve, except one docs PR for the glossary entries and ADRs the grill writes while charting. After that you get a map issue labelled `discovery/map` and one child ticket per question, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
 
 Each later run takes the next free ticket, settles it with you, posts the answer, closes the ticket, and updates the map:
 

@@ -71,9 +71,10 @@ work already decided. The map comes first.
    question that must be settled before the work can be cut; which are sharp
    now and which are fog; which need an outside fact (research), a thing to
    react to (experiment), or manual work first (task); what gates what. Then
-   continue at step 3. Its close-out PR also holds the files the step 1
-   grill named. Done when grill has said `Grill done.` and every
-   settled question carries a type.
+   continue at step 3. Its close-out counts the files the step 1 grill
+   named as its own, so they get a PR even when step 2 changed none.
+   Done when grill has said `Grill done.` and every settled question
+   carries a type.
 
    No fog, and the whole thing fits one session: say `/grill settled it.
    /to-issue or /to-epic is the tool.` and stop.
