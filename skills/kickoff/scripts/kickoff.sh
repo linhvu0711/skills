@@ -9,7 +9,8 @@
 #
 # Exit 0: the pane is running /plan-up, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
-# Nothing is half done: no pane exists until the tree check passed.
+# Nothing is half done: no pane exists until every check passed.
+# The tree is left as is: /plan-up reads its own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -129,18 +130,6 @@ if [ "$path_from" != "map" ]; then
   printf '%s\t%s\n' "$slug" "$path" >>"$map"
 fi
 
-# ---------- tree ----------
-dirty="$(git -C "$path" status --porcelain)"
-[ -z "$dirty" ] || die "dirty tree in $path:"$'\n'"$dirty"$'\n'"Commit or stash, then run /kickoff again."
-tree_note="tree clean on $base"
-current="$(git -C "$path" branch --show-current)"
-if [ "$current" != "$base" ]; then
-  git -C "$path" fetch --quiet origin "$base" 2>/dev/null || true
-  git -C "$path" checkout --quiet "$base" || die "could not check out $base in $path"
-  tree_note="switched $current -> $base"
-fi
-git -C "$path" pull --quiet --ff-only || die "git pull --ff-only failed in $path on $base"
-
 # ---------- label ----------
 if [ -z "$label" ]; then
   label="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/ /g' \
@@ -191,8 +180,8 @@ fi
 
 if [ "$dry_run" -eq 1 ]; then
   place="new tab"; [ -n "$target_tab" ] && place="split $split_pane in $target_tab"
-  printf 'dry-run: #%s %s · form %s · effort %s (%s) · base %s · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
-    "$number" "$title" "$form" "$effort" "$rule" "$base" "$path" "$path_from" "$tree_note" "$label" "$place" "$prep_args"
+  printf 'dry-run: #%s %s · form %s · effort %s (%s) · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
+    "$number" "$title" "$form" "$effort" "$rule" "$path" "$path_from" "base $base" "$label" "$place" "$prep_args"
   exit 0
 fi
 
@@ -223,7 +212,7 @@ done
 
 if [ "$no_prompt" -eq 1 ]; then
   printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s · no prompt sent\n' \
-    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "$tree_note" "$placed"
+    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
   exit 0
 fi
 
@@ -240,4 +229,4 @@ if [ "$status" != "working" ]; then
 fi
 
 printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s\n' \
-  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "$tree_note" "$placed"
+  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
