@@ -30,10 +30,12 @@ session. Write so that reader can act on the issue alone.
   line at most: `Found while <doing what>, YYYY-MM-DD.`
 - **Code by permalink.** In Context, a file and line is
   `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`, where
-  `<sha>` is the full commit the lines were seen at (`git rev-parse HEAD`).
-  It must be on GitHub: `git branch -r --contains <sha>` prints a branch.
-  When it is not, write the path with no line, because a bare line number
-  drifts with the next change. Steps keep the short `path:line` form; the
+  `<sha>` is the full commit the lines were seen at, read in the checkout
+  where they were seen (`git -C <that checkout> rev-parse HEAD`), which
+  is not always the current folder. It must be on GitHub in the issue's
+  repo: `gh api repos/<owner>/<repo>/commits/<sha> --silent` succeeds.
+  No such checkout, or GitHub does not have the commit: write the path
+  with no line, because a bare line number drifts with the next change. Steps keep the short `path:line` form; the
   Files line in Context carries the permalinks for the same places.
 - **Evidence in the issue.** An error goes in a code block, verbatim. A log
   goes in as the lines that matter, ten at most. A screenshot or recording
