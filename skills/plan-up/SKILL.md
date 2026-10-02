@@ -43,11 +43,27 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
 ## Steps
 
-1. **Fresh tree.** The base: the default branch from
+1. **Base copy.** The base: the default branch from
    `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, or
    the `on` PR's head branch from `gh pr view <n> --json headRefName`.
-   Checked out on it, `git status --porcelain` empty:
-   `git pull --ff-only`. Anything else: say what is off, stop.
+   The checkout you start in can be on any branch, with edits or not.
+   Note its `git status --porcelain` and `git worktree list`; the run
+   leaves both as it found them. Then:
+
+   ```bash
+   bash scripts/base-copy.sh <base>
+   ```
+
+   It fetches `origin/<base>` and adds a detached worktree of it, with
+   its submodules, in a temp folder. `stop:` on stderr: show it, stop. Hold `BASE_WT` and
+   `BASE_SHA` from its line. Every repo fact comes from `BASE_WT`: each
+   Explore brief names it as the folder to read, every command that
+   reads the code runs there, and a `file:line` is a line there, written
+   from the repo root. Nothing is written in it. The checkout you start
+   in is never read for facts and never changed.
+
+   The copy lives until the run ends, by `ok` or by any stop. Then
+   `bash scripts/base-copy.sh --remove <BASE_WT>`.
 
    Then prune old plans: `bash scripts/prune.sh`.
    It deletes the files of every plan whose issues are all closed. Its
@@ -205,14 +221,16 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    headless host. Chat
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md` and `DATA`, rebuild, bump `v`, show the summary
-   again. `ok`: say `Ready for /handoff-devin.` and stop.
+   again. `ok`: remove the base copy (step 1), say
+   `Ready for /handoff-devin.`, and stop.
 
 ## Examples
 
 **User:** `/plan-up https://github.com/acme/shop/issues/42` (size/M feat,
 export orders as CSV, six Done-when lines)
 
-Tree is clean on `main`, pulled. Gate passes. Round 1: five agents fetch
+The tree is on `feat/old-work` with two edits; it stays as it is. Base
+copy of `origin/main` in a temp folder. Gate passes. Round 1: five agents fetch
 `orders/export.ts` and its callers, the `orders.test.ts` seam, the
 `pnpm test` and `pnpm typecheck` scripts, how `ErrorToast.tsx:12` shows
 errors, the `csv-stringify` docs, and the docs on export:
@@ -282,7 +300,7 @@ Gate fails on "Done means". One block: the question that closes it, and
 (epic "teams"; #71 Team entity M, #73 add member S, #74 invite S; #73
 and #74 blocked by #71)
 
-Tree clean on `main`. Edges hold: #71 first, #73 and #74 after it. Gates
+Base copy of `origin/main`. Edges hold: #71 first, #73 and #74 after it. Gates
 pass. Round 1 fans out per ticket. #71's plan decides the seam
 `teams/service.ts` `createTeam()`. #73's Seams block points at it as
 `layer 1, slice 1`, since the file does not exist yet. One big fork on
@@ -301,6 +319,6 @@ run above.
 **User:** `/plan-up https://github.com/acme/shop/issues/75 on https://github.com/acme/shop/pull/80`
 (#75 team switcher, S; PR 80 is the top of the open stack)
 
-Base is PR 80's head branch, checked out, pulled. One layer, base named
+Base is PR 80's head branch; the base copy is of that branch. One layer, base named
 in the Stack block as `PR #80`. Rest as a single ticket. Present, `ok`,
 `Ready for /handoff-devin.`

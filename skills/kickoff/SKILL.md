@@ -1,6 +1,6 @@
 ---
 name: kickoff
-description: "Open a new herdr pane beside this one and run /plan-up there on an issue, a run of epic tickets, or a whole epic. One script does it all: checks the repo is clean, on base, and pulled; picks the effort from the size label; places and names the pane. Stops once /plan-up is running."
+description: "Open a new herdr pane beside this one and run /plan-up there on an issue, a run of epic tickets, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the effort from the size label; places and names the pane. Stops once /plan-up is running."
 disable-model-invocation: true
 ---
 
@@ -29,17 +29,16 @@ to the user in the new pane. Do not watch it, read its plan, or run
 `/handoff-devin` from here.
 
 Exit 1: the last stderr line starts with `stop:` and says why. Show it
-as is and stop. Nothing is half done: the script makes no pane until the
-tree check passed. A dirty tree lists the files; the user commits or
-stashes and runs `/kickoff` again. A pane that exists but did not launch
+as is and stop. Nothing is half done: the script makes no pane until
+every check passed. A pane that exists but did not launch
 stays for the user to look at; the message names it.
 
 Flags you may add:
 
 - `--label <name>` when the auto label from the title reads badly.
   Names match `[a-z][a-z0-9_-]{0,31}`.
-- `--dry-run` to show every decision (form, effort, base, repo path,
-  tree, label, placement) with no pane made. Use it when the user asks
+- `--dry-run` to show every decision (form, effort, repo path, base,
+  label, placement) with no pane made. Use it when the user asks
   what would happen.
 
 What the script decides, so you can answer questions about it:
@@ -53,8 +52,9 @@ What the script decides, so you can answer questions about it:
   then the pane's cwd if its origin matches, then a search under
   `~/development`. Worktrees are skipped. A find is written to the map.
   None or several: it stops and says so.
-- Tree: dirty stops. Clean but off base switches to base. Then
-  `git pull --ff-only`.
+- Tree: left as is, on any branch, with edits or not. `/plan-up` reads
+  its own fresh copy of the base, so the script never switches, pulls,
+  or stops on it.
 - Placement: split the current tab to the right if it has under 3
   columns, else the tab in this workspace with the fewest columns under
   3, else a new tab. Never reuses a pane. Never takes focus. Columns are
@@ -81,14 +81,14 @@ say what you found, name the candidates, and ask which one. The word
 **User:** `/kickoff https://github.com/acme/shop/issues/42`
 
 Run the script. It prints
-`#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · tree clean on main · split in w4:t1`.
+`#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · base main · split in w4:t1`.
 Say that line. Stop.
 
 **User:** `/kickoff https://github.com/acme/shop/issues/42` with edits in
-the tree
+the tree, on a feature branch
 
-Script exits 1 with `stop: dirty tree in ~/development/projects/shop:`
-and the files. Show it. Stop.
+Same as above: the script runs and prints its line. The edits and the
+branch stay as they are. Say the line. Stop.
 
 **User:** `what would /kickoff do for issue 70?`
 

@@ -14,7 +14,7 @@ It only runs when you call it.
 
 ## What you get
 
-A prompt file holding the issue, the plan, and the build rules, sent to Devin as an attachment. It picks the machine (Linux unless the repo needs macOS or Windows) and creates any missing size labels. The prompt itself stays out of the chat:
+A prompt file holding the issue, the plan, and the build rules, sent to Devin as an attachment. It picks the machine (Linux unless the repo needs macOS or Windows) and creates any missing size labels. It looks for a size-label bot in the base branch's workflows, whatever branch your checkout is on. The prompt itself stays out of the chat:
 
 ```
 Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)

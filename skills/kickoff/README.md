@@ -16,13 +16,13 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 
 ## What you get
 
-A script checks that the repo is clean, on its base branch, and pulled, picks the effort from the size label (`medium` for XS or S, else `high`), opens the pane without taking focus, and types `/plan-up` into it. The chat gets one line and stops:
+A script finds the repo on disk, picks the effort from the size label (`medium` for XS or S, else `high`), opens the pane without taking focus, and types `/plan-up` into it. The chat gets one line and stops:
 
 ```
-#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · tree clean on main · split in w4:t1
+#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · base main · split in w4:t1
 ```
 
-A dirty tree stops it before any pane is made, with the files listed.
+Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh copy of the base branch.
 
 ## Needs
 

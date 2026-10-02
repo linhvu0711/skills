@@ -422,7 +422,7 @@ facts or forks.
 
 - Every `Proved` line has its fact, what ran, the day, and a `Used by`
   that names a slice, a walk, or a `Decided` line. Every probe left the
-  repo's tree and worktree list as step 1 found them.
+  checkout's status as step 1 found it, and removed its own worktree.
 - Every doc the facts round or a probe named is a `Docs` line in a
   slice, a `Decided` line that says why it stays, or an `Out of scope`
   line when it covers code no slice touches. A slice whose change makes

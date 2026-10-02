@@ -14,7 +14,7 @@ In Codex there are no sub-agents: use the read tools yourself, in the same order
 
 ## Two kinds of fact
 
-- **Repo facts** live in the working directory. Explore agents fetch them.
+- **Repo facts** live in the repo's checkout: the working directory, or the folder the skill names (plan-up reads a copy of the base). Explore agents fetch them.
 - **Outside facts** live in library docs, specs, and upstream source. Explore agents fetch these too, with `SEARCH=on` in the brief. When a decision will rest on one, `../skills/grill/references/research.md` says how to write it down.
 
 ## A fact that arrives late

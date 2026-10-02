@@ -50,14 +50,16 @@ a doubt, and step 5 sorts it like any other.
 
 ## Where
 
-Never in the repo's tree. Each probe gets its own `mktemp -d` folder. A
-probe that needs the repo's code adds a detached worktree there:
-`git worktree add --detach "$PROBE/wt" <base>`, and removes it with
+Never in the checkout you started in, and never in the base copy, which
+stays read-only. Each probe gets its own `mktemp -d` folder. A probe
+that needs the repo's code adds a detached worktree there:
+`git worktree add --detach "$PROBE/wt" <BASE_SHA>`, and removes it with
 `git worktree remove --force "$PROBE/wt"` when it ends, pass or fail.
 A package it needs installs into its folder, never into the repo's
 manifests. A service it starts (a container, a dev server) it stops.
-When the probes end, `git status --porcelain` is empty and
-`git worktree list` is as step 1 found it.
+When the probes end, `git status --porcelain` is as step 1 found it,
+and `git worktree list` holds only the base copy beyond what step 1
+found.
 
 ## How
 

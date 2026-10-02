@@ -70,8 +70,10 @@ handoff-cursor.
    carries the letter per layer.
 
 3. **Labels.** The PR gets a size label, XS to XL, in the repo's own
-   spelling. First the bot check: `grep -ril 'size' .github/workflows`
-   on the base branch, and read any hit. A workflow that labels PRs by
+   spelling. First the bot check, on the base branch whatever the
+   checkout is on: `git fetch --quiet origin <base>`, then
+   `git grep -il size origin/<base> -- .github/workflows`, and read each
+   hit with `git show <hit>`; a hit already reads `origin/<base>:<path>`. A workflow that labels PRs by
    size (`pr-size-labeler`, `size-label`, a `labeler` with size rules)
    owns the label. Take its label names from its config, mapped onto XS
    to XL, and write the prompt line as `Size labels: bot · XS <name> ·
