@@ -187,8 +187,9 @@ it; drop the line when they did not.
 Environment: version or commit, OS, provider; drop the line when the
 behaviour does not depend on it.
 Commands a stranger can paste, in order, from what the chat actually ran.
-Then what they see when it fails (the error verbatim, the time it took)
-and how often it fails, such as `2 of 6 runs`.
+Then what they see when it fails, the error verbatim. The time it took
+and how often it fails, such as `2 of 6 runs`, only when the chat
+measured them; a failure seen once is `Seen once.`
 
 ## Context
 Same as a seed.
