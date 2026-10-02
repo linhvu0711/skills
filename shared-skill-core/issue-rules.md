@@ -1,6 +1,7 @@
 # Issue rules
 
-Shared by `to-issue` and `to-epic`. One issue here is a **ticket**: a unit of
+Shared by `to-issue` and `to-epic`; `capture` follows § Written for a
+stranger and the label names. One issue here is a **ticket**: a unit of
 work an agent can pick up cold, in a fresh context window, and ship as one PR.
 The one exception is a `task`: work a person does cold in a platform outside
 the repo, and reports back. Everything below serves those two readers.
@@ -12,6 +13,43 @@ the `CONTEXT.md` of the bounded context named in `CONTEXT-MAP.md`). Decisions
 already made live in `docs/adr/`; a ticket in that area respects them and
 names the ADR in Context. When neither file exists, use the names the code
 uses.
+
+## Written for a stranger
+
+Every issue these skills write, a ticket, a `task`, or a raw seed or bug from
+`capture`, is read by someone with no access to the chat that wrote it or the
+machine it ran on, maybe months later: another person, or an agent in a fresh
+session. Write so that reader can act on the issue alone.
+
+- **Nothing local.** No path on the writer's machine (a temp, scratch, or
+  home folder), and no name of a thing that dies with the session: a VM or
+  sandbox ID, a PID, a temp branch, a local port. Say what the thing was
+  instead: "a fresh macOS VM", not its ID.
+- **No session words.** "Run 3", "the agent", "my limit", "as we saw above"
+  mean nothing to the reader. Name what happened. How it was found is one
+  line at most: `Found while <doing what>, YYYY-MM-DD.`
+- **Code by permalink.** In Context, a file and line is
+  `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`, where
+  `<sha>` is the full commit the lines were seen at, read in the checkout
+  where they were seen (`git -C <that checkout> rev-parse HEAD`), which
+  is not always the current folder. It must be on GitHub in the issue's
+  repo: `gh api repos/<owner>/<repo>/commits/<sha> --silent` succeeds.
+  No such checkout, or GitHub does not have the commit: write the path
+  with no line, because a bare line number drifts with the next change. Steps keep the short `path:line` form; the
+  Files line in Context carries the permalinks for the same places.
+- **Evidence in the issue.** An error goes in a code block, verbatim. A log
+  goes in as the lines that matter, ten at most. A screenshot or recording
+  the chat already has is uploaded with `--attach` on `gh issue create` or
+  `gh issue edit` and referenced as `![alt](./file.png)`, never as a local
+  path.
+- **Environment, when the behaviour depends on it.** One line: the version
+  or commit, the OS, and any provider or service it ran on.
+- **Proven apart from guessed.** A fact the chat proved by running something
+  is stated as a fact, with its proof (see Known). A cause or fix the chat
+  only suspects goes on an `Open:` line, never as a fact.
+
+The commit lookup, the GitHub check, and the upload are mechanical steps, not
+research. A skill that forbids digging still runs them.
 
 ## Readiness gate
 
@@ -187,7 +225,9 @@ them alone.
 ticket, each as `#N owns <thing>. Do not build it here.`
 
 ## Context
-- Files: `path/to/file:42` for every place the chat or lookup named.
+- Files: a permalink for every place the chat or lookup named (see Written
+  for a stranger), such as
+  `https://github.com/acme/shop/blob/<sha>/path/to/file#L42`.
 - Terms: glossary words this ticket uses, when a glossary exists.
 - ADRs: `docs/adr/NNNN-slug.md`, when one governs this area.
 - Related: `Blocked by #N (<why>)`, `Blocks #M (<why>)`, `Part of #P`.
@@ -313,10 +353,12 @@ running something becomes one **Known** line in Context, with its proof:
   the value;
 - the request and response shape as seen, where it differs from the docs;
 - a limit that was hit: rate, size, timeout, page size;
-- the script or command that shows it, and the day it ran.
+- the command that shows it, pasted in the issue, and the day it ran; a
+  script counts only when it is in the repo.
 
 One line, one fact, one proof: "Refunds on ACH come back `status:
-pending`, not `succeeded`: `scratch/refund-spike.sh`, 2026-09-08". A
+pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test
+mode, 2026-09-08". A
 fact the chat only read about is not Known. It stays out, or goes under
 Open when it still needs proof.
 

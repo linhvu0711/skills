@@ -31,9 +31,17 @@ point is speed and low noise. File it and get out.
 - **Priority is optional.** A priority the user stated (step 2) becomes the
   priority label. None stated: no priority label, no question, no guess.
 - **No diagnosis. No plan.** Do not root-cause, estimate, propose an approach,
-  or write acceptance criteria.
+  or write acceptance criteria. A cause the chat already proved by running
+  something is a fact for Context; a cause it only suspects goes on one
+  `Open:` line.
 - **No digging.** Use only what is already in the conversation: no code
-  reads, no searches.
+  reads, no searches. The mechanical steps in
+  `../../shared-skill-core/issue-rules.md` § Written for a stranger (the
+  commit lookup, the GitHub check, the upload) are not digging; run them.
+- **Written for a stranger.** The reader has neither this chat nor this
+  machine. Follow `../../shared-skill-core/issue-rules.md` § Written for a
+  stranger: nothing local, no session words, code by permalink, evidence in
+  the issue, environment when it matters, proven apart from guessed.
 - **One question at most:** "Which repo?", when it cannot be determined.
 - **Learn the repo convention once.** It is saved per repo. Do not re-read old
   issues on a repo that already has a saved entry.
@@ -148,16 +156,19 @@ characters, no trailing period. Examples: `[seed] Cache user avatars on the
 profile page`, `[bug] Nightly job skips rows with null email`. The priority
 goes in the label, not the title.
 
-Write the body to a temp file and pass it with `--body-file`. Keep it short.
-Three sections at most. A seed:
+Write the body to a temp file and pass it with `--body-file`. Keep it short,
+and write it for a stranger (Hard rules). A seed has three sections, a bug
+four. A seed:
 
 ```markdown
 ## Seed
 One to three sentences in the user's own words. What the thing is.
 
 ## Context
-Only facts already in the conversation: file paths as `path/to/file:42`,
-an error line verbatim, a branch or PR ref. Drop this section if there
+Only facts already in the conversation: code as permalinks, an error
+verbatim in a code block, the few log lines that matter, a PR or issue
+ref, the environment when it matters. One `Open:` line for a suspected
+cause. One `Found while …, YYYY-MM-DD.` line. Drop this section if there
 is nothing concrete.
 
 ## Status
@@ -172,16 +183,35 @@ Seen: one to three sentences in the user's own words. What happens.
 Expected: one sentence. What should happen instead, when the user said
 it; drop the line when they did not.
 
+## Repro
+Environment: version or commit, OS, provider; drop the line when the
+behaviour does not depend on it.
+Commands a stranger can paste, in order, from what the chat actually ran.
+Then what they see when it fails, the error verbatim. The time it took
+and how often it fails, such as `2 of 6 runs`, only when the chat
+measured them; a failure seen once is `Seen once.`
+
 ## Context
-Same as a seed: only facts already in the conversation.
+Same as a seed.
 
 ## Status
 Bug only. Not triaged, not planned. Becomes a `fix` ticket through
 /to-issue once the behaviour after the fix is written.
 ```
 
+The Repro comes only from what the chat ran or saw. Never invent a command
+or a result. When the chat holds no repro, the section is one line:
+`Not known yet.` A screenshot the chat already has goes into `## Bug` or
+`## Repro` as `![alt](./file.png)` and is uploaded in step 6.
+
 Detail the user gave beyond this stays in `## Seed` or `## Bug` as plain
 prose, as they said it.
+
+Before step 6, read the body once as the stranger. It fails, and you fix
+it, when it names a local path (`/tmp/`, `/private/`, a home folder, a
+scratch folder, a shell variable like `$S`), an ID of something that died
+with the session, a word only this chat explains, or a bare `path:line`
+in Context.
 
 ### 6. Create the issue
 
@@ -195,6 +225,16 @@ gh issue create --title "<title>" --body-file "$f" --label "<seed_label or bug_l
 ```
 
 Use `--repo owner/repo` if the current directory is not the target repo.
+
+When the body references a screenshot or recording, first check that this
+`gh` can upload it: `gh issue create --help` lists `--attach`. It does: run
+the create from the folder that holds the files and add one
+`--attach './file.png#<alt text>'` per file; `gh` uploads each and swaps
+the `./file.png` reference for its URL. Then check that no `(./`
+reference is left in the issue body. It does not: replace each reference
+with one sentence of what the file showed, file the issue without the
+flag, and add `Screenshot not attached: this gh has no --attach.` to the
+report line.
 
 **If `gh` fails because a label does not exist**, handle it once, then retry
 once:
@@ -230,7 +270,8 @@ command -v pbcopy >/dev/null && printf "%s" "<url>" | pbcopy
 
 No `pbcopy` (a headless host): `Captured: <url>`.
 
-Nothing else. No summary of the body, no next steps.
+Nothing else, except the `Screenshot not attached` note from step 6 when it
+applies. No summary of the body, no next steps.
 
 ## Edge cases, handled
 
@@ -268,15 +309,27 @@ Title: `[seed] Export user data as CSV`. Labels: `seed`.
 `[bug] Nightly job skips rows with null email`. Labels: `bug` and the
 repo's p0 label (`p0`, `priority/p0`, or `priority: critical`, whichever the
 saved convention says). Body `## Bug`: `Seen:` their sentence; no
-`Expected:` line, they did not say.
+`Expected:` line, they did not say. `## Repro`: `Not known yet.`, the chat
+ran nothing.
 
 **User:** `/capture bug: the post modal shows ready while a media file is missing; the server rejects the publish`
 
 Title: `[bug] Post modal shows ready while a media file is missing`.
 Labels: `bug`. Body `## Bug`: `Seen:` the modal shows ready while a media
 file is missing; `Expected:` the server rejects the publish, so the modal
-should not say ready. `## Context`: the file path only if the chat named
-one.
+should not say ready. `## Context`: a permalink only if the chat named the
+file and line.
+
+**User:** `/capture this` after a chat that ran a command on a test VM ten
+times, saw it hang 2 times with no error, took a screenshot of the stuck
+screen into a scratch folder, and suspects the wrapper script.
+
+A bug. `## Repro`: the environment line, the commands from the chat with
+the VM ID replaced by `"$id"` from the create command, the hang described as
+seen, and `2 of 10 runs`. The screenshot is copied next to the body, named
+for what it shows, and attached. `## Context`: a permalink to the wrapper
+script, an `Open:` line that names it as the suspect, and one `Found while
+…` line. The scratch path and the VM ID appear nowhere.
 
 **User:** "write the fix ticket for the login bug"
 
