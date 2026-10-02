@@ -226,10 +226,15 @@ gh issue create --title "<title>" --body-file "$f" --label "<seed_label or bug_l
 
 Use `--repo owner/repo` if the current directory is not the target repo.
 
-When the body references a screenshot or recording, run the create from the
-folder that holds the files and add one `--attach './file.png#<alt text>'`
-per file; `gh` uploads each and swaps the `./file.png` reference for its
-URL. Then check that no `(./` reference is left in the issue body.
+When the body references a screenshot or recording, first check that this
+`gh` can upload it: `gh issue create --help` lists `--attach`. It does: run
+the create from the folder that holds the files and add one
+`--attach './file.png#<alt text>'` per file; `gh` uploads each and swaps
+the `./file.png` reference for its URL. Then check that no `(./`
+reference is left in the issue body. It does not: replace each reference
+with one sentence of what the file showed, file the issue without the
+flag, and add `Screenshot not attached: this gh has no --attach.` to the
+report line.
 
 **If `gh` fails because a label does not exist**, handle it once, then retry
 once:
@@ -265,7 +270,8 @@ command -v pbcopy >/dev/null && printf "%s" "<url>" | pbcopy
 
 No `pbcopy` (a headless host): `Captured: <url>`.
 
-Nothing else. No summary of the body, no next steps.
+Nothing else, except the `Screenshot not attached` note from step 6 when it
+applies. No summary of the body, no next steps.
 
 ## Edge cases, handled
 
