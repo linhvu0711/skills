@@ -353,10 +353,12 @@ running something becomes one **Known** line in Context, with its proof:
   the value;
 - the request and response shape as seen, where it differs from the docs;
 - a limit that was hit: rate, size, timeout, page size;
-- the script or command that shows it, and the day it ran.
+- the command that shows it, pasted in the issue, and the day it ran; a
+  script counts only when it is in the repo.
 
 One line, one fact, one proof: "Refunds on ACH come back `status:
-pending`, not `succeeded`: `scratch/refund-spike.sh`, 2026-09-08". A
+pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test
+mode, 2026-09-08". A
 fact the chat only read about is not Known. It stays out, or goes under
 Open when it still needs proof.
 
