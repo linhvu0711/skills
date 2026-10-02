@@ -36,12 +36,13 @@ unchanged. The form decides only where the build runs (step 2).
 ## Steps
 
 1. **Plan.** Read `../plan-up/SKILL.md` and follow its
-   steps 1 to 8 whole: fresh tree, issue, gate, facts, forks, plan, done
-   rule, page. Its stop points are yours: a tree that is not clean, a
-   gate that fails, a `manual` ticket, a stale step, and every big fork
+   steps 1 to 8 whole: base copy, issue, gate, facts, forks, plan, done
+   rule, page. Its stop points are yours: a base that cannot be fetched,
+   a gate that fails, a `manual` ticket, a stale step, and every big fork
    (one question per message, wait). Two changes at step 8: build and
    open the page, print the summary, and go on at once as if `ok` were
-   given; `Ready for /handoff-devin.` is left out. Done when the plan
+   given: the base copy is removed, `Ready for /handoff-devin.` is left
+   out. Done when the plan
    `.md` exists at the path the summary names and you hold it.
 
 2. **Route.** Read the plan. Cloud when it has a `## Stack` block, or

@@ -17,7 +17,7 @@ It only runs when you call it.
 
 ## What you get
 
-First the plan, from [plan-up](../plan-up/), open in your browser. Then the route:
+First the plan, from [plan-up](../plan-up/), open in your browser. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
 
 - **Local**, for one ticket with no screen to check: a git worktree under `~/development/worktrees`, a build prompt, and a build. On Fable inside herdr, a Devin CLI pane builds it; on any other model, this chat builds it. Then [ready-pr](../ready-pr/) takes the PR through review.
 - **Cloud**, for a plan with UI walks or a stack: a Devin cloud session through [handoff-devin](../handoff-devin/).

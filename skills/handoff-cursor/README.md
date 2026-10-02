@@ -14,7 +14,7 @@ It only runs when you call it.
 
 ## What you get
 
-A prompt file holding the issue, the plan, and the build rules, sent whole as the agent's prompt. The agent opens the PR itself, on the branch the plan names, as you. The prompt stays out of the chat:
+A prompt file holding the issue, the plan, and the build rules, sent whole as the agent's prompt. Its size labels come from a size-label bot in the base branch's workflows when there is one, whatever branch your checkout is on. The agent opens the PR itself, on the branch the plan names, as you. The prompt stays out of the chat:
 
 ```
 Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
