@@ -134,6 +134,29 @@ t_say_through_adapter() {
   eq "adapter args" "devin-abc note.md" "$(cat "$FAKE_AD/devin.say.args")"
 }
 
+# unstamped: stdout with each line's leading `[HH:MM] ` dropped.
+unstamped() { printf '%s\n' "$out" | sed 's/^\[[0-9:]*\] //'; }
+
+t_watch_events() {
+  fake_adapters
+  printf 'working\tworking|-\t-\thttps://app.devin.ai/sessions/abc\t-\n' > "$FAKE_AD/devin.poll.1.out"
+  printf 'blocked\tblocked|Which file?\t-\thttps://app.devin.ai/sessions/abc\tWhich file?\n' > "$FAKE_AD/devin.poll.2.out"
+  printf 'finished\tfinished|Done\thttps://github.com/o/r/pull/5\thttps://app.devin.ai/sessions/abc\tDone\n' > "$FAKE_AD/devin.poll.3.out"
+  handoff watch devin devin-abc --interval 0
+  eq exit 0 "$code"
+  eq stdout "blocked https://app.devin.ai/sessions/abc :: Which file?
+pr https://github.com/o/r/pull/5
+finished https://app.devin.ai/sessions/abc :: Done" "$(unstamped)"
+}
+
+t_watch_time_limit() {
+  fake_adapters
+  printf 'working\tworking|-\t-\thttps://app.devin.ai/sessions/abc\t-\n' > "$FAKE_AD/devin.poll.out"
+  handoff watch devin devin-abc --interval 1 --max 1
+  eq exit 0 "$code"
+  eq stdout "still running https://app.devin.ai/sessions/abc" "$(unstamped)"
+}
+
 cases=(
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
@@ -145,4 +168,6 @@ cases=(
   "start on another executor's issue names it|t_start_names_other_executor"
   "status reads the session through the adapter named|t_status_through_adapter"
   "say sends the note through the adapter named|t_say_through_adapter"
+  "watch prints events as they come and stops when finished|t_watch_events"
+  "watch prints still running at its time limit|t_watch_time_limit"
 )

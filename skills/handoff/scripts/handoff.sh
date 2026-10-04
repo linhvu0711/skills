@@ -7,6 +7,8 @@
 #                                                             -> "<session>\t<link>"
 #   handoff.sh status <executor> <session> [poll options]     -> state, PR, link, last message
 #   handoff.sh say <executor> <session> <note-file>           -> sends a follow-up
+#   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
+#                                                             -> one line per event; exits when it ends
 #
 # <executor> is devin or cursor. Each has an adapter, adapters/<executor>.sh;
 # HANDOFF_ADAPTERS names another folder (the tests use a fake one). Options
@@ -17,7 +19,13 @@
 # route reads it: the issue's newest session, of the named executor when one
 # is named, is a follow-up; no session starts on the named executor, else
 # devin. status asks the adapter's poll, one line of state, event key, PRs,
-# link, and message, tab separated. start on an issue that only another executor has prints
+# link, and message, tab separated. watch polls until the session ends:
+# `pr <url>` once per PR, and `<state> <link> :: <message>` when it blocks,
+# finishes, errors, is cancelled, expires, or is suspended. --once exits on
+# the first event, for a caller that only sees the process end; --follow
+# keeps going past the end, for a session that gets a follow-up. At --max
+# seconds it prints `still running <link>`. The interval defaults to 120s for
+# devin and 60s for cursor. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
 
@@ -90,6 +98,56 @@ cmd_say() {
   adapter "$e" say "$id" "$file"
 }
 
+cmd_watch() {
+  local e; e=$(executor "${1:-}"); shift || true
+  local id="${1:-}"; shift || true
+  [[ -n "$id" ]] || die "session id required"
+  local interval=60 max=0 once=0 follow=0 opts=()
+  [[ "$e" == devin ]] && interval=120
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --interval) interval="$2"; shift 2 ;;
+      --max) max="$2"; shift 2 ;;
+      --once) once=1; shift ;;
+      --follow) follow=1; shift ;;
+      *) opts+=("$1"); shift ;;
+    esac
+  done
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr
+  start=$(date +%s)
+  while :; do
+    if line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>/dev/null); then
+      IFS=$'\t' read -r st key prs link msg <<<"$line"
+      last_link="$link"
+      if [[ "$prs" != "-" ]]; then
+        IFS=',' read -ra arr <<<"$prs"
+        for p in "${arr[@]}"; do
+          case "$seen" in *" $p "*) ;; *) echo "[$(date +%H:%M)] pr $p"; seen="$seen$p " ;; esac
+        done
+      fi
+      # An event is a new key in a state the caller acts on. The adapter
+      # makes the key, so a new message or a new run counts as new.
+      if [[ "$key" != "$prev_key" ]]; then
+        case "$st" in
+          blocked|finished|error|cancelled|expired|suspended*)
+            echo "[$(date +%H:%M)] $st $link :: $msg"
+            (( once )) && exit 0
+            ;;
+        esac
+        prev_key="$key"
+      fi
+      if (( follow == 0 )); then
+        case "$st" in finished|error|cancelled|expired) exit 0 ;; esac
+      fi
+    fi
+    if (( max > 0 && $(date +%s) - start >= max )); then
+      echo "[$(date +%H:%M)] still running $last_link"
+      exit 0
+    fi
+    sleep "$interval"
+  done
+}
+
 cmd_route() {
   local issue="${1:-}" e="" row
   [[ -n "$issue" ]] || die "issue URL required"
@@ -107,5 +165,6 @@ case "${1:-}" in
   start) shift; cmd_start "$@" ;;
   status) shift; cmd_status "$@" ;;
   say)   shift; cmd_say "$@" ;;
+  watch) shift; cmd_watch "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac
