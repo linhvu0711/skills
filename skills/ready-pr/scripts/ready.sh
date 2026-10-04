@@ -8,6 +8,7 @@
 # has none); no review thread waits for the author; no review asks for changes;
 # GitHub says MERGEABLE with a merge state of CLEAN, HAS_HOOKS, or BEHIND;
 # at least one check or status is on the head, with or without --no-devin;
+# every check the base branch requires is on the head;
 # and no other check on the head is red or pending. A merge state of
 # BLOCKED counts as ready only when the one thing missing is an approving
 # review. A merge state of UNKNOWN is GitHub still computing: it is asked
@@ -69,6 +70,7 @@ case "$(get MERGE_STATE)" in
 esac
 [ "$(get CHECKS_RED)" = "0" ] || why+=("$(get CHECKS_RED) other check(s) red")
 [ "$(get CHECKS_PENDING)" = "0" ] || why+=("$(get CHECKS_PENDING) other check(s) pending")
+[ -z "$(get REQUIRED_MISSING)" ] || why+=("required check(s) not posted: $(get REQUIRED_MISSING | sed 's/,/, /g')")
 [ "$(get REVIEW_DECISION)" != "CHANGES_REQUESTED" ] || why+=("changes requested")
 
 # BLOCKED with no other reason: a missing approval is the one thing a person

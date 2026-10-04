@@ -483,8 +483,9 @@ restack="$here/../skills/ready-pr/scripts/restack.sh"
 # fake_gh: a temp folder T with a fake gh and a no-op sleep first on PATH.
 # `pr list … --base <b>` prints $T/prs/<b, with / as _>.json, or `[]` when
 # there is none. Else the gh answers from fixture files in $FAKE_GH, by
-# route: `pr view` is pr,
-# `api graphql` threads, `api user` user, `api repos/…/status` status, and
+# route: `pr view` is pr, `api graphql` threads, `api user` user,
+# `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
+# `api repos/…/status` status, and
 # `api repos/…/check-runs` check-runs. Call n of a route prints
 # <route>.<n>.fail or <route>.fail to stderr and fails when one exists, else
 # prints <route>.<n>.json or <route>.json, through `jq -r` when given -q.
@@ -510,6 +511,8 @@ case "$args" in
   " pr view"*) key=pr ;;
   " api graphql"*) key=threads ;;
   " api user"*) key=user ;;
+  " api repos/"*/rules/branches/*) key=rules ;;
+  " api repos/"*/branches/*) key=branch ;;
   " api repos/"*/status*) key=status ;;
   " api repos/"*/check-runs*) key=check-runs ;;
   *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;
@@ -548,9 +551,19 @@ threads_json() {
     {pageInfo: {hasNextPage: false, endCursor: null}, nodes: $n}}}}}' > "$FAKE_GH/threads.json"
 }
 
-# ready [<flag>...]: ready.sh on PR 7 as `author`, no threads unless written.
+# required_json <protection contexts> <ruleset contexts>: the required checks of
+# the base branch, from branch protection and from a ruleset.
+required_json() {
+  jq -n --argjson c "$1" '{protection: {enabled: true, required_status_checks: {contexts: $c}}}' > "$FAKE_GH/branch.json"
+  jq -n --argjson c "$2" '[{type: "required_status_checks",
+    parameters: {required_status_checks: [$c[] | {context: .}]}}]' > "$FAKE_GH/rules.json"
+}
+
+# ready [<flag>...]: ready.sh on PR 7 as `author`; no threads and no required
+# checks unless written.
 ready() {
   [ -f "$FAKE_GH/threads.json" ] || threads_json '[]'
+  [ -f "$FAKE_GH/branch.json" ] || required_json '[]' '[]'
   run bash "$here/../skills/ready-pr/scripts/ready.sh" acme/app 7 --me author "$@"
 }
 
@@ -769,6 +782,30 @@ t_ready_blocked_no_review_rule() {
   eq "last line" "NOT READY https://github.com/acme/app/pull/7: merge state is BLOCKED" "$(last)"
 }
 
+t_ready_required_check_missing() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_ok]"
+  required_json '["check","build"]' '[]'
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: required check(s) not posted: build" "$(last)"
+}
+
+t_ready_ruleset_check_missing() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_ok]"
+  required_json '[]' '["check","lint"]'
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: required check(s) not posted: lint" "$(last)"
+}
+
+t_ready_required_checks_posted() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_ok]"
+  required_json '["check"]' '["Devin Review"]'
+  ready
+  eq exit 0 "$code"
+  eq "last line" "READY https://github.com/acme/app/pull/7 (waiting for approval)" "$(last)"
+}
+
 t_ready_draft() {
   fake_gh; pr_json pr.json DRAFT MERGEABLE "" true "[$ci_green,$devin_ok]"
   ready
@@ -894,6 +931,9 @@ cases=(
   "ready-pr: BLOCKED with changes requested reads NOT READY|t_ready_blocked_changes_requested"
   "ready-pr: BLOCKED with a red check reads NOT READY|t_ready_blocked_red_check"
   "ready-pr: BLOCKED with no review rule reads NOT READY|t_ready_blocked_no_review_rule"
+  "ready-pr: a required check not posted reads NOT READY|t_ready_required_check_missing"
+  "ready-pr: a ruleset check not posted reads NOT READY|t_ready_ruleset_check_missing"
+  "ready-pr: required checks all posted reads READY (waiting for approval)|t_ready_required_checks_posted"
   "ready-pr: a draft reads NOT READY|t_ready_draft"
   "ready-pr: zero checks reads NOT READY|t_ready_zero_checks"
   "ready-pr: zero checks under --no-devin reads NOT READY|t_ready_zero_checks_no_devin"
