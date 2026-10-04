@@ -89,6 +89,7 @@ flowchart LR
 | [make-pr](skills/make-pr/) | Opens a pull request for work done by hand, in the same shape as every PR these skills make. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
 | [ready-pr](skills/ready-pr/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
+| [prune-worktrees](skills/prune-worktrees/) | Removes the worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays. |
 
 ### Review and standards
 

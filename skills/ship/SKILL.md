@@ -154,7 +154,7 @@ unchanged. The form decides only where the build runs (step 2).
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
    Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
    Worktree: ~/code/worktrees/app/feat-42-login
-   Clean up after merge: git -C ~/code/app worktree remove ~/code/worktrees/app/feat-42-login
+   After merge: /prune-worktrees
    READY https://github.com/acme/app/pull/43
    ```
 

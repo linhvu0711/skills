@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prune Worktrees"
+  short_description: "Remove worktrees that are safe to prune, list the rest with a reason"
+  default_prompt: "$prune-worktrees"

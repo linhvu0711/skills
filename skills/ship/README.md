@@ -28,7 +28,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
 Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
 Worktree: ~/development/worktrees/app/feat-42-login
-Clean up after merge: git -C ~/development/app worktree remove ~/development/worktrees/app/feat-42-login
+After merge: /prune-worktrees
 READY https://github.com/acme/app/pull/43
 ```
 
@@ -47,4 +47,5 @@ A PR that waits only for a person's approval ends with `READY <url> (waiting for
 - Calls [plan-up](../plan-up/), then [handoff-devin](../handoff-devin/) or a local build, then [ready-pr](../ready-pr/).
 - Uses [kickoff](../kickoff/)'s `equalize_columns.py` to even out pane widths.
 - A failed readiness gate sends you to [grill](../grill/) first.
+- After the merge, [prune-worktrees](../prune-worktrees/) removes the worktree and its branch.
 - Nothing calls this skill; you run it.
