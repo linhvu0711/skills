@@ -43,7 +43,8 @@ kills the review loop.
 The first word is the executor when it is `devin` or `cursor`, when it
 is the only word, or when a URL follows it. Any other word there: say
 `executor must be devin or cursor` and stop; `handoff.sh` stops with the
-same words. Anything else is a note.
+same words. Anything else is a note; a one-word note names its
+executor first, as `/handoff devin yes`.
 
 No executor named: `bash scripts/handoff.sh route <issue-url>` picks
 it: `follow <executor> <session> <link>` names the executor that
@@ -137,9 +138,8 @@ set's, the first ticket URL. Say the pick in one line, as
    in a row it prints `poll failed <link> :: <error>` and exits: show it
    and stop. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
-   section. Without a Monitor (a background shell reports only when the
-   process ends), add `--once`: the watch then exits on the first event,
-   and you start it again after you answer. In Codex there is no
+   section. Without a Monitor, add `--once`: the watch exits on the first
+   event, and you start it again after you answer. In Codex there is no
    Monitor: print `bash scripts/handoff.sh status <executor> <session>`
    as the way to check. Stop.
 
@@ -221,7 +221,10 @@ set's, the first ticket URL. Say the pick in one line, as
 3. **Send.** The session is the one this chat started. A chat without
    one runs `bash scripts/handoff.sh route <issue-url> [<executor>]`, the
    issue from this chat's plan; a chat with no plan either asks for the
-   issue URL in one line and waits. `follow <executor> <session> <link>`
+   issue URL in one line and waits. A new layer routes by the stack's
+   URL, not its own issue's: the epic URL, or a set's first ticket URL,
+   the one the stack was handed off with; not known here, ask for it in
+   one line and wait. `follow <executor> <session> <link>`
    is the session, so a note with no executor named goes to the
    executor that started the issue. `start …` means the issue has no
    session: say `#<n> has no handoff session. Start one with /handoff
@@ -359,9 +362,8 @@ claude-opus-5`, Monitor on `watch cursor <agent> --repo acme/shop
 **User:** `/handoff` after a short-path `/plan-up` of #57 ended with
 `Ready for /handoff.`
 
-No URL: the issue is the plan's, #57. One slice, no walks, no videos:
-the prompt drops `UI walks` and `Videos`. `start`, watch, stop. The same
-`/handoff` with no plan in this chat: `Run /plan-up first.` Stop.
+No URL: the issue is the plan's, #57. No walks, no videos: the prompt
+drops those blocks. With no plan in this chat: `Run /plan-up first.`
 
 **User:** `/handoff foo`
 
@@ -378,12 +380,10 @@ fetches the button at `ExportButton.tsx:18` and the loading pattern at
 shaped per § Follow-up, `say cursor bc-1`, `Sent to <link>`, watch
 again. Stop.
 
-**Watch prints** `blocked <link> :: The plan names lib/format.ts:12 for
-the date helper but that file only has formatCurrency…` from Devin
+**Watch prints** `blocked <link> :: Where does formatDate go?` from Devin
 
-`status devin` gives the whole message. `utils/time.ts:4` already
-exports `toIsoDate`: small fork. Answer per § Answer, `say`,
-`Answered <link>`, one line to the user. The watch keeps running. Stop.
+`status devin` gives it whole. `utils/time.ts:4` already exports
+`toIsoDate`: small fork. § Answer, `say`, `Answered <link>`. Stop.
 
 **Watch prints** `finished <link> :: The users table has no team_id
 column. Should I add a migration or …` from Cursor, no `pr` line
