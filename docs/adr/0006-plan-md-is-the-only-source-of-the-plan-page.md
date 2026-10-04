@@ -1,0 +1,3 @@
+# The plan .md is the only source of the plan page
+
+plan-up wrote each plan twice: the `.md`, and a `DATA` object for the page that the agent copied from it by hand. `check-page.py` then compared the two, and the copies drifted: the check skipped `At`, and it read a one-layer run as a single ticket. We decided that a script builds the page from the `.md` alone. So every field the page shows has a place in the `.md`: each layer gets a `Summary` block, and the page-only `bend` override is gone, because the page routes each flow on its own. When a curve looks wrong, we fix the router, not the plan.

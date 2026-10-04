@@ -1,0 +1,3 @@
+# Each caller keeps its own branch-to-PR lookup
+
+Six places find the PR of a branch, and they do not use the same rule. An architecture review suggested one PR lookup module for all of them. We decided against it, because the rules differ on purpose: `make-pr` and `ship` want the open PR, so they can update it; `prune-worktrees` wants the newest PR in any state, because a merged PR is what makes a worktree safe to prune; `review-pr` and `validate-pr-review` take the PR the user names. Each lookup is one `gh` command, so a module over them adds no depth. The one rule they really shared, how to find the default branch, moved into the checkout resolver.

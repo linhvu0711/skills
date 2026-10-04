@@ -34,6 +34,22 @@ _Avoid_: lock, reservation
 A risk in the Review view that no probe has checked. Each risk names the `Proved` line that proves it, or says `not proved`. Reading the code does not prove a risk.
 _Avoid_: unproven, unverified, assumed
 
+## Handoff
+
+**Executor**:
+The agent that does the work of a plan handed off by `/handoff`: Devin, Cursor, or local.
+_Avoid_: vendor, provider, backend
+
+**Handoff ledger**:
+The one list of handoff sessions, a row per session with its executor and issue. `/handoff` reads it to send a follow-up to the executor that started the issue.
+_Avoid_: session list, sessions file
+
+## PRs
+
+**Readiness verdict**:
+The one answer the readiness module gives for a PR: ready, waiting, or blocked, with the reason.
+_Avoid_: PR status, ready state
+
 ## Credit
 
 **Upstream**:
@@ -87,3 +103,7 @@ _Avoid_: legacy rules, old conventions
 **Safe to prune**:
 A worktree that is clean, whose PR is merged on GitHub (or whose branch is in the default branch), and whose branch tip is the PR's last commit. `prune-worktrees` removes it and its branch without asking. Any other worktree waits for the user.
 _Avoid_: stale, old, abandoned
+
+**Checkout resolver**:
+The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch.
+_Avoid_: repo finder, repo lookup
