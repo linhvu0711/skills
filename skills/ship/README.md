@@ -20,7 +20,7 @@ It only runs when you call it.
 First the plan, from [plan-up](../plan-up/), open in your browser. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
 
 - **Local**, for one ticket with no screen to check: a git worktree under `~/development/worktrees`, a build prompt, and a build. On Fable inside herdr, a Devin CLI pane builds it; on any other model, this chat builds it. Then [ready-pr](../ready-pr/) takes the PR through review.
-- **Cloud**, for a plan with UI walks or a stack: a Devin cloud session through [handoff-devin](../handoff-devin/).
+- **Cloud**, for a plan with UI walks or a stack: a Devin cloud session through [handoff](../handoff/).
 
 It stops only for a ticket someone else is already on, the plan's big decisions, and the build's surprises. The last message:
 
@@ -37,14 +37,14 @@ A PR that waits only for a person's approval ends with `READY <url> (waiting for
 ## Needs
 
 - `gh` (signed in), `git`, `jq`, and `python3`.
-- The skills it chains: [plan-up](../plan-up/), [handoff-devin](../handoff-devin/), and [ready-pr](../ready-pr/), and what they need.
+- The skills it chains: [plan-up](../plan-up/), [handoff](../handoff/), and [ready-pr](../ready-pr/), and what they need.
 - The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh` (the checkout resolver), and `../../shared-skill-core/handoff/render.sh`.
 - For a Devin CLI pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Devin CLI `devin`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
-- For the cloud route: a Devin account, as [handoff-devin](../handoff-devin/) describes.
+- For the cloud route: a Devin account, as [handoff](../handoff/) describes.
 
 ## Fits with
 
-- Calls [plan-up](../plan-up/), then [handoff-devin](../handoff-devin/) or a local build, then [ready-pr](../ready-pr/).
+- Calls [plan-up](../plan-up/), then [handoff](../handoff/) or a local build, then [ready-pr](../ready-pr/).
 - Uses [kickoff](../kickoff/)'s `equalize_columns.py` to even out pane widths.
 - A failed readiness gate sends you to [grill](../grill/) first.
 - After the merge, [prune-worktrees](../prune-worktrees/) removes the worktree and its branch.

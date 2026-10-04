@@ -1,4 +1,4 @@
-<!-- template: shared by /handoff-devin, /handoff-cursor, and /ship. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /handoff and /ship. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 You are the executor. The plan above was written by someone who read the
 repo and made every decision that needs judgment. Follow it in order.
 Your job is clean code, green tests, and proof for every Done-when line.

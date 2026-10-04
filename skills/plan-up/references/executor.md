@@ -3,7 +3,7 @@
 The plan is written for an executor: a coding agent that gets the plan
 as one prompt and builds from it alone. This file says what the plan
 may assume about it. Which agent it is, and the rules it runs under,
-belong to `/handoff-devin`; the plan never names it.
+belong to `/handoff`; the plan never names it.
 
 ## What it has
 

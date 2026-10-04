@@ -49,8 +49,8 @@ executor() {
 }
 
 # migrate -> moves each old per-tool ledger into the ledger, sorted by time, and
-# renames it to .migrated, or appends it to a .migrated already there (the
-# old skills write their file again until #84 removes them). Each old file is
+# renames it to .migrated, or appends it to a .migrated already there (a
+# copy of an old skill outside this repo can still write one). Each old file is
 # renamed aside, to a new <file>.taking.<suffix>, before it is read, so a row
 # an old skill appends meanwhile lands in a new old file, which the next run
 # moves in. A .taking file a stopped run left behind is moved in too, and a

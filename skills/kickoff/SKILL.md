@@ -26,7 +26,7 @@ The arguments are `/plan-up`'s, passed through unchanged:
 
 Exit 0: print the script's one report line and stop. `/plan-up` now talks
 to the user in the new pane. Do not watch it, read its plan, or run
-`/handoff-devin` from here.
+`/handoff` from here.
 
 Exit 1: the last stderr line starts with `stop:` and says why. Show it
 as is and stop. Nothing is half done: the script makes no pane until

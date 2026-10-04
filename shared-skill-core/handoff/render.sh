@@ -3,14 +3,14 @@
 #
 #   render.sh <devin|cursor|local> <rules|prompt>
 #
-# The templates in this directory are shared by /handoff-devin,
-# /handoff-cursor, and /ship. A block between `<!-- devin -->` and
-# `<!-- /devin -->` (or `cursor`, or `local`) is kept only for that
-# executor; a block between `<!-- cloud -->` and `<!-- /cloud -->` is kept
-# for devin and cursor and dropped for local. Blocks nest. The marker
-# lines go. A line that starts with `<!-- template` is a note for editors
-# and goes. A line `<!-- include <path> -->` is replaced by that file,
-# path relative to this directory; its `<!-- template` lines go too.
+# The templates in this directory are shared by /handoff and /ship. A
+# block between `<!-- devin -->` and `<!-- /devin -->` (or `cursor`, or
+# `local`) is kept only for that executor; a block between
+# `<!-- cloud -->` and `<!-- /cloud -->` is kept for devin and cursor and
+# dropped for local. Blocks nest. The marker lines go. A line that starts
+# with `<!-- template` is a note for editors and goes. A line
+# `<!-- include <path> -->` is replaced by that file, path relative to
+# this directory; its `<!-- template` lines go too.
 # `{{app}}`, `{{me}}`, `{{session}}`, `{{here}}`, and `{{caller}}` are
 # words that differ per executor; see the case below. `{{skills}}` is the
 # absolute path of the skills folder, for a rendered prompt that is read
@@ -25,8 +25,8 @@ case "$ex" in devin|cursor|local) ;; *) echo "$usage" >&2; exit 64 ;; esac
 case "$f" in rules|prompt) ;; *) echo "$usage" >&2; exit 64 ;; esac
 
 case "$ex" in
-  devin)  app=Devin;       session=session; here="in the session";      caller=/handoff-devin ;;
-  cursor) app=Cursor;      session=run;     here="in your reply";       caller=/handoff-cursor ;;
+  devin)  app=Devin;       session=session; here="in the session";      caller=/handoff ;;
+  cursor) app=Cursor;      session=run;     here="in your reply";       caller=/handoff ;;
   local)  app="Devin CLI"; session=session; here="in your last message"; caller=/ship ;;
 esac
 
