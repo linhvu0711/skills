@@ -41,7 +41,8 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 # `api graphql` graphql, `api user` user, `api repos/…/rules/branches/…`
 # rules, `api repos/…/branches/…` branch, `api repos/…/status` status, and
 # `api repos/…/check-runs` check-runs. Each route counts its calls in
-# <route>.calls and logs their args in <route>.args. Call n of a route prints
+# <route>.calls and logs their args in <route>.args, one line per call (a
+# newline inside an arg becomes a space). Call n of a route prints
 # <route>.<n>.fail or <route>.fail to stderr and fails when one exists. Else
 # `pr list … --base <b>` prints pr-list.<b, with / as _>.json, or `[]` when
 # there is none, and every other route prints <route>.<n>.json or
@@ -57,7 +58,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -q) q="$2"; shift 2 ;;
     --base) branch="${2:-}"; args="$args $1 $branch"; shift 2 ;;
-    *) args="$args $1"; shift ;;
+    *) args="$args ${1//$'\n'/ }"; shift ;;
   esac
 done
 case "$args" in
