@@ -22,7 +22,7 @@ Each readiness check is one call to `ready.sh`, which gives one readiness verdic
 
 A repo without Devin Review still works: it says so once and judges the comments people left.
 
-If `gh` fails five times in a row while it waits for the review (an expired login, the network), it stops with the error (exit 4) and never goes on without the review.
+If `gh` fails five times in a row while it waits for the review (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
 
 ## Needs
 
