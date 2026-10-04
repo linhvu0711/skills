@@ -1,0 +1,134 @@
+{
+  "title": "Team switcher",
+  "issue": {
+    "number": 75,
+    "url": "https://github.com/acme/shop/issues/75",
+    "size": ""
+  },
+  "date": "2026-10-04",
+  "run": true,
+  "points": "2 (XS 1, S 2, M 4, L 8)",
+  "review": {
+    "change": "header has one team → header switches teams",
+    "approach": "reuse the header and the active team",
+    "blast": {
+      "touches": [
+        "Web",
+        "API"
+      ],
+      "dependency": "none",
+      "schema": "none",
+      "api": "team commands",
+      "config": "none",
+      "ci": "none"
+    },
+    "risks": [],
+    "in": "teams",
+    "out": "invitations, O1"
+  },
+  "facts": {
+    "repo": "acme/shop",
+    "base": "main",
+    "test": "pnpm test",
+    "typecheck": "none",
+    "lint": "pnpm lint",
+    "build": "none",
+    "run": "pnpm dev",
+    "ui": "web",
+    "open": "http://localhost:3000/teams",
+    "screen": "1024 x 768",
+    "platform": "linux",
+    "standards": "the code"
+  },
+  "proved": [],
+  "maps": [
+    {
+      "area": "Teams",
+      "parts": [
+        {
+          "ref": "M1",
+          "name": "Team switcher",
+          "job": "the header switches teams",
+          "change": "new",
+          "group": "",
+          "kind": "part",
+          "at": [
+            "src/switcher.ts:10"
+          ],
+          "x": 0,
+          "y": 0,
+          "layer": "L1"
+        }
+      ],
+      "flows": []
+    }
+  ],
+  "layers": [
+    {
+      "issue": {
+        "number": 75,
+        "url": "https://github.com/acme/shop/issues/75",
+        "size": "S"
+      },
+      "title": "Team switcher",
+      "targets": "PR #80",
+      "points": 2,
+      "summary": "Adds the team switcher to the header. Slice 1 switches the active team. 1 done-when, 1 slice.",
+      "review": {
+        "change": "adds the team switcher to the header",
+        "choices": [],
+        "works": [
+          "the header switches teams"
+        ]
+      },
+      "forks": [],
+      "seams": [
+        {
+          "name": "team command",
+          "at": "src/switcher.ts:10",
+          "why": "the public command"
+        }
+      ],
+      "proof": [
+        {
+          "line": "the header switches teams",
+          "test": "`src/switcher.test.ts` \"switches teams\"",
+          "walk": null,
+          "video": null,
+          "artifact": "test"
+        }
+      ],
+      "slices": [
+        {
+          "seam": "team command",
+          "proves": [
+            1
+          ],
+          "change": [
+            "`src/switcher.ts:10`, adds the team switcher to the header."
+          ],
+          "docs": [],
+          "tests": [
+            {
+              "file": "src/switcher.test.ts",
+              "name": "switches teams",
+              "given": "a signed-in user",
+              "when": "run the command",
+              "then": "the header switches teams"
+            }
+          ]
+        }
+      ],
+      "walks": [],
+      "videos": [],
+      "gates": {
+        "slice": "its test green.",
+        "task": "full suite green, lint green."
+      },
+      "decided": [],
+      "out": [
+        "team creation"
+      ]
+    }
+  ]
+}

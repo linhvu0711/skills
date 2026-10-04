@@ -1,0 +1,222 @@
+{
+  "title": "Team membership",
+  "issue": {
+    "number": 71,
+    "url": "https://github.com/acme/shop/issues/71",
+    "size": ""
+  },
+  "date": "2026-10-04",
+  "run": true,
+  "points": "6 (XS 1, S 2, M 4, L 8)",
+  "review": {
+    "change": "no teams → teams and members",
+    "approach": "add the team route, then its membership route",
+    "blast": {
+      "touches": [
+        "Web",
+        "API"
+      ],
+      "dependency": "none",
+      "schema": "none",
+      "api": "team commands",
+      "config": "none",
+      "ci": "none"
+    },
+    "risks": [],
+    "in": "teams",
+    "out": "invitations, O1"
+  },
+  "facts": {
+    "repo": "acme/shop",
+    "base": "main",
+    "test": "pnpm test",
+    "typecheck": "none",
+    "lint": "pnpm lint",
+    "build": "none",
+    "run": "pnpm dev",
+    "ui": "web",
+    "open": "http://localhost:3000/teams",
+    "screen": "1024 x 768",
+    "platform": "linux",
+    "standards": "the code"
+  },
+  "proved": [],
+  "maps": [
+    {
+      "area": "Teams",
+      "parts": [
+        {
+          "ref": "M1",
+          "name": "Team entity",
+          "job": "a team can be created",
+          "change": "new",
+          "group": "",
+          "kind": "part",
+          "at": [
+            "src/teams.ts:10"
+          ],
+          "x": 0,
+          "y": 0,
+          "layer": "L1"
+        },
+        {
+          "ref": "M2",
+          "name": "Add a member",
+          "job": "a member can join a team",
+          "change": "new",
+          "group": "",
+          "kind": "part",
+          "at": [
+            "src/members.ts:10"
+          ],
+          "x": 1,
+          "y": 0,
+          "layer": "L2"
+        }
+      ],
+      "flows": [
+        {
+          "from": "M1",
+          "to": "M2",
+          "label": "team id",
+          "change": "new",
+          "layer": "L2"
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "issue": {
+        "number": 71,
+        "url": "https://github.com/acme/shop/issues/71",
+        "size": "M"
+      },
+      "title": "Team entity",
+      "targets": "main",
+      "points": 4,
+      "summary": "Adds the team entity. Slice 1 creates a team through the route. 1 done-when, 1 slice.",
+      "review": {
+        "change": "adds the team entity",
+        "choices": [],
+        "works": [
+          "a team can be created"
+        ]
+      },
+      "forks": [],
+      "seams": [
+        {
+          "name": "team command",
+          "at": "src/teams.ts:10",
+          "why": "the public command"
+        }
+      ],
+      "proof": [
+        {
+          "line": "a team can be created",
+          "test": "`src/teams.test.ts` \"creates a team\"",
+          "walk": null,
+          "video": null,
+          "artifact": "test"
+        }
+      ],
+      "slices": [
+        {
+          "seam": "team command",
+          "proves": [
+            1
+          ],
+          "change": [
+            "`src/teams.ts:10`, adds the team entity."
+          ],
+          "docs": [],
+          "tests": [
+            {
+              "file": "src/teams.test.ts",
+              "name": "creates a team",
+              "given": "a signed-in user",
+              "when": "run the command",
+              "then": "a team can be created"
+            }
+          ]
+        }
+      ],
+      "walks": [],
+      "videos": [],
+      "gates": {
+        "slice": "its test green.",
+        "task": "full suite green, lint green."
+      },
+      "decided": [],
+      "out": [
+        "invitations"
+      ]
+    },
+    {
+      "issue": {
+        "number": 73,
+        "url": "https://github.com/acme/shop/issues/73",
+        "size": "S"
+      },
+      "title": "Add a member",
+      "targets": "layer 1",
+      "points": 2,
+      "summary": "Adds team membership. Slice 1 joins a member through the route. 1 done-when, 1 slice.",
+      "review": {
+        "change": "adds a member to a team",
+        "choices": [],
+        "works": [
+          "a member can join a team"
+        ]
+      },
+      "forks": [],
+      "seams": [
+        {
+          "name": "team command",
+          "at": "src/members.ts:10",
+          "why": "the public command"
+        }
+      ],
+      "proof": [
+        {
+          "line": "a member can join a team",
+          "test": "`src/members.test.ts` \"joins a team\"",
+          "walk": null,
+          "video": null,
+          "artifact": "test"
+        }
+      ],
+      "slices": [
+        {
+          "seam": "team command",
+          "proves": [
+            1
+          ],
+          "change": [
+            "`src/members.ts:10`, adds a member to a team."
+          ],
+          "docs": [],
+          "tests": [
+            {
+              "file": "src/members.test.ts",
+              "name": "joins a team",
+              "given": "a signed-in user",
+              "when": "run the command",
+              "then": "a member can join a team"
+            }
+          ]
+        }
+      ],
+      "walks": [],
+      "videos": [],
+      "gates": {
+        "slice": "its test green.",
+        "task": "full suite green, lint green."
+      },
+      "decided": [],
+      "out": [
+        "roles"
+      ]
+    }
+  ]
+}

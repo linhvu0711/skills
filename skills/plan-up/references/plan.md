@@ -56,6 +56,9 @@ Write every block in this order. Drop a block only when no probe ran
 nothing was decided (`Decided`).
 
 ```markdown
+# Plan: #<n> <issue title>
+Size: size/<x>    Date: YYYY-MM-DD
+
 ## Review
 Change:   <before> → <after>, at most 4 lines
 Approach: <how it is built, and why not the other way>, at most 4 lines
@@ -100,6 +103,9 @@ Standards: <the files that hold the rules, or "the code">
 ## Proved
 - P1 <the fact, with the value, shape, or limit the build needs>: <what ran,
   one clause>, <YYYY-MM-DD>. Used by <S2, D1>.
+
+## Summary
+<2 to 3 lines: what changes, the path slice 1 takes, the counts>
 
 ## Proof
 | # | Done-when line | Test (file, case) | UI walk | Video | Artifact |
@@ -158,6 +164,9 @@ A run is one plan with the blocks above written once per layer. These
 blocks come first and once:
 
 ```markdown
+# Plan: #<first ticket or epic> <title>
+Date: YYYY-MM-DD
+
 ## Stack
 | Layer | Issue | Base | Size | Points |
 |---|---|---|---|---|
@@ -180,7 +189,7 @@ for the whole stack>
 ```
 
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
-and under it a small `## Review` block, then Proof, Seams, Slices, UI
+and under it a small `## Review` block, then `## Summary`, Proof, Seams, Slices, UI
 walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
 The layer's Review holds three parts: `Change`, at most 2 lines, what
 this layer's PR adds to the stack; `Choices`, its forks and decisions;
@@ -200,7 +209,8 @@ slice gives it. Nothing points at a later layer. The points line is
 information, not a cap: the user chose the run.
 
 A single ticket prepped `on` an open stack is a run of one layer whose
-Base is `PR #<n>`.
+Base is `PR #<n>`. It has both the stack Review and the layer Review.
+The H1 and Date come first and once; each layer has its own Summary.
 
 ## Handoff-ready
 
@@ -262,6 +272,9 @@ In a run, a labelled layer is built the same way.
 
 ## Filling the blocks
 
+**Summary.** Two to three lines: what changes, the path slice 1 takes,
+and the counts. The page shows it as the layer's Overview lead.
+
 **Review.** Written last, from the blocks under it, and placed first.
 It is for a person who approves the plan and never reads a slice, so it
 uses the issue's words and the repo's names, and no plan words (`slice
@@ -290,8 +303,8 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, in a few words: a name at most 20 characters, a job at
-  most 30, so both fit the box. `Change` is `new`, `changed` (the job
+  job changes, short enough to fit the box. `scripts/build-page.py`
+  holds the limits and names each line over one. `Change` is `new`, `changed` (the job
   changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
@@ -300,8 +313,8 @@ part or flow changes.`, so the reader sees that the plan checked.
 - `At` is the files of a part that exists now, `file` or `file:line`,
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
-- A flow names what moves or what is asked, never `imports`, in at most
-  20 characters. `(same)` may be left out.
+- A flow names what moves or what is asked, never `imports`, in a few
+  words within the label limit in `scripts/build-page.py`. `(same)` may be left out.
 - At most 12 parts. More: merge the `same` parts no changed flow needs,
   then parts of one group whose flows match. Still more: two maps, one
   per area, each block headed `## Change map · <area>`.

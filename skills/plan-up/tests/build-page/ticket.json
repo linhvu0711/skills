@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-04",
+  "facts": {
+    "repo": "acme/shop", "base": "main", "test": "pnpm test", "typecheck": "pnpm typecheck",
+    "lint": "pnpm lint", "build": "pnpm build", "run": "pnpm dev", "ui": "web",
+    "open": "http://localhost:3000/orders", "screen": "1024 x 768", "platform": "linux", "standards": "the code"
+  },
+  "issue": {"number": 42, "url": "https://github.com/acme/shop/issues/42", "size": "size/M", "kind": "feat"},
+  "layers": [{
+    "issue": {"number": 42, "url": "https://github.com/acme/shop/issues/42", "size": "size/M"},
+    "title": "[feat] Export orders as CSV",
+    "summary": "Adds CSV next to JSON in the orders export. Slice 1 runs the CSV path end to end; slice 2 adds the empty export. 2 done-when, 2 slices, 1 walk, 1 video.",
+    "review": {
+      "choices": [{"ref": null, "text": "stream or buffer → stream (user)"}, {"ref": "D2", "text": "delimiter is `,`. Risk: a different delimiter breaks imports"}],
+      "works": ["orders export as CSV", "an empty export has a header"]
+    },
+    "forks": [{"question": "stream or buffer", "pick": "stream"}],
+    "seams": [{"name": "export route", "at": "src/orders/export.ts:31", "why": "receives the chosen format"}],
+    "proof": [
+      {"line": "orders export as CSV", "test": "`src/orders/export.test.ts` \"exports csv\"", "walk": 1, "video": "video 1 @ step 2", "artifact": "screenshot 1"},
+      {"line": "an empty export has a header", "test": "`src/orders/export.test.ts` \"exports an empty list\"", "walk": null, "video": null, "artifact": "test"}
+    ],
+    "slices": [
+      {"seam": "export route", "proves": [1], "change": ["`src/orders/export.ts:31`, stream CSV beside JSON."], "docs": ["`src/README.md:88`, CSV next to JSON."], "tests": [{"file": "src/orders/export.test.ts", "name": "exports csv", "given": "three orders, one note with a newline", "when": "export CSV", "then": "all three rows with the note whole"}]},
+      {"seam": "export route", "proves": [2], "change": ["`src/orders/export.ts:31`, keep the header with no orders."], "docs": [], "tests": [{"file": "src/orders/export.test.ts", "name": "exports an empty list", "given": "no orders", "when": "export CSV", "then": "the header alone"}]}
+    ],
+    "walks": [{"proves": [1], "setup": "three orders", "where": "`/orders`", "steps": ["click Export, pick CSV"], "see": "three orders in the download", "mustNot": "a console error", "before": "none"}],
+    "videos": [{"title": "Setup of walk 1", "setup": "walk 1", "walks": [1], "steps": ["Open `/orders`.", "Click Export, pick CSV."], "shows": "#1 at step 2"}],
+    "gates": {"slice": "its test green, typecheck green.", "task": "full suite green, lint green, build green."},
+    "decided": [{"what": "file name", "why": "`orders-<date>.csv`"}, {"what": "delimiter", "why": "`,` as the spec says"}],
+    "out": ["orders export as PDF"]
+  }],
+  "maps": [{
+    "area": "",
+    "parts": [
+      {"ref": "M1", "name": "Orders page", "job": "asks for an export", "change": "same", "group": "Web", "kind": "part", "at": ["src/web/orders.tsx:12"], "x": 0, "y": 1, "layer": null},
+      {"ref": "M2", "name": "Export", "job": "JSON or CSV", "change": "changed", "group": "API", "kind": "part", "at": ["src/orders/export.ts:31"], "x": 1, "y": 1, "layer": null},
+      {"ref": "M3", "name": "Orders store", "job": "order rows", "change": "same", "group": "", "kind": "store", "at": ["src/db/orders.ts:4"], "x": 2, "y": 1, "layer": null}
+    ],
+    "flows": [
+      {"from": "M1", "to": "M2", "label": "asks for CSV", "change": "new", "layer": null},
+      {"from": "M2", "to": "M3", "label": "streams orders", "change": "changed", "layer": null}
+    ]
+  }],
+  "proved": [{"fact": "csv-stringify keeps a note with a newline whole", "ran": "streamed three rows in a temp folder", "date": "2026-10-04", "usedBy": "S1"}],
+  "review": {
+    "change": "orders export as JSON only → as JSON or CSV", "approach": "stream CSV through the existing export route, not a second route",
+    "blast": {"touches": ["Web", "API"], "dependency": "csv-stringify, D2", "schema": "none", "api": "export accepts CSV", "config": "none", "ci": "none"},
+    "risks": [{"belief": "notes may contain newlines.", "ifWrong": "rows split", "proved": "P1"}],
+    "in": "CSV beside JSON", "out": "PDF, O1"
+  },
+  "run": false,
+  "title": "[feat] Export orders as CSV"
+}
