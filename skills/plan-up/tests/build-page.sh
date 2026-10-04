@@ -194,6 +194,13 @@ t_build_script_text() {
   has escaped '<\/script>' "$(sed -n '/^const DATA = /p' "$T/plan-acme-shop-42.html")"
 }
 
+t_build_no_bend() {
+  T="$(mktemp -d)"
+  run grep -ci bend "$here/../assets/shell.html" "$here/../../../shared-skill-core/plan-page.md"
+  eq stdout "$here/../assets/shell.html:0
+$here/../../../shared-skill-core/plan-page.md:0" "$out"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -225,4 +232,5 @@ cases=(
   "build-page reports every problem before writing|t_build_all_problems"
   "build-page preserves wrapped text, colons and escaped pipes|t_build_wrapped_text"
   "build-page escapes script closing text|t_build_script_text"
+  "the shell and plan-page.md hold no bend|t_build_no_bend"
 )
