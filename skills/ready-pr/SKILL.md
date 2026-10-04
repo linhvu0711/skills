@@ -14,7 +14,8 @@ closes it. People's comments count the same way, without the status.
 Short lookups are yours; the judging is `/validate-pr-review`'s, read
 and followed. Facts per `../../shared-skill-core/facts.md`. Never merge.
 
-`scripts/` holds five helpers; each prints its usage with no arguments.
+`scripts/` holds two: `ready.sh`, the readiness module, and
+`restack.sh`; each prints its usage with no arguments.
 In Claude Code every Bash call starts in the session's directory: git
 runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
@@ -25,12 +26,19 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
 ## Steps
 
-1. **Resolve.** `bash scripts/pr-facts.sh <arg>` (no arg: the current
-   branch's PR; add `--repo owner/repo` when the argument is a number
-   and you are not in the repo). Hold every line. `STATE` is not `OPEN`:
-   say so, stop. `FORK=true`: say `fork PRs are not mine`, stop.
-   `me` is `gh api user -q .login`. Done when you hold `REPO`, `NUMBER`,
-   `URL`, `BASE`, `HEAD`, `SHA`, and `me`.
+1. **Resolve.**
+
+   ```bash
+   gh pr view <arg> --json url,number,state,isCrossRepository,baseRefName,headRefName,headRefOid
+   ```
+
+   No arg: the current branch's PR; add `--repo owner/repo` when the
+   argument is a number and you are not in the repo. `state` is not
+   `OPEN`: say so, stop. `isCrossRepository` is true: say `fork PRs are
+   not mine`, stop. `me` is `gh api user -q .login`. Done when you hold
+   `REPO` (the `owner/repo` in the URL), `NUMBER`, `URL`, `BASE`
+   (`baseRefName`), `HEAD` (`headRefName`), `SHA` (`headRefOid`), and
+   `me`.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
    `WT` is that directory. Otherwise find the main checkout the way
@@ -51,18 +59,23 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 3. **Wait.** Round `r` starts here, `r` from 1.
 
    ```bash
-   bash scripts/wait-review.sh <REPO> <SHA>
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA> [--no-devin]
    ```
 
+   It waits for Devin Review on `SHA`, then gives the readiness verdict.
    Run it in the background in Claude Code; in Codex or a Devin CLI
-   pane, in the foreground. Exit 0: go on. Exit 3 (no status in ten
-   minutes): say `No Devin Review on this repo` once, set `no-devin`,
-   go on. Exit 1: say the state and the PR URL, stop; the user decides.
-   Exit 2 (pending for thirty minutes): say so, stop. Exit 4
-   (`stop: gh failed: …`): say the error and the PR URL, stop.
+   pane, in the foreground. By the reason line:
+   - `Devin Review is PENDING`: it stayed pending for thirty minutes;
+     say so, stop.
+   - `no Devin Review status`: no status in ten minutes; say `No Devin
+     Review on this repo` once, set `no-devin`, go on.
+   - `Devin Review is` any other state (`FAILURE`, `ERROR`, …): say the
+     state and the PR URL, stop; the user decides.
+   - `gh failed:`: say the error and the PR URL, stop.
+   - anything else: go on.
 
-4. **Open?** `bash scripts/open-threads.sh <REPO> <NUMBER> --me <me>`.
-   `OPEN=0`: step 6. Else hold the lines.
+4. **Open?** The thread lines under step 3's reason line. None: step 6.
+   Else hold them.
 
 5. **Judge and apply.** Read `../validate-pr-review/SKILL.md`.
    Follow its steps 1 to 6 with `NUMBER` as the argument, in `$WT`; then
@@ -94,7 +107,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      session: the same reply, with a link to the earlier thread, no new
      judge.
    - **Before the push.** `git -C "$WT" fetch origin <BASE>`. The push
-     is rejected, or `MERGE_STATE` was `DIRTY`: `git -C "$WT" rebase
+     is rejected, or the last verdict's reason named `merge state is DIRTY`: `git -C "$WT" rebase
      origin/<BASE>`; a conflict is
      `../fix-conflicts/SKILL.md`, followed whole. Then, before the force
      push, the PRs stacked on this one: `OLD` is
@@ -118,18 +131,26 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    bash scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
    ```
 
-   `READY`, or `READY <url> (waiting for approval)`: step 7. `NOT READY`,
-   by reason:
+   It prints the readiness verdict on line 1, its reason on line 2, then
+   one line per open thread. `READY <url>`, or `READY <url> (waiting for
+   approval)`: step 7. `WAITING`, by reason:
+   - `Devin Review is PENDING`: step 3.
+   - `check(s) pending`, `no checks on … yet`, or `required check(s)
+     not posted`: wait for them, `cd "$WT" && gh pr checks <NUMBER>
+     --watch`, then ready again.
+   - `UNKNOWN`: ready again after a minute.
+   - The same `WAITING` reason for thirty minutes: say it, stop.
+
+   `BLOCKED`, by reason:
    - `merge state is DIRTY`: the rebase path of step 5, then step 3.
    - `check(s) red`: `cd "$WT" && gh pr checks <NUMBER>`, read the
      failing log. A cause inside the PR's own change is work: fix,
      commit, push, step 3. A cause outside it is a question to the
      user.
-   - `check(s) pending`: wait for them, `cd "$WT" && gh pr checks
-     <NUMBER> --watch`, then ready again.
-   - `thread(s) wait for the author`: step 5.
-   - `Devin Review is PENDING`: step 3.
+   - `thread(s) wait for the author`: step 5, with the thread lines.
    - anything else: say it, stop.
+
+   A stop in this step ends the report with `NOT READY <url>: <reason>`.
 
 7. **Report.** Chat gets this and nothing more:
 
@@ -143,7 +164,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    READY https://github.com/acme/app/pull/43
    ```
 
-   One `Stack:` line per restack, in round order, each moved PR by its
+   The second line is `Rounds: <r> · ` and the reason line of the
+   `READY` verdict. One `Stack:` line per restack, in round order, each moved PR by its
    URL; a stopped one reads
    `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
    restack: no `Stack:` line. One line per finding over every round,
@@ -152,18 +174,20 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `Devin Review: none on this repo`. A PR that waits only for a
    person's approval ends with `READY <url> (waiting for approval)`; the
    approval and the merge are the user's. A stop point that ended the run
-   prints the same block with `NOT READY <url>: <what is open>` last.
+   prints the same block with `NOT READY <url>: <what is open>` last; a
+   stop on a `BLOCKED` or `WAITING` verdict puts its reason line there.
 
 ## Examples
 
 **User:** `/ready-pr 43` in the app checkout, on `feat/42-login`.
 
-Facts: open, not a fork, head `d6221e2`, `DEVIN=PENDING`. Tree clean on
-the branch, so `WT` is here. `wait-review.sh` in the background returns
-`DEVIN=success` after four minutes. `open-threads.sh`: `OPEN=1`, a 🟡
-finding at `src/auth/login.ts:212`. Validate: one `fix here`,
-`ours`, `should`. Fix, commit, fetch, push. Round 2: wait, success,
-`OPEN=0`. Ready: `READY`. Report with the one finding and its SHA.
+The PR is open, not a fork, head `d6221e2`. Tree clean on the branch,
+so `WT` is here. `ready.sh --wait` in the background returns after four
+minutes: `BLOCKED`, reason `1 review thread(s) wait for the author`, and
+one thread line, a 🟡 finding at `src/auth/login.ts:212`. Validate: one
+`fix here`, `ours`, `should`. Fix, commit, fetch, push. Round 2: the
+wait returns no thread line. Ready: `READY`. Report with
+the one finding and its SHA.
 
 **User:** `/ready-pr https://github.com/acme/shop/pull/61` in a chat with
 no checkout.
@@ -177,7 +201,7 @@ Main checkout found under `~/development`; `worktree.sh` tracks
 A schema change: stop before the fix. One question to the user, `A`
 add the migration in this PR, `B` `fix later` as its own ticket. Wait.
 
-**`ready.sh`** says `merge state is DIRTY` after main moved.
+**`ready.sh`** says `BLOCKED`, reason `merge state is DIRTY`, after main moved.
 
 Rebase on `origin/main`; two hunks conflict; fix-conflicts resolves them
 and the suite is green; `push --force-with-lease`. Step 3 again on the
@@ -191,7 +215,8 @@ lines, 44 first, and `RESTACK=moved 2`. The report's `Stack:` line names
 both URLs. Had 44 clashed, the move stops there with `CLASH` and the
 files; 45 is `LEFT`, not pushed.
 
-**`wait-review.sh`** exits 3 on a repo with no Devin app.
+**`ready.sh --wait`** says `WAITING`, reason `no Devin Review status on
+9e18c16`, on a repo with no Devin app.
 
 `No Devin Review on this repo`, `no-devin` set. Threads from people are
 still judged; ready is checked with `--no-devin`. The report says
