@@ -36,37 +36,34 @@ eq() { [ "$2" = "$3" ] || { printf '%s: expected [%s], got [%s]\n' "$1" "$2" "$3
 has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3" >&2; exit 1 ;; esac; }
 
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
-# (made when T is not set yet).
-# `pr list … --base <b>` prints $T/prs/<b, with / as _>.json, or `[]` when
-# there is none. Else the gh answers from fixture files in $FAKE_GH, by
-# route: `pr view` is pr, `api graphql` threads, `api user` user,
-# `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
-# `api repos/…/status` status, and
-# `api repos/…/check-runs` check-runs. Call n of a route prints
-# <route>.<n>.fail or <route>.fail to stderr and fails when one exists, else
-# prints <route>.<n>.json or <route>.json, through `jq -r` when given -q.
-# Each route counts its calls in <route>.calls and logs their args in <route>.args.
+# (made when T is not set yet). The gh answers from fixture files in
+# $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view,
+# `api graphql` graphql, `api user` user, `api repos/…/rules/branches/…`
+# rules, `api repos/…/branches/…` branch, `api repos/…/status` status, and
+# `api repos/…/check-runs` check-runs. Each route counts its calls in
+# <route>.calls and logs their args in <route>.args. Call n of a route prints
+# <route>.<n>.fail or <route>.fail to stderr and fails when one exists. Else
+# `pr list … --base <b>` prints pr-list.<b, with / as _>.json, or `[]` when
+# there is none, and every other route prints <route>.<n>.json or
+# <route>.json. The answer goes through `jq -r` when given -q.
 fake_gh() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
-  mkdir -p "$T/bin" "$T/gh" "$T/prs"
+  mkdir -p "$T/bin" "$T/gh"
   cat > "$T/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-q=""; args=""; base=""
+q=""; args=""; branch=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -q) q="$2"; shift 2 ;;
-    --base) base="${2:-}"; args="$args $1 $base"; shift 2 ;;
+    --base) branch="${2:-}"; args="$args $1 $branch"; shift 2 ;;
     *) args="$args $1"; shift ;;
   esac
 done
 case "$args" in
-  " pr list"*)
-    f="$(dirname "$FAKE_GH")/prs/$(printf '%s' "$base" | tr / _).json"
-    if [ -f "$f" ]; then cat "$f"; else echo '[]'; fi
-    exit 0 ;;
-  " pr view"*) key=pr ;;
-  " api graphql"*) key=threads ;;
+  " pr list"*) key=pr-list ;;
+  " pr view"*) key=pr-view ;;
+  " api graphql"*) key=graphql ;;
   " api user"*) key=user ;;
   " api repos/"*/rules/branches/*) key=rules ;;
   " api repos/"*/branches/*) key=branch ;;
@@ -79,7 +76,12 @@ printf '%s\n' "${args# }" >> "$FAKE_GH/$key.args"
 for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
 done
-f="$FAKE_GH/$key.$n.json"; [ -f "$f" ] || f="$FAKE_GH/$key.json"
+if [ "$key" = pr-list ]; then
+  f="$FAKE_GH/pr-list.$(printf '%s' "$branch" | tr / _).json"
+  [ -f "$f" ] || { echo '[]'; exit 0; }
+else
+  f="$FAKE_GH/$key.$n.json"; [ -f "$f" ] || f="$FAKE_GH/$key.json"
+fi
 if [ -n "$q" ]; then jq -r "$q" "$f"; else cat "$f"; fi
 EOF
   printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
