@@ -26,6 +26,10 @@ _Avoid_: summary, overview
 The one diagram kind in the Review view. A box is a part with a job, named in the project's own words; an arrow is what moves between parts, or who asks whom; a gray area is the app or package the parts live in. A store box lists the tables, columns, or keys that change. Files are details of a box, never boxes.
 _Avoid_: architecture diagram, component diagram, dependency graph
 
+**Claim**:
+A sign that someone else is already on an issue: an open PR that closes or mentions it, an assignee, or a comment that takes the work. Plan-up asks before it plans a claimed issue.
+_Avoid_: lock, reservation
+
 **Not proved**:
 A risk in the Review view that no probe has checked. Each risk names the `Proved` line that proves it, or says `not proved`. Reading the code does not prove a risk.
 _Avoid_: unproven, unverified, assumed
