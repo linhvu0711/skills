@@ -50,12 +50,17 @@ executor() {
 
 # migrate -> moves each old per-tool ledger into the ledger, sorted by time, and
 # renames it to .migrated, or appends it to a .migrated already there (the
-# old skills write their file again until #84 removes them)
+# old skills write their file again until #84 removes them). Each old file is
+# renamed aside before it is read, so a row an old skill appends meanwhile
+# lands in a new old file, which the next run moves in.
 migrate() {
-  local dir old olds=() pair tmp
+  local dir old olds=() pair tmp taken
   dir=$(dirname "$LEDGER")
   for pair in devin:sessions.tsv cursor:cursor-sessions.tsv; do
-    [[ -f "$dir/${pair#*:}" ]] && olds+=("$pair")
+    old="$dir/${pair#*:}"
+    [[ -f "$old" ]] || continue
+    taken="$old.taking.$$"
+    mv "$old" "$taken" 2>/dev/null && olds+=("$pair")
   done
   [[ ${#olds[@]} -gt 0 ]] || return 0
   tmp=$(mktemp "$dir/.handoff.XXXXXX")
@@ -67,16 +72,16 @@ migrate() {
         NF == 0 { next }
         NF == 5 && $2 != "" && $1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/ {
           print $1 "\t" e "\t" $2 "\t" $3 "\t" $4 "\t" $5; next }
-        { printf "handoff.sh: skipped line %d of %s: not a session row\n", FNR, f > "/dev/stderr" }' "$dir/${pair#*:}"
+        { printf "handoff.sh: skipped line %d of %s: not a session row\n", FNR, f > "/dev/stderr" }' "$dir/${pair#*:}.taking.$$"
     done
   } | sort -s -t "$(printf '\t')" -k1,1 >"$tmp"
   mv "$tmp" "$LEDGER"
   for pair in "${olds[@]}"; do
-    old="$dir/${pair#*:}"
+    old="$dir/${pair#*:}"; taken="$old.taking.$$"
     if [[ -f "$old.migrated" ]]; then
-      cat "$old" >>"$old.migrated" && rm "$old"
+      cat "$taken" >>"$old.migrated" && rm "$taken"
     else
-      mv "$old" "$old.migrated"
+      mv "$taken" "$old.migrated"
     fi
   done
 }
