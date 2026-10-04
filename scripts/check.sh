@@ -4,6 +4,8 @@
 #   check.sh               scan every tracked file (the Repo check on GitHub)
 #   check.sh <path>...     scan every file under these paths, tracked or not
 #   check.sh --staged      scan only the lines and paths the index adds (the pre-commit hook)
+#   check.sh --commit-msg <file>
+#                          the README check only, on the index and that message (the commit-msg hook)
 #
 # Checks: an absolute home path, an email address unless it is on the allow
 # list below, and each pattern in the owner's private word list,
@@ -29,12 +31,28 @@
 # a frontmatter (a `---` first line and a closing `---` line), a `name` equal to
 # its folder, and a `description` that is not empty.
 #
+# The README check runs only with --commit-msg: a commit that changes a file
+# under `skills/<name>/` needs `skills/<name>/README.md` in it too, unless a line
+# of the message is `Readme: unchanged`. A merge commit is skipped.
+#
 # Exit 0: `check: clean` on stdout.
-# Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
+# Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr (or
+# `<path>: <problem>` for a check of a whole file or folder),
 # then `check: <n> problem(s) found`.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+
+# report: print the problems and exit 1, or print `check: clean` and exit 0.
+report() {
+  if [ ${#problems[@]} -eq 0 ]; then
+    echo "check: clean"
+    exit 0
+  fi
+  printf '%s\n' "${problems[@]}" >&2
+  printf 'check: %d problem(s) found\n' "${#problems[@]}" >&2
+  exit 1
+}
 
 # A home path is not part of a longer name: it does not follow a letter or a
 # digit, so example.com/home/x is not one. The char before it is cut from the match.
@@ -46,15 +64,21 @@ allowed_emails='cursoragent@cursor.com'
 # `<skill folder> <path>`, one per line.
 allowed_paths='skills/embed-source scripts/sync-repos.sh'
 
-staged=0; paths=()
+staged=0; msg=""; paths=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --staged) staged=1; shift ;;
+    --commit-msg) [ $# -ge 2 ] || die "--commit-msg takes a file"; msg="$2"; shift 2 ;;
     -*) die "unknown flag $1" ;;
     *) paths+=("$1"); shift ;;
   esac
 done
 [ "$staged" = 0 ] || [ ${#paths[@]} -eq 0 ] || die "--staged takes no paths"
+[ -z "$msg" ] || { [ "$staged" = 0 ] && [ ${#paths[@]} -eq 0 ]; } || die "--commit-msg takes no other flag or path"
+if [ -n "$msg" ]; then
+  [ -f "$msg" ] || die "no such file: $msg"
+  case "$msg" in /*) ;; *) msg="$PWD/$msg" ;; esac
+fi
 # Paths are given from the caller's folder; the scan runs from the repo root.
 prefix="$(git rev-parse --show-prefix)" || die "not inside a git repo"
 for i in ${paths[@]+"${!paths[@]}"}; do
@@ -65,6 +89,23 @@ cd "$(git rev-parse --show-toplevel)"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
+problems=()
+
+# --commit-msg: the README check alone; the pre-commit hook ran the rest. Each
+# skill the commit changes needs its README in the commit too, unless a message
+# line is `Readme: unchanged`. A merge is skipped: each side's commits passed.
+if [ -n "$msg" ]; then
+  if grep -qE '^Readme: unchanged[[:space:]]*$' "$msg" || git rev-parse -q --verify MERGE_HEAD >/dev/null; then
+    report
+  fi
+  git -c core.quotePath=false diff --cached --name-only --no-renames > "$tmp/changed"
+  awk -F/ '$1 == "skills" && NF >= 3 { print $1 "/" $2 }' "$tmp/changed" | sort -u > "$tmp/asked"
+  while IFS= read -r skill; do
+    grep -qxF "$skill/README.md" "$tmp/changed" \
+      || problems+=("$skill: changed without its README; add \"Readme: unchanged\" to the message to skip")
+  done < "$tmp/asked"
+  report
+fi
 
 # root: the folder the scanned files are read from. files: the files to scan,
 # relative to root. names: the file paths to match private words against.
@@ -103,8 +144,6 @@ if [ -f "$words_file" ]; then
   grep -vE '^[[:space:]]*(#|$)' "$words_file" > "$tmp/words" || true
   [ -s "$tmp/words" ] && words="$tmp/words"
 fi
-
-problems=()
 
 # scan <kind> <allowed> <grep args>...: add every hit in the files as
 # `<file>:<line>: <kind>: <match>`, except a match listed in <allowed>.
@@ -218,10 +257,4 @@ if [ -n "$words" ]; then
   fi
 fi
 
-if [ ${#problems[@]} -eq 0 ]; then
-  echo "check: clean"
-  exit 0
-fi
-printf '%s\n' "${problems[@]}" >&2
-printf 'check: %d problem(s) found\n' "${#problems[@]}" >&2
-exit 1
+report

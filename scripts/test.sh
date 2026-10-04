@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, the
-# handoff render.sh, the ready-pr scripts, and the plan-up claims.py. The
-# ready-pr cases run against a fake gh on PATH that answers from fixture files.
+# test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
+# adopt.sh, the handoff render.sh, the ready-pr scripts, and the plan-up
+# claims.py. The ready-pr cases run against a fake gh on PATH that answers from
+# fixture files.
 #
 #   test.sh
 #
@@ -276,6 +277,14 @@ skill_md() {
   printf -- '---\nname: %s\ndescription: A %s skill.\n---\n# %s\n' "$1" "$1" "$1" > "skills/$1/SKILL.md"
 }
 
+# skill <name> [<line>]: skills/<name> with a SKILL.md, plus <line> when
+# given, and a README that has the four template headings.
+skill() {
+  skill_md "$1"
+  [ $# -lt 2 ] || printf '%s\n' "$2" >> "skills/$1/SKILL.md"
+  printf '# %s\n\n## Use it when\n\n## What you get\n\n## Needs\n\n## Fits with\n' "$1" > "skills/$1/README.md"
+}
+
 # readme <heading>...: skills/demo with a SKILL.md and a README that has
 # these `## ` headings.
 readme() {
@@ -499,6 +508,53 @@ t_flags_empty_description() {
   run bash scripts/check.sh
   eq exit 1 "$code"
   eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+# readme_msg <skill>: the line the commit-msg hook prints for a skill
+# changed without its README.
+readme_msg() { printf '%s: changed without its README; add "Readme: unchanged" to the message to skip' "$1"; }
+
+t_readme_hook_stops_skill_change() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; git add skills
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_passes_marked_change() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_passes_with_readme() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; printf 'more\n' >> skills/demo/README.md; git add skills
+  run git commit -m test
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
+t_marked_change_runs_leak_check() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'see %s/x\n' "$mac_home" >> skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md:6: home path: $mac_home" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_marked_change_runs_header_check() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf -- '---\nname: other\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md: name does not match folder: other" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
 }
 
 t_render_names_ready_pr() {
@@ -989,6 +1045,11 @@ cases=(
   "flags a SKILL.md with no frontmatter|t_flags_no_frontmatter"
   "flags a SKILL.md name that is not its folder|t_flags_name_not_folder"
   "flags a SKILL.md with an empty description|t_flags_empty_description"
+  "readme hook stops a skill change without its README|t_readme_hook_stops_skill_change"
+  "readme hook passes a skill change marked Readme: unchanged|t_readme_hook_passes_marked_change"
+  "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"
+  "Readme: unchanged still runs the leak check|t_marked_change_runs_leak_check"
+  "Readme: unchanged still runs the header check|t_marked_change_runs_header_check"
 )
 
 pass=0; fail=0
