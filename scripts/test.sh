@@ -1133,6 +1133,15 @@ t_prune_keeps_moved_tip() {
   eq "branch list" "+ feat/1-a" "$(git branch --list feat/1-a)"
 }
 
+t_prune_git_only() {
+  wt_repo; prune_gh; wt "$T/w/feat-2-b" feat/2-b
+  git merge -q --ff-only feat/2-b
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq exit 0 "$code"
+  eq stdout "removed $T/w/feat-2-b, branch feat/2-b deleted (-d)" "$out"
+  [ ! -e "$T/gh-calls" ] || eq "gh calls" "none" "$(cat "$T/gh-calls")"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1242,6 +1251,7 @@ cases=(
   "prune keeps unpushed commits|t_prune_keeps_unpushed"
   "prune keeps an open PR|t_prune_keeps_open_pr"
   "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
+  "prune uses only git with no GitHub remote|t_prune_git_only"
 )
 
 pass=0; fail=0
