@@ -82,7 +82,7 @@ api() {
   cat "$out"; rm -f "$out"
 }
 
-# state SESSION-JSON -> one word the watch and status read:
+# state SESSION-JSON -> one word, the state poll prints:
 #   working | blocked | finished | error | suspended:<why> | new | claimed | resuming
 state() {
   jq -r '
