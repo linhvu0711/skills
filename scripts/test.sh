@@ -543,6 +543,12 @@ t_flags_comment_description() {
   eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_flags_escaped_quote_name() {
+  header "$(printf "name: 'demo''-other'\ndescription: A demo skill.")"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: name does not match folder: demo'-other" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 # readme_msg <skill>: the line the commit-msg hook prints for a skill
 # changed without its README.
 readme_msg() { printf '%s: changed without its README; add "Readme: unchanged" to the message to skip' "$1"; }
@@ -1136,6 +1142,7 @@ cases=(
   "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
+  "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
 )
 
 pass=0; fail=0

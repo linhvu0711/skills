@@ -286,15 +286,22 @@ if [ ${#paths[@]} -eq 0 ]; then
   done < <(skill_dirs)
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
-  # `description` is not empty. A quoted value is what the quotes hold; an
+  # `description` is not empty. A quoted value is what the quotes hold, with
+  # `''` read as `'` and a `\`-escaped char kept; an
   # unquoted one loses its `#` comment, and `null` or `~` is empty. A block
   # scalar counts when its first line that is not blank is indented.
   while IFS= read -r skill; do
     while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | awk -v want="${skill#skills/}" -v q="'" '
-      function val(s,  c, e) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
-                               if (c == "\"" || c == q) { e = index(substr(s, 2), c); return e ? substr(s, 2, e - 1) : s }
-                               sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
-                               return (s == "~" || tolower(s) == "null") ? "" : s }
+      function val(s,  c, i, ch, v) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
+        if (c == "\"" || c == q) {
+          for (i = 2; i <= length(s); i++) { ch = substr(s, i, 1)
+            if (c == q && ch == q && substr(s, i + 1, 1) == q) { v = v q; i++; continue }
+            if (c == "\"" && ch == "\\") { v = v substr(s, i, 2); i++; continue }
+            if (ch == c) return v
+            v = v ch }
+          return s }
+        sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
+        return (s == "~" || tolower(s) == "null") ? "" : s }
       NR == 1          { if ($0 != "---") exit; next }
       blk && /^[ \t]*$/ { next }
       blk              { blk = 0; if ($0 ~ /^[ \t]+[^ \t]/) desc = "block" }
