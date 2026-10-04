@@ -357,19 +357,20 @@ t_passes_readme_with_headings() {
 
 # fake_gh_graphql: a temp folder T with a stub `gh` first on PATH. The stub reads
 # the `number=<n>` argument, prints $T/gh/<n>.err to stderr and exits 1 when
-# that file exists, else prints $T/gh/<n>.json, or $T/gh/<n>.<c>.json when
-# it is asked for the events after cursor <c>.
+# that file exists, else prints $T/gh/<n>.json, or $T/gh/<n>.<p>.<e>.json
+# when it is asked for the closing PRs after cursor <p> or the events after
+# cursor <e> (a cursor not asked for drops out of the name).
 fake_gh_graphql() {
   T="$(mktemp -d)"; mkdir -p "$T/bin" "$T/gh"
   cat > "$T/bin/gh" <<'EOF'
 #!/usr/bin/env bash
-page=""
+p=""; e=""
 for a in "$@"; do
-  case "$a" in number=*) n="${a#number=}" ;; eventAfter=*) page=".${a#eventAfter=}" ;; esac
+  case "$a" in number=*) n="${a#number=}" ;; prAfter=*) p=".${a#prAfter=}" ;; eventAfter=*) e=".${a#eventAfter=}" ;; esac
 done
 d="$(dirname "$0")/../gh"
 if [ -e "$d/$n.err" ]; then cat "$d/$n.err" >&2; exit 1; fi
-cat "$d/$n$page.json"
+cat "$d/$n$p$e.json"
 EOF
   chmod +x "$T/bin/gh"
 }
@@ -420,6 +421,21 @@ t_claims_next_page() {
   claims 65
   eq exit 0 "$code"
   eq stdout '#65 pr #72 "Late fix" @erin https://github.com/o/r/pull/72' "$out"
+}
+
+t_claims_each_list_pages_on_its_own() {
+  fake_gh_graphql
+  pr71='{"number":71,"title":"Refactor step 2","url":"https://github.com/o/r/pull/71","state":"OPEN","author":{"login":"carol"}}'
+  pr73='{"number":73,"title":"Second try","url":"https://github.com/o/r/pull/73","state":"OPEN","author":{"login":"dave"}}'
+  printf '{"data":{"viewer":{"login":"me"},"repository":{"issue":{"assignees":{"nodes":[]},"closedByPullRequestsReferences":{"nodes":[%s],"pageInfo":{"hasNextPage":true,"endCursor":"p1"}},"timelineItems":{"nodes":[{"source":%s}],"pageInfo":{"hasNextPage":false,"endCursor":"e1"}}}}}}\n' \
+    "$pr70" "$pr71" > "$T/gh/65.json"
+  printf '{"data":{"viewer":{"login":"me"},"repository":{"issue":{"assignees":{"nodes":[]},"closedByPullRequestsReferences":{"nodes":[%s],"pageInfo":{"hasNextPage":false,"endCursor":"p2"}},"timelineItems":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}}\n' \
+    "$pr73" > "$T/gh/65.p1.e1.json"
+  claims 65
+  eq exit 0 "$code"
+  eq stdout "$line70
+#65 pr #71 \"Refactor step 2\" @carol https://github.com/o/r/pull/71
+#65 pr #73 \"Second try\" @dave https://github.com/o/r/pull/73" "$out"
 }
 
 t_claims_other_assignee() {
@@ -655,6 +671,7 @@ cases=(
   "claims names an open PR that only mentions the issue|t_claims_mentioning_pr"
   "claims lists a PR once and skips closed and merged PRs|t_claims_pr_once_open_only"
   "claims reads a PR on the next page of links|t_claims_next_page"
+  "claims reads each list of links to its own end|t_claims_each_list_pages_on_its_own"
   "claims names an assignee other than the user|t_claims_other_assignee"
   "claims prints nothing when no one is on the issue|t_claims_none"
   "claims checks each issue of a run|t_claims_each_issue"
