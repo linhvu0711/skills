@@ -68,6 +68,17 @@ t_devin_no_key() {
   eq stderr "devin.sh: no DEVIN_API_KEY in ~/.zshrc or env" "$err"
 }
 
+t_devin_keys_from_zshrc() {
+  fake_curl
+  mkdir -p "$T/home"; printf 'export DEVIN_API_KEY=k\nexport DEVIN_ORG_ID=org1\n' > "$T/home/.zshrc"
+  printf '"https://att.test/p.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
+  printf '{"session_id":"devin-abc","url":"https://app.devin.ai/sessions/abc"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_sessions.json"
+  printf '# Brief\n' > p.md
+  run env -u DEVIN_API_KEY -u DEVIN_ORG_ID -u DEVIN_USER_ID HOME="$T/home" DEVIN_API_URL=https://devin.test bash "$here/../scripts/adapters/devin.sh" start p.md
+  eq exit 0 "$code"
+  eq stdout "devin-abc	https://app.devin.ai/sessions/abc" "$out"
+}
+
 cases=(
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"
@@ -75,4 +86,5 @@ cases=(
   "devin say sends the note|t_devin_say"
   "devin start prints the API message on a failed call|t_devin_failed_call"
   "devin stops without an API key|t_devin_no_key"
+  "devin reads its keys from .zshrc with no DEVIN_USER_ID there|t_devin_keys_from_zshrc"
 )
