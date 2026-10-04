@@ -2,7 +2,8 @@
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
 # adopt.sh, and the handoff render.sh. It sources test-lib.sh, the helpers and
 # the one fake gh that every case shares, runs its own cases, then sources
-# each skills/*/tests/*.sh in turn and runs that file's cases.
+# each skills/*/tests/*.sh and shared-skill-core/tests/*.sh in turn and runs
+# that file's cases.
 #
 #   test.sh
 #
@@ -589,12 +590,13 @@ run_cases() {
   done
 }
 
-# Each skill's file is sourced and its cases run before the next file is
-# sourced, so a helper name in one file never replaces another file's.
+# Each skill's or shared core test file is sourced and its cases run before
+# the next file is sourced, so a helper name in one file never replaces
+# another file's.
 pass=0; fail=0
 log="$(mktemp)"
 run_cases
-for f in "$here"/../skills/*/tests/*.sh; do
+for f in "$here"/../skills/*/tests/*.sh "$here"/../shared-skill-core/tests/*.sh; do
   cases=(); . "$f"; run_cases
 done
 printf '%d passed, %d failed\n' "$pass" "$fail"

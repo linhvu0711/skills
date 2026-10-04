@@ -5,6 +5,7 @@
 - Change a skill, update its README in the same commit.
 - A skill copied or adapted from another repo gets its upstream's `LICENSE` in its folder and a row in `THIRD_PARTY_NOTICES.md`.
 - A test for a skill's script goes in `skills/<name>/tests/`, one file per script, on the helpers and the one fake `gh` in `scripts/test-lib.sh`. `scripts/test.sh` runs every such file; add the file's cases to its own `cases` list.
+- A test for a shared core script goes in `shared-skill-core/tests/`, one file per script, on the same helpers. `scripts/test.sh` runs those files too.
 
 ## Checks
 

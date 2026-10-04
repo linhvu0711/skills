@@ -64,10 +64,11 @@ unchanged. The form decides only where the build runs (step 2).
 4. **Local: worktree.** The branch name follows the rules block
    § Branch names: the issue's type (`feat` for a `[feat]`, `fix` for a
    `[fix]`, else the label or the title), its number, two to four words,
-   as in `fix/133-uninstall-reverses-setup`. Then:
+   as in `fix/133-uninstall-reverses-setup`. Then, with `<owner/repo>`
+   from the plan's Facts `Repo:` line:
 
    ```bash
-   bash ../../shared-skill-core/worktree.sh <main-checkout> <branch> --base <base>
+   bash ../../shared-skill-core/checkout.sh <owner/repo> <branch> --base <base>
    ```
 
    `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=` line.
@@ -153,7 +154,7 @@ unchanged. The form decides only where the build runs (step 2).
    ```
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
    Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
-   Worktree: ~/code/worktrees/app/feat-42-login
+   Worktree: ~/code/worktrees/acme/app/feat-42-login
    After merge: /prune-worktrees
    READY https://github.com/acme/app/pull/43
    ```
@@ -180,7 +181,7 @@ herdr; #57 is a `[fix]`, size S, `handoff-ready`, no screen.
 
 Plan-up runs its short path, page opens, summary printed, no wait.
 `Route: local (no UI, one ticket)`. Worktree
-`~/development/worktrees/shop/fix-57-export-date-iso` from `main`.
+`~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`.
 Prompt assembled, 240 lines, labels all present. `pane.sh` splits the
 tab, Devin CLI on `swe-2-medium` reads the prompt. `herdr-wait` runs in
 the background. Two hours later it returns `idle`; the tail ends with

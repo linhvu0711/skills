@@ -7,8 +7,9 @@
 #
 # It reads every worktree of the repo the current folder is in, wherever the
 # worktree is on disk. `all` adds every repo that has a worktree under
-# ${WORKTREES_ROOT:-$HOME/development/worktrees}/<repo>/. The main checkout is
-# never touched and never printed. Every worktree is judged first, then the
+# ${WORKTREES_ROOT:-$HOME/development/worktrees}, in <owner>/<repo>/<branch>
+# or the older <repo>/<branch>. The main checkout is never touched and never
+# printed. Every worktree is judged first, then the
 # safe ones are removed.
 #
 # --remove: only the worktrees the user named, each removed with --force
@@ -210,13 +211,26 @@ if cd_git="$(common_dir "$PWD")"; then
 elif [ "$all" -eq 0 ]; then
   die "not in a git repo"
 fi
-# all: every repo with a worktree under the root, as worktree.sh lays them out.
+# root_worktree <path>: adds the repo of a worktree under the root, or keeps
+# the folder when its repo is gone.
+root_worktree() {
+  local g
+  if g="$(common_dir "$1")"; then add_repo "${g%/.git}"
+  else kept+=("$1${sep}its repo is gone"); fi
+}
+# all: every repo with a worktree under the root, in either shape the checkout
+# resolver lays out: <root>/<owner>/<repo>/<branch>, or the older
+# <root>/<repo>/<branch>. A folder two down with a .git file is an old-shape
+# worktree, and is never looked inside; any other folder there holds new-shape
+# worktrees.
 if [ "$all" -eq 1 ]; then
   root="${WORKTREES_ROOT:-$HOME/development/worktrees}"
   for d in "$root"/*/*; do
-    [ -f "$d/.git" ] || continue
-    if g="$(common_dir "$d")"; then add_repo "${g%/.git}"
-    else kept+=("$d${sep}its repo is gone"); fi
+    if [ -f "$d/.git" ]; then root_worktree "$d"; continue; fi
+    [ -d "$d" ] || continue
+    for e in "$d"/*; do
+      if [ -f "$e/.git" ]; then root_worktree "$e"; fi
+    done
   done
 fi
 for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
