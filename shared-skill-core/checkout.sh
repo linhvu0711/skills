@@ -40,7 +40,7 @@ usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
 slug=""; branch=""; base=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base) base="${2:-}"; shift 2 ;;
+    --base) [ -n "${2:-}" ] || die "$usage"; base="$2"; shift 2 ;;
     -*) die "unknown flag $1" ;;
     *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die "unexpected argument: $1"; fi; shift ;;
   esac

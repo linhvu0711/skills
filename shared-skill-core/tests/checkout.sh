@@ -100,6 +100,12 @@ t_ck_no_default() {
   eq stderr "stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$err"
 }
 
+t_ck_base_without_value() {
+  ck_setup
+  resolve acme/app feat/x --base
+  eq stderr "stop: usage: checkout.sh <owner/repo> <branch> [--base <ref>]" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -110,4 +116,5 @@ cases=(
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
   "default branch falls back to origin/HEAD|t_ck_default_from_origin_head"
   "stops when gh and origin/HEAD both fail|t_ck_no_default"
+  "stops when --base has no value|t_ck_base_without_value"
 )
