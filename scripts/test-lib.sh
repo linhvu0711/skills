@@ -1,6 +1,6 @@
 # test-lib.sh: the helpers every test case shares, and the one fake gh.
-# test.sh sources this file first, then each skills/*/tests/*.sh, so the
-# cases there call these helpers by name.
+# test.sh sources this file first, then each skills/*/tests/*.sh and
+# shared-skill-core/tests/*.sh, so the cases there call these helpers by name.
 #
 # Every leak string below is joined from two halves at runtime, so this file
 # holds nothing check.sh flags.
@@ -37,13 +37,14 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in
-# $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view,
-# `api graphql` graphql, `api user` user, `api repos/…/rules/branches/…`
-# rules, `api repos/…/branches/…` branch, `api repos/…/status` status, and
-# `api repos/…/check-runs` check-runs. Each route counts its calls in
-# <route>.calls and logs their args in <route>.args, one line per call (a
-# newline inside an arg becomes a space). Call n of a route prints
-# <route>.<n>.fail or <route>.fail to stderr and fails when one exists. Else
+# $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `repo view`
+# repo-view, `api graphql` graphql, `api user` user,
+# `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
+# `api repos/…/status` status, and `api repos/…/check-runs` check-runs. Each
+# route counts its calls in <route>.calls and logs their args in
+# <route>.args, one line per call (a newline inside an arg becomes a space).
+# Call n of a route prints <route>.<n>.fail or <route>.fail to stderr and
+# fails when one exists. Else
 # `pr list … --base <b>` or `--head <b>` prints pr-list.<b, with / as _>.json,
 # or `[]` when there is none, and every other route prints <route>.<n>.json or
 # <route>.json. The answer goes through `jq -r` when given -q or --jq.
@@ -64,6 +65,7 @@ done
 case "$args" in
   " pr list"*) key=pr-list ;;
   " pr view"*) key=pr-view ;;
+  " repo view"*) key=repo-view ;;
   " api graphql"*) key=graphql ;;
   " api user"*) key=user ;;
   " api repos/"*/rules/branches/*) key=rules ;;
