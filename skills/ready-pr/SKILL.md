@@ -41,7 +41,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `me`.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
-   `WT` is that directory. Otherwise:
+   `WT` is that directory. Otherwise, the checkout resolver finds the
+   main checkout and makes or reuses the worktree:
 
    ```bash
    bash ../../shared-skill-core/checkout.sh <REPO> <HEAD>
@@ -188,7 +189,7 @@ the one finding and its SHA.
 **User:** `/ready-pr https://github.com/acme/shop/pull/61` in a chat with
 no checkout.
 
-`checkout.sh` finds the main checkout under `~/development` and tracks
+The checkout resolver finds the main checkout and tracks
 `origin/fix/57-export-date-iso` into
 `~/development/worktrees/acme/shop/fix-57-export-date-iso`. Then as above.
 

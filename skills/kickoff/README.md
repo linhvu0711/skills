@@ -29,11 +29,15 @@ Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh 
 - herdr, and this chat running inside a herdr pane (`HERDR_ENV=1`).
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
-- A way to find the repo on disk: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
+- A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
 - The [plan-up](../plan-up/) skill in the new pane.
 
 ## Fits with
 
 - Starts [plan-up](../plan-up/) in the new pane.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- [ready-pr](../ready-pr/) finds a checkout the way this script does, and [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.
+- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.
+
+## Tests
+
+The cases for the checkout lookup in [kickoff.sh](scripts/kickoff.sh) are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

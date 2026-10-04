@@ -160,6 +160,14 @@ t_prune_nothing() {
   eq stdout "nothing to prune" "$out"
 }
 
+t_prune_keeps_locked() {
+  wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
+  git worktree lock "$T/w/feat-1-a"
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  run bash "$P"
+  eq stdout "$(printf 'kept %s: locked\nnothing to prune' "$T/w/feat-1-a")" "$out"
+}
+
 cases=(
   "prune removes a merged worktree outside the root|t_prune_removes_merged"
   "prune keeps a branch with no PR|t_prune_keeps_no_pr"
@@ -175,4 +183,5 @@ cases=(
   "prune all goes through every repo under the root|t_prune_all"
   "prune all finds old and new shapes|t_prune_all_both_shapes"
   "prune removes a named worktree and keeps an unmerged branch|t_prune_removes_named"
+  "prune keeps a locked worktree|t_prune_keeps_locked"
 )
