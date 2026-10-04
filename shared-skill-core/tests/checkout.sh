@@ -158,6 +158,25 @@ t_ck_worktrees_outside_git() {
   eq stderr "stop: not a git checkout: $T/plain" "$err"
 }
 
+t_ck_main_by_search() {
+  ck_setup; ck acme/app "$T/dev/app"
+  resolve main acme/app
+  eq stdout "FROM=search MAIN=$T/dev/app" "$out"
+}
+
+t_ck_main_from_map() {
+  ck_setup; ck acme/app "$T/dev/app"
+  resolve main acme/app
+  resolve main acme/app
+  eq stdout "FROM=map MAIN=$T/dev/app" "$out"
+}
+
+t_ck_main_no_checkout() {
+  ck_setup; mkdir -p "$T/dev"
+  resolve main acme/app
+  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -174,4 +193,7 @@ cases=(
   "a rewrite to another GitHub repo names only that repo|t_ck_github_rewrite"
   "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"
   "worktrees stops on a folder outside git|t_ck_worktrees_outside_git"
+  "main finds the one checkout by search|t_ck_main_by_search"
+  "main reads the map it wrote|t_ck_main_from_map"
+  "main stops when no checkout is found|t_ck_main_no_checkout"
 )

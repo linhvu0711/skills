@@ -12,7 +12,8 @@
 #
 # A new worktree goes to
 # ${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>/<branch>,
-# with every `/` in the branch written as `-`. Shared by /ship and /ready-pr.
+# with every `/` in the branch written as `-`. Shared by /ship, /ready-pr,
+# /kickoff, restack.sh, and prune-worktrees.sh.
 #
 # - A worktree of the repo is on the branch, clean, in this shape or the
 #   older <root>/<repo>/<branch>: reused.
@@ -26,6 +27,11 @@
 # Exit 0: one line,
 # `MAIN=<dir> WORKTREE=<dir> BRANCH=<b> DEFAULT=<b> STATE=<created|reused> FROM=<what>`.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
+#
+#   checkout.sh main <owner/repo>
+#
+# Finds only the main checkout, by the order above, with no gh call. Exit 0:
+# one line, `FROM=<map|cwd|search> MAIN=<dir>`, the path last.
 #
 #   checkout.sh worktrees <dir>
 #
@@ -64,25 +70,6 @@ worktrees() {
   done < <(printf '%s\n\n' "$listed")
 }
 
-# The forms that take no branch.
-case "${1:-}" in
-  worktrees)
-    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
-    worktrees "$2"; exit 0 ;;
-esac
-
-usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
-slug=""; branch=""; base=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --base) [ -n "${2:-}" ] || die "$usage"; base="$2"; shift 2 ;;
-    -*) die "unknown flag $1" ;;
-    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die "unexpected argument: $1"; fi; shift ;;
-  esac
-done
-[ -n "$slug" ] && [ -n "$branch" ] || die "$usage"
-[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die "$usage"
-
 # ---------- main checkout ----------
 map="${KICKOFF_REPO_MAP:-$HOME/.config/kickoff/repos.tsv}"
 dev_root="${KICKOFF_DEV_ROOT:-$HOME/development}"
@@ -105,40 +92,70 @@ origin_is() {
 }
 is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
 
-main=""; main_from=""
-# 1. the map
-if [ -f "$map" ]; then
-  cand="$(awk -F'\t' -v s="$slug" '$1==s {print $2; exit}' "$map")"
-  if [ -n "$cand" ]; then
-    if is_main_checkout "$cand" && origin_is "$cand" "$slug"; then
-      main="$cand"; main_from="map"
-    else
-      printf 'map entry for %s is stale (%s), dropping it\n' "$slug" "$cand" >&2
-      tmp="$(mktemp)"; awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
+# find_main <owner/repo>: sets main and main_from (map, cwd, or search) by the
+# order in the header, and writes a find to the map. Stops on none or several.
+find_main() {
+  local slug="$1" cand tmp gitdir d matches
+  main=""; main_from=""
+  # 1. the map
+  if [ -f "$map" ]; then
+    cand="$(awk -F'\t' -v s="$slug" '$1==s {print $2; exit}' "$map")"
+    if [ -n "$cand" ]; then
+      if is_main_checkout "$cand" && origin_is "$cand" "$slug"; then
+        main="$cand"; main_from="map"
+      else
+        printf 'map entry for %s is stale (%s), dropping it\n' "$slug" "$cand" >&2
+        tmp="$(mktemp)"; awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
+      fi
     fi
   fi
-fi
-# 2. the current folder
-if [ -z "$main" ] && is_main_checkout "$PWD" && origin_is "$PWD" "$slug"; then
-  main="$PWD"; main_from="cwd"
-fi
-# 3. search the dev root
-if [ -z "$main" ]; then
-  matches=()
-  while IFS= read -r gitdir; do
-    d="${gitdir%/.git}"
-    if origin_is "$d" "$slug"; then matches+=("$d"); fi
-  done < <(find "$dev_root" -maxdepth 6 -type d -name .git -not -path '*/node_modules/*' 2>/dev/null | sort)
-  case "${#matches[@]}" in
-    0) die "no checkout of $slug under $dev_root. Clone it, or add a line to $map: $slug<TAB>/path" ;;
-    1) main="${matches[0]}"; main_from="search" ;;
-    *) die "several checkouts of $slug: ${matches[*]}. Add the right one to $map: $slug<TAB>/path" ;;
+  # 2. the current folder
+  if [ -z "$main" ] && is_main_checkout "$PWD" && origin_is "$PWD" "$slug"; then
+    main="$PWD"; main_from="cwd"
+  fi
+  # 3. search the dev root
+  if [ -z "$main" ]; then
+    matches=()
+    while IFS= read -r gitdir; do
+      d="${gitdir%/.git}"
+      if origin_is "$d" "$slug"; then matches+=("$d"); fi
+    done < <(find "$dev_root" -maxdepth 6 -type d -name .git -not -path '*/node_modules/*' 2>/dev/null | sort)
+    case "${#matches[@]}" in
+      0) die "no checkout of $slug under $dev_root. Clone it, or add a line to $map: $slug<TAB>/path" ;;
+      1) main="${matches[0]}"; main_from="search" ;;
+      *) die "several checkouts of $slug: ${matches[*]}. Add the right one to $map: $slug<TAB>/path" ;;
+    esac
+  fi
+  if [ "$main_from" != "map" ]; then
+    mkdir -p "$(dirname "$map")"
+    printf '%s\t%s\n' "$slug" "$main" >>"$map"
+  fi
+}
+
+# The forms that take no branch.
+case "${1:-}" in
+  worktrees)
+    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
+    worktrees "$2"; exit 0 ;;
+  main)
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh main <owner/repo>"
+    find_main "$2"
+    printf 'FROM=%s MAIN=%s\n' "$main_from" "$main"; exit 0 ;;
+esac
+
+usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
+slug=""; branch=""; base=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --base) [ -n "${2:-}" ] || die "$usage"; base="$2"; shift 2 ;;
+    -*) die "unknown flag $1" ;;
+    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die "unexpected argument: $1"; fi; shift ;;
   esac
-fi
-if [ "$main_from" != "map" ]; then
-  mkdir -p "$(dirname "$map")"
-  printf '%s\t%s\n' "$slug" "$main" >>"$map"
-fi
+done
+[ -n "$slug" ] && [ -n "$branch" ] || die "$usage"
+[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die "$usage"
+
+find_main "$slug"
 
 git -C "$main" check-ref-format --branch "$branch" >/dev/null 2>&1 || die "not a valid branch name: $branch"
 
