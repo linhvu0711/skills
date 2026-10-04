@@ -183,10 +183,11 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    `Cargo.toml`, `Gemfile`, a lockfile, a Dockerfile, a CI config, or a
    new SDK and API key. A version bump of one already there counts too.
    Ask before the plan names it. The question holds at least two
-   options: `A` the dependency, with the docs fact from round 1, or the
-   `Proved` line from its probe, that says it does the job; `B` the nearest thing the repo already has, with
+   options: the dependency, with the docs fact from round 1, or the
+   `Proved` line from its probe, that says it does the job; and the nearest thing the repo already has, with
    its `file:line` and the line that keeps it from serving, or hand-written
-   code when the repo has nothing. Wait. The answer goes under `Decided`,
+   code when the repo has nothing. Either can be `A`, by `grilling.md`
+   § Your pick. Wait. The answer goes under `Decided`,
    marked `(user)`. A plan that adds a dependency the user did not pick
    is not done.
 
