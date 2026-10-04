@@ -157,6 +157,59 @@ t_watch_time_limit() {
   eq stdout "still running https://app.devin.ai/sessions/abc" "$(unstamped)"
 }
 
+# old_ledgers: the two old ledgers, one bad line in the devin one.
+old_ledgers() {
+  mkdir -p "$HOME/.config/dispatch"
+  printf '2026-09-08T16:04:25Z\tdevin-1\thttps://app.devin.ai/sessions/1\thttps://github.com/o/r/issues/1\t#1 First\ngarbage line\n2026-09-13T04:14:21Z\tdevin-7\thttps://app.devin.ai/sessions/7\thttps://github.com/o/r/issues/7\t#7 Posts\n' \
+    > "$HOME/.config/dispatch/sessions.tsv"
+  printf '2026-09-10T09:04:45Z\tbc-2\thttps://cursor.com/agents/bc-2\thttps://github.com/o/r/issues/2\t#2 Smoke\n' \
+    > "$HOME/.config/dispatch/cursor-sessions.tsv"
+}
+
+t_migrate_moves_rows() {
+  fake_adapters; old_ledgers
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq ledger "2026-09-08T16:04:25Z	devin	devin-1	https://app.devin.ai/sessions/1	https://github.com/o/r/issues/1	#1 First
+2026-09-10T09:04:45Z	cursor	bc-2	https://cursor.com/agents/bc-2	https://github.com/o/r/issues/2	#2 Smoke
+2026-09-13T04:14:21Z	devin	devin-7	https://app.devin.ai/sessions/7	https://github.com/o/r/issues/7	#7 Posts" "$(cat "$(ledger)")"
+}
+
+t_migrate_warns_bad_row() {
+  fake_adapters; old_ledgers
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq stderr "handoff.sh: skipped line 2 of sessions.tsv: not a session row" "$err"
+}
+
+t_migrate_renames_files() {
+  fake_adapters; old_ledgers
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq files "cursor-sessions.tsv.migrated
+handoff.tsv
+sessions.tsv.migrated" "$(ls "$HOME/.config/dispatch")"
+}
+
+t_migrate_then_route() {
+  fake_adapters; old_ledgers
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq stdout "follow devin devin-7 https://app.devin.ai/sessions/7" "$out"
+}
+
+t_migrate_appends_migrated() {
+  fake_adapters
+  d="$HOME/.config/dispatch"; mkdir -p "$d"
+  printf '2026-09-08T16:04:25Z\tdevin-1\thttps://app.devin.ai/sessions/1\thttps://github.com/o/r/issues/1\t#1 First\n' > "$d/sessions.tsv.migrated"
+  printf '2026-10-03T08:00:00Z\tdevin-9\thttps://app.devin.ai/sessions/9\thttps://github.com/o/r/issues/9\t#9 Late\n' > "$d/sessions.tsv"
+  handoff route https://github.com/o/r/issues/9
+  eq exit 0 "$code"
+  [ ! -e "$d/sessions.tsv" ] || { echo "sessions.tsv is still there" >&2; exit 1; }
+  eq migrated "2026-09-08T16:04:25Z	devin-1	https://app.devin.ai/sessions/1	https://github.com/o/r/issues/1	#1 First
+2026-10-03T08:00:00Z	devin-9	https://app.devin.ai/sessions/9	https://github.com/o/r/issues/9	#9 Late" "$(cat "$d/sessions.tsv.migrated")"
+}
+
 cases=(
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
@@ -170,4 +223,9 @@ cases=(
   "say sends the note through the adapter named|t_say_through_adapter"
   "watch prints events as they come and stops when finished|t_watch_events"
   "watch prints still running at its time limit|t_watch_time_limit"
+  "first run moves the old ledgers|t_migrate_moves_rows"
+  "migration warns on a row it cannot read|t_migrate_warns_bad_row"
+  "migration renames the old files|t_migrate_renames_files"
+  "migration routes from the moved rows|t_migrate_then_route"
+  "a later old ledger appends to its .migrated|t_migrate_appends_migrated"
 )

@@ -16,6 +16,9 @@
 # --mode, cursor --repo, --base, and --model.
 # The handoff ledger, ~/.config/dispatch/handoff.tsv, holds a row per session:
 # time, executor, session, link, issue, title, tab separated.
+# Each command first moves in the rows of the old ledgers, sessions.tsv
+# (devin) and cursor-sessions.tsv (cursor) in the same folder, and renames
+# each to .migrated; a row it cannot read is skipped with a warning.
 # route reads it: the issue's newest session, of the named executor when one
 # is named, is a follow-up; no session starts on the named executor, else
 # devin. status asks the adapter's poll, one line of state, event key, PRs,
@@ -41,6 +44,39 @@ executor() {
     devin|cursor) printf %s "$1" ;;
     *) die "executor must be devin or cursor" ;;
   esac
+}
+
+# migrate -> moves each old per-tool ledger into the ledger, sorted by time, and
+# renames it to .migrated, or appends it to a .migrated already there (the
+# old skills write their file again until #84 removes them)
+migrate() {
+  local dir old olds=() pair tmp
+  dir=$(dirname "$LEDGER")
+  for pair in devin:sessions.tsv cursor:cursor-sessions.tsv; do
+    [[ -f "$dir/${pair#*:}" ]] && olds+=("$pair")
+  done
+  [[ ${#olds[@]} -gt 0 ]] || return 0
+  tmp=$(mktemp "$dir/.handoff.XXXXXX")
+  {
+    [[ -f "$LEDGER" ]] && cat "$LEDGER"
+    for pair in "${olds[@]}"; do
+      # No {n} intervals: mawk, the awk on Ubuntu, may not read them.
+      awk -F'\t' -v e="${pair%%:*}" -v f="${pair#*:}" '
+        NF == 0 { next }
+        NF == 5 && $2 != "" && $1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/ {
+          print $1 "\t" e "\t" $2 "\t" $3 "\t" $4 "\t" $5; next }
+        { printf "handoff.sh: skipped line %d of %s: not a session row\n", FNR, f > "/dev/stderr" }' "$dir/${pair#*:}"
+    done
+  } | sort -s -t "$(printf '\t')" -k1,1 >"$tmp"
+  mv "$tmp" "$LEDGER"
+  for pair in "${olds[@]}"; do
+    old="$dir/${pair#*:}"
+    if [[ -f "$old.migrated" ]]; then
+      cat "$old" >>"$old.migrated" && rm "$old"
+    else
+      mv "$old" "$old.migrated"
+    fi
+  done
 }
 
 # newest ISSUE [EXECUTOR] -> the ledger's newest row for that issue, of that executor when given
@@ -160,6 +196,7 @@ cmd_route() {
   fi
 }
 
+migrate
 case "${1:-}" in
   route) shift; cmd_route "$@" ;;
   start) shift; cmd_start "$@" ;;
