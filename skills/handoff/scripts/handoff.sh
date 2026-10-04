@@ -51,16 +51,21 @@ executor() {
 # migrate -> moves each old per-tool ledger into the ledger, sorted by time, and
 # renames it to .migrated, or appends it to a .migrated already there (the
 # old skills write their file again until #84 removes them). Each old file is
-# renamed aside, to <file>.taking.<pid>, before it is read, so a row an old
-# skill appends meanwhile lands in a new old file, which the next run moves
-# in. A .taking file a stopped run left behind is moved in too, and a row the
-# ledger already holds is not written twice.
+# renamed aside, to a new <file>.taking.<suffix>, before it is read, so a row
+# an old skill appends meanwhile lands in a new old file, which the next run
+# moves in. A .taking file a stopped run left behind is moved in too, and a
+# row the ledger already holds is not written twice.
 migrate() {
   local dir old pair tmp t taken=()
   dir=$(dirname "$LEDGER")
   for pair in devin:sessions.tsv cursor:cursor-sessions.tsv; do
     old="$dir/${pair#*:}"
-    [[ -f "$old" ]] && mv "$old" "$old.taking.$$" 2>/dev/null
+    # mktemp makes a name no other file has, so a .taking file a stopped run
+    # left behind is never overwritten.
+    if [[ -f "$old" ]]; then
+      t=$(mktemp "$old.taking.XXXXXX")
+      mv "$old" "$t" 2>/dev/null || rm -f "$t"
+    fi
     for t in "$old".taking.*; do
       [[ -f "$t" ]] && taken+=("${pair%%:*}:$t")
     done
