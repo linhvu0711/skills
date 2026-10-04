@@ -33,14 +33,10 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `URL`, `BASE`, `HEAD`, `SHA`, and `me`.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
-   `WT` is that directory. Otherwise find the main checkout the way
-   `../kickoff/scripts/kickoff.sh` does (the map at
-   `~/.config/kickoff/repos.tsv`, then the current directory's origin,
-   then a search under `~/development`; a `.git` directory, not a
-   file), and:
+   `WT` is that directory. Otherwise:
 
    ```bash
-   bash ../../shared-skill-core/worktree.sh <main-checkout> <HEAD>
+   bash ../../shared-skill-core/checkout.sh <REPO> <HEAD>
    ```
 
    `stop:` on stderr: show it, stop. `WT` is its `WORKTREE=`. Done when
@@ -139,7 +135,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    Stack: moved https://github.com/acme/app/pull/44, https://github.com/acme/app/pull/45
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
-   Worktree: ~/code/worktrees/app/feat-42-login
+   Worktree: ~/code/worktrees/acme/app/feat-42-login
    READY https://github.com/acme/app/pull/43
    ```
 
@@ -168,9 +164,9 @@ finding at `src/auth/login.ts:212`. Validate: one `fix here`,
 **User:** `/ready-pr https://github.com/acme/shop/pull/61` in a chat with
 no checkout.
 
-Main checkout found under `~/development`; `worktree.sh` tracks
+`checkout.sh` finds the main checkout under `~/development` and tracks
 `origin/fix/57-export-date-iso` into
-`~/development/worktrees/shop/fix-57-export-date-iso`. Then as above.
+`~/development/worktrees/acme/shop/fix-57-export-date-iso`. Then as above.
 
 **Round 3** finds a thread whose fix means a new column on `users`.
 

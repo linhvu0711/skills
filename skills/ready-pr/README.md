@@ -29,13 +29,13 @@ If `gh` fails five times in a row while it waits for the review (an expired logi
 - `gh` (signed in), `git`, and `jq`.
 - [Devin Review](https://devin.ai) installed on the repo, for the review status. Optional, see above.
 - The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, `../../shared-skill-core/grilling.md` (question format and how to pick), and `../../shared-skill-core/pr-shape.md`.
-- For a PR with no local checkout: the repo map at `~/.config/kickoff/repos.tsv` or a clone under `~/development`, found the way [kickoff](../kickoff/) finds one.
+- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh` (the checkout resolver), `../../shared-skill-core/grilling.md` (question format and how to pick), and `../../shared-skill-core/pr-shape.md`.
+- For a PR with no local checkout: a main checkout the checkout resolver can find, from the repo map at `~/.config/kickoff/repos.tsv`, the current folder, or a clone under `~/development`.
 
 ## Fits with
 
 - Calls [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- Finds a checkout the way [kickoff](../kickoff/)'s script does.
+- Finds the main checkout and the worktree through the shared checkout resolver.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.
 - Named by [make-pr](../make-pr/) as the next step once the PR is open.
 

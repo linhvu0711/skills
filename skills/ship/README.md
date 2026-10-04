@@ -27,7 +27,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 ```
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
 Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
-Worktree: ~/development/worktrees/app/feat-42-login
+Worktree: ~/development/worktrees/acme/app/feat-42-login
 After merge: /prune-worktrees
 READY https://github.com/acme/app/pull/43
 ```
@@ -38,7 +38,7 @@ A PR that waits only for a person's approval ends with `READY <url> (waiting for
 
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - The skills it chains: [plan-up](../plan-up/), [handoff-devin](../handoff-devin/), and [ready-pr](../ready-pr/), and what they need.
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, and `../../shared-skill-core/handoff/render.sh`.
+- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh` (the checkout resolver), and `../../shared-skill-core/handoff/render.sh`.
 - For a Devin CLI pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Devin CLI `devin`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
 - For the cloud route: a Devin account, as [handoff-devin](../handoff-devin/) describes.
 
