@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, the
-# handoff render.sh, the ready-pr scripts, and the plan-up claims.py. The
-# ready-pr cases run against a fake gh on PATH that answers from fixture files.
+# test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
+# adopt.sh, the handoff render.sh, the ready-pr scripts, and the plan-up
+# claims.py. The ready-pr cases run against a fake gh on PATH that answers from
+# fixture files.
 #
 #   test.sh
 #
@@ -269,10 +270,25 @@ t_hook_stops_missing_path() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+# skill_md <name>: skills/<name>/SKILL.md with a frontmatter whose name is
+# the folder and whose description is not empty.
+skill_md() {
+  mkdir -p "skills/$1"
+  printf -- '---\nname: %s\ndescription: A %s skill.\n---\n# %s\n' "$1" "$1" "$1" > "skills/$1/SKILL.md"
+}
+
+# skill <name> [<line>]: skills/<name> with a SKILL.md, plus <line> when
+# given, and a README that has the four template headings.
+skill() {
+  skill_md "$1"
+  [ $# -lt 2 ] || printf '%s\n' "$2" >> "skills/$1/SKILL.md"
+  printf '# %s\n\n## Use it when\n\n## What you get\n\n## Needs\n\n## Fits with\n' "$1" > "skills/$1/README.md"
+}
+
 # readme <heading>...: skills/demo with a SKILL.md and a README that has
 # these `## ` headings.
 readme() {
-  mkdir -p skills/demo; printf '# demo\n' > skills/demo/SKILL.md
+  skill_md demo
   printf '# demo\n' > skills/demo/README.md
   for h in "$@"; do printf '\n## %s\n' "$h" >> skills/demo/README.md; done
 }
@@ -466,6 +482,163 @@ t_claims_gh_fails() {
   eq exit 1 "$code"
   eq stdout "" "$out"
   eq stderr 'claims: #65: gh: Could not resolve to an Issue with the number of 65.' "$err"
+}
+
+t_flags_no_frontmatter() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"; printf '# demo\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: missing frontmatter" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_name_not_folder() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: other\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: name does not match folder: other" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_empty_description() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: ""\n---\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+# header <frontmatter lines>: repo with skills/demo, its README headings, and a
+# SKILL.md of `---`, these lines, `---`, committed; then run check.sh.
+header() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\n%s\n---\n' "$1" > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_passes_block_after_blank() {
+  header "$(printf 'name: demo\ndescription: |\n\n  Explains the skill.')"
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_passes_name_with_comment() {
+  header "$(printf 'name: demo # short label\ndescription: A demo skill.')"
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_null_description() {
+  header "$(printf 'name: demo\ndescription: null')"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_comment_description() {
+  header "$(printf 'name: demo\ndescription: # add later')"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_escaped_quote_name() {
+  header "$(printf "name: 'demo''-other'\ndescription: A demo skill.")"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: name does not match folder: demo'-other" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+# readme_msg <skill>: the line the commit-msg hook prints for a skill
+# changed without its README.
+readme_msg() { printf '%s: changed without its README; add "Readme: unchanged" to the message to skip' "$1"; }
+
+t_readme_hook_stops_skill_change() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; git add skills
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_passes_marked_change() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_passes_with_readme() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'more\n' >> skills/demo/SKILL.md; printf 'more\n' >> skills/demo/README.md; git add skills
+  run git commit -m test
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
+t_marked_change_runs_leak_check() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf 'see %s/x\n' "$mac_home" >> skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md:6: home path: $mac_home" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_marked_change_runs_header_check() {
+  hooked; skill demo; git add -A; git commit -qm skill
+  printf -- '---\nname: other\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md; git add skills
+  run git commit -m test -m 'Readme: unchanged'
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md: name does not match folder: other" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+# core: a shared core with two top-level files, and a handoff/ folder whose
+# rules.md includes ../size.md.
+core() {
+  mkdir -p shared-skill-core/handoff
+  printf 'hi\n' > shared-skill-core/x.md; printf 'hi\n' > shared-skill-core/size.md
+  printf 'hi\n' > shared-skill-core/handoff/render.sh
+  printf '<!-- include ../size.md -->\n' > shared-skill-core/handoff/rules.md
+}
+
+t_readme_hook_asks_named_core() {
+  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/x.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_core_folder() {
+  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/handoff/rules.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_included_core() {
+  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/size.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_skips_unread_core() {
+  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; skill other 'read `../../shared-skill-core/size.md`'
+  git add -A; git commit -qm skills
+  printf 'more\n' >> shared-skill-core/x.md; printf 'more\n' >> skills/demo/README.md; git add -A
+  run git commit -m test
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
 }
 
 t_render_names_ready_pr() {
@@ -953,6 +1126,23 @@ cases=(
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
   "wait-review: 5 failed calls stop with exit 4|t_wait_review_gh_fails"
   "wait-review: one failed call then success goes on|t_wait_review_one_failure"
+  "flags a SKILL.md with no frontmatter|t_flags_no_frontmatter"
+  "flags a SKILL.md name that is not its folder|t_flags_name_not_folder"
+  "flags a SKILL.md with an empty description|t_flags_empty_description"
+  "readme hook stops a skill change without its README|t_readme_hook_stops_skill_change"
+  "readme hook passes a skill change marked Readme: unchanged|t_readme_hook_passes_marked_change"
+  "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"
+  "Readme: unchanged still runs the leak check|t_marked_change_runs_leak_check"
+  "Readme: unchanged still runs the header check|t_marked_change_runs_header_check"
+  "readme hook asks a skill that names a changed core file|t_readme_hook_asks_named_core"
+  "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
+  "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"
+  "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
+  "passes a block description after a blank line|t_passes_block_after_blank"
+  "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
+  "flags a null description|t_flags_null_description"
+  "flags a description that is only a comment|t_flags_comment_description"
+  "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
 )
 
 pass=0; fail=0
