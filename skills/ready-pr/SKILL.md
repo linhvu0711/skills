@@ -58,7 +58,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    pane, in the foreground. Exit 0: go on. Exit 3 (no status in ten
    minutes): say `No Devin Review on this repo` once, set `no-devin`,
    go on. Exit 1: say the state and the PR URL, stop; the user decides.
-   Exit 2 (pending for thirty minutes): say so, stop.
+   Exit 2 (pending for thirty minutes): say so, stop. Exit 4
+   (`stop: gh failed: …`): say the error and the PR URL, stop.
 
 4. **Open?** `bash scripts/open-threads.sh <REPO> <NUMBER> --me <me>`.
    `OPEN=0`: step 6. Else hold the lines.
@@ -117,7 +118,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    bash scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
    ```
 
-   `READY`: step 7. `NOT READY`, by reason:
+   `READY`, or `READY <url> (waiting for approval)`: step 7. `NOT READY`,
+   by reason:
    - `merge state is DIRTY`: the rebase path of step 5, then step 3.
    - `check(s) red`: `cd "$WT" && gh pr checks <NUMBER>`, read the
      failing log. A cause inside the PR's own change is work: fix,
@@ -147,7 +149,9 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    restack: no `Stack:` line. One line per finding over every round,
    id, verdict, SHA or URL.
    `Filed: none` when nothing was filed. A `no-devin` run says
-   `Devin Review: none on this repo`. A stop point that ended the run
+   `Devin Review: none on this repo`. A PR that waits only for a
+   person's approval ends with `READY <url> (waiting for approval)`; the
+   approval and the merge are the user's. A stop point that ended the run
    prints the same block with `NOT READY <url>: <what is open>` last.
 
 ## Examples

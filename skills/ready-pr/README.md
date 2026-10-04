@@ -18,7 +18,11 @@ F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issue
 READY https://github.com/acme/app/pull/43
 ```
 
+`READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. A requested change, a draft, a head with no checks yet, or a check the base branch requires that never posted reads `NOT READY`.
+
 A repo without Devin Review still works: it says so once and judges the comments people left.
+
+If `gh` fails five times in a row while it waits for the review (an expired login, the network), it stops with the error (exit 4) and never goes on without the review.
 
 ## Needs
 

@@ -12,6 +12,8 @@
 #   1  failure or error
 #   2  still pending when --timeout-sec ran out
 #   3  no status at all for --none-sec seconds (Devin Review is not on this repo, or is late)
+#   4  five gh calls in a row failed (a login, the network, a 403):
+#      `stop: gh failed: <last error line>` on stderr
 # Polls an API, so it costs no model tokens while it waits. In Claude Code
 # run it in the background; the tool wakes the session when it ends.
 set -euo pipefail
@@ -28,18 +30,28 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$repo" ] && [ -n "$sha" ] || { echo 'usage: wait-review.sh <owner/repo> <sha> [--timeout-sec N] [--none-sec N] [--poll-sec N]' >&2; exit 64; }
 
+# state_of: sets s to the Devin Review state, lower case, or empty when there
+# is none. A failed gh call sets err to its last line and returns 1.
 state_of() {
-  local s
-  s="$(gh api "repos/$repo/commits/$sha/status" -q '[.statuses[] | select(.context=="Devin Review") | .state] | first // empty' 2>/dev/null || true)"
-  if [ -z "$s" ]; then
-    s="$(gh api "repos/$repo/commits/$sha/check-runs" -q '[.check_runs[] | select(.name=="Devin Review") | (.conclusion // .status)] | first // empty' 2>/dev/null || true)"
+  local out
+  out="$(gh api "repos/$repo/commits/$sha/status" -q '[.statuses[] | select(.context=="Devin Review") | .state] | first // empty' 2>&1)" \
+    || { err="$(printf '%s\n' "$out" | tail -1)"; return 1; }
+  if [ -z "$out" ]; then
+    out="$(gh api "repos/$repo/commits/$sha/check-runs" -q '[.check_runs[] | select(.name=="Devin Review") | (.conclusion // .status)] | first // empty' 2>&1)" \
+      || { err="$(printf '%s\n' "$out" | tail -1)"; return 1; }
   fi
-  printf '%s' "$s" | tr '[:upper:]' '[:lower:]'
+  s="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]')"
 }
 
-waited=0
+waited=0; fails=0; s=""; err=""
 while :; do
-  s="$(state_of)"
+  if state_of; then
+    fails=0
+  else
+    fails=$((fails + 1))
+    if [ "$fails" -ge 5 ]; then printf 'stop: gh failed: %s\n' "$err" >&2; exit 4; fi
+    sleep "$poll"; waited=$((waited + poll)); continue
+  fi
   case "$s" in
     success)
       printf 'DEVIN=success SHA=%s WAITED=%s\n' "$sha" "$waited"; exit 0 ;;
