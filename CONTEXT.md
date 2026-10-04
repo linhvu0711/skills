@@ -26,6 +26,10 @@ _Avoid_: summary, overview
 The one diagram kind in the Review view. A box is a part with a job, named in the project's own words; an arrow is what moves between parts, or who asks whom; a gray area is the app or package the parts live in. A store box lists the tables, columns, or keys that change. Files are details of a box, never boxes.
 _Avoid_: architecture diagram, component diagram, dependency graph
 
+**Not proved**:
+A risk in the Review view that no probe has checked. Each risk names the `Proved` line that proves it, or says `not proved`. Reading the code does not prove a risk.
+_Avoid_: unproven, unverified, assumed
+
 ## Credit
 
 **Upstream**:
@@ -73,3 +77,9 @@ _Avoid_: style guide, conventions file
 **Scattered rules**:
 Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`.
 _Avoid_: legacy rules, old conventions
+
+## Worktrees
+
+**Safe to prune**:
+A worktree that is clean, whose PR is merged on GitHub (or whose branch is in the default branch), and whose branch tip is the PR's last commit. `prune-worktrees` removes it and its branch without asking. Any other worktree waits for the user.
+_Avoid_: stale, old, abandoned
