@@ -37,7 +37,9 @@
 # the README of each skill that reads it. A skill reads a core file when one of
 # its files names it or a folder that holds it, when it reads another file in
 # the same core subfolder, or when a core file it reads names or includes it. A
-# merge commit is skipped.
+# merge commit is skipped. The change is the index against HEAD, and git tells
+# a hook nothing about an amend, so an amend is judged by what it adds to the
+# commit it replaces.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr (or
