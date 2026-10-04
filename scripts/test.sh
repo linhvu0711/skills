@@ -380,9 +380,10 @@ EOF
   chmod +x "$T/bin/gh"; PATH="$T/bin:$PATH"
 }
 
-# pr <number> <base> <head>: one PR as `gh pr list --json` prints it.
+# pr <number> <base> <head> [fork]: one PR as `gh pr list --json` prints it.
 pr() {
-  printf '{"number":%s,"baseRefName":"%s","headRefName":"%s","url":"https://github.com/o/r/pull/%s","isCrossRepository":false}' "$1" "$2" "$3" "$1"
+  local fork=false; [ "${4:-}" = fork ] && fork=true
+  printf '{"number":%s,"baseRefName":"%s","headRefName":"%s","url":"https://github.com/o/r/pull/%s","isCrossRepository":%s}' "$1" "$2" "$3" "$1" "$fork"
 }
 
 t_restack_lists_stack_in_order() {
@@ -395,6 +396,26 @@ t_restack_lists_stack_in_order() {
 11 feat/a feat/b https://github.com/o/r/pull/11 fork=false
 12 feat/b feat/c https://github.com/o/r/pull/12 fork=false
 13 feat/a feat/d https://github.com/o/r/pull/13 fork=false" "$out"
+}
+
+t_restack_lists_child_behind_fork_of_same_name() {
+  fake_gh
+  printf '[%s,%s]\n' "$(pr 11 feat/a feat/b fork)" "$(pr 12 feat/a feat/b)" > "$T/prs/feat_a.json"
+  printf '[%s]\n' "$(pr 13 feat/b feat/c)" > "$T/prs/feat_b.json"
+  run bash "$restack" list o/r feat/a
+  eq exit 0 "$code"
+  eq stdout "STACK=3
+11 feat/a feat/b https://github.com/o/r/pull/11 fork=true
+12 feat/a feat/b https://github.com/o/r/pull/12 fork=false
+13 feat/b feat/c https://github.com/o/r/pull/13 fork=false" "$out"
+}
+
+t_restack_stops_past_100_prs() {
+  fake_gh
+  { printf '['; for n in $(seq 1 101); do [ "$n" = 1 ] || printf ','; pr "$n" feat/a "feat/x$n"; done; printf ']\n'; } > "$T/prs/feat_a.json"
+  run bash "$restack" list o/r feat/a
+  eq exit 1 "$code"
+  eq stderr "stop: more than 100 open PRs on feat/a; restack lists at most 100" "$err"
 }
 
 t_restack_lists_nothing() {
@@ -470,6 +491,20 @@ RESTACK=stopped" "$out"
   eq "origin/feat/b" "$b" "$(git rev-parse origin/feat/b)"
 }
 
+t_restack_skips_merge_commits() {
+  stack
+  git checkout -q -b side feat/b; echo s > s; git add s; git commit -qm side
+  git checkout -q feat/b; echo b2 >> b; git commit -qam b2; git merge -q --no-ff -m merge side
+  git push -q origin feat/b; git checkout -q feat/a
+  b="$(git rev-parse origin/feat/b)"
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack"
+  eq exit 1 "$code"
+  eq stdout "SKIP https://github.com/o/r/pull/11: feat/b has merge commits; move it by hand
+LEFT https://github.com/o/r/pull/12
+RESTACK=stopped" "$out"
+  eq "origin/feat/b" "$b" "$(git rev-parse origin/feat/b)"
+}
+
 t_restack_skips_dirty_worktree() {
   stack
   git worktree add -q "$T/bwt" feat/b; echo x >> "$T/bwt/b"
@@ -517,6 +552,9 @@ cases=(
   "restack stops on a clash|t_restack_stops_on_clash"
   "restack skips an unpushed branch|t_restack_skips_unpushed_branch"
   "restack skips a dirty worktree|t_restack_skips_dirty_worktree"
+  "restack skips a child with merge commits|t_restack_skips_merge_commits"
+  "restack lists a child behind a fork of the same name|t_restack_lists_child_behind_fork_of_same_name"
+  "restack stops past 100 PRs on a branch|t_restack_stops_past_100_prs"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"

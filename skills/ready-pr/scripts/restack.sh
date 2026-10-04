@@ -7,6 +7,7 @@
 # list: every open PR whose base is <branch>, then the PRs on each of their
 # heads, depth first, a parent before its children and siblings by number. A
 # fork PR's head is not walked, and a head already listed is not walked again.
+# More than 100 open PRs on one branch is a stop, not a short list.
 # Prints `STACK=<n>` first, then one line per PR:
 #   <number> <base> <head> <url> fork=<true|false>
 #
@@ -20,6 +21,7 @@
 #   SKIP <url>: fork PR, not mine
 #   SKIP <url>: <head> has <n> commit(s) not on origin
 #   SKIP <url>: worktree <path> has uncommitted changes
+#   SKIP <url>: <head> has merge commits; move it by hand
 #   CLASH <url>: <files>              (the rebase is aborted)
 #   SKIP <url>: push refused: <git's last line>
 # then `LEFT <url>` for each PR after a stop. Last line `RESTACK=moved <n>`
@@ -31,9 +33,11 @@ usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <
 # children <branch>: the open PRs on <branch>, one line each, by number.
 children() {
   local json
-  json="$(gh pr list --repo "$repo" --base "$1" --state open --limit 100 \
+  json="$(gh pr list --repo "$repo" --base "$1" --state open --limit 101 \
     --json number,baseRefName,headRefName,url,isCrossRepository 2>&1)" \
     || { printf 'stop: %s\n' "$json" >&2; exit 1; }
+  [ "$(jq length <<<"$json")" -le 100 ] \
+    || { printf 'stop: more than 100 open PRs on %s; restack lists at most 100\n' "$1" >&2; exit 1; }
   jq -r 'sort_by(.number)[] | "\(.number) \(.baseRefName) \(.headRefName) \(.url) fork=\(.isCrossRepository)"' <<<"$json"
 }
 
@@ -44,9 +48,11 @@ walk() {
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     read -r _ _ head _ fork <<<"$line"
+    # A fork's head names a branch in another repo, so it marks nothing seen.
+    [ "$fork" = "fork=false" ] || { stack+=("$line"); continue; }
     case "$seen" in *" $head "*) continue ;; esac
     seen="$seen$head "; stack+=("$line")
-    [ "$fork" = "fork=true" ] || walk "$head"
+    walk "$head"
   done <<<"$kids"
 }
 
@@ -85,6 +91,10 @@ move_one() {
   fi
   g worktree add -q --detach "$tmp/wt" "origin/$head" 2>/dev/null || { result="SKIP $url: cannot check out $head"; return 1; }
   up="$(git -C "$tmp/wt" merge-base "$parent_old" HEAD)" || { drop_tmp; result="SKIP $url: no commit in common with $base"; return 1; }
+  # A rebase drops merge commits, and with them any resolution made there.
+  if [ "$(git -C "$tmp/wt" rev-list --merges --count "$up..HEAD")" -gt 0 ]; then
+    drop_tmp; result="SKIP $url: $head has merge commits; move it by hand"; return 1
+  fi
   if ! git -C "$tmp/wt" rebase -q --onto "origin/$base" "$up" >/dev/null 2>&1; then
     files="$(git -C "$tmp/wt" diff --name-only --diff-filter=U | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
     git -C "$tmp/wt" rebase --abort; drop_tmp
