@@ -741,6 +741,34 @@ t_ready_thread_waits() {
   eq "last line" "NOT READY https://github.com/acme/app/pull/7: 1 review thread(s) wait for the author" "$(last)"
 }
 
+t_ready_blocked_waiting_approval() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 0 "$code"
+  eq "last line" "READY https://github.com/acme/app/pull/7 (waiting for approval)" "$(last)"
+}
+
+t_ready_blocked_changes_requested() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE CHANGES_REQUESTED false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: changes requested" "$(last)"
+}
+
+t_ready_blocked_red_check() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_red,$devin_ok]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: 1 other check(s) red" "$(last)"
+}
+
+t_ready_blocked_no_review_rule() {
+  fake_gh; pr_json pr.json BLOCKED MERGEABLE "" false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: merge state is BLOCKED" "$(last)"
+}
+
 t_wait_review_success() {
   fake_gh; printf '{"statuses":[{"context":"Devin Review","state":"success"}]}\n' > "$FAKE_GH/status.json"
   wait_review
@@ -818,6 +846,10 @@ cases=(
   "ready-pr: UNKNOWN then CLEAN reads READY|t_ready_unknown_then_clean"
   "ready-pr: Devin pending reads NOT READY|t_ready_devin_pending"
   "ready-pr: a thread waiting for the author reads NOT READY|t_ready_thread_waits"
+  "ready-pr: BLOCKED waiting for approval reads READY|t_ready_blocked_waiting_approval"
+  "ready-pr: BLOCKED with changes requested reads NOT READY|t_ready_blocked_changes_requested"
+  "ready-pr: BLOCKED with a red check reads NOT READY|t_ready_blocked_red_check"
+  "ready-pr: BLOCKED with no review rule reads NOT READY|t_ready_blocked_no_review_rule"
   "wait-review: success reads DEVIN=success|t_wait_review_success"
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
 )

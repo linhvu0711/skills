@@ -4,10 +4,12 @@
 #   pr-facts.sh [<number|url|branch>] [--repo owner/repo]
 #
 # No argument: the PR of the current branch. Keys: REPO NUMBER URL TITLE
-# STATE FORK BASE HEAD SHA AUTHOR MERGEABLE MERGE_STATE DEVIN CHECKS_RED
-# CHECKS_PENDING CHECKS_GREEN. DEVIN is the `Devin Review` state on the
-# head commit (SUCCESS, PENDING, FAILURE, ERROR) or `none`. The CHECKS_*
-# counts cover every other status and check run on the head commit.
+# STATE FORK BASE HEAD SHA AUTHOR MERGEABLE MERGE_STATE REVIEW_DECISION DEVIN
+# CHECKS_RED CHECKS_PENDING CHECKS_GREEN. REVIEW_DECISION is APPROVED,
+# CHANGES_REQUESTED, REVIEW_REQUIRED, or empty when the repo asks for no
+# review. DEVIN is the `Devin Review` state on the head commit (SUCCESS,
+# PENDING, FAILURE, ERROR) or `none`. The CHECKS_* counts cover every other
+# status and check run on the head commit.
 set -euo pipefail
 
 ref=""; repo=()
@@ -19,7 +21,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-json="$(gh pr view ${ref:+"$ref"} "${repo[@]}" --json number,url,title,state,isCrossRepository,baseRefName,headRefName,headRefOid,author,mergeable,mergeStateStatus,statusCheckRollup 2>&1)" \
+json="$(gh pr view ${ref:+"$ref"} "${repo[@]}" --json number,url,title,state,isCrossRepository,baseRefName,headRefName,headRefOid,author,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup 2>&1)" \
   || { printf 'stop: %s\n' "$json" >&2; exit 1; }
 
 jq -r '
@@ -40,6 +42,7 @@ jq -r '
   "AUTHOR=\(.author.login)",
   "MERGEABLE=\(.mergeable)",
   "MERGE_STATE=\(.mergeStateStatus)",
+  "REVIEW_DECISION=\(.reviewDecision // "")",
   "DEVIN=" + (([.statusCheckRollup[]? | select(is_devin) | st] | first) // "none"),
   "CHECKS_RED=" + ([others[] | select(st as $s | red | index($s))] | length | tostring),
   "CHECKS_PENDING=" + ([others[] | select(st as $s | (red + green) | index($s) | not)] | length | tostring),
