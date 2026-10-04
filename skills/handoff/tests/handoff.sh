@@ -235,6 +235,25 @@ t_migrate_appends_migrated() {
 2026-10-03T08:00:00Z	devin-9	https://app.devin.ai/sessions/9	https://github.com/o/r/issues/9	#9 Late" "$(cat "$d/sessions.tsv.migrated")"
 }
 
+t_migrate_picks_up_stray_taking() {
+  fake_adapters
+  d="$HOME/.config/dispatch"; mkdir -p "$d"
+  printf '2026-09-13T04:14:21Z\tdevin-7\thttps://app.devin.ai/sessions/7\thttps://github.com/o/r/issues/7\t#7 Posts\n' > "$d/sessions.tsv.taking.999"
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq stdout "follow devin devin-7 https://app.devin.ai/sessions/7" "$out"
+}
+
+t_migrate_skips_rows_already_moved() {
+  fake_adapters
+  d="$HOME/.config/dispatch"; mkdir -p "$d"
+  printf '2026-09-13T04:14:21Z\tdevin\tdevin-7\thttps://app.devin.ai/sessions/7\thttps://github.com/o/r/issues/7\t#7 Posts\n' > "$d/handoff.tsv"
+  printf '2026-09-13T04:14:21Z\tdevin-7\thttps://app.devin.ai/sessions/7\thttps://github.com/o/r/issues/7\t#7 Posts\n' > "$d/sessions.tsv.taking.999"
+  handoff route https://github.com/o/r/issues/7
+  eq exit 0 "$code"
+  eq ledger "2026-09-13T04:14:21Z	devin	devin-7	https://app.devin.ai/sessions/7	https://github.com/o/r/issues/7	#7 Posts" "$(cat "$d/handoff.tsv")"
+}
+
 cases=(
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
@@ -256,4 +275,6 @@ cases=(
   "migration renames the old files|t_migrate_renames_files"
   "migration routes from the moved rows|t_migrate_then_route"
   "a later old ledger appends to its .migrated|t_migrate_appends_migrated"
+  "migration picks up a file a stopped run left aside|t_migrate_picks_up_stray_taking"
+  "migration skips rows the ledger already has|t_migrate_skips_rows_already_moved"
 )
