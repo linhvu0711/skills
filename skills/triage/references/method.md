@@ -61,6 +61,12 @@ Measure with a profiler or timers, not log lines. Three numbers before anything 
 baseline, the target. The metric and the baseline are yours to measure. The
 target is the user's; ask once with a default.
 
+A number becomes the baseline only after three checks. Run the measure
+at least five times and take the median. Count the errors in each run;
+a run with errors is not a timing. Check that each run did the same
+amount of work, the same rows, requests, or items; a run that did less
+is not comparable.
+
 Then halve on the numbers. A profiler when one exists. Else timers around
 the halves of the path. The hot spot is the part that holds most of the
 time, with its share stated: "900 of 1200 ms". Stop there.
