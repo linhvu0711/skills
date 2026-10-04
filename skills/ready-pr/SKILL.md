@@ -14,7 +14,7 @@ closes it. People's comments count the same way, without the status.
 Short lookups are yours; the judging is `/validate-pr-review`'s, read
 and followed. Facts per `../../shared-skill-core/facts.md`. Never merge.
 
-`scripts/` holds four helpers; each prints its usage with no arguments.
+`scripts/` holds five helpers; each prints its usage with no arguments.
 In Claude Code every Bash call starts in the session's directory: git
 runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
@@ -90,9 +90,13 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    - **Before the push.** `git -C "$WT" fetch origin <BASE>`. The push
      is rejected, or `MERGE_STATE` was `DIRTY`: `git -C "$WT" rebase
      origin/<BASE>`; a conflict is
-     `../fix-conflicts/SKILL.md`, followed whole; then
-     `git -C "$WT" push --force-with-lease`. Devin re-reviews the new
-     head; old threads go `outdated` and stay resolved.
+     `../fix-conflicts/SKILL.md`, followed whole. Then, before the force
+     push, the PRs stacked on this one: `OLD` is
+     `git -C "$WT" rev-parse origin/<HEAD>`, and
+     `bash scripts/restack.sh list <REPO> <HEAD> > <file>`, a temp file;
+     print its lines. Then `git -C "$WT" push --force-with-lease`. Devin
+     re-reviews the new head; old threads go `outdated` and stay
+     resolved.
 
    After the push, `r` is `r + 1`. `r` past 6: say what keeps coming
    back and stop. Else `SHA` is the new head: step 3.

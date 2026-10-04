@@ -8,7 +8,7 @@ A PR is open and you want it cleaned up for merge without babysitting the review
 
 ## What you get
 
-Each round it waits for the `Devin Review` status on the head commit, runs [validate-pr-review](../validate-pr-review/) on the open threads, commits the fixes, files the `fix later` findings as issues and lists them under `Follow-ups` in the PR body, replies, resolves, and pushes. A merge conflict gets a rebase. It stops to ask you when a fix would touch a schema, an API, or a decision in the plan, and after six rounds that keep finding things. The last message:
+Each round it waits for the `Devin Review` status on the head commit, runs [validate-pr-review](../validate-pr-review/) on the open threads, commits the fixes, files the `fix later` findings as issues and lists them under `Follow-ups` in the PR body, replies, resolves, and pushes. A merge conflict gets a rebase. Before a force push it lists the open PRs stacked on the branch. It stops to ask you when a fix would touch a schema, an API, or a decision in the plan, and after six rounds that keep finding things. The last message:
 
 ```
 PR: feat(auth): add login (#43)

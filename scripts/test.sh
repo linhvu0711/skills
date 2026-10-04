@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, and the
-# handoff render.sh.
+# test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, the
+# handoff render.sh, and ready-pr's restack.sh.
 #
 #   test.sh
 #
 # Each case builds its own git repo in a temp folder, copies this scripts/
-# folder in, and runs the command there; the render case runs in this checkout. Every leak string below is joined
+# folder in, and runs the command there; the render case runs in this checkout,
+# and the restack cases use a fake `gh` and a local origin. Every leak string below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
 # Prints `ok <case>` or `FAIL <case>: <why>` per case, then
@@ -364,6 +365,45 @@ t_render_names_ready_pr() {
   [ -f "$f" ] || eq "ready-pr path" "a file" "$f"
 }
 
+restack="$here/../skills/ready-pr/scripts/restack.sh"
+
+# fake_gh: a temp folder T with a `gh` first on PATH. For `pr list … --base <b>`
+# it prints $T/prs/<b, with / as _>.json, or `[]` when there is none.
+fake_gh() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"; mkdir -p "$T/bin" "$T/prs"
+  cat > "$T/bin/gh" <<EOF
+#!/usr/bin/env bash
+b=""; while [ \$# -gt 0 ]; do [ "\$1" = --base ] && b="\${2:-}"; shift; done
+f="$T/prs/\$(printf '%s' "\$b" | tr / _).json"
+if [ -f "\$f" ]; then cat "\$f"; else echo '[]'; fi
+EOF
+  chmod +x "$T/bin/gh"; PATH="$T/bin:$PATH"
+}
+
+# pr <number> <base> <head>: one PR as `gh pr list --json` prints it.
+pr() {
+  printf '{"number":%s,"baseRefName":"%s","headRefName":"%s","url":"https://github.com/o/r/pull/%s","isCrossRepository":false}' "$1" "$2" "$3" "$1"
+}
+
+t_restack_lists_stack_in_order() {
+  fake_gh
+  printf '[%s,%s]\n' "$(pr 13 feat/a feat/d)" "$(pr 11 feat/a feat/b)" > "$T/prs/feat_a.json"
+  printf '[%s]\n' "$(pr 12 feat/b feat/c)" > "$T/prs/feat_b.json"
+  run bash "$restack" list o/r feat/a
+  eq exit 0 "$code"
+  eq stdout "STACK=3
+11 feat/a feat/b https://github.com/o/r/pull/11 fork=false
+12 feat/b feat/c https://github.com/o/r/pull/12 fork=false
+13 feat/a feat/d https://github.com/o/r/pull/13 fork=false" "$out"
+}
+
+t_restack_lists_nothing() {
+  fake_gh
+  run bash "$restack" list o/r feat/a
+  eq exit 0 "$code"
+  eq stdout "STACK=0" "$out"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -393,6 +433,8 @@ cases=(
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
   "render puts the ready-pr path in local rules|t_render_names_ready_pr"
+  "restack lists the stack in order|t_restack_lists_stack_in_order"
+  "restack lists nothing on a bare branch|t_restack_lists_nothing"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"
