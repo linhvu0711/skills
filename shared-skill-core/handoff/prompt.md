@@ -1,4 +1,4 @@
-<!-- template: shared by /handoff-devin, /handoff-cursor, and /ship. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /handoff and /ship. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 # Prompt rules
 
 The prompt file is the only thing the executor gets. It reads no file

@@ -1,6 +1,6 @@
 ---
 name: plan-up
-description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, or a whole epic, stacked as PRs, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff-devin."
+description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, or a whole epic, stacked as PRs, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff."
 disable-model-invocation: true
 ---
 
@@ -253,7 +253,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary
    again. `ok`: remove the base copy (step 1), say
-   `Ready for /handoff-devin.`, and stop.
+   `Ready for /handoff.`, and stop.
 
 ## Examples
 
@@ -290,7 +290,7 @@ six slices (slice 1 carries
 `Docs: README.md:88`, CSV next to JSON), three UI walks (happy, empty,
 failed), two videos: happy and failed from the seeded shop, empty from
 an empty seed.
-Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
+Done rule holds. Present, `ok`, `Ready for /handoff.`
 
 **User:** `/plan-up https://github.com/acme/shop/issues/88` (PR 90 by
 `@bob` is open and closes #88)
@@ -314,7 +314,7 @@ the ISO date from the issue, and `Docs: docs/export.md:12`, the ISO
 date. No probe: the Steps leave no doubt. Two Proof rows: row 1 the case, row 2 the
 `pnpm test export` command. No walks, no videos. Gates: the existing
 `export.test.ts` cases. Decided: none, the issue had no `Open` line.
-Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
+Done rule holds. Present, `ok`, `Ready for /handoff.`
 
 **User:** `/plan-up https://github.com/acme/tally/issues/12` (size/S fix,
 a CLI; Done when: `status` wraps its hints on a narrow terminal, `rules
@@ -329,7 +329,7 @@ wrapped hint, the whole id. Both screens exist on the base, so each
 walk's `Before` names the same command and the old output: the hint
 cut at column 60, the id cut short. Plan: two slices, two walks, one
 video.
-Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
+Done rule holds. Present, `ok`, `Ready for /handoff.`
 
 **User:** `/plan-up https://github.com/acme/shop/issues/61` (body has What
 to build, no Done when)
@@ -348,7 +348,7 @@ pass. Round 1 fans out per ticket. #71's plan decides the seam
 #74 (invite token lifetime is not in the repo), asked, answered. Plan:
 Stack block with three layers, one Facts block, 7 points, then Proof
 through Out of scope for each layer. Done rule holds. Present, `ok`,
-`Ready for /handoff-devin.`
+`Ready for /handoff.`
 
 **User:** `/plan-up https://github.com/acme/shop/issues/70` (same epic; #72
 is closed)
@@ -362,4 +362,4 @@ run above.
 
 Base is PR 80's head branch; the base copy is of that branch. One layer, base named
 in the Stack block as `PR #80`. Rest as a single ticket. Present, `ok`,
-`Ready for /handoff-devin.`
+`Ready for /handoff.`

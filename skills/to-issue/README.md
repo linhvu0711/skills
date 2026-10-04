@@ -29,7 +29,7 @@ https://github.com/acme/shop/issues/42 · size/M · feat
 - Fed by [grill](../grill/) and [discover-path](../discover-path/). Called by [triage](../triage/) as its last step.
 - Turns a `[bug]` from [capture](../capture/), or any bug issue the chat names, into the ticket in place: same number, new title and body. A `seed` still gets a new issue and is closed.
 - Sends XL work to [to-epic](../to-epic/).
-- Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff](../kickoff/). [handoff-devin](../handoff-devin/) and [handoff-cursor](../handoff-cursor/) read the size labels through its `scripts/conventions.py`.
+- Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff](../kickoff/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
 
 ## Credits
 

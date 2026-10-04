@@ -41,22 +41,20 @@ flowchart LR
   kickoff -->|new pane| planup
   subgraph ship [ship: one run]
     direction LR
-    sp[plan-up] --> sb[handoff-devin or local build] --> sr[ready-pr]
+    sp[plan-up] --> sb[handoff or local build] --> sr[ready-pr]
   end
-  planup --> hd[handoff-devin]
-  planup --> hc[handoff-cursor]
+  planup --> ho[handoff]
   planup --> hand[build by hand]
   hand --> gitcommit[commit] --> makepr[make-pr] --> readypr[ready-pr]
   ship --> done([PR ready: you merge])
-  hd --> done
-  hc --> done
+  ho --> done
   readypr --> done
   readypr -.-> vpr[validate-pr-review]
   readypr -.-> fc[fix-conflicts]
 ```
 
 - [ship](skills/ship/) does the whole path in one run: plan, build, then ready the PR. Use it when you do not need to watch each step.
-- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it in a new pane. Then give the plan to [handoff-devin](skills/handoff-devin/) or [handoff-cursor](skills/handoff-cursor/), or build it by hand.
+- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it in a new pane. Then give the plan to [handoff](skills/handoff/), which sends it to Devin or Cursor, or build it by hand.
 - After a build by hand, [commit](skills/commit/) and [make-pr](skills/make-pr/) open the PR, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
 
@@ -83,8 +81,7 @@ flowchart LR
 |---|---|
 | [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/plan-up` there on an issue, a run of tickets, or an epic. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
-| [handoff-devin](skills/handoff-devin/) | Sends the plan to a Devin cloud session and watches it until the PR is ready. |
-| [handoff-cursor](skills/handoff-cursor/) | Sends the plan to a Cursor cloud agent and watches it until the PR is ready. |
+| [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request for work done by hand, in the same shape as every PR these skills make. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
@@ -123,14 +120,14 @@ flowchart LR
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff](skills/kickoff/), [handoff-devin](skills/handoff-devin/), [handoff-cursor](skills/handoff-cursor/), [ready-pr](skills/ready-pr/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff](skills/kickoff/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff](skills/kickoff/), and [ship](skills/ship/) when it builds in a pane.
-- Devin: [handoff-devin](skills/handoff-devin/), [ship](skills/ship/) on its cloud route, and Devin Review for [ready-pr](skills/ready-pr/).
-- Cursor: [handoff-cursor](skills/handoff-cursor/).
+- Devin: [handoff](skills/handoff/), [ship](skills/ship/) on its cloud route, and Devin Review for [ready-pr](skills/ready-pr/).
+- Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
 

@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then: a single no-UI ticket is built in a worktree under ~/development/worktrees (a Devin CLI pane on SWE-2 when this session runs on Fable, else this session) and made ready with /ready-pr; a plan with UI walks, or any stack, is built by Devin cloud through /handoff-devin. Stops only at the plan's big forks and the build's surprises."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then: a single no-UI ticket is built in a worktree under ~/development/worktrees (a Devin CLI pane on SWE-2 when this session runs on Fable, else this session) and made ready with /ready-pr; a plan with UI walks, or any stack, is built by Devin cloud through /handoff. Stops only at the plan's big forks and the build's surprises."
 disable-model-invocation: true
 ---
 
@@ -42,7 +42,7 @@ unchanged. The form decides only where the build runs (step 2).
    build anyway, a stale step, and every big fork
    (one question per message, wait). Two changes at step 8: build and
    open the page, print the summary, and go on at once as if `ok` were
-   given: the base copy is removed, `Ready for /handoff-devin.` is left
+   given: the base copy is removed, `Ready for /handoff.` is left
    out. Done when the plan
    `.md` exists at the path the summary names and you hold it.
 
@@ -51,13 +51,13 @@ unchanged. The form decides only where the build runs (step 2).
    in one line: `Route: cloud (UI walks)`, `Route: cloud (stack of 3)`,
    or `Route: local (no UI, one ticket)`.
 
-3. **Cloud.** Read `../handoff-devin/SKILL.md` and follow
+3. **Cloud.** Read `../handoff/SKILL.md` and follow
    § First prompt whole, steps 1 to 9: prompt, send, watch, answer
    Devin's questions (small forks yourself, big forks to the user),
    finish check. The PRs stay Devin's. On `finished` with a PR, run the
    Ready step of `../ready-pr/SKILL.md` on each PR, bottom
    of the stack first: `READY` on every one, go to step 8. Anything open
-   goes back to the session as a follow-up per handoff-devin
+   goes back to the session as a follow-up per handoff
    § Follow-up, naming the PR and what is open; watch again; at most
    three times, then step 8 with what is open.
 
@@ -75,13 +75,13 @@ unchanged. The form decides only where the build runs (step 2).
    An open PR already on that branch (`gh pr list --head <branch>
    --state open --json url`): say so and go to step 7 with it.
 
-5. **Local: prompt.** Follow handoff-devin § First prompt steps 2
+5. **Local: prompt.** Follow handoff § First prompt steps 2
    (facts) and 3 (labels) as written. Then assemble the file per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`:
    the head lines with `Branch` and `Worktree`, the issue's `Task` and
    `Done when` verbatim, the plan's blocks, and the rules block from
    `render.sh local rules` pasted whole, unchanged, once. No `UI walks`,
-   no `Videos`. Check per handoff-devin step 5 with those two dropped:
+   no `Videos`. Check per handoff step 5 with those two dropped:
    every Proof row, every `file:line`, five label names, zero
    placeholders. Write it to
    `$HOME/.agents/artifacts/plan/prompt-<slug>.md`, the
@@ -114,7 +114,7 @@ unchanged. The form decides only where the build runs (step 2).
      `herdr agent read <AGENT> --source visible --lines 80`, and sort:
      - The last message starts with `QUESTION`: sort it by the two
        tests in `../plan-up/SKILL.md` step 5, as
-       handoff-devin step 8 does. **Small fork**: the plan, the issue,
+       handoff step 8 does. **Small fork**: the plan, the issue,
        or the repo holds the answer; fetch the `file:line` with
        Explore, shape it per `render.sh local prompt` § Answer, write
        it to a file, and `~/.claude/bin/herdr-send <PANE> --file <file>
@@ -171,7 +171,7 @@ unchanged. The form decides only where the build runs (step 2).
 plan-up step 5 (a big fork it leaves open goes to the user first), shape
 it per `render.sh local prompt` § Answer when it answers a `QUESTION`,
 else § Follow-up, `herdr-send <PANE> --file <file>`, then back to step 6's
-sort. A Devin session this chat started: handoff-devin § Follow-up. This
+sort. A Devin session this chat started: handoff § Follow-up. This
 chat started neither: say so and stop.
 
 ## Examples

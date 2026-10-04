@@ -519,6 +519,17 @@ t_render_names_ready_pr() {
   [ -f "$f" ] || eq "ready-pr path" "a file" "$f"
 }
 
+t_render_names_handoff() {
+  T="$(mktemp -d)"
+  local ex
+  for ex in devin cursor; do
+    run bash "$here/../shared-skill-core/handoff/render.sh" "$ex" prompt
+    eq "$ex exit" 0 "$code"
+    eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
+    eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
+  done
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -548,6 +559,7 @@ cases=(
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
   "render puts the ready-pr path in local rules|t_render_names_ready_pr"
+  "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"
