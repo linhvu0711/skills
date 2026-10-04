@@ -22,6 +22,8 @@ READY https://github.com/acme/app/pull/43
 
 A repo without Devin Review still works: it says so once and judges the comments people left.
 
+If `gh` fails five times in a row while it waits for the review (an expired login, the network), it stops with the error (exit 4) and never goes on without the review.
+
 ## Needs
 
 - `gh` (signed in), `git`, and `jq`.

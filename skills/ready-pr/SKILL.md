@@ -58,7 +58,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    pane, in the foreground. Exit 0: go on. Exit 3 (no status in ten
    minutes): say `No Devin Review on this repo` once, set `no-devin`,
    go on. Exit 1: say the state and the PR URL, stop; the user decides.
-   Exit 2 (pending for thirty minutes): say so, stop.
+   Exit 2 (pending for thirty minutes): say so, stop. Exit 4
+   (`stop: gh failed: …`): say the error and the PR URL, stop.
 
 4. **Open?** `bash scripts/open-threads.sh <REPO> <NUMBER> --me <me>`.
    `OPEN=0`: step 6. Else hold the lines.

@@ -812,6 +812,22 @@ t_wait_review_none() {
   eq stdout "DEVIN=none SHA=abc1234def5678 WAITED=2" "$out"
 }
 
+t_wait_review_gh_fails() {
+  fake_gh; printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/status.fail"
+  wait_review
+  eq exit 4 "$code"
+  eq stderr "stop: gh failed: gh: Bad credentials (HTTP 401)" "$err"
+  eq "status calls" 5 "$(cat "$FAKE_GH/status.calls")"
+}
+
+t_wait_review_one_failure() {
+  fake_gh; printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/status.1.fail"
+  printf '{"statuses":[{"context":"Devin Review","state":"success"}]}\n' > "$FAKE_GH/status.json"
+  wait_review --poll-sec 1
+  eq exit 0 "$code"
+  eq stdout "DEVIN=success SHA=abc1234def5678 WAITED=1" "$out"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -884,6 +900,8 @@ cases=(
   "ready-pr: an absent rollup is zero checks|t_ready_absent_rollup"
   "wait-review: success reads DEVIN=success|t_wait_review_success"
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
+  "wait-review: 5 failed calls stop with exit 4|t_wait_review_gh_fails"
+  "wait-review: one failed call then success goes on|t_wait_review_one_failure"
 )
 
 pass=0; fail=0
