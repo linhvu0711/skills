@@ -44,9 +44,9 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 # <route>.calls and logs their args in <route>.args, one line per call (a
 # newline inside an arg becomes a space). Call n of a route prints
 # <route>.<n>.fail or <route>.fail to stderr and fails when one exists. Else
-# `pr list … --base <b>` prints pr-list.<b, with / as _>.json, or `[]` when
-# there is none, and every other route prints <route>.<n>.json or
-# <route>.json. The answer goes through `jq -r` when given -q.
+# `pr list … --base <b>` or `--head <b>` prints pr-list.<b, with / as _>.json,
+# or `[]` when there is none, and every other route prints <route>.<n>.json or
+# <route>.json. The answer goes through `jq -r` when given -q or --jq.
 fake_gh() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin" "$T/gh"
@@ -56,8 +56,8 @@ set -euo pipefail
 q=""; args=""; branch=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    -q) q="$2"; shift 2 ;;
-    --base) branch="${2:-}"; args="$args $1 $branch"; shift 2 ;;
+    -q|--jq) q="$2"; shift 2 ;;
+    --base|--head) branch="${2:-}"; args="$args $1 $branch"; shift 2 ;;
     *) args="$args ${1//$'\n'/ }"; shift ;;
   esac
 done
@@ -79,11 +79,12 @@ for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
 done
 if [ "$key" = pr-list ]; then
   f="$FAKE_GH/pr-list.$(printf '%s' "$branch" | tr / _).json"
-  [ -f "$f" ] || { echo '[]'; exit 0; }
+  if [ -f "$f" ]; then answer="$(cat "$f")"; else answer='[]'; fi
 else
   f="$FAKE_GH/$key.$n.json"; [ -f "$f" ] || f="$FAKE_GH/$key.json"
+  answer="$(cat "$f")"
 fi
-if [ -n "$q" ]; then jq -r "$q" "$f"; else cat "$f"; fi
+if [ -n "$q" ]; then jq -r "$q" <<<"$answer"; else printf '%s\n' "$answer"; fi
 EOF
   printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
   chmod +x "$T/bin/gh" "$T/bin/sleep"

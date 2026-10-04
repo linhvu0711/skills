@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
-# adopt.sh, the handoff render.sh, and prune-worktrees.sh. It sources
-# test-lib.sh, the helpers and the one fake gh that every case shares, runs
-# its own cases, then sources each skills/*/tests/*.sh in turn and runs that
-# file's cases.
+# adopt.sh, and the handoff render.sh. It sources test-lib.sh, the helpers and
+# the one fake gh that every case shares, runs its own cases, then sources
+# each skills/*/tests/*.sh in turn and runs that file's cases.
 #
 #   test.sh
 #
@@ -30,42 +29,6 @@ hooked() {
   [ $# -gt 0 ] || return 0
   printf '# test\n\n' > "$(git rev-parse --git-common-dir)/info/private-words"
   printf '%s\n' "$@" >> "$(git rev-parse --git-common-dir)/info/private-words"
-}
-
-# The prune-worktrees script, and the repos and fake gh its cases use.
-P="$here/../skills/prune-worktrees/scripts/prune-worktrees.sh"
-
-# wt_repo: repo, on a branch named main.
-wt_repo() { repo; git branch -M main; }
-
-# gh_remote: an origin on GitHub that is never contacted, with origin/main
-# and origin/HEAD set from the local main.
-gh_remote() {
-  git remote add origin https://github.com/acme/app.git
-  git update-ref refs/remotes/origin/main main
-  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
-}
-
-# prune_gh: $T/bin/gh, which logs its arguments to $T/gh-calls. With
-# GH_FAKE_FAIL set it fails as gh does offline. Else it prints the PR of the
-# --head branch from $T/gh-prs, lines of `<branch> <number> <STATE> <sha>`.
-prune_gh() {
-  mkdir -p "$T/bin"; : > "$T/gh-prs"
-  cat > "$T/bin/gh" <<EOF
-#!/usr/bin/env bash
-printf '%s\n' "\$*" >> "$T/gh-calls"
-[ -z "\${GH_FAKE_FAIL:-}" ] || { echo "error connecting to api.github.com" >&2; exit 1; }
-b=""; while [ \$# -gt 0 ]; do [ "\$1" = --head ] && b="\$2"; shift; done
-awk -v b="\$b" '\$1 == b { print \$2, \$3, \$4 }' "$T/gh-prs"
-EOF
-  chmod +x "$T/bin/gh"
-}
-
-# wt <dir> <branch> [n]: a worktree of the repo on a new branch from main,
-# with n empty commits (1 when not given).
-wt() {
-  git worktree add -q -b "$2" "$1" main
-  local i; for i in $(seq "${3:-1}"); do git -C "$1" commit -q --allow-empty -m "c$i"; done
 }
 
 t_flags_home_path() {
@@ -555,119 +518,6 @@ t_render_names_ready_pr() {
   [ -f "$f" ] || eq "ready-pr path" "a file" "$f"
 }
 
-t_prune_removes_merged() {
-  wt_repo; gh_remote; prune_gh; wt "$T/elsewhere/feat-1-a" feat/1-a
-  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "removed $T/elsewhere/feat-1-a, branch feat/1-a deleted (-D)" "$out"
-  [ ! -e "$T/elsewhere/feat-1-a" ] || eq "$T/elsewhere/feat-1-a" "gone" "still there"
-  eq "branch list" "" "$(git branch --list feat/1-a)"
-}
-
-t_prune_keeps_no_pr() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  git update-ref refs/remotes/origin/feat/1-a feat/1-a
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "$(printf 'kept %s: no PR\nnothing to prune' "$T/w/feat-1-a")" "$out"
-  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
-}
-
-t_prune_keeps_dirty() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  printf 'a\n' > "$T/w/feat-1-a/a.txt"; printf 'b\n' > "$T/w/feat-1-a/b.txt"
-  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq stdout "$(printf 'kept %s: 2 uncommitted files\nnothing to prune' "$T/w/feat-1-a")" "$out"
-  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
-}
-
-t_prune_keeps_unpushed() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a 2
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq stdout "$(printf 'kept %s: 2 commits not on GitHub\nnothing to prune' "$T/w/feat-1-a")" "$out"
-}
-
-t_prune_keeps_open_pr() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  printf 'feat/1-a 159 OPEN %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq stdout "$(printf 'kept %s: PR #159 open\nnothing to prune' "$T/w/feat-1-a")" "$out"
-}
-
-t_prune_keeps_moved_tip() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  printf 'feat/1-a 43 MERGED 0000000000000000000000000000000000000000\n' > "$T/gh-prs"
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq stdout "$(printf 'kept %s: PR #43 merged, tip is not its last commit\nnothing to prune' "$T/w/feat-1-a")" "$out"
-  eq "branch list" "+ feat/1-a" "$(git branch --list feat/1-a)"
-}
-
-t_prune_git_only() {
-  wt_repo; prune_gh; wt "$T/w/feat-2-b" feat/2-b
-  git merge -q --ff-only feat/2-b
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "removed $T/w/feat-2-b, branch feat/2-b deleted (-d)" "$out"
-  [ ! -e "$T/gh-calls" ] || eq "gh calls" "none" "$(cat "$T/gh-calls")"
-}
-
-t_prune_gh_fails() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
-  run env PATH="$T/bin:$PATH" GH_FAKE_FAIL=1 bash "$P"
-  eq exit 1 "$code"
-  eq stdout "" "$out"
-  eq stderr "stop: gh failed: error connecting to api.github.com" "$err"
-  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
-}
-
-t_prune_skips_session() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
-  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
-  cd "$T/w/feat-1-a"; run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "$(printf 'kept %s: this session is in it\nnothing to prune' "$T/w/feat-1-a")" "$out"
-  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
-}
-
-t_prune_clears_stale() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/gone" feat/9-x; rm -rf "$T/w/gone"
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "cleared 1 stale entry" "$out"
-  eq "worktree list lines" 1 "$(git worktree list | wc -l | tr -d ' ')"
-}
-
-t_prune_all() {
-  wt_repo; gh_remote; prune_gh
-  mkdir "$T/b"; git -C "$T/b" init -q -b main
-  git -C "$T/b" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
-  git -C "$T/b" worktree add -q -b feat/2-b "$T/root/b/feat-2-b" main
-  git -C "$T/b" merge -q --ff-only feat/2-b
-  run env PATH="$T/bin:$PATH" WORKTREES_ROOT="$T/root" bash "$P" all
-  eq exit 0 "$code"
-  eq stdout "removed $T/root/b/feat-2-b, branch feat/2-b deleted (-d)" "$out"
-  [ ! -e "$T/root/b/feat-2-b" ] || eq "$T/root/b/feat-2-b" "gone" "still there"
-}
-
-t_prune_removes_named() {
-  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-3-c" feat/3-c; printf 'a\n' > "$T/w/feat-3-c/a.txt"
-  run env PATH="$T/bin:$PATH" bash "$P" --remove "$T/w/feat-3-c"
-  eq exit 0 "$code"
-  eq stdout "removed $T/w/feat-3-c, branch feat/3-c kept: git branch -d refused" "$out"
-  [ ! -e "$T/w/feat-3-c" ] || eq "$T/w/feat-3-c" "gone" "still there"
-  eq "branch list" "  feat/3-c" "$(git branch --list feat/3-c)"
-}
-
-t_prune_nothing() {
-  wt_repo; gh_remote; prune_gh
-  run env PATH="$T/bin:$PATH" bash "$P"
-  eq exit 0 "$code"
-  eq stdout "nothing to prune" "$out"
-}
-
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -723,19 +573,6 @@ cases=(
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
-  "prune removes a merged worktree outside the root|t_prune_removes_merged"
-  "prune keeps a branch with no PR|t_prune_keeps_no_pr"
-  "prune says when there is nothing to prune|t_prune_nothing"
-  "prune keeps a dirty worktree|t_prune_keeps_dirty"
-  "prune keeps unpushed commits|t_prune_keeps_unpushed"
-  "prune keeps an open PR|t_prune_keeps_open_pr"
-  "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
-  "prune uses only git with no GitHub remote|t_prune_git_only"
-  "prune stops and removes nothing when gh fails|t_prune_gh_fails"
-  "prune skips the session's worktree|t_prune_skips_session"
-  "prune clears a stale entry|t_prune_clears_stale"
-  "prune all goes through every repo under the root|t_prune_all"
-  "prune removes a named worktree and keeps an unmerged branch|t_prune_removes_named"
 )
 
 # run_cases: run each case of `cases` in a subshell, print `ok <name>` or
