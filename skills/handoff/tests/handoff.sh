@@ -80,9 +80,47 @@ t_failed_start_keeps_ledger() {
   eq ledger "$row" "$(cat "$(ledger)")"
 }
 
+t_route_follows_ledger() {
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  handoff route "$issue12"
+  eq exit 0 "$code"
+  eq stdout "follow cursor bc-1 https://cursor.com/agents/bc-1" "$out"
+}
+
+t_route_follows_named() {
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  handoff route "$issue12" devin
+  eq exit 0 "$code"
+  eq stdout "follow devin devin-a https://app.devin.ai/sessions/a" "$out"
+}
+
+t_route_new_issue_devin() {
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  handoff route https://github.com/o/r/issues/13
+  eq exit 0 "$code"
+  eq stdout "start devin" "$out"
+}
+
+t_start_names_other_executor() {
+  fake_adapters
+  printf '%s\n' "$row_devin12" > "$(ledger)"
+  printf 'bc-9\thttps://cursor.com/agents/bc-9\n' > "$FAKE_AD/cursor.start.out"
+  printf '# Brief\n' > p.md
+  handoff start cursor p.md --issue "$issue12" --title "#12 Export" --repo o/r
+  eq exit 0 "$code"
+  eq stderr "#12 already has a devin session" "$err"
+}
+
 cases=(
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
   "unknown executor stops|t_unknown_executor"
   "a failed start leaves the ledger as it was|t_failed_start_keeps_ledger"
+  "route follows the executor the ledger has|t_route_follows_ledger"
+  "route follows the named executor's own session|t_route_follows_named"
+  "route starts an issue with no session on devin|t_route_new_issue_devin"
+  "start on another executor's issue names it|t_start_names_other_executor"
 )
