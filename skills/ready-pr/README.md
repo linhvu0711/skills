@@ -24,7 +24,7 @@ A repo without Devin Review still works: it says so once and judges the comments
 - `gh` (signed in), `git`, and `jq`.
 - [Devin Review](https://devin.ai) installed on the repo, for the review status. Optional, see above.
 - The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, `../../shared-skill-core/grilling.md`, and `../../shared-skill-core/pr-shape.md`.
+- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/worktree.sh`, `../../shared-skill-core/grilling.md` (question format and how to pick), and `../../shared-skill-core/pr-shape.md`.
 - For a PR with no local checkout: the repo map at `~/.config/kickoff/repos.tsv` or a clone under `~/development`, found the way [kickoff](../kickoff/) finds one.
 
 ## Fits with

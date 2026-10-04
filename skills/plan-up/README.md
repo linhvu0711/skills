@@ -43,7 +43,7 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 - `python3`, to build, serve, and check the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
-- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, and [plan-page.md](../../shared-skill-core/plan-page.md) for the page.
+- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, and [plan-page.md](../../shared-skill-core/plan-page.md) for the page.
 
 ## Fits with
 
