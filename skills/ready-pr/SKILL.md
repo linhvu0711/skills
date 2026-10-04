@@ -118,18 +118,26 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    bash scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
    ```
 
-   `READY`, or `READY <url> (waiting for approval)`: step 7. `NOT READY`,
-   by reason:
+   It prints the readiness verdict on line 1, its reason on line 2, then
+   one line per open thread. `READY <url>`, or `READY <url> (waiting for
+   approval)`: step 7. `WAITING`, by reason:
+   - `Devin Review is PENDING`: step 3.
+   - `check(s) pending`, `no checks on … yet`, or `required check(s)
+     not posted`: wait for them, `cd "$WT" && gh pr checks <NUMBER>
+     --watch`, then ready again.
+   - `UNKNOWN`: ready again after a minute.
+   - The same `WAITING` reason for thirty minutes: say it, stop.
+
+   `BLOCKED`, by reason:
    - `merge state is DIRTY`: the rebase path of step 5, then step 3.
    - `check(s) red`: `cd "$WT" && gh pr checks <NUMBER>`, read the
      failing log. A cause inside the PR's own change is work: fix,
      commit, push, step 3. A cause outside it is a question to the
      user.
-   - `check(s) pending`: wait for them, `cd "$WT" && gh pr checks
-     <NUMBER> --watch`, then ready again.
-   - `thread(s) wait for the author`: step 5.
-   - `Devin Review is PENDING`: step 3.
+   - `thread(s) wait for the author`: step 5, with the thread lines.
    - anything else: say it, stop.
+
+   A stop in this step ends the report with `NOT READY <url>: <reason>`.
 
 7. **Report.** Chat gets this and nothing more:
 
@@ -143,7 +151,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    READY https://github.com/acme/app/pull/43
    ```
 
-   One `Stack:` line per restack, in round order, each moved PR by its
+   The second line is `Rounds: <r> · ` and the reason line of the
+   `READY` verdict. One `Stack:` line per restack, in round order, each moved PR by its
    URL; a stopped one reads
    `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
    restack: no `Stack:` line. One line per finding over every round,
@@ -152,7 +161,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `Devin Review: none on this repo`. A PR that waits only for a
    person's approval ends with `READY <url> (waiting for approval)`; the
    approval and the merge are the user's. A stop point that ended the run
-   prints the same block with `NOT READY <url>: <what is open>` last.
+   prints the same block with `NOT READY <url>: <what is open>` last; a
+   stop on a `BLOCKED` or `WAITING` verdict puts its reason line there.
 
 ## Examples
 
@@ -177,7 +187,7 @@ Main checkout found under `~/development`; `worktree.sh` tracks
 A schema change: stop before the fix. One question to the user, `A`
 add the migration in this PR, `B` `fix later` as its own ticket. Wait.
 
-**`ready.sh`** says `merge state is DIRTY` after main moved.
+**`ready.sh`** says `BLOCKED`, reason `merge state is DIRTY`, after main moved.
 
 Rebase on `origin/main`; two hunks conflict; fix-conflicts resolves them
 and the suite is green; `push --force-with-lease`. Step 3 again on the
