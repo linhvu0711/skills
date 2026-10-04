@@ -114,6 +114,26 @@ t_start_names_other_executor() {
   eq stderr "#12 already has a devin session" "$err"
 }
 
+t_status_through_adapter() {
+  fake_adapters
+  printf 'blocked\trun-1|FINISHED\thttps://github.com/o/r/pull/5\thttps://cursor.com/agents/bc-1\tWhich file?\n' > "$FAKE_AD/cursor.poll.out"
+  handoff status cursor bc-1
+  eq exit 0 "$code"
+  eq stdout "state: blocked
+pr: https://github.com/o/r/pull/5
+link: https://cursor.com/agents/bc-1
+message: Which file?" "$out"
+}
+
+t_say_through_adapter() {
+  fake_adapters
+  printf 'sent to devin-abc\n' > "$FAKE_AD/devin.say.out"
+  printf '# Changed\n' > note.md
+  handoff say devin devin-abc note.md
+  eq exit 0 "$code"
+  eq "adapter args" "devin-abc note.md" "$(cat "$FAKE_AD/devin.say.args")"
+}
+
 cases=(
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
@@ -123,4 +143,6 @@ cases=(
   "route follows the named executor's own session|t_route_follows_named"
   "route starts an issue with no session on devin|t_route_new_issue_devin"
   "start on another executor's issue names it|t_start_names_other_executor"
+  "status reads the session through the adapter named|t_status_through_adapter"
+  "say sends the note through the adapter named|t_say_through_adapter"
 )

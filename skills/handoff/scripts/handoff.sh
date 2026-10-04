@@ -5,6 +5,8 @@
 #   handoff.sh route <issue-url> [<executor>]                 -> "follow <executor> <session> <link>" or "start <executor>"
 #   handoff.sh start <executor> <prompt-file> [--issue URL] [--title T] [adapter options]
 #                                                             -> "<session>\t<link>"
+#   handoff.sh status <executor> <session> [poll options]     -> state, PR, link, last message
+#   handoff.sh say <executor> <session> <note-file>           -> sends a follow-up
 #
 # <executor> is devin or cursor. Each has an adapter, adapters/<executor>.sh;
 # HANDOFF_ADAPTERS names another folder (the tests use a fake one). Options
@@ -14,7 +16,8 @@
 # time, executor, session, link, issue, title, tab separated.
 # route reads it: the issue's newest session, of the named executor when one
 # is named, is a follow-up; no session starts on the named executor, else
-# devin. start on an issue that only another executor has prints
+# devin. status asks the adapter's poll, one line of state, event key, PRs,
+# link, and message, tab separated. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
 
@@ -66,6 +69,27 @@ cmd_start() {
   printf '%s\t%s\n' "$id" "$link"
 }
 
+cmd_status() {
+  local e; e=$(executor "${1:-}"); shift || true
+  local id="${1:-}"; shift || true
+  [[ -n "$id" ]] || die "session id required"
+  local line st key prs link msg
+  line=$(adapter "$e" poll "$id" "$@") || exit 1
+  IFS=$'\t' read -r st key prs link msg <<<"$line"
+  echo "state: $st"
+  echo "pr: $prs"
+  echo "link: $link"
+  echo "message: $msg"
+}
+
+cmd_say() {
+  local e; e=$(executor "${1:-}")
+  local id="${2:-}" file="${3:-}"
+  [[ -n "$id" ]] || die "session id required"
+  [[ -s "$file" ]] || die "note file missing or empty: $file"
+  adapter "$e" say "$id" "$file"
+}
+
 cmd_route() {
   local issue="${1:-}" e="" row
   [[ -n "$issue" ]] || die "issue URL required"
@@ -81,5 +105,7 @@ cmd_route() {
 case "${1:-}" in
   route) shift; cmd_route "$@" ;;
   start) shift; cmd_start "$@" ;;
+  status) shift; cmd_status "$@" ;;
+  say)   shift; cmd_say "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac
