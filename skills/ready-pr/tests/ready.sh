@@ -196,7 +196,7 @@ t_ready_zero_checks() {
   ready
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "no checks on abc1234 yet" "$(line 2)"
+  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
 }
 
 t_ready_zero_checks_no_devin() {
@@ -211,7 +211,7 @@ t_ready_absent_rollup() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false null; devin_status none
   ready
   eq exit 2 "$code"
-  eq "line 2" "no checks on abc1234 yet" "$(line 2)"
+  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
 }
 
 t_ready_no_devin_status() {
@@ -307,6 +307,31 @@ t_ready_pr_view_fails() {
   eq "line 2" "gh failed: HTTP 502: Bad Gateway" "$(line 2)"
 }
 
+t_ready_wait_none_zero_checks() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"; devin_status none
+  ready --wait abc1234def5678 --none-sec 2 --poll-sec 1
+  eq exit 2 "$code"
+  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
+}
+
+t_ready_required_missing_after_devin() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_in_rollup]"
+  required_json '["build"]' '[]'
+  ready
+  eq exit 1 "$code"
+  eq "line 1" "BLOCKED $url" "$(line 1)"
+  eq "line 2" "required check(s) not posted: build" "$(line 2)"
+}
+
+t_ready_devin_read_whole() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
+  printf '{"check_runs":[{"name":"Devin Review","status":"completed","conclusion":"success"}]}\n' > "$FAKE_GH/check-runs.json"
+  ready
+  eq exit 0 "$code"
+  has "status call reads every page" "--paginate" "$(cat "$FAKE_GH/status.args")"
+  has "check runs asked by name" "check_name=Devin%20Review" "$(cat "$FAKE_GH/check-runs.args")"
+}
+
 cases=(
   "ready-pr: CLEAN reads READY|t_ready_clean"
   "ready-pr: BEHIND reads READY|t_ready_behind"
@@ -338,4 +363,7 @@ cases=(
   "ready-pr: --wait stops BLOCKED after 5 failed calls|t_ready_wait_gh_fails"
   "ready-pr: --wait goes on after one failed call|t_ready_wait_one_failure"
   "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"
+  "ready-pr: --wait with no checks at all names the missing Devin status|t_ready_wait_none_zero_checks"
+  "ready-pr: a required check not posted after Devin success reads BLOCKED|t_ready_required_missing_after_devin"
+  "ready-pr: Devin Review is read across pages and by name|t_ready_devin_read_whole"
 )

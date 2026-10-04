@@ -72,13 +72,14 @@ gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
 
 # devin_state <sha>: sets s to the Devin Review state on that commit, upper
 # case (SUCCESS, PENDING, FAILURE, …), or empty when there is none. The commit
-# status first, then the check runs. A failed gh call sets err, returns 1.
+# status first, read across every page, then the check runs asked for by
+# name. A failed gh call sets err, returns 1.
 devin_state() {
-  gh_out api "repos/$repo/commits/$1/status" -q '[.statuses[] | select(.context=="Devin Review") | .state] | first // empty' || return 1
+  gh_out api "repos/$repo/commits/$1/status" --paginate -q '[.statuses[] | select(.context=="Devin Review") | .state] | first // empty' || return 1
   if [ -z "$out" ]; then
-    gh_out api "repos/$repo/commits/$1/check-runs" -q '[.check_runs[] | select(.name=="Devin Review") | (.conclusion // .status)] | first // empty' || return 1
+    gh_out api "repos/$repo/commits/$1/check-runs?check_name=Devin%20Review" -q '[.check_runs[] | select(.name=="Devin Review") | (.conclusion // .status)] | first // empty' || return 1
   fi
-  s="$(printf '%s' "$out" | tr '[:lower:]' '[:upper:]')"
+  s="$(printf '%s' "$out" | head -1 | tr '[:lower:]' '[:upper:]')"
 }
 devin_red() { case "$1" in FAILURE|ERROR|TIMED_OUT|CANCELLED|ACTION_REQUIRED|STARTUP_FAILURE) return 0 ;; esac; return 1; }
 
@@ -186,9 +187,8 @@ waiting() { why+=("$1"); has_waiting=1; }
 [ "$(get STATE)" = "OPEN" ] || blocked "state is $(get STATE)"
 [ "$(get DRAFT)" != "true" ] || blocked "draft"
 checks=$(( $(get CHECKS_RED) + $(get CHECKS_PENDING) + $(get CHECKS_GREEN) ))
-if [ "$devin" = "none" ] && [ "$checks" -eq 0 ]; then
-  waiting "no checks on $sha7 yet"
-elif [ "$no_devin" -eq 0 ]; then
+[ "$devin" != "none" ] || [ "$checks" -ne 0 ] || waiting "no checks on $sha7 yet"
+if [ "$no_devin" -eq 0 ]; then
   case "$devin" in
     SUCCESS) ;;
     none) waiting "no Devin Review status on $sha7" ;;
@@ -210,10 +210,12 @@ case "$(get MERGE_STATE)" in
 esac
 [ "$(get CHECKS_RED)" = "0" ] || blocked "$(get CHECKS_RED) other check(s) red"
 [ "$(get CHECKS_PENDING)" = "0" ] || waiting "$(get CHECKS_PENDING) other check(s) pending"
-# A required check not posted yet may still come while anything runs.
+# A required check not posted yet may still come while a check or Devin
+# Review runs, or before anything at all has posted.
 if [ -n "$(get REQUIRED_MISSING)" ]; then
   missing="required check(s) not posted: $(get REQUIRED_MISSING | sed 's/,/, /g')"
-  if [ "$checks" -eq 0 ] || [ "$(get CHECKS_PENDING)" != "0" ] || { [ "$devin" != "SUCCESS" ] && [ "$devin" != "none" ]; }; then
+  if [ "$(get CHECKS_PENDING)" != "0" ] || { [ "$devin" = "none" ] && [ "$checks" -eq 0 ]; } \
+    || { [ "$devin" != "SUCCESS" ] && [ "$devin" != "none" ] && ! devin_red "$devin"; }; then
     waiting "$missing"
   else
     blocked "$missing"
