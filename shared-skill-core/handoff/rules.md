@@ -147,8 +147,9 @@ what the line says, is a surprise (see below).
 - Before the commit, ask two questions of the test. Would it still pass
   if the inside were rewritten with the same behavior? A `no` means it
   reads internals; move it to the seam. Would it fail if the code
-  returned the wrong value? A `no` means it proves nothing; put the
-  literal back.
+  returned the wrong value, and would it fail if every function it
+  imports returned `undefined`? A `no` to either means it proves
+  nothing; put the literal back.
 
 A test in this shape, for a slice whose seam is `exportOrders` and whose
 `Then` is `"id,total\n1,15.00\n"`:

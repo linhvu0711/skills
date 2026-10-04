@@ -14,6 +14,8 @@ A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a s
 Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md
 ```
 
+The logic check also flags a test that would still pass if every function it imports returned `undefined`, and a fix that hides a failure instead of fixing its cause. The standards check adds five possible smells: split state, two ways to do one job, importable internals, hand-synced lists, and code that could be simpler.
+
 ## Needs
 
 - `git` and `gh`, signed in.
@@ -28,3 +30,5 @@ Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claud
 ## Credits
 
 Thanks to [mattpocock/skills](https://github.com/mattpocock/skills) for the `code-review` skill, which gave us the idea (MIT license). No text was copied.
+
+Some logic checks and smells take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT): its root-cause and legacy-API principles and its design red flags. No text was copied.

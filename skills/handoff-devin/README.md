@@ -21,6 +21,8 @@ Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
 Session started: https://app.devin.ai/sessions/… · linux
 ```
 
+The build rules make Devin ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`.
+
 The PR Devin opens shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk. Devin records each video at real speed with `ffmpeg`, not with its own recorder, which speeds video up, and checks its length before it attaches it.
 
 Then it watches. When Devin asks something, this chat answers from the plan and the repo, and only brings you the big decisions. When Devin finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed.
@@ -39,3 +41,7 @@ Then it watches. When Devin asks something, this chat answers from the plan and 
 - Sorts review questions the way [validate-pr-review](../validate-pr-review/) does, and files `fix later` findings with [capture](../capture/).
 - Called by [ship](../ship/) for plans with UI walks and for stacks.
 - [handoff-cursor](../handoff-cursor/) is its twin for Cursor; both use the same prompt and rules templates.
+
+## Credits
+
+The `undefined` test question takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

@@ -13,7 +13,7 @@ Read the whole diff once per axis.
 
 ## Logic
 
-Does the change work, and does it break anything? Six checks on every PR:
+Does the change work, and does it break anything? Seven checks on every PR:
 
 1. **New paths**: every new branch, loop, and return does what the code
    around it needs. Trace each one with a concrete input.
@@ -29,12 +29,19 @@ Does the change work, and does it break anything? Six checks on every PR:
 5. **Data**: migrations run backwards, no write can half-complete, no
    path loses data.
 6. **Tests**: the change has a test that fails without it. A test edited
-   so it passes is a finding.
+   so it passes is a finding. So is a test that would still pass if every
+   function it imports returned `undefined` (or the language's empty
+   value): it proves nothing.
+7. **Fix at the cause**: a new guard, null check, or catch whose only job
+   is to hide a failure, with no cause named, is a finding. So is a new
+   API or path added while the old one stays with only internal callers
+   and no issue to remove it. That second part does not apply when
+   outside users depend on the old API.
 
 Performance is a check only when the diff touches a hot path or a loop
 over data.
 
-Done when all six checks have run against every hunk and each finding
+Done when all seven checks have run against every hunk and each finding
 cites a file and line.
 
 ## Scope
@@ -71,8 +78,9 @@ When `CODING_STANDARDS.md` is missing, the code next to the diff is the
 standard and the smell list below is the floor. Say once in the review:
 "no CODING_STANDARDS.md; run /set-coding-standards".
 
-Smell list (Fowler, _Refactoring_ ch.3). Each is a judgement call,
-labelled "possible", and a written repo rule always wins over it:
+Smell list (Fowler, _Refactoring_ ch.3, plus five for code agents write).
+Each is a judgement call, labelled "possible", and a written repo rule
+always wins over it:
 
 - **Mysterious Name**: the name hides what it does or holds.
 - **Duplicated Code**: the same logic shape in more than one hunk.
@@ -88,6 +96,17 @@ labelled "possible", and a written repo rule always wins over it:
 - **Message Chains**: `a.b().c().d()` the caller should not know about.
 - **Middle Man**: a function that only delegates.
 - **Refused Bequest**: a subclass that ignores most of what it inherits.
+- **Split State**: two places write the same state, or each keeps its
+  own copy of it.
+- **Two Ways**: two ways to do the same job, so new code copies
+  whichever it finds first.
+- **Importable Internals**: other modules can import a module's
+  internals, so they turn into its interface.
+- **Hand-Synced List**: the same items listed in more than one place
+  and kept in sync by hand.
+- **Could Be Simpler**: the diff keeps branches, helpers, or layers that
+  a restructure would delete, or wraps an existing helper instead of
+  using it.
 
 Done when every hunk has been read against the rules and each finding
 cites a rule or names a smell.
