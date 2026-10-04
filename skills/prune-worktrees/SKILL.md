@@ -16,7 +16,8 @@ with the reason it stays. The user decides about the rest.
 ## Hard rules
 
 - **The script decides.** Never remove a worktree or delete a branch by
-  hand, and never remove one the script printed as `kept`.
+  hand. A worktree the script printed as `kept` goes only through
+  `--remove` (step 3), and only when the user names it in this turn.
 - **The main checkout is never touched.**
 - **Relay, do not rewrite.** The script's lines are the reply.
 
