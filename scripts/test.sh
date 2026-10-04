@@ -15,6 +15,11 @@
 # `<p> passed, <f> failed`. Exit 1 when any case failed.
 set -euo pipefail
 
+# Run from a git hook or `git rebase --exec`, git sets GIT_DIR and its kin,
+# and every temp repo below would write into the caller's repo instead.
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
+
 here="$(cd "$(dirname "$0")" && pwd -P)"
 mac_home="/Us""ers/alice"
 linux_home="/ho""me/bob"
