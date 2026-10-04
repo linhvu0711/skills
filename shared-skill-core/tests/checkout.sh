@@ -158,6 +158,15 @@ t_ck_worktrees_outside_git() {
   eq stderr "stop: not a git checkout: $T/plain" "$err"
 }
 
+t_ck_worktrees_bare_first() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git clone -q --bare "$T/dev/app" "$T/app.git"
+  git -C "$T/app.git" worktree add -q -b feat/1-a "$T/w/feat-1-a" main
+  resolve worktrees "$T/w/feat-1-a"
+  eq stdout "BRANCH= LOCKED=0 PRUNABLE=0 WORKTREE=$T/app.git
+BRANCH=feat/1-a LOCKED=0 PRUNABLE=0 WORKTREE=$T/w/feat-1-a" "$out"
+}
+
 t_ck_main_by_search() {
   ck_setup; ck acme/app "$T/dev/app"
   resolve main acme/app
@@ -193,6 +202,7 @@ cases=(
   "a rewrite to another GitHub repo names only that repo|t_ck_github_rewrite"
   "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"
   "worktrees stops on a folder outside git|t_ck_worktrees_outside_git"
+  "worktrees lists a bare repo first, as git does|t_ck_worktrees_bare_first"
   "main finds the one checkout by search|t_ck_main_by_search"
   "main reads the map it wrote|t_ck_main_from_map"
   "main stops when no checkout is found|t_ck_main_no_checkout"

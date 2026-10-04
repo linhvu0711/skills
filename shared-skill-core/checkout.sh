@@ -35,10 +35,10 @@
 #
 #   checkout.sh worktrees <dir>
 #
-# Lists every worktree of the repo <dir> is in, the main checkout first, as
-# git lists them, one line each:
+# Lists every worktree of the repo <dir> is in, the main checkout (or the
+# bare repo) first, as git lists them, one line each:
 # `BRANCH=<b> LOCKED=<0|1> PRUNABLE=<0|1> WORKTREE=<path>`. BRANCH is empty on
-# a detached HEAD; PRUNABLE=1 is a worktree whose folder is gone. The path
+# a detached HEAD and on the bare repo; PRUNABLE=1 is a worktree whose folder is gone. The path
 # comes last, so `read` keeps a space in it.
 set -euo pipefail
 
@@ -50,19 +50,18 @@ common_dir() {
   (cd "$d" && pwd -P)
 }
 # worktrees <dir>: the lines of the `worktrees` form, from
-# `git worktree list --porcelain`. A bare entry is left out.
+# `git worktree list --porcelain`.
 worktrees() {
-  local listed line path="" branch="" locked=0 gone=0 bare=0
+  local listed line path="" branch="" locked=0 gone=0
   listed="$(git -C "$1" worktree list --porcelain 2>/dev/null)" || die "not a git checkout: $1"
   while IFS= read -r line; do
     case "$line" in
-      "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0; bare=0 ;;
+      "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0 ;;
       "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
-      bare) bare=1 ;;
       locked|"locked "*) locked=1 ;;
       prunable|"prunable "*) gone=1 ;;
       "")
-        if [ -n "$path" ] && [ "$bare" -eq 0 ]; then
+        if [ -n "$path" ]; then
           printf 'BRANCH=%s LOCKED=%s PRUNABLE=%s WORKTREE=%s\n' "$branch" "$locked" "$gone" "$path"
         fi
         path="" ;;
