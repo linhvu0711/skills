@@ -557,6 +557,51 @@ t_marked_change_runs_header_check() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
+# core: a shared core with two top-level files, and a handoff/ folder whose
+# rules.md includes ../size.md.
+core() {
+  mkdir -p shared-skill-core/handoff
+  printf 'hi\n' > shared-skill-core/x.md; printf 'hi\n' > shared-skill-core/size.md
+  printf 'hi\n' > shared-skill-core/handoff/render.sh
+  printf '<!-- include ../size.md -->\n' > shared-skill-core/handoff/rules.md
+}
+
+t_readme_hook_asks_named_core() {
+  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/x.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_core_folder() {
+  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/handoff/rules.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_included_core() {
+  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared-skill-core/size.md; git add -A
+  run git commit -m test
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_skips_unread_core() {
+  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; skill other 'read `../../shared-skill-core/size.md`'
+  git add -A; git commit -qm skills
+  printf 'more\n' >> shared-skill-core/x.md; printf 'more\n' >> skills/demo/README.md; git add -A
+  run git commit -m test
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
 t_render_names_ready_pr() {
   T="$(mktemp -d)"
   run bash "$here/../shared-skill-core/handoff/render.sh" local rules
@@ -1050,6 +1095,10 @@ cases=(
   "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"
   "Readme: unchanged still runs the leak check|t_marked_change_runs_leak_check"
   "Readme: unchanged still runs the header check|t_marked_change_runs_header_check"
+  "readme hook asks a skill that names a changed core file|t_readme_hook_asks_named_core"
+  "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
+  "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"
+  "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
 )
 
 pass=0; fail=0

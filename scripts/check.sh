@@ -33,7 +33,11 @@
 #
 # The README check runs only with --commit-msg: a commit that changes a file
 # under `skills/<name>/` needs `skills/<name>/README.md` in it too, unless a line
-# of the message is `Readme: unchanged`. A merge commit is skipped.
+# of the message is `Readme: unchanged`. A change to a shared core file asks for
+# the README of each skill that reads it. A skill reads a core file when one of
+# its files names it or a folder that holds it, when it reads another file in
+# the same core subfolder, or when a core file it reads names or includes it. A
+# merge commit is skipped.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr (or
@@ -91,6 +95,60 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 problems=()
 
+# in_index <path>: the path is in the index, so the commit holds it.
+in_index() { git cat-file -e ":$1" 2>/dev/null; }
+
+# skill_dirs: each `skills/<name>` folder whose SKILL.md is in the index.
+skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }'; }
+
+# refs <file> <text>: each relative path that <file> names, read from the file
+# <text>, as `<line>\t<path>\t<from>/<path>`, by the rules in the header. Prints
+# nothing for a file outside skills/ and shared-skill-core/, or not `.md`, `.sh`,
+# or `.py`.
+refs() {
+  local f="$1" text="$2" base line tok p from nl=$'\n'
+  case "$f" in
+    skills/*/*) base="${f#skills/}"; base="skills/${base%%/*}" ;;
+    shared-skill-core/*) base="$(dirname "$f")" ;;
+    *) return 0 ;;
+  esac
+  case "$f" in *.md|*.sh|*.py) ;; *) return 0 ;; esac
+  while IFS=$'\t' read -r line tok; do
+    case "$tok" in
+      '$here/'*) case "$f" in *.sh) ;; *) continue ;; esac
+                 p="${tok#\$here/}"; from="$(dirname "$f")" ;;
+      /*|./*) continue ;;
+      ../*) p="$tok"; from="$base" ;;
+      *) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+    esac
+    case "$p" in *[\<\>{}*\$~]*) continue ;; esac
+    while [ "${p%.}" != "$p" ]; do p="${p%.}"; done
+    case "$nl$allowed_paths$nl" in *"$nl$base $p$nl"*) continue ;; esac
+    printf '%s\t%s\t%s\n' "$line" "$p" "$from/$p"
+  done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
+                  for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$text")
+}
+
+# core_refs: the shared core paths that the index files named on stdin name,
+# one per line, `.` and `..` folded. A path inside a core subfolder becomes that
+# subfolder, since the files of one subfolder work as one unit.
+core_refs() {
+  local f
+  while IFS= read -r f; do refs "$f" <(git show ":$f"); done | cut -f3 | awk -F/ '
+    { n = 0; for (i = 1; i <= NF; i++) { if ($i == "" || $i == ".") continue
+                                         if ($i == "..") { if (n) n--; continue }
+                                         p[++n] = $i }
+      if (n == 0 || p[1] != "shared-skill-core") next
+      print (n >= 2 ? p[1] "/" p[2] : p[1]) }' | sort -u
+}
+
+# under <reads> <paths>: print each line of the file <paths> that is a line of
+# the file <reads>, or inside one.
+under() {
+  awk -F '\t' 'NR == FNR { r[$0] = 1; next }
+                { for (k in r) if ($1 == k || index($1, k "/") == 1) { print; next } }' "$1" "$2"
+}
+
 # --commit-msg: the README check alone; the pre-commit hook ran the rest. Each
 # skill the commit changes needs its README in the commit too, unless a message
 # line is `Readme: unchanged`. A merge is skipped: each side's commits passed.
@@ -99,7 +157,25 @@ if [ -n "$msg" ]; then
     report
   fi
   git -c core.quotePath=false diff --cached --name-only --no-renames > "$tmp/changed"
-  awk -F/ '$1 == "skills" && NF >= 3 { print $1 "/" $2 }' "$tmp/changed" | sort -u > "$tmp/asked"
+  awk -F/ '$1 == "skills" && NF >= 3 { print $1 "/" $2 }' "$tmp/changed" > "$tmp/asked"
+  # A changed shared core file asks each skill that reads it: one of the
+  # skill's files names it or its subfolder, or a core file the skill reads does.
+  grep '^shared-skill-core/' "$tmp/changed" > "$tmp/core" || true
+  if [ -s "$tmp/core" ]; then
+    while IFS= read -r f; do
+      printf '%s\n' "$f" | core_refs | awk -v f="$f" '{ print f "\t" $0 }'
+    done < <(git ls-files -- shared-skill-core) > "$tmp/edges"
+    while IFS= read -r skill; do
+      git ls-files -- "$skill/" | core_refs > "$tmp/reads"
+      while :; do
+        { cat "$tmp/reads"; under "$tmp/reads" "$tmp/edges" | cut -f2; } | sort -u > "$tmp/next"
+        cmp -s "$tmp/next" "$tmp/reads" && break
+        mv "$tmp/next" "$tmp/reads"
+      done
+      [ -z "$(under "$tmp/reads" "$tmp/core")" ] || echo "$skill" >> "$tmp/asked"
+    done < <(skill_dirs)
+  fi
+  sort -u -o "$tmp/asked" "$tmp/asked"
   while IFS= read -r skill; do
     grep -qxF "$skill/README.md" "$tmp/changed" \
       || problems+=("$skill: changed without its README; add \"Readme: unchanged\" to the message to skip")
@@ -166,33 +242,10 @@ scan "email" "$allowed_emails" -E -e "$email_re"
 # so --staged reads only the added lines; the files they name are looked up
 # from the repo top, where this script now runs.
 for f in ${files[@]+"${files[@]}"}; do
-  case "$f" in
-    skills/*/*) base="${f#skills/}"; base="skills/${base%%/*}" ;;
-    shared-skill-core/*) base="$(dirname "$f")" ;;
-    *) continue ;;
-  esac
-  case "$f" in *.md|*.sh|*.py) ;; *) continue ;; esac
-  while IFS=$'\t' read -r line tok; do
-    case "$tok" in
-      '$here/'*) case "$f" in *.sh) ;; *) continue ;; esac
-                 p="${tok#\$here/}"; from="$(dirname "$f")" ;;
-      /*|./*) continue ;;
-      ../*) p="$tok"; from="$base" ;;
-      *) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
-    esac
-    case "$p" in *[\<\>{}*\$~]*) continue ;; esac
-    while [ "${p%.}" != "$p" ]; do p="${p%.}"; done
-    printf '%s\n' "$allowed_paths" | grep -qxF -e "$base $p" && continue
-    [ -e "$from/$p" ] || problems+=("$f:$line: missing path: $p")
-  done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
-                  for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$root/$f")
+  while IFS=$'\t' read -r line p path; do
+    [ -e "$path" ] || problems+=("$f:$line: missing path: $p")
+  done < <(refs "$f" "$root/$f")
 done
-
-# in_index <path>: the path is in the index, so the commit holds it.
-in_index() { git cat-file -e ":$1" 2>/dev/null; }
-
-# skill_dirs: each `skills/<name>` folder whose SKILL.md is in the index.
-skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }'; }
 
 if [ ${#paths[@]} -eq 0 ]; then
   # rows: `<line>\t<owner>\t<path>\t<level>` for each table row of
