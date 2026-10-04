@@ -1169,6 +1169,18 @@ t_prune_clears_stale() {
   eq "worktree list lines" 1 "$(git worktree list | wc -l | tr -d ' ')"
 }
 
+t_prune_all() {
+  wt_repo; gh_remote; prune_gh
+  mkdir "$T/b"; git -C "$T/b" init -q -b main
+  git -C "$T/b" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/b" worktree add -q -b feat/2-b "$T/root/b/feat-2-b" main
+  git -C "$T/b" merge -q --ff-only feat/2-b
+  run env PATH="$T/bin:$PATH" WORKTREES_ROOT="$T/root" bash "$P" all
+  eq exit 0 "$code"
+  eq stdout "removed $T/root/b/feat-2-b, branch feat/2-b deleted (-d)" "$out"
+  [ ! -e "$T/root/b/feat-2-b" ] || eq "$T/root/b/feat-2-b" "gone" "still there"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1282,6 +1294,7 @@ cases=(
   "prune stops and removes nothing when gh fails|t_prune_gh_fails"
   "prune skips the session's worktree|t_prune_skips_session"
   "prune clears a stale entry|t_prune_clears_stale"
+  "prune all goes through every repo under the root|t_prune_all"
 )
 
 pass=0; fail=0

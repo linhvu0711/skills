@@ -4,7 +4,7 @@ Removes the git worktrees whose PRs are merged, with their branches, and lists e
 
 ## Use it when
 
-A PR merged and its worktree is still on disk. Type `/prune-worktrees` in the repo (`$prune-worktrees` in Codex). [ship](../ship/) names it in its last line, `After merge: /prune-worktrees`. It only runs when you call it.
+A PR merged and its worktree is still on disk. Type `/prune-worktrees` in the repo (`$prune-worktrees` in Codex). `/prune-worktrees all` also goes through every repo with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`. [ship](../ship/) names it in its last line, `After merge: /prune-worktrees`. It only runs when you call it.
 
 ## What you get
 

@@ -28,6 +28,9 @@ with the reason it stays. The user decides about the rest.
    bash scripts/prune-worktrees.sh
    ```
 
+   `/prune-worktrees all`: add `all`. It also goes through every repo
+   with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`.
+
 2. Exit 0: reply with its stdout, verbatim, and nothing more.
 
    A `stop: gh failed: <why>` line: say that `gh` failed and why, name

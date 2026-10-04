@@ -2,10 +2,11 @@
 # prune-worktrees.sh: remove the worktrees that are safe to prune, with their
 # branches, and list every other worktree with the reason it stays.
 #
-#   prune-worktrees.sh
+#   prune-worktrees.sh [all]
 #
 # It reads every worktree of the repo the current folder is in, wherever the
-# worktree is on disk. The main checkout is never touched and never printed.
+# worktree is on disk. `all` adds every repo that has a worktree under
+# ${WORKTREES_ROOT:-$HOME/development/worktrees}/<repo>/. The main checkout is never touched and never printed.
 # Every worktree is sorted first, then the safe ones are removed.
 #
 # Safe to prune: a clean worktree whose PR is merged on GitHub with the branch
@@ -19,7 +20,8 @@
 #     `this session is in it`, `locked`, `detached HEAD`, `<n> uncommitted files`, `PR #<n> open`,
 #     `PR #<n> closed, not merged`, `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
-#     `not in <default>` (a repo with no GitHub remote)
+#     `not in <default>` (a repo with no GitHub remote),
+#     `its repo is gone` (all: a folder under the root whose repo is deleted)
 #   cleared <n> stale entries                      when folders were gone
 #   removed <path>, branch <b> deleted (-D|-d)     one per worktree removed,
 #   removed <path>, branch <b> kept: git branch -d refused      or this
@@ -142,11 +144,40 @@ sort_repo() {
   [ "$stale_n" -eq 0 ] || stale+=("$main$tab$stale_n")
 }
 
-[ $# -eq 0 ] || die "usage: prune-worktrees.sh"
-cd_git="$(common_dir "$PWD")" || die "not in a git repo"
-# The worktree this session is in stays, whatever its state.
-session="$(cd "$(git -C "$PWD" rev-parse --show-toplevel)" && pwd -P)"
-sort_repo "${cd_git%/.git}"
+usage="usage: prune-worktrees.sh [all]"
+all=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    all) all=1; shift ;;
+    *) die "$usage" ;;
+  esac
+done
+
+repos=()      # main checkouts, each once
+add_repo() {
+  local r
+  for r in ${repos[@]+"${repos[@]}"}; do [ "$r" = "$1" ] && return 0; done
+  repos+=("$1")
+}
+
+# The repo this session is in, and the worktree it is in, which stays.
+session=""
+if cd_git="$(common_dir "$PWD")"; then
+  add_repo "${cd_git%/.git}"
+  session="$(cd "$(git -C "$PWD" rev-parse --show-toplevel)" && pwd -P)"
+elif [ "$all" -eq 0 ]; then
+  die "not in a git repo"
+fi
+# all: every repo with a worktree under the root, as worktree.sh lays them out.
+if [ "$all" -eq 1 ]; then
+  root="${WORKTREES_ROOT:-$HOME/development/worktrees}"
+  for d in "$root"/*/*; do
+    [ -f "$d/.git" ] || continue
+    if g="$(common_dir "$d")"; then add_repo "${g%/.git}"
+    else kept+=("$d${tab}its repo is gone"); fi
+  done
+fi
+for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
 
 for k in ${kept[@]+"${kept[@]}"}; do
   printf 'kept %s: %s\n' "$(show "${k%%"$tab"*}")" "${k#*"$tab"}"
