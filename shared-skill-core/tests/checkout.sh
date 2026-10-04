@@ -124,6 +124,17 @@ t_ck_alias_origin() {
   eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/acme/app/feat-4-a BRANCH=feat/4-a DEFAULT=main STATE=created FROM=local" "$out"
 }
 
+t_ck_github_rewrite() {
+  ck_setup
+  git init -q -b main "$T/dev/app"
+  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" branch feat/x
+  git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
+  git -C "$T/dev/app" config url.https://github.com/other/app.git.insteadOf https://github.com/acme/app.git
+  resolve acme/app feat/x
+  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -137,4 +148,5 @@ cases=(
   "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
   "stops when --base has no value|t_ck_base_without_value"
   "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"
+  "a rewrite to another GitHub repo names only that repo|t_ck_github_rewrite"
 )

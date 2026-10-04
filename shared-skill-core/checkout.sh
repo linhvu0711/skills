@@ -58,14 +58,15 @@ github_slug() {
     *github.com[:/]*) printf '%s' "$1" | sed -E 's#\.git$##; s#/$##; s#.*github\.com[:/]##' ;;
   esac
 }
-# origin_is <dir> <owner/repo>: the checkout's origin is that GitHub repo, as
-# configured or as git rewrites it, so an insteadOf rewrite in either
-# direction never hides it.
+# origin_is <dir> <owner/repo>: the checkout's origin is that GitHub repo. The
+# URL git uses after insteadOf names it when it is on GitHub, so an alias such
+# as gh:acme/app counts; else the URL as configured does, so a rewrite to a
+# local mirror never hides it. One checkout never names two repos.
 origin_is() {
-  local raw
+  local raw eff
   raw="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 1
-  [ "$(github_slug "$raw")" = "$2" ] && return 0
-  [ "$(github_slug "$(git -C "$1" remote get-url origin 2>/dev/null)")" = "$2" ]
+  eff="$(github_slug "$(git -C "$1" remote get-url origin 2>/dev/null)")"
+  if [ -n "$eff" ]; then [ "$eff" = "$2" ]; else [ "$(github_slug "$raw")" = "$2" ]; fi
 }
 is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
 
