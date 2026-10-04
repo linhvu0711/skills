@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, the
-# handoff render.sh, ready-pr's restack.sh, and the plan-up claims.py.
+# handoff render.sh, the ready-pr scripts, and the plan-up claims.py. The
+# ready-pr cases run against a fake gh on PATH that answers from fixture files.
 #
 #   test.sh
 #
@@ -479,18 +480,84 @@ t_render_names_ready_pr() {
 
 restack="$here/../skills/ready-pr/scripts/restack.sh"
 
-# fake_gh: a temp folder T with a `gh` first on PATH. For `pr list … --base <b>`
-# it prints $T/prs/<b, with / as _>.json, or `[]` when there is none.
+# fake_gh: a temp folder T with a fake gh and a no-op sleep first on PATH.
+# `pr list … --base <b>` prints $T/prs/<b, with / as _>.json, or `[]` when
+# there is none. Else the gh answers from fixture files in $FAKE_GH, by
+# route: `pr view` is pr,
+# `api graphql` threads, `api user` user, `api repos/…/status` status, and
+# `api repos/…/check-runs` check-runs. Call n of a route prints
+# <route>.<n>.fail or <route>.fail to stderr and fails when one exists, else
+# prints <route>.<n>.json or <route>.json, through `jq -r` when given -q.
+# Each route counts its calls in <route>.calls.
 fake_gh() {
-  T="$(cd "$(mktemp -d)" && pwd -P)"; mkdir -p "$T/bin" "$T/prs"
-  cat > "$T/bin/gh" <<EOF
+  T="$(cd "$(mktemp -d)" && pwd -P)"; mkdir -p "$T/bin" "$T/gh" "$T/prs"
+  cat > "$T/bin/gh" <<'EOF'
 #!/usr/bin/env bash
-b=""; while [ \$# -gt 0 ]; do [ "\$1" = --base ] && b="\${2:-}"; shift; done
-f="$T/prs/\$(printf '%s' "\$b" | tr / _).json"
-if [ -f "\$f" ]; then cat "\$f"; else echo '[]'; fi
+set -euo pipefail
+q=""; args=""; base=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -q) q="$2"; shift 2 ;;
+    --base) base="${2:-}"; args="$args $1 $base"; shift 2 ;;
+    *) args="$args $1"; shift ;;
+  esac
+done
+case "$args" in
+  " pr list"*)
+    f="$(dirname "$FAKE_GH")/prs/$(printf '%s' "$base" | tr / _).json"
+    if [ -f "$f" ]; then cat "$f"; else echo '[]'; fi
+    exit 0 ;;
+  " pr view"*) key=pr ;;
+  " api graphql"*) key=threads ;;
+  " api user"*) key=user ;;
+  " api repos/"*/status*) key=status ;;
+  " api repos/"*/check-runs*) key=check-runs ;;
+  *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;
+esac
+n=$(( $(cat "$FAKE_GH/$key.calls" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$FAKE_GH/$key.calls"
+for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
+  if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
+done
+f="$FAKE_GH/$key.$n.json"; [ -f "$f" ] || f="$FAKE_GH/$key.json"
+if [ -n "$q" ]; then jq -r "$q" "$f"; else cat "$f"; fi
 EOF
-  chmod +x "$T/bin/gh"; PATH="$T/bin:$PATH"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
+  chmod +x "$T/bin/gh" "$T/bin/sleep"
+  export PATH="$T/bin:$PATH" FAKE_GH="$T/gh"
 }
+
+# Items of a status check rollup, as `gh pr view` gives them.
+ci_green='{"__typename":"CheckRun","name":"check","status":"COMPLETED","conclusion":"SUCCESS"}'
+ci_red='{"__typename":"CheckRun","name":"check","status":"COMPLETED","conclusion":"FAILURE"}'
+devin_ok='{"__typename":"StatusContext","context":"Devin Review","state":"SUCCESS"}'
+devin_pending='{"__typename":"StatusContext","context":"Devin Review","state":"PENDING"}'
+
+# pr_json <file> <mergeStateStatus> <mergeable> <reviewDecision> <isDraft> <rollup>:
+# a `gh pr view` answer for PR 7 of acme/app, head abc1234def5678, in $FAKE_GH.
+pr_json() {
+  jq -n --arg ms "$2" --arg m "$3" --arg rd "$4" --argjson d "$5" --argjson r "$6" '{
+    number: 7, url: "https://github.com/acme/app/pull/7", title: "fix: demo", state: "OPEN",
+    isCrossRepository: false, baseRefName: "main", headRefName: "fix/7-demo",
+    headRefOid: "abc1234def5678", author: {login: "author"}, mergeable: $m,
+    mergeStateStatus: $ms, reviewDecision: $rd, isDraft: $d, statusCheckRollup: $r }' > "$FAKE_GH/$1"
+}
+
+# threads_json <nodes>: a review threads answer with these nodes, one page.
+threads_json() {
+  jq -n --argjson n "$1" '{data: {repository: {pullRequest: {reviewThreads:
+    {pageInfo: {hasNextPage: false, endCursor: null}, nodes: $n}}}}}' > "$FAKE_GH/threads.json"
+}
+
+# ready [<flag>...]: ready.sh on PR 7 as `author`, no threads unless written.
+ready() {
+  [ -f "$FAKE_GH/threads.json" ] || threads_json '[]'
+  run bash "$here/../skills/ready-pr/scripts/ready.sh" acme/app 7 --me author "$@"
+}
+
+# wait_review [<flag>...]: wait-review.sh on the head commit of PR 7.
+wait_review() { run bash "$here/../skills/ready-pr/scripts/wait-review.sh" acme/app abc1234def5678 "$@"; }
+
+last() { printf '%s\n' "$out" | tail -1; }
 
 # pr <number> <base> <head> [fork]: one PR as `gh pr list --json` prints it.
 pr() {
@@ -629,6 +696,66 @@ RESTACK=stopped" "$out"
   eq "origin/feat/b" "$b" "$(git rev-parse origin/feat/b)"
 }
 
+t_ready_clean() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 0 "$code"
+  eq "last line" "READY https://github.com/acme/app/pull/7" "$(last)"
+}
+
+t_ready_behind() {
+  fake_gh; pr_json pr.json BEHIND MERGEABLE "" false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 0 "$code"
+  eq "last line" "READY https://github.com/acme/app/pull/7" "$(last)"
+}
+
+t_ready_dirty() {
+  fake_gh; pr_json pr.json DIRTY CONFLICTING "" false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: mergeable is CONFLICTING; merge state is DIRTY" "$(last)"
+}
+
+t_ready_unknown_then_clean() {
+  fake_gh; pr_json pr.1.json UNKNOWN UNKNOWN "" false "[$ci_green,$devin_ok]"
+  pr_json pr.json CLEAN MERGEABLE "" false "[$ci_green,$devin_ok]"
+  ready
+  eq exit 0 "$code"
+  eq "last line" "READY https://github.com/acme/app/pull/7" "$(last)"
+  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr.calls")"
+}
+
+t_ready_devin_pending() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[$ci_green,$devin_pending]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: Devin Review is PENDING" "$(last)"
+}
+
+t_ready_thread_waits() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[$ci_green,$devin_ok]"
+  threads_json '[{"id":"T1","isResolved":false,"path":"a.sh","line":3,"opener":{"nodes":[{"body":"fix this"}]},"latest":{"nodes":[{"author":{"login":"reviewer"},"body":"fix this"}]}}]'
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: 1 review thread(s) wait for the author" "$(last)"
+}
+
+t_wait_review_success() {
+  fake_gh; printf '{"statuses":[{"context":"Devin Review","state":"success"}]}\n' > "$FAKE_GH/status.json"
+  wait_review
+  eq exit 0 "$code"
+  eq stdout "DEVIN=success SHA=abc1234def5678 WAITED=0" "$out"
+}
+
+t_wait_review_none() {
+  fake_gh; printf '{"statuses":[]}\n' > "$FAKE_GH/status.json"
+  printf '{"check_runs":[]}\n' > "$FAKE_GH/check-runs.json"
+  wait_review --none-sec 2 --poll-sec 1
+  eq exit 3 "$code"
+  eq stdout "DEVIN=none SHA=abc1234def5678 WAITED=2" "$out"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -685,6 +812,14 @@ cases=(
   "flags a listed skill with no Credits|t_flags_listed_without_credits"
   "flags a skill with a listed file and no Credits|t_flags_listed_file_without_credits"
   "passes a README with its headings|t_passes_readme_with_headings"
+  "ready-pr: CLEAN reads READY|t_ready_clean"
+  "ready-pr: BEHIND reads READY|t_ready_behind"
+  "ready-pr: DIRTY reads NOT READY|t_ready_dirty"
+  "ready-pr: UNKNOWN then CLEAN reads READY|t_ready_unknown_then_clean"
+  "ready-pr: Devin pending reads NOT READY|t_ready_devin_pending"
+  "ready-pr: a thread waiting for the author reads NOT READY|t_ready_thread_waits"
+  "wait-review: success reads DEVIN=success|t_wait_review_success"
+  "wait-review: no status reads DEVIN=none|t_wait_review_none"
 )
 
 pass=0; fail=0
