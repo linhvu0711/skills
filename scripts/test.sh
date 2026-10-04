@@ -7,9 +7,10 @@
 #
 #   test.sh
 #
-# Each case builds its own git repo in a temp folder, copies this scripts/
-# folder in, and runs the command there; the render case runs in this
-# checkout. Every leak string below is joined
+# Each case starts in an empty temp folder with set -e on, builds its own git
+# repo in a temp folder, copies this scripts/ folder in, and runs the command
+# there; the render case reads render.sh from this checkout. Every leak string
+# below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
 # Prints `ok <case>` or `FAIL <case>: <why>` per case, then
@@ -530,6 +531,29 @@ t_render_names_handoff() {
   done
 }
 
+# t_runner_keeps_cases_out_of_caller: from a caller repo with an origin,
+# run_cases runs two broken cases. One fails, then would write a marker. One
+# loses its cd behind `|| true`, then commits and pushes. Both report FAIL; the
+# caller and its origin are unchanged and no marker exists.
+t_runner_keeps_cases_out_of_caller() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  git init -q --bare "$T/origin.git"; git init -q "$T/caller"; cd "$T/caller"
+  git config user.email "t""@""example.invalid"; git config user.name t
+  git config commit.gpgsign false; git config core.hooksPath .no-hooks
+  git remote add origin "$T/origin.git"
+  git commit -q --allow-empty -m init; git push -q origin HEAD:refs/heads/main
+  local head; head="$(git rev-parse HEAD)"
+  t_stops_at_error() { false; touch "$T/marker"; }
+  t_lost_cd() { cd "$T/missing" 2>/dev/null || true; git commit -q --allow-empty -m lost; git push -q origin HEAD:refs/heads/lost; }
+  cases=("stops|t_stops_at_error" "lost|t_lost_cd"); pass=0; fail=0; log="$T/log"
+  # Called directly: `run` uses `||`, which turns set -e off for all it calls.
+  run_cases >"$T/out" 2>&1
+  eq failed 2 "$fail"
+  eq marker no "$([ -e "$T/marker" ] && echo yes || echo no)"
+  eq "caller HEAD" "$head" "$(git -C "$T/caller" rev-parse HEAD)"
+  eq "origin branches" refs/heads/main "$(git -C "$T/origin.git" for-each-ref --format='%(refname)' refs/heads)"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -586,15 +610,18 @@ cases=(
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
+  "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 
-# run_cases: run each case of `cases` in a subshell, print `ok <name>` or
+# run_cases: run each case of `cases` in a subshell with set -e on, from a new
+# empty temp folder that git finds no repo above, print `ok <name>` or
 # `FAIL <name>: <why>`, and add to pass and fail.
 run_cases() {
   local c name fn
   for c in "${cases[@]}"; do
     name="${c%%|*}"; fn="${c##*|}"
-    if ( "$fn" ) >"$log" 2>&1; then
+    rc=0; set +e; ( set -e; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    if [ "$rc" -eq 0 ]; then
       printf 'ok %s\n' "$name"; pass=$((pass + 1))
     else
       printf 'FAIL %s: %s\n' "$name" "$(tail -1 "$log")"; fail=$((fail + 1))
