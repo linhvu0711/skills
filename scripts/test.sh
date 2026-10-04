@@ -769,6 +769,13 @@ t_ready_blocked_no_review_rule() {
   eq "last line" "NOT READY https://github.com/acme/app/pull/7: merge state is BLOCKED" "$(last)"
 }
 
+t_ready_draft() {
+  fake_gh; pr_json pr.json DRAFT MERGEABLE "" true "[$ci_green,$devin_ok]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: draft" "$(last)"
+}
+
 t_wait_review_success() {
   fake_gh; printf '{"statuses":[{"context":"Devin Review","state":"success"}]}\n' > "$FAKE_GH/status.json"
   wait_review
@@ -850,6 +857,7 @@ cases=(
   "ready-pr: BLOCKED with changes requested reads NOT READY|t_ready_blocked_changes_requested"
   "ready-pr: BLOCKED with a red check reads NOT READY|t_ready_blocked_red_check"
   "ready-pr: BLOCKED with no review rule reads NOT READY|t_ready_blocked_no_review_rule"
+  "ready-pr: a draft reads NOT READY|t_ready_draft"
   "wait-review: success reads DEVIN=success|t_wait_review_success"
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
 )

@@ -3,9 +3,9 @@
 #
 #   ready.sh <owner/repo> <number> [--me <login>] [--no-devin]
 #
-# Ready means, all at once: the PR is open; Devin Review is `success` on
-# the head commit (or --no-devin was given because the repo has none);
-# no review thread waits for the author; no review asks for changes;
+# Ready means, all at once: the PR is open and not a draft; Devin Review
+# is `success` on the head commit (or --no-devin was given because the repo
+# has none); no review thread waits for the author; no review asks for changes;
 # GitHub says MERGEABLE with a merge state of CLEAN, HAS_HOOKS, or BEHIND;
 # and no other check on the head is red or pending. A merge state of
 # BLOCKED counts as ready only when the one thing missing is an approving
@@ -47,6 +47,7 @@ printf 'OPEN_THREADS=%s\n' "$open"
 
 why=(); blocked=0
 [ "$(get STATE)" = "OPEN" ] || why+=("state is $(get STATE)")
+[ "$(get DRAFT)" != "true" ] || why+=("draft")
 if [ "$no_devin" -eq 0 ]; then
   case "$(get DEVIN)" in
     SUCCESS) ;;
@@ -58,6 +59,7 @@ fi
 [ "$(get MERGEABLE)" = "MERGEABLE" ] || why+=("mergeable is $(get MERGEABLE)")
 case "$(get MERGE_STATE)" in
   CLEAN|HAS_HOOKS|BEHIND) ;;
+  DRAFT) ;;  # the draft line says it
   BLOCKED) blocked=1 ;;
   *) why+=("merge state is $(get MERGE_STATE)") ;;
 esac

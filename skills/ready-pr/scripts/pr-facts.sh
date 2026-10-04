@@ -4,8 +4,9 @@
 #   pr-facts.sh [<number|url|branch>] [--repo owner/repo]
 #
 # No argument: the PR of the current branch. Keys: REPO NUMBER URL TITLE
-# STATE FORK BASE HEAD SHA AUTHOR MERGEABLE MERGE_STATE REVIEW_DECISION DEVIN
-# CHECKS_RED CHECKS_PENDING CHECKS_GREEN. REVIEW_DECISION is APPROVED,
+# STATE DRAFT FORK BASE HEAD SHA AUTHOR MERGEABLE MERGE_STATE REVIEW_DECISION
+# DEVIN CHECKS_RED CHECKS_PENDING CHECKS_GREEN. DRAFT is true or false.
+# REVIEW_DECISION is APPROVED,
 # CHANGES_REQUESTED, REVIEW_REQUIRED, or empty when the repo asks for no
 # review. DEVIN is the `Devin Review` state on the head commit (SUCCESS,
 # PENDING, FAILURE, ERROR) or `none`. The CHECKS_* counts cover every other
@@ -21,7 +22,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-json="$(gh pr view ${ref:+"$ref"} "${repo[@]}" --json number,url,title,state,isCrossRepository,baseRefName,headRefName,headRefOid,author,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup 2>&1)" \
+json="$(gh pr view ${ref:+"$ref"} "${repo[@]}" --json number,url,title,state,isDraft,isCrossRepository,baseRefName,headRefName,headRefOid,author,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup 2>&1)" \
   || { printf 'stop: %s\n' "$json" >&2; exit 1; }
 
 jq -r '
@@ -35,6 +36,7 @@ jq -r '
   "URL=\(.url)",
   "TITLE=\(.title)",
   "STATE=\(.state)",
+  "DRAFT=\(.isDraft)",
   "FORK=\(.isCrossRepository)",
   "BASE=\(.baseRefName)",
   "HEAD=\(.headRefName)",

@@ -18,7 +18,7 @@ F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issue
 READY https://github.com/acme/app/pull/43
 ```
 
-`READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. A requested change reads `NOT READY`.
+`READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. A requested change or a draft reads `NOT READY`.
 
 A repo without Devin Review still works: it says so once and judges the comments people left.
 
