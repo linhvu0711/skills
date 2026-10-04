@@ -100,6 +100,13 @@ t_ck_no_default() {
   eq stderr "stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$err"
 }
 
+t_ck_reuses_spaced_path() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/my wt/feat-2-y" main
+  resolve acme/app feat/2-y
+  eq stdout "MAIN=$T/dev/app WORKTREE=$T/my wt/feat-2-y BRANCH=feat/2-y DEFAULT=main STATE=reused FROM=existing" "$out"
+}
+
 t_ck_base_without_value() {
   ck_setup
   resolve acme/app feat/x --base
@@ -116,5 +123,6 @@ cases=(
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
   "default branch falls back to origin/HEAD|t_ck_default_from_origin_head"
   "stops when gh and origin/HEAD both fail|t_ck_no_default"
+  "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
   "stops when --base has no value|t_ck_base_without_value"
 )

@@ -121,9 +121,9 @@ done_line() {
 # A worktree on the branch already, in either folder shape: reused. The main
 # checkout, which `git worktree list` prints first, is never one.
 listed="$(git -C "$main" worktree list --porcelain)"
-where="$(awk -v b="refs/heads/$branch" '$1=="worktree"{w=$2} $1=="branch" && $2==b {print w}' <<<"$listed")"
+where="$(awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0==b {print w}' <<<"$listed")"
 if [ -n "$where" ]; then
-  [ "$where" != "$(awk '$1=="worktree"{print $2; exit}' <<<"$listed")" ] \
+  [ "$where" != "$(awk '/^worktree /{print substr($0, 10); exit}' <<<"$listed")" ] \
     || die "branch $branch is already checked out at $where"
   dirty="$(git -C "$where" status --porcelain)"
   [ -z "$dirty" ] || die "dirty worktree at $where:"$'\n'"$dirty"
