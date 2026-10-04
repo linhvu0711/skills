@@ -1152,6 +1152,15 @@ t_prune_gh_fails() {
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
+t_prune_skips_session() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
+  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
+  cd "$T/w/feat-1-a"; run env PATH="$T/bin:$PATH" bash "$P"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'kept %s: this session is in it\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1263,6 +1272,7 @@ cases=(
   "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
   "prune uses only git with no GitHub remote|t_prune_git_only"
   "prune stops and removes nothing when gh fails|t_prune_gh_fails"
+  "prune skips the session's worktree|t_prune_skips_session"
 )
 
 pass=0; fail=0

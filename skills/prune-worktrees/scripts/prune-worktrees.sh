@@ -16,7 +16,7 @@
 #
 # Prints, in this order:
 #   kept <path>: <reason>                          one per worktree that stays:
-#     `locked`, `detached HEAD`, `<n> uncommitted files`, `PR #<n> open`,
+#     `this session is in it`, `locked`, `detached HEAD`, `<n> uncommitted files`, `PR #<n> open`,
 #     `PR #<n> closed, not merged`, `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
 #     `not in <default>` (a repo with no GitHub remote)
@@ -84,6 +84,7 @@ plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s'
 sort_one() {
   local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid=""
   keep() { kept+=("$path$tab$1"); }
+  [ "$(cd "$path" 2>/dev/null && pwd -P)" != "$session" ] || { keep "this session is in it"; return; }
   [ "$locked" -eq 0 ] || { keep "locked"; return; }
   [ -n "$branch" ] || { keep "detached HEAD"; return; }
   n="$(git -C "$path" status --porcelain | wc -l | tr -d ' ')"
@@ -135,6 +136,8 @@ sort_repo() {
 
 [ $# -eq 0 ] || die "usage: prune-worktrees.sh"
 cd_git="$(common_dir "$PWD")" || die "not in a git repo"
+# The worktree this session is in stays, whatever its state.
+session="$(cd "$(git -C "$PWD" rev-parse --show-toplevel)" && pwd -P)"
 sort_repo "${cd_git%/.git}"
 
 for k in ${kept[@]+"${kept[@]}"}; do
