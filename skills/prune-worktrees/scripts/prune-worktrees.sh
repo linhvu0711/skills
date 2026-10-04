@@ -13,7 +13,10 @@
 # branch with `git branch -D`.
 #
 # Prints, in this order:
-#   kept <path>: <reason>                          one per worktree that stays
+#   kept <path>: <reason>                          one per worktree that stays:
+#     `locked`, `detached HEAD`, `<n> uncommitted files`, `PR #<n> open`,
+#     `PR #<n> closed, not merged`, `PR #<n> merged, tip is not its last commit`,
+#     `<n> commits not on GitHub` (a branch with no PR), `no PR`
 #   removed <path>, branch <b> deleted (-D)        one per worktree removed
 #   nothing to prune                               when nothing was removed
 # A path under $HOME is printed with ~.
@@ -51,32 +54,49 @@ tab=$'\t'
 kept=()       # <path> TAB <reason>
 removals=()   # <main> TAB <path> TAB <branch> TAB <flag>
 
-# sort_one <main> <owner/repo> <path> <branch>: puts one worktree in kept or
-# removals.
+# plural <n> <one> <many>: `<n> <one>` or `<n> <many>`.
+plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
+
+# sort_one <main> <owner/repo> <path> <branch> <locked>: puts one worktree in
+# kept or removals. The first reason that holds is the one printed.
 sort_one() {
-  local main="$1" slug="$2" path="$3" branch="$4" tip num="" state="" oid=""
+  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n num="" state="" oid=""
+  keep() { kept+=("$path$tab$1"); }
+  [ "$locked" -eq 0 ] || { keep "locked"; return; }
+  [ -n "$branch" ] || { keep "detached HEAD"; return; }
+  n="$(git -C "$path" status --porcelain | wc -l | tr -d ' ')"
+  [ "$n" -eq 0 ] || { keep "$(plural "$n" "uncommitted file" "uncommitted files")"; return; }
   tip="$(git -C "$main" rev-parse "refs/heads/$branch")"
   if [ -n "$slug" ]; then
     read -r num state oid <<<"$(pr_of "$slug" "$branch")" || true
   fi
-  if [ "$state" = MERGED ] && [ "$oid" = "$tip" ]; then
-    removals+=("$main$tab$path$tab$branch$tab-D")
-  else
-    kept+=("$path${tab}no PR")
-  fi
+  case "$state" in
+    MERGED)
+      if [ "$oid" = "$tip" ]; then removals+=("$main$tab$path$tab$branch$tab-D")
+      else keep "PR #$num merged, tip is not its last commit"; fi
+      return ;;
+    OPEN) keep "PR #$num open"; return ;;
+    CLOSED) keep "PR #$num closed, not merged"; return ;;
+  esac
+  # No PR. A squash-merged branch's commits are on no remote ref, so this
+  # count is only read for a branch with no PR.
+  n="$(git -C "$main" rev-list --count "refs/heads/$branch" --not --remotes=origin)"
+  [ "$n" -eq 0 ] || { keep "$(plural "$n" "commit not on GitHub" "commits not on GitHub")"; return; }
+  keep "no PR"
 }
 
 # sort_repo <main>: sorts every worktree of the repo but the main checkout,
 # which `git worktree list` always prints first.
 sort_repo() {
-  local main="$1" slug path="" branch="" line n=0
+  local main="$1" slug path="" branch="" locked=0 line n=0
   slug="$(github_repo "$main")"
   while IFS= read -r line; do
     case "$line" in
-      "worktree "*) path="${line#worktree }"; branch=""; n=$((n + 1)) ;;
+      "worktree "*) path="${line#worktree }"; branch=""; locked=0; n=$((n + 1)) ;;
       "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
+      locked|"locked "*) locked=1 ;;
       "")
-        if [ -n "$path" ] && [ "$n" -gt 1 ]; then sort_one "$main" "$slug" "$path" "$branch"; fi
+        if [ -n "$path" ] && [ "$n" -gt 1 ]; then sort_one "$main" "$slug" "$path" "$branch" "$locked"; fi
         path="" ;;
     esac
   done < <(git -C "$main" worktree list --porcelain; echo)

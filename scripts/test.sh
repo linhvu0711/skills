@@ -1103,6 +1103,36 @@ t_prune_keeps_no_pr() {
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
+t_prune_keeps_dirty() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
+  printf 'a\n' > "$T/w/feat-1-a/a.txt"; printf 'b\n' > "$T/w/feat-1-a/b.txt"
+  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq stdout "$(printf 'kept %s: 2 uncommitted files\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
+}
+
+t_prune_keeps_unpushed() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a 2
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq stdout "$(printf 'kept %s: 2 commits not on GitHub\nnothing to prune' "$T/w/feat-1-a")" "$out"
+}
+
+t_prune_keeps_open_pr() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
+  printf 'feat/1-a 159 OPEN %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq stdout "$(printf 'kept %s: PR #159 open\nnothing to prune' "$T/w/feat-1-a")" "$out"
+}
+
+t_prune_keeps_moved_tip() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
+  printf 'feat/1-a 43 MERGED 0000000000000000000000000000000000000000\n' > "$T/gh-prs"
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq stdout "$(printf 'kept %s: PR #43 merged, tip is not its last commit\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq "branch list" "+ feat/1-a" "$(git branch --list feat/1-a)"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1208,6 +1238,10 @@ cases=(
   "prune removes a merged worktree outside the root|t_prune_removes_merged"
   "prune keeps a branch with no PR|t_prune_keeps_no_pr"
   "prune says when there is nothing to prune|t_prune_nothing"
+  "prune keeps a dirty worktree|t_prune_keeps_dirty"
+  "prune keeps unpushed commits|t_prune_keeps_unpushed"
+  "prune keeps an open PR|t_prune_keeps_open_pr"
+  "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
 )
 
 pass=0; fail=0
