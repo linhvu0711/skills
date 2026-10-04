@@ -27,7 +27,9 @@
 # finishes, errors, is cancelled, expires, or is suspended. --once exits on
 # the first event, for a caller that only sees the process end; --follow
 # keeps going past the end, for a session that gets a follow-up. At --max
-# seconds it prints `still running <link>`. The interval defaults to 120s for
+# seconds it prints `still running <link>`. A failed poll is tried again; after
+# three in a row it prints `poll failed <link> :: <the adapter's error>` and
+# exits 1. The interval defaults to 120s for
 # devin and 60s for cursor. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
@@ -149,16 +151,29 @@ cmd_watch() {
       *) opts+=("$1"); shift ;;
     esac
   done
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0
+  errf=$(mktemp); trap "rm -f '$errf'" EXIT
   start=$(date +%s)
   while :; do
-    if line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>/dev/null); then
+    if ! line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>"$errf"); then
+      # One failure is often the network; three in a row is a key, a
+      # session, or an outage the caller has to see.
+      fails=$((fails + 1))
+      if (( fails >= 3 )); then
+        echo "[$(date +%H:%M)] poll failed $last_link :: $(tail -1 "$errf")"
+        exit 1
+      fi
+    else
+      fails=0
       IFS=$'\t' read -r st key prs link msg <<<"$line"
       last_link="$link"
       if [[ "$prs" != "-" ]]; then
         IFS=',' read -ra arr <<<"$prs"
         for p in "${arr[@]}"; do
-          case "$seen" in *" $p "*) ;; *) echo "[$(date +%H:%M)] pr $p"; seen="$seen$p " ;; esac
+          case "$seen" in
+            *" $p "*) ;;
+            *) echo "[$(date +%H:%M)] pr $p"; seen="$seen$p "; (( once )) && exit 0 ;;
+          esac
         done
       fi
       # An event is a new key in a state the caller acts on. The adapter

@@ -157,6 +157,31 @@ t_watch_time_limit() {
   eq stdout "still running https://app.devin.ai/sessions/abc" "$(unstamped)"
 }
 
+t_watch_once_on_pr() {
+  fake_adapters
+  printf 'working\tworking|-\thttps://github.com/o/r/pull/5\thttps://app.devin.ai/sessions/abc\t-\n' > "$FAKE_AD/devin.poll.out"
+  handoff watch devin devin-abc --interval 0 --once
+  eq exit 0 "$code"
+  eq stdout "pr https://github.com/o/r/pull/5" "$(unstamped)"
+}
+
+t_watch_survives_a_failed_poll() {
+  fake_adapters
+  printf 'devin.sh: HTTP 502 on GET /sessions/devin-abc\n' > "$FAKE_AD/devin.poll.1.fail"
+  printf 'finished\tfinished|Done\t-\thttps://app.devin.ai/sessions/abc\tDone\n' > "$FAKE_AD/devin.poll.2.out"
+  handoff watch devin devin-abc --interval 0
+  eq exit 0 "$code"
+  eq stdout "finished https://app.devin.ai/sessions/abc :: Done" "$(unstamped)"
+}
+
+t_watch_stops_on_failing_polls() {
+  fake_adapters
+  printf 'devin.sh: HTTP 401 on GET /sessions/devin-abc: bad key\n' > "$FAKE_AD/devin.poll.fail"
+  handoff watch devin devin-abc --interval 0
+  eq exit 1 "$code"
+  eq stdout "poll failed devin-abc :: devin.sh: HTTP 401 on GET /sessions/devin-abc: bad key" "$(unstamped)"
+}
+
 # old_ledgers: the two old ledgers, one bad line in the devin one.
 old_ledgers() {
   mkdir -p "$HOME/.config/dispatch"
@@ -223,6 +248,9 @@ cases=(
   "say sends the note through the adapter named|t_say_through_adapter"
   "watch prints events as they come and stops when finished|t_watch_events"
   "watch prints still running at its time limit|t_watch_time_limit"
+  "watch --once exits on a new PR|t_watch_once_on_pr"
+  "watch goes on after one failed poll|t_watch_survives_a_failed_poll"
+  "watch stops after three failed polls in a row|t_watch_stops_on_failing_polls"
   "first run moves the old ledgers|t_migrate_moves_rows"
   "migration warns on a row it cannot read|t_migrate_warns_bad_row"
   "migration renames the old files|t_migrate_renames_files"
