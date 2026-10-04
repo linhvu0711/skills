@@ -38,7 +38,8 @@ unchanged. The form decides only where the build runs (step 2).
 1. **Plan.** Read `../plan-up/SKILL.md` and follow its
    steps 1 to 8 whole: base copy, issue, gate, facts, forks, plan, done
    rule, page. Its stop points are yours: a base that cannot be fetched,
-   a gate that fails, a `manual` ticket, a stale step, and every big fork
+   a gate that fails, a `manual` ticket, a claimed ticket you do not
+   build anyway, a stale step, and every big fork
    (one question per message, wait). Two changes at step 8: build and
    open the page, print the summary, and go on at once as if `ok` were
    given: the base copy is removed, `Ready for /handoff-devin.` is left

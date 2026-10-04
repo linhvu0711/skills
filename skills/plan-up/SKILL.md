@@ -97,6 +97,35 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    the short path too: its Steps become the layer's slices per `plan.md`
    § Handoff-ready, and its facts round asks only what that section lists.
 
+   **Claims.** Check whether someone is already on a ticket before you
+   plan it. Run `python3 scripts/claims.py <owner/repo> <n>...` once,
+   with every ticket this run plans; the `manual` tasks and the tickets
+   they block are already out. It prints one line per open PR that
+   closes or mentions a ticket, and per assignee who is not you. Then
+   read each ticket's comments, read above, for a claim: a comment that
+   says its author is taking or doing the work ("I'll take this",
+   "working on it"), by someone other than you (`gh api user -q .login`),
+   and not given back by a later comment from that author or from you.
+   Your own assignment and comments are not claims; an open PR is,
+   whoever opened it.
+
+   No claim: say nothing and go on. Any claim: one message lists each
+   claimed ticket, number and title, and under it each claim: a PR as
+   `PR #70 Add the claim check · @bob · <url>`, an assignee as
+   `assigned to @dave`, a comment quoted whole with `@<author>`. Then
+   one question for all of them, in the format of
+   `../../shared-skill-core/grilling.md`. A PR named: `A` review their
+   PR instead (pick: their code exists), `B` build anyway, `C` stop. No
+   PR named: `A` stop (pick: ask them first), `B` build anyway. Wait;
+   nothing is planned before the answer. Review: print one
+   `/review-pr <url>` line per named PR, remove the base copy, and stop.
+   Stop: remove the base copy and stop. Build anyway: go on.
+
+   `claims.py` exits 1, or `gh api user` fails: say
+   `Could not check who is on #<n>: <its error line>.`, ask in one line
+   whether to go on, and wait. Yes: go on. No: remove the base copy and
+   stop.
+
 3. **Gate.** Apply `## Readiness gate` from
    `../../shared-skill-core/issue-rules.md` to the issue
    text, each ticket of a run on its own. Pass: continue. Fail: name the
@@ -261,6 +290,16 @@ six slices (slice 1 carries
 failed), two videos: happy and failed from the seeded shop, empty from
 an empty seed.
 Done rule holds. Present, `ok`, `Ready for /handoff-devin.`
+
+**User:** `/plan-up https://github.com/acme/shop/issues/88` (PR 90 by
+`@bob` is open and closes #88)
+
+`claims.py acme/shop 88` prints `#88 pr #90 "Add order notes" @bob
+https://github.com/acme/shop/pull/90`. One message: `#88 Order notes`,
+under it `PR #90 Add order notes · @bob · https://github.com/acme/shop/pull/90`,
+then the question with `A` review their PR instead, `B` build anyway,
+`C` stop. User: `A`. Print `/review-pr https://github.com/acme/shop/pull/90`,
+remove the base copy. Stop.
 
 **User:** `/plan-up https://github.com/acme/shop/issues/57` (size/XS fix,
 `handoff-ready`, three Steps, two Done-when lines)

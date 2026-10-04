@@ -12,7 +12,7 @@ You have a ticket that passes the readiness gate and you want it built by an age
 - `/plan-up <epic-url>`: every open ticket in the epic.
 - `/plan-up <issue-url> on <pr-url>`: one more layer on an open stack.
 
-It reads every ticket with its comments, since a later comment can change what the ticket asks. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
+It reads every ticket with its comments, since a later comment can change what the ticket asks. Before it plans, it checks whether someone is already on each ticket: an open PR that closes or mentions it, an assignee who is not you, or a comment that claims the work. If it finds one, it names them and asks whether to review their PR, build anyway, or stop. When `gh` fails during the check, it says the check could not run and asks whether to go on. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
 
 ## What you get
 
@@ -40,7 +40,7 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 ## Needs
 
 - `gh`, signed in, and `git`.
-- `python3`, to build, serve, and check the page. `curl` and `lsof` for the local server.
+- `python3`, to check for claims and to build, serve, and check the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
 - From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, and [plan-page.md](../../shared-skill-core/plan-page.md) for the page.

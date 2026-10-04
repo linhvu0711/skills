@@ -22,7 +22,7 @@ First the plan, from [plan-up](../plan-up/), open in your browser. Your checkout
 - **Local**, for one ticket with no screen to check: a git worktree under `~/development/worktrees`, a build prompt, and a build. On Fable inside herdr, a Devin CLI pane builds it; on any other model, this chat builds it. Then [ready-pr](../ready-pr/) takes the PR through review.
 - **Cloud**, for a plan with UI walks or a stack: a Devin cloud session through [handoff-devin](../handoff-devin/).
 
-It stops only for the plan's big decisions and the build's surprises. The last message:
+It stops only for a ticket someone else is already on, the plan's big decisions, and the build's surprises. The last message:
 
 ```
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
