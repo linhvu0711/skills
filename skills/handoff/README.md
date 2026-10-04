@@ -11,7 +11,7 @@ You have a plan you said `ok` to and want a cloud agent to build it, with its ow
 - `/handoff [devin|cursor] <note>`: a follow-up or an answer for the session on this chat's issue. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
 - `--model <id>` picks the Cursor model.
 
-With no executor named, a follow-up goes to the executor that started the issue, and a new issue goes to Devin. It only runs when you call it.
+With no executor named, a follow-up goes to the executor that started the issue, and a new issue goes to Devin. An issue that already has a session asks you first: send the plan to that session, or start a new one. It only runs when you call it.
 
 ## What you get
 

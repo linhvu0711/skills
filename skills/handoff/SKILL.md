@@ -60,13 +60,14 @@ set's, the first ticket URL. Say the pick in one line, as
    `.md` file, the path `/plan-up` gave in its summary
    (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
    `../../shared-skill-core/plan-page.md`). No plan: say
-   `Run /plan-up first.` and stop. A `handoff-ready` issue is no
-   exception; `/plan-up` takes its short path on that label and still
-   writes the plan file. A run always needs the plan; an epic URL, or a
-   set's first ticket URL with `#n` numbers, with no plan is
-   `Run /plan-up first.` No URL: the issue is the plan's, from its
+   `Run /plan-up first.` and stop. A `handoff-ready` issue or a run
+   is no exception. No URL: the issue is the plan's, from its
    `# Plan: #<n>` title and its `Repo:` line. Then the executor, per
-   § Arguments.
+   § Arguments. `route` printed `follow …`: the issue already has a
+   session, and a second one would build it twice. Show its link and ask
+   one question, per `../../shared-skill-core/grilling.md`: `A` send
+   this plan to it as a follow-up (§ Follow-up, from step 2), the pick;
+   `B` start a new session. Wait. `A`: § Follow-up. `B`: go on.
 
 2. **Facts.** `gh repo view --json nameWithOwner,defaultBranchRef`. From
    the issue, and in a run from each layer's issue: number, title, and
@@ -321,10 +322,10 @@ by themselves (it is subscribed to its PR); to follow those rounds,
 start the watch with `--follow`, which does not exit on `finished`.
 
 **Known limits.**
-- Commits show the user as author, from the prompt's `Author` line
-  (proven 2026-09-16, perch PR 122), but are signed with Cursor's key,
-  so they show `Unverified`. A repo that requires verified signatures
-  rejects them; that job goes to Devin.
+- Commits show the user as author, from the `Author` line (proven
+  2026-09-16, perch PR 122), but are signed with Cursor's key, so they
+  show `Unverified`. A repo that requires verified signatures rejects
+  them; that job goes to Devin.
 - Cursor knows nothing of the PR the agent opens with `gh`, so the
   watch asks GitHub, and the rules make the agent subscribe to the PR.
 - Proof media goes in by `gh pr edit --attach <file>` (gh 2.99+): the
@@ -342,10 +343,8 @@ start the watch with `--follow`, which does not exit on `finished`.
 `/plan-up` ended with `Ready for /handoff.`
 
 Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-42.md`.
-`route` prints `start devin`: `Executor: devin (new issue)`. Labels:
-`size/XS` to `size/L` exist, `size/XL` created. Prompt assembled and
-checked: six Proof rows, every `file:line`, five labels. A web app, so
-Linux. `start devin` with `--issue`, `Session started: <link> · devin ·
+`route` prints `start devin`: `Executor: devin (new issue)`. Prompt
+assembled and checked. A web app, so Linux. `start devin` with `--issue`, `Session started: <link> · devin ·
 linux`, Monitor on `watch`. Stop. Later the watch prints `pr <url>`,
 then `finished … :: <finish message>`; each becomes two lines to the
 user.
