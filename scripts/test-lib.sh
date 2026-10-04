@@ -1,6 +1,7 @@
-# test-lib.sh: the helpers every test case shares, and the one fake gh.
-# test.sh sources this file first, then each skills/*/tests/*.sh and
-# shared-skill-core/tests/*.sh, so the cases there call these helpers by name.
+# test-lib.sh: the helpers every test case shares, the one fake gh, and the
+# fake curl. test.sh sources this file first, then each skills/*/tests/*.sh
+# and shared-skill-core/tests/*.sh, so the cases there call these helpers by
+# name.
 #
 # Every leak string below is joined from two halves at runtime, so this file
 # holds nothing check.sh flags.
@@ -91,4 +92,45 @@ EOF
   printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
   chmod +x "$T/bin/gh" "$T/bin/sleep"
   export PATH="$T/bin:$PATH" FAKE_GH="$T/gh"
+}
+
+# fake_curl: a fake curl first on PATH, in the temp folder T (made when T is
+# not set yet). cd into T.
+# The curl answers from fixture files in $FAKE_CURL, by route: the method and
+# the URL's path, query dropped, every / as _, as in
+# POST_v3_organizations_org1_sessions. It logs `<METHOD> <path>` to calls,
+# writes -d to <route>.data, writes <route>.json to the -o file, and prints
+# <route>.code, or 200. A route with no fixture answers 404.
+fake_curl() {
+  [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
+  mkdir -p "$T/bin" "$T/curl"
+  cat > "$T/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out=""; method=GET; data=""; url=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -X) method="$2"; shift 2 ;;
+    -d) data="$2"; shift 2 ;;
+    -H|-F|-w) shift 2 ;;
+    -*) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+path="/${url#*://*/}"; path="${path%%\?*}"
+key="$method$(printf '%s' "$path" | tr / _)"
+printf '%s %s\n' "$method" "$path" >> "$FAKE_CURL/calls"
+[ -z "$data" ] || printf '%s\n' "$data" > "$FAKE_CURL/$key.data"
+if [ -f "$FAKE_CURL/$key.json" ]; then
+  cat "$FAKE_CURL/$key.json" > "$out"
+  cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200
+else
+  printf '{"detail":"fake curl: no fixture %s"}\n' "$key" > "$out"
+  printf 404
+fi
+EOF
+  chmod +x "$T/bin/curl"
+  export PATH="$T/bin:$PATH" FAKE_CURL="$T/curl"
+  cd "$T"
 }
