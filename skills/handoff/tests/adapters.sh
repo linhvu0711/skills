@@ -69,6 +69,16 @@ t_devin_poll() {
   eq stdout "blocked	blocked|Which file?	https://github.com/o/r/pull/5	https://app.devin.ai/sessions/abc	Which file?" "$out"
 }
 
+t_devin_poll_every_pr() {
+  fake_curl
+  printf '{"session_id":"devin-abc","status":"running","status_detail":"working","pull_requests":[{"pr_url":"https://github.com/o/r/pull/5"},{"pr_url":"https://github.com/o/r/pull/6"}],"url":"https://app.devin.ai/sessions/abc"}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_sessions_devin-abc.json"
+  printf '{"items":[],"has_next_page":false}\n' > "$FAKE_CURL/GET_v3_organizations_org1_sessions_devin-abc_messages.json"
+  devin poll abc
+  eq exit 0 "$code"
+  eq stdout "working	working|-	https://github.com/o/r/pull/5,https://github.com/o/r/pull/6	https://app.devin.ai/sessions/abc	-" "$out"
+}
+
 t_devin_say() {
   fake_curl
   printf '"https://att.test/note.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
@@ -162,6 +172,7 @@ t_cursor_no_key() {
 cases=(
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"
+  "devin poll lists every PR of the session|t_devin_poll_every_pr"
   "devin say sends the note|t_devin_say"
   "devin start prints the API message on a failed call|t_devin_failed_call"
   "devin stops without an API key|t_devin_no_key"

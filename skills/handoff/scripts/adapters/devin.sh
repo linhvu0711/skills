@@ -4,7 +4,7 @@
 #
 #   devin.sh start <prompt-file> [--title T] [--platform P] [--mode M]
 #                                                             -> "<session_id>\t<url>"
-#   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<pr>\t<url>\t<message>"
+#   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<prs>\t<url>\t<message>"
 #   devin.sh say <session> <note-file>                        -> sends a follow-up
 #   devin.sh archive <session>                                -> archives the session
 #   devin.sh upload <file>                                    -> attachment URL
@@ -112,12 +112,12 @@ last_devin() {
   printf %s "$msg" | tr '\t\r\n' '   ' | head -c "$MSG_CHARS"
 }
 
-# summary ID -> "state<TAB>pr<TAB>url<TAB>last devin message"
+# summary ID -> "state<TAB>prs, comma joined<TAB>url<TAB>last devin message"
 summary() {
   local id="$1" res st pr url
   res=$(api GET "/sessions/$id")
   st=$(state <<<"$res")
-  pr=$(jq -r '.pull_requests[0].pr_url // "-"' <<<"$res")
+  pr=$(jq -r '[ .pull_requests[]?.pr_url // empty ] | if length == 0 then "-" else join(",") end' <<<"$res")
   url=$(jq -r '.url // ("https://app.devin.ai/sessions/" + (.session_id | ltrimstr("devin-")))' <<<"$res")
   printf '%s\t%s\t%s\t%s\n' "$st" "$pr" "$url" "$(last_devin "$id")"
 }
