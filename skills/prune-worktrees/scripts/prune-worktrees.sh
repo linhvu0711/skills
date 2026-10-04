@@ -20,9 +20,10 @@
 #     `PR #<n> closed, not merged`, `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
 #     `not in <default>` (a repo with no GitHub remote)
+#   cleared <n> stale entries                      when folders were gone
 #   removed <path>, branch <b> deleted (-D|-d)     one per worktree removed,
 #   removed <path>, branch <b> kept: git branch -d refused      or this
-#   nothing to prune                               when nothing was removed
+#   nothing to prune                               when nothing was cleared or removed
 # A path under $HOME is printed with ~.
 # Exit 1: `stop: <why>` on stderr, and nothing was removed.
 set -euo pipefail
@@ -75,6 +76,7 @@ default_ref() {
 tab=$'\t'
 kept=()       # <path> TAB <reason>
 removals=()   # <main> TAB <path> TAB <branch> TAB <flag>
+stale=()      # <main> TAB <entries whose folder is gone>
 
 # plural <n> <one> <many>: `<n> <one>` or `<n> <many>`.
 plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
@@ -118,20 +120,26 @@ sort_one() {
 }
 
 # sort_repo <main>: sorts every worktree of the repo but the main checkout,
-# which `git worktree list` always prints first.
+# which `git worktree list` always prints first. An entry whose folder is gone
+# (`prunable`) is only counted, for `git worktree prune`.
 sort_repo() {
-  local main="$1" slug path="" branch="" locked=0 line n=0
+  local main="$1" slug path="" branch="" locked=0 gone=0 line n=0 stale_n=0
   slug="$(github_repo "$main")"
   while IFS= read -r line; do
     case "$line" in
-      "worktree "*) path="${line#worktree }"; branch=""; locked=0; n=$((n + 1)) ;;
+      "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0; n=$((n + 1)) ;;
       "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
       locked|"locked "*) locked=1 ;;
+      prunable|"prunable "*) gone=1 ;;
       "")
-        if [ -n "$path" ] && [ "$n" -gt 1 ]; then sort_one "$main" "$slug" "$path" "$branch" "$locked"; fi
+        if [ -n "$path" ] && [ "$n" -gt 1 ]; then
+          if [ "$gone" -eq 1 ]; then stale_n=$((stale_n + 1))
+          else sort_one "$main" "$slug" "$path" "$branch" "$locked"; fi
+        fi
         path="" ;;
     esac
   done < <(git -C "$main" worktree list --porcelain; echo)
+  [ "$stale_n" -eq 0 ] || stale+=("$main$tab$stale_n")
 }
 
 [ $# -eq 0 ] || die "usage: prune-worktrees.sh"
@@ -144,6 +152,11 @@ for k in ${kept[@]+"${kept[@]}"}; do
   printf 'kept %s: %s\n' "$(show "${k%%"$tab"*}")" "${k#*"$tab"}"
 done
 done_any=0
+for st in ${stale[@]+"${stale[@]}"}; do
+  git -C "${st%%"$tab"*}" worktree prune
+  printf 'cleared %s\n' "$(plural "${st#*"$tab"}" "stale entry" "stale entries")"
+  done_any=1
+done
 for r in ${removals[@]+"${removals[@]}"}; do
   IFS="$tab" read -r main path branch flag <<<"$r"
   git -C "$main" worktree remove "$path"

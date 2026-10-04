@@ -1161,6 +1161,14 @@ t_prune_skips_session() {
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
+t_prune_clears_stale() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/gone" feat/9-x; rm -rf "$T/w/gone"
+  run env PATH="$T/bin:$PATH" bash "$P"
+  eq exit 0 "$code"
+  eq stdout "cleared 1 stale entry" "$out"
+  eq "worktree list lines" 1 "$(git worktree list | wc -l | tr -d ' ')"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1273,6 +1281,7 @@ cases=(
   "prune uses only git with no GitHub remote|t_prune_git_only"
   "prune stops and removes nothing when gh fails|t_prune_gh_fails"
   "prune skips the session's worktree|t_prune_skips_session"
+  "prune clears a stale entry|t_prune_clears_stale"
 )
 
 pass=0; fail=0

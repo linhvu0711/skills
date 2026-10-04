@@ -15,7 +15,7 @@ kept ~/development/worktrees/app/feat-7-search: PR #159 open
 removed ~/development/worktrees/app/feat-42-login, branch feat/42-login deleted (-D)
 ```
 
-No worktree to prune: one line, `nothing to prune`.
+Entries whose folder is gone are cleared with `git worktree prune`, and the report says how many. No worktree to prune: one line, `nothing to prune`.
 
 ## Needs
 
