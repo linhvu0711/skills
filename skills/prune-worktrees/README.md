@@ -1,0 +1,33 @@
+# prune-worktrees
+
+Removes the git worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays.
+
+## Use it when
+
+A PR merged and its worktree is still on disk. Type `/prune-worktrees` in the repo (`$prune-worktrees` in Codex). [ship](../ship/) names it in its last line, `After merge: /prune-worktrees`. It only runs when you call it.
+
+## What you get
+
+It looks at every worktree of the repo, wherever it is on disk. A worktree is safe to prune when it is clean, its PR is merged on GitHub, and its branch tip is the PR's last commit. Those go without a question: the worktree with `git worktree remove`, the branch with `git branch -D`. Every other worktree stays, listed with its reason. The main checkout is never touched.
+
+```
+kept ~/development/worktrees/app/feat-7-search: PR #159 open
+removed ~/development/worktrees/app/feat-42-login, branch feat/42-login deleted (-D)
+```
+
+No worktree to prune: one line, `nothing to prune`.
+
+## Needs
+
+- `git`.
+- `gh`, signed in, for the PR of each branch: one call per branch.
+
+## Fits with
+
+- [ship](../ship/) ends with `After merge: /prune-worktrees` for the worktree it built in.
+- It removes what `../../shared-skill-core/worktree.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/).
+- Nothing calls this skill; you run it.
+
+## Credits
+
+The idea came from the worktree-cleanup playbook and `worktree-audit.sh` in pstack, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.
