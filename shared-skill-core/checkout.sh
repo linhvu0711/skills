@@ -52,14 +52,20 @@ done
 map="${KICKOFF_REPO_MAP:-$HOME/.config/kickoff/repos.tsv}"
 dev_root="${KICKOFF_DEV_ROOT:-$HOME/development}"
 
-# origin_slug <dir>: owner/repo of a checkout's GitHub origin, or nothing. The
-# raw config value, so an insteadOf rewrite never hides it.
-origin_slug() {
-  local url
-  url="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 0
-  case "$url" in
-    *github.com[:/]*) printf '%s' "$url" | sed -E 's#\.git$##; s#/$##; s#.*github\.com[:/]##' ;;
+# github_slug <url>: owner/repo of a GitHub URL, or nothing.
+github_slug() {
+  case "$1" in
+    *github.com[:/]*) printf '%s' "$1" | sed -E 's#\.git$##; s#/$##; s#.*github\.com[:/]##' ;;
   esac
+}
+# origin_is <dir> <owner/repo>: the checkout's origin is that GitHub repo, as
+# configured or as git rewrites it, so an insteadOf rewrite in either
+# direction never hides it.
+origin_is() {
+  local raw
+  raw="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 1
+  [ "$(github_slug "$raw")" = "$2" ] && return 0
+  [ "$(github_slug "$(git -C "$1" remote get-url origin 2>/dev/null)")" = "$2" ]
 }
 is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
 
@@ -68,7 +74,7 @@ main=""; main_from=""
 if [ -f "$map" ]; then
   cand="$(awk -F'\t' -v s="$slug" '$1==s {print $2; exit}' "$map")"
   if [ -n "$cand" ]; then
-    if is_main_checkout "$cand" && [ "$(origin_slug "$cand")" = "$slug" ]; then
+    if is_main_checkout "$cand" && origin_is "$cand" "$slug"; then
       main="$cand"; main_from="map"
     else
       printf 'map entry for %s is stale (%s), dropping it\n' "$slug" "$cand" >&2
@@ -77,7 +83,7 @@ if [ -f "$map" ]; then
   fi
 fi
 # 2. the current folder
-if [ -z "$main" ] && is_main_checkout "$PWD" && [ "$(origin_slug "$PWD")" = "$slug" ]; then
+if [ -z "$main" ] && is_main_checkout "$PWD" && origin_is "$PWD" "$slug"; then
   main="$PWD"; main_from="cwd"
 fi
 # 3. search the dev root
@@ -85,7 +91,7 @@ if [ -z "$main" ]; then
   matches=()
   while IFS= read -r gitdir; do
     d="${gitdir%/.git}"
-    [ "$(origin_slug "$d")" = "$slug" ] && matches+=("$d")
+    if origin_is "$d" "$slug"; then matches+=("$d"); fi
   done < <(find "$dev_root" -maxdepth 6 -type d -name .git -not -path '*/node_modules/*' 2>/dev/null | sort)
   case "${#matches[@]}" in
     0) die "no checkout of $slug under $dev_root. Clone it, or add a line to $map: $slug<TAB>/path" ;;

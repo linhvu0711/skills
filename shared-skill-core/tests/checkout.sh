@@ -113,6 +113,17 @@ t_ck_base_without_value() {
   eq stderr "stop: usage: checkout.sh <owner/repo> <branch> [--base <ref>]" "$err"
 }
 
+t_ck_alias_origin() {
+  ck_setup
+  git init -q -b main "$T/dev/app"
+  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" branch feat/4-a
+  git -C "$T/dev/app" remote add origin gh:acme/app
+  git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
+  resolve acme/app feat/4-a
+  eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/acme/app/feat-4-a BRANCH=feat/4-a DEFAULT=main STATE=created FROM=local" "$out"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -125,4 +136,5 @@ cases=(
   "stops when gh and origin/HEAD both fail|t_ck_no_default"
   "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
   "stops when --base has no value|t_ck_base_without_value"
+  "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"
 )
