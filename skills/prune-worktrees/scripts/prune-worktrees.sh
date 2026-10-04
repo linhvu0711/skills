@@ -40,6 +40,8 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+checkout="$here/../../../shared-skill-core/checkout.sh"
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -158,26 +160,18 @@ sort_one() {
 }
 
 # sort_repo <main>: sorts every worktree of the repo but the main checkout,
-# which `git worktree list` always prints first. An entry whose folder is gone
+# which the checkout resolver lists first. An entry whose folder is gone
 # (`prunable`) is only counted, for `git worktree prune`.
 sort_repo() {
-  local main="$1" slug path="" branch="" locked=0 gone=0 line n=0 stale_n=0
+  local main="$1" slug path branch locked gone b l g w n=0 stale_n=0
   slug="$(github_repo "$main")"
   if named "$main"; then die "$(show "$main") is the main checkout"; fi
-  while IFS= read -r line; do
-    case "$line" in
-      "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0; n=$((n + 1)) ;;
-      "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
-      locked|"locked "*) locked=1 ;;
-      prunable|"prunable "*) gone=1 ;;
-      "")
-        if [ -n "$path" ] && [ "$n" -gt 1 ]; then
-          if [ "$gone" -eq 1 ]; then stale_n=$((stale_n + 1))
-          else sort_one "$main" "$slug" "$path" "$branch" "$locked"; fi
-        fi
-        path="" ;;
-    esac
-  done < <(git -C "$main" worktree list --porcelain; echo)
+  while read -r b l g w; do
+    n=$((n + 1)); [ "$n" -gt 1 ] || continue
+    branch="${b#BRANCH=}"; locked="${l#LOCKED=}"; gone="${g#PRUNABLE=}"; path="${w#WORKTREE=}"
+    if [ "$gone" -eq 1 ]; then stale_n=$((stale_n + 1))
+    else sort_one "$main" "$slug" "$path" "$branch" "$locked"; fi
+  done < <(bash "$checkout" worktrees "$main")
   [ "$stale_n" -eq 0 ] || [ "${#names[@]}" -gt 0 ] || stale+=("$main$sep$stale_n")
 }
 
