@@ -26,6 +26,14 @@
 # Exit 0: one line,
 # `MAIN=<dir> WORKTREE=<dir> BRANCH=<b> DEFAULT=<b> STATE=<created|reused> FROM=<what>`.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
+#
+#   checkout.sh worktrees <dir>
+#
+# Lists every worktree of the repo <dir> is in, the main checkout first, as
+# git lists them, one line each:
+# `BRANCH=<b> LOCKED=<0|1> PRUNABLE=<0|1> WORKTREE=<path>`. BRANCH is empty on
+# a detached HEAD; PRUNABLE=1 is a worktree whose folder is gone. The path
+# comes last, so `read` keeps a space in it.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -35,6 +43,33 @@ common_dir() {
   d="$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && [ -n "$d" ] || return 1
   (cd "$d" && pwd -P)
 }
+# worktrees <dir>: the lines of the `worktrees` form, from
+# `git worktree list --porcelain`. A bare entry is left out.
+worktrees() {
+  local listed line path="" branch="" locked=0 gone=0 bare=0
+  listed="$(git -C "$1" worktree list --porcelain 2>/dev/null)" || die "not a git checkout: $1"
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0; bare=0 ;;
+      "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
+      bare) bare=1 ;;
+      locked|"locked "*) locked=1 ;;
+      prunable|"prunable "*) gone=1 ;;
+      "")
+        if [ -n "$path" ] && [ "$bare" -eq 0 ]; then
+          printf 'BRANCH=%s LOCKED=%s PRUNABLE=%s WORKTREE=%s\n' "$branch" "$locked" "$gone" "$path"
+        fi
+        path="" ;;
+    esac
+  done < <(printf '%s\n\n' "$listed")
+}
+
+# The forms that take no branch.
+case "${1:-}" in
+  worktrees)
+    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
+    worktrees "$2"; exit 0 ;;
+esac
 
 usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
 slug=""; branch=""; base=""
@@ -126,12 +161,15 @@ done_line() {
 }
 
 # A worktree on the branch already, in either folder shape: reused. The main
-# checkout, which `git worktree list` prints first, is never one.
-listed="$(git -C "$main" worktree list --porcelain)"
-where="$(awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0==b {print w}' <<<"$listed")"
+# checkout, which `worktrees` lists first, is never one.
+listed="$(worktrees "$main")"
+first=""; where=""
+while read -r b _ _ w; do
+  [ -n "$first" ] || first="${w#WORKTREE=}"
+  if [ "$b" = "BRANCH=$branch" ]; then where="${w#WORKTREE=}"; break; fi
+done <<<"$listed"
 if [ -n "$where" ]; then
-  [ "$where" != "$(awk '/^worktree /{print substr($0, 10); exit}' <<<"$listed")" ] \
-    || die "branch $branch is already checked out at $where"
+  [ "$where" != "$first" ] || die "branch $branch is already checked out at $where"
   dirty="$(git -C "$where" status --porcelain)"
   [ -z "$dirty" ] || die "dirty worktree at $where:"$'\n'"$dirty"
   done_line "$where" reused existing

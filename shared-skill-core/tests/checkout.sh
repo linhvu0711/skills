@@ -135,6 +135,29 @@ t_ck_github_rewrite() {
   eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
 }
 
+t_ck_worktrees_lists_all() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/1-a "$T/w/feat 1" main
+  git -C "$T/dev/app" worktree add -q --detach "$T/w/det" main
+  git -C "$T/dev/app" worktree add -q -b feat/2-b "$T/w/locked" main
+  git -C "$T/dev/app" worktree lock "$T/w/locked"
+  git -C "$T/dev/app" worktree add -q -b feat/3-c "$T/w/gone" main
+  rm -rf "$T/w/gone"
+  resolve worktrees "$T/dev/app"
+  eq stdout "BRANCH=main LOCKED=0 PRUNABLE=0 WORKTREE=$T/dev/app
+BRANCH= LOCKED=0 PRUNABLE=0 WORKTREE=$T/w/det
+BRANCH=feat/1-a LOCKED=0 PRUNABLE=0 WORKTREE=$T/w/feat 1
+BRANCH=feat/2-b LOCKED=1 PRUNABLE=0 WORKTREE=$T/w/locked
+BRANCH=feat/3-c LOCKED=0 PRUNABLE=1 WORKTREE=$T/w/gone" \
+    "$(printf '%s\n' "$out" | sed -n 1p; printf '%s\n' "$out" | sed 1d | LC_ALL=C sort)"
+}
+
+t_ck_worktrees_outside_git() {
+  ck_setup; mkdir -p "$T/plain"
+  resolve worktrees "$T/plain"
+  eq stderr "stop: not a git checkout: $T/plain" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -149,4 +172,6 @@ cases=(
   "stops when --base has no value|t_ck_base_without_value"
   "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"
   "a rewrite to another GitHub repo names only that repo|t_ck_github_rewrite"
+  "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"
+  "worktrees stops on a folder outside git|t_ck_worktrees_outside_git"
 )

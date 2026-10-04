@@ -105,5 +105,5 @@ A worktree that is clean, whose PR is merged on GitHub (or whose branch is in th
 _Avoid_: stale, old, abandoned
 
 **Checkout resolver**:
-The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch.
+The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also lists a repo's worktrees.
 _Avoid_: repo finder, repo lookup
