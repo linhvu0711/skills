@@ -29,8 +29,17 @@ t_build_run_one() {
   eq DATA "$(jq -S . "$here/build-page/run-one.json")" "$(page_data "$T/plan-acme-shop-75-run.html")"
 }
 
+t_build_none_map() {
+  T="$(mktemp -d)"
+  cp "$here/build-page/none-map.md" "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S . "$here/build-page/none-map.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
+  "build-page builds a None map page|t_build_none_map"
 )

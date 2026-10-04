@@ -544,7 +544,7 @@ const DATA = {};
 
   function mapView() {
     if (d.maps == null) return null;
-    if (!d.maps.length) return el('p', { class: 'empty', style: 'margin-top:10px' }, 'No change map: no part or flow changes.');
+    if (!d.maps.length) return el('p', { class: 'empty', style: 'margin-top:10px' }, d.noMap);
     return d.maps.map((m, i) => el('div', { class: 'map' }, m.area ? el('h4', {}, m.area) : null, mapKey(m), el('div', { class: 'mapwrap' }, mapSvg(m, `map${i}`))));
   }
   // The M refs a run's layer makes: its parts, and the parts its flows touch.

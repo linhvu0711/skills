@@ -167,7 +167,7 @@ def md_maps(lines):
             continue
         t = line.strip()
         if t.lower().startswith("none:"):
-            cur["none"] = True
+            cur["none"] = t
         elif t.startswith("|"):
             cells = next(table_rows([t]))
             if cells and cells[0] == "Ref":
@@ -196,6 +196,8 @@ def grid(cell):
 def page_maps(maps):
     got = []
     for m in maps:
+        if m["none"]:
+            continue
         parts = []
         for p in m["parts"]:
             at = p.get("At", "")
@@ -315,6 +317,9 @@ def page_data(lines):
             "review": top_review(parts), "maps": page_maps(md_maps(lines)), "facts": facts, "proved": proved, "layers": layers}
     if is_run:
         data["points"] = key_values(section["Stack"], ["Points"]).get("points", "")
+    no_map = next((m["none"] for m in md_maps(lines) if m["none"]), None)
+    if no_map:
+        data["noMap"] = no_map
     return data
 
 
