@@ -104,6 +104,14 @@ t_route_new_issue_devin() {
   eq stdout "start devin" "$out"
 }
 
+t_route_unknown_executor() {
+  fake_adapters
+  printf '%s\n' "$row_cursor12" > "$(ledger)"
+  handoff route "$issue12" foo
+  eq exit 1 "$code"
+  eq stderr "handoff.sh: executor must be devin or cursor" "$err"
+}
+
 t_start_names_other_executor() {
   fake_adapters
   printf '%s\n' "$row_devin12" > "$(ledger)"
@@ -262,6 +270,7 @@ cases=(
   "route follows the executor the ledger has|t_route_follows_ledger"
   "route follows the named executor's own session|t_route_follows_named"
   "route starts an issue with no session on devin|t_route_new_issue_devin"
+  "route stops on an unknown executor|t_route_unknown_executor"
   "start on another executor's issue names it|t_start_names_other_executor"
   "status reads the session through the adapter named|t_status_through_adapter"
   "say sends the note through the adapter named|t_say_through_adapter"

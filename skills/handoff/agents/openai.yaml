@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Build the prompt from the plan and start a Devin or Cursor session"
+  default_prompt: "$handoff"
