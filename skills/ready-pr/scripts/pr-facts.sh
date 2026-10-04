@@ -30,7 +30,8 @@ json="$(gh pr view ${ref:+"$ref"} "${repo[@]}" --json number,url,title,state,isD
 # The checks the base requires, from branch protection and from rulesets.
 # Both read with plain read access; a repo with neither gives [].
 r="$(jq -r '.url | capture("github\\.com/(?<r>[^/]+/[^/]+)/pull").r' <<<"$json")"
-base="$(jq -r .baseRefName <<<"$json")"
+# One path segment: a slash in the branch name is sent as %2F.
+base="$(jq -r '.baseRefName | @uri' <<<"$json")"
 prot="$(gh api "repos/$r/branches/$base" -q '.protection.required_status_checks.contexts // []' 2>&1)" \
   || { printf 'stop: %s\n' "$prot" >&2; exit 1; }
 rules="$(gh api "repos/$r/rules/branches/$base" -q '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]' 2>&1)" \

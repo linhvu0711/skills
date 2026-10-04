@@ -489,7 +489,7 @@ restack="$here/../skills/ready-pr/scripts/restack.sh"
 # `api repos/…/check-runs` check-runs. Call n of a route prints
 # <route>.<n>.fail or <route>.fail to stderr and fails when one exists, else
 # prints <route>.<n>.json or <route>.json, through `jq -r` when given -q.
-# Each route counts its calls in <route>.calls.
+# Each route counts its calls in <route>.calls and logs their args in <route>.args.
 fake_gh() {
   T="$(cd "$(mktemp -d)" && pwd -P)"; mkdir -p "$T/bin" "$T/gh" "$T/prs"
   cat > "$T/bin/gh" <<'EOF'
@@ -518,6 +518,7 @@ case "$args" in
   *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;
 esac
 n=$(( $(cat "$FAKE_GH/$key.calls" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$FAKE_GH/$key.calls"
+printf '%s\n' "${args# }" >> "$FAKE_GH/$key.args"
 for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
 done
@@ -806,6 +807,15 @@ t_ready_required_checks_posted() {
   eq "last line" "READY https://github.com/acme/app/pull/7 (waiting for approval)" "$(last)"
 }
 
+t_ready_slash_base() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[$ci_green,$devin_ok]"
+  jq '.baseRefName = "release/1.0"' "$FAKE_GH/pr.json" > "$FAKE_GH/pr.tmp" && mv "$FAKE_GH/pr.tmp" "$FAKE_GH/pr.json"
+  ready
+  eq exit 0 "$code"
+  eq "branch and rules calls" "api repos/acme/app/branches/release%2F1.0 api repos/acme/app/rules/branches/release%2F1.0" \
+    "$(cat "$FAKE_GH/branch.args" "$FAKE_GH/rules.args" | awk '{print $1, $2}' | paste -sd' ' -)"
+}
+
 t_ready_draft() {
   fake_gh; pr_json pr.json DRAFT MERGEABLE "" true "[$ci_green,$devin_ok]"
   ready
@@ -934,6 +944,7 @@ cases=(
   "ready-pr: a required check not posted reads NOT READY|t_ready_required_check_missing"
   "ready-pr: a ruleset check not posted reads NOT READY|t_ready_ruleset_check_missing"
   "ready-pr: required checks all posted reads READY (waiting for approval)|t_ready_required_checks_posted"
+  "ready-pr: a base with a slash is encoded in the required checks calls|t_ready_slash_base"
   "ready-pr: a draft reads NOT READY|t_ready_draft"
   "ready-pr: zero checks reads NOT READY|t_ready_zero_checks"
   "ready-pr: zero checks under --no-devin reads NOT READY|t_ready_zero_checks_no_devin"
