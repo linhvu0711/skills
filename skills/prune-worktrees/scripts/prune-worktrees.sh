@@ -48,10 +48,16 @@ github_repo() {
 }
 
 # pr_of <owner/repo> <branch>: `<number> <STATE> <headRefOid>` of the
-# branch's newest PR, or nothing when it has none.
+# branch's newest PR, or nothing when it has none. gh fails: the stop line on
+# stderr, and return 1.
 pr_of() {
-  gh pr list -R "$1" --head "$2" --state all --limit 1 \
-    --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"'
+  local out err
+  err="$(mktemp)"
+  if out="$(gh pr list -R "$1" --head "$2" --state all --limit 1 \
+      --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"' 2>"$err")"; then
+    rm -f "$err"; printf '%s' "$out"; return 0
+  fi
+  printf 'stop: gh failed: %s\n' "$(head -1 "$err")" >&2; rm -f "$err"; return 1
 }
 
 # default_ref <main>: the default branch to test a tip against: origin/HEAD,
@@ -76,7 +82,7 @@ plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s'
 # sort_one <main> <owner/repo> <path> <branch> <locked>: puts one worktree in
 # kept or removals. The first reason that holds is the one printed.
 sort_one() {
-  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref num="" state="" oid=""
+  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid=""
   keep() { kept+=("$path$tab$1"); }
   [ "$locked" -eq 0 ] || { keep "locked"; return; }
   [ -n "$branch" ] || { keep "detached HEAD"; return; }
@@ -84,7 +90,10 @@ sort_one() {
   [ "$n" -eq 0 ] || { keep "$(plural "$n" "uncommitted file" "uncommitted files")"; return; }
   tip="$(git -C "$main" rev-parse "refs/heads/$branch")"
   if [ -n "$slug" ]; then
-    read -r num state oid <<<"$(pr_of "$slug" "$branch")" || true
+    # Every worktree is sorted before the first removal, so a stop here
+    # removes nothing.
+    pr="$(pr_of "$slug" "$branch")" || exit 1
+    read -r num state oid <<<"$pr" || true
   fi
   case "$state" in
     MERGED)

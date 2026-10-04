@@ -30,6 +30,10 @@ with the reason it stays. The user decides about the rest.
 
 2. Exit 0: reply with its stdout, verbatim, and nothing more.
 
+   A `stop: gh failed: <why>` line: say that `gh` failed and why, name
+   `gh auth status` to check the login, and stop. Nothing was removed.
+   Do not run the script again without `gh`.
+
 ## Examples
 
 **User:** `/prune-worktrees` after two PRs merged; a third PR is open.

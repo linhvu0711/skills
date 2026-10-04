@@ -1142,6 +1142,16 @@ t_prune_git_only() {
   [ ! -e "$T/gh-calls" ] || eq "gh calls" "none" "$(cat "$T/gh-calls")"
 }
 
+t_prune_gh_fails() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-1-a" feat/1-a
+  printf 'feat/1-a 43 MERGED %s\n' "$(git rev-parse feat/1-a)" > "$T/gh-prs"
+  run env PATH="$T/bin:$PATH" GH_FAKE_FAIL=1 bash "$P"
+  eq exit 1 "$code"
+  eq stdout "" "$out"
+  eq stderr "stop: gh failed: error connecting to api.github.com" "$err"
+  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1252,6 +1262,7 @@ cases=(
   "prune keeps an open PR|t_prune_keeps_open_pr"
   "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
   "prune uses only git with no GitHub remote|t_prune_git_only"
+  "prune stops and removes nothing when gh fails|t_prune_gh_fails"
 )
 
 pass=0; fail=0

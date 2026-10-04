@@ -20,7 +20,7 @@ No worktree to prune: one line, `nothing to prune`.
 ## Needs
 
 - `git`.
-- `gh`, signed in, for the PR of each branch: one call per branch.
+- `gh`, signed in, for the PR of each branch: one call per branch. When `gh` fails (not signed in, no network), it removes nothing and says so.
 
 ## Fits with
 
