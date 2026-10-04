@@ -122,7 +122,8 @@ unchanged. The form decides only where the build runs (step 2).
        plus a force push, a delete, another branch): quote the question
        in a fenced block, then one question to the user, two options at
        most, your pick first. The user answers `/ship <note>`. Stop.
-     - The last line is `READY <url>` or `NOT READY <url>: …`: step 7.
+     - The last line is `READY <url>`, with or without
+       `(waiting for approval)`, or `NOT READY <url>: …`: step 7.
      - A PR exists (`gh pr list --head <branch> --state open`) and the
        pane is idle with neither line: step 7.
      - No PR and no question: the pane stopped short. Show the last 20
@@ -158,7 +159,9 @@ unchanged. The form decides only where the build runs (step 2).
    ```
 
    A cloud route: `Route: cloud (UI walks) · session: <url>` and no
-   worktree lines. Not ready: the last line is
+   worktree lines. The `READY` line is the one ready-pr printed, word
+   for word: a PR that waits only for a person's approval ends
+   `READY <url> (waiting for approval)`. Not ready: the last line is
    `NOT READY <url>: <what is open>`. The merge is the user's.
 
 ## Follow-up

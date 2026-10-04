@@ -32,6 +32,8 @@ Clean up after merge: git -C ~/development/app worktree remove ~/development/wor
 READY https://github.com/acme/app/pull/43
 ```
 
+A PR that waits only for a person's approval ends with `READY <url> (waiting for approval)`.
+
 ## Needs
 
 - `gh` (signed in), `git`, `jq`, and `python3`.

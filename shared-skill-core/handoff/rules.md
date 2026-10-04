@@ -428,7 +428,8 @@ and repeats until the PR is ready or it must ask. Its stop points are
 yours: an `unclear` finding, or a `fix here` whose change touches a
 seam, a Done-when line, a schema, an API, or a `Decided` line, is a
 surprise; stop and ask (see Asking). When it prints
-`READY <pr-url>`, go to Finish.
+`READY <pr-url>`, or `READY <pr-url> (waiting for approval)`, go to
+Finish.
 <!-- /local -->
 <!-- cloud -->
 <!-- devin -->
@@ -637,7 +638,10 @@ the old, `--add-label` the new). Then end the turn with one message:
 the PR URL, the size with its facts and line count, then every
 surprise and every review comment, one line each with its verdict and
 its SHA or issue URL, a `Filed:` line listing every issue URL you
-created (or `Filed: none`), and as the last line `READY <pr-url>`.
+created (or `Filed: none`), and as the last line the `READY` line
+`ready-pr` printed, word for word: `READY <pr-url>`, or
+`READY <pr-url> (waiting for approval)` when only a person's approval
+is left.
 `ready-pr` stopped short of ready and you could not close the gap: the
 same message, last line `NOT READY <pr-url>: <what is open>`. The
 proof is already in the PR. Secrets, tokens, and keys stay out of the
