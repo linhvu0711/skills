@@ -67,10 +67,27 @@ t_ck_bad_branch() {
   eq stderr "stop: not a valid branch name: feat..x" "$err"
 }
 
+t_ck_reuses_old_shape() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/root/app/feat-2-y" main
+  resolve acme/app feat/2-y
+  eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/app/feat-2-y BRANCH=feat/2-y DEFAULT=main STATE=reused FROM=existing" "$out"
+}
+
+t_ck_stops_dirty() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/root/app/feat-2-y" main
+  printf 'a\n' > "$T/root/app/feat-2-y/a.txt"
+  resolve acme/app feat/2-y
+  eq stderr "$(printf 'stop: dirty worktree at %s:\n?? a.txt' "$T/root/app/feat-2-y")" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
   "stops when no checkout is found|t_ck_no_checkout"
   "stops on two checkouts|t_ck_two_checkouts"
   "stops on a bad branch name|t_ck_bad_branch"
+  "reuses an old-shape worktree by its branch|t_ck_reuses_old_shape"
+  "stops on a dirty worktree for the branch|t_ck_stops_dirty"
 )

@@ -14,6 +14,8 @@
 # ${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>/<branch>,
 # with every `/` in the branch written as `-`. Shared by /ship and /ready-pr.
 #
+# - A worktree of the repo is on the branch, clean, in this shape or the
+#   older <root>/<repo>/<branch>: reused.
 # - The branch exists locally: the worktree checks it out.
 # - It exists only on origin: fetched and tracked.
 # - It exists nowhere: made from --base (fetched from origin first).
@@ -110,24 +112,30 @@ done_line() {
   printf 'MAIN=%s WORKTREE=%s BRANCH=%s DEFAULT=%s STATE=%s FROM=%s\n' "$main" "$1" "$branch" "$default" "$2" "$3"
 }
 
-# Already a worktree there?
+# A worktree on the branch already, in either folder shape: reused. The main
+# checkout, which `git worktree list` prints first, is never one.
+listed="$(git -C "$main" worktree list --porcelain)"
+where="$(awk -v b="refs/heads/$branch" '$1=="worktree"{w=$2} $1=="branch" && $2==b {print w}' <<<"$listed")"
+if [ -n "$where" ]; then
+  [ "$where" != "$(awk '$1=="worktree"{print $2; exit}' <<<"$listed")" ] \
+    || die "branch $branch is already checked out at $where"
+  dirty="$(git -C "$where" status --porcelain)"
+  [ -z "$dirty" ] || die "dirty worktree at $where:"$'\n'"$dirty"
+  done_line "$where" reused existing
+  exit 0
+fi
+
+# Something else in the folder?
 if [ -e "$dir" ]; then
   [ -f "$dir/.git" ] || die "$dir exists and is not a worktree"
   owner="$(common_dir "$dir")" || die "$dir is a worktree whose repo is gone"
   [ "$owner" = "$(common_dir "$main")" ] || die "$dir is a worktree of ${owner%/.git}, not $main"
-  cur="$(git -C "$dir" branch --show-current 2>/dev/null || true)"
-  [ "$cur" = "$branch" ] || die "$dir is on '$cur', not '$branch'"
-  dirty="$(git -C "$dir" status --porcelain)"
-  [ -z "$dirty" ] || die "dirty worktree at $dir:"$'\n'"$dirty"
-  done_line "$dir" reused existing
-  exit 0
+  die "$dir is on '$(git -C "$dir" branch --show-current 2>/dev/null || true)', not '$branch'"
 fi
 
 # Where is the branch?
 from=""
 if git -C "$main" show-ref --verify --quiet "refs/heads/$branch"; then
-  where="$(git -C "$main" worktree list --porcelain | awk -v b="refs/heads/$branch" '$1=="worktree"{w=$2} $1=="branch" && $2==b {print w}')"
-  [ -z "$where" ] || die "branch $branch is already checked out at $where"
   from="local"
 elif git -C "$main" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
   from="origin"
