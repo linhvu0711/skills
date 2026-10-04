@@ -129,6 +129,21 @@ t_prune_all() {
   [ ! -e "$T/root/b/feat-2-b" ] || eq "$T/root/b/feat-2-b" "gone" "still there"
 }
 
+t_prune_all_both_shapes() {
+  wt_repo; gh_remote; fake_gh
+  local r
+  for r in b c; do
+    mkdir "$T/$r"; git -C "$T/$r" init -q -b main
+    git -C "$T/$r" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  done
+  git -C "$T/b" worktree add -q -b feat/2-b "$T/root/b/feat-2-b" main
+  git -C "$T/b" merge -q --ff-only feat/2-b
+  git -C "$T/c" worktree add -q -b feat/3-c "$T/root/acme/c/feat-3-c" main
+  git -C "$T/c" merge -q --ff-only feat/3-c
+  run env WORKTREES_ROOT="$T/root" bash "$P" all
+  eq stdout "$(printf 'removed %s, branch feat/3-c deleted (-d)\nremoved %s, branch feat/2-b deleted (-d)' "$T/root/acme/c/feat-3-c" "$T/root/b/feat-2-b")" "$out"
+}
+
 t_prune_removes_named() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-3-c" feat/3-c; printf 'a\n' > "$T/w/feat-3-c/a.txt"
   run bash "$P" --remove "$T/w/feat-3-c"
@@ -158,5 +173,6 @@ cases=(
   "prune skips the session's worktree|t_prune_skips_session"
   "prune clears a stale entry|t_prune_clears_stale"
   "prune all goes through every repo under the root|t_prune_all"
+  "prune all finds old and new shapes|t_prune_all_both_shapes"
   "prune removes a named worktree and keeps an unmerged branch|t_prune_removes_named"
 )

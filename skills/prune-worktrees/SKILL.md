@@ -30,7 +30,8 @@ with the reason it stays. The user decides about the rest.
    ```
 
    `/prune-worktrees all`: add `all`. It also goes through every repo
-   with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`.
+   with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`,
+   in `<owner>/<repo>/<branch>` folders or the older `<repo>/<branch>`.
 
 2. Exit 0: reply with its stdout, verbatim, and nothing more.
 
@@ -49,15 +50,15 @@ with the reason it stays. The user decides about the rest.
 **User:** `/prune-worktrees` after two PRs merged; a third PR is open.
 
 ```
-kept ~/development/worktrees/app/feat-7-search: PR #159 open
-removed ~/development/worktrees/app/feat-42-login, branch feat/42-login deleted (-D)
-removed ~/development/worktrees/app/fix-43-date, branch fix/43-date deleted (-D)
+kept ~/development/worktrees/acme/app/feat-7-search: PR #159 open
+removed ~/development/worktrees/acme/app/feat-42-login, branch feat/42-login deleted (-D)
+removed ~/development/worktrees/acme/app/fix-43-date, branch fix/43-date deleted (-D)
 ```
 
 The reply is those three lines.
 
 **User:** `remove the search one` after that reply.
 
-`bash scripts/prune-worktrees.sh --remove ~/development/worktrees/app/feat-7-search`
-prints `removed ~/development/worktrees/app/feat-7-search, branch
+`bash scripts/prune-worktrees.sh --remove ~/development/worktrees/acme/app/feat-7-search`
+prints `removed ~/development/worktrees/acme/app/feat-7-search, branch
 feat/7-search kept: git branch -d refused`. The reply is that line.
