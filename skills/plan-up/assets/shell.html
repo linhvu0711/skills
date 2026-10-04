@@ -591,7 +591,7 @@ const DATA = {};
     const rows = L.proof.map((p, i) => el('tr', {},
       el('td', { class: 'num' }, i + 1),
       el('td', {}, R(p.line)),
-      el('td', {}, p.test ? R(`${code(p.test.file)} "${p.test.name}"`) : el('span', { class: 'empty' }, 'none')),
+      el('td', {}, p.test ? R(p.test) : el('span', { class: 'empty' }, 'none')),
       el('td', {}, badge(p.walk && 'walk ' + p.walk, 'kind')),
       el('td', {}, badge(p.video, 'kind')),
       el('td', {}, badge(p.artifact, p.artifact === 'test' ? 'ok' : 'warn'))));

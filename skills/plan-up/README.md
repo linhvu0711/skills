@@ -16,7 +16,7 @@ It reads every ticket with its comments, since a later comment can change what t
 
 ## What you get
 
-A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser.
+A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. The plan opens with its issue, size, and date and holds a short Summary that the page shows on its Overview tab. [build-page.py](scripts/build-page.py) builds the page from the `.md`.
 
 The page opens on a Review tab, written for you, the person who approves the plan: what changes, the approach and why not the other way, the blast radius (the parts it touches, and whether it adds a dependency, a schema change, an API, config, or CI), the choices you should know about, at most three risks, how we know it works, and the scope. Each part has a size limit, and the check fails a page that breaks one. A run shows the whole stack first, then a small block for each layer.
 
@@ -55,6 +55,8 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 ## Tests
 
 The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+
+The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
 
 ## Credits
 

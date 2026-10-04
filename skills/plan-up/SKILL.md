@@ -246,11 +246,12 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    back to step 4 or 5.
 
 8. **Present.** Per `../../shared-skill-core/plan-page.md`: write the plan to its `.md`,
-   fill `DATA`, build the page, serve it with `scripts/serve.sh`, check it with
-   `scripts/check-page.py`, open it in the browser, or publish it on a
+   run `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
+   the `.md` and run it again. Never write `DATA`: the builder makes it.
+   Serve with `scripts/serve.sh`, open it in the browser, or publish it on a
    headless host. Chat
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
-   edit: change the `.md` and `DATA`, rebuild, bump `v`, show the summary
+   edit: change the `.md`, rebuild, bump `v`, show the summary
    again. `ok`: remove the base copy (step 1), say
    `Ready for /handoff-devin.`, and stop.
 

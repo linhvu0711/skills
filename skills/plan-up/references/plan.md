@@ -56,6 +56,9 @@ Write every block in this order. Drop a block only when no probe ran
 nothing was decided (`Decided`).
 
 ```markdown
+# Plan: #<n> <issue title>
+Size: size/<x>    Date: YYYY-MM-DD
+
 ## Review
 Change:   <before> → <after>, at most 4 lines
 Approach: <how it is built, and why not the other way>, at most 4 lines
@@ -100,6 +103,9 @@ Standards: <the files that hold the rules, or "the code">
 ## Proved
 - P1 <the fact, with the value, shape, or limit the build needs>: <what ran,
   one clause>, <YYYY-MM-DD>. Used by <S2, D1>.
+
+## Summary
+<2 to 3 lines: what changes, the path slice 1 takes, the counts>
 
 ## Proof
 | # | Done-when line | Test (file, case) | UI walk | Video | Artifact |
@@ -261,6 +267,9 @@ Two things end the short path:
 In a run, a labelled layer is built the same way.
 
 ## Filling the blocks
+
+**Summary.** Two to three lines: what changes, the path slice 1 takes,
+and the counts. The page shows it as the layer's Overview lead.
 
 **Review.** Written last, from the blocks under it, and placed first.
 It is for a person who approves the plan and never reads a slice, so it
