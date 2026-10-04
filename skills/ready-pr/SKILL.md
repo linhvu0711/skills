@@ -96,7 +96,12 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      `bash scripts/restack.sh list <REPO> <HEAD> > <file>`, a temp file;
      print its lines. Then `git -C "$WT" push --force-with-lease`. Devin
      re-reviews the new head; old threads go `outdated` and stay
-     resolved.
+     resolved. `STACK=0`: nothing more. Else
+     `bash scripts/restack.sh move "$WT" <HEAD> <OLD> <file>`, and hold
+     its lines for the report. `RESTACK=stopped`: say its `CLASH` or
+     `SKIP` line; the PRs from there up stay as they are, for the user.
+     A child's conflict never goes to fix-conflicts. This PR's loop goes
+     on.
 
    After the push, `r` is `r + 1`. `r` past 6: say what keeps coming
    back and stop. Else `SHA` is the new head: step 3.
@@ -124,13 +129,18 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    ```
    PR: feat(auth): add login (#43)
    Rounds: 2 · Devin Review: success on 9e18c16 · open threads: 0 · merge state: CLEAN
+   Stack: moved https://github.com/acme/app/pull/44, https://github.com/acme/app/pull/45
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
    Worktree: ~/code/worktrees/app/feat-42-login
    READY https://github.com/acme/app/pull/43
    ```
 
-   One line per finding over every round, id, verdict, SHA or URL.
+   One `Stack:` line per restack, in round order, each moved PR by its
+   URL; a stopped one reads
+   `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
+   restack: no `Stack:` line. One line per finding over every round,
+   id, verdict, SHA or URL.
    `Filed: none` when nothing was filed. A `no-devin` run says
    `Devin Review: none on this repo`. A stop point that ended the run
    prints the same block with `NOT READY <url>: <what is open>` last.
@@ -163,6 +173,14 @@ add the migration in this PR, `B` `fix later` as its own ticket. Wait.
 Rebase on `origin/main`; two hunks conflict; fix-conflicts resolves them
 and the suite is green; `push --force-with-lease`. Step 3 again on the
 new head.
+
+**PR 43 is under PRs 44 and 45**, and its merge state is `DIRTY`.
+
+Rebase on `origin/main`, then `restack.sh list` prints `STACK=2`: 44 on
+43's branch, 45 on 44's. Force push, then `restack.sh move`: two `MOVED`
+lines, 44 first, and `RESTACK=moved 2`. The report's `Stack:` line names
+both URLs. Had 44 clashed, the move stops there with `CLASH` and the
+files; 45 is `LEFT`, not pushed.
 
 **`wait-review.sh`** exits 3 on a repo with no Devin app.
 
