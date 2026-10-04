@@ -52,6 +52,10 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 - Its plan goes to [handoff-devin](../handoff-devin/) or [handoff-cursor](../handoff-cursor/).
 - [ship](../ship/) runs it as its first step, and [kickoff](../kickoff/) runs it in a new pane.
 
+## Tests
+
+The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+
 ## Credits
 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.

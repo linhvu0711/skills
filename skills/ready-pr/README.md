@@ -38,3 +38,7 @@ If `gh` fails five times in a row while it waits for the review (an expired logi
 - Finds a checkout the way [kickoff](../kickoff/)'s script does.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.
 - Named by [make-pr](../make-pr/) as the next step once the PR is open.
+
+## Tests
+
+The cases for its scripts are in [tests/](tests/), one file per script, on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
