@@ -8,7 +8,7 @@ You have a plan with decisions still open, and you want them found and settled b
 
 ## What you get
 
-One question per message, each with its options and a recommended pick, until you agree the plan is understood. New terms go into `CONTEXT.md` as they settle. A decision that is hard to reverse, surprising, and the result of a real trade-off becomes an ADR in `docs/adr/`. At the end you get the settled list and a docs PR, opened by [make-pr](../make-pr/). It closes the seed issue when the grill started from one:
+One question per message, each with its options and a recommended pick (the clean, long-term option, with any quick fix shown as a labelled fallback), until you agree the plan is understood. New terms go into `CONTEXT.md` as they settle. A decision that is hard to reverse, surprising, and the result of a real trade-off becomes an ADR in `docs/adr/`. At the end you get the settled list and a docs PR, opened by [make-pr](../make-pr/). It closes the seed issue when the grill started from one:
 
 ```
 Grill done.

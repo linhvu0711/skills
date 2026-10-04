@@ -16,6 +16,14 @@ C. <option>
 
 Options sit on their own lines, labelled A, B, C, D, as many as there are real ways. Two is the usual case, four is the ceiling. Your pick is always A, and line A starts with the ✅ emoji and ends with `— my pick:` and the reason, so the pick stands out at a glance. Lines B, C, D carry no emoji.
 
+### Your pick
+
+Pick what a careful senior engineer would ship: the option with the cleanest architecture and code, correct, easy to change later, and good for the user. Judge on those four alone; speed of writing is no weight. Ask where the logic belongs, and whether the option also covers the similar cases you found. A reason like "smallest diff", "one file", or "matches nearby code" is a shortcut talking; look again.
+
+Right-sized is part of clean: the pick adds no layer, abstraction, or config the work does not need.
+
+When a quicker fix is a real option, it goes on a lower line, labelled `(quick fix)`, with what it costs later.
+
 Each answer reshapes the tree. Settled decisions push the frontier outward and unblock the questions that depended on them. Recompute the frontier and ask the next question. A question waits only when its answer truly depends on one still open. When it could go either way, ask it now as a conditional ("if the last answer is A, then ..."). Every branch gets asked; one more question is cheaper than a branch left silent.
 
 Keep a running list of settled decisions, so the summary at the end is one paste.
