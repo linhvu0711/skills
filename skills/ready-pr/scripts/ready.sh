@@ -7,6 +7,7 @@
 # is `success` on the head commit (or --no-devin was given because the repo
 # has none); no review thread waits for the author; no review asks for changes;
 # GitHub says MERGEABLE with a merge state of CLEAN, HAS_HOOKS, or BEHIND;
+# at least one check or status is on the head, with or without --no-devin;
 # and no other check on the head is red or pending. A merge state of
 # BLOCKED counts as ready only when the one thing missing is an approving
 # review. A merge state of UNKNOWN is GitHub still computing: it is asked
@@ -48,7 +49,10 @@ printf 'OPEN_THREADS=%s\n' "$open"
 why=(); blocked=0
 [ "$(get STATE)" = "OPEN" ] || why+=("state is $(get STATE)")
 [ "$(get DRAFT)" != "true" ] || why+=("draft")
-if [ "$no_devin" -eq 0 ]; then
+checks=$(( $(get CHECKS_RED) + $(get CHECKS_PENDING) + $(get CHECKS_GREEN) ))
+if [ "$(get DEVIN)" = "none" ] && [ "$checks" -eq 0 ]; then
+  why+=("no checks on $(get SHA | cut -c1-7) yet")
+elif [ "$no_devin" -eq 0 ]; then
   case "$(get DEVIN)" in
     SUCCESS) ;;
     none) why+=("no Devin Review status on $(get SHA | cut -c1-7)") ;;

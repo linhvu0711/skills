@@ -776,6 +776,27 @@ t_ready_draft() {
   eq "last line" "NOT READY https://github.com/acme/app/pull/7: draft" "$(last)"
 }
 
+t_ready_zero_checks() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[]"
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: no checks on abc1234 yet" "$(last)"
+}
+
+t_ready_zero_checks_no_devin() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false "[]"
+  ready --no-devin
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: no checks on abc1234 yet" "$(last)"
+}
+
+t_ready_absent_rollup() {
+  fake_gh; pr_json pr.json CLEAN MERGEABLE "" false null
+  ready
+  eq exit 1 "$code"
+  eq "last line" "NOT READY https://github.com/acme/app/pull/7: no checks on abc1234 yet" "$(last)"
+}
+
 t_wait_review_success() {
   fake_gh; printf '{"statuses":[{"context":"Devin Review","state":"success"}]}\n' > "$FAKE_GH/status.json"
   wait_review
@@ -858,6 +879,9 @@ cases=(
   "ready-pr: BLOCKED with a red check reads NOT READY|t_ready_blocked_red_check"
   "ready-pr: BLOCKED with no review rule reads NOT READY|t_ready_blocked_no_review_rule"
   "ready-pr: a draft reads NOT READY|t_ready_draft"
+  "ready-pr: zero checks reads NOT READY|t_ready_zero_checks"
+  "ready-pr: zero checks under --no-devin reads NOT READY|t_ready_zero_checks_no_devin"
+  "ready-pr: an absent rollup is zero checks|t_ready_absent_rollup"
   "wait-review: success reads DEVIN=success|t_wait_review_success"
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
 )
