@@ -13,6 +13,24 @@ t_build_ticket() {
   eq DATA "$(jq -S . "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_run() {
+  T="$(mktemp -d)"
+  cp "$here/build-page/run.md" "$T/plan-acme-shop-71-run.md"
+  build "$T/plan-acme-shop-71-run.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S . "$here/build-page/run.json")" "$(page_data "$T/plan-acme-shop-71-run.html")"
+}
+
+t_build_run_one() {
+  T="$(mktemp -d)"
+  cp "$here/build-page/run-one.md" "$T/plan-acme-shop-75-run.md"
+  build "$T/plan-acme-shop-75-run.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S . "$here/build-page/run-one.json")" "$(page_data "$T/plan-acme-shop-75-run.html")"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
+  "build-page builds a run page from its .md|t_build_run"
+  "build-page builds a one-layer run page from its .md|t_build_run_one"
 )

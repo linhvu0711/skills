@@ -164,6 +164,9 @@ A run is one plan with the blocks above written once per layer. These
 blocks come first and once:
 
 ```markdown
+# Plan: #<first ticket or epic> <title>
+Date: YYYY-MM-DD
+
 ## Stack
 | Layer | Issue | Base | Size | Points |
 |---|---|---|---|---|
@@ -186,7 +189,7 @@ for the whole stack>
 ```
 
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
-and under it a small `## Review` block, then Proof, Seams, Slices, UI
+and under it a small `## Review` block, then `## Summary`, Proof, Seams, Slices, UI
 walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
 The layer's Review holds three parts: `Change`, at most 2 lines, what
 this layer's PR adds to the stack; `Choices`, its forks and decisions;
@@ -206,7 +209,8 @@ slice gives it. Nothing points at a later layer. The points line is
 information, not a cap: the user chose the run.
 
 A single ticket prepped `on` an open stack is a run of one layer whose
-Base is `PR #<n>`.
+Base is `PR #<n>`. It has both the stack Review and the layer Review.
+The H1 and Date come first and once; each layer has its own Summary.
 
 ## Handoff-ready
 

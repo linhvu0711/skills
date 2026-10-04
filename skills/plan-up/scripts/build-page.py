@@ -18,6 +18,7 @@ PART = re.compile(r"(Change|Approach|Blast radius|Choices|Risks|Works when|In|Ou
 BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
 CHANGES = {"new", "changed", "removed", "same"}
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
+LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
 
 
 def blocks(lines):
@@ -28,6 +29,19 @@ def blocks(lines):
         else:
             got[-1][1].append(line)
     return got
+
+
+def sections(lines):
+    top, layers, current = {}, [], None
+    for name, body in blocks(lines):
+        if (m := LAYER.fullmatch(name)):
+            current = {}
+            layers.append((m, current))
+        elif current is None:
+            top[name] = body
+        else:
+            current[name] = body
+    return top, layers
 
 
 def text(lines):
@@ -264,7 +278,7 @@ def page_layer(section, issue, title, parts):
 
 
 def page_data(lines):
-    section = dict(blocks(lines))
+    section, layer_sections = sections(lines)
     head = key_values(section["head"], ["Size", "Date"])
     m = next((re.match(r"# Plan: #(\d+) (.*)", l) for l in lines if l.startswith("# Plan: #")), None)
     number, title = (int(m.group(1)), m.group(2)) if m else (0, "")
@@ -277,12 +291,31 @@ def page_data(lines):
         m = re.match(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$", item)
         if m:
             proved.append(dict(zip(["fact", "ran", "date", "usedBy"], m.groups())))
-    layer = page_layer(section, dict(issue), title, parts)
+    is_run = "Stack" in section
+    layers = []
+    if is_run:
+        stack = {int(r[0]): r for r in table_rows(section["Stack"]) if r and r[0].isdigit()}
+        for i, (heading, body) in enumerate(layer_sections, 1):
+            row = stack.get(int(heading.group(1)), [])
+            layer_issue = {"number": int(heading.group(2)),
+                           "url": f"https://github.com/{facts.get('repo', '')}/issues/{heading.group(2)}",
+                           "size": row[3] if len(row) > 3 else ""}
+            review = next((r["parts"] for r in reviews if r["kind"] == "layer" and r["layer"] == i), {})
+            layer = page_layer(body, layer_issue, heading.group(3), review)
+            layer["review"]["change"] = text(review.get("Change", {}).get("text", []))
+            layer["targets"] = row[2] if len(row) > 2 else ""
+            layer["points"] = int(row[4]) if len(row) > 4 and row[4].isdigit() else 0
+            layers.append(layer)
+    else:
+        layers.append(page_layer(section, dict(issue), title, parts))
     kind = re.match(r"\[([^]]+)\]", title)
     if kind:
         issue["kind"] = kind.group(1)
-    return {"title": title, "issue": issue, "date": head.get("date", ""), "run": False,
-            "review": top_review(parts), "maps": page_maps(md_maps(lines)), "facts": facts, "proved": proved, "layers": [layer]}
+    data = {"title": title, "issue": issue, "date": head.get("date", ""), "run": is_run,
+            "review": top_review(parts), "maps": page_maps(md_maps(lines)), "facts": facts, "proved": proved, "layers": layers}
+    if is_run:
+        data["points"] = key_values(section["Stack"], ["Points"]).get("points", "")
+    return data
 
 
 def main():

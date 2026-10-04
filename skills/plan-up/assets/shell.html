@@ -203,7 +203,7 @@ const DATA = {};
 
   const d = DATA;
   const layers = d.layers || [];
-  const isRun = layers.length > 1;
+  const isRun = !!d.run;
   let cur = 0;
 
   document.title = `Plan · ${d.issue?.number ? '#' + d.issue.number + ' ' : ''}${d.title || ''}`;
