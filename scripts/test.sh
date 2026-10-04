@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit hook, adopt.sh, the
-# handoff render.sh, and ready-pr's restack.sh.
+# handoff render.sh, ready-pr's restack.sh, and the plan-up claims.py.
 #
 #   test.sh
 #
@@ -355,6 +355,85 @@ t_passes_readme_with_headings() {
   eq stdout "check: clean" "$out"
 }
 
+# fake_gh_graphql: a temp folder T with a stub `gh` first on PATH. The stub reads
+# the `number=<n>` argument, prints $T/gh/<n>.err to stderr and exits 1 when
+# that file exists, else prints $T/gh/<n>.json.
+fake_gh_graphql() {
+  T="$(mktemp -d)"; mkdir -p "$T/bin" "$T/gh"
+  cat > "$T/bin/gh" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do case "$a" in number=*) n="${a#number=}" ;; esac; done
+d="$(dirname "$0")/../gh"
+if [ -e "$d/$n.err" ]; then cat "$d/$n.err" >&2; exit 1; fi
+cat "$d/$n.json"
+EOF
+  chmod +x "$T/bin/gh"
+}
+
+# issue_json <n> <assignees> <closing PRs> <timeline nodes>: write the
+# `gh api graphql` answer for issue <n>; each list is JSON array items.
+issue_json() {
+  printf '{"data":{"viewer":{"login":"me"},"repository":{"issue":{"assignees":{"nodes":[%s]},"closedByPullRequestsReferences":{"nodes":[%s]},"timelineItems":{"nodes":[%s]}}}}}\n' \
+    "$2" "$3" "$4" > "$T/gh/$1.json"
+}
+
+claims() { run env PATH="$T/bin:$PATH" python3 "$here/../skills/plan-up/scripts/claims.py" o/r "$@"; }
+
+pr70='{"number":70,"title":"Add the claim check","url":"https://github.com/o/r/pull/70","state":"OPEN","author":{"login":"bob"}}'
+line70='#65 pr #70 "Add the claim check" @bob https://github.com/o/r/pull/70'
+
+t_claims_closing_pr() {
+  fake_gh_graphql; issue_json 65 '' "$pr70" ''
+  claims 65
+  eq exit 0 "$code"
+  eq stdout "$line70" "$out"
+}
+
+t_claims_mentioning_pr() {
+  fake_gh_graphql
+  issue_json 65 '' '' '{"source":{"number":71,"title":"Refactor step 2","url":"https://github.com/o/r/pull/71","state":"OPEN","author":{"login":"carol"}}}'
+  claims 65
+  eq exit 0 "$code"
+  eq stdout '#65 pr #71 "Refactor step 2" @carol https://github.com/o/r/pull/71' "$out"
+}
+
+t_claims_pr_once_open_only() {
+  fake_gh_graphql
+  issue_json 65 '' "$pr70" "{\"source\":$pr70},"'{"source":{"number":68,"title":"Old try","url":"https://github.com/o/r/pull/68","state":"MERGED","author":{"login":"bob"}}},{"source":{"number":69,"title":"Dropped","url":"https://github.com/o/r/pull/69","state":"CLOSED","author":{"login":"bob"}}},{"source":{}}'
+  claims 65
+  eq exit 0 "$code"
+  eq stdout "$line70" "$out"
+}
+
+t_claims_other_assignee() {
+  fake_gh_graphql; issue_json 65 '{"login":"me"},{"login":"dave"}' '' ''
+  claims 65
+  eq exit 0 "$code"
+  eq stdout '#65 assignee @dave' "$out"
+}
+
+t_claims_none() {
+  fake_gh_graphql; issue_json 65 '{"login":"me"}' '' ''
+  claims 65
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_claims_each_issue() {
+  fake_gh_graphql; issue_json 65 '' '' ''; issue_json 66 '{"login":"dave"}' '' ''
+  claims 65 66
+  eq exit 0 "$code"
+  eq stdout '#66 assignee @dave' "$out"
+}
+
+t_claims_gh_fails() {
+  fake_gh_graphql; printf 'gh: Could not resolve to an Issue with the number of 65.\n' > "$T/gh/65.err"
+  claims 65
+  eq exit 1 "$code"
+  eq stdout "" "$out"
+  eq stderr 'claims: #65: gh: Could not resolve to an Issue with the number of 65.' "$err"
+}
+
 t_render_names_ready_pr() {
   T="$(mktemp -d)"
   run bash "$here/../shared-skill-core/handoff/render.sh" local rules
@@ -555,6 +634,13 @@ cases=(
   "restack skips a child with merge commits|t_restack_skips_merge_commits"
   "restack lists a child behind a fork of the same name|t_restack_lists_child_behind_fork_of_same_name"
   "restack stops past 100 PRs on a branch|t_restack_stops_past_100_prs"
+  "claims names an open PR that closes the issue|t_claims_closing_pr"
+  "claims names an open PR that only mentions the issue|t_claims_mentioning_pr"
+  "claims lists a PR once and skips closed and merged PRs|t_claims_pr_once_open_only"
+  "claims names an assignee other than the user|t_claims_other_assignee"
+  "claims prints nothing when no one is on the issue|t_claims_none"
+  "claims checks each issue of a run|t_claims_each_issue"
+  "claims fails when gh fails|t_claims_gh_fails"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"
