@@ -8,7 +8,7 @@ You want reviewers, human or agent, to check the same things on every pull reque
 
 ## What you get
 
-A `REVIEW.md` at the root. The top block is fixed and checks three things: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). Below it go your repo rules, one line each, such as "A migration PR includes the down migration and a dry-run log". It finds rules already in the repo (PR templates, `CONTRIBUTING.md`, bot configs), proposes more from the folders that fix and revert commits touch most, and asks you about each one before it writes. `CLAUDE.md` and `AGENTS.md` get one line that points at the file. Nothing is committed: `REVIEW.md` and any glossary entry or ADR the grill wrote wait together on your branch. The chat ends with:
+A `REVIEW.md` at the root. The top block is fixed and checks three things: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). Logic has seven checks, among them tests that pass whatever the code returns and fixes that hide a failure; Standards adds five smells common in code agents write. Run it again in a repo with an older `REVIEW.md` to get the new checks; only the top block changes. Below it go your repo rules, one line each, such as "A migration PR includes the down migration and a dry-run log". It finds rules already in the repo (PR templates, `CONTRIBUTING.md`, bot configs), proposes more from the folders that fix and revert commits touch most, and asks you about each one before it writes. `CLAUDE.md` and `AGENTS.md` get one line that points at the file. Nothing is committed: `REVIEW.md` and any glossary entry or ADR the grill wrote wait together on your branch. The chat ends with:
 
 ```
 Ready for /commit
@@ -29,3 +29,5 @@ Ready for /commit
 ## Credits
 
 Thanks to [mattpocock/skills](https://github.com/mattpocock/skills) for the `code-review` skill, which gave us the idea (MIT license). No text was copied.
+
+Some logic checks and smells take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT): its root-cause and legacy-API principles and its design red flags. No text was copied.
