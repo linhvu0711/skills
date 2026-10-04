@@ -14,8 +14,6 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-map="${KICKOFF_REPO_MAP:-$HOME/.config/kickoff/repos.tsv}"
-dev_root="${KICKOFF_DEV_ROOT:-$HOME/development}"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*" >&2; }
@@ -88,47 +86,9 @@ else
 fi
 
 # ---------- repo path ----------
-origin_slug() {  # prints owner/repo of a checkout's origin, or nothing
-  local url
-  url="$(git -C "$1" remote get-url origin 2>/dev/null)" || return 0
-  printf '%s' "$url" | sed -E 's#^(git@|https://|ssh://git@)github\.com[:/]##; s#\.git$##; s#/$##'
-}
-is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
-
-path=""; path_from=""
-# 1. the map
-if [ -f "$map" ]; then
-  cand="$(awk -F'\t' -v s="$slug" '$1==s {print $2; exit}' "$map")"
-  if [ -n "$cand" ]; then
-    if is_main_checkout "$cand" && [ "$(origin_slug "$cand")" = "$slug" ]; then
-      path="$cand"; path_from="map"
-    else
-      say "map entry for $slug is stale ($cand), dropping it"
-      tmp="$(mktemp)"; awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
-    fi
-  fi
-fi
-# 2. the pane's cwd
-if [ -z "$path" ] && is_main_checkout "$PWD" && [ "$(origin_slug "$PWD")" = "$slug" ]; then
-  path="$PWD"; path_from="cwd"
-fi
-# 3. search ~/development
-if [ -z "$path" ]; then
-  matches=()
-  while IFS= read -r gitdir; do
-    d="${gitdir%/.git}"
-    [ "$(origin_slug "$d")" = "$slug" ] && matches+=("$d")
-  done < <(find "$dev_root" -maxdepth 6 -type d -name .git -not -path '*/node_modules/*' 2>/dev/null)
-  case "${#matches[@]}" in
-    0) die "no checkout of $slug under $dev_root. Clone it, or add a line to $map: $slug<TAB>/path" ;;
-    1) path="${matches[0]}"; path_from="search" ;;
-    *) die "several checkouts of $slug: ${matches[*]}. Add the right one to $map: $slug<TAB>/path" ;;
-  esac
-fi
-if [ "$path_from" != "map" ]; then
-  mkdir -p "$(dirname "$map")"
-  printf '%s\t%s\n' "$slug" "$path" >>"$map"
-fi
+# The checkout resolver finds the main checkout; its stop line is ours.
+found="$(bash "$here/../../../shared-skill-core/checkout.sh" main "$slug")" || exit 1
+path_from="${found%% *}"; path_from="${path_from#FROM=}"; path="${found#* MAIN=}"
 
 # ---------- label ----------
 if [ -z "$label" ]; then

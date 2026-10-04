@@ -48,10 +48,10 @@ What the script decides, so you can answer questions about it:
   `Size: Small`). Everything else is `high`: M and up, no size label, a
   run, a set, a whole epic.
 - Permission mode is `auto`.
-- Repo path: `~/.config/kickoff/repos.tsv` first (`owner/repo<TAB>path`),
-  then the pane's cwd if its origin matches, then a search under
-  `~/development`. Worktrees are skipped. A find is written to the map.
-  None or several: it stops and says so.
+- Repo path: found by the checkout resolver,
+  `../../shared-skill-core/checkout.sh main <owner/repo>`, whose header
+  says where it looks. A find is written to the map. None or several: it
+  stops and says so.
 - Tree: left as is, on any branch, with edits or not. `/plan-up` reads
   its own fresh copy of the base, so the script never switches, pulls,
   or stops on it.

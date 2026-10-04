@@ -37,8 +37,8 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in
-# $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `repo view`
-# repo-view, `api graphql` graphql, `api user` user,
+# $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `issue view`
+# issue-view, `repo view` repo-view, `api graphql` graphql, `api user` user,
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
 # `api repos/…/status` status, and `api repos/…/check-runs` check-runs. Each
 # route counts its calls in <route>.calls and logs their args in
@@ -65,6 +65,7 @@ done
 case "$args" in
   " pr list"*) key=pr-list ;;
   " pr view"*) key=pr-view ;;
+  " issue view"*) key=issue-view ;;
   " repo view"*) key=repo-view ;;
   " api graphql"*) key=graphql ;;
   " api user"*) key=user ;;
