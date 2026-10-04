@@ -25,7 +25,9 @@
 # shared core file, <owner> from the section's `## <owner>/<repo>` heading.
 # Each skill with a SKILL.md needs a README.md with the headings `## Use it
 # when`, `## What you get`, `## Needs`, and `## Fits with`, plus `## Credits`
-# when THIRD_PARTY_NOTICES.md lists it or a file inside it.
+# when THIRD_PARTY_NOTICES.md lists it or a file inside it. Each SKILL.md needs
+# a frontmatter (a `---` first line and a closing `---` line), a `name` equal to
+# its folder, and a `description` that is not empty.
 #
 # Exit 0: `check: clean` on stdout.
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr,
@@ -150,6 +152,9 @@ done
 # in_index <path>: the path is in the index, so the commit holds it.
 in_index() { git cat-file -e ":$1" 2>/dev/null; }
 
+# skill_dirs: each `skills/<name>` folder whose SKILL.md is in the index.
+skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }'; }
+
 if [ ${#paths[@]} -eq 0 ]; then
   # rows: `<line>\t<owner>\t<path>\t<level>` for each table row of
   # THIRD_PARTY_NOTICES.md whose first cell is one backticked path.
@@ -184,7 +189,25 @@ if [ ${#paths[@]} -eq 0 ]; then
     for h in "${headings[@]}"; do
       printf '%s\n' "$readme" | grep -qxF -e "## $h" || problems+=("$skill/README.md: missing heading: ## $h")
     done
-  done < <(git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }')
+  done < <(skill_dirs)
+
+  # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
+  # `description` is not empty. Quotes around a value go; a block scalar counts
+  # when an indented line follows it.
+  while IFS= read -r skill; do
+    while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | awk -v want="${skill#skills/}" -v q="'" '
+      function val(s,  c) { sub(/^[^:]*:[ \t]*/, "", s); sub(/[ \t]+$/, "", s); c = substr(s, 1, 1)
+                            if (length(s) > 1 && (c == "\"" || c == q) && substr(s, length(s)) == c) s = substr(s, 2, length(s) - 2)
+                            return s }
+      NR == 1          { if ($0 != "---") exit; next }
+      blk              { blk = 0; if ($0 ~ /^[ \t]+[^ \t]/) desc = "block" }
+      $0 == "---"      { closed = 1; exit }
+      /^name:/         { name = val($0) }
+      /^description:/  { desc = val($0); if (desc ~ /^[|>][-+]?$/) { desc = ""; blk = 1 } }
+      END { if (!closed) { print "missing frontmatter"; exit }
+            if (name != want) print "name does not match folder: " (name == "" ? "(none)" : name)
+            if (desc == "") print "empty description" }')
+  done < <(skill_dirs)
 fi
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"

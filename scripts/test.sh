@@ -269,10 +269,17 @@ t_hook_stops_missing_path() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+# skill_md <name>: skills/<name>/SKILL.md with a frontmatter whose name is
+# the folder and whose description is not empty.
+skill_md() {
+  mkdir -p "skills/$1"
+  printf -- '---\nname: %s\ndescription: A %s skill.\n---\n# %s\n' "$1" "$1" "$1" > "skills/$1/SKILL.md"
+}
+
 # readme <heading>...: skills/demo with a SKILL.md and a README that has
 # these `## ` headings.
 readme() {
-  mkdir -p skills/demo; printf '# demo\n' > skills/demo/SKILL.md
+  skill_md demo
   printf '# demo\n' > skills/demo/README.md
   for h in "$@"; do printf '\n## %s\n' "$h" >> skills/demo/README.md; done
 }
@@ -466,6 +473,32 @@ t_claims_gh_fails() {
   eq exit 1 "$code"
   eq stdout "" "$out"
   eq stderr 'claims: #65: gh: Could not resolve to an Issue with the number of 65.' "$err"
+}
+
+t_flags_no_frontmatter() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"; printf '# demo\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: missing frontmatter" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_name_not_folder() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: other\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: name does not match folder: other" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_empty_description() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: ""\n---\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
 t_render_names_ready_pr() {
@@ -953,6 +986,9 @@ cases=(
   "wait-review: no status reads DEVIN=none|t_wait_review_none"
   "wait-review: 5 failed calls stop with exit 4|t_wait_review_gh_fails"
   "wait-review: one failed call then success goes on|t_wait_review_one_failure"
+  "flags a SKILL.md with no frontmatter|t_flags_no_frontmatter"
+  "flags a SKILL.md name that is not its folder|t_flags_name_not_folder"
+  "flags a SKILL.md with an empty description|t_flags_empty_description"
 )
 
 pass=0; fail=0
