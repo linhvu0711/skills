@@ -63,11 +63,12 @@ set's, the first ticket URL. Say the pick in one line, as
    `Run /plan-up first.` and stop. A `handoff-ready` issue or a run
    is no exception. No URL: the issue is the plan's, from its
    `# Plan: #<n>` title and its `Repo:` line. Then the executor, per
-   § Arguments. `route` printed `follow …`: the issue already has a
-   session, and a second one would build it twice. Show its link and ask
-   one question, per `../../shared-skill-core/grilling.md`: `A` send
+   § Arguments. Then `route <issue-url>` with no executor, even when one
+   is named: `follow …` means the issue already has a session, of any
+   executor, and a second one would build it twice. Show its link and
+   ask one question, per `../../shared-skill-core/grilling.md`: `A` send
    this plan to it as a follow-up (§ Follow-up, from step 2), the pick;
-   `B` start a new session. Wait. `A`: § Follow-up. `B`: go on.
+   `B` start a new session on the executor picked above. Wait.
 
 2. **Facts.** `gh repo view --json nameWithOwner,defaultBranchRef`. From
    the issue, and in a run from each layer's issue: number, title, and
