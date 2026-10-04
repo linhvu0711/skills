@@ -20,7 +20,8 @@
 # - It exists only on origin: fetched and tracked.
 # - It exists nowhere: made from --base (fetched from origin first).
 #
-# The default branch is GitHub's.
+# The default branch is GitHub's; when gh fails, origin/HEAD's; when both
+# fail, it stops and says how to set origin/HEAD.
 #
 # Exit 0: one line,
 # `MAIN=<dir> WORKTREE=<dir> BRANCH=<b> DEFAULT=<b> STATE=<created|reused> FROM=<what>`.
@@ -100,8 +101,13 @@ fi
 git -C "$main" check-ref-format --branch "$branch" >/dev/null 2>&1 || die "not a valid branch name: $branch"
 
 # ---------- default branch ----------
-default="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" && [ -n "$default" ] \
-  || die "could not find the default branch of $slug"
+# GitHub's; when gh fails, origin/HEAD's, with no fetch.
+default="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
+if [ -z "$default" ]; then
+  default="$(git -C "$main" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
+  default="${default#origin/}"
+fi
+[ -n "$default" ] || die "could not find the default branch of $slug: gh failed and origin/HEAD is not set. Set it with: git -C $main remote set-head origin --auto"
 
 # ---------- worktree ----------
 root="${WORKTREES_ROOT:-$HOME/development/worktrees}"

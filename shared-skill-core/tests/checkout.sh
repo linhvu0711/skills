@@ -82,6 +82,24 @@ t_ck_stops_dirty() {
   eq stderr "$(printf 'stop: dirty worktree at %s:\n?? a.txt' "$T/root/app/feat-2-y")" "$err"
 }
 
+t_ck_default_from_origin_head() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" push -q origin main:trunk
+  git -C "$T/dev/app" fetch -q origin
+  git -C "$T/dev/app" remote set-head origin trunk >/dev/null
+  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
+  resolve acme/app feat/3-z --base main
+  eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/acme/app/feat-3-z BRANCH=feat/3-z DEFAULT=trunk STATE=created FROM=base:main" "$out"
+}
+
+t_ck_no_default() {
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" remote set-head origin -d
+  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
+  resolve acme/app feat/3-z --base main
+  eq stderr "stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -90,4 +108,6 @@ cases=(
   "stops on a bad branch name|t_ck_bad_branch"
   "reuses an old-shape worktree by its branch|t_ck_reuses_old_shape"
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
+  "default branch falls back to origin/HEAD|t_ck_default_from_origin_head"
+  "stops when gh and origin/HEAD both fail|t_ck_no_default"
 )
