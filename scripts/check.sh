@@ -284,14 +284,17 @@ if [ ${#paths[@]} -eq 0 ]; then
   done < <(skill_dirs)
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
-  # `description` is not empty. Quotes around a value go; a block scalar counts
-  # when an indented line follows it.
+  # `description` is not empty. A quoted value is what the quotes hold; an
+  # unquoted one loses its `#` comment, and `null` or `~` is empty. A block
+  # scalar counts when its first line that is not blank is indented.
   while IFS= read -r skill; do
     while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | awk -v want="${skill#skills/}" -v q="'" '
-      function val(s,  c) { sub(/^[^:]*:[ \t]*/, "", s); sub(/[ \t]+$/, "", s); c = substr(s, 1, 1)
-                            if (length(s) > 1 && (c == "\"" || c == q) && substr(s, length(s)) == c) s = substr(s, 2, length(s) - 2)
-                            return s }
+      function val(s,  c, e) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
+                               if (c == "\"" || c == q) { e = index(substr(s, 2), c); return e ? substr(s, 2, e - 1) : s }
+                               sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
+                               return (s == "~" || tolower(s) == "null") ? "" : s }
       NR == 1          { if ($0 != "---") exit; next }
+      blk && /^[ \t]*$/ { next }
       blk              { blk = 0; if ($0 ~ /^[ \t]+[^ \t]/) desc = "block" }
       $0 == "---"      { closed = 1; exit }
       /^name:/         { name = val($0) }

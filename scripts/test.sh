@@ -510,6 +510,39 @@ t_flags_empty_description() {
   eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+# header <frontmatter lines>: repo with skills/demo, its README headings, and a
+# SKILL.md of `---`, these lines, `---`, committed; then run check.sh.
+header() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\n%s\n---\n' "$1" > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_passes_block_after_blank() {
+  header "$(printf 'name: demo\ndescription: |\n\n  Explains the skill.')"
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_passes_name_with_comment() {
+  header "$(printf 'name: demo # short label\ndescription: A demo skill.')"
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_null_description() {
+  header "$(printf 'name: demo\ndescription: null')"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_comment_description() {
+  header "$(printf 'name: demo\ndescription: # add later')"
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: empty description" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 # readme_msg <skill>: the line the commit-msg hook prints for a skill
 # changed without its README.
 readme_msg() { printf '%s: changed without its README; add "Readme: unchanged" to the message to skip' "$1"; }
@@ -1099,6 +1132,10 @@ cases=(
   "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
   "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"
   "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
+  "passes a block description after a blank line|t_passes_block_after_blank"
+  "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
+  "flags a null description|t_flags_null_description"
+  "flags a description that is only a comment|t_flags_comment_description"
 )
 
 pass=0; fail=0
