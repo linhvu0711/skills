@@ -21,6 +21,8 @@ Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
 Agent started: https://cursor.com/agents/bc-…
 ```
 
+The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`.
+
 The PR the agent opens shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk. The agent records each video at real speed and checks its length before it attaches it.
 
 Then it watches. Cursor has no "waiting for you" state, so a run that ends with a question is treated as one: this chat answers from the plan and the repo, and only brings you the big decisions. When the agent finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed.
@@ -38,3 +40,7 @@ Then it watches. Cursor has no "waiting for you" state, so a run that ends with 
 - Reads the plan from [plan-up](../plan-up/).
 - Sorts review questions the way [validate-pr-review](../validate-pr-review/) does, and files `fix later` findings with [capture](../capture/).
 - The Cursor twin of [handoff-devin](../handoff-devin/): same plan, same prompt shape, same steps. A repo that requires verified commit signatures goes to handoff-devin instead.
+
+## Credits
+
+The `undefined` test question takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
