@@ -37,6 +37,12 @@ with the reason it stays. The user decides about the rest.
    `gh auth status` to check the login, and stop. Nothing was removed.
    Do not run the script again without `gh`.
 
+3. The user names a `kept` worktree to remove ("remove X", "remove the
+   search one"): run the script with `--remove <path>`, one per worktree
+   named, with the path from the `kept` line, and relay its lines. Its
+   uncommitted files go with it; its branch goes only when git allows.
+   Pass `--remove` only for a path the user named in this turn.
+
 ## Examples
 
 **User:** `/prune-worktrees` after two PRs merged; a third PR is open.
@@ -48,3 +54,9 @@ removed ~/development/worktrees/app/fix-43-date, branch fix/43-date deleted (-D)
 ```
 
 The reply is those three lines.
+
+**User:** `remove the search one` after that reply.
+
+`bash scripts/prune-worktrees.sh --remove ~/development/worktrees/app/feat-7-search`
+prints `removed ~/development/worktrees/app/feat-7-search, branch
+feat/7-search kept: git branch -d refused`. The reply is that line.

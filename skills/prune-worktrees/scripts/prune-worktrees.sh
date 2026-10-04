@@ -3,11 +3,17 @@
 # branches, and list every other worktree with the reason it stays.
 #
 #   prune-worktrees.sh [all]
+#   prune-worktrees.sh [all] --remove <path> [--remove <path>]...
 #
 # It reads every worktree of the repo the current folder is in, wherever the
 # worktree is on disk. `all` adds every repo that has a worktree under
-# ${WORKTREES_ROOT:-$HOME/development/worktrees}/<repo>/. The main checkout is never touched and never printed.
-# Every worktree is sorted first, then the safe ones are removed.
+# ${WORKTREES_ROOT:-$HOME/development/worktrees}/<repo>/. The main checkout is
+# never touched and never printed. Every worktree is judged first, then the
+# safe ones are removed.
+#
+# --remove: only the worktrees the user named, each removed with --force
+# whatever its reason, unless the session is in it or it is locked. Its branch
+# goes by the same rule as below; a branch git will not take with -d stays.
 #
 # Safe to prune: a clean worktree whose PR is merged on GitHub with the branch
 # tip as its last commit; the branch goes with `git branch -D`. Or, with no
@@ -16,16 +22,18 @@
 # test, and no gh call.
 #
 # Prints, in this order:
-#   kept <path>: <reason>                          one per worktree that stays:
-#     `this session is in it`, `locked`, `detached HEAD`, `<n> uncommitted files`, `PR #<n> open`,
-#     `PR #<n> closed, not merged`, `PR #<n> merged, tip is not its last commit`,
+#   kept <path>: <reason>            one per worktree that stays. The reasons:
+#     `this session is in it`, `locked`, `detached HEAD`,
+#     `<n> uncommitted files`, `PR #<n> open`, `PR #<n> closed, not merged`,
+#     `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
 #     `not in <default>` (a repo with no GitHub remote),
 #     `its repo is gone` (all: a folder under the root whose repo is deleted)
-#   cleared <n> stale entries                      when folders were gone
-#   removed <path>, branch <b> deleted (-D|-d)     one per worktree removed,
-#   removed <path>, branch <b> kept: git branch -d refused      or this
-#   nothing to prune                               when nothing was cleared or removed
+#   cleared <n> stale entries        when folders were gone
+#   removed <path>, branch <b> deleted (-D|-d)
+#   removed <path>, branch <b> kept: git branch -d refused
+#                                    one of these per worktree removed
+#   nothing to prune                 when nothing was cleared or removed
 # A path under $HOME is printed with ~.
 # Exit 1: `stop: <why>` on stderr, and nothing was removed.
 set -euo pipefail
@@ -75,50 +83,77 @@ default_ref() {
   done
 }
 
-tab=$'\t'
-kept=()       # <path> TAB <reason>
-removals=()   # <main> TAB <path> TAB <branch> TAB <flag>
-stale=()      # <main> TAB <entries whose folder is gone>
+# Fields of a record. Not a tab: read collapses empty tab-split fields.
+sep=$'\x1f'
+kept=()       # <path> SEP <reason>
+removals=()   # <main> SEP <path> SEP <branch> SEP <flag> SEP <--force or empty>
+stale=()      # <main> SEP <entries whose folder is gone>
 
 # plural <n> <one> <many>: `<n> <one>` or `<n> <many>`.
 plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
 
-# sort_one <main> <owner/repo> <path> <branch> <locked>: puts one worktree in
-# kept or removals. The first reason that holds is the one printed.
-sort_one() {
+# judge <main> <owner/repo> <path> <branch> <locked>: sets `flag` to the
+# branch flag (-D or -d) when the worktree is safe to prune, else `reason` to
+# why it stays. The first reason that holds is the one given.
+judge() {
   local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid=""
-  keep() { kept+=("$path$tab$1"); }
-  [ "$(cd "$path" 2>/dev/null && pwd -P)" != "$session" ] || { keep "this session is in it"; return; }
-  [ "$locked" -eq 0 ] || { keep "locked"; return; }
-  [ -n "$branch" ] || { keep "detached HEAD"; return; }
+  flag="" reason=""
+  if [ "$(cd "$path" 2>/dev/null && pwd -P)" = "$session" ]; then reason="this session is in it"; return; fi
+  [ "$locked" -eq 0 ] || { reason="locked"; return; }
+  [ -n "$branch" ] || { reason="detached HEAD"; return; }
   n="$(git -C "$path" status --porcelain | wc -l | tr -d ' ')"
-  [ "$n" -eq 0 ] || { keep "$(plural "$n" "uncommitted file" "uncommitted files")"; return; }
+  [ "$n" -eq 0 ] || { reason="$(plural "$n" "uncommitted file" "uncommitted files")"; return; }
   tip="$(git -C "$main" rev-parse "refs/heads/$branch")"
   if [ -n "$slug" ]; then
-    # Every worktree is sorted before the first removal, so a stop here
+    # Every worktree is judged before the first removal, so a stop here
     # removes nothing.
     pr="$(pr_of "$slug" "$branch")" || exit 1
     read -r num state oid <<<"$pr" || true
   fi
   case "$state" in
     MERGED)
-      if [ "$oid" = "$tip" ]; then removals+=("$main$tab$path$tab$branch$tab-D")
-      else keep "PR #$num merged, tip is not its last commit"; fi
+      if [ "$oid" = "$tip" ]; then flag="-D"
+      else reason="PR #$num merged, tip is not its last commit"; fi
       return ;;
-    OPEN) keep "PR #$num open"; return ;;
-    CLOSED) keep "PR #$num closed, not merged"; return ;;
+    OPEN) reason="PR #$num open"; return ;;
+    CLOSED) reason="PR #$num closed, not merged"; return ;;
   esac
   # No PR, or no GitHub: git's own test.
   ref="$(default_ref "$main")"
-  if [ -n "$ref" ] && git -C "$main" merge-base --is-ancestor "$tip" "$ref"; then
-    removals+=("$main$tab$path$tab$branch$tab-d"); return
-  fi
-  [ -n "$slug" ] || { keep "not in ${ref:-a default branch}"; return; }
+  if [ -n "$ref" ] && git -C "$main" merge-base --is-ancestor "$tip" "$ref"; then flag="-d"; return; fi
+  [ -n "$slug" ] || { reason="not in ${ref:-a default branch}"; return; }
   # A squash-merged branch's commits are on no remote ref, so this count is
   # only read for a branch with no PR.
   n="$(git -C "$main" rev-list --count "refs/heads/$branch" --not --remotes=origin)"
-  [ "$n" -eq 0 ] || { keep "$(plural "$n" "commit not on GitHub" "commits not on GitHub")"; return; }
-  keep "no PR"
+  [ "$n" -eq 0 ] || { reason="$(plural "$n" "commit not on GitHub" "commits not on GitHub")"; return; }
+  reason="no PR"
+}
+
+# named <path>: whether the user named this worktree with --remove.
+named() {
+  local p
+  for p in ${names[@]+"${names[@]}"}; do [ "$p" = "$1" ] && return 0; done
+  return 1
+}
+
+# sort_one <main> <owner/repo> <path> <branch> <locked>: puts one worktree in
+# kept or removals. With --remove, only a named worktree, and it is removed
+# whatever the reason, unless the session is in it or it is locked; its branch
+# keeps the flag judge gives, -d for any reason.
+sort_one() {
+  local main="$1" path="$3" branch="$4"
+  if [ "${#names[@]}" -gt 0 ]; then
+    named "$path" || return 0
+    found+=("$path")
+    judge "$@"
+    [ "$reason" != "this session is in it" ] || die "this session is in $(show "$path")"
+    if [ "$reason" = "locked" ]; then kept+=("$path${sep}locked"); return; fi
+    removals+=("$main$sep$path$sep$branch$sep${flag:--d}$sep--force")
+    return
+  fi
+  judge "$@"
+  if [ -n "$flag" ]; then removals+=("$main$sep$path$sep$branch$sep$flag$sep")
+  else kept+=("$path$sep$reason"); fi
 }
 
 # sort_repo <main>: sorts every worktree of the repo but the main checkout,
@@ -127,6 +162,7 @@ sort_one() {
 sort_repo() {
   local main="$1" slug path="" branch="" locked=0 gone=0 line n=0 stale_n=0
   slug="$(github_repo "$main")"
+  if named "$main"; then die "$(show "$main") is the main checkout"; fi
   while IFS= read -r line; do
     case "$line" in
       "worktree "*) path="${line#worktree }"; branch=""; locked=0; gone=0; n=$((n + 1)) ;;
@@ -141,14 +177,20 @@ sort_repo() {
         path="" ;;
     esac
   done < <(git -C "$main" worktree list --porcelain; echo)
-  [ "$stale_n" -eq 0 ] || stale+=("$main$tab$stale_n")
+  [ "$stale_n" -eq 0 ] || [ "${#names[@]}" -gt 0 ] || stale+=("$main$sep$stale_n")
 }
 
-usage="usage: prune-worktrees.sh [all]"
+usage="usage: prune-worktrees.sh [all] [--remove <path>]..."
 all=0
+names=()      # --remove paths, physical
+found=()      # the names that are worktrees
 while [ $# -gt 0 ]; do
   case "$1" in
     all) all=1; shift ;;
+    --remove)
+      [ -n "${2:-}" ] || die "$usage"
+      [ -d "$2" ] || die "no folder at $2"
+      names+=("$(cd "$2" && pwd -P)"); shift 2 ;;
     *) die "$usage" ;;
   esac
 done
@@ -174,24 +216,31 @@ if [ "$all" -eq 1 ]; then
   for d in "$root"/*/*; do
     [ -f "$d/.git" ] || continue
     if g="$(common_dir "$d")"; then add_repo "${g%/.git}"
-    else kept+=("$d${tab}its repo is gone"); fi
+    else kept+=("$d${sep}its repo is gone"); fi
   done
 fi
 for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
+for p in ${names[@]+"${names[@]}"}; do
+  named_found=0
+  for q in ${found[@]+"${found[@]}"}; do [ "$q" = "$p" ] && named_found=1; done
+  [ "$named_found" -eq 1 ] || die "$(show "$p") is not a worktree of $(show "${repos[0]:-this repo}")"
+done
 
 for k in ${kept[@]+"${kept[@]}"}; do
-  printf 'kept %s: %s\n' "$(show "${k%%"$tab"*}")" "${k#*"$tab"}"
+  printf 'kept %s: %s\n' "$(show "${k%%"$sep"*}")" "${k#*"$sep"}"
 done
 done_any=0
 for st in ${stale[@]+"${stale[@]}"}; do
-  git -C "${st%%"$tab"*}" worktree prune
-  printf 'cleared %s\n' "$(plural "${st#*"$tab"}" "stale entry" "stale entries")"
+  git -C "${st%%"$sep"*}" worktree prune
+  printf 'cleared %s\n' "$(plural "${st#*"$sep"}" "stale entry" "stale entries")"
   done_any=1
 done
 for r in ${removals[@]+"${removals[@]}"}; do
-  IFS="$tab" read -r main path branch flag <<<"$r"
-  git -C "$main" worktree remove "$path"
-  if git -C "$main" branch "$flag" "$branch" >/dev/null 2>&1; then
+  IFS="$sep" read -r main path branch flag force <<<"$r"
+  git -C "$main" worktree remove ${force:+"$force"} "$path"
+  if [ -z "$branch" ]; then
+    printf 'removed %s\n' "$(show "$path")"
+  elif git -C "$main" branch "$flag" "$branch" >/dev/null 2>&1; then
     printf 'removed %s, branch %s deleted (%s)\n' "$(show "$path")" "$branch" "$flag"
   else
     printf 'removed %s, branch %s kept: git branch %s refused\n' "$(show "$path")" "$branch" "$flag"

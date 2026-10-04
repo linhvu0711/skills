@@ -1181,6 +1181,15 @@ t_prune_all() {
   [ ! -e "$T/root/b/feat-2-b" ] || eq "$T/root/b/feat-2-b" "gone" "still there"
 }
 
+t_prune_removes_named() {
+  wt_repo; gh_remote; prune_gh; wt "$T/w/feat-3-c" feat/3-c; printf 'a\n' > "$T/w/feat-3-c/a.txt"
+  run env PATH="$T/bin:$PATH" bash "$P" --remove "$T/w/feat-3-c"
+  eq exit 0 "$code"
+  eq stdout "removed $T/w/feat-3-c, branch feat/3-c kept: git branch -d refused" "$out"
+  [ ! -e "$T/w/feat-3-c" ] || eq "$T/w/feat-3-c" "gone" "still there"
+  eq "branch list" "  feat/3-c" "$(git branch --list feat/3-c)"
+}
+
 t_prune_nothing() {
   wt_repo; gh_remote; prune_gh
   run env PATH="$T/bin:$PATH" bash "$P"
@@ -1295,6 +1304,7 @@ cases=(
   "prune skips the session's worktree|t_prune_skips_session"
   "prune clears a stale entry|t_prune_clears_stale"
   "prune all goes through every repo under the root|t_prune_all"
+  "prune removes a named worktree and keeps an unmerged branch|t_prune_removes_named"
 )
 
 pass=0; fail=0

@@ -15,7 +15,7 @@ kept ~/development/worktrees/app/feat-7-search: PR #159 open
 removed ~/development/worktrees/app/feat-42-login, branch feat/42-login deleted (-D)
 ```
 
-Entries whose folder is gone are cleared with `git worktree prune`, and the report says how many. No worktree to prune: one line, `nothing to prune`.
+To remove a kept worktree, name it: "remove X". Its uncommitted files go with it, and its branch goes only when git allows. Entries whose folder is gone are cleared with `git worktree prune`, and the report says how many. No worktree to prune: one line, `nothing to prune`.
 
 ## Needs
 
