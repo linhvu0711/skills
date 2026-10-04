@@ -357,24 +357,32 @@ t_passes_readme_with_headings() {
 
 # fake_gh_graphql: a temp folder T with a stub `gh` first on PATH. The stub reads
 # the `number=<n>` argument, prints $T/gh/<n>.err to stderr and exits 1 when
-# that file exists, else prints $T/gh/<n>.json.
+# that file exists, else prints $T/gh/<n>.json, or $T/gh/<n>.<c>.json when
+# it is asked for the events after cursor <c>.
 fake_gh_graphql() {
   T="$(mktemp -d)"; mkdir -p "$T/bin" "$T/gh"
   cat > "$T/bin/gh" <<'EOF'
 #!/usr/bin/env bash
-for a in "$@"; do case "$a" in number=*) n="${a#number=}" ;; esac; done
+page=""
+for a in "$@"; do
+  case "$a" in number=*) n="${a#number=}" ;; eventAfter=*) page=".${a#eventAfter=}" ;; esac
+done
 d="$(dirname "$0")/../gh"
 if [ -e "$d/$n.err" ]; then cat "$d/$n.err" >&2; exit 1; fi
-cat "$d/$n.json"
+cat "$d/$n$page.json"
 EOF
   chmod +x "$T/bin/gh"
 }
 
-# issue_json <n> <assignees> <closing PRs> <timeline nodes>: write the
-# `gh api graphql` answer for issue <n>; each list is JSON array items.
+# issue_json <n> <assignees> <closing PRs> <timeline nodes> [<next> [<page>]]:
+# write the `gh api graphql` answer for issue <n>, each list as JSON array
+# items. <next>: the events go on after cursor <next>. <page>: this is the
+# page after cursor <page>.
 issue_json() {
-  printf '{"data":{"viewer":{"login":"me"},"repository":{"issue":{"assignees":{"nodes":[%s]},"closedByPullRequestsReferences":{"nodes":[%s]},"timelineItems":{"nodes":[%s]}}}}}\n' \
-    "$2" "$3" "$4" > "$T/gh/$1.json"
+  local more=false cursor=null
+  [ -n "${5:-}" ] && { more=true; cursor="\"$5\""; }
+  printf '{"data":{"viewer":{"login":"me"},"repository":{"issue":{"assignees":{"nodes":[%s]},"closedByPullRequestsReferences":{"nodes":[%s],"pageInfo":{"hasNextPage":false,"endCursor":null}},"timelineItems":{"nodes":[%s],"pageInfo":{"hasNextPage":%s,"endCursor":%s}}}}}}\n' \
+    "$2" "$3" "$4" "$more" "$cursor" > "$T/gh/$1${6:+.$6}.json"
 }
 
 claims() { run env PATH="$T/bin:$PATH" python3 "$here/../skills/plan-up/scripts/claims.py" o/r "$@"; }
@@ -403,6 +411,15 @@ t_claims_pr_once_open_only() {
   claims 65
   eq exit 0 "$code"
   eq stdout "$line70" "$out"
+}
+
+t_claims_next_page() {
+  fake_gh_graphql
+  issue_json 65 '' '' '' c1
+  issue_json 65 '' '' '{"source":{"number":72,"title":"Late fix","url":"https://github.com/o/r/pull/72","state":"OPEN","author":{"login":"erin"}}}' '' c1
+  claims 65
+  eq exit 0 "$code"
+  eq stdout '#65 pr #72 "Late fix" @erin https://github.com/o/r/pull/72' "$out"
 }
 
 t_claims_other_assignee() {
@@ -637,6 +654,7 @@ cases=(
   "claims names an open PR that closes the issue|t_claims_closing_pr"
   "claims names an open PR that only mentions the issue|t_claims_mentioning_pr"
   "claims lists a PR once and skips closed and merged PRs|t_claims_pr_once_open_only"
+  "claims reads a PR on the next page of links|t_claims_next_page"
   "claims names an assignee other than the user|t_claims_other_assignee"
   "claims prints nothing when no one is on the issue|t_claims_none"
   "claims checks each issue of a run|t_claims_each_issue"
