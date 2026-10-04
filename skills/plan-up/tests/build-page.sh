@@ -201,6 +201,60 @@ t_build_no_bend() {
 $here/../../../shared-skill-core/plan-page.md:0" "$out"
 }
 
+t_build_earlier_seam() {
+  T="$(mktemp -d)"
+  sed 's/`src\/members.ts:10`, the public command/layer 1, slice 2, the public command/' "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
+  build "$T/plan-acme-shop-71-run.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[1].seams[0].at = "layer 1, slice 2"' "$here/build-page/run.json")" "$(page_data "$T/plan-acme-shop-71-run.html")"
+}
+
+t_build_mixed_at() {
+  T="$(mktemp -d)"
+  sed 's/`src\/web\/orders.tsx:12` |/`src\/web\/orders.tsx:12`, src\/types.ts:7, S2 |/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.maps[0].parts[0].at = ["src/web/orders.tsx:12", "src/types.ts:7", "S2"]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
+bad_run() {
+  T="$(mktemp -d)"
+  sed "$1" "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
+  build "$T/plan-acme-shop-71-run.md"
+  eq exit 1 "$code"
+  eq stdout "$2" "$out"
+  eq stderr "" "$err"
+  [ ! -e "$T/plan-acme-shop-71-run.html" ]
+  [ ! -e "$T/plan-acme-shop-71-run.html.tmp" ]
+}
+
+t_build_stack_identity() {
+  bad_run 's/## Layer 2 ·/## Layer 3 ·/' 'stack: layer heading 3 is not layer 2'
+  bad_run 's/| 2 | #73 /| 3 | #73 /' 'stack: row 2 names layer 3, needs 2'
+  bad_run 's/| 2 | #73 /| two | #73 /' 'stack: row 2 names layer two, needs 2'
+  bad_run 's/| 2 | #73 /| 2 | #74 /' 'stack: row 2 issue `#74 Add a member` is not `#73 Add a member`'
+  bad_run 's/| #73 Add a member |/| #73 Join a team |/' 'stack: row 2 issue `#73 Join a team` is not `#73 Add a member`'
+  bad_run 's/| layer 1 | S | 2 |/| layer 1 | S |/' 'stack: row 2 has 4 cells, needs 5'
+  bad_run 's/| layer 1 | S | 2 |/| | S | 2 |/' 'stack: row 2 has no base'
+  bad_run 's/| layer 1 | S | 2 |/| layer 1 | tiny | 2 |/' 'stack: row 2 size `tiny` is not XS, S, M, L, or XL'
+  bad_run 's/| layer 1 | S | 2 |/| layer 1 | S | two |/' 'stack: row 2 points `two` is not an integer'
+}
+
+t_build_bad_record_headings() {
+  bad_ticket 's/Slice 2, proves/Slice two, proves/' 'slices: Slice two, proves #2: export route is not a `Slice <n>, proves #<n>: <seam>` heading'
+  bad_ticket 's/Walk 1, proves/Walk one, proves/' 'UI walks: Walk one, proves #1 is not a `Walk <n>, proves #<n>` heading'
+  bad_ticket 's/Video 1, Setup/Video one, Setup/' 'videos: Video one, Setup of walk 1, shows walks 1 is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
+  bad_ticket 's/Video 1, Setup of walk 1, shows walks 1/Video 1, Setup of walk 1, shows walks one/' 'videos: Video 1, Setup of walk 1, shows walks one is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
+}
+
+t_build_task_protections() {
+  T="$(mktemp -d)"
+  sed 's/Task done: full suite green, lint green, build green./Task done: full suite green, and these existing tests untouched and green:\n  `src\/orders.test.ts` "exports JSON"./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].gates.task = "full suite green, and these existing tests untouched and green: `src/orders.test.ts` \"exports JSON\"."' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -233,4 +287,9 @@ cases=(
   "build-page preserves wrapped text, colons and escaped pipes|t_build_wrapped_text"
   "build-page escapes script closing text|t_build_script_text"
   "the shell and plan-page.md hold no bend|t_build_no_bend"
+  "build-page preserves earlier-layer seam locations|t_build_earlier_seam"
+  "build-page keeps every mixed-format map location|t_build_mixed_at"
+  "build-page refuses malformed or mismatched Stack rows|t_build_stack_identity"
+  "build-page refuses malformed Slice Walk and Video headings|t_build_bad_record_headings"
+  "build-page keeps existing test protections in Task done text|t_build_task_protections"
 )

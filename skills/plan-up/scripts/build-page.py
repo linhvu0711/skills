@@ -28,6 +28,12 @@ NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 PROVED = re.compile(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$")
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
+REFS = r"#\d+(?:,\s*#\d+)*"
+RECORD = {
+    "slice": re.compile(rf"Slice \d+, proves ({REFS}):\s*(.+)"),
+    "walk": re.compile(rf"Walk \d+, proves ({REFS})"),
+    "video": re.compile(r"Video \d+, (Setup of walk (\d+)), shows walks (\d+(?:,\s*\d+)*)"),
+}
 
 
 def blocks(lines):
@@ -87,6 +93,10 @@ def table_rows(lines):
     for line in lines:
         if line.strip().startswith("|"):
             yield [c.strip().replace(r"\|", "|") for c in re.split(r"(?<!\\)\|", line.strip())[1:-1]]
+
+
+def stack_rows(lines):
+    return [r for r in table_rows(lines) if r and r[0] != "Layer" and not re.fullmatch(r":?-+:?", r[0])]
 
 
 def md_reviews(lines):
@@ -213,7 +223,7 @@ def page_maps(maps):
             xy = grid(p.get("Grid")) or (0.0, 0.0)
             parts.append({"ref": p.get("Ref"), "name": p.get("Part"), "job": p.get("Job"),
                           "change": p.get("Change"), "group": p.get("Group", ""), "kind": p.get("Kind"),
-                          "at": re.findall(r"`([^`]+)`", at) or at or [],
+                          "at": [re.sub(r"^`(.*)`$", r"\1", entry.strip()) for entry in at.split(",") if entry.strip()],
                           "x": int(xy[0]) if xy[0].is_integer() else xy[0],
                           "y": int(xy[1]) if xy[1].is_integer() else xy[1], "layer": p.get("Layer") or None})
         got.append({"area": m["area"], "parts": parts, "flows": [f for f in m["flows"] if "bad" not in f]})
@@ -228,15 +238,15 @@ def records(lines, kind):
     got, current, last = [], None, None
     for line in lines:
         t = line.strip()
-        if kind == "slice" and (m := re.match(r"Slice \d+, proves (.*?):\s*(.*)", t)):
+        if kind == "slice" and (m := RECORD[kind].fullmatch(t)):
             current = {"seam": m.group(2), "proves": proves(m.group(1)), "change": [], "docs": [], "tests": []}
             got.append(current)
             last = None
-        elif kind == "walk" and (m := re.match(r"Walk \d+, proves (.*)", t)):
+        elif kind == "walk" and (m := RECORD[kind].fullmatch(t)):
             current = {"proves": proves(m.group(1)), "steps": []}
             got.append(current)
             last = None
-        elif kind == "video" and (m := re.match(r"Video \d+, (Setup of walk (\d+)), shows walks (.*)", t)):
+        elif kind == "video" and (m := RECORD[kind].fullmatch(t)):
             current = {"title": m.group(1), "setup": "walk " + m.group(2),
                        "walks": [int(x) for x in re.findall(r"\d+", m.group(3))], "steps": []}
             got.append(current)
@@ -275,9 +285,9 @@ def page_layer(section, issue, title, parts):
                       "walk": int(w.group(1)) if w else None, "video": None if r[4] == "none" else r[4], "artifact": r[5]})
     seams = []
     for item in list_items(section.get("Seams", [])):
-        m = re.match(r"(.*?):\s*`([^`]+)`\s*,\s*(.*)", item)
+        m = re.match(r"(.*?):\s*(?:`([^`]+)`|(layer \d+, slice \d+))\s*,\s*(.*)", item)
         if m:
-            seams.append({"name": m.group(1), "at": m.group(2), "why": m.group(3)})
+            seams.append({"name": m.group(1), "at": m.group(2) or m.group(3), "why": m.group(4)})
     decided = []
     for item in list_items(section.get("Decided", [])):
         what, _, why = re.sub(r"^D\d+ ", "", item).partition(": ")
@@ -307,7 +317,7 @@ def page_data(lines):
     is_run = "Stack" in section
     layers = []
     if is_run:
-        stack = {int(r[0]): r for r in table_rows(section["Stack"]) if r and r[0].isdigit()}
+        stack = {int(r[0]): r for r in stack_rows(section["Stack"]) if r[0].isdecimal()}
         for i, (heading, body) in enumerate(layer_sections, 1):
             row = stack.get(int(heading.group(1)), [])
             layer_issue = {"number": int(heading.group(2)),
@@ -317,7 +327,7 @@ def page_data(lines):
             layer = page_layer(body, layer_issue, heading.group(3), review)
             layer["review"]["change"] = text(review.get("Change", {}).get("text", []))
             layer["targets"] = row[2] if len(row) > 2 else ""
-            layer["points"] = int(row[4]) if len(row) > 4 and row[4].isdigit() else 0
+            layer["points"] = int(row[4]) if len(row) > 4 and row[4].isdecimal() else 0
             layers.append(layer)
     else:
         layers.append(page_layer(section, dict(issue), title, parts))
@@ -496,6 +506,44 @@ def strings(node, path="DATA"):
             yield from strings(v, f"{path}[{i}]")
 
 
+def stack_problems(lines, layers):
+    rows = stack_rows(lines)
+    if len(rows) != len(layers):
+        yield f"stack: {len(rows)} rows, {len(layers)} `## Layer` headings"
+        return
+    for n, (row, (heading, _)) in enumerate(zip(rows, layers), 1):
+        if int(heading.group(1)) != n:
+            yield f"stack: layer heading {heading.group(1)} is not layer {n}"
+        if len(row) != 5:
+            yield f"stack: row {n} has {len(row)} cells, needs 5"
+            continue
+        if row[0] != str(n):
+            yield f"stack: row {n} names layer {row[0]}, needs {n}"
+        issue = f"#{heading.group(2)} {heading.group(3)}"
+        if row[1] != issue:
+            yield f"stack: row {n} issue `{row[1]}` is not `{issue}`"
+        if not row[2]:
+            yield f"stack: row {n} has no base"
+        if not re.fullmatch(r"XS|S|M|L|XL", row[3]):
+            yield f"stack: row {n} size `{row[3]}` is not XS, S, M, L, or XL"
+        if not row[4].isdecimal():
+            yield f"stack: row {n} points `{row[4]}` is not an integer"
+
+
+def record_problems(section):
+    for block, kind, form in [
+        ("Slices", "slice", "Slice <n>, proves #<n>: <seam>"),
+        ("UI walks", "walk", "Walk <n>, proves #<n>"),
+        ("Videos", "video", "Video <n>, Setup of walk <n>, shows walks <n>"),
+    ]:
+        for line in section.get(block, []):
+            t = line.strip()
+            heading = not line[:1].isspace() or re.match(r"(Slice|Walk|Video)\b", t)
+            if t and heading and not RECORD[kind].fullmatch(t):
+                name = block if block == "UI walks" else block.lower()
+                yield f"{name}: {t} is not a `{form}` heading"
+
+
 def plan_problems(lines):
     section, layer_sections = sections(lines)
     is_run = "Stack" in section
@@ -508,13 +556,12 @@ def plan_problems(lines):
         yield "head: a ticket needs `Size: size/<x>`"
     layers = [body for _, body in layer_sections] if is_run else [section]
     if is_run:
-        rows = [r for r in table_rows(section["Stack"]) if r and r[0].isdigit()]
-        if len(rows) != len(layers):
-            yield f"stack: {len(rows)} rows, {len(layers)} `## Layer` headings"
+        yield from stack_problems(section["Stack"], layer_sections)
     reviews, proof_rows = md_reviews(lines)
     yield from review_problems(reviews, proof_rows, is_run, len(layers))
     yield from map_problems(md_maps(lines), is_run)
     for n, body in enumerate(layers, 1):
+        yield from record_problems(body)
         for row in table_rows(body.get("Proof", [])):
             if row and row[0].isdigit() and len(row) != 6:
                 yield f"proof: layer {n} row {row[0]} has {len(row)} cells, needs 6"
@@ -529,7 +576,7 @@ def plan_problems(lines):
             yield f"proved: {ref} needs `, <YYYY-MM-DD>. Used by <refs>.` at its end"
     walks = []
     for n, body in enumerate(layers, 1):
-        numbers = [int(m.group(1)) for l in body.get("UI walks", []) if (m := re.match(r"Walk (\d+)", l))]
+        numbers = [int(l.split()[1].rstrip(",")) for l in body.get("UI walks", []) if RECORD["walk"].fullmatch(l.strip())]
         for number, walk in zip(numbers, records(body.get("UI walks", []), "walk")):
             walks.append({"layer": n, "n": number, "kind": before_kind(walk["before"]) if "before" in walk else None})
     yield from md_before_problems(walks)
