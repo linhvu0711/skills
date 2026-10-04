@@ -217,6 +217,24 @@ t_build_mixed_at() {
   eq DATA "$(jq -S '.maps[0].parts[0].at = ["src/web/orders.tsx:12", "src/types.ts:7", "S2"]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_multiple_proofs() {
+  T="$(mktemp -d)"
+  sed 's/Slice 1, proves #1:/Slice 1, proves #1 and #2:/;
+    s/Walk 1, proves #1$/Walk 1, proves #1 and #2/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].slices[0].proves = [1, 2] |
+    .layers[0].walks[0].proves = [1, 2]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
+t_build_at_comma() {
+  T="$(mktemp -d)"
+  sed 's/`src\/web\/orders.tsx:12` |/`src\/web\/orders,v2.tsx:12`, `src\/db\/orders,v2.ts:4`, src\/types.ts:7, S2 |/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.maps[0].parts[0].at = ["src/web/orders,v2.tsx:12", "src/db/orders,v2.ts:4", "src/types.ts:7", "S2"]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 bad_run() {
   T="$(mktemp -d)"
   sed "$1" "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
@@ -242,6 +260,7 @@ t_build_stack_identity() {
 
 t_build_bad_record_headings() {
   bad_ticket 's/Slice 2, proves/Slice two, proves/' 'slices: Slice two, proves #2: export route is not a `Slice <n>, proves #<n>: <seam>` heading'
+  bad_ticket 's/Slice 1, proves #1:/Slice 1, proves #1 and two:/' 'slices: Slice 1, proves #1 and two: export route is not a `Slice <n>, proves #<n>: <seam>` heading'
   bad_ticket 's/Walk 1, proves/Walk one, proves/' 'UI walks: Walk one, proves #1 is not a `Walk <n>, proves #<n>` heading'
   bad_ticket 's/Video 1, Setup/Video one, Setup/' 'videos: Video one, Setup of walk 1, shows walks 1 is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
   bad_ticket 's/Video 1, Setup of walk 1, shows walks 1/Video 1, Setup of walk 1, shows walks one/' 'videos: Video 1, Setup of walk 1, shows walks one is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
@@ -289,6 +308,8 @@ cases=(
   "the shell and plan-page.md hold no bend|t_build_no_bend"
   "build-page preserves earlier-layer seam locations|t_build_earlier_seam"
   "build-page keeps every mixed-format map location|t_build_mixed_at"
+  "build-page accepts and-separated proof references|t_build_multiple_proofs"
+  "build-page keeps commas inside quoted map locations|t_build_at_comma"
   "build-page refuses malformed or mismatched Stack rows|t_build_stack_identity"
   "build-page refuses malformed Slice Walk and Video headings|t_build_bad_record_headings"
   "build-page keeps existing test protections in Task done text|t_build_task_protections"

@@ -28,7 +28,7 @@ NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 PROVED = re.compile(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$")
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
-REFS = r"#\d+(?:,\s*#\d+)*"
+REFS = r"#\d+(?:(?:,\s*|\s+and\s+)#\d+)*"
 RECORD = {
     "slice": re.compile(rf"Slice \d+, proves ({REFS}):\s*(.+)"),
     "walk": re.compile(rf"Walk \d+, proves ({REFS})"),
@@ -223,7 +223,8 @@ def page_maps(maps):
             xy = grid(p.get("Grid")) or (0.0, 0.0)
             parts.append({"ref": p.get("Ref"), "name": p.get("Part"), "job": p.get("Job"),
                           "change": p.get("Change"), "group": p.get("Group", ""), "kind": p.get("Kind"),
-                          "at": [re.sub(r"^`(.*)`$", r"\1", entry.strip()) for entry in at.split(",") if entry.strip()],
+                          "at": [re.sub(r"^`(.*)`$", r"\1", entry.strip())
+                                 for entry in re.findall(r"(?:`[^`]*`|[^,])+", at) if entry.strip()],
                           "x": int(xy[0]) if xy[0].is_integer() else xy[0],
                           "y": int(xy[1]) if xy[1].is_integer() else xy[1], "layer": p.get("Layer") or None})
         got.append({"area": m["area"], "parts": parts, "flows": [f for f in m["flows"] if "bad" not in f]})

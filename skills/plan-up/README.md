@@ -60,6 +60,8 @@ The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place.
 
+A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
+
 ## Credits
 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
