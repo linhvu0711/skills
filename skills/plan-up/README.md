@@ -18,9 +18,9 @@ It reads every ticket with its comments, since a later comment can change what t
 
 A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. The plan opens with its issue, size, and date and holds a short Summary that the page shows on its Overview tab. [build-page.py](scripts/build-page.py) builds the page from the `.md`.
 
-The page opens on a Review tab, written for you, the person who approves the plan: what changes, the approach and why not the other way, the blast radius (the parts it touches, and whether it adds a dependency, a schema change, an API, config, or CI), the choices you should know about, at most three risks, how we know it works, and the scope. Each part has a size limit, and the check fails a page that breaks one. A run shows the whole stack first, then a small block for each layer.
+The page opens on a Review tab, written for you, the person who approves the plan: what changes, the approach and why not the other way, the blast radius (the parts it touches, and whether it adds a dependency, a schema change, an API, config, or CI), the choices you should know about, at most three risks, how we know it works, and the scope. Each part has a size limit, and the builder refuses a plan that breaks one. A run shows the whole stack first, then a small block for each layer.
 
-Under the blast radius sits a change map, drawn only when the plan adds or removes a part, moves a job between parts, or changes what flows between them. A box is a part with a job, named in your repo's words; an arrow is what moves, never an import; a gray area is the app or package. Green is new, amber is a changed job, red is removed, and a dashed border is outside the repo. An arrow finds its own way around the boxes, and its label sits on it where it covers no box or other label, on two lines when one has no room. Point at a box to see its files, and name its ref (`M3`) in chat to change it. A run gets one map for the whole stack, with each change tagged by its layer. The check keeps every name, job, and arrow label short enough to fit, and fails when the page's map says something the plan does not.
+Under the blast radius sits a change map, drawn only when the plan adds or removes a part, moves a job between parts, or changes what flows between them. A box is a part with a job, named in your repo's words; an arrow is what moves, never an import; a gray area is the app or package. Green is new, amber is a changed job, red is removed, and a dashed border is outside the repo. An arrow finds its own way around the boxes, and its label sits on it where it covers no box or other label, on two lines when one has no room. Point at a box to see its files, and name its ref (`M3`) in chat to change it. A run gets one map for the whole stack, with each change tagged by its layer. The builder keeps every name, job, and arrow label short enough to fit; the limits live in the builder. The page routes every flow itself: `bend` is not a plan field.
 
 The tabs after it are for the agent that builds. The plan holds the facts it proved by a probe, one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then) and the docs its change makes stale, so code and docs land in one commit, UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), a before shot for each walk that changes a screen that exists already, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time, with the cleaner option as the pick, package or not.
 
@@ -40,7 +40,7 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 ## Needs
 
 - `gh`, signed in, and `git`.
-- `python3`, to check for claims and to build, serve, and check the page. `curl` and `lsof` for the local server.
+- `python3`, to check for claims and to build and serve the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
 - From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, and [plan-page.md](../../shared-skill-core/plan-page.md) for the page.
@@ -57,6 +57,8 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
 
 The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
+
+The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place.
 
 ## Credits
 

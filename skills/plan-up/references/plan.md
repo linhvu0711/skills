@@ -303,8 +303,8 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, in a few words: a name at most 20 characters, a job at
-  most 30, so both fit the box. `Change` is `new`, `changed` (the job
+  job changes, short enough to fit the box. `scripts/build-page.py`
+  holds the limits and names each line over one. `Change` is `new`, `changed` (the job
   changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
@@ -313,8 +313,8 @@ part or flow changes.`, so the reader sees that the plan checked.
 - `At` is the files of a part that exists now, `file` or `file:line`,
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
-- A flow names what moves or what is asked, never `imports`, in at most
-  20 characters. `(same)` may be left out.
+- A flow names what moves or what is asked, never `imports`, in a few
+  words within the label limit in `scripts/build-page.py`. `(same)` may be left out.
 - At most 12 parts. More: merge the `same` parts no changed flow needs,
   then parts of one group whose flows match. Still more: two maps, one
   per area, each block headed `## Change map · <area>`.

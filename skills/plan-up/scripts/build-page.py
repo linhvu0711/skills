@@ -17,6 +17,15 @@ FACTS = "Repo Base Test Typecheck Lint Build Run UI Open Screen Platform Standar
 PART = re.compile(r"(Change|Approach|Blast radius|Choices|Risks|Works when|In|Out):\s*(.*)$")
 BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
 CHANGES = {"new", "changed", "removed", "same"}
+KINDS = {"part", "store", "outside"}
+NEEDS = {
+    "single": ["Change", "Approach", "Blast radius", "Choices", "Risks", "Works when", "In", "Out"],
+    "stack": ["Change", "Approach", "Blast radius", "Risks", "In", "Out"],
+    "layer": ["Change", "Choices", "Works when"],
+}
+# The longest text that fits a map box or a flow label in shell.html. plan.md points here.
+NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
+PROVED = re.compile(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$")
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
 
@@ -201,7 +210,7 @@ def page_maps(maps):
         parts = []
         for p in m["parts"]:
             at = p.get("At", "")
-            xy = grid(p.get("Grid")) or (0, 0)
+            xy = grid(p.get("Grid")) or (0.0, 0.0)
             parts.append({"ref": p.get("Ref"), "name": p.get("Part"), "job": p.get("Job"),
                           "change": p.get("Change"), "group": p.get("Group", ""), "kind": p.get("Kind"),
                           "at": re.findall(r"`([^`]+)`", at) or at or [],
@@ -259,6 +268,8 @@ def page_layer(section, issue, title, parts):
     rows = [r for r in table_rows(section.get("Proof", [])) if r and r[0].isdigit()]
     proof = []
     for r in rows:
+        if len(r) != 6:
+            continue
         w = re.search(r"walk (\d+)", r[3])
         proof.append({"line": r[1], "test": None if r[2] == "none" else r[2],
                       "walk": int(w.group(1)) if w else None, "video": None if r[4] == "none" else r[4], "artifact": r[5]})
@@ -290,7 +301,7 @@ def page_data(lines):
     parts = reviews[0]["parts"] if reviews else {}
     proved = []
     for item in list_items(section.get("Proved", [])):
-        m = re.match(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$", item)
+        m = PROVED.fullmatch(item)
         if m:
             proved.append(dict(zip(["fact", "ran", "date", "usedBy"], m.groups())))
     is_run = "Stack" in section
@@ -323,11 +334,222 @@ def page_data(lines):
     return data
 
 
+def review_problems(reviews, proof_rows, is_run, layer_count):
+    run_name = f"run of {layer_count} layer{'s' if layer_count != 1 else ''}"
+    want = ["single"] if not is_run else ["stack"] + ["layer"] * layer_count
+    have = [r["kind"] for r in reviews]
+    if have != want:
+        yield f"review: the .md has {len(reviews)} `## Review` block(s), a {run_name if is_run else 'ticket'} needs {len(want)}"
+        return
+    for r in reviews:
+        name = "review" if r["kind"] == "single" else ("stack review" if r["kind"] == "stack" else f"layer {r['layer']} review")
+        parts = r["parts"]
+        for p in NEEDS[r["kind"]]:
+            if p not in parts:
+                yield f"{name}: no `{p}` part"
+        for p, cap in [("Change", 2 if r["kind"] == "layer" else 4), ("Approach", 4), ("In", 4), ("Out", 4)]:
+            if p in parts and len(parts[p]["text"]) > cap:
+                yield f"{name}: `{p}` has {len(parts[p]['text'])} lines, the limit is {cap}"
+            if p in parts and not parts[p]["text"]:
+                yield f"{name}: `{p}` is empty"
+        if "Blast radius" in parts:
+            keys = parts["Blast radius"]["keys"]
+            for k in BLAST:
+                if not keys.get(k):
+                    yield f"{name}: `Blast radius` has no `{k}` line"
+        if "Choices" in parts:
+            got = items(parts["Choices"])
+            odd = [x for x in got if not re.match(r"(Fork|D\d+):", x)]
+            if odd:
+                yield f"{name}: each `Choices` line starts `Fork:` or `D<n>:`, not: {odd[0][:60]}"
+            decided = [x for x in got if re.match(r"D\d+:", x)]
+            if len(decided) > 3:
+                yield f"{name}: `Choices` has {len(decided)} `Decided` lines, the limit is 3"
+        if "Risks" in parts:
+            got = items(parts["Risks"])
+            if len(got) > 3:
+                yield f"{name}: `Risks` has {len(got)} lines, the limit is 3"
+            for x in got:
+                if "If wrong:" not in x or "Proved:" not in x:
+                    yield f"{name}: a risk needs `If wrong:` and `Proved:`: {x[:60]}"
+        if "Works when" in parts:
+            got = items(parts["Works when"])
+            rows = proof_rows[r["layer"]]
+            if len(got) != rows:
+                yield f"{name}: `Works when` has {len(got)} lines, its Proof has {rows} rows"
+            for j, x in enumerate(got, 1):
+                if not x.startswith(f"#{j} "):
+                    yield f"{name}: `Works when` line {j} must start `#{j} `"
+
+
+def map_problems(blocks, is_run):
+    if not blocks:
+        yield "change map: the .md has no `## Change map` block; write a map, or `None: no part or flow changes.`"
+        return
+    if any(b["none"] for b in blocks):
+        if len(blocks) > 1 or blocks[0]["parts"] or blocks[0]["flows"]:
+            yield "change map: a `None:` line stands alone, with no map beside it"
+        return
+    if len(blocks) > 2:
+        yield f"change map: {len(blocks)} maps, the limit is 2"
+    seen = set()
+    for n, b in enumerate(blocks, 1):
+        name = f"change map {n}" if len(blocks) > 1 else "change map"
+        parts = b["parts"]
+        if not parts:
+            yield f"{name}: no parts"
+        if len(parts) > 12:
+            yield f"{name}: {len(parts)} parts, the limit is 12; merge the `same` ones first"
+        refs, cells = {}, {}
+        for p in parts:
+            ref = p.get("Ref", "?")
+            if ref in seen:
+                yield f"{name}: {ref} is used twice"
+            seen.add(ref)
+            refs[ref] = p
+            if not p.get("Part") or not p.get("Job"):
+                yield f"{name}: {ref} needs a part name and a job"
+            if len(p.get("Part") or "") > NAME_MAX:
+                yield f"{name}: {ref} part name is {len(p['Part'])} characters, the limit is {NAME_MAX}"
+            if len(p.get("Job") or "") > JOB_MAX:
+                yield f"{name}: {ref} job is {len(p['Job'])} characters, the limit is {JOB_MAX}"
+            if p.get("Change") not in CHANGES:
+                yield f"{name}: {ref} change `{p.get('Change')}` is not new, changed, removed, or same"
+            if p.get("Kind") not in KINDS:
+                yield f"{name}: {ref} kind `{p.get('Kind')}` is not part, store, or outside"
+            if p.get("Kind") != "outside" and not (p.get("At") or "").strip():
+                yield f"{name}: {ref} has no files and no slice in `At`"
+            g = grid(p.get("Grid"))
+            if g is None:
+                yield f"{name}: {ref} grid `{p.get('Grid')}` is not `column,row` with both 0 or more"
+            elif g in cells:
+                yield f"{name}: {ref} and {cells[g]} share the grid cell {p.get('Grid')}"
+            else:
+                cells[g] = ref
+            if is_run and p.get("Change") != "same" and not re.match(r"L\d+$", p.get("Layer") or ""):
+                yield f"{name}: {ref} is {p.get('Change')} but names no layer"
+        # A group's gray area spans its cells; a part of no such group inside it misstates the map.
+        groups = {}
+        for p in parts:
+            if p.get("Group") and grid(p.get("Grid")):
+                groups.setdefault(p["Group"], []).append(grid(p["Grid"]))
+        for gname, gcells in groups.items():
+            xs, ys = [c[0] for c in gcells], [c[1] for c in gcells]
+            for c, ref in cells.items():
+                if refs[ref].get("Group") != gname and min(xs) <= c[0] <= max(xs) and min(ys) <= c[1] <= max(ys):
+                    yield f"{name}: {ref} sits inside the area of group `{gname}`; put the group's parts in cells next to each other"
+        touched = set()
+        for f in b["flows"]:
+            if "bad" in f:
+                yield f"{name}: a flow line is not `- M1 → M2: what moves (change)`: {f['bad'][:60]}"
+                continue
+            for end in (f["from"], f["to"]):
+                if end not in refs:
+                    yield f"{name}: flow {f['from']} → {f['to']} names {end}, which is not a part of this map"
+            if not f["label"] or re.fullmatch(r"imports?", f["label"].strip(), re.I):
+                yield f"{name}: flow {f['from']} → {f['to']} must name what moves, not `{f['label']}`"
+            elif len(f["label"].strip()) > LABEL_MAX:
+                yield f"{name}: flow {f['from']} → {f['to']} label is {len(f['label'].strip())} characters, the limit is {LABEL_MAX}"
+            if f["change"] != "same":
+                touched.update((f["from"], f["to"]))
+                if is_run and not f["layer"]:
+                    yield f"{name}: flow {f['from']} → {f['to']} is {f['change']} but names no layer"
+        for ref, p in refs.items():
+            if p.get("Change") == "same" and ref not in touched:
+                yield f"{name}: {ref} has no change and no changed flow touches it; leave it out"
+
+
+def before_kind(value):
+    v = value.strip().strip("`").strip().lower()
+    if not v:
+        return "blank"
+    if v.startswith("none"):
+        return "none"
+    m = re.match(r"as walk (\d+)\b", v)
+    return f"as walk {m.group(1)}" if m else "steps"
+
+
+def md_before_problems(walks):
+    runs = len({w["layer"] for w in walks}) > 1
+    for w in walks:
+        name = f"layer {w['layer']} walk {w['n']}" if runs else f"walk {w['n']}"
+        kind = w["kind"]
+        if kind is None:
+            yield f"{name}: the .md has no `Before` line"
+        elif kind == "blank":
+            yield f"{name}: the .md `Before` line is blank"
+        elif kind.startswith("as walk "):
+            t = int(kind.split()[-1])
+            target = next((x for x in walks if x["layer"] == w["layer"] and x["n"] == t), None)
+            if t >= w["n"] or target is None or target["kind"] != "steps":
+                yield f"{name}: `{kind}` must name an earlier walk of its layer whose `Before` names steps"
+
+
+def strings(node, path="DATA"):
+    if isinstance(node, str):
+        yield path, node
+    elif isinstance(node, dict):
+        for k, v in node.items():
+            yield from strings(v, f"{path}.{k}")
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from strings(v, f"{path}[{i}]")
+
+
+def plan_problems(lines):
+    section, layer_sections = sections(lines)
+    is_run = "Stack" in section
+    head = key_values(section["head"], ["Size", "Date"])
+    if not any(re.fullmatch(r"# Plan: #\d+ .+", l) for l in section["head"]):
+        yield "head: no `# Plan: #<n>` line"
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", head.get("date", "")):
+        yield "head: no `Date: YYYY-MM-DD` line under `# Plan:`"
+    if not is_run and not re.fullmatch(r"size/(XS|S|M|L|XL)", head.get("size", "")):
+        yield "head: a ticket needs `Size: size/<x>`"
+    layers = [body for _, body in layer_sections] if is_run else [section]
+    if is_run:
+        rows = [r for r in table_rows(section["Stack"]) if r and r[0].isdigit()]
+        if len(rows) != len(layers):
+            yield f"stack: {len(rows)} rows, {len(layers)} `## Layer` headings"
+    reviews, proof_rows = md_reviews(lines)
+    yield from review_problems(reviews, proof_rows, is_run, len(layers))
+    yield from map_problems(md_maps(lines), is_run)
+    for n, body in enumerate(layers, 1):
+        for row in table_rows(body.get("Proof", [])):
+            if row and row[0].isdigit() and len(row) != 6:
+                yield f"proof: layer {n} row {row[0]} has {len(row)} cells, needs 6"
+        summary = [l for l in body.get("Summary", []) if l.strip()]
+        if not summary:
+            yield f"summary: layer {n} has no `## Summary` block"
+        elif len(summary) > 3:
+            yield f"summary: layer {n} has {len(summary)} lines, the limit is 3"
+    for item in list_items(section.get("Proved", [])):
+        if not PROVED.fullmatch(item):
+            ref = item.split()[0]
+            yield f"proved: {ref} needs `, <YYYY-MM-DD>. Used by <refs>.` at its end"
+    walks = []
+    for n, body in enumerate(layers, 1):
+        numbers = [int(m.group(1)) for l in body.get("UI walks", []) if (m := re.match(r"Walk (\d+)", l))]
+        for number, walk in zip(numbers, records(body.get("UI walks", []), "walk")):
+            walks.append({"layer": n, "n": number, "kind": before_kind(walk["before"]) if "before" in walk else None})
+    yield from md_before_problems(walks)
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__.strip().splitlines()[2].strip())
     path = Path(sys.argv[1])
-    data = page_data(path.read_text(encoding="utf-8").splitlines())
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if "## Review" not in lines:
+        print(f"not a plan-up .md: {path.name}")
+        sys.exit(1)
+    problems = list(plan_problems(lines))
+    data = page_data(lines)
+    problems.extend(f"{p}: odd number of backticks, one shows raw: {s[:80]}"
+                    for p, s in strings(data) if s.count("`") % 2)
+    if problems:
+        print("\n".join(problems))
+        sys.exit(1)
     shell = (Path(__file__).resolve().parent.parent / "assets/shell.html").read_text(encoding="utf-8")
     output = path.with_suffix(".html")
     tmp = output.with_suffix(".html.tmp")

@@ -50,27 +50,10 @@ port that is only in use is not a port that serves this folder, and the
 person gets a 404. Run the script again after every rebuild; the port
 can differ between plans, so use the URL it prints.
 
-Then, in this order:
-
-1. **The check**, a script, not a browser: it reads the `DATA` the page
-   embeds and compares it with the `.md`.
-
-   ```sh
-   python3 ../skills/plan-up/scripts/check-page.py "$OUT" "$DIR/plan-<slug>.md"
-   ```
-
-   It prints `page ok` or one line per problem: a count that differs
-   from the `.md`, a slice whose `docs` name other files, a `Proved`
-   line with another date or `Used by`, a Review part that is missing,
-   over its limit, or differs from the `.md`, a Change map that breaks a
-   rule of `plan.md` § Change map or differs from the `.md`, `[object`, or a string
-   with an odd number of backticks. Fix the `.md`,
-   rebuild, run it again.
-2. **The review**, in the person's own browser: `open "<url>"` on macOS,
-   `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the check
-   passes. This is the step the person sees. Run it on the first build
-   and after every rebuild.
-
+**The review**, in the person's own browser: `open "<url>"` on macOS,
+`xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the build
+prints `page:`. This is the step the person sees. Run it on the first
+build and after every rebuild.
 Bump `v` on every rebuild, or the browser shows the old page. Leave the
 page open. Do not open the page with browser tools: `shell.html` is
 fixed, and a render bug in it gets fixed there, once, not worked around
@@ -79,7 +62,7 @@ in the plan.
 ## Headless host
 
 `command -v open xdg-open` finds neither: there is no browser to leave
-the page in. Serve and check as above, then publish the `.html` with the
+the page in. Build and serve as above, then publish the `.html` with the
 `to-artifact` skill. The first round is a first publish; every rebuild
 republishes to the same artifact, so the link never changes and an open
 view refreshes on its own. In chat the artifact link takes the place of
