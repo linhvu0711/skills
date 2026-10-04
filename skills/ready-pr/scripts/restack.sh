@@ -29,6 +29,8 @@
 set -euo pipefail
 
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file>'
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+checkout="$here/../../../shared-skill-core/checkout.sh"
 
 # children <branch>: the open PRs on <branch>, one line each, by number.
 children() {
@@ -67,9 +69,14 @@ old_of() {
   return 1
 }
 
-# holder <branch>: the worktree that has <branch> checked out, if any.
+# holder <branch>: the worktree that has <branch> checked out, if any, as the
+# checkout resolver lists them.
 holder() {
-  g worktree list --porcelain | awk -v ref="branch refs/heads/$1" '/^worktree /{p=substr($0,10)} $0==ref{print p}'
+  local listed b w
+  listed="$(bash "$checkout" worktrees "$wt")"
+  while read -r b _ _ w; do
+    if [ "$b" = "BRANCH=$1" ]; then printf '%s' "${w#WORKTREE=}"; return 0; fi
+  done <<<"$listed"
 }
 
 drop_tmp() { g worktree remove --force "$tmp/wt" >/dev/null 2>&1 || true; }
