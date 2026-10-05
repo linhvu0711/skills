@@ -7,7 +7,7 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 The prompt skeleton and the rules block live in
-`../../shared-skill-core/handoff/` as templates, shared with `/ship`.
+`../../shared-skill-core/handoff/` as templates, shared with `/build-and-prove`.
 Read the prompt rules first, rendered for the executor:
 `bash ../../shared-skill-core/handoff/render.sh <executor> prompt`
 (the prompt skeleton, where each block comes from, and the follow-up
