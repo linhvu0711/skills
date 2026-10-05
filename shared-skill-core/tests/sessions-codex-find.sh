@@ -32,6 +32,28 @@ t_cof_lists_project_session() {
   eq ids "c1" "$(ids)"
 }
 
+t_cof_each_cwd() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  co_rollout c2 /wt/o/app/feat-x "add the button"
+  co_rollout c3 /p/other "tidy the docs"
+  run python3 "$F" --cwd /p/app --cwd /wt/o/app --include-subdirs --days 1 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1 c2" "$(ids)"
+}
+
+t_cof_every_project() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  co_rollout c2 /wt/o/app/feat-x "add the button"
+  co_rollout c3 /p/other "tidy the docs"
+  run python3 "$F" --all-projects --days 1 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1 c2 c3" "$(ids)"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder lists sessions under each cwd|t_cof_each_cwd"
+  "finder lists every project|t_cof_every_project"
 )

@@ -26,6 +26,8 @@ Usage:
     find_session.py "rewrite the landing page hero"       # score + rank
     find_session.py --all                                  # newest first
     find_session.py "..." --cwd /path/to/proj              # other project
+    find_session.py "..." --cwd A --cwd B --include-subdirs # several roots and below
+    find_session.py --all-projects --days 3 --all          # every project, last 3 days
     find_session.py "..." --date yesterday | --days 30     # narrow by time
     find_session.py --show 01a0900b                        # one session's prompts
     find_session.py "..." --json                           # machine output
@@ -212,16 +214,23 @@ def rollout_paths(root: Path, day: dt.date | None, days: int | None):
                 yield d / name
 
 
-def cwd_matches(session_cwd, target: str, include_subdirs: bool) -> bool:
+def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -> bool:
+    """True when the cwd is one of the targets, or below one with include_subdirs.
+    No targets (None) means every project."""
+    if targets is None:
+        return True
     if not session_cwd:
         return False
     s = os.path.normpath(os.path.expanduser(session_cwd))
-    if s == target:
-        return True
-    return include_subdirs and s.startswith(target.rstrip(os.sep) + os.sep)
+    for target in targets:
+        if s == target:
+            return True
+        if include_subdirs and s.startswith(target.rstrip(os.sep) + os.sep):
+            return True
+    return False
 
 
-def collect(paths, target: str, include_subdirs: bool, include_subagents: bool, idx: dict) -> list[dict]:
+def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
     Subagent threads (spawned by another session) are skipped by default: the
@@ -244,14 +253,14 @@ def collect(paths, target: str, include_subdirs: bool, include_subagents: bool, 
             ent = {"size": st.st_size, "mtime": st.st_mtime, **meta}
             files[key] = ent
             dirty = True
-        if not cwd_matches(ent.get("cwd"), target, include_subdirs):
+        if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
         if ent.get("subagent") and not include_subagents:
             continue
         if "prompts" not in ent:
             ent.update(parse_content(p))
             dirty = True
-        out.append({"path": key, "modified": st.st_mtime, **ent})
+        out.append({"path": key, "modified": st.st_mtime, "size": st.st_size, **ent})
     if dirty:
         save_index(idx)
     return out
@@ -360,13 +369,14 @@ def show_session(id_prefix: str, idx: dict) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Find Codex sessions for a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
-    ap.add_argument("--cwd", default=os.getcwd(), help="project working dir (default: cwd)")
+    ap.add_argument("--cwd", action="append", help="project working dir (default: cwd); repeat for several roots")
+    ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
     ap.add_argument("--include-subagents", action="store_true", help="also list subagent threads spawned by other sessions")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8)")
+    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     ap.add_argument("--sessions-root", default=str(SESSIONS_ROOT))
@@ -380,9 +390,11 @@ def main() -> int:
     if not root.is_dir():
         print(f"No Codex sessions root at {root}")
         return 1
-    target = os.path.normpath(os.path.expanduser(args.cwd))
+    roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
+    target = "all projects" if args.all_projects else ", ".join(roots)
     paths = rollout_paths(root, resolve_day(args.date), args.days)
-    sessions = collect(paths, target, args.include_subdirs, args.include_subagents, idx)
+    sessions = collect(paths, None if args.all_projects else roots,
+                       args.include_subdirs, args.include_subagents, idx)
 
     tokens = tokenize(args.query)
     phrase = args.query.strip().lower()
@@ -396,10 +408,10 @@ def main() -> int:
         ranked.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
     else:
         ranked = sorted(sessions, key=lambda s: s["modified"], reverse=True)
-    shown = ranked[: max(args.limit, 1)]
+    shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
-        keys = ("id", "cwd", "timestamp", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path")
+        keys = ("id", "cwd", "timestamp", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size")
         print(json.dumps({
             "cwd": target, "query": args.query,
             "total_sessions": len(sessions), "matched": len(ranked),
@@ -421,7 +433,7 @@ def main() -> int:
         score = f"  [score {s['score']}]" if use_query else ""
         print(f"{i}. {s['id']}")
         print(f"   {humanize_age(s['modified'])} · {s['n_prompts']} prompts{score}")
-        if args.include_subdirs:
+        if args.include_subdirs or args.all_projects or len(roots) > 1:
             print(f"   cwd:    {s.get('cwd')}")
         if s.get("first_prompt"):
             fp = re.sub(r"\s+", " ", s["first_prompt"]).strip()
