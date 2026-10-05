@@ -37,12 +37,26 @@ _Avoid_: unproven, unverified, assumed
 ## Handoff
 
 **Executor**:
-The agent that does the work of a plan handed off by `/handoff`: Devin, Cursor, or local.
+The agent that does the work of a plan: Devin or Cursor in the cloud, through `/handoff`, or local, through `/build-and-prove`.
 _Avoid_: vendor, provider, backend
 
 **Handoff ledger**:
 The one list of handoff sessions, a row per session with its executor and issue. `/handoff` reads it to send a follow-up to the executor that started the issue.
 _Avoid_: session list, sessions file
+
+## Local build
+
+**Builder**:
+The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Devin CLI pane, or the session itself.
+_Avoid_: implementer, coder
+
+**Walker**:
+The subagent that does a plan's UI walks on a proofbox Sandbox the way a test user would. It gets the walks and the pass rule for each, never reads or changes the code, and reports what passed and what broke, with videos and screenshots.
+_Avoid_: tester, verifier, QA agent
+
+**Proof folder**:
+What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, and the filled Proof table. `/make-pr` builds the PR's Proof part from it.
+_Avoid_: artifacts dir, media folder
 
 ## PRs
 
