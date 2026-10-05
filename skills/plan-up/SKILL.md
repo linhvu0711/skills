@@ -1,6 +1,6 @@
 ---
 name: plan-up
-description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, or a whole epic, stacked as PRs, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff."
+description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, a whole epic, stacked as PRs, or work this chat agreed on with no issue, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff."
 disable-model-invocation: true
 ---
 
@@ -23,7 +23,7 @@ down.
 Read `../../shared-skill-core/facts.md` first: you are the brain,
 Explore agents retrieve, `SEARCH=on` for outside facts.
 
-## Five forms
+## Six forms
 
 - `/plan-up <issue-url>`: one ticket, one PR. Base is the default branch.
 - `/plan-up <epic-url> #12 #14 #15`: a **run**. The epic is a graph; a run
@@ -40,6 +40,10 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
   From there it is a run.
 - `/plan-up <issue-url> on <pr-url>`: one ticket as a new layer on top of an
   open stack. Base is that PR's head branch.
+- `/plan-up`, no URL, words after it or none: a **chat plan**. The work
+  this chat agreed on, with no issue: one ticket, one PR. Base is the
+  default branch. The words, when given, say which part of the chat to
+  plan. Step 2 § Chat plan takes the place of the issue.
 
 ## Steps
 
@@ -126,9 +130,33 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    whether to go on, and wait. Yes: go on. No: remove the base copy and
    stop.
 
+   **Chat plan.** No issue to read: write the **brief** from the chat
+   instead, per `../../shared-skill-core/issue-rules.md`: a `Title`
+   (§ Title, the repo's style), a `Task` in one to three lines, the
+   `Done when` lines (§ Done when), the `Known` and `Open` lines of
+   § Context, and a size (§ Size). A chat plan has no Steps and takes
+   no short path, whatever its size. The facts are only what the chat
+   said or ran; nothing is made up to fill a line. Its slug is picked
+   free, per `../../shared-skill-core/plan-page.md` § Files, before
+   step 8 writes a file. From here on, the brief stands for the issue:
+   its `Done when` lines, `Known` lines, and `Open` lines are read as an
+   issue's are. Print it in chat in this shape and go on, with no wait:
+
+   ```
+   Brief: [feat] Export orders as CSV · size/M
+   Task: staff can download the orders list as a CSV file
+   Done when:
+   - the Export menu offers CSV next to JSON
+   - an order note with a newline stays in one CSV field
+   ```
+
+   A chat plan has no `manual` label, no `Blocked by`, and no claim
+   to check: skip all three.
+
 3. **Gate.** Apply `## Readiness gate` from
    `../../shared-skill-core/issue-rules.md` to the issue
-   text, each ticket of a run on its own. Pass: continue. Fail: name the
+   text, each ticket of a run on its own; to a chat plan's brief, and
+   its gaps name `/grill` only. Pass: continue. Fail: name the
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/triage`, stop. Nothing is planned.
 
@@ -253,7 +281,8 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary
    again. `ok`: remove the base copy (step 1), say
-   `Ready for /handoff.`, and stop.
+   `Ready for /handoff.` (a chat plan: `Ready for /ship.`, since the
+   cloud needs an issue), and stop.
 
 ## Examples
 

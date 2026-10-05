@@ -9,7 +9,14 @@ a short summary.
 
 Folder: `$HOME/.agents/artifacts/plan/`. Create it when
 needed. Slug: `<owner>-<repo>-<n>`, the first ticket's number; a run
-adds `-run`.
+adds `-run`. A chat plan has no number: `<owner>-<repo>-chat-<words>`,
+two to four words of its title, lower case, joined by `-`. The words
+also name its branch, `<type>/<words>`. So when the plan is first
+written, both must be free: no `plan-<slug>.md` in the folder, and no
+branch `<type>/<words>` in `git branch --list` or
+`git ls-remote --heads origin`. One is taken: add `-2`, then `-3`, and
+so on to the words, until both are free. An edit to the plan keeps its
+slug.
 
 - `plan-<slug>.md`: the plan, verbatim per `plan.md`.
 - `plan-<slug>.html`: what `../skills/plan-up/scripts/build-page.py` writes from the `.md`.
@@ -17,7 +24,8 @@ adds `-run`.
 The folder holds `plan-<slug>.md`, `plan-<slug>.html`, and `/ship`'s
 `prompt-<slug>.md`. The `.md` keeps
 its `Repo: owner/repo` line in Facts: `../skills/plan-up/scripts/prune.sh` reads it to
-know when the plan's issues are closed and its files can go.
+know when the plan's issues are closed and its files can go. A chat
+plan's files go 30 days after its `.md` last changed.
 
 ## Build
 
@@ -80,7 +88,9 @@ $HOME/.agents/artifacts/plan/plan-acme-shop-42.md
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
-A run: one line per layer under the first. A `handoff-ready` ticket
-adds `· short path` after the size, so the user knows the Steps were
-trusted. `doc` counts `Docs` lines and `probe` counts `Proved` lines;
+A run: one line per layer under the first. A chat plan: its first line
+has no `#<n>`, as in
+`Plan: [feat] Export orders as CSV · size/M · base main`. A
+`handoff-ready` ticket adds `· short path` after the size, so the user
+knows the Steps were trusted. `doc` counts `Docs` lines and `probe` counts `Proved` lines;
 each drops when it is 0. The whole plan never goes in chat.

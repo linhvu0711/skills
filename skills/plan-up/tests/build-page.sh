@@ -37,6 +37,39 @@ t_build_none_map() {
   eq DATA "$(jq -S . "$here/build-page/none-map.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+# chat_plan <file> [<brief>]: ticket.md with no issue number, and <brief>
+# (default: a Task and two Done-when lines) as its last block.
+chat_plan() {
+  sed 's/^# Plan: #42 /# Plan: /' "$here/build-page/ticket.md" > "$1"
+  printf '\n%s\n' "${2-$'## Brief\nTask: staff download the orders list as CSV\nDone when:\n- the Export menu offers CSV\n- a note with a newline stays in one field'}" >> "$1"
+}
+
+t_build_chat() {
+  T="$(mktemp -d)"
+  chat_plan "$T/plan-acme-shop-chat-orders-csv.md"
+  build "$T/plan-acme-shop-chat-orders-csv.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S 'del(.issue.number, .issue.url, .layers[0].issue.number, .layers[0].issue.url)' "$here/build-page/ticket.json")" \
+    "$(page_data "$T/plan-acme-shop-chat-orders-csv.html")"
+}
+
+bad_chat() {
+  T="$(mktemp -d)"
+  chat_plan "$T/plan-acme-shop-chat-orders-csv.md" "$1"
+  build "$T/plan-acme-shop-chat-orders-csv.md"
+  eq exit 1 "$code"
+  eq stdout "$2" "$out"
+  [ ! -e "$T/plan-acme-shop-chat-orders-csv.html" ]
+}
+
+t_build_chat_no_brief() {
+  bad_chat '' 'brief: a chat plan needs a `## Brief` block'
+}
+
+t_build_chat_brief_gaps() {
+  bad_chat $'## Brief\nTask:\nDone when:\n- ' "$(printf 'brief: no `Task:` line\nbrief: no `Done when:` list')"
+}
+
 bad_ticket() {
   T="$(mktemp -d)"
   sed "$1" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -81,7 +114,7 @@ t_build_no_date() {
 }
 
 t_build_no_head() {
-  bad_ticket '/^# Plan:/d' 'head: no `# Plan: #<n>` line'
+  bad_ticket '/^# Plan:/d' 'head: no `# Plan:` line'
 }
 
 t_build_no_size() {
@@ -279,6 +312,9 @@ cases=(
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
+  "build-page builds a chat plan with no issue|t_build_chat"
+  "build-page refuses a chat plan with no Brief|t_build_chat_no_brief"
+  "build-page refuses a Brief with no Task or Done when|t_build_chat_brief_gaps"
   "build-page stops on a file with no Review|t_build_no_review"
   "build-page refuses a Review with no Schema line|t_build_no_schema"
   "build-page refuses a part name over its limit|t_build_name_limit"

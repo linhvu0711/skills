@@ -61,12 +61,17 @@ commits stay.
    - a `## Stack` block and no `--layer`: `A run: /ship builds it
      layer by layer, or name --layer <n>.`
    - `Platform: windows`: `proofbox has no Windows. Use Devin: /ship
-     <issue-url> devin?` and wait for the answer.
+     <issue-url> devin?` and wait for the answer. A chat plan (no
+     `#<n>` in its `# Plan:` line) has no issue for Devin: `proofbox has
+     no Windows, and the cloud needs an issue. Run /to-issue first.`
+     and stop.
 
    Hold `REPO` (the `Repo:` line), `BASE` (`--base`, else the `Base:`
    line), the issue number `N`, `UI` (the `UI:` line), the OS (`linux`,
    or `macos` for `macos-outpost`), and the layer's blocks: for a run,
    only the blocks under `## Layer <n>`. The slug is `<owner>-<repo>-<N>`.
+   A chat plan (`../plan-up/references/plan.md` § Chat plan) has no
+   `N`: its slug is the plan file's, `plan-<slug>.md`.
    `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 
 2. **proofbox.** `command -v proofbox`. Missing: say `proofbox is not
@@ -75,6 +80,11 @@ commits stay.
 3. **Worktree.** The branch follows the PR shape § Branch
    (`../../shared-skill-core/pr-shape.md`): the issue's type, its
    number, two to four words, as in `fix/133-uninstall-reverses-setup`.
+   A chat plan: the type from its title, then the words of its slug
+   after `chat-`, as in `feat/export-orders-csv` for
+   `acme-shop-chat-export-orders-csv`. The slug was picked so that no
+   branch had this name, so an existing branch here is this plan's
+   rerun.
 
    ```bash
    bash ../../shared-skill-core/checkout.sh <REPO> <branch> --base <BASE>
@@ -130,7 +140,8 @@ commits stay.
 7. **Build.** Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
    head lines with `Branch`, `Worktree`, and `Proof folder` (`PROOF`),
-   the issue's `Task` and `Done when` verbatim, the plan's blocks, and
+   the issue's `Task` and `Done when` verbatim (a chat plan: its
+   `## Brief` block's), the plan's blocks, and
    the rules block from `render.sh local rules` pasted whole,
    unchanged, once. No `UI walks`, no `Videos`. On a rerun, one line
    under `# Slices` first: `Slices 1 to <k> are committed; start at
@@ -151,8 +162,8 @@ commits stay.
      bash scripts/pane.sh "$WT" <label> <prompt-path>
      ```
 
-     The label is the first four words of the issue title in kebab
-     case. `stop:` on stderr: show it, stop. Exit 0: print its report
+     The label is the first four words of the issue title (a chat
+     plan: the plan title, its type tag left out) in kebab case. `stop:` on stderr: show it, stop. Exit 0: print its report
      line and hold `PANE` and `AGENT`. Then wait:
 
      ```bash
@@ -165,8 +176,8 @@ commits stay.
      80`, and sort:
      - The last message starts with `QUESTION`: sort it by the two
        tests in `../plan-up/SKILL.md` step 5. **Small fork**: the plan,
-       the issue, or the repo holds the answer; fetch the `file:line`
-       with Explore, shape it per `render.sh local prompt` § Answer,
+       the issue (a chat plan: its brief), or the repo holds the
+       answer; fetch the `file:line` with Explore, shape it per `render.sh local prompt` § Answer,
        write it to a file, `~/.claude/bin/herdr-send <PANE> --file
        <file> --no-wait`, tell the user in one line what was asked and
        answered, and wait again. **Big fork** (the list in plan-up step
@@ -283,8 +294,10 @@ commits stay.
     BUILT feat/42-export-orders-csv
     ```
 
-    `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line. The worktree is `WT`, and the
-    branch is not pushed: `/make-pr` with the proof folder is next.
+    `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
+    A chat plan: the first line has no `#<n>`, as in
+    `Built: [feat] Export orders as CSV · feat/export-orders-csv`. The
+    worktree is `WT`, and the branch is not pushed: `/make-pr` with the proof folder is next.
 
 ## Rerun
 

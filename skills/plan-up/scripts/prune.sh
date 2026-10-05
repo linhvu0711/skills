@@ -6,9 +6,11 @@
 # A slug goes when its `plan-<slug>.md` has a `Repo: owner/repo` line and
 # every issue the slug names is closed: the number(s) in the slug, plus,
 # for a `-run`, every `#N` in the `## Stack` table. Its `plan-<slug>.*`
-# and `prompt-<slug>.*` files are deleted. A slug with no issue, an
-# unknown repo, or a gh error stays. Files that belong to no plan are
-# printed as `stray`, never deleted.
+# and `prompt-<slug>.*` files are deleted. A chat plan, slug
+# `<owner>-<repo>-chat-<words>`, has no issue: it goes when its `.md` is
+# older than 30 days. Any other slug with no issue, an unknown repo, or a
+# gh error stays. Files that belong to no plan are printed as `stray`,
+# never deleted.
 
 set -u
 DIR="${PLAN_DIR:-$HOME/.agents/artifacts/plan}"
@@ -39,6 +41,14 @@ for md in "$DIR"/plan-*.md; do
 
   repo=$(sed -n 's/^Repo:[[:space:]]*`*\([^`[:space:]]*\).*/\1/p' "$md" | head -1)
   tail=${slug#"${repo/\//-}-"}
+  if [ -n "$repo" ] && [[ $tail =~ ^chat-[a-z0-9-]+$ ]]; then
+    if [ -z "$(find "$md" -mmin +43200)" ]; then
+      kept=$((kept + 1)); continue
+    fi
+    echo "pruned $slug"
+    [ "$dry" = 1 ] || rm -f "$DIR/plan-$slug".* "$DIR/prompt-$slug".*
+    pruned=$((pruned + 1)); continue
+  fi
   if [ -z "$repo" ] || [ "$tail" = "$slug" ] || ! [[ $tail =~ ^[0-9]+(-[0-9]+)*(-run)?$ ]]; then
     kept=$((kept + 1)); continue
   fi

@@ -11,12 +11,15 @@ You have a ticket that passes the readiness gate and you want it built by an age
 - `/plan-up <issue-url> #14 #15`: a set of plain tickets, stacked the same way.
 - `/plan-up <epic-url>`: every open ticket in the epic.
 - `/plan-up <issue-url> on <pr-url>`: one more layer on an open stack.
+- `/plan-up` with no URL: plan the work this chat agreed on, with no issue. Words after it say which part of the chat to plan.
 
 It reads every ticket with its comments, since a later comment can change what the ticket asks. Before it plans, it checks whether someone is already on each ticket: an open PR that closes or mentions it, an assignee who is not you, or a comment that claims the work. If it finds one, it names them and asks whether to review their PR, build anyway, or stop. When `gh` fails during the check, it says the check could not run and asks whether to go on. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
 
+With no URL, there is no issue to read. It writes a short brief from the chat instead: a title, the task, the Done-when lines, and a size, by the same rules as an issue. It prints the brief and goes on, and the brief goes through the same gate. A plan with no issue has no claims to check, no short path, and a file named `plan-<owner>-<repo>-chat-<words>.md`. The words also name its branch, so it picks words that no other plan file and no branch uses yet, adding `-2` or `-3` when it must. Its PR has no `Closes #<n>` line, and only a local build can take it, since the cloud needs an issue.
+
 ## What you get
 
-A plan file, `plan-<owner>-<repo>-<n>.md` under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. The plan opens with its issue, size, and date and holds a short Summary that the page shows on its Overview tab. [build-page.py](scripts/build-page.py) builds the page from the `.md`.
+A plan file, `plan-<owner>-<repo>-<n>.md` (or `plan-<owner>-<repo>-chat-<words>.md` for a plan with no issue) under `~/.agents/artifacts/plan/`, and the same plan as an HTML page opened in your browser. The plan opens with its issue, size, and date and holds a short Summary that the page shows on its Overview tab. [build-page.py](scripts/build-page.py) builds the page from the `.md`.
 
 The page opens on a Review tab, written for you, the person who approves the plan: what changes, the approach and why not the other way, the blast radius (the parts it touches, and whether it adds a dependency, a schema change, an API, config, or CI), the choices you should know about, at most three risks, how we know it works, and the scope. Each part has a size limit, and the builder refuses a plan that breaks one. A run shows the whole stack first, then a small block for each layer.
 
@@ -56,7 +59,11 @@ A `handoff-ready` ticket takes a short path: its Steps are trusted and only the 
 
 The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
 
+The cases for [prune.sh](scripts/prune.sh) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed.
+
 The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
+
+A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them.
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place.
 

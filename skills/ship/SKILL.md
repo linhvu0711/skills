@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks and the build's surprises."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks and the build's surprises."
 disable-model-invocation: true
 ---
 
@@ -33,12 +33,14 @@ where the build runs (step 2).
   stack.
 - `/ship <any of the above> devin` or `… cursor`: the same, built in the
   cloud.
-- `/ship <note>`, no URL: a follow-up for the build this chat started
-  (§ Follow-up).
+- `/ship`, no URL, words after it or none: what this chat holds picks
+  the start (§ No URL): a follow-up for the build this chat started, the
+  plan this chat made, or a chat plan of the work this chat agreed on.
 
 ## Steps
 
-1. **Plan.** Read `../plan-up/SKILL.md` and follow its
+1. **Plan.** A plan this chat made (§ No URL): skip this step. Else
+   read `../plan-up/SKILL.md` and follow its
    steps 1 to 8 whole: base copy, issue, gate, facts, forks, plan, done
    rule, page. Its stop points are yours: a base that cannot be fetched,
    a gate that fails, a `manual` ticket, a claimed ticket you do not
@@ -53,7 +55,11 @@ where the build runs (step 2).
    otherwise, with walks or without, one ticket or a stack. One case
    asks: a plan with `Platform: windows` and no executor named, since
    proofbox has no Windows. Ask `proofbox has no Windows. Build it on
-   Devin?`, A yes (pick), B stop; wait. Say the route in one line:
+   Devin?`, A yes (pick), B stop; wait. A chat plan has no issue, and
+   the cloud needs one (handoff § First prompt step 1): with `devin` or
+   `cursor` named, or with `Platform: windows`, say `A chat plan has no
+   issue, so it cannot build in the cloud. Run /to-issue first.` and
+   stop. Say the route in one line:
    `Route: local (3 walks)`, `Route: local (stack of 3)`,
    `Route: local (no UI)`, or `Route: cloud (devin, named)`.
 
@@ -81,7 +87,8 @@ where the build runs (step 2).
 
 5. **Local: PR.** Read `../make-pr/SKILL.md` and follow it in `$WT`,
    with its five caller settings: the branch `BUILT` named; the files
-   are the branch's commits, nothing new; the issue line `Closes #<n>`;
+   are the branch's commits, nothing new; the issue line `Closes #<n>`,
+   or none for a chat plan;
    under `Summary`, the plan's Review `Change` and `Approach` in plain
    words, plus each surprise that changed what the code does; and the
    proof folder `PROOF`. The base is the layer's base from step 4. Its
@@ -105,6 +112,8 @@ where the build runs (step 2).
    READY https://github.com/acme/app/pull/43
    ```
 
+   A chat plan: no `#<n>`, as in
+   `Shipped: [feat] Export orders as CSV · feat/export-orders-csv · …`.
    A stack: one such block per layer, bottom first. A cloud route:
    `Route: cloud (devin, named) · session: <url>` and no worktree lines.
    The `READY` line is the one ready-pr printed, word for word: a PR
@@ -112,11 +121,25 @@ where the build runs (step 2).
    `READY <url> (waiting for approval)`. Not ready: the last line is
    `NOT READY <url>: <what is open>`. The merge is the user's.
 
-## Follow-up
+## No URL
 
-`/ship <note>` with no URL. A local build this chat started:
-build-and-prove § Follow-up. A cloud session this chat started:
-handoff § Follow-up. This chat started neither: say so and stop.
+`/ship` with no URL, words after it or none. The first case that holds
+picks the start; `devin` or `cursor` is taken off first, as in § Forms.
+
+1. **A build this chat started.** The words are a follow-up. A local
+   build: build-and-prove § Follow-up. A cloud session: handoff
+   § Follow-up. No words: say `A build from this chat is open; say what
+   to change.` and stop.
+2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
+   with no build yet. Hold its `.md`, the path its summary names, and
+   say `Plan: <path>`. Its base copy still there (no `ok` was given):
+   remove it, per plan-up step 1. Words with it are an edit to the plan:
+   make it per plan-up step 8 (change the `.md`, rebuild, bump `v`),
+   with no wait. Then step 2.
+3. **Work this chat agreed on, with no issue and no plan.** Step 1
+   runs plan-up's chat form, `/plan-up <words>`: the brief comes from
+   the chat, and its gate stops the run when the chat left a gap. Then
+   step 2, on the local route.
 
 ## Examples
 
@@ -156,6 +179,29 @@ Ready step says `READY`. Report with `session: <url>`.
 
 `proofbox has no Windows. Build it on Devin?` A yes, B stop. The user
 says A: `Route: cloud (devin, asked)`, as above.
+
+**User:** `/plan-up https://github.com/acme/shop/issues/42`, then, once
+the page is open, `/ship`.
+
+No URL, no build yet, and the plan of #42 is in this chat: § No URL
+case 2. `Plan: ~/.agents/artifacts/plan/plan-acme-shop-42.md`, the base
+copy is removed, step 1 is skipped. `Route: local (3 walks)`, then on
+as for any ticket.
+
+**User:** after a long chat that settled a CSV export for orders, with
+no issue: `/ship the CSV export`.
+
+No build, no plan: § No URL case 3. Plan-up's chat form prints
+`Brief: [feat] Export orders as CSV · size/M` with its Done-when lines,
+the gate passes, the plan is
+`plan-acme-shop-chat-export-orders-csv.md`, and the run goes on with no
+wait. `Route: local (2 walks)`. Branch `feat/export-orders-csv`; the PR
+has no `Closes` line. Report.
+
+**User:** `/ship devin` after the same chat.
+
+Case 3 again, then Route: `A chat plan has no issue, so it cannot
+build in the cloud. Run /to-issue first.` Stop.
 
 **User:** `/ship https://github.com/acme/shop/issues/61` where the issue
 has no Done-when list.

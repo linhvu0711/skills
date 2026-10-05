@@ -1,6 +1,6 @@
 # ship
 
-Takes an issue from plan to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges.
+Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges.
 
 ## Use it when
 
@@ -12,13 +12,16 @@ You have a ready issue and want the whole path done without starting each step b
 - `/ship <epic-url>`: every open ticket in the epic.
 - `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
 - Any of the above with `devin` or `cursor` at the end: built in the cloud instead.
-- `/ship <note>`: an answer or follow-up for the build this chat started.
+- `/ship` with no URL, and words after it or none. What the chat holds picks the start:
+  - a build this chat started: the words are an answer or a follow-up for it;
+  - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
+  - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.
 
 It only runs when you call it.
 
 ## What you get
 
-First the plan, from [plan-up](../plan-up/), open in your browser. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
+First the plan, from [plan-up](../plan-up/), open in your browser, unless the chat already has one. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
 
 - **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, runs every test and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. A stack goes layer by layer, bottom first.
 - **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
