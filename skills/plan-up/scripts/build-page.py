@@ -554,7 +554,7 @@ def brief_problems(lines):
     if not any(re.fullmatch(r"Task:\s*\S.*", l.strip()) for l in lines):
         yield "brief: no `Task:` line"
     done = [i for i, l in enumerate(lines) if l.strip() == "Done when:"]
-    if not done or not list_items(lines[done[0] + 1:]):
+    if not done or not any(list_items(lines[done[0] + 1:])):
         yield "brief: no `Done when:` list"
 
 

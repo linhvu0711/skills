@@ -67,7 +67,7 @@ t_build_chat_no_brief() {
 }
 
 t_build_chat_brief_gaps() {
-  bad_chat $'## Brief\nTask:\nDone when:' "$(printf 'brief: no `Task:` line\nbrief: no `Done when:` list')"
+  bad_chat $'## Brief\nTask:\nDone when:\n- ' "$(printf 'brief: no `Task:` line\nbrief: no `Done when:` list')"
 }
 
 bad_ticket() {
