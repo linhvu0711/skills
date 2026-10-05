@@ -72,8 +72,18 @@ t_ccf_every_project() {
   eq cwds "/p/app /p/tool" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["cwd"] for s in json.load(sys.stdin)["sessions"])))')"
 }
 
+t_ccf_name_clash() {
+  ccf_home
+  cc_session -p-a-b s1 /p/a-b "fix the export"
+  cc_session -p-a-b s2 /p/a/b "add the flag"
+  run python3 "$F" --project-dir /p/a-b --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "s1" "$(ids)"
+}
+
 cases=(
   "finder lists a project session|t_ccf_lists_project_session"
+  "finder keeps apart two projects with the same folder name|t_ccf_name_clash"
   "finder lists every project|t_ccf_every_project"
   "finder lists worktree sessions inside the day window|t_ccf_worktrees_in_window"
   "finder ranks by topic inside the day window|t_ccf_topic_in_window"

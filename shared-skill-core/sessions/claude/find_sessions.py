@@ -82,17 +82,21 @@ def session_dirs(project_dirs, include_subdirs, all_projects):
 
 
 def in_scope(sess, project_dirs, include_subdirs, all_projects):
-    """True when the session belongs to one of the roots: its folder is a root's
-    own folder, or with include_subdirs its recorded cwd is a root or below it."""
+    """True when the session belongs to one of the roots: its recorded cwd is a
+    root, or with include_subdirs below one. Two paths can share a folder name
+    (/p/a-b and /p/a/b), so the cwd decides; a transcript with no cwd counts
+    when its folder is a root's own folder."""
     if all_projects:
         return True
     folder = os.path.basename(os.path.dirname(sess["path"]))
+    cwd = sess.get("cwd")
     for d in project_dirs:
         d = os.path.abspath(d)
-        if folder == encode_cwd(d):
-            return True
-        cwd = sess.get("cwd")
-        if include_subdirs and cwd and (cwd == d or cwd.startswith(d.rstrip(os.sep) + os.sep)):
+        if not cwd:
+            if folder == encode_cwd(d):
+                return True
+            continue
+        if cwd == d or (include_subdirs and cwd.startswith(d.rstrip(os.sep) + os.sep)):
             return True
     return False
 
