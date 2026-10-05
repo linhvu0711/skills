@@ -135,8 +135,19 @@ t_cof_resumed_keeps_old_helpers() {
   eq "modified is today" "$(date +%F)" "$(printf '%s' "$out" | python3 -c 'import json,sys,datetime as d; print(d.date.fromtimestamp(json.load(sys.stdin)["sessions"][0]["modified"]))')"
 }
 
+t_cof_window_skips_older_days() {
+  cof_home
+  co_rollout z1 /p/app "tidy the docs"; co_move z1 2026/01/01
+  co_rollout c1 /p/app "fix the export"
+  run python3 "$F" --cwd /p/app --days 1 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+  eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder reads no day folder before the window|t_cof_window_skips_older_days"
   "finder lists a helper's own helpers|t_cof_nested_helpers"
   "finder finds a helper filed under the next day|t_cof_helper_next_day"
   "finder keeps the older helpers of a resumed session|t_cof_resumed_keeps_old_helpers"

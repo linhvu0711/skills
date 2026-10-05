@@ -222,6 +222,15 @@ def rollout_paths(root: Path, day: dt.date | None, days: int | None):
                 yield d / name
 
 
+def folder_day(path: Path) -> dt.date | None:
+    """The start day a rollout is filed under, from its YYYY/MM/DD folder."""
+    try:
+        y, m, d = path.parts[-4:-1]
+        return dt.date(int(y), int(m), int(d))
+    except (ValueError, TypeError):
+        return None
+
+
 def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -> bool:
     """True when the cwd is one of the targets, or below one with include_subdirs.
     No targets (None) means every project."""
@@ -444,10 +453,25 @@ def main() -> int:
             return False
         return active is None or dt.date.fromtimestamp(st.st_mtime) >= active
 
+    # Helpers can sit outside the window (filed under a later day, or older than
+    # a resumed parent), but a helper never starts before its parent. So read
+    # every folder from the earliest day a picked session started; with no
+    # window, that is every folder.
+    paths = list(rollout_paths(root, None, None))
+    if started is not None or active is not None:
+        picked = []
+        for p in paths:
+            try:
+                st = p.stat()
+            except OSError:
+                continue
+            if in_window(str(p), st):
+                picked.append(folder_day(p))
+        first = min((d for d in picked if d), default=None)
+        paths = [p for p in paths if first and (folder_day(p) or first) >= first]
+
     skipped = {}
-    # Every day folder, so helpers outside the window still reach their parent;
-    # the index keeps this to one stat per rollout.
-    sessions = collect(rollout_paths(root, None, None), None if args.all_projects else roots,
+    sessions = collect(paths, None if args.all_projects else roots,
                        args.include_subdirs, args.include_subagents, idx,
                        interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
