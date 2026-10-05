@@ -13,13 +13,13 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
 ## Steps
 
 1. **Scope.** Read the user's words for three things:
-   - **Sessions.** Nothing named: the current session. Session IDs: those. A time range ("last 3 days", "since Monday", "this week"): turn it into `--days N`, today counting as day 1, or `--date YYYY-MM-DD` for one day. A topic ("the handoff sessions"): the finders' query. Range and topic mix.
+   - **Sessions.** Nothing named: the current session. Session IDs: those. A time range ("last 3 days", "since Monday", "this week"): turn it into a day count `N`, today counting as day 1. A topic ("the handoff sessions"): the finders' query. Range and topic mix.
    - **Where.** This project by default. "All projects": every project on this machine.
    - **Tools.** Claude Code and Codex, both, unless the user names one.
 
    This project's roots: the main checkout (the first `worktree` line of `git worktree list --porcelain`), every other worktree it lists, and `${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>` when `gh repo view --json nameWithOwner -q .nameWithOwner` names the repo. Done when you hold the sessions rule, the roots or "all projects", and the tools.
 
-2. **List.** The current session alone (in Claude Code its ID is `$CLAUDE_CODE_SESSION_ID`), or one named ID, skips to step 4 with that one session; its path is the extractor's `--list` line. Otherwise run each finder once, with `--json --limit 0`, the window flags, and the topic as the query (no topic: `--all`):
+2. **List.** The current session alone (in Claude Code its ID is `$CLAUDE_CODE_SESSION_ID`), or one named ID, skips to step 4 with that one session; its path is the extractor's `--list` line. Otherwise run each finder once, with `--json --limit 0`, the day count, and the topic as the query (no topic: `--all`):
 
    ```bash
    python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<topic>" --project-dir <root> [--project-dir <root>...] --include-subdirs --days <N> --json --limit 0
