@@ -97,6 +97,7 @@ flowchart LR
 | [set-review-rules](skills/set-review-rules/) | Writes a `REVIEW.md` for your repo: the shared three-part review plus the rules only your repo needs. |
 | [set-coding-standards](skills/set-coding-standards/) | Makes your repo's first `CODING_STANDARDS.md`: researches your stack, reads your code, asks what you want, then writes the file and the tool configs. |
 | [audit-coding-standards](skills/audit-coding-standards/) | Checks your `CODING_STANDARDS.md` against your code and current docs, asks how to fix what is outdated, broken, or missing, then writes the changes. |
+| [retro](skills/retro/) | Reads one session or many, finds where the agent struggled, and turns what repeats into fixes to its environment: checks, pointers, review rules, skills. |
 
 ### Sessions
 

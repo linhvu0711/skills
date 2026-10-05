@@ -124,6 +124,7 @@ SOFTWARE.
 - Upstream: https://github.com/mattpocock/skills
 - License: MIT
 - Commit: `321658273cb1d20b76026717d027d505790106d4` (best match of the first copies)
+- `skills/retro` came later, from commit `24fe0ef7737efae15c87225755e9f6f5965e4888`.
 
 | Skill or file | Upstream path | Level |
 |---|---|---|
@@ -137,6 +138,7 @@ SOFTWARE.
 | `skills/discover-path` | `skills/engineering/wayfinder` | heavy adaptation |
 | `skills/to-epic` | `skills/engineering/to-tickets` | heavy adaptation |
 | `shared-skill-core/review/general-rules.md` | `skills/engineering/code-review` | heavy adaptation |
+| `skills/retro` | `skills/engineering/retro` | heavy adaptation |
 
 ### License text
 
