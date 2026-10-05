@@ -28,7 +28,8 @@ Usage:
     find_session.py "..." --cwd /path/to/proj              # other project
     find_session.py "..." --cwd A --cwd B --include-subdirs # several roots and below
     find_session.py --all-projects --days 3 --all          # every project, last 3 days
-    find_session.py "..." --date yesterday | --days 30     # narrow by time
+    find_session.py "..." --date yesterday | --days 30     # narrow by start day
+    find_session.py "..." --active-days 3                  # used in the last 3 days
     find_session.py --show 01a0900b                        # one session's prompts
     find_session.py "..." --json                           # machine output
 """
@@ -394,6 +395,8 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
+    ap.add_argument("--active-days", type=int,
+                    help="only sessions used in the last N days, wherever they started (by the rollout's mtime)")
     ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
@@ -411,6 +414,11 @@ def main() -> int:
     roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
     target = "all projects" if args.all_projects else ", ".join(roots)
     paths = rollout_paths(root, resolve_day(args.date), args.days)
+    if args.active_days:
+        # A resumed rollout stays in its start-day folder, so walk every day and
+        # keep the ones written to inside the window; the index skips the parse.
+        start = dt.date.today() - dt.timedelta(days=args.active_days - 1)
+        paths = [p for p in paths if dt.date.fromtimestamp(p.stat().st_mtime) >= start]
     skipped = {}
     sessions = collect(paths, None if args.all_projects else roots,
                        args.include_subdirs, args.include_subagents, idx,

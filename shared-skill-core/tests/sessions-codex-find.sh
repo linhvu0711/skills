@@ -75,8 +75,23 @@ t_cof_helper_threads() {
   eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(os.path.basename(p) for p in json.load(sys.stdin)["sessions"][0]["subagents"]))')"
 }
 
+t_cof_active_days() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  local d="$HOME/.codex/sessions/2026/09/20"
+  mkdir -p "$d"
+  mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c1.jsonl" "$d/"
+  co_rollout c2 /p/app "add the flag"
+  mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c2.jsonl" "$d/"
+  python3 -c 'import os,sys,time; t=time.time()-30*86400; os.utime(sys.argv[1],(t,t))' "$d/rollout-2026-10-01T10-00-00-c2.jsonl"
+  run python3 "$F" --cwd /p/app --active-days 3 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder lists a session started before the window but active in it|t_cof_active_days"
   "finder lists a session's helper threads|t_cof_helper_threads"
   "finder leaves out headless exec runs when asked|t_cof_interactive_only"
   "finder lists sessions under each cwd|t_cof_each_cwd"
