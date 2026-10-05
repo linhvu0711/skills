@@ -62,8 +62,19 @@ t_ccf_topic_in_window() {
   eq ids "s2" "$(ids)"
 }
 
+t_ccf_every_project() {
+  ccf_home
+  cc_session -p-app s1 /p/app "fix the export"
+  cc_session -p-tool t1 /p/tool "add the flag"
+  run python3 "$F" --all-projects --days 1 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "s1 t1" "$(ids)"
+  eq cwds "/p/app /p/tool" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["cwd"] for s in json.load(sys.stdin)["sessions"])))')"
+}
+
 cases=(
   "finder lists a project session|t_ccf_lists_project_session"
+  "finder lists every project|t_ccf_every_project"
   "finder lists worktree sessions inside the day window|t_ccf_worktrees_in_window"
   "finder ranks by topic inside the day window|t_ccf_topic_in_window"
 )
