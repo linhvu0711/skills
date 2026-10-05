@@ -547,6 +547,17 @@ def record_problems(section):
                 yield f"{name}: {t} is not a `{form}` heading"
 
 
+def brief_problems(lines):
+    if not lines:
+        yield "brief: a chat plan needs a `## Brief` block"
+        return
+    if not any(re.fullmatch(r"Task:\s*\S.*", l.strip()) for l in lines):
+        yield "brief: no `Task:` line"
+    done = [i for i, l in enumerate(lines) if l.strip() == "Done when:"]
+    if not done or not list_items(lines[done[0] + 1:]):
+        yield "brief: no `Done when:` list"
+
+
 def plan_problems(lines):
     section, layer_sections = sections(lines)
     is_run = "Stack" in section
@@ -555,6 +566,8 @@ def plan_problems(lines):
         yield "head: no `# Plan: #<n>` line"
     if not is_run and not any(re.fullmatch(r"# Plan: (#\d+ )?.+", l) for l in section["head"]):
         yield "head: no `# Plan:` line"
+    if not is_run and any(re.fullmatch(r"# Plan: [^#].*", l) for l in section["head"]):
+        yield from brief_problems(section.get("Brief", []))
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", head.get("date", "")):
         yield "head: no `Date: YYYY-MM-DD` line under `# Plan:`"
     if not is_run and not re.fullmatch(r"size/(XS|S|M|L|XL)", head.get("size", "")):
