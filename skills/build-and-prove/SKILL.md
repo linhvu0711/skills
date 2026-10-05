@@ -120,10 +120,11 @@ commits stay.
    worktree has commits: add a detached worktree of `BASE` in a temp
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 8a), send the walker in `before` mode (step 8b), stop the app,
-   remove the temp worktree. The next `box.sh run` without `--from` puts
-   the branch back. The walker ends with `GONE <id>`: start this step
-   again once, as step 8c says. Say `Before shots: <n>`.
+   (step 8a), send the walker in `before` mode (step 8b), stop the app
+   unless the walker ended with `GONE <id>`, remove the temp worktree.
+   The next `box.sh run` without `--from` puts the branch back. On
+   `GONE`, run this step again once, from the app start, as step 8c
+   says. Say `Before shots: <n>`.
 
 7. **Build.** Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
@@ -226,8 +227,9 @@ commits stay.
 
       It does not get the code, the slices, or the diff. It returns
       one line per walk and writes `walk-report-<round>.md` in `PROOF`.
-      Then stop the app: `box.sh run "$PROOF" -- sh -c 'kill $(cat
-      /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
+      It ended with `GONE <id>`: the app died with its Sandbox, so stop
+      nothing and go to 8c. Else stop the app: `box.sh run "$PROOF" --
+      sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
 
