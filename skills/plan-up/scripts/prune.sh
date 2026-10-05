@@ -42,7 +42,7 @@ for md in "$DIR"/plan-*.md; do
   repo=$(sed -n 's/^Repo:[[:space:]]*`*\([^`[:space:]]*\).*/\1/p' "$md" | head -1)
   tail=${slug#"${repo/\//-}-"}
   if [ -n "$repo" ] && [[ $tail =~ ^chat-[a-z0-9-]+$ ]]; then
-    if [ -z "$(find "$md" -mtime +30)" ]; then
+    if [ -z "$(find "$md" -mmin +43200)" ]; then
       kept=$((kept + 1)); continue
     fi
     echo "pruned $slug"
