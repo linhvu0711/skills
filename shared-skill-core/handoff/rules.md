@@ -301,98 +301,15 @@ test("exports one order as CSV", async () => {
   Two PRs open makes the stack; each later call adds the new PR. Then
   start the next layer. The PR body covers that layer's Done-when lines
   only.
-- The Proof table has two more columns after `Test`: `Screenshot` and
-  `Video`. `Screenshot` holds no image: it names the screenshot below
-  that shows the line holding, as `Screenshot n`. Two lines one screenshot shows both name it. A
-  line with no screen leaves the cell empty. `Video` is the plan's
-  `video n @ step m` for the line, copied from the Proof table; a line
-  with no screen leaves it empty.
-
-  ```markdown
-  ## Proof
-
-  | # | Behavior | Test | Screenshot | Video |
-  |---|---|---|---|---|
-  | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case on the branch) | Screenshot 1 | video 1 @ step 4 |
-  | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 | video 1 @ step 4 |
-  | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 | video 1 @ step 6 |
-  | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | | |
-  ```
-
-  The screenshots go after the table, under `### Screenshots`, numbered
-  in the order the table first names them, one block per walk. A block
-  opens with `**Screenshot n.**` and one or two plain sentences on what
-  is on screen. A walk with a before shot says what changed, then shows
-  the two side by side in a two-column table; a walk with none shows its
-  one image on its own line. A walk whose `Before` says `as walk n`
-  shows its one image too, after a line `Before: as in Screenshot m.`,
-  where m is the block of walk n. Each image is in the body once.
-
-  ```markdown
-  ### Screenshots
-
-  **Screenshot 1.** Before, rows kept the order they were added in. After, they are sorted by due date: `Sooner 2099-01-01`, `Soon 2099-12-30`, `Later`.
-
-  | Before | After |
-  |---|---|
-  | ![](./before-1.png) | ![](./after-1.png) |
-
-  **Screenshot 2.** The `Due` field opens a date picker on today's month.
-
-  ![](./after-2.png)
-  ```
-
-  A `Screenshot` cell that names no block, or a walk whose `Before`
-  line names steps and whose block has no before image, is a gap.
-
-  The videos go after the table, under `### Videos`, in plan order, one
-  block each: one line in plain words, `Video n:` then what it shows,
-  then an empty line, then `![video-n](./video-n.mp4)` alone on its own
-  line with an empty line after it. That image form is what `--attach`
-  rewrites to the upload URL; it is not what GitHub plays. GitHub shows
-  a player only when the bare `https://github.com/user-attachments/…`
-  URL is the whole paragraph: no `![…](…)` around it, no caption on the
-  same line. So after the attach step below, read the body back and
-  unwrap every video line, then write the body once more:
-
-  ```bash
-  gh pr view <n> --json body -q .body \
-    | sed -E 's#^!\[video-[0-9]+\]\((https://github\.com/user-attachments/assets/[^)]+)\)$#\1#' \
-    > pr-body.md
-  gh pr edit <n> --body-file pr-body.md
-  ```
-
-  Then open the PR and check that each video shows a player, not a
-  broken image. Every video of the plan has a block; a `Video` cell
-  that names a video with no block is a gap.
-- How the media gets in. `gh` uploads it: every `--attach <file>` on
-  `gh pr edit` (or `gh pr create`, `gh pr comment`) uploads that file
-  to GitHub and rewrites the `./<file>` reference in the body to the
-  uploaded asset's URL, a `github.com/user-attachments` link that never
-  expires. An image then shows inline and a video plays in a player,
-  and only people with access to the repo can see them. Keep
-  `pr-body.md` next to the media files. Then, from that directory:
-
-  ```bash
-  gh pr edit <n> --body-file pr-body.md --attach before-1.png --attach after-1.png --attach video-1.mp4 …
-  ```
-
-  One `--attach` per file the body references, up to 50 per command.
-  A file the body does not reference is appended to the end, so attach
-  only what the body names. Limits: an image up to 10 MB; a video up to
-  10 MB on a free plan, 100 MB on a paid one; PNG, JPEG, GIF, WebP,
-  SVG, MP4, MOV, WebM. A WebM recording (Playwright records WebM)
-  becomes MP4 first:
-  `ffmpeg -i in.webm -c:v libx264 -pix_fmt yuv420p -movflags +faststart
-  video-n.mp4`. A walk done again is a new upload: edit the body file
-  and run the command again with the new files. Never commit the media
+- The media rules are under § Proof above: the Screenshot and Video
+  columns, the Screenshots and Videos parts, and `gh pr edit --attach`.
 <!-- devin -->
-  to the repo. Only when `--attach` fails: paste the files into the PR
-  editor on github.com with your browser; the links come out the same.
-  Links into the Devin app do not count as proof.
+  Only when `--attach` fails: paste the files into the PR editor on
+  github.com with your browser; the links come out the same. Links into
+  the Devin app do not count as proof.
 <!-- /devin -->
 <!-- cursor -->
-  to the repo. Links into the Cursor app do not count as proof.
+  Links into the Cursor app do not count as proof.
 <!-- /cursor -->
 <!-- /cloud -->
 - The size label. Size the PR's own diff with the table under § Size

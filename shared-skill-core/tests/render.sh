@@ -24,7 +24,15 @@ t_render_devin_pr() {
   lacks "box.sh" "box.sh" "$out"
 }
 
+t_render_media_once() {
+  render devin rules
+  eq exit 0 "$code"
+  eq "pr-shape" 1 "$(grep -c '^ *### Screenshots$' "$here/../pr-shape.md")"
+  eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^ *### Screenshots$')"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
+  "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
 )
