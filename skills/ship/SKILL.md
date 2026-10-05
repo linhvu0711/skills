@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then: a single no-UI ticket is built in a worktree under ~/development/worktrees (a Devin CLI pane on SWE-2 when this session runs on Fable, else this session) and made ready with /ready-pr; a plan with UI walks, or any stack, is built by Devin cloud through /handoff. Stops only at the plan's big forks and the build's surprises."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks and the build's surprises."
 disable-model-invocation: true
 ---
 
@@ -13,25 +13,28 @@ cannot fire them. Facts come from reading, per
 Everything else you decide, write down, and go on. Never merge.
 
 In Claude Code every Bash call starts in the session's directory. Every
-git command in a worktree is `git -C "$WT" …`, and every `gh` or test
-command runs as `cd "$WT" && …` inside one call.
+git command in a worktree is `git -C "$WT" …`, and every `gh` command
+runs as `cd "$WT" && …` inside one call.
 
 ## Forms
 
 The arguments are `/plan-up`'s, every form of them, passed to it
-unchanged. The form decides only where the build runs (step 2).
+unchanged. The word `devin` or `cursor`, first or last, names a cloud
+executor; take it off before the rest goes to plan-up. It decides only
+where the build runs (step 2).
 
-- `/ship <issue-url>`: one ticket, one PR. Local when the plan has no
-  UI walks; Devin cloud when it has.
+- `/ship <issue-url>`: one ticket, one PR.
 - `/ship <epic-url> #12 #14`: a run of the named tickets under that
-  epic, a stack of PRs. Devin cloud.
+  epic, a stack of PRs.
 - `/ship <issue-url> #14 #15`: a set of plain tickets, the first URL
-  first, a stack of PRs. Devin cloud.
-- `/ship <epic-url>`: the whole epic as one run. Devin cloud.
+  first, a stack of PRs.
+- `/ship <epic-url>`: the whole epic as one run.
 - `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open
-  stack. Devin cloud.
-- `/ship <note>`, no URL: a follow-up for the pane or session this chat
-  started (§ Follow-up).
+  stack.
+- `/ship <any of the above> devin` or `… cursor`: the same, built in the
+  cloud.
+- `/ship <note>`, no URL: a follow-up for the build this chat started
+  (§ Follow-up).
 
 ## Steps
 
@@ -46,133 +49,74 @@ unchanged. The form decides only where the build runs (step 2).
    out. Done when the plan
    `.md` exists at the path the summary names and you hold it.
 
-2. **Route.** Read the plan. Cloud when it has a `## Stack` block, or
-   its Facts line `UI:` is anything but `none`. Local otherwise. Say it
-   in one line: `Route: cloud (UI walks)`, `Route: cloud (stack of 3)`,
-   or `Route: local (no UI, one ticket)`.
+2. **Route.** Cloud when the command named `devin` or `cursor`. Local
+   otherwise, with walks or without, one ticket or a stack. One case
+   asks: a plan with `Platform: windows` and no executor named, since
+   proofbox has no Windows. Ask `proofbox has no Windows. Build it on
+   Devin?`, A yes (pick), B stop; wait. Say the route in one line:
+   `Route: local (3 walks)`, `Route: local (stack of 3)`,
+   `Route: local (no UI)`, or `Route: cloud (devin, named)`.
 
 3. **Cloud.** Read `../handoff/SKILL.md` and follow
-   § First prompt whole, steps 1 to 9: prompt, send, watch, answer
-   Devin's questions (small forks yourself, big forks to the user),
-   finish check. The PRs stay Devin's. On `finished` with a PR, run the
-   Ready step of `../ready-pr/SKILL.md` on each PR, bottom
-   of the stack first: `READY` on every one, go to step 8. Anything open
-   goes back to the session as a follow-up per handoff
+   § First prompt whole, steps 1 to 9, with the named executor: prompt,
+   send, watch, answer its questions (small forks yourself, big forks
+   to the user), finish check. The PRs stay the executor's. On
+   `finished` with a PR, run the Ready step of `../ready-pr/SKILL.md` on
+   each PR, bottom of the stack first: `READY` on every one, go to step
+   7. Anything open goes back to the session as a follow-up per handoff
    § Follow-up, naming the PR and what is open; watch again; at most
-   three times, then step 8 with what is open.
+   three times, then step 7 with what is open.
 
-4. **Local: worktree.** The branch name follows the rules block
-   § Branch names: the issue's type (`feat` for a `[feat]`, `fix` for a
-   `[fix]`, else the label or the title), its number, two to four words,
-   as in `fix/133-uninstall-reverses-setup`. Then, with `<owner/repo>`
-   from the plan's Facts `Repo:` line:
+4. **Local: build.** Read `../build-and-prove/SKILL.md` and follow it
+   whole on the plan: worktree, setup files, Sandbox, builder, walks,
+   proof folder. Its stop points are yours. It ends with `BUILT
+   <branch>`; hold `WT`, the branch, the proof folder `PROOF`, and the
+   surprises it reported.
 
-   ```bash
-   bash ../../shared-skill-core/checkout.sh <owner/repo> <branch> --base <base>
-   ```
+   A run or a set: one layer at a time, in `Stack` order, bottom first:
+   `--layer <n> --base <base>`, where layer 1's base is the plan's
+   `Base` and each later layer's base is the branch of the layer below.
+   Each layer goes through steps 4 and 5 before the next one starts, so
+   its PR exists for the layer above to stack on.
 
-   `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=` line.
-   An open PR already on that branch (`gh pr list --head <branch>
-   --state open --json url`): say so and go to step 7 with it.
+5. **Local: PR.** Read `../make-pr/SKILL.md` and follow it in `$WT`,
+   with its five caller settings: the branch `BUILT` named; the files
+   are the branch's commits, nothing new; the issue line `Closes #<n>`;
+   under `Summary`, the plan's Review `Change` and `Approach` in plain
+   words, plus each surprise that changed what the code does; and the
+   proof folder `PROOF`. The base is the layer's base from step 4. Its
+   checks already ran in the Sandbox, so it runs none here.
 
-5. **Local: prompt.** Follow handoff § First prompt steps 2
-   (facts) and 3 (labels) as written. Then assemble the file per
-   `bash ../../shared-skill-core/handoff/render.sh local prompt`:
-   the head lines with `Branch` and `Worktree`, the issue's `Task` and
-   `Done when` verbatim, the plan's blocks, and the rules block from
-   `render.sh local rules` pasted whole, unchanged, once. No `UI walks`,
-   no `Videos`. Check per handoff step 5 with those two dropped:
-   every Proof row, every `file:line`, five label names, zero
-   placeholders. Write it to
-   `$HOME/.agents/artifacts/plan/prompt-<slug>.md`, the
-   slug the plan used. Chat gets one line: `Prompt: <path> (<n> lines)`.
+6. **Make ready.** Read `../ready-pr/SKILL.md` and follow it whole on
+   each PR, bottom of the stack first, in its worktree. Its fixes run
+   their tests in a Sandbox too, never on this machine: the build ended
+   with `box.sh down`, so the first fix runs `box.sh up` again with the
+   build's arguments (`../build-and-prove/SKILL.md` step 5), each test
+   goes through `box.sh run`, and `box.sh down` follows ready-pr's last
+   round. It ends with `READY` or a stop point.
 
-6. **Local: executor.** Your system prompt names the model you run on.
-
-   **Fable** (`Fable`, `claude-fable-*`): the pane builds.
-   - `HERDR_ENV` is not `1`: say `Not inside herdr. Open a herdr pane
-     and run /ship there, or say "here" to build in this session.` and
-     stop. `here` means the "Any other model" branch below.
-   - Otherwise:
-
-     ```bash
-     bash scripts/pane.sh "$WT" <label> <prompt-path>
-     ```
-
-     The label is the first four words of the issue title in kebab
-     case. `stop:` on stderr: show it, stop; a pane it left behind is
-     named there. Exit 0: print its report line and hold `PANE` and
-     `AGENT`. Then wait:
-
-     ```bash
-     ~/.claude/bin/herdr-wait <PANE> --timeout-sec 21600
-     ```
-
-     In Claude Code run it in the background; the tool wakes you when
-     it ends. In Codex run it in the foreground with a long timeout.
-     It returns on `idle`, `blocked`, or `done`. Read the tail,
-     `herdr agent read <AGENT> --source visible --lines 80`, and sort:
-     - The last message starts with `QUESTION`: sort it by the two
-       tests in `../plan-up/SKILL.md` step 5, as
-       handoff step 8 does. **Small fork**: the plan, the issue,
-       or the repo holds the answer; fetch the `file:line` with
-       Explore, shape it per `render.sh local prompt` § Answer, write
-       it to a file, and `~/.claude/bin/herdr-send <PANE> --file <file>
-       --no-wait`; tell the user in one line what was asked and
-       answered; wait again. **Big fork** (the list in plan-up step 5,
-       plus a force push, a delete, another branch): quote the question
-       in a fenced block, then one question to the user, two options at
-       most, your pick first. The user answers `/ship <note>`. Stop.
-     - The last line is `READY <url>`, with or without
-       `(waiting for approval)`, or `NOT READY <url>: …`: step 7.
-     - A PR exists (`gh pr list --head <branch> --state open`) and the
-       pane is idle with neither line: step 7.
-     - No PR and no question: the pane stopped short. Show the last 20
-       lines and stop.
-     - `STATUS=timeout`: say how long it ran, the pane's last lines,
-       and stop.
-
-   **Any other model**: you build. Read the prompt file and follow it
-   whole as its executor, in `$WT`: slices in order, tests first, one
-   commit per slice, gates, the PR per its § The pull request, the size
-   label. Its § Surprises are yours: stop and ask the user where it says
-   stop and ask. It ends at § After the PR opens, which is step 7.
-
-7. **Make ready.** Read `../ready-pr/SKILL.md`.
-   - The pane built: it already ran ready-pr (rules § After the PR
-     opens). Run only its Ready step on the PR. `READY`: step 8.
-     `NOT READY`: shape a follow-up per `render.sh local prompt`
-     § Follow-up, `# Changed` naming what is open and `# Check` naming
-     the ready-pr steps to run again, `herdr-send <PANE> --file <file>`
-     (it waits), then Ready again. Three times, then step 8 with what
-     is open.
-   - You built, or step 4 found an open PR: follow ready-pr whole from
-     its first step, in `$WT`. It ends with `READY` or a stop point.
-
-8. **Report.** Chat gets this and nothing more:
+7. **Report.** Chat gets this and nothing more:
 
    ```
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
-   Route: local · built by: devin pane w4:p9M · review rounds: 2 · Filed: none
-   Worktree: ~/code/worktrees/acme/app/feat-42-login
+   Route: local · built by: devin pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
+   Worktree: ~/development/worktrees/acme/app/feat-42-login
    After merge: /prune-worktrees
    READY https://github.com/acme/app/pull/43
    ```
 
-   A cloud route: `Route: cloud (UI walks) · session: <url>` and no
-   worktree lines. The `READY` line is the one ready-pr printed, word
-   for word: a PR that waits only for a person's approval ends
+   A stack: one such block per layer, bottom first. A cloud route:
+   `Route: cloud (devin, named) · session: <url>` and no worktree lines.
+   The `READY` line is the one ready-pr printed, word for word: a PR
+   that waits only for a person's approval ends
    `READY <url> (waiting for approval)`. Not ready: the last line is
    `NOT READY <url>: <what is open>`. The merge is the user's.
 
 ## Follow-up
 
-`/ship <note>` with no URL. A pane this chat started: sort the note by
-plan-up step 5 (a big fork it leaves open goes to the user first), shape
-it per `render.sh local prompt` § Answer when it answers a `QUESTION`,
-else § Follow-up, `herdr-send <PANE> --file <file>`, then back to step 6's
-sort. A Devin session this chat started: handoff § Follow-up. This
-chat started neither: say so and stop.
+`/ship <note>` with no URL. A local build this chat started:
+build-and-prove § Follow-up. A cloud session this chat started:
+handoff § Follow-up. This chat started neither: say so and stop.
 
 ## Examples
 
@@ -180,48 +124,38 @@ chat started neither: say so and stop.
 herdr; #57 is a `[fix]`, size S, `handoff-ready`, no screen.
 
 Plan-up runs its short path, page opens, summary printed, no wait.
-`Route: local (no UI, one ticket)`. Worktree
-`~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`.
-Prompt assembled, 240 lines, labels all present. `pane.sh` splits the
-tab, Devin CLI on `swe-2-medium` reads the prompt. `herdr-wait` runs in
-the background. Two hours later it returns `idle`; the tail ends with
-`READY https://github.com/acme/shop/pull/61`. Ready step agrees.
-Report printed. Stop.
+`Route: local (no UI)`. build-and-prove: worktree
+`~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
+Sandbox up, a Devin CLI pane on `swe-2-medium` builds, every test
+through `box.sh run`. `BUILT fix/57-export-date-iso`, `Walks: none (no
+UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
+ready-pr: `READY https://github.com/acme/shop/pull/61`. Report.
 
-**User:** `/ship https://github.com/acme/shop/issues/42` on Fable; the
+**User:** `/ship https://github.com/acme/shop/issues/42` on Sonnet; the
 plan has three UI walks and two videos.
 
-`Route: cloud (UI walks)`. Handoff-devin § First prompt whole, Monitor on
-the watch. Later `finished` with PR 44; finish check passes; Ready step
-says `READY`. Report with `Route: cloud (UI walks) · session: <url>`.
+`Route: local (3 walks)`. build-and-prove builds in this session, the
+walker films two videos, round 2 passes. make-pr attaches the
+screenshots and videos. ready-pr readies PR 44. Report.
 
-**User:** `/ship https://github.com/acme/shop/issues/70 #71 #73` on
-Sonnet.
+**User:** `/ship https://github.com/acme/shop/issues/70 #71 #73`.
 
-A run is a stack: `Route: cloud (stack of 2)` whatever the UI. Same as
-above, Ready step on PR 72 then PR 74.
+`Route: local (stack of 2)`. Layer 1: build-and-prove `--layer 1 --base
+main`, make-pr opens PR 72 on `main`. Layer 2: `--layer 2 --base
+feat/71-team-entity`, make-pr opens PR 74 on that branch. ready-pr on
+PR 72, then PR 74. Two report blocks.
 
-**Watch tail** ends with `QUESTION` / `The plan names lib/format.ts:12
-for the date helper, but that file only has formatCurrency…`
+**User:** `/ship https://github.com/acme/shop/issues/42 devin`.
 
-Explore finds `utils/time.ts:4` exports `toIsoDate`. Small fork.
-`# Answer` written, `herdr-send … --no-wait`, one line to the user,
-`herdr-wait` again.
+`Route: cloud (devin, named)`. Handoff § First prompt whole with Devin,
+Monitor on the watch. Later `finished` with PR 44; finish check passes;
+Ready step says `READY`. Report with `session: <url>`.
 
-**Watch tail** ends with `QUESTION` / `The users table has no team_id
-column. Add a migration, or…`
+**User:** `/ship https://github.com/acme/shop/issues/88`; the plan says
+`Platform: windows`.
 
-Stored data: big fork. Question quoted, one question to the user, `A`
-add the migration in this PR (pick, `migrations/0042.sql` shows the
-shape), `B` stop and file it as its own ticket. Stop. The user says
-`/ship A, add the migration`; it goes as § Answer.
-
-**User:** `/ship https://github.com/acme/shop/issues/57` on Fable in a
-plain terminal, no herdr.
-
-Plan, route local, worktree, prompt. Then `Not inside herdr. Open a
-herdr pane and run /ship there, or say "here" to build in this
-session.` Stop. `here`: this session builds from the prompt file.
+`proofbox has no Windows. Build it on Devin?` A yes, B stop. The user
+says A: `Route: cloud (devin, asked)`, as above.
 
 **User:** `/ship https://github.com/acme/shop/issues/61` where the issue
 has no Done-when list.
