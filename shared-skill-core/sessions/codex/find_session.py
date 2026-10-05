@@ -50,7 +50,7 @@ INDEX_PATHS = (
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
 INDEX_PATH = INDEX_PATHS[0]
-INDEX_VERSION = 3  # 3: prompts is a list, so a multiline prompt stays one prompt
+INDEX_VERSION = 4  # 4: meta keeps the source (cli, vscode, exec); 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
@@ -107,7 +107,7 @@ def read_meta(path: Path) -> dict | None:
     source = p.get("source")
     subagent = bool(p.get("parent_thread_id")) or (isinstance(source, dict) and "subagent" in source)
     return {"id": p.get("id"), "cwd": p.get("cwd"), "timestamp": p.get("timestamp"),
-            "subagent": subagent}
+            "subagent": subagent, "source": source if isinstance(source, str) else None}
 
 
 def parse_content(path: Path) -> dict:
@@ -230,11 +230,13 @@ def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -
     return False
 
 
-def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict) -> list[dict]:
+def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict,
+            interactive_only: bool = False, skipped: dict | None = None) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
     Subagent threads (spawned by another session) are skipped by default: the
-    user never typed into them, so they only add noise."""
+    user never typed into them, so they only add noise. With interactive_only,
+    headless `codex exec` runs are skipped too and counted in skipped["exec"]."""
     files = idx["files"]
     out = []
     dirty = False
@@ -256,6 +258,10 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
         if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
         if ent.get("subagent") and not include_subagents:
+            continue
+        if interactive_only and ent.get("source") == "exec":
+            if skipped is not None:
+                skipped["exec"] = skipped.get("exec", 0) + 1
             continue
         if "prompts" not in ent:
             ent.update(parse_content(p))
@@ -373,6 +379,7 @@ def main() -> int:
     ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
     ap.add_argument("--include-subagents", action="store_true", help="also list subagent threads spawned by other sessions")
+    ap.add_argument("--interactive", action="store_true", help="leave out headless `codex exec` runs")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
@@ -393,8 +400,10 @@ def main() -> int:
     roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
     target = "all projects" if args.all_projects else ", ".join(roots)
     paths = rollout_paths(root, resolve_day(args.date), args.days)
+    skipped = {}
     sessions = collect(paths, None if args.all_projects else roots,
-                       args.include_subdirs, args.include_subagents, idx)
+                       args.include_subdirs, args.include_subagents, idx,
+                       interactive_only=args.interactive, skipped=skipped)
 
     tokens = tokenize(args.query)
     phrase = args.query.strip().lower()
@@ -411,10 +420,10 @@ def main() -> int:
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
-        keys = ("id", "cwd", "timestamp", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size")
+        keys = ("id", "cwd", "timestamp", "source", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size")
         print(json.dumps({
             "cwd": target, "query": args.query,
-            "total_sessions": len(sessions), "matched": len(ranked),
+            "total_sessions": len(sessions), "matched": len(ranked), "skipped_exec": skipped.get("exec", 0),
             "sessions": [{k: s.get(k) for k in keys} | {"age": humanize_age(s["modified"])} for s in shown],
         }, indent=2, ensure_ascii=False))
         return 0

@@ -13,12 +13,12 @@ cof_home() {
   mkdir -p "$HOME/.codex/sessions"
 }
 
-# co_rollout <id> <cwd> <prompt>: a rollout in today's day folder with one
-# session_meta line and one user message.
+# co_rollout <id> <cwd> <prompt> [<source>]: a rollout in today's day folder
+# with one session_meta line (source default `cli`) and one user message.
 co_rollout() {
   local d="$HOME/.codex/sessions/$(date +%Y/%m/%d)"
   mkdir -p "$d"
-  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z"}}\n' "$1" "$2" > "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
+  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z","source":"%s"}}\n' "$1" "$2" "${4:-cli}" > "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
   printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"%s"}]}}\n' "$3" >> "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
 }
 
@@ -52,8 +52,18 @@ t_cof_every_project() {
   eq ids "c1 c2 c3" "$(ids)"
 }
 
+t_cof_interactive_only() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  co_rollout x1 /p/app "read the config" exec
+  run python3 "$F" --cwd /p/app --interactive --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder leaves out headless exec runs when asked|t_cof_interactive_only"
   "finder lists sessions under each cwd|t_cof_each_cwd"
   "finder lists every project|t_cof_every_project"
 )
