@@ -15,7 +15,7 @@ fallback. Assistant text + tool activity live in response_item. Reasoning blocks
 are encrypted on disk, so only their count is surfaced.
 
 Usage:
-    extract_session.py <session-id> [--full] [--summary] [--tail N]
+    extract_session.py <session-id | path> [--full] [--summary] [--tail N]
                                     [--max-result-chars N] [--list]
 
 Modes (default = balanced: prompts + assistant text in full, tool calls as
@@ -52,7 +52,11 @@ INJECTION_MARKERS = (
 
 
 def locate(session_id):
-    """Return rollout file paths matching the id (exact uuid, then prefix)."""
+    """Return rollout file paths matching the id (exact uuid, then prefix), or
+    the file itself when given a path."""
+    given = os.path.expanduser(session_id.strip().strip("`'\""))
+    if os.path.isfile(given):
+        return [os.path.abspath(given)]
     sid = session_id.strip().strip("`'\"")
     if sid.endswith(".jsonl"):
         sid = sid[:-6]

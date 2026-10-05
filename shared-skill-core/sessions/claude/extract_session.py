@@ -7,7 +7,7 @@ prefix), and prints a markdown transcript suitable for loading into another
 Claude Code conversation.
 
 Usage:
-    extract_session.py <session-id> [--full] [--summary] [--tail N]
+    extract_session.py <session-id | path> [--full] [--summary] [--tail N]
                                     [--after-compact] [--max-result-chars N] [--list]
 
 Modes (default = balanced: prompts + assistant text in full, tool calls as
@@ -37,7 +37,11 @@ PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
 
 
 def locate(session_id):
-    """Return list of (path) matching the id. Strips .jsonl if given."""
+    """Return list of (path) matching the id, or the file itself when given a
+    path (a helper agent's log under <id>/subagents/). Strips .jsonl if given."""
+    given = os.path.expanduser(session_id.strip())
+    if os.path.isfile(given):
+        return [os.path.abspath(given)]
     sid = session_id.strip()
     if sid.endswith(".jsonl"):
         sid = sid[:-6]
