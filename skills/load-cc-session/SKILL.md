@@ -27,7 +27,7 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
 1. **Peek.** Check that the ID resolves, and see the size:
 
    ```bash
-   python3 extract_session.py <id> --list
+   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: pass on the script's message and stop.
@@ -37,7 +37,7 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    Code and `/tmp/load-cc-session/<id8>.md` in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 extract_session.py <id> --summary --after-compact > <out>
+   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --summary --after-compact > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in one message.**
@@ -47,7 +47,7 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    (`fork_turns = "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 extract_session.py <id> --skeleton
+   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --skeleton
    ```
 
    The skeleton is the fixed part (title, first prompt, recap rows, files

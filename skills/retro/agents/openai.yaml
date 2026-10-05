@@ -1,0 +1,6 @@
+interface:
+  display_name: "Retro"
+  short_description: "Find where the agent struggled across sessions and turn the patterns into fixes"
+  default_prompt: "$retro"
+policy:
+  allow_implicit_invocation: false

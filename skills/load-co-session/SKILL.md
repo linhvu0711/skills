@@ -31,7 +31,7 @@ for one, or list recent sessions with
 1. **Peek.** Check that the ID resolves, and see the size:
 
    ```bash
-   python3 extract_session.py <id> --list
+   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: pass on the script's message and stop. The peek
@@ -43,7 +43,7 @@ for one, or list recent sessions with
    in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 extract_session.py <id> --summary > <out>
+   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --summary > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in one message.**
@@ -53,7 +53,7 @@ for one, or list recent sessions with
    with it (`fork_turns = "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 extract_session.py <id> --skeleton
+   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --skeleton
    ```
 
    The skeleton is the fixed part (first prompt, files patched, last reply),

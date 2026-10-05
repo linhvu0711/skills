@@ -26,7 +26,10 @@ Usage:
     find_session.py "rewrite the landing page hero"       # score + rank
     find_session.py --all                                  # newest first
     find_session.py "..." --cwd /path/to/proj              # other project
-    find_session.py "..." --date yesterday | --days 30     # narrow by time
+    find_session.py "..." --cwd A --cwd B --include-subdirs # several roots and below
+    find_session.py --all-projects --days 3 --all          # every project, last 3 days
+    find_session.py "..." --date yesterday | --days 30     # narrow by start day
+    find_session.py "..." --active-days 3                  # used in the last 3 days
     find_session.py --show 01a0900b                        # one session's prompts
     find_session.py "..." --json                           # machine output
 """
@@ -48,7 +51,7 @@ INDEX_PATHS = (
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
 INDEX_PATH = INDEX_PATHS[0]
-INDEX_VERSION = 3  # 3: prompts is a list, so a multiline prompt stays one prompt
+INDEX_VERSION = 5  # 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
@@ -104,8 +107,15 @@ def read_meta(path: Path) -> dict | None:
     p = o.get("payload") or {}
     source = p.get("source")
     subagent = bool(p.get("parent_thread_id")) or (isinstance(source, dict) and "subagent" in source)
+    parent = p.get("parent_thread_id")
+    if not parent and isinstance(source, dict):
+        sub = source.get("subagent")
+        # Older rollouts name the helper kind as a plain string here, with no parent.
+        spawn = (sub.get("thread_spawn") or {}) if isinstance(sub, dict) else {}
+        parent = spawn.get("parent_thread_id")
     return {"id": p.get("id"), "cwd": p.get("cwd"), "timestamp": p.get("timestamp"),
-            "subagent": subagent}
+            "subagent": subagent, "parent": parent,
+            "source": source if isinstance(source, str) else None}
 
 
 def parse_content(path: Path) -> dict:
@@ -212,22 +222,45 @@ def rollout_paths(root: Path, day: dt.date | None, days: int | None):
                 yield d / name
 
 
-def cwd_matches(session_cwd, target: str, include_subdirs: bool) -> bool:
+def folder_day(path: Path) -> dt.date | None:
+    """The start day a rollout is filed under, from its YYYY/MM/DD folder."""
+    try:
+        y, m, d = path.parts[-4:-1]
+        return dt.date(int(y), int(m), int(d))
+    except (ValueError, TypeError):
+        return None
+
+
+def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -> bool:
+    """True when the cwd is one of the targets, or below one with include_subdirs.
+    No targets (None) means every project."""
+    if targets is None:
+        return True
     if not session_cwd:
         return False
     s = os.path.normpath(os.path.expanduser(session_cwd))
-    if s == target:
-        return True
-    return include_subdirs and s.startswith(target.rstrip(os.sep) + os.sep)
+    for target in targets:
+        if s == target:
+            return True
+        if include_subdirs and s.startswith(target.rstrip(os.sep) + os.sep):
+            return True
+    return False
 
 
-def collect(paths, target: str, include_subdirs: bool, include_subagents: bool, idx: dict) -> list[dict]:
+def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict,
+            interactive_only: bool = False, skipped: dict | None = None, in_window=None) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
     Subagent threads (spawned by another session) are skipped by default: the
-    user never typed into them, so they only add noise."""
+    user never typed into them, so they only add noise. With interactive_only,
+    headless `codex exec` runs are skipped too and counted in skipped["exec"].
+    in_window(key, stat) picks the sessions returned; every path still feeds the
+    helper map, since a helper can sit in another day folder than its parent or
+    be older than a resumed parent. Each session row lists the rollouts of its
+    helper threads, and of their helpers, in "subagents"."""
     files = idx["files"]
     out = []
+    helpers = {}
     dirty = False
     for p in paths:
         key = str(p)
@@ -244,17 +277,40 @@ def collect(paths, target: str, include_subdirs: bool, include_subagents: bool, 
             ent = {"size": st.st_size, "mtime": st.st_mtime, **meta}
             files[key] = ent
             dirty = True
-        if not cwd_matches(ent.get("cwd"), target, include_subdirs):
+        if ent.get("parent"):
+            helpers.setdefault(ent["parent"], []).append(key)
+        if in_window and not in_window(key, st):
+            continue
+        if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
         if ent.get("subagent") and not include_subagents:
+            continue
+        if interactive_only and ent.get("source") == "exec":
+            if skipped is not None:
+                skipped["exec"] = skipped.get("exec", 0) + 1
             continue
         if "prompts" not in ent:
             ent.update(parse_content(p))
             dirty = True
-        out.append({"path": key, "modified": st.st_mtime, **ent})
+        out.append({"path": key, "modified": st.st_mtime, "size": st.st_size, **ent})
     if dirty:
         save_index(idx)
+    for s in out:
+        s["subagents"] = helper_paths(s.get("id"), helpers, files)
     return out
+
+
+def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
+    """Every rollout spawned under sid, a helper's own helpers included."""
+    seen, todo, found = {sid}, [sid], []
+    while todo:
+        for key in helpers.get(todo.pop(), []):
+            found.append(key)
+            hid = files.get(key, {}).get("id")
+            if hid and hid not in seen:
+                seen.add(hid)
+                todo.append(hid)
+    return sorted(found)
 
 
 # ---------------------------------------------------------------- scoring
@@ -360,13 +416,17 @@ def show_session(id_prefix: str, idx: dict) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Find Codex sessions for a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
-    ap.add_argument("--cwd", default=os.getcwd(), help="project working dir (default: cwd)")
+    ap.add_argument("--cwd", action="append", help="project working dir (default: cwd); repeat for several roots")
+    ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
     ap.add_argument("--include-subagents", action="store_true", help="also list subagent threads spawned by other sessions")
+    ap.add_argument("--interactive", action="store_true", help="leave out headless `codex exec` runs")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8)")
+    ap.add_argument("--active-days", type=int,
+                    help="only sessions used in the last N days, wherever they started (by the rollout's mtime)")
+    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     ap.add_argument("--sessions-root", default=str(SESSIONS_ROOT))
@@ -380,9 +440,40 @@ def main() -> int:
     if not root.is_dir():
         print(f"No Codex sessions root at {root}")
         return 1
-    target = os.path.normpath(os.path.expanduser(args.cwd))
-    paths = rollout_paths(root, resolve_day(args.date), args.days)
-    sessions = collect(paths, target, args.include_subdirs, args.include_subagents, idx)
+    roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
+    target = "all projects" if args.all_projects else ", ".join(roots)
+    day = resolve_day(args.date)
+    started = {str(p) for p in rollout_paths(root, day, args.days)} if (day or args.days) else None
+    # A resumed rollout stays in its start-day folder, so --active-days goes by
+    # the file's mtime instead of the folder.
+    active = dt.date.today() - dt.timedelta(days=args.active_days - 1) if args.active_days else None
+
+    def in_window(key, st):
+        if started is not None and key not in started:
+            return False
+        return active is None or dt.date.fromtimestamp(st.st_mtime) >= active
+
+    # Helpers can sit outside the window (filed under a later day, or older than
+    # a resumed parent), but a helper never starts before its parent. So read
+    # every folder from the earliest day a picked session started; with no
+    # window, that is every folder.
+    paths = list(rollout_paths(root, None, None))
+    if started is not None or active is not None:
+        picked = []
+        for p in paths:
+            try:
+                st = p.stat()
+            except OSError:
+                continue
+            if in_window(str(p), st):
+                picked.append(folder_day(p))
+        first = min((d for d in picked if d), default=None)
+        paths = [p for p in paths if first and (folder_day(p) or first) >= first]
+
+    skipped = {}
+    sessions = collect(paths, None if args.all_projects else roots,
+                       args.include_subdirs, args.include_subagents, idx,
+                       interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
     tokens = tokenize(args.query)
     phrase = args.query.strip().lower()
@@ -396,13 +487,13 @@ def main() -> int:
         ranked.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
     else:
         ranked = sorted(sessions, key=lambda s: s["modified"], reverse=True)
-    shown = ranked[: max(args.limit, 1)]
+    shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
-        keys = ("id", "cwd", "timestamp", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path")
+        keys = ("id", "cwd", "timestamp", "source", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size", "modified", "subagents")
         print(json.dumps({
             "cwd": target, "query": args.query,
-            "total_sessions": len(sessions), "matched": len(ranked),
+            "total_sessions": len(sessions), "matched": len(ranked), "skipped_exec": skipped.get("exec", 0),
             "sessions": [{k: s.get(k) for k in keys} | {"age": humanize_age(s["modified"])} for s in shown],
         }, indent=2, ensure_ascii=False))
         return 0
@@ -421,7 +512,7 @@ def main() -> int:
         score = f"  [score {s['score']}]" if use_query else ""
         print(f"{i}. {s['id']}")
         print(f"   {humanize_age(s['modified'])} · {s['n_prompts']} prompts{score}")
-        if args.include_subdirs:
+        if args.include_subdirs or args.all_projects or len(roots) > 1:
             print(f"   cwd:    {s.get('cwd')}")
         if s.get("first_prompt"):
             fp = re.sub(r"\s+", " ", s["first_prompt"]).strip()

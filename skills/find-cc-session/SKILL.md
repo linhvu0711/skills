@@ -5,6 +5,8 @@ description: "Find a past Claude Code session in the current project by what it 
 
 # find-cc-session
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 Claude Code keeps each session as a JSONL transcript under `~/.claude/projects/<encoded-cwd>/`. The script does the mechanical part: it lists the current project's sessions, scores their keyword overlap with the description, and prints the top candidates. You judge which one the user meant.
 
 Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in Claude Code and in Codex; only the load offer at the end differs.
@@ -12,7 +14,7 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
 ## Steps
 
 1. **Run the finder.**
-   `python3 find_sessions.py "<description>"`
+   `python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<description>"`
    No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
 2. **Judge the candidates.** The score is a keyword heuristic, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
