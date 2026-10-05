@@ -67,7 +67,10 @@ One recording per video under `Videos`, in order:
    so the mark's number is the step's number. Waiting for something
    slow: `proofbox mark <id> "<why you wait>" --wait`.
 4. `proofbox record stop <id> --out <folder>/video-<n>.mp4`. It writes
-   `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark.
+   `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox
+   takes a step's screenshot when the step ends, at the next mark or at
+   `record stop`, so `video-<n>-<k>.png` shows the screen after step
+   `k`'s actions.
 5. For each walk the video's `Shows` line ties to step `k`: copy
    `video-<n>-<k>.png` to `after-<walk>.png`, Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`

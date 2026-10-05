@@ -27,9 +27,10 @@ arguments.
   it with `--idle 30m --max-life 6h` and no `--provider`, so proofbox's
   own config picks the Provider. It reads the setup script and env file
   from `~/.agents/proofbox/<owner>-<repo>/`.
-- `box.sh run <proof-dir> -- <command>…` uploads the worktree's changed
-  files, runs the command, and exits with its code. A Sandbox that is
-  gone is made again once from its Snapshot.
+- `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
+  worktree's changed files, or `<folder>`'s, runs the command, and exits
+  with its code. A Sandbox that is gone is made again once from its
+  Snapshot.
 - `box.sh down <proof-dir>` deletes it.
 
 `stop:` on stderr is the reason to stop. Every stop after `up` runs
@@ -111,11 +112,13 @@ commits stay.
 
 6. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
    line names steps, and only for a walk with no `before-<walk>.png` in
-   `PROOF` yet. The Sandbox must hold the base: on a first run the
-   worktree has no change yet; on a rerun, add a detached worktree of
-   `BASE` in a temp folder, `proofbox upload <id> <that folder>`, and
-   remove it after the shots. Start the app (step 8a), send the walker
-   in `before` mode (step 8b), stop the app. Say `Before shots: <n>`.
+   `PROOF` yet. The Sandbox must hold the base, even on a rerun whose
+   worktree has commits: add a detached worktree of `BASE` in a temp
+   folder, and run every command of this step as `box.sh run "$PROOF"
+   --from <that folder> -- …`, so the base is what runs. Start the app
+   (step 8a), send the walker in `before` mode (step 8b), stop the app,
+   remove the temp worktree. The next `box.sh run` without `--from` puts
+   the branch back. Say `Before shots: <n>`.
 
 7. **Build.** Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
@@ -179,8 +182,12 @@ commits stay.
    `BUILT <branch>`.
 
    Then the gates once more, yourself, on the head commit: the full
-   suite, typecheck, lint, and build under `Facts`, each through
-   `box.sh run`. Hold each command, the short SHA, and the result.
+   suite, typecheck, lint, and build under `Facts`, and every command
+   the repo's `AGENTS.md` or `CLAUDE.md` names as a check, each through
+   `box.sh run`. Write each to `$PROOF/checks.txt`, one line per
+   command: the command, the short SHA, and the result, as in
+   `pnpm test · 1a2b3c4 · 116 pass, 0 fail`. `/make-pr` counts these
+   and runs none of them on this machine. A fix round rewrites the file.
 
 8. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
    to step 9. Else rounds, at most three:
@@ -247,8 +254,7 @@ commits stay.
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
    `PROOF`. A row proved by a command carries the command, the short
-   SHA, and the result from step 7's gates, which ran in the Sandbox;
-   `/make-pr` counts those results, so nothing runs on this machine.
+   SHA, and the result from `checks.txt`.
 
 10. **Down.** `bash scripts/box.sh down "$PROOF"`.
 
@@ -270,7 +276,10 @@ commits stay.
 The same plan again after a stop. `checkout.sh` hands back the same
 worktree. The commits ahead of `BASE` are the first slices, one commit
 each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
-number done, and the prompt starts at the next one. Before shots in
+number done, and the prompt starts at the next one. A count at or past
+the number of slices means every slice is in, since fix rounds commit
+only after the last slice: no builder, go to the gates at the end of
+step 7. Before shots in
 `PROOF` are kept. Every walk runs again from the start, since a video
 must show the final code.
 
