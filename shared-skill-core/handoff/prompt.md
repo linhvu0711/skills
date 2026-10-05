@@ -1,16 +1,17 @@
-<!-- template: shared by /handoff and /ship. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /handoff and /build-and-prove. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 # Prompt rules
 
 The prompt file is the only thing the executor gets. It reads no file
 of ours beyond it. So it carries the issue, the plan, and the rules in
 <!-- local -->
-full, in this order. `/ship` writes the file and the executor reads it
-whole: the Devin CLI pane gets `Read <path> whole and follow it` as its
-first prompt, or the planning session follows the file itself. The
-head lines (everything above the first `# ` heading) open the file,
+full, in this order. `/build-and-prove` writes the file and the
+builder reads it whole: the Devin CLI pane gets `Read <path> whole and
+follow it` as its first prompt, or the session follows the file itself.
+The head lines (everything above the first `# ` heading) open the file,
 because the rules block reads `Repo`, `Base branch`, `Branch`, and
-`Size labels` by name. A local prompt never has `UI walks`, `Videos`,
-or a `Stack`: a plan with any of those goes to a cloud executor.
+`Proof folder` by name. A local prompt never has `UI walks`, `Videos`,
+or a `Stack`: the walker does the walks, and a run is built one layer
+per prompt.
 <!-- /local -->
 <!-- devin -->
 full, in this order. `devin.sh` sends it as an attachment: Devin's
@@ -37,8 +38,11 @@ Author: Name <email>
 <!-- local -->
 Branch: feat/42-export-orders-csv
 Worktree: ~/development/worktrees/acme/shop/feat-42-export-orders-csv
+Proof folder: ~/.agents/artifacts/proof/acme-shop-42
 <!-- /local -->
+<!-- cloud -->
 Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
+<!-- /cloud -->
 Issue: #42 <title> (<url>) · size M
 
 # Task
@@ -62,11 +66,13 @@ Issue: #42 <title> (<url>) · size M
 # Slices
 <the plan's Slices block, in order>
 
+<!-- cloud -->
 # UI walks
 <the plan's UI walks block; drop when UI is none>
 
 # Videos
 <the plan's Videos block; drop when UI is none>
+<!-- /cloud -->
 
 # Gates
 <the plan's Gates block>
@@ -92,6 +98,7 @@ rules block sets it in the workspace before the first commit, so the
 commits are the user's and not `Cursor Agent`'s.
 
 <!-- /cursor -->
+<!-- cloud -->
 ## Size
 
 `Size labels` lists the five PR size labels in the repo's own spelling,
@@ -106,6 +113,7 @@ column of `Stack`, copied from the plan's Stack table without the
 `Points` column. The executor uses these only to say when the diff
 lands on another size than the forecast.
 
+<!-- /cloud -->
 <!-- cloud -->
 ## Run
 

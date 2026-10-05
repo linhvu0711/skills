@@ -1,4 +1,4 @@
-<!-- template: shared by /handoff and /ship. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /handoff and /build-and-prove. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 You are the executor. The plan above was written by someone who read the
 repo and made every decision that needs judgment. Follow it in order.
 Your job is clean code, green tests, and proof for every Done-when line.
@@ -52,14 +52,27 @@ error, and the whole message is lost.
 <!-- /cursor -->
 <!-- /cloud -->
 <!-- local -->
-`gh api user -q .login` must print the user's GitHub login: `gh` here
-is the user's own, already signed in. An error instead: stop and ask
-(see Asking below), say what it printed. You are in a git worktree
-that `/ship` made, already on the branch named under `Branch` at the
-top of the prompt, with the base branch fetched. Every command runs
-in that worktree. Stay on that branch; the main checkout and every
-other worktree are not yours. Never print a token, a `Token:` line, or
-an `Authorization` header, even masked.
+You are in a git worktree that `/build-and-prove` made, already on the
+branch named under `Branch` at the top of the prompt, with the base
+branch fetched. Every git command runs in that worktree. Stay on that
+branch; the main checkout and every other worktree are not yours.
+Never print a token, a `Token:` line, or an `Authorization` header,
+even masked.
+
+This machine only edits files and runs git. Every command that runs
+the project's code, a test, the typecheck, lint, the build, an
+install, the app, runs in the run's proofbox Sandbox, from the
+worktree:
+
+```bash
+bash {{skills}}/build-and-prove/scripts/box.sh run <Proof folder> -- <command>
+```
+
+`<Proof folder>` is the line of that name at the top of the prompt. It
+sends the files you changed, runs the command there, and exits with the
+command's code, so a red test is a non-zero exit. Never run one of those
+commands here, not even one quick test. A `stop:` line from it: stop and
+ask (see Asking below), say what it printed.
 <!-- /local -->
 
 <!-- cloud -->
@@ -76,9 +89,11 @@ gives. No `Stack` table: one layer, one PR, the blocks as written.
 
 ## Branch names
 
+<!-- cloud -->
 Each branch has the shape under § The pull request, Branch, with the
 layer's issue number. In a run, each layer gets its own branch in this
 shape from its own issue.
+<!-- /cloud -->
 <!-- cursor -->
 Make the branch yourself, `git checkout -b <name> <base>`, before the
 first commit; the branch the workspace opened on is not the one. The
@@ -88,8 +103,8 @@ word `cursor` never appears in a branch name, in any case or spelling.
 The word `devin` never appears in a branch name, in any case or spelling.
 <!-- /devin -->
 <!-- local -->
-`/ship` made the branch in this shape; it is the one under `Branch`.
-One layer, one PR.
+`/build-and-prove` made the branch; it is the one under `Branch`. One
+layer.
 <!-- /local -->
 
 <!-- cloud -->
@@ -172,6 +187,8 @@ test("exports one order as CSV", async () => {
 <!-- local -->
 2. Anything red is work: a test, the typecheck, lint, or the build. Fix
    it and run the checks again. Repeat until all of it is green.
+3. Then go to Finish. You open no PR and push nothing:
+   `/build-and-prove` has the walks filmed, and `/make-pr` opens the PR.
 <!-- /local -->
 <!-- cloud -->
 <!-- devin -->
@@ -236,6 +253,7 @@ test("exports one order as CSV", async () => {
    badge. A video that fails is recorded again.
 <!-- /cloud -->
 
+<!-- cloud -->
 ## The pull request
 
 <!-- include ../pr-shape.md -->
@@ -245,11 +263,6 @@ test("exports one order as CSV", async () => {
 - The core change under `Where to look` is the seam the plan names. A
   surprise that changed what the code does is a bullet there (see
   Surprises).
-<!-- local -->
-- One PR, ready for review, against the branch named under `Base branch`.
-  Open it from the worktree with `gh pr create --base <base> --head
-  <branch> --title … --body-file pr-body.md`.
-<!-- /local -->
 <!-- cloud -->
 <!-- devin -->
 - One PR per layer, ready for review, against the branch named under
@@ -406,10 +419,6 @@ test("exports one order as CSV", async () => {
 - A PR is not ready while any Done-when line has an empty `Test` cell,
   it has no size label, any check is red, or any gate is red.
 <!-- /cursor -->
-<!-- local -->
-- A PR is not ready while any Done-when line has an empty `Test` cell,
-  it has no size label, or any gate is red.
-<!-- /local -->
 
 ## Size
 
@@ -417,20 +426,6 @@ test("exports one order as CSV", async () => {
 
 ## After the PR opens
 
-<!-- local -->
-Devin Review runs on the PR and posts comments; people may too. The
-review loop is the `ready-pr` skill's: read
-`{{skills}}/ready-pr/SKILL.md` and follow it on your PR, whole,
-from its first step, in this worktree. It waits for the Devin Review
-status, judges every finding on the three questions it holds, fixes
-what is `fix here`, files what is `fix later`, replies and resolves,
-and repeats until the PR is ready or it must ask. Its stop points are
-yours: an `unclear` finding, or a `fix here` whose change touches a
-seam, a Done-when line, a schema, an API, or a `Decided` line, is a
-surprise; stop and ask (see Asking). When it prints
-`READY <pr-url>`, or `READY <pr-url> (waiting for approval)`, go to
-Finish.
-<!-- /local -->
 <!-- cloud -->
 <!-- devin -->
 Devin Review runs on the PR and posts comments. Comments from people on
@@ -541,6 +536,7 @@ login: delete that comment and post it again with `gh`.
 Each comment is one line {{here}}: what it said, the verdict,
 and the SHA or the issue URL.
 <!-- /cloud -->
+<!-- /cloud -->
 
 <!-- cursor -->
 ## Asking
@@ -589,9 +585,7 @@ Sort each one:
 <!-- /cursor -->
 <!-- local -->
 - It changes a seam, a Done-when line, a schema, an API, a `Decided`
-  line, or makes a `Gates` test fail: **stop and ask** (see Asking). A
-  review comment whose fix needs one of these changes is the same case:
-  stop and ask before the fix, not after.
+  line, or makes a `Gates` test fail: **stop and ask** (see Asking).
 <!-- /local -->
 - Something stays red after real tries at fixing it: stop and ask.
   Say what is red, what you tried, and what you think is wrong.
@@ -599,6 +593,9 @@ Sort each one:
   so {{here}} in one line: plan said X, code had Y, did Z. When it
   changed what the code does, it is also a bullet under `Where to look`
   in the PR.
+<!-- local -->
+  `/build-and-prove` puts it there through `/make-pr`.
+<!-- /local -->
 
 ## Finish
 
@@ -631,19 +628,10 @@ order. The proof is already in the PR. Secrets, tokens, and keys stay
 out of the PR, the commits, the screenshots, and the videos.
 <!-- /cursor -->
 <!-- local -->
-When every gate holds, every Done-when line has its proof, and
-`ready-pr` printed `READY`: size the diff once more, since review fixes
-moved it, and when the size changed swap the label (`--remove-label`
-the old, `--add-label` the new). Then end the turn with one message:
-the PR URL, the size with its facts and line count, then every
-surprise and every review comment, one line each with its verdict and
-its SHA or issue URL, a `Filed:` line listing every issue URL you
-created (or `Filed: none`), and as the last line the `READY` line
-`ready-pr` printed, word for word: `READY <pr-url>`, or
-`READY <pr-url> (waiting for approval)` when only a person's approval
-is left.
-`ready-pr` stopped short of ready and you could not close the gap: the
-same message, last line `NOT READY <pr-url>: <what is open>`. The
-proof is already in the PR. Secrets, tokens, and keys stay out of the
-PR and the commits.
+When every slice is committed and the full suite, typecheck, lint, and
+build are green in the Sandbox, end the turn with one message: every
+surprise, one line each, then as the last line `BUILT <branch>`, the
+branch under `Branch`. Something stays red and you could not close it:
+the same message, last line `NOT BUILT <branch>: <what is open>`.
+Secrets, tokens, and keys stay out of the commits.
 <!-- /local -->

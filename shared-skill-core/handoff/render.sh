@@ -3,7 +3,7 @@
 #
 #   render.sh <devin|cursor|local> <rules|prompt>
 #
-# The templates in this directory are shared by /handoff and /ship. A
+# The templates in this directory are shared by /handoff and /build-and-prove. A
 # block between `<!-- devin -->` and `<!-- /devin -->` (or `cursor`, or
 # `local`) is kept only for that executor; a block between
 # `<!-- cloud -->` and `<!-- /cloud -->` is kept for devin and cursor and
@@ -27,7 +27,7 @@ case "$f" in rules|prompt) ;; *) echo "$usage" >&2; exit 64 ;; esac
 case "$ex" in
   devin)  app=Devin;       session=session; here="in the session";      caller=/handoff ;;
   cursor) app=Cursor;      session=run;     here="in your reply";       caller=/handoff ;;
-  local)  app="Devin CLI"; session=session; here="in your last message"; caller=/ship ;;
+  local)  app="Devin CLI"; session=session; here="in your last message"; caller=/build-and-prove ;;
 esac
 
 awk -v ex="$ex" -v dir="$dir" '

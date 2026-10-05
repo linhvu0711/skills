@@ -510,14 +510,14 @@ t_readme_hook_skips_unread_core() {
   eq commits 3 "$(git rev-list --count HEAD)"
 }
 
-t_render_names_ready_pr() {
+t_render_names_box() {
   T="$(mktemp -d)"
   run bash "$here/../shared-skill-core/handoff/render.sh" local rules
   eq exit 0 "$code"
   eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
-  eq "lines with the ready-pr path" 1 "$(printf '%s\n' "$out" | grep -c '/ready-pr/SKILL.md' || true)"
-  f="$(printf '%s\n' "$out" | grep -o '`[^`]*/ready-pr/SKILL.md`' | tr -d '`')"
-  [ -f "$f" ] || eq "ready-pr path" "a file" "$f"
+  eq "lines with the box.sh path" 1 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
+  f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //')"
+  [ -f "$f" ] || eq "box.sh path" "a file" "$f"
 }
 
 t_render_names_handoff() {
@@ -582,7 +582,7 @@ cases=(
   "flags a missing path after \$here in a script|t_flags_missing_here_path"
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
-  "render puts the ready-pr path in local rules|t_render_names_ready_pr"
+  "render puts the box.sh path in local rules|t_render_names_box"
   "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
