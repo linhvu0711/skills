@@ -3,7 +3,7 @@
 # edits; every command that runs the project's code runs in this Sandbox.
 #
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
-#   box.sh run <proof-dir> -- <command>...
+#   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh down <proof-dir>
 #
 # up creates the Sandbox with the repo's setup script, and its env file when
@@ -13,8 +13,10 @@
 # BOX_WORK, BOX_SETUP, BOX_ENV.
 #
 # run uploads the worktree's changed files, runs the command in the Sandbox,
-# and exits with its code. A Sandbox that is gone (idle, or past its max life)
-# is made again once, from the same setup, and the command runs again.
+# and exits with its code. --from uploads that folder instead, such as a copy
+# of the base for before shots; the next run without it puts the worktree
+# back. A Sandbox that is gone (idle, or past its max life) at the upload or
+# the exec is made again once, from the same setup, and the command runs again.
 #
 # down deletes the Sandbox and the state.
 #
@@ -26,7 +28,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 IDLE=30m
 MAX_LIFE=6h
 
-usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> -- <command>... | down <proof-dir>"
+usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
@@ -49,26 +51,38 @@ create() {
     "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" > "$dir/box.env"
 }
 
+# load: read the state as text, the five keys only; the file never runs.
 load() {
   [ -f "$dir/box.env" ] || die "no Sandbox for $dir; run box.sh up first"
-  # shellcheck disable=SC1091
-  . "$dir/box.env"
+  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""
+  local k v
+  while IFS='=' read -r k v; do
+    case "$k" in
+      BOX_ID) BOX_ID="$v" ;; BOX_OS) BOX_OS="$v" ;; BOX_WORK) BOX_WORK="$v" ;;
+      BOX_SETUP) BOX_SETUP="$v" ;; BOX_ENV) BOX_ENV="$v" ;;
+    esac
+  done < "$dir/box.env"
 }
 
 # attempt <command>...: upload, then exec. Sets `gone` when proofbox says the
-# Sandbox is gone; otherwise exits with the command's code.
+# Sandbox is gone, at either step; otherwise exits with the command's code.
+# exec's stderr still reaches the caller live; a copy is kept to tell a gone
+# Sandbox (125 and its line) from the command's own exit code.
 attempt() {
   local errf c=0
   errf="$(mktemp)"
   gone=""
-  proofbox upload "$BOX_ID" "$BOX_WORK" >/dev/null 2>"$errf" || c=$?
-  if [ "$c" -eq 0 ]; then
-    rm -f "$errf"
-    proofbox exec "$BOX_ID" -- "$@" || exit $?
-    exit 0
+  proofbox upload "$BOX_ID" "${from:-$BOX_WORK}" >/dev/null 2>"$errf" || c=$?
+  if [ "$c" -ne 0 ]; then
+    if grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
+    cat "$errf" >&2; rm -f "$errf"; exit "$c"
   fi
-  if grep -q "is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
-  cat "$errf" >&2; rm -f "$errf"; exit "$c"
+  set +e
+  { proofbox exec "$BOX_ID" -- "$@" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; c=${PIPESTATUS[0]}; } 3>&1
+  set -e
+  if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
+  rm -f "$errf"
+  exit "$c"
 }
 
 case "$verb" in
@@ -85,8 +99,14 @@ case "$verb" in
     printf 'SANDBOX=%s\n' "$BOX_ID"
     ;;
   run)
-    [ $# -ge 3 ] && [ "$2" = "--" ] || die "$usage"
-    dir="$1"; shift 2
+    [ $# -ge 1 ] || die "$usage"
+    dir="$1"; shift; from=""
+    if [ "${1:-}" = "--from" ]; then
+      [ -d "${2:-}" ] || die "--from needs a folder"
+      from="$2"; shift 2
+    fi
+    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
+    shift
     load
     attempt "$@"
     old="$gone"

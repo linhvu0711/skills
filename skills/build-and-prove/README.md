@@ -14,7 +14,7 @@ It only runs when you call it.
 
 ## What you get
 
-A worktree under `~/development/worktrees` on the issue's branch, with one commit per slice, every check green in the Sandbox. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<owner>-<repo>-<n>/`: the videos, the before and after screenshots, and `proof.md`, the PR's `Proof` part. [make-pr](../make-pr/) turns that into the PR.
+A worktree under `~/development/worktrees` on the issue's branch, with one commit per slice, every check green in the Sandbox. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<owner>-<repo>-<n>/`: the videos, the before and after screenshots, `proof.md`, the PR's `Proof` part, and `checks.txt`, the repo's checks it ran on the head commit in the Sandbox, so make-pr runs none of them on your Mac. [make-pr](../make-pr/) turns that into the PR.
 
 On the way:
 
