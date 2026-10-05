@@ -9,4 +9,4 @@ In `/build-and-prove`, the Mac only edits files, runs git, and calls proofbox. E
 
 ## Consequences
 
-- One Sandbox per run, created with `--idle 30m --max-life 6h`. proofbox cannot change these after `create`, so when a Sandbox dies, the skill makes a new one from its Snapshot.
+- One Sandbox per run, created with `--idle 30m` and a max life the skill sizes from the plan: 2h for XS or S, 4h for M, 6h for L, 8h for XL, and 1h more when the plan has UI walks. The max life caps the cost of a run that stops before it deletes its Sandbox. proofbox cannot change these after `create`, so when a Sandbox dies, the skill makes a new one from its Snapshot with the same values.

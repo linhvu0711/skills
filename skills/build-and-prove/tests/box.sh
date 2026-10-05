@@ -40,7 +40,7 @@ box() { run bash "$here/../scripts/box.sh" "$@"; }
 # state: an up Sandbox, without running up.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\n' "$1" "$R" "$SETUP" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_LIFE=%s\n' "$1" "$R" "$SETUP" "${2:-6h}" > "$P/box.env"
 }
 
 t_box_up_flags() {
@@ -59,6 +59,33 @@ t_box_up_env_file() {
   box up "$P" "$R" linux acme/shop
   eq exit 0 "$code"
   has "create args" "--setup $SETUP --env-file $HOME/.agents/proofbox/acme-shop/app.env" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_up_max_life() {
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  box up "$P" "$R" linux acme/shop --max-life 3h
+  eq exit 0 "$code"
+  has "create args" "--idle 30m --max-life 3h" "$(cat "$FAKE_PB/log")"
+  has state "BOX_LIFE=3h" "$(cat "$P/box.env")"
+}
+
+t_box_up_bad_max_life() {
+  fake_proofbox
+  box up "$P" "$R" linux acme/shop --max-life 3hours
+  eq exit 1 "$code"
+  has stderr "stop: --max-life takes a number and m or h, as in 4h, not 3hours" "$err"
+  [ ! -e "$FAKE_PB/log" ] || { echo "proofbox was called" >&2; exit 1; }
+}
+
+t_box_run_recreate_keeps_life() {
+  fake_proofbox
+  state ns:us:abc 2h
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  has "create args" "--idle 30m --max-life 2h" "$(cat "$FAKE_PB/log")"
 }
 
 t_box_run_passes_code() {
@@ -161,7 +188,10 @@ t_box_state_not_run() {
 }
 
 cases=(
-  "up creates with idle 30m and max life 6h and no provider|t_box_up_flags"
+  "up creates with idle 30m, max life 6h by default, and no provider|t_box_up_flags"
+  "up passes the max life it is given and keeps it|t_box_up_max_life"
+  "up stops on a max life proofbox would refuse|t_box_up_bad_max_life"
+  "run makes a gone Sandbox again with the same max life|t_box_run_recreate_keeps_life"
   "up passes the setup and env files from the repo's folder|t_box_up_env_file"
   "run uploads then execs and passes the exit code|t_box_run_passes_code"
   "run recreates a gone Sandbox once|t_box_run_recreates"

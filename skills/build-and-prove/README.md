@@ -18,7 +18,7 @@ A worktree under `~/development/worktrees` on the issue's branch, with one commi
 
 On the way:
 
-- **One Sandbox per run.** `scripts/box.sh` creates it with a 30-minute idle time and a 6-hour life, runs each command there, and makes it again from its Snapshot when it dies. Each test is a `proofbox upload` of the changed files plus a `proofbox exec`.
+- **One Sandbox per run.** `scripts/box.sh` creates it with a 30-minute idle time and a life sized from the plan, 2 hours for a small ticket up to 8 for an XL one, plus 1 when it has walks, runs each command there, and makes it again from its Snapshot when it dies. Each test is a `proofbox upload` of the changed files plus a `proofbox exec`.
 - **A builder.** On Fable inside herdr, a Devin CLI pane; on any other model, this chat. It follows the handoff rules for a local build.
 - **A walker.** A Sonnet subagent that does each walk as a test user: it gets the walks and what it must see, never the code, records each video with proofbox, and says what passed and what broke. A broken walk goes back to the builder when the app is wrong, or into the plan when the walk is wrong. At most three rounds.
 - **Setup files.** On the first run for a repo it writes `~/.agents/proofbox/<owner>-<repo>/setup-<os>.sh` from the repo, and an `app.env` with an empty line for each secret you fill in. Later runs reuse them.

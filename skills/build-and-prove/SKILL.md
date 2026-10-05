@@ -23,9 +23,10 @@ edits files, runs git, and calls proofbox (ADR 0009 in this repo).
 `scripts/box.sh` holds the Sandbox; it prints its usage with no
 arguments.
 
-- `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
-  it with `--idle 30m --max-life 6h` and no `--provider`, so proofbox's
-  own config picks the Provider. It reads the setup script and env file
+- `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
+  --max-life <time>` creates it with `--idle 30m`, the max life step 5
+  sizes from the plan, and no `--provider`, so proofbox's own config
+  picks the Provider. proofbox cannot change either value later. It reads the setup script and env file
   from `~/.agents/proofbox/<owner>-<repo>/`.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits
@@ -95,10 +96,21 @@ commits stay.
      and the names to fill in, never a value. Wait until the user says
      it is done. Never print the file.
 
-5. **Sandbox up.**
+5. **Sandbox up.** The max life is a cost cap: a run that stops
+   before `down` leaves its Sandbox running until then. Size it from
+   the plan: the head's `Size:` line, or for a layer, its row's `Size`
+   in `## Stack`.
+
+   | Size | XS, S | M | L | XL |
+   |---|---|---|---|---|
+   | Max life | 2h | 4h | 6h | 8h |
+
+   Add 1h when `UI` is not `none`, for the before shots and the walks.
+   A run that outlives it loses nothing: `box.sh run` makes the
+   Sandbox again from its Snapshot, with the same max life.
 
    ```bash
-   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
+   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO> --max-life <time>
    ```
 
    - `stop: log in first: <command>`: show the command, copy it with
@@ -108,7 +120,7 @@ commits stay.
      three tries, stop with the last line.
    - Any other `stop:`: show it, stop.
 
-   Say `Sandbox: <id>`.
+   Say `Sandbox: <id> · max life <time> (size <x>[, walks])`.
 
 6. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
    line names steps, and only for a walk with no `before-<walk>.png` in
@@ -301,7 +313,8 @@ Plan read, slug `acme-shop-42`. proofbox found. Worktree
 `~/development/worktrees/acme/shop/feat-42-export-orders-csv` from
 `main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`;
 `app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it
-in. `box.sh up` prints `SANDBOX=ns:us:abc`. Walk 1's `Before` names
+in. The plan is `size/M` with walks: `box.sh up … --max-life 5h` prints
+`SANDBOX=ns:us:abc`. Walk 1's `Before` names
 steps: app started, walker in `before` mode, `before-1.png`. Prompt
 written, this session builds four slices, each test red then green
 through `box.sh run`. Gates green on `1a2b3c4`. Round 1: walk 3 fails,
