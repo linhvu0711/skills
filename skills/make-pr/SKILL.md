@@ -12,9 +12,15 @@ it. It stops when the PR is open, and it never merges.
 
 ## When a skill calls you
 
-A caller can set four things: the branch name, the files that go in,
-the issue line, and what goes under `Summary` and `Follow-ups`. The
-rest is this skill's.
+A caller can set five things: the branch name, the files that go in,
+the issue line, what goes under `Summary` and `Follow-ups`, and a proof
+folder. The rest is this skill's.
+
+A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the
+finished `## Proof` part, with the screenshots and videos it names as
+`./<file>` beside it. With one set, `gh` must be 2.99 or newer
+(`gh --version`), so that `gh pr edit --attach` exists; older: say so
+and stop before step 7.
 
 ## Steps
 
@@ -69,7 +75,9 @@ rest is this skill's.
    `CLAUDE.md` names as a check, and every `test`, `lint`, and
    `typecheck` script in `package.json`, each command once. Neither
    source has one: the checks `CONTRIBUTING.md` names. Run each one. A check that passed in this session after the last file change
-   already counts: use that result and say so. A red check: show its
+   already counts: use that result and say so. So does a check a proof
+   folder's `proof.md` names with HEAD's short SHA: it ran in a proofbox
+   Sandbox, and it does not run again on this machine. A red check: show its
    failing lines and stop, with the PR not opened. Done when every
    check is green and you hold each command, the short SHA of HEAD, and
    the result, for `Proof`.
@@ -85,7 +93,10 @@ rest is this skill's.
    outside the tree: `f=$(mktemp)`. An open PR: read its body first,
    `gh pr view <n> --json body -q .body`, and carry every line under
    `Follow-ups` into the new body; those issues are not in the diff.
-   Done when every part of the shape
+   A proof folder: `## Proof` is its `proof.md`, pasted whole, with each
+   test case linked on the branch as the shape says; and the body file
+   is `pr-body.md` inside the proof folder, next to the media, not a
+   temp file. Done when every part of the shape
    is written or left out for the reason the shape gives, and no
    placeholder is left.
 
@@ -96,6 +107,12 @@ rest is this skill's.
      The new body covers the whole branch and replaces the old one,
      its `Follow-ups` kept; GitHub keeps the old body in the edit
      history.
+
+   A proof folder: then, from inside it, attach every file the body
+   names, `gh pr edit <n> --body-file pr-body.md --attach <file> …`,
+   and unwrap the video lines, both per `../../shared-skill-core/pr-shape.md`
+   § Proof. Open the PR and check that each image shows and each video
+   plays.
 
    Done when `gh pr view <n> --json title,body` shows what you wrote.
 
