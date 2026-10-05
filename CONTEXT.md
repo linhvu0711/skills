@@ -121,3 +121,21 @@ _Avoid_: stale, old, abandoned
 **Checkout resolver**:
 The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also finds the main checkout alone, and lists a repo's worktrees.
 _Avoid_: repo finder, repo lookup
+
+## Retro
+
+**Struggle list**:
+What one reader agent writes for one session: each moment the agent went wrong, with a quote and where it is in the session.
+_Avoid_: summary, notes
+
+**Pattern**:
+Two or more moments, from two or more sessions, that one fix would stop. Moments that only look alike are not a pattern.
+_Avoid_: trend, theme
+
+**One-time problem**:
+A serious moment from one session that is part of no pattern. The retro report lists it after the patterns.
+_Avoid_: outlier
+
+**Repeated correction**:
+The same thing the user told the agent in two or more sessions. Its fix is a check first, a skill fix next, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
+_Avoid_: feedback, nag
