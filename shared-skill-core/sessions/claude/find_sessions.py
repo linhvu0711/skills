@@ -21,9 +21,15 @@ Usage:
     find_sessions.py --all                              # list everything, newest first
     find_sessions.py "..." --json                       # machine-readable output
     find_sessions.py "..." --project-dir /path/to/proj  # a different project
-    find_sessions.py "..." --limit 12                   # show more candidates
+    find_sessions.py "..." --project-dir A --project-dir B --include-subdirs
+                                                        # several roots, worktrees under them
+    find_sessions.py --all-projects --days 3 --all      # every project, last 3 days
+    find_sessions.py "..." --date yesterday | --days 30 # narrow by last activity
+    find_sessions.py "..." --limit 12                   # show more candidates (0: all)
 """
 import argparse
+import datetime as dt
+import glob
 import json
 import os
 import re
@@ -52,6 +58,65 @@ def encode_cwd(path):
 def project_session_dir(project_dir):
     home = os.path.expanduser("~")
     return os.path.join(home, ".claude", "projects", encode_cwd(os.path.abspath(project_dir)))
+
+
+def session_dirs(project_dirs, include_subdirs, all_projects):
+    """The project folders to read. With include_subdirs, also every folder whose
+    encoded name extends a root's, such as <root>/.claude/worktrees/<name>; the
+    encoding is lossy, so in_scope() checks each session's real cwd after."""
+    root = os.path.join(os.path.expanduser("~"), ".claude", "projects")
+    if not os.path.isdir(root):
+        return []
+    names = sorted(n for n in os.listdir(root) if os.path.isdir(os.path.join(root, n)))
+    if all_projects:
+        return [os.path.join(root, n) for n in names]
+    out = []
+    for d in project_dirs:
+        enc = encode_cwd(os.path.abspath(d))
+        for n in names:
+            if n == enc or (include_subdirs and n.startswith(enc + "-")):
+                path = os.path.join(root, n)
+                if path not in out:
+                    out.append(path)
+    return out
+
+
+def in_scope(sess, project_dirs, include_subdirs, all_projects):
+    """True when the session belongs to one of the roots: its folder is a root's
+    own folder, or with include_subdirs its recorded cwd is a root or below it."""
+    if all_projects:
+        return True
+    folder = os.path.basename(os.path.dirname(sess["path"]))
+    for d in project_dirs:
+        d = os.path.abspath(d)
+        if folder == encode_cwd(d):
+            return True
+        cwd = sess.get("cwd")
+        if include_subdirs and cwd and (cwd == d or cwd.startswith(d.rstrip(os.sep) + os.sep)):
+            return True
+    return False
+
+
+def resolve_day(value):
+    if not value:
+        return None
+    v = value.lower()
+    if v == "today":
+        return dt.date.today()
+    if v == "yesterday":
+        return dt.date.today() - dt.timedelta(days=1)
+    return dt.date.fromisoformat(value)
+
+
+def in_window(mtime, day, days):
+    """By last activity, in local time: on one day, or within the last N days
+    counting today as the first."""
+    when = dt.date.fromtimestamp(mtime)
+    if day:
+        return when == day
+    if days:
+        return when >= dt.date.today() - dt.timedelta(days=days - 1)
+    return True
 
 
 def text_of(message):
@@ -100,6 +165,7 @@ def parse_session(path):
     """
     sid = os.path.basename(path)[: -len(".jsonl")]
     title = None
+    cwd = None
     created = None
     first_prompt = None      # first prompt of any kind (may be a bare slash command)
     first_substantive = None  # first prompt with real prose, for display
@@ -135,6 +201,8 @@ def parse_session(path):
                 ts = d.get("timestamp")
                 if ts and created is None:
                     created = ts
+                if cwd is None and d.get("cwd"):
+                    cwd = d["cwd"]
                 if t == "user":
                     if d.get("isMeta") or d.get("isSidechain"):
                         continue
@@ -174,6 +242,11 @@ def parse_session(path):
         "n_prompts": n_prompts,
         "modified": os.path.getmtime(path),
         "created": created,
+        "path": path,
+        "size": os.path.getsize(path),
+        "cwd": cwd,
+        # Helper agents' transcripts sit next to the session, in <id>/subagents/.
+        "subagents": sorted(glob.glob(os.path.join(os.path.dirname(path), sid, "subagents", "*.jsonl"))),
         "prompts": "\n".join(prompt_parts),
         "body": "\n".join(body_parts),
     }
@@ -273,17 +346,25 @@ def tokenize(query):
 def main():
     ap = argparse.ArgumentParser(description="Find Claude Code sessions in a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
-    ap.add_argument("--project-dir", default=os.getcwd(), help="project working dir (default: cwd)")
+    ap.add_argument("--project-dir", action="append",
+                    help="project working dir (default: cwd); repeat for several roots")
+    ap.add_argument("--include-subdirs", action="store_true",
+                    help="also sessions started below a --project-dir, such as its worktrees")
+    ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
+    ap.add_argument("--date", help="one local calendar day of last activity: today, yesterday, or YYYY-MM-DD")
+    ap.add_argument("--days", type=int, help="only sessions active in the last N days (default: all time)")
     ap.add_argument("--all", action="store_true", help="list every session (newest first), ignore scoring")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8)")
+    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()
 
-    sess_dir = project_session_dir(args.project_dir)
-    if not os.path.isdir(sess_dir):
+    project_dirs = args.project_dir or [os.getcwd()]
+    sess_dir = project_session_dir(project_dirs[0])
+    dirs = session_dirs(project_dirs, args.include_subdirs, args.all_projects)
+    if not dirs:
         msg = (f"No session history found for this project.\n"
                f"Looked in: {sess_dir}\n"
-               f"(Derived from project dir: {os.path.abspath(args.project_dir)})")
+               f"(Derived from project dir: {os.path.abspath(project_dirs[0])})")
         if args.json:
             print(json.dumps({"error": "no_project_dir", "session_dir": sess_dir, "sessions": []}))
         else:
@@ -291,8 +372,11 @@ def main():
         return
 
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
-    files = [os.path.join(sess_dir, f) for f in os.listdir(sess_dir) if f.endswith(".jsonl")]
-    sessions = [s for s in (parse_session(p) for p in files) if s]
+    day = resolve_day(args.date)
+    files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
+    files = [p for p in files if in_window(os.path.getmtime(p), day, args.days)]
+    sessions = [s for s in (parse_session(p) for p in files)
+                if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
 
     tokens = tokenize(args.query)
     phrase = args.query.strip().lower()
@@ -311,18 +395,20 @@ def main():
     else:
         ranked = sorted(sessions, key=lambda s: s["modified"], reverse=True)
 
-    shown = ranked[: args.limit]
+    shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
         out = {
             "session_dir": sess_dir,
+            "session_dirs": dirs,
             "query": args.query,
             "current_session_id": current_id,
             "total_sessions": len(sessions),
             "matched": len(ranked) if use_query else len(sessions),
             "sessions": [
                 {k: s[k] for k in ("id", "title", "first_prompt", "last_prompt",
-                                   "n_prompts", "score", "snippet", "is_current")}
+                                   "n_prompts", "score", "snippet", "is_current",
+                                   "path", "size", "cwd", "subagents")}
                 | {"age": humanize_age(s["modified"]), "modified": s["modified"]}
                 for s in shown
             ],
@@ -331,7 +417,8 @@ def main():
         return
 
     # Pretty text output
-    print(f"Project session dir: {sess_dir}")
+    print(f"Project session dir: {sess_dir}" if len(dirs) == 1 and dirs[0] == sess_dir
+          else f"Project session dirs: {len(dirs)}")
     print(f"Total sessions in project: {len(sessions)}")
     if use_query:
         print(f'Query: "{args.query}"  →  {len(ranked)} with keyword overlap '

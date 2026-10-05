@@ -37,6 +37,33 @@ t_ccf_lists_project_session() {
   eq ids "s1" "$(ids)"
 }
 
+t_ccf_worktrees_in_window() {
+  ccf_home
+  cc_session -p-app s1 /p/app "fix the export"
+  cc_session -p-app--claude-worktrees-x w1 /p/app/.claude/worktrees/x "add the button"
+  mkdir -p "$HOME/.claude/projects/-p-app--claude-worktrees-x/w1/subagents"
+  printf '{"type":"user","message":{"role":"user","content":"read"},"isSidechain":true}\n' \
+    > "$HOME/.claude/projects/-p-app--claude-worktrees-x/w1/subagents/agent-a1.jsonl"
+  cc_session -p-app old /p/app "fix the export" 5
+  cc_session -p-app-two sib /p/app-two "fix the export"
+  run python3 "$F" --project-dir /p/app --include-subdirs --days 3 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "s1 w1" "$(ids)"
+  eq subagents "agent-a1.jsonl" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; s=[x for x in json.load(sys.stdin)["sessions"] if x["id"]=="w1"][0]; print(" ".join(os.path.basename(p) for p in s["subagents"]))')"
+}
+
+t_ccf_topic_in_window() {
+  ccf_home
+  cc_session -p-app s1 /p/app "fix the export"
+  cc_session -p-app s2 /p/app "handoff retry"
+  cc_session -p-app s3 /p/app "handoff loop" 5
+  run python3 "$F" "handoff" --project-dir /p/app --days 3 --json
+  eq exit 0 "$code"
+  eq ids "s2" "$(ids)"
+}
+
 cases=(
   "finder lists a project session|t_ccf_lists_project_session"
+  "finder lists worktree sessions inside the day window|t_ccf_worktrees_in_window"
+  "finder ranks by topic inside the day window|t_ccf_topic_in_window"
 )
