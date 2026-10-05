@@ -26,6 +26,21 @@ co_rollout() {
 # src <source>: the source as JSON: an object as it is, a word quoted.
 src() { case "$1" in "{"*) printf '%s' "$1" ;; *) printf '"%s"' "$1" ;; esac; }
 
+# co_move <id> <yyyy/mm/dd>: move rollout <id> from today's folder to that day's.
+co_move() {
+  mkdir -p "$HOME/.codex/sessions/$2"
+  mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-$1.jsonl" "$HOME/.codex/sessions/$2/"
+}
+
+# old <id> <yyyy/mm/dd>: set rollout <id> in that day's folder to 30 days ago.
+old() { python3 -c 'import os,sys,time; t=time.time()-30*86400; os.utime(sys.argv[1],(t,t))' "$HOME/.codex/sessions/$2/rollout-2026-10-01T10-00-00-$1.jsonl"; }
+
+# helper <parent>: the session_meta source of a helper thread of <parent>.
+helper() { printf '{"subagent":{"thread_spawn":{"parent_thread_id":"%s","depth":1}}}' "$1"; }
+
+# helpers: the file names in the first session's subagents, sorted.
+helpers() { printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(sorted(os.path.basename(p) for p in json.load(sys.stdin)["sessions"][0]["subagents"])))'; }
+
 # ids: the session ids in the finder's JSON on stdout, sorted, space-joined.
 ids() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["id"] for s in json.load(sys.stdin)["sessions"])))'; }
 
@@ -89,8 +104,42 @@ t_cof_active_days() {
   eq ids "c1" "$(ids)"
 }
 
+t_cof_nested_helpers() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  co_rollout h1 /p/app "read the config" "$(helper c1)"
+  co_rollout h2 /p/app "grep the tests" "$(helper h1)"
+  run python3 "$F" --cwd /p/app --all --json --limit 0
+  eq exit 0 "$code"
+  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl rollout-2026-10-01T10-00-00-h2.jsonl" "$(helpers)"
+}
+
+t_cof_helper_next_day() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"; co_move c1 2026/10/01
+  co_rollout h1 /p/app "read the config" "$(helper c1)"; co_move h1 2026/10/02
+  run python3 "$F" --cwd /p/app --date 2026-10-01 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(helpers)"
+}
+
+t_cof_resumed_keeps_old_helpers() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"; co_move c1 2026/09/20
+  co_rollout h1 /p/app "read the config" "$(helper c1)"; co_move h1 2026/09/20; old h1 2026/09/20
+  run python3 "$F" --cwd /p/app --active-days 3 --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(helpers)"
+  eq "modified is today" "$(date +%F)" "$(printf '%s' "$out" | python3 -c 'import json,sys,datetime as d; print(d.date.fromtimestamp(json.load(sys.stdin)["sessions"][0]["modified"]))')"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder lists a helper's own helpers|t_cof_nested_helpers"
+  "finder finds a helper filed under the next day|t_cof_helper_next_day"
+  "finder keeps the older helpers of a resumed session|t_cof_resumed_keeps_old_helpers"
   "finder lists a session started before the window but active in it|t_cof_active_days"
   "finder lists a session's helper threads|t_cof_helper_threads"
   "finder leaves out headless exec runs when asked|t_cof_interactive_only"
