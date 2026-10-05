@@ -100,3 +100,7 @@ walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step
 
 Say what you saw, in the screen's own words, and what the walk said you
 should see. Never say why it broke.
+
+A proofbox command that says `Sandbox <id> is gone` ends the round: the
+Sandbox was deleted under you, and no other command will work. Stop
+there, and end with the line `GONE <id>` in place of the walk lines.

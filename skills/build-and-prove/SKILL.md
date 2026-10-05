@@ -23,16 +23,19 @@ edits files, runs git, and calls proofbox (ADR 0009 in this repo).
 `scripts/box.sh` holds the Sandbox; it prints its usage with no
 arguments.
 
-- `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
-  --max-life <time>` creates it with `--idle 30m`, the max life step 5
-  sizes from the plan, and no `--provider`, so proofbox's own config
-  picks the Provider. proofbox cannot change either value later. It reads the setup script and env file
+- `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
+  it with an idle time of 30m on Linux and 10m on macOS, proofbox's
+  default max life of 3h, and no `--provider`, so proofbox's own config
+  picks the Provider. It reads the setup script and env file
   from `~/.agents/proofbox/<owner>-<repo>/`.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits
-  with its code. A Sandbox that is gone is made again once from its
-  Snapshot.
-- `box.sh down <proof-dir>` deletes it.
+  with its code. A Sandbox that is gone, idle too long or past its max
+  life, is made again once from its Snapshot, and `run` says so on
+  stderr. Nothing is lost: the code lives in the worktree. A run can
+  last longer than one Sandbox.
+- `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
+  times it was made again.
 
 `stop:` on stderr is the reason to stop. Every stop after `up` runs
 `down` first, so no Sandbox is left running; the worktree and its
@@ -96,21 +99,10 @@ commits stay.
      and the names to fill in, never a value. Wait until the user says
      it is done. Never print the file.
 
-5. **Sandbox up.** The max life is a cost cap: a run that stops
-   before `down` leaves its Sandbox running until then. Size it from
-   the plan: the head's `Size:` line, or for a layer, its row's `Size`
-   in `## Stack`.
-
-   | Size | XS, S | M | L | XL |
-   |---|---|---|---|---|
-   | Max life | 2h | 4h | 6h | 8h |
-
-   Add 1h when `UI` is not `none`, for the before shots and the walks.
-   A run that outlives it loses nothing: `box.sh run` makes the
-   Sandbox again from its Snapshot, with the same max life.
+5. **Sandbox up.**
 
    ```bash
-   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO> --max-life <time>
+   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
    ```
 
    - `stop: log in first: <command>`: show the command, copy it with
@@ -120,7 +112,7 @@ commits stay.
      three tries, stop with the last line.
    - Any other `stop:`: show it, stop.
 
-   Say `Sandbox: <id> · max life <time> (size <x>[, walks])`.
+   Say `Sandbox: <id>`.
 
 6. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
    line names steps, and only for a walk with no `before-<walk>.png` in
@@ -130,7 +122,8 @@ commits stay.
    --from <that folder> -- …`, so the base is what runs. Start the app
    (step 8a), send the walker in `before` mode (step 8b), stop the app,
    remove the temp worktree. The next `box.sh run` without `--from` puts
-   the branch back. Say `Before shots: <n>`.
+   the branch back. The walker ends with `GONE <id>`: start this step
+   again once, as step 8c says. Say `Before shots: <n>`.
 
 7. **Build.** Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
@@ -238,8 +231,13 @@ commits stay.
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
 
-   c. **Sort.** Every walk passed: step 9. Each failed walk, by its
-      screenshot and the plan, never by the walker's guess:
+   c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
+      under it, idle or at its max life. No walk failed; run the round
+      again from 8a, where `box.sh run` makes a new Sandbox, and it does
+      not count as a round. A second `GONE` in the same round: `box.sh
+      down`, then stop with that line. Every walk passed: step 9. Each
+      failed walk, by its screenshot and the plan, never by the walker's
+      guess:
       - **App bug**: the steps reached the screen the walk names, and
         `See` is not there or a `Must not` is. A follow-up to the
         builder per `render.sh local prompt` § Follow-up: `# Changed`
@@ -268,7 +266,8 @@ commits stay.
    `PROOF`. A row proved by a command carries the command, the short
    SHA, and the result from `checks.txt`.
 
-10. **Down.** `bash scripts/box.sh down "$PROOF"`.
+10. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
+    count for the report.
 
 11. **Report.** Chat gets this and nothing more:
 
@@ -276,11 +275,12 @@ commits stay.
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
     Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
     Walks: 3 passed in round 2 · videos: 2 · built by: devin pane w4:p9M
+    Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
     BUILT feat/42-export-orders-csv
     ```
 
-    `UI: none`: `Walks: none (no UI)`. The worktree is `WT`, and the
+    `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line. The worktree is `WT`, and the
     branch is not pushed: `/make-pr` with the proof folder is next.
 
 ## Rerun
@@ -315,8 +315,7 @@ Plan read, slug `acme-shop-42`. proofbox found. Worktree
 `~/development/worktrees/acme/shop/feat-42-export-orders-csv` from
 `main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`;
 `app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it
-in. The plan is `size/M` with walks: `box.sh up … --max-life 5h` prints
-`SANDBOX=ns:us:abc`. Walk 1's `Before` names
+in. `box.sh up` prints `SANDBOX=ns:us:abc`. Walk 1's `Before` names
 steps: app started, walker in `before` mode, `before-1.png`. Prompt
 written, this session builds four slices, each test red then green
 through `box.sh run`. Gates green on `1a2b3c4`. Round 1: walk 3 fails,

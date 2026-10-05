@@ -9,4 +9,4 @@ In `/build-and-prove`, the Mac only edits files, runs git, and calls proofbox. E
 
 ## Consequences
 
-- One Sandbox per run, created with `--idle 30m` and a max life the skill sizes from the plan: 2h for XS or S, 4h for M, 6h for L, 8h for XL, and 1h more when the plan has UI walks. The max life caps the cost of a run that stops before it deletes its Sandbox. proofbox cannot change these after `create`, so when a Sandbox dies, the skill makes a new one from its Snapshot with the same values.
+- One Sandbox at a time per run. Its idle time is 30m on Linux and 10m on macOS, and its max life is proofbox's 3h default, because Namespace's Developer plan allows no more. proofbox cannot change these after `create`, so when a Sandbox dies, the skill makes a new one from its Snapshot, in about a minute, and the run goes on. The code lives on the Mac, so a Sandbox that dies loses no work. The idle time, not the max life, caps the cost of a run that stops before it deletes its Sandbox.

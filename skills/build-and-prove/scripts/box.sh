@@ -2,36 +2,36 @@
 # box.sh: hold the one proofbox Sandbox of a build-and-prove run. The Mac
 # edits; every command that runs the project's code runs in this Sandbox.
 #
-#   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> [--max-life <time>]
+#   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh down <proof-dir>
 #
 # up creates the Sandbox with the repo's setup script, and its env file when
 # there is one, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh and
 # app.env. It passes no --provider, so ~/.config/proofbox/config picks it.
-# The idle time is always 30m. The max life is the caller's, sized from the
-# plan, as a number and m or h; 6h when none is given. The state goes in
+# The idle time is 30m on linux and 10m on macos, where a minute costs ten
+# times more and a new Sandbox costs about one. It passes no --max-life, so
+# proofbox's 3h applies, which every Namespace plan allows. The state goes in
 # <proof-dir>/box.env as KEY=value lines: BOX_ID, BOX_OS, BOX_WORK,
-# BOX_SETUP, BOX_ENV, BOX_LIFE.
+# BOX_SETUP, BOX_ENV, BOX_REMADE.
 #
 # run uploads the worktree's changed files, runs the command in the Sandbox,
 # and exits with its code. --from uploads that folder instead, such as a copy
 # of the base for before shots; the next run without it puts the worktree
 # back. A Sandbox that is gone (idle, or past its max life) at the upload or
-# the exec is made again once, from the same setup and max life, and the
-# command runs again.
+# the exec is made again once, from the same setup, and the command runs
+# again; BOX_REMADE counts these.
 #
-# down deletes the Sandbox and the state.
+# down deletes the Sandbox and the state, and prints REMADE=<n>.
 #
 # Exit 1: `stop: <why>` as the last stderr line.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-IDLE=30m
-MAX_LIFE=6h
+idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
-usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> [--max-life <time>] | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
+usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
@@ -39,7 +39,7 @@ command -v proofbox >/dev/null || die "proofbox is not installed"
 create() {
   local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf
   [ -z "$BOX_ENV" ] || args+=(--env-file "$BOX_ENV")
-  args+=(--idle "$IDLE" --max-life "$BOX_LIFE")
+  args+=(--idle "$(idle "$BOX_OS")")
   errf="$(mktemp)"
   if ! id="$(proofbox "${args[@]}" 2>"$errf")"; then
     local why login
@@ -50,19 +50,19 @@ create() {
   fi
   rm -f "$errf"
   BOX_ID="$(tail -n 1 <<<"$id")"
-  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_LIFE=%s\n' \
-    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_LIFE" > "$dir/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\n' \
+    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" > "$dir/box.env"
 }
 
 # load: read the state as text, its six keys only; the file never runs.
 load() {
   [ -f "$dir/box.env" ] || die "no Sandbox for $dir; run box.sh up first"
-  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_LIFE="$MAX_LIFE"
+  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_REMADE=0
   local k v
   while IFS='=' read -r k v; do
     case "$k" in
       BOX_ID) BOX_ID="$v" ;; BOX_OS) BOX_OS="$v" ;; BOX_WORK) BOX_WORK="$v" ;;
-      BOX_SETUP) BOX_SETUP="$v" ;; BOX_ENV) BOX_ENV="$v" ;; BOX_LIFE) BOX_LIFE="$v" ;;
+      BOX_SETUP) BOX_SETUP="$v" ;; BOX_ENV) BOX_ENV="$v" ;; BOX_REMADE) BOX_REMADE="$v" ;;
     esac
   done < "$dir/box.env"
 }
@@ -90,9 +90,8 @@ attempt() {
 
 case "$verb" in
   up)
-    [ $# -eq 4 ] || { [ $# -eq 6 ] && [ "$5" = "--max-life" ]; } || die "$usage"
-    dir="$1"; BOX_WORK="$2"; BOX_OS="$3"; slug="${4/\//-}"; BOX_LIFE="${6:-$MAX_LIFE}"
-    [[ "$BOX_LIFE" =~ ^[1-9][0-9]*[mh]$ ]] || die "--max-life takes a number and m or h, as in 4h, not $BOX_LIFE"
+    [ $# -eq 4 ] || die "$usage"
+    dir="$1"; BOX_WORK="$2"; BOX_OS="$3"; slug="${4/\//-}"; BOX_REMADE=0
     case "$BOX_OS" in linux|macos) ;; *) die "os must be linux or macos, not $BOX_OS" ;; esac
     home="$HOME/.agents/proofbox/$slug"
     BOX_SETUP="$home/setup-$BOX_OS.sh"
@@ -113,8 +112,10 @@ case "$verb" in
     shift
     load
     attempt "$@"
-    old="$gone"
+    old="$gone"; was="$BOX_ID"
+    BOX_REMADE=$((BOX_REMADE + 1))
     create
+    printf 'Sandbox %s is gone; made %s from its Snapshot\n' "$was" "$BOX_ID" >&2
     attempt "$@"
     die "$old"
     ;;
@@ -124,6 +125,7 @@ case "$verb" in
     load
     proofbox delete "$BOX_ID" >/dev/null
     rm -f "$dir/box.env"
+    printf 'REMADE=%s\n' "$BOX_REMADE"
     ;;
   *) die "$usage" ;;
 esac

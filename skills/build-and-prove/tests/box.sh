@@ -40,7 +40,7 @@ box() { run bash "$here/../scripts/box.sh" "$@"; }
 # state: an up Sandbox, without running up.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_LIFE=%s\n' "$1" "$R" "$SETUP" "${2:-6h}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" > "$P/box.env"
 }
 
 t_box_up_flags() {
@@ -48,7 +48,7 @@ t_box_up_flags() {
   echo ns:us:abc > "$FAKE_PB/create.out"
   box up "$P" "$R" linux acme/shop
   eq exit 0 "$code"
-  eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m --max-life 6h" "$(cat "$FAKE_PB/log")"
+  eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m" "$(cat "$FAKE_PB/log")"
   has state "BOX_ID=ns:us:abc" "$(cat "$P/box.env")"
 }
 
@@ -61,31 +61,33 @@ t_box_up_env_file() {
   has "create args" "--setup $SETUP --env-file $HOME/.agents/proofbox/acme-shop/app.env" "$(cat "$FAKE_PB/log")"
 }
 
-t_box_up_max_life() {
+t_box_up_macos_idle() {
   fake_proofbox
-  echo ns:us:abc > "$FAKE_PB/create.out"
-  box up "$P" "$R" linux acme/shop --max-life 3h
+  printf '#!/bin/sh\n' > "$HOME/.agents/proofbox/acme-shop/setup-macos.sh"
+  echo ns:us:mac > "$FAKE_PB/create.out"
+  box up "$P" "$R" macos acme/shop
   eq exit 0 "$code"
-  has "create args" "--idle 30m --max-life 3h" "$(cat "$FAKE_PB/log")"
-  has state "BOX_LIFE=3h" "$(cat "$P/box.env")"
+  has "create args" "--os macos" "$(cat "$FAKE_PB/log")"
+  has "create args" "--idle 10m" "$(cat "$FAKE_PB/log")"
 }
 
-t_box_up_bad_max_life() {
+t_box_run_counts_remakes() {
   fake_proofbox
-  box up "$P" "$R" linux acme/shop --max-life 3hours
-  eq exit 1 "$code"
-  has stderr "stop: --max-life takes a number and m or h, as in 4h, not 3hours" "$err"
-  [ ! -e "$FAKE_PB/log" ] || { echo "proofbox was called" >&2; exit 1; }
-}
-
-t_box_run_recreate_keeps_life() {
-  fake_proofbox
-  state ns:us:abc 2h
+  state ns:us:abc 1
   echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
   echo ns:us:def > "$FAKE_PB/create.out"
   box run "$P" -- pnpm test
   eq exit 0 "$code"
-  has "create args" "--idle 30m --max-life 2h" "$(cat "$FAKE_PB/log")"
+  has state "BOX_REMADE=2" "$(cat "$P/box.env")"
+  has stderr "Sandbox ns:us:abc is gone; made ns:us:def from its Snapshot" "$err"
+}
+
+t_box_down_prints_remakes() {
+  fake_proofbox
+  state ns:us:abc 2
+  box down "$P"
+  eq exit 0 "$code"
+  eq stdout "REMADE=2" "$out"
 }
 
 t_box_run_passes_code() {
@@ -188,10 +190,10 @@ t_box_state_not_run() {
 }
 
 cases=(
-  "up creates with idle 30m, max life 6h by default, and no provider|t_box_up_flags"
-  "up passes the max life it is given and keeps it|t_box_up_max_life"
-  "up stops on a max life proofbox would refuse|t_box_up_bad_max_life"
-  "run makes a gone Sandbox again with the same max life|t_box_run_recreate_keeps_life"
+  "up creates linux with idle 30m and no max life or provider|t_box_up_flags"
+  "up creates macos with idle 10m|t_box_up_macos_idle"
+  "run counts each Sandbox it makes again|t_box_run_counts_remakes"
+  "down prints how many times the Sandbox was made again|t_box_down_prints_remakes"
   "up passes the setup and env files from the repo's folder|t_box_up_env_file"
   "run uploads then execs and passes the exit code|t_box_run_passes_code"
   "run recreates a gone Sandbox once|t_box_run_recreates"
