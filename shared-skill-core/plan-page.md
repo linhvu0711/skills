@@ -10,7 +10,13 @@ a short summary.
 Folder: `$HOME/.agents/artifacts/plan/`. Create it when
 needed. Slug: `<owner>-<repo>-<n>`, the first ticket's number; a run
 adds `-run`. A chat plan has no number: `<owner>-<repo>-chat-<words>`,
-two to four words of its title, lower case, joined by `-`.
+two to four words of its title, lower case, joined by `-`. The words
+also name its branch, `<type>/<words>`. So when the plan is first
+written, both must be free: no `plan-<slug>.md` in the folder, and no
+branch `<type>/<words>` in `git branch --list` or
+`git ls-remote --heads origin`. One is taken: add `-2`, then `-3`, and
+so on to the words, until both are free. An edit to the plan keeps its
+slug.
 
 - `plan-<slug>.md`: the plan, verbatim per `plan.md`.
 - `plan-<slug>.html`: what `../skills/plan-up/scripts/build-page.py` writes from the `.md`.

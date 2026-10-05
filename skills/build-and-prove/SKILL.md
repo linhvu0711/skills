@@ -80,8 +80,11 @@ commits stay.
 3. **Worktree.** The branch follows the PR shape § Branch
    (`../../shared-skill-core/pr-shape.md`): the issue's type, its
    number, two to four words, as in `fix/133-uninstall-reverses-setup`.
-   A chat plan: the type from its title, no number, as in
-   `feat/export-orders-csv`.
+   A chat plan: the type from its title, then the words of its slug
+   after `chat-`, as in `feat/export-orders-csv` for
+   `acme-shop-chat-export-orders-csv`. The slug was picked so that no
+   branch had this name, so an existing branch here is this plan's
+   rerun.
 
    ```bash
    bash ../../shared-skill-core/checkout.sh <REPO> <branch> --base <BASE>

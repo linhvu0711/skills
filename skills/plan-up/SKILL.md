@@ -136,10 +136,11 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    `Done when` lines (§ Done when), the `Known` and `Open` lines of
    § Context, and a size (§ Size). A chat plan has no Steps and takes
    no short path, whatever its size. The facts are only what the chat
-   said or ran; nothing is made up to fill a line. From here on, the
-   brief stands for the issue: its `Done when` lines, `Known` lines,
-   and `Open` lines are read as an issue's are. Print it in chat in this shape
-   and go on, with no wait:
+   said or ran; nothing is made up to fill a line. Its slug is picked
+   free, per `../../shared-skill-core/plan-page.md` § Files, before
+   step 8 writes a file. From here on, the brief stands for the issue:
+   its `Done when` lines, `Known` lines, and `Open` lines are read as an
+   issue's are. Print it in chat in this shape and go on, with no wait:
 
    ```
    Brief: [feat] Export orders as CSV · size/M
