@@ -62,7 +62,10 @@ set's, the first ticket URL. Say the pick in one line, as
    `../../shared-skill-core/plan-page.md`). No plan: say
    `Run /plan-up first.` and stop. A `handoff-ready` issue or a run
    is no exception. No URL: the issue is the plan's, from its
-   `# Plan: #<n>` title and its `Repo:` line. Then the executor, per
+   `# Plan: #<n>` title and its `Repo:` line. A chat plan, with no
+   `#<n>` there, has no issue, and a cloud session is keyed to one: say
+   `A chat plan has no issue. Run /to-issue, then /plan-up on it.` and
+   stop. Then the executor, per
    § Arguments. Then `route <issue-url>` with no executor, even when one
    is named: `follow …` means the issue already has a session, of any
    executor, and a second one would build it twice. Show its link and

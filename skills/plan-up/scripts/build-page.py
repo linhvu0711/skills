@@ -304,10 +304,12 @@ def page_layer(section, issue, title, parts):
 def page_data(lines):
     section, layer_sections = sections(lines)
     head = key_values(section["head"], ["Size", "Date"])
-    m = next((re.match(r"# Plan: #(\d+) (.*)", l) for l in lines if l.startswith("# Plan: #")), None)
-    number, title = (int(m.group(1)), m.group(2)) if m else (0, "")
+    m = next((re.match(r"# Plan: (?:#(\d+) )?(.*)", l) for l in lines if l.startswith("# Plan: ")), None)
+    number, title = (int(m.group(1)) if m and m.group(1) else 0, m.group(2) if m else "")
     facts = key_values(section.get("Facts", []), FACTS)
-    issue = {"number": number, "url": f"https://github.com/{facts.get('repo', '')}/issues/{number}", "size": head.get("size", "")}
+    issue = {"size": head.get("size", "")}
+    if number:
+        issue = {"number": number, "url": f"https://github.com/{facts.get('repo', '')}/issues/{number}", **issue}
     reviews, _ = md_reviews(lines)
     parts = reviews[0]["parts"] if reviews else {}
     proved = []
@@ -549,8 +551,10 @@ def plan_problems(lines):
     section, layer_sections = sections(lines)
     is_run = "Stack" in section
     head = key_values(section["head"], ["Size", "Date"])
-    if not any(re.fullmatch(r"# Plan: #\d+ .+", l) for l in section["head"]):
+    if is_run and not any(re.fullmatch(r"# Plan: #\d+ .+", l) for l in section["head"]):
         yield "head: no `# Plan: #<n>` line"
+    if not is_run and not any(re.fullmatch(r"# Plan: (#\d+ )?.+", l) for l in section["head"]):
+        yield "head: no `# Plan:` line"
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", head.get("date", "")):
         yield "head: no `Date: YYYY-MM-DD` line under `# Plan:`"
     if not is_run and not re.fullmatch(r"size/(XS|S|M|L|XL)", head.get("size", "")):

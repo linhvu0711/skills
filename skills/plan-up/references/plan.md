@@ -158,6 +158,23 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 - <from the issue's Scope Out, plus anything the plan chose to leave>
 ```
 
+## Chat plan
+
+A chat plan (`SKILL.md` § Six forms) has no issue. It takes the shape
+of one ticket, with two changes. The head line has no number:
+`# Plan: <brief title>`. And a `## Brief` block comes last, after Out
+of scope: the brief's `Task` and `Done when` lines from `SKILL.md`
+step 2, word for word, since there is no issue for the build prompt to
+quote.
+
+```markdown
+## Brief
+Task: <one to three lines>
+Done when:
+- <Done-when line 1>
+- <...>
+```
+
 ## Run
 
 A run is one plan with the blocks above written once per layer. These

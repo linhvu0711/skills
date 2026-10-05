@@ -37,6 +37,15 @@ t_build_none_map() {
   eq DATA "$(jq -S . "$here/build-page/none-map.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_chat() {
+  T="$(mktemp -d)"
+  sed 's/^# Plan: #42 /# Plan: /' "$here/build-page/ticket.md" > "$T/plan-acme-shop-chat-orders-csv.md"
+  build "$T/plan-acme-shop-chat-orders-csv.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S 'del(.issue.number, .issue.url, .layers[0].issue.number, .layers[0].issue.url)' "$here/build-page/ticket.json")" \
+    "$(page_data "$T/plan-acme-shop-chat-orders-csv.html")"
+}
+
 bad_ticket() {
   T="$(mktemp -d)"
   sed "$1" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -81,7 +90,7 @@ t_build_no_date() {
 }
 
 t_build_no_head() {
-  bad_ticket '/^# Plan:/d' 'head: no `# Plan: #<n>` line'
+  bad_ticket '/^# Plan:/d' 'head: no `# Plan:` line'
 }
 
 t_build_no_size() {
@@ -279,6 +288,7 @@ cases=(
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
+  "build-page builds a chat plan with no issue|t_build_chat"
   "build-page stops on a file with no Review|t_build_no_review"
   "build-page refuses a Review with no Schema line|t_build_no_schema"
   "build-page refuses a part name over its limit|t_build_name_limit"
