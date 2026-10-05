@@ -26,7 +26,7 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
    python3 ../../shared-skill-core/sessions/codex/find_session.py "<topic>" --cwd <root> [--cwd <root>...] --include-subdirs --interactive --days <N> --json --limit 0
    ```
 
-   "All projects": `--all-projects` in place of the roots. Named IDs: `--all` in the window, kept by id prefix. A topic score is a keyword count, so read each title and first prompt and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. Each row keeps: tool, id, date (`modified`, or the Codex `timestamp`), project (`cwd`), title (Claude `title`, else the first prompt), `size`, `path`, and for Claude its `subagents`.
+   "All projects": `--all-projects` in place of the roots. Named IDs: `--all` in the window, kept by id prefix. A topic score is a keyword count, so read each title and first prompt and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. Each row keeps: tool, id, date (`modified`, or the Codex `timestamp`), project (`cwd`), title (Claude `title`, else the first prompt), `size`, `path`, and `subagents`, its helper agents' logs.
 
    - No session left: say what you searched (window, topic, roots or "all projects", tools) and stop.
    - One left: go to step 4 with it.
@@ -39,7 +39,7 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
 
    ```bash
    python3 ../../shared-skill-core/sessions/<claude|codex>/extract_session.py <path> --max-result-chars 300 > <scratch>/<n>-main.md
-   python3 ../../shared-skill-core/sessions/claude/extract_session.py <subagent path> --max-result-chars 300 > <scratch>/<n>-helper-<k>.md
+   python3 ../../shared-skill-core/sessions/<claude|codex>/extract_session.py <subagent path> --max-result-chars 300 > <scratch>/<n>-helper-<k>.md
    ```
 
    Done when every kept session has its files, or a line saying why one could not render.

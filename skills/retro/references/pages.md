@@ -44,7 +44,7 @@ A bar fixed to the bottom of the page: a read-only text box with the line, and a
 ## Session list
 
 - **Header**: the `<title>` and heading `Retro sessions`, then one line of scope (this project and its roots, or all projects; the window; the topic), then the totals: sessions, total size in MB, readers (one per session), and what was left out with the count (headless Codex runs from the finder's `skipped_exec`, this retro's own session, topic misses).
-- **Rows**: one per session, newest first, numbered from 1. Each row: a checkbox, ticked; `#`; date; tool badge (`Claude` or `Codex`); title, or the first prompt cut to 80 characters; size; helper logs count (Claude only). All projects: one group per project, its folder as the heading with the session count, rows numbered on across groups.
+- **Rows**: one per session, newest first, numbered from 1. Each row: a checkbox, ticked; `#`; date; tool badge (`Claude` or `Codex`); title, or the first prompt cut to 80 characters; size; helper logs count. All projects: one group per project, its folder as the heading with the session count, rows numbered on across groups.
 - `MODE = "drop"`.
 
 ## Report

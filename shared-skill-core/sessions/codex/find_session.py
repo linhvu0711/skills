@@ -50,7 +50,7 @@ INDEX_PATHS = (
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
 INDEX_PATH = INDEX_PATHS[0]
-INDEX_VERSION = 4  # 4: meta keeps the source (cli, vscode, exec); 3: prompts is a list
+INDEX_VERSION = 5  # 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
@@ -106,8 +106,13 @@ def read_meta(path: Path) -> dict | None:
     p = o.get("payload") or {}
     source = p.get("source")
     subagent = bool(p.get("parent_thread_id")) or (isinstance(source, dict) and "subagent" in source)
+    parent = p.get("parent_thread_id")
+    if not parent and isinstance(source, dict):
+        spawn = (source.get("subagent") or {}).get("thread_spawn") or {}
+        parent = spawn.get("parent_thread_id")
     return {"id": p.get("id"), "cwd": p.get("cwd"), "timestamp": p.get("timestamp"),
-            "subagent": subagent, "source": source if isinstance(source, str) else None}
+            "subagent": subagent, "parent": parent,
+            "source": source if isinstance(source, str) else None}
 
 
 def parse_content(path: Path) -> dict:
@@ -236,9 +241,11 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
 
     Subagent threads (spawned by another session) are skipped by default: the
     user never typed into them, so they only add noise. With interactive_only,
-    headless `codex exec` runs are skipped too and counted in skipped["exec"]."""
+    headless `codex exec` runs are skipped too and counted in skipped["exec"].
+    Each session row lists the rollouts of its helper threads in "subagents"."""
     files = idx["files"]
     out = []
+    helpers = {}
     dirty = False
     for p in paths:
         key = str(p)
@@ -255,6 +262,8 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
             ent = {"size": st.st_size, "mtime": st.st_mtime, **meta}
             files[key] = ent
             dirty = True
+        if ent.get("parent"):
+            helpers.setdefault(ent["parent"], []).append(key)
         if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
         if ent.get("subagent") and not include_subagents:
@@ -269,6 +278,8 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
         out.append({"path": key, "modified": st.st_mtime, "size": st.st_size, **ent})
     if dirty:
         save_index(idx)
+    for s in out:
+        s["subagents"] = sorted(helpers.get(s.get("id"), []))
     return out
 
 
@@ -420,7 +431,7 @@ def main() -> int:
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
-        keys = ("id", "cwd", "timestamp", "source", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size")
+        keys = ("id", "cwd", "timestamp", "source", "first_prompt", "last_prompt", "n_prompts", "score", "snippet", "path", "size", "subagents")
         print(json.dumps({
             "cwd": target, "query": args.query,
             "total_sessions": len(sessions), "matched": len(ranked), "skipped_exec": skipped.get("exec", 0),

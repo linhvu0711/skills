@@ -14,13 +14,17 @@ cof_home() {
 }
 
 # co_rollout <id> <cwd> <prompt> [<source>]: a rollout in today's day folder
-# with one session_meta line (source default `cli`) and one user message.
+# with one session_meta line (source default `cli`; a JSON object goes in as
+# it is) and one user message.
 co_rollout() {
   local d="$HOME/.codex/sessions/$(date +%Y/%m/%d)"
   mkdir -p "$d"
-  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z","source":"%s"}}\n' "$1" "$2" "${4:-cli}" > "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
+  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z","source":%s}}\n' "$1" "$2" "$(src "${4:-cli}")" > "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
   printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"%s"}]}}\n' "$3" >> "$d/rollout-2026-10-01T10-00-00-$1.jsonl"
 }
+
+# src <source>: the source as JSON: an object as it is, a word quoted.
+src() { case "$1" in "{"*) printf '%s' "$1" ;; *) printf '"%s"' "$1" ;; esac; }
 
 # ids: the session ids in the finder's JSON on stdout, sorted, space-joined.
 ids() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["id"] for s in json.load(sys.stdin)["sessions"])))'; }
@@ -61,8 +65,19 @@ t_cof_interactive_only() {
   eq ids "c1" "$(ids)"
 }
 
+t_cof_helper_threads() {
+  cof_home
+  co_rollout c1 /p/app "fix the export"
+  co_rollout h1 /p/app "read the config" '{"subagent":{"thread_spawn":{"parent_thread_id":"c1","depth":1}}}'
+  run python3 "$F" --cwd /p/app --all --json --limit 0
+  eq exit 0 "$code"
+  eq ids "c1" "$(ids)"
+  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(os.path.basename(p) for p in json.load(sys.stdin)["sessions"][0]["subagents"]))')"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder lists a session's helper threads|t_cof_helper_threads"
   "finder leaves out headless exec runs when asked|t_cof_interactive_only"
   "finder lists sessions under each cwd|t_cof_each_cwd"
   "finder lists every project|t_cof_every_project"
