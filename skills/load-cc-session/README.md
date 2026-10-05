@@ -24,6 +24,7 @@ The last three things you typed in that session come along word for word. Say "g
 ## Needs
 
 - `python3` (standard library only).
+- The script in the shared core folder [`sessions/claude/`](../../shared-skill-core/sessions/claude/), which retro uses too.
 - A sub-agent to write the brief: the Explore agent in Claude Code, an `explorer` agent in Codex.
 - The shared core file [`session-brief.md`](../../shared-skill-core/session-brief.md), which holds the brief's shape.
 - Claude Code transcripts under `~/.claude/projects/`.

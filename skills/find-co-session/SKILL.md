@@ -5,6 +5,8 @@ description: "Find a past Codex CLI session in the current project by what it wa
 
 # find-co-session
 
+Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+
 Codex keeps each session as a rollout under `~/.codex/sessions/YYYY/MM/DD/`. The script does the mechanical part: it lists the sessions started in the current folder, scores their keyword overlap with the description, and prints the top candidates. You judge which one the user meant.
 
 Sibling: **find-cc-session** does the same for Claude Code sessions. Both run in Claude Code and in Codex; only the load offer at the end differs.
@@ -12,7 +14,7 @@ Sibling: **find-cc-session** does the same for Claude Code sessions. Both run in
 ## Steps
 
 1. **Run the finder.**
-   `python3 find_session.py "<description>"`
+   `python3 ../../shared-skill-core/sessions/codex/find_session.py "<description>"`
    Turn a relative date in the description into a flag first: "yesterday" is `--date yesterday`, "last week" is `--days 7`. No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--cwd <path>`; a parent folder: add `--include-subdirs`. `--help` lists the other flags. The first run in a project parses its rollouts once and caches them under `~/.cache/find-co-session/`, or `/tmp/find-co-session/` when the Codex sandbox makes the home cache read-only; later runs take under a second.
 
 2. **Judge the candidates.** The score is a keyword heuristic, so read each opening prompt and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. `--show <id>` prints one candidate's user prompts, and only those, so it stays small. In Codex, the session you are in is a rollout too; set it aside unless the description clearly names it.

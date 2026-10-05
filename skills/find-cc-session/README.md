@@ -19,6 +19,7 @@ When a few sessions fit, it lists them and asks you to pick. When nothing fits, 
 ## Needs
 
 - `python3` (standard library only).
+- The script in the shared core folder [`sessions/claude/`](../../shared-skill-core/sessions/claude/), which retro uses too.
 - `pbcopy` for the clipboard, so macOS as written.
 - Claude Code transcripts under `~/.claude/projects/`. It runs from Claude Code or Codex.
 

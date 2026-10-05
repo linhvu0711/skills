@@ -1,0 +1,42 @@
+# sessions-claude-find.sh: the cases for the shared core's
+# sessions/claude/find_sessions.py. The repo's test.sh sources this file after
+# test-lib.sh and runs its cases.
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+F="$here/../sessions/claude/find_sessions.py"
+
+# ccf_home: a fresh temp folder T with HOME at $T/home, so the finder reads
+# only the sessions a case writes.
+ccf_home() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  export HOME="$T/home"
+  mkdir -p "$HOME/.claude/projects"
+}
+
+# cc_session <folder> <id> <cwd> <prompt> [<days ago>]: a transcript at
+# ~/.claude/projects/<folder>/<id>.jsonl with one user prompt and one reply,
+# last changed <days ago> days back (default 0).
+cc_session() {
+  local f="$HOME/.claude/projects/$1/$2.jsonl"
+  mkdir -p "$(dirname "$f")"
+  printf '{"type":"user","message":{"role":"user","content":"%s"},"timestamp":"2026-10-01T10:00:00Z","cwd":"%s","sessionId":"%s"}\n' "$4" "$3" "$2" > "$f"
+  printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"done"}]},"cwd":"%s"}\n' "$3" >> "$f"
+  age "$f" "${5:-0}"
+}
+
+# age <file> <days>: set the file's mtime to <days> days ago.
+age() { python3 -c 'import os,sys,time; t=time.time()-int(sys.argv[2])*86400; os.utime(sys.argv[1],(t,t))' "$1" "$2"; }
+
+# ids: the session ids in the finder's JSON on stdout, sorted, space-joined.
+ids() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["id"] for s in json.load(sys.stdin)["sessions"])))'; }
+
+t_ccf_lists_project_session() {
+  ccf_home; cc_session -p-app s1 /p/app "fix the export"
+  run python3 "$F" --project-dir /p/app --all --json
+  eq exit 0 "$code"
+  eq ids "s1" "$(ids)"
+}
+
+cases=(
+  "finder lists a project session|t_ccf_lists_project_session"
+)
