@@ -286,7 +286,9 @@ commits stay.
 ## Rerun
 
 The same plan again after a stop. `checkout.sh` hands back the same
-worktree. The commits ahead of `BASE` are the first slices, one commit
+worktree, only when it is clean: a slice or a fix cut off before its
+commit leaves changes, and step 3 stops on them with the files named.
+The user commits or drops them, then runs again. The commits ahead of `BASE` are the first slices, one commit
 each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
 number done, and the prompt starts at the next one. A count at or past
 the number of slices means every slice is in, since fix rounds commit
