@@ -120,11 +120,12 @@ commits stay.
    worktree has commits: add a detached worktree of `BASE` in a temp
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 8a), send the walker in `before` mode (step 8b), stop the app
-   unless the walker ended with `GONE <id>`, remove the temp worktree.
-   The next `box.sh run` without `--from` puts the branch back. On
-   `GONE`, run this step again once, from the app start, as step 8c
-   says. Say `Before shots: <n>`.
+   (step 8a), send the walker in `before` mode (step 8b), and stop the
+   app unless the walker ended with `GONE <id>`. On `GONE`, start the
+   app again from the same temp worktree and send the walker once more,
+   as step 8c says. Remove the temp worktree only when this step ends,
+   with the shots or with a stop. The next `box.sh run` without
+   `--from` puts the branch back. Say `Before shots: <n>`.
 
 7. **Build.** Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
