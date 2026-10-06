@@ -8,7 +8,7 @@ You have a plan from [plan-up](../plan-up/) and want it built and proved with vi
 
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: one layer of a run.
-- `/build-and-prove <note>`: an answer or follow-up for the Devin CLI pane this chat started.
+- `/build-and-prove <note>`: an answer or follow-up for the Claude Code pane this chat started.
 
 It only runs when you call it.
 
@@ -19,7 +19,7 @@ A worktree under `~/development/worktrees` on the issue's branch (a plan with no
 On the way:
 
 - **One Sandbox per run.** `scripts/box.sh` creates it, runs each command there, and makes it again from its Snapshot when it dies, so a run can outlast one Sandbox. Namespace deletes a Sandbox after 30 idle minutes on Linux and 10 on a Mac, where a minute costs ten times more, and after proofbox's 3-hour max life, which every Namespace plan allows. A new one takes about a minute, and your code stays on your Mac, so nothing is lost. The report says how many times it was made again. Each test is a `proofbox upload` of the changed files plus a `proofbox exec`.
-- **A builder.** On Fable inside herdr, a Devin CLI pane; on any other model, this chat. It follows the handoff rules for a local build.
+- **A builder.** On Fable inside herdr, a Claude Code pane on Sonnet at high effort; on any other model, this chat. It follows the handoff rules for a local build.
 - **A walker.** A Sonnet subagent that does each walk as a test user: it gets the walks and what it must see, never the code, records each video with proofbox, and says what passed and what broke. A broken walk goes back to the builder when the app is wrong, or into the plan when the walk is wrong. At most three rounds.
 - **Setup files.** On the first run for a repo it writes `~/.agents/proofbox/<owner>-<repo>/setup-<os>.sh` from the repo, and an `app.env` with an empty line for each secret you fill in. Later runs reuse them.
 
@@ -28,7 +28,7 @@ It stops, with the Sandbox deleted and your commits kept, when proofbox is missi
 ```
 Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
 Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
-Walks: 3 passed in round 2 · videos: 2 · built by: devin pane w4:p9M
+Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
 Proof: ~/.agents/artifacts/proof/acme-shop-42
 BUILT feat/42-export-orders-csv
 ```
@@ -39,7 +39,7 @@ BUILT feat/42-export-orders-csv
 - `git`, and `gh` (signed in) for the issue.
 - The walker's agent file, linked once into Claude Code: `ln -s "$PWD/skills/build-and-prove/agents/walker.md" ~/.claude/agents/walker.md`, run from this repo's root. Codex has no sub-agents, so the session walks under the same rules.
 - The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh`, `../../shared-skill-core/pr-shape.md`, and the templates in `../../shared-skill-core/handoff/`.
-- For a Devin CLI pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Devin CLI `devin`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
+- For a Claude Code pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Claude Code CLI `claude`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
 
 ## Fits with
 
