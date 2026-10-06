@@ -284,6 +284,11 @@ commits stay.
       one line per walk and writes `walk-report-<mode>-<round>.md` in
       `PROOF`: `walk-report-before-<round>.md` or
       `walk-report-after-<round>.md`, so neither overwrites the other.
+      Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
+      `GONE <id>`. It does not: send it back once with § Report of
+      `agents/walker.md` pasted whole (in Claude Code, a message to the
+      same walker). A second miss: `box.sh down`, then stop with
+      `Walker report unreadable`.
       It ended with `GONE <id>`: the app died with its Sandbox, so stop
       nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
       sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
