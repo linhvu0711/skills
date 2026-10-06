@@ -522,11 +522,12 @@ are ever closed this way.
 
 ## Report
 
-Put the URL on the clipboard with `copy.sh`, the script in this file's
-folder:
+Put the URL on the clipboard with `copy.sh`, the script next to this
+file. Call it by its absolute path: `<shared core>` is the folder you
+read this file from, not the working directory.
 
 ```bash
-printf "%s" "<url>" | bash copy.sh
+printf "%s" "<url>" | bash "<shared core>/copy.sh"
 ```
 
 Exit 0: the URL is on the clipboard. Say so in one line. Any other exit:
