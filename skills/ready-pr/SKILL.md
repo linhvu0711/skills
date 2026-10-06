@@ -1,16 +1,17 @@
 ---
 name: ready-pr
-description: "Take an open PR to ready-to-merge: wait for Devin Review on the head commit, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
+description: "Take an open PR to ready-to-merge: wait for the repo's review tools (Devin Review, CodeRabbit, …) on the head commit, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-You own one PR until it is ready. Devin Review is the reviewer: a
-commit status named `Devin Review` that turns pending after each push,
-`success` a few minutes later, and posts a review only when it found
-something. When a push fixes a thread, Devin replies `✅ Resolved` and
-closes it. People's comments count the same way, without the status.
+You own one PR until it is ready. The reviewers are the review tools the
+repo uses, found from its recent PRs, and people. Each tool posts a review
+status on the head; Devin Review's turns pending after each push, `success`
+a few minutes later, and it posts a review only when it found something.
+When a push fixes a thread, Devin replies `✅ Resolved` and closes it.
+People's comments count the same way, without a status.
 Short lookups are yours; the judging is `/validate-pr-review`'s, read
 and followed. Facts per `../../shared-skill-core/facts.md`. Never merge.
 
@@ -38,7 +39,15 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    not mine`, stop. `me` is `gh api user -q .login`. Done when you hold
    `REPO` (the `owner/repo` in the URL), `NUMBER`, `URL`, `BASE`
    (`baseRefName`), `HEAD` (`headRefName`), `SHA` (`headRefOid`), and
-   `me`.
+   `me`. Then the review tools, read off the repo's last PRs:
+
+   ```bash
+   bash ../../shared-skill-core/review-tools/detect.sh <REPO>
+   ```
+
+   `TOOLS` is the first word of each line after `PRS=`, comma separated,
+   or `none` when there is no such line. Say `Review tools: <TOOLS>` once.
+   `stop:` on stderr: show it, stop.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
    `WT` is that directory. Otherwise, the checkout resolver finds the
@@ -56,17 +65,19 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 3. **Wait.** Round `r` starts here, `r` from 1.
 
    ```bash
-   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA> [--no-devin]
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA> --tools <TOOLS>
    ```
 
-   It waits for Devin Review on `SHA`, then gives the readiness verdict.
-   Run it in the background in Claude Code; in Codex, in the foreground.
-   By the reason line:
-   - `Devin Review is PENDING`: it stayed pending for thirty minutes;
-     say so, stop.
-   - `no Devin Review status`: no status in ten minutes; say `No Devin
-     Review on this repo` once, set `no-devin`, go on.
-   - `Devin Review is` any other state (`FAILURE`, `ERROR`, …): say the
+   It waits for each tool's review status on `SHA`, then gives the
+   readiness verdict. Run it in the background in Claude Code; in Codex,
+   in the foreground. By the reason line, `<status>` being a tool's
+   status name in `../../shared-skill-core/review-tools/known.tsv`:
+   - `<status> is PENDING`: it stayed pending for thirty minutes; say
+     so, stop.
+   - `no <status> status`: none in ten minutes; say `No <status> on this
+     PR` once, take that tool out of `TOOLS` (`none` when it was the
+     last), go on.
+   - `<status> is` any other state (`FAILURE`, `ERROR`, …): say the
      state and the PR URL, stop; the user decides.
    - `gh failed:`: say the error and the PR URL, stop.
    - anything else: go on.
@@ -107,8 +118,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      push, the PRs stacked on this one: `OLD` is
      `git -C "$WT" rev-parse origin/<HEAD>`, and
      `bash scripts/restack.sh list <REPO> <HEAD> > <file>`, a temp file;
-     print its lines. Then `git -C "$WT" push --force-with-lease`. Devin
-     re-reviews the new head; old threads go `outdated` and stay
+     print its lines. Then `git -C "$WT" push --force-with-lease`. The
+     tools re-review the new head; old threads go `outdated` and stay
      resolved. `STACK=0`: nothing more. Else
      `bash scripts/restack.sh move "$WT" <HEAD> <OLD> <file>`, and hold
      its lines for the report. `RESTACK=stopped`: say its `CLASH` or
@@ -122,13 +133,13 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 6. **Ready.**
 
    ```bash
-   bash scripts/ready.sh <REPO> <NUMBER> --me <me> [--no-devin]
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --tools <TOOLS>
    ```
 
    It prints the readiness verdict on line 1, its reason on line 2, then
    one line per open thread. `READY <url>`, or `READY <url> (waiting for
    approval)`: step 7. `WAITING`, by reason:
-   - `Devin Review is PENDING`: step 3.
+   - `<status> is PENDING`: step 3.
    - `check(s) pending`, `no checks on … yet`, or `required check(s)
      not posted`: wait for them, `cd "$WT" && gh pr checks <NUMBER>
      --watch`, then ready again.
@@ -150,7 +161,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
    ```
    PR: feat(auth): add login (#43)
-   Rounds: 2 · Devin Review: success on 9e18c16 · open threads: 0 · merge state: CLEAN
+   Rounds: 2 · Review tools: devin success on 9e18c16 · open threads: 0 · merge state: CLEAN
    Stack: moved https://github.com/acme/app/pull/44, https://github.com/acme/app/pull/45
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
@@ -164,8 +175,9 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
    restack: no `Stack:` line. One line per finding over every round,
    id, verdict, SHA or URL.
-   `Filed: none` when nothing was filed. A `no-devin` run says
-   `Devin Review: none on this repo`. A PR that waits only for a
+   `Filed: none` when nothing was filed. A run with `TOOLS` `none` says
+   `Review tools: none`. Each tool taken out in step 3 adds
+   ` · no status from <tool>` at the end of the second line. A PR that waits only for a
    person's approval ends with `READY <url> (waiting for approval)`; the
    approval and the merge are the user's. A stop point that ended the run
    prints the same block with `NOT READY <url>: <what is open>` last; a
@@ -209,9 +221,13 @@ lines, 44 first, and `RESTACK=moved 2`. The report's `Stack:` line names
 both URLs. Had 44 clashed, the move stops there with `CLASH` and the
 files; 45 is `LEFT`, not pushed.
 
-**`ready.sh --wait`** says `WAITING`, reason `no Devin Review status on
-9e18c16`, on a repo with no Devin app.
+**`detect.sh`** prints `PRS=10`, `devin 10/10`, `coderabbit 9/10`.
 
-`No Devin Review on this repo`, `no-devin` set. Threads from people are
-still judged; ready is checked with `--no-devin`. The report says
-`Devin Review: none on this repo`.
+`TOOLS` is `devin,coderabbit`. The wait returns once both statuses are
+green on the head; a thread from either is judged the same way.
+
+**`detect.sh`** prints only `PRS=0`, on a new repo.
+
+`TOOLS` is `none`: no review status to wait for. Threads from people are
+still judged. A tool that does post a status on this PR still counts, as
+one more check. The report says `Review tools: none`.

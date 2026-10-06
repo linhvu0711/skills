@@ -1,31 +1,37 @@
 #!/usr/bin/env bash
 # ready.sh: the readiness module. One readiness verdict for a PR, with its reason.
 #
-#   ready.sh <owner/repo> <number> [--me <login>] [--no-devin]
+#   ready.sh <owner/repo> <number> --tools <tool,…|none> [--me <login>]
 #            [--wait <sha>] [--timeout-sec 1800] [--none-sec 600] [--poll-sec 60]
 #
-# Ready means, all at once: the PR is open and not a draft; Devin Review
-# is `success` on the head commit (or --no-devin was given because the repo
-# has none); no review thread waits for the author; no review asks for changes;
+# --tools names the review tools the repo uses, as the shared core's
+# review-tools/detect.sh prints them, or `none`. Each tool's review status is
+# its status name in review-tools/known.tsv; a tool whose name there is `-`
+# posts none, and only its threads count.
+#
+# Ready means, all at once: the PR is open and not a draft; the review status
+# of every tool in --tools is green (success, neutral, or skipped) on the head
+# commit; no review thread waits for the author; no review asks for changes;
 # GitHub says MERGEABLE with a merge state of CLEAN, HAS_HOOKS, or BEHIND;
-# at least one check or status is on the head, with or without --no-devin;
+# at least one check or status is on the head, a review status included;
 # every check the base branch requires is on the head;
 # and no other check on the head is red or pending. A merge state of
 # BLOCKED counts as ready only when the one thing missing is an approving
 # review. A merge state of UNKNOWN is GitHub still computing: it is asked
 # again a few times before it counts.
 #
-# Devin Review is a commit status, or a check run, named `Devin Review`. It
-# turns pending soon after a push and success a few minutes later, whether or
-# not it found anything; it posts a review only when it did. devin_state is
-# the one place that reads it. --wait <sha> first polls it on that commit,
-# every --poll-sec, until it is success or red, until it was absent for
-# --none-sec, or until it was pending for --timeout-sec; then the verdict. The
-# wait polls an API, so it costs no model tokens; in Claude Code run it in the
-# background, and the tool wakes the session when it ends.
+# A review status is a commit status, or a check run, with the tool's status
+# name. Devin Review's turns pending soon after a push and success a few
+# minutes later, whether or not it found anything; it posts a review only when
+# it did. review_state is the one place that reads one. --wait <sha> first
+# polls them on that commit, every --poll-sec, until one is red, until none
+# is pending and every absent one was absent for --none-sec, or until one was
+# pending for --timeout-sec; then the verdict. The wait polls an API, so it costs no model tokens; in
+# Claude Code run it in the background, and the tool wakes the session when
+# it ends.
 #
-# Each reason it is not ready is `waiting` when time alone clears it (Devin
-# Review or a check still pending, no checks yet, GitHub still computing, a
+# Each reason it is not ready is `waiting` when time alone clears it (a
+# review status or a check still pending, no checks yet, GitHub still computing, a
 # required check not posted while anything is pending) and `blocked` when it
 # needs work or a person. Prints line 1 the verdict, line 2 the reason, then
 # one line per review thread that waits for the author:
@@ -34,8 +40,10 @@
 # (default: the login `gh api user` prints). Devin resolves a thread itself
 # once a push fixes it, with a `✅ Resolved` reply, so those never wait.
 # The verdict and its exit code:
-#   READY <url>                          0  the reason is `Devin Review: <state>
-#   READY <url> (waiting for approval)   0  on <sha> · open threads: 0 · merge state: <state>`
+#   READY <url>                          0  the reason is `Review tools: <tool> <state>,
+#   READY <url> (waiting for approval)   0  … on <sha> · open threads: 0 · merge state: <state>`;
+#                                           a tool with no status reads `<tool> no status`,
+#                                           and --tools none `Review tools: none`
 #   BLOCKED <url>                        1  the reason lists every reason, `; ` between
 #   WAITING <url>                        2  (no blocked reason among them)
 # A gh call that fails is BLOCKED with the reason `gh failed: <its last error
@@ -43,11 +51,13 @@
 # A bad flag or argument is `stop: …` on stderr, exit 64. Never merges.
 set -euo pipefail
 
-repo=""; num=""; me=""; no_devin=0; wait_sha=""; timeout=1800; none_sec=600; poll=60
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+known="$here/../../../shared-skill-core/review-tools/known.tsv"
+repo=""; num=""; me=""; tools=""; wait_sha=""; timeout=1800; none_sec=600; poll=60
 while [ $# -gt 0 ]; do
   case "$1" in
     --me) me="${2:-}"; shift 2 ;;
-    --no-devin) no_devin=1; shift ;;
+    --tools) tools="${2:-}"; shift 2 ;;
     --wait) wait_sha="${2:-}"; shift 2 ;;
     --timeout-sec) timeout="${2:-}"; shift 2 ;;
     --none-sec) none_sec="${2:-}"; shift 2 ;;
@@ -56,7 +66,20 @@ while [ $# -gt 0 ]; do
     *) if [ -z "$repo" ]; then repo="$1"; elif [ -z "$num" ]; then num="$1"; else printf 'stop: unexpected argument %s\n' "$1" >&2; exit 64; fi; shift ;;
   esac
 done
-[ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--no-devin] [--wait <sha>] [--timeout-sec N] [--none-sec N] [--poll-sec N]' >&2; exit 64; }
+[ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> --tools <tool,…|none> [--me <login>] [--wait <sha>] [--timeout-sec N] [--none-sec N] [--poll-sec N]' >&2; exit 64; }
+[ -n "$tools" ] || { echo 'stop: --tools is required: the tools detect.sh printed, comma separated, or none' >&2; exit 64; }
+
+# tool_names: each tool in --tools, in order. statuses: the status names of
+# those that post one, the same order.
+tool_names=(); statuses=()
+if [ "$tools" != none ]; then
+  IFS=, read -r -a tool_names <<<"$tools"
+  for t in "${tool_names[@]}"; do
+    st="$(awk -F'\t' -v t="$t" '!/^#/ && $1 == t {print $3; exit}' "$known")"
+    [ -n "$st" ] || { printf 'stop: unknown review tool %s, not in known.tsv\n' "$t" >&2; exit 64; }
+    [ "$st" = "-" ] || statuses+=("$st")
+  done
+fi
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
 
@@ -70,23 +93,31 @@ gh_out() {
 # gh_failed <err>: the BLOCKED verdict for a gh call that failed.
 gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
 
-# devin_state <sha>: sets s to the Devin Review state on that commit, upper
-# case (SUCCESS, PENDING, FAILURE, …), or empty when there is none. The commit
-# status first, read across every page, then the check runs asked for by
-# name. A failed gh call sets err, returns 1.
-devin_state() {
-  gh_out api "repos/$repo/commits/$1/status" --paginate -q '[.statuses[] | select(.context=="Devin Review") | .state] | first // empty' || return 1
+# review_state <sha> <status name>: sets s to that review status on that
+# commit, upper case (SUCCESS, PENDING, FAILURE, …), or empty when there is
+# none. The commit status first, read across every page, then the check runs
+# asked for by name. A failed gh call sets err, returns 1.
+review_state() {
+  gh_out api "repos/$repo/commits/$1/status" --paginate -q "[.statuses[] | select(.context==$(jq -n --arg n "$2" '$n')) | .state] | first // empty" || return 1
   if [ -z "$out" ]; then
-    gh_out api "repos/$repo/commits/$1/check-runs?check_name=Devin%20Review" -q '[.check_runs[] | select(.name=="Devin Review") | (.conclusion // .status)] | first // empty' || return 1
+    gh_out api "repos/$repo/commits/$1/check-runs?check_name=$(jq -rn --arg n "$2" '$n | @uri')" -q "[.check_runs[] | select(.name==$(jq -n --arg n "$2" '$n')) | (.conclusion // .status)] | first // empty" || return 1
   fi
   s="$(printf '%s' "$out" | head -1 | tr '[:lower:]' '[:upper:]')"
 }
-devin_red() { case "$1" in FAILURE|ERROR|TIMED_OUT|CANCELLED|ACTION_REQUIRED|STARTUP_FAILURE) return 0 ;; esac; return 1; }
+review_red() { case "$1" in FAILURE|ERROR|TIMED_OUT|CANCELLED|ACTION_REQUIRED|STARTUP_FAILURE) return 0 ;; esac; return 1; }
+review_green() { case "$1" in SUCCESS|NEUTRAL|SKIPPED) return 0 ;; esac; return 1; }
+
+# review_states <sha>: sets states, one state per status name, the same order
+# (empty for one not posted). A failed gh call sets err, returns 1.
+review_states() {
+  local st; states=()
+  for st in ${statuses[@]+"${statuses[@]}"}; do review_state "$1" "$st" || return 1; states+=("$s"); done
+}
 
 # pr_facts: sets facts, one KEY=value per line, read only through get. Keys:
 # URL STATE DRAFT SHA MERGEABLE MERGE_STATE REVIEW_DECISION CHECKS_RED
 # CHECKS_PENDING CHECKS_GREEN REQUIRED_MISSING. The CHECKS_* counts cover every
-# status and check run on the head but Devin Review. REQUIRED_MISSING lists,
+# status and check run on the head but the review statuses. REQUIRED_MISSING lists,
 # comma separated, the checks that the base branch requires (branch protection
 # and rulesets) and the head does not have at all. A failed gh call sets err,
 # returns 1.
@@ -101,10 +132,10 @@ pr_facts() {
   prot="$out"
   gh_out api "repos/$repo/rules/branches/$base" -q '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]' || return 1
   rules="$out"
-  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" '
+  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" --argjson reviews "$reviews_json" '
     def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
-    def is_devin: ((.context // .name // "") == "Devin Review");
-    def others: [.statusCheckRollup[]? | select(is_devin | not)];
+    def is_review: ((.context // .name // "") as $n | $reviews | index($n));
+    def others: [.statusCheckRollup[]? | select(is_review | not)];
     def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
     def green: ["SUCCESS","NEUTRAL","SKIPPED"];
     "URL=\(.url)",
@@ -147,15 +178,24 @@ open_threads() {
   ' <<<"$all")"
 }
 
-if [ -n "$wait_sha" ] && [ "$no_devin" -eq 0 ]; then
-  waited=0; fails=0; s=""
+reviews_json="$(jq -nc '$ARGS.positional' --args ${statuses[@]+"${statuses[@]}"})"
+
+if [ -n "$wait_sha" ] && [ "${#statuses[@]}" -gt 0 ]; then
+  waited=0; fails=0
   while :; do
-    if devin_state "$wait_sha"; then
-      fails=0
-      if [ "$s" = SUCCESS ] || devin_red "$s"; then break; fi
-      if [ -z "$s" ]; then [ "$waited" -lt "$none_sec" ] || break
-      else [ "$waited" -lt "$timeout" ] || break
-      fi
+    if review_states "$wait_sha"; then
+      # An absent status stops the wait only once none is pending, so a
+      # PENDING reason always means --timeout-sec passed.
+      fails=0; red=0; pending=0; absent=0
+      for s in "${states[@]}"; do
+        if review_red "$s"; then red=1
+        elif [ -z "$s" ]; then absent=1
+        elif ! review_green "$s"; then pending=1
+        fi
+      done
+      [ "$red" -eq 0 ] || break
+      if [ "$pending" -eq 0 ] && { [ "$absent" -eq 0 ] || [ "$waited" -ge "$none_sec" ]; }; then break; fi
+      [ "$waited" -lt "$timeout" ] || break
     else
       fails=$((fails + 1))
       [ "$fails" -lt 5 ] || gh_failed "$err"
@@ -173,8 +213,13 @@ for _ in 1 2 3 4; do
 done
 url="$(get URL)"
 sha7="$(get SHA | cut -c1-7)"
-devin_state "$(get SHA)" || gh_failed "$err"
-devin="${s:-none}"
+review_states "$(get SHA)" || gh_failed "$err"
+# posted: a review status is on the head; running: one is posted, not done.
+posted=0; running=0
+for s in ${states[@]+"${states[@]}"}; do
+  [ -n "$s" ] || continue
+  posted=1; review_green "$s" || review_red "$s" || running=1
+done
 
 open_threads || gh_failed "$err"
 open="$(head -1 <<<"$threads" | cut -d= -f2)"
@@ -187,14 +232,14 @@ waiting() { why+=("$1"); has_waiting=1; }
 [ "$(get STATE)" = "OPEN" ] || blocked "state is $(get STATE)"
 [ "$(get DRAFT)" != "true" ] || blocked "draft"
 checks=$(( $(get CHECKS_RED) + $(get CHECKS_PENDING) + $(get CHECKS_GREEN) ))
-[ "$devin" != "none" ] || [ "$checks" -ne 0 ] || waiting "no checks on $sha7 yet"
-if [ "$no_devin" -eq 0 ]; then
-  case "$devin" in
-    SUCCESS) ;;
-    none) waiting "no Devin Review status on $sha7" ;;
-    *) if devin_red "$devin"; then blocked "Devin Review is $devin"; else waiting "Devin Review is $devin"; fi ;;
-  esac
-fi
+[ "$posted" -eq 1 ] || [ "$checks" -ne 0 ] || waiting "no checks on $sha7 yet"
+for i in ${statuses[@]+"${!statuses[@]}"}; do
+  st="${statuses[$i]}"; s="${states[$i]}"
+  if [ -z "$s" ]; then waiting "no $st status on $sha7"
+  elif review_red "$s"; then blocked "$st is $s"
+  elif ! review_green "$s"; then waiting "$st is $s"
+  fi
+done
 [ "$open" = "0" ] || blocked "$open review thread(s) wait for the author"
 case "$(get MERGEABLE)" in
   MERGEABLE) ;;
@@ -210,12 +255,12 @@ case "$(get MERGE_STATE)" in
 esac
 [ "$(get CHECKS_RED)" = "0" ] || blocked "$(get CHECKS_RED) other check(s) red"
 [ "$(get CHECKS_PENDING)" = "0" ] || waiting "$(get CHECKS_PENDING) other check(s) pending"
-# A required check not posted yet may still come while a check or Devin
-# Review runs, or before anything at all has posted.
+# A required check not posted yet may still come while a check or a review
+# runs, or before anything at all has posted.
 if [ -n "$(get REQUIRED_MISSING)" ]; then
   missing="required check(s) not posted: $(get REQUIRED_MISSING | sed 's/,/, /g')"
-  if [ "$(get CHECKS_PENDING)" != "0" ] || { [ "$devin" = "none" ] && [ "$checks" -eq 0 ]; } \
-    || { [ "$devin" != "SUCCESS" ] && [ "$devin" != "none" ] && ! devin_red "$devin"; }; then
+  if [ "$(get CHECKS_PENDING)" != "0" ] || [ "$running" -eq 1 ] \
+    || { [ "$posted" -eq 0 ] && [ "$checks" -eq 0 ]; }; then
     waiting "$missing"
   else
     blocked "$missing"
@@ -235,8 +280,18 @@ elif [ "$approval" -eq 1 ]; then verdict="READY $url (waiting for approval)"; co
 else verdict="READY $url"; code=0
 fi
 if [ "$code" -eq 0 ]; then
-  if [ "$devin" = "none" ]; then d="none on this repo"; else d="$(tr '[:upper:]' '[:lower:]' <<<"$devin") on $sha7"; fi
-  reason="Devin Review: $d · open threads: $open · merge state: $(get MERGE_STATE)"
+  # Every status is green here, so each tool with one has a state.
+  d=(); j=0
+  for t in ${tool_names[@]+"${tool_names[@]}"}; do
+    st="$(awk -F'\t' -v t="$t" '!/^#/ && $1 == t {print $3; exit}' "$known")"
+    if [ "$st" = "-" ]; then d+=("$t no status")
+    else d+=("$t $(tr '[:upper:]' '[:lower:]' <<<"${states[$j]}")"); j=$((j + 1))
+    fi
+  done
+  if [ "${#d[@]}" -eq 0 ]; then tl="none"
+  else tl="$(printf '%s, ' "${d[@]}")"; tl="${tl%, }"; [ "${#statuses[@]}" -eq 0 ] || tl="$tl on $sha7"
+  fi
+  reason="Review tools: $tl · open threads: $open · merge state: $(get MERGE_STATE)"
 else
   reason="$(IFS=';'; printf '%s' "${why[*]}" | sed 's/;/; /g')"
 fi
