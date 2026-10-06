@@ -207,6 +207,21 @@ t_ko_bad_command() {
   [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
 }
 
+t_ko_on_name() {
+  ko_herdr; ko_issue '[{"name":"size/M"}]'
+  printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+  ko_go https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80
+  has rename "pane rename w1:p2 i42-on-80" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus medium i42-on-80)" "$(cat "$T/herdr.log")"
+}
+
+t_ko_no_dry_run() {
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  ko_go --dry-run https://github.com/acme/app/issues/42
+  eq exit 1 "$code"
+  eq stderr "stop: unexpected argument: --dry-run" "$err"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -224,4 +239,6 @@ cases=(
   "a bad size stops|t_ko_bad_size"
   "overrides win and the report says set|t_ko_overrides"
   "a bad command stops|t_ko_bad_command"
+  "the pane is named by numbers|t_ko_on_name"
+  "dry-run is gone|t_ko_no_dry_run"
 )

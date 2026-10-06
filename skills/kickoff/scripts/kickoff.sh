@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
-# kickoff.sh: open a herdr pane and run /plan-up there.
+# kickoff.sh: open a herdr pane and run /ship or /plan-up there.
 #
-# Usage: kickoff.sh [--label L] [--dry-run] [--no-prompt] <issue-url> [#n ...] [on <pr-url>]
+# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up]
+#                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
 # the numbers are a run under it. When it has none, it is the first ticket of a
 # set: plain issues with no shared parent, planned together in the order given.
 #
-# Exit 0: the pane is running /plan-up, one report line on stdout.
+# The model, effort, and command come from the tickets' size and
+# ready-to-build labels unless a flag names them; --size gives a ticket with
+# no size label the size the agent guessed.
+#
+# Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Nothing is half done: no pane exists until every check passed.
-# The tree is left as is: /plan-up reads its own copy of the base.
+# The tree is left as is: /ship and /plan-up read their own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,7 +24,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*" >&2; }
 
 # ---------- args ----------
-label=""; dry_run=0; no_prompt=0; args=(); sizes=()
+label=""; args=(); sizes=()
 set_model=""; set_effort=""; set_command=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -34,12 +39,11 @@ while [ $# -gt 0 ]; do
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
-    --dry-run) dry_run=1; shift ;;
-    --no-prompt) no_prompt=1; shift ;;
+    -*) die "unexpected argument: $1" ;;
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -169,7 +173,7 @@ fi
 # ---------- repo path ----------
 # The checkout resolver finds the main checkout; its stop line is ours.
 found="$(bash "$here/../../../shared-skill-core/checkout.sh" main "$slug")" || exit 1
-path_from="${found%% *}"; path_from="${path_from#FROM=}"; path="${found#* MAIN=}"
+path="${found#* MAIN=}"
 
 # ---------- label ----------
 # The issue numbers: i42, i42-43, i42-on-80, and i70 for a whole epic. Too
@@ -230,13 +234,6 @@ if [ -z "$target_tab" ]; then
   done
 fi
 
-if [ "$dry_run" -eq 1 ]; then
-  place="new tab"; [ -n "$target_tab" ] && place="split $split_pane in $target_tab"
-  printf 'dry-run: #%s %s · form %s · /%s · model %s · effort %s · %s · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
-    "$number" "$title" "$form" "$command" "$model" "$effort" "$reason" "$path" "$path_from" "base $base" "$label" "$place" "$prep_args"
-  exit 0
-fi
-
 if [ -n "$target_tab" ]; then
   new_pane="$(herdr pane split --pane "$split_pane" --direction right --ratio 0.5 --cwd "$path" --no-focus | jq -r .result.pane.pane_id)"
   python3 "$here/equalize_columns.py" "$new_pane" >/dev/null
@@ -261,12 +258,6 @@ for _ in $(seq 1 20); do
   sleep 1
 done
 [ "$started" -eq 1 ] || die "claude did not come up in $new_pane; the pane is left as is"
-
-if [ "$no_prompt" -eq 1 ]; then
-  printf '#%s %s → %s/%s/%s · model %s · effort %s · %s · %s · %s · no prompt sent\n' \
-    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$model" "$effort" "$reason" "base $base" "$placed"
-  exit 0
-fi
 
 herdr agent prompt "$label" "/$command $prep_args" >/dev/null
 status="idle"

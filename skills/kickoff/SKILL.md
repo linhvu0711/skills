@@ -112,7 +112,8 @@ branch stay as they are. Say the line. Stop.
 
 **User:** `what would /kickoff do for issue 70?`
 
-Run with `--dry-run`. Show the line.
+Do not run the script. Read #70's labels and answer from the table:
+the model, effort, and command it would pick, and why.
 
 **User:** makes an issue with `/to-issue`, then `/kickoff on this pls`
 

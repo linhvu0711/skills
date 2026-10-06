@@ -47,8 +47,8 @@ Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh 
 
 - Starts [ship](../ship/) or [plan-up](../plan-up/) in the new pane.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.
+- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
 
 ## Tests
 
-The cases for the checkout lookup in [kickoff.sh](scripts/kickoff.sh) are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup and the model, effort, command, and name it picks, are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `herdr` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
