@@ -207,6 +207,13 @@ t_ko_bad_command() {
   [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
 }
 
+t_ko_bad_effort() {
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  ko_go --effort huge https://github.com/acme/app/issues/42
+  eq exit 1 "$code"
+  eq stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge" "$err"
+}
+
 t_ko_on_name() {
   ko_herdr; ko_issue '[{"name":"size/M"}]'
   printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
@@ -239,6 +246,7 @@ cases=(
   "a bad size stops|t_ko_bad_size"
   "overrides win and the report says set|t_ko_overrides"
   "a bad command stops|t_ko_bad_command"
+  "a bad effort stops|t_ko_bad_effort"
   "the pane is named by numbers|t_ko_on_name"
   "dry-run is gone|t_ko_no_dry_run"
 )
