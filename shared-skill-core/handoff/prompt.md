@@ -5,7 +5,7 @@ The prompt file is the only thing the executor gets. It reads no file
 of ours beyond it. So it carries the issue, the plan, and the rules in
 <!-- local -->
 full, in this order. `/build-and-prove` writes the file and the
-builder reads it whole: the Devin CLI pane gets `Read <path> whole and
+builder reads it whole: the Claude Code pane gets `Read <path> whole and
 follow it` as its first prompt, or the session follows the file itself.
 The head lines (everything above the first `# ` heading) open the file,
 because the rules block reads `Repo`, `Base branch`, `Branch`, and

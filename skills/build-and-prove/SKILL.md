@@ -152,7 +152,8 @@ commits stay.
 
    Your system prompt names the model you run on.
 
-   **Fable** (`Fable`, `claude-fable-*`): a Devin CLI pane builds.
+   **Fable** (`Fable`, `claude-fable-*`): a Claude Code pane builds, on
+   Sonnet at high effort.
    - `HERDR_ENV` is not `1`: say `Not inside herdr. Open a herdr pane
      and run this there, or say "here" to build in this session.` and
      stop. `here` means the "Any other model" branch below.
@@ -288,7 +289,7 @@ commits stay.
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
     Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
-    Walks: 3 passed in round 2 · videos: 2 · built by: devin pane w4:p9M
+    Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
     Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
     BUILT feat/42-export-orders-csv

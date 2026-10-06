@@ -27,7 +27,7 @@ case "$f" in rules|prompt) ;; *) echo "$usage" >&2; exit 64 ;; esac
 case "$ex" in
   devin)  app=Devin;       session=session; here="in the session";      caller=/handoff ;;
   cursor) app=Cursor;      session=run;     here="in your reply";       caller=/handoff ;;
-  local)  app="Devin CLI"; session=session; here="in your last message"; caller=/build-and-prove ;;
+  local)  app="Claude Code"; session=session; here="in your last message"; caller=/build-and-prove ;;
 esac
 
 awk -v ex="$ex" -v dir="$dir" '

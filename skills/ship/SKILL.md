@@ -106,7 +106,7 @@ where the build runs (step 2).
 
    ```
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
-   Route: local · built by: devin pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
+   Route: local · built by: claude pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
    Worktree: ~/development/worktrees/acme/app/feat-42-login
    After merge: /prune-worktrees
    READY https://github.com/acme/app/pull/43
@@ -149,7 +149,7 @@ herdr; #57 is a `[fix]`, size S, `handoff-ready`, no screen.
 Plan-up runs its short path, page opens, summary printed, no wait.
 `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
-Sandbox up, a Devin CLI pane on `swe-2-medium` builds, every test
+Sandbox up, a Claude Code pane on Sonnet at high effort builds, every test
 through `box.sh run`. `BUILT fix/57-export-date-iso`, `Walks: none (no
 UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
 ready-pr: `READY https://github.com/acme/shop/pull/61`. Report.
