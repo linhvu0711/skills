@@ -32,8 +32,10 @@ t_render_media_once() {
 }
 
 t_render_risk_line() {
-  eq "risk line" 1 "$(grep -c '^   First line, always: `Risk: <door> door, blast radius: <what>.`$' "$here/../pr-shape.md")"
-  eq "one place" 1 "$(grep -c 'keeps only the `Risk`' "$here/../pr-shape.md")"
+  local item
+  item="$(sed -n '/^3\. \*\*`## Where to look`\*\*/,/^4\. /p' "$here/../pr-shape.md")"
+  eq "risk line" 1 "$(printf '%s\n' "$item" | grep -c '^   First line, always: `Risk: <door> door, blast radius: <what>.`$')"
+  eq "one place" 1 "$(printf '%s\n' "$item" | grep -c 'keeps only the `Risk`')"
 }
 
 t_render_cloud_risk_once() {
