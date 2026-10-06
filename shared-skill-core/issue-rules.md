@@ -12,7 +12,9 @@ Titles and bodies use the repo's own words. The glossary is `CONTEXT.md` (or
 the `CONTEXT.md` of the bounded context named in `CONTEXT-MAP.md`). Decisions
 already made live in `docs/adr/`; a ticket in that area respects them and
 names the ADR in Context. When neither file exists, use the names the code
-uses.
+uses. A decision made but not built yet waits in an open issue's
+`## Docs to write` (see Body): it is decided, not built, and a ticket in
+that area respects it like an ADR.
 
 ## Written for a stranger
 
@@ -193,7 +195,8 @@ Steps.
 
 Write it to a temp file, pass it with `--body-file`. Four sections, in this
 order. XS adds a fifth, `Steps`, after Done when, and S adds it when the
-steps are free (see Size). Every line is from the user's view: what someone
+steps are free (see Size). `Docs to write` comes last, only when the chat
+settled doc text (see Docs to write below). Every line is from the user's view: what someone
 sees, runs, or gets. Without Steps, implementation plans and file-by-file
 instructions stay out; the worker owns those. With Steps the ticket owns
 them.
@@ -234,6 +237,12 @@ ticket, each as `#N owns <thing>. Do not build it here.`
 - Known: facts the chat proved by running something, one per line, each
   with its proof (see Known). Drop the line when none.
 - Open: facts you could not settle, one per line. Drop the line when none.
+
+## Docs to write
+### `CONTEXT.md`
+<the glossary entry, word for word as agreed>
+### `docs/adr/<next>-no-job-queue.md`
+<the whole ADR, word for word as agreed>
 ```
 
 Type variants:
@@ -246,6 +255,25 @@ Type variants:
 - `task`: see Task body below.
 
 Drop a Context bullet that would be empty. Keep the four headings.
+
+### Docs to write
+
+Doc text the chat agreed on, most often in a grill, that becomes true only
+when this ticket's code lands: a glossary entry, an ADR, a line in a
+README or a spec. It waits here, not in the doc, so no doc says what the
+code does not do yet. The PR that ships the code writes it, word for word.
+
+- One `###` heading per file, the path in backticks. Under it the full
+  text in a fenced `markdown` block, as agreed. Never a summary: the
+  builder copies it and does not write it again.
+- A new ADR has no number yet: `docs/adr/<next>-<slug>.md`. The build
+  takes the next free number on its base.
+- Text that is true already, like "we will not build X", rides on the
+  first code ticket of the same work. With no code ticket at all, it is
+  not here: the grill ships it in a docs PR.
+- A later decision that changes the text edits the entry. Text that never
+  shipped needs no superseded ADR.
+- A ticket closed with no PR takes its text with it.
 
 ### Task body
 
@@ -487,9 +515,9 @@ gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number
 
 - A result that is clearly the same work and is **not** a seed: show it and
   stop. Nothing is created.
-- A result that is clearly the same work and carries the `seed` or `bug`
-  label, or a seed or bug number the conversation named: it is the
-  **origin**. Continue.
+- A result that is clearly the same work and carries the `seed`, `bug`, or
+  `discovery/map` label, or a seed, bug, or map number the conversation
+  named: it is the **origin**. Continue.
 
 ### Origin bug
 
@@ -510,15 +538,22 @@ it when the old body only restates the new one, as a short `[bug]` from
 
 ### Origin seed
 
-A `seed` label, or a bug that grows into an epic. Create the new issue, then
-close the origin:
+A `seed` label, or a `discovery/map` issue the conversation named, like
+the one `/discover-path` printed `Map clear.` for. It is rewritten in
+place, like an origin bug: the number, the comments, and the links stay,
+and nothing is closed. A ticket: the seed becomes the ticket. An epic: the
+seed or the map becomes the parent, and the sub-issues go under it.
 
 ```bash
-gh issue close <seed> --comment "Grew into #<new>"
+gh issue edit <seed> --title "<title>" --body-file "$f" \
+  [--remove-label seed] [--remove-label discovery/map] [--add-label …] [--type <Name>]
 ```
 
-For an epic, `<new>` is the parent. Only issues labelled `seed` or `bug`
-are ever closed this way.
+The labels are the ones a new issue of that kind gets. The old body goes
+at the end of Context, in `<details><summary>Original seed</summary>…</details>`;
+skip it when the new body restates it. A map keeps its closed question
+tickets as sub-issues: they are the record of how the work was decided.
+A bug that grows into an epic becomes the parent the same way.
 
 ## Report
 

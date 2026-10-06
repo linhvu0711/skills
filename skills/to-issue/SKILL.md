@@ -28,7 +28,8 @@ report. This file is the order of operations.
    docs instead, per the rules file § Lookup, so Steps can be written.
 
 4. **Duplicate check.** One search. Same work, not a seed: show it, stop.
-   Origin found: remember its number, and whether it is a bug or a seed.
+   Origin found: remember its number, and whether it is a bug, a seed, or
+   a map.
 
 5. **Write.** Title per the title rule. Body per the template, with the type
    variant when it applies. Every Done-when line is observable from outside
@@ -38,11 +39,13 @@ report. This file is the order of operations.
    rules. S gets Steps only when every step comes from a line that was seen
    and no choice is open. A step that needs a decision the chat never made:
    XS becomes S, and S gets no Steps. `task`: body per the rules file § Task
-   body, Steps always.
+   body, Steps always. Doc text the chat agreed on (a glossary entry, an
+   ADR) goes under `## Docs to write`, word for word, per the rules file.
+   A map as origin is epic-sized: say `to-epic` is the tool, and stop.
 
-6. **Create.** Origin bug: rewrite it instead, per the rules file § Origin
-   bug, with the same labels and `--repo`. Nothing new is created.
-   Otherwise:
+6. **Create.** Origin bug or seed: rewrite it instead, per the rules file
+   § Origin bug or § Origin seed, with the same labels and `--repo`.
+   Nothing new is created, and nothing is closed. Otherwise:
 
    ```bash
    gh issue create --repo owner/repo --title "<title>" --body-file "$f" \
@@ -56,10 +59,7 @@ report. This file is the order of operations.
    A missing label from the rules file: create it, retry once. Any other
    failure: show the error, stop.
 
-7. **Close the origin seed**, when there is one. A rewritten bug stays open:
-   it is the ticket now.
-
-8. **Report.** One line: the URL, also put on the clipboard, then the size
+7. **Report.** One line: the URL, also put on the clipboard, then the size
    and the type.
 
 ## Examples

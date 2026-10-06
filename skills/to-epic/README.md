@@ -10,7 +10,7 @@ The work is settled but too big for one PR. [to-issue](../to-issue/) sized it XL
 
 First, a breakdown in chat: phases, and per ticket a title, type, size, blocked-by list, and one line of what it delivers. Each ticket is a thin vertical slice that can be verified alone. A ticket that leaves a stand-in, like a fake or a hard-coded value, names the later ticket that removes it, and that ticket checks it is gone. Work outside the repo, like an account or a key, is its own `task` ticket, never a note. It ends with three questions about granularity, edges, and splits, and loops on your changes until you say `go`.
 
-Then the parent and every sub-issue are created in phase order, with the edges wired, and the parent body rewritten with real numbers:
+Then the parent and every sub-issue are created in phase order, with the edges wired, and the parent body rewritten with real numbers. When the work started as a `seed`, or as the map that [discover-path](../discover-path/) cleared, that issue becomes the parent: same number, new body, nothing closed. Doc text agreed in a [grill](../grill/) (a glossary entry, an ADR) goes on the first sub-issue whose code makes it true, so it lands in that PR:
 
 ```
 https://github.com/acme/shop/issues/40
