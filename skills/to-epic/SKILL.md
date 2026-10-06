@@ -19,7 +19,9 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
 3. **Facts.** Cutting needs the seams, the layers each slice crosses, and for a
    wide refactor the call-site count per package or directory. Take them from
-   the chat. What the chat lacks, fetch in the one lookup round. For every
+   the chat, and from the map's body when a cleared map is the origin: its
+   Decisions so far and its `## Docs to write`. What the chat lacks, fetch
+   in the one lookup round. For every
    ticket that looks XS or S, the same round also fetches its lines, the
    pattern to copy, and the test, so its Steps can be written. Also list
    every thing outside the repo a ticket needs before it can land (an
@@ -47,7 +49,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    before the approve word.
 
 6. **Duplicate check.** One search on the epic's keywords. Same work, not a
-   seed: show it, stop. Origin seed: remember it.
+   seed: show it, stop. Origin seed, or the map `/discover-path` cleared:
+   remember it. It becomes the parent, per the rules file § Origin seed.
 
 7. **Create, in phase order.** Each call is one `gh issue create`. Numbers
    from earlier calls feed later ones.
@@ -55,7 +58,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    1. Parent: title with `epic` in the type slot, priority
       label if named, body per the parent template with the phase list
       holding titles only. The parent holds no prerequisite prose: every
-      "before you start" item is a task ticket in the phase list.
+      "before you start" item is a task ticket in the phase list. With an
+      origin, `gh issue edit` it into the parent instead of creating one.
    2. Phase 1 tickets: `--parent <P>`, size label, body per the rules file
       with `Part of #P`. XS tickets carry Steps and `--label ready-to-build`.
       S tickets carry both only when the steps are free, per the rules file.
@@ -65,6 +69,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
       rules file § Task body. A task the code needs first: the code ticket
       carries `--blocked-by` the task's number. A task that follows the
       code: the task carries `--blocked-by` the code ticket's number.
+      A ticket the Docs rule below gives doc text to carries it under
+      `## Docs to write`.
    3. Each later phase: same, plus `--blocked-by <n1>,<n2>` with the numbers
       of the tickets that gate it, and the `Related` and `Noted for later`
       lines filled with real numbers.
@@ -81,9 +87,7 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
    Match by title, skip those, resume the sequence, then finish step 7.4.
 
-8. **Close the origin seed**, when there is one, with `Grew into #<P>`.
-
-9. **Report.** Parent URL on the clipboard. Then one line per ticket: number,
+8. **Report.** Parent URL on the clipboard. Then one line per ticket: number,
    title, size, phase. Then two lines: the tickets with no blockers, free for
    an agent now; and the tasks, which are yours.
 
@@ -137,6 +141,15 @@ file, Types). Two directions:
 
 One task per platform and account.
 
+**Docs.** Doc text the chat agreed on (a glossary entry, an ADR), and
+each entry of a map's `## Docs to write`, goes on the
+first sub-issue whose code makes it true, under its `## Docs to write`,
+word for word. Text that
+is true already, like "we will not build X", goes on the first code ticket
+in phase order. The parent holds no doc text: its Context lists each entry
+as one pointer, `#13 writes docs/adr/<next>-no-job-queue.md`. The breakdown
+in chat shows the pointers too.
+
 **Wide refactor.** One mechanical change whose blast radius fans across the
 codebase, so no vertical slice can land green. Cut as:
 
@@ -164,6 +177,7 @@ and let the user choose before going on.
 1. **<title>** · <type> · <size> · blocked by: none
    Delivers: <end-to-end behaviour, one line>
    Leaves: <stand-in>, removed by 3
+   Writes: `docs/adr/<next>-no-job-queue.md`, `CONTEXT.md` (Order)
 
 ### Phase 2 · <…>
 3. **<title>** · <type> · <size> · blocked by: 1
@@ -174,6 +188,8 @@ and let the user choose before going on.
 
 A `Leaves` line appears only on a ticket that builds a stand-in (Cutting
 rules, Stand-ins), so the approve step shows the cleanup beside the shortcut.
+A `Writes` line appears only on a ticket the Docs rule gives doc text to,
+so the approve step shows where each agreed doc lands.
 
 A task shows `task` in the type slot and its lead time where size would be,
 so the approve step shows the human work beside the agent work.
@@ -205,6 +221,8 @@ Work the frontier: any ticket whose "after" tickets are closed. Start a phase wh
 
 ## Context
 - Terms, ADRs, files, Open. As in the rules file.
+- Docs: `#13 writes docs/adr/<next>-no-job-queue.md`, one line per entry of
+  the Docs rule. Drop when none.
 ```
 
 The parent has no size label. It closes when every sub-issue is closed.

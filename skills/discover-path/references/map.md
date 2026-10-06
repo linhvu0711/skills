@@ -84,11 +84,21 @@ should consult. Never an instruction to build.
 ## Out of scope
 - Work ruled past the destination, one line each: the gist, why it is out,
   and the closed ticket's link when one existed.
+
+## Docs to write
+### `docs/adr/<next>-per-seat-billing.md`
+From [[grill] Which plan model?](url).
+~~~markdown
+The full text the grill agreed on, word for word, per `issue-rules.md`
+§ Docs to write.
+~~~
 ```
 
 Decisions so far is an index. A decision lives on its ticket; the map gists
 it and links. A patch of fog that becomes a ticket leaves Not yet specified
-the same moment. Out of scope never graduates.
+the same moment. Out of scope never graduates. Docs to write holds every
+glossary entry and ADR the grills agreed on, in full, until `to-epic` hands
+each to a sub-issue; drop the heading while it is empty.
 
 ## Ticket body
 
@@ -114,8 +124,8 @@ Posted on the ticket, then the ticket is closed.
 The decision, in one to three sentences.
 
 ## Why
-The options weighed and the reason for the pick. Terms that landed in
-`CONTEXT.md`. An ADR, when one was written: `docs/adr/NNNN-slug.md`.
+The options weighed and the reason for the pick. The doc entries this
+answer added to the map's Docs to write, by file name.
 
 ## Known
 - One proven fact per line with its proof, per `issue-rules.md` § Known.
@@ -159,6 +169,14 @@ f=$(mktemp) && cat > "$f" <<'B'
 <map body>
 B
 gh issue create --title "$(t discovery "<effort>")" --body-file "$f" --label "discovery/map"
+```
+
+With an origin seed, the seed becomes the map instead: same `$f`, the old
+seed body at the end in `<details><summary>Original seed</summary>…</details>`.
+
+```bash
+gh issue edit <seed> --title "$(t discovery "<effort>")" --body-file "$f" \
+  --remove-label seed --add-label "discovery/map"
 ```
 
 **Create a ticket** (numbers from earlier calls feed later ones)

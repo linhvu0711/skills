@@ -8,7 +8,7 @@ The code has become hard to change or hard to test, and you want to know where a
 
 ## What you get
 
-An HTML report that opens in your browser as a local page, one card per candidate. Each card names the files, the problem, the change in plain words, the wins, a before and after diagram, and a strength badge (`Strong`, `Worth exploring`, `Speculative`). The report ends with a top pick. You choose a card, and a [grill](../grill/) works out the shape of the deeper module with you. If you want to compare interfaces, three or more sub-agents each design one under a different constraint, and you get a side-by-side comparison with a pick.
+An HTML report that opens in your browser as a local page, one card per candidate. Each card names the files, the problem, the change in plain words, the wins, a before and after diagram, and a strength badge (`Strong`, `Worth exploring`, `Speculative`). The report ends with a top pick. You choose a card, and a [grill](../grill/) works out the shape of the deeper module with you, then files the refactor as an issue, with the agreed glossary and ADR text inside. If you want to compare interfaces, three or more sub-agents each design one under a different constraint, and you get a side-by-side comparison with a pick.
 
 It changes no code and proposes no interface on its own.
 

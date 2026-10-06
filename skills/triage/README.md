@@ -19,7 +19,7 @@ Category: Our code
 Evidence: the export test with an ISO assertion fails on that field
 ```
 
-For a slow thing the cause line is a hot spot with its share of the time, like `900 of 1200 ms`. The baseline is the median of at least five runs, each with its errors counted and the same amount of work done. When the fix is a real choice (two fixes with a different blast radius, or a trade-off like batch or cache), it runs a grill on that choice first. When the fix is clear, it skips the grill.
+For a slow thing the cause line is a hot spot with its share of the time, like `900 of 1200 ms`. The baseline is the median of at least five runs, each with its errors counted and the same amount of work done. When the fix is a real choice (two fixes with a different blast radius, or a trade-off like batch or cache), it runs a grill on that choice first, and the doc text the grill agrees on goes into the ticket, so the fix PR writes it. When the fix is clear, it skips the grill.
 
 Then it files the ticket itself, through [to-issue](../to-issue/). The ticket follows the bug's category: a `fix` for our code, a `perf` for a hot spot, a `chore` for a missing guard or a pinned dependency, a `docs` for a missing setup step, or nothing when no code work is left. It files a `spike` when it cannot find the cause. The part that is yours (an ops fix, a data fix, a local command) stays in the report. You do not run `/to-issue`. When you started from an issue, like `/triage #42`, that issue becomes the ticket: new title, new body, same number, and the old text kept under "Original report". Nothing new is opened and nothing is closed.
 
