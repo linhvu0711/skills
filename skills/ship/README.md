@@ -21,7 +21,7 @@ It only runs when you call it.
 
 ## What you get
 
-First the plan, from [plan-up](../plan-up/), open in your browser, unless the chat already has one. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
+First the plan, from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. No page opens in your browser: the chat gets a short summary with the file's path, and the run goes on. To read and approve the plan as a page first, run [plan-up](../plan-up/) alone. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Then the route:
 
 - **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. Review fixes run their tests on your machine and leave the full suite and the build to the PR's CI when a workflow runs those commands; each one no workflow runs, or all of them in a repo with no CI, runs in a Sandbox. A stack goes layer by layer, bottom first.
 - **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
