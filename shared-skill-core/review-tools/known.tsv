@@ -1,0 +1,14 @@
+# known.tsv: the review tools detect.sh knows, one row each, tab between
+# columns. A new tool is one new row.
+#
+#   tool   its short name, as detect.sh prints it
+#   login  its GitHub app login, without `[bot]`: the author of its reviews
+#          and comments, and the app of its check runs
+#   status the commit status or check run it posts on each head, or `-`
+#
+# Each row was read off a public PR the tool reviewed, on 2026-10-06.
+devin	devin-ai-integration	Devin Review
+coderabbit	coderabbitai	CodeRabbit
+macroscope	macroscopeapp	Macroscope - Correctness Check
+greptile	greptile-apps	Greptile Review
+copilot	copilot-pull-request-reviewer	-
