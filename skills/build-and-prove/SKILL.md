@@ -30,8 +30,8 @@ prints its usage with no arguments.
   picks the Provider. It shows every line proofbox prints as it makes
   the Sandbox, so a failed setup script's last lines come before the
   `stop:` line. It reads the setup script, the env file, and the
-  optional size file from `~/.agents/proofbox/<owner>-<repo>/`. With a Sandbox already in
-  `<proof-dir>`, it keeps that one and prints its id.
+  optional size file from `~/.agents/proofbox/<owner>-<repo>/`. With a
+  Sandbox already in `<proof-dir>`, it keeps that one and prints its id.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits
   with its code. A Sandbox that is gone, idle too long or past its max
@@ -279,14 +279,14 @@ commits stay.
       It does not get the code, the slices, or the diff. It returns
       one line per walk and writes `walk-report-<round>.md` in `PROOF`.
       It ended with `GONE <id>`: the app died with its Sandbox, so stop
-      nothing and go to 8c. Else stop the app: `box.sh run "$PROOF" --
+      nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
       sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
 
    c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
       under it, idle or at its max life. No walk failed; run the round
-      again from 8a, where `box.sh run` makes a new Sandbox, and it does
+      again from 9a, where `box.sh run` makes a new Sandbox, and it does
       not count as a round. A second `GONE` in the same round: `box.sh
       down`, then stop with that line. Every walk passed: step 10. Each
       failed walk, by its screenshot and the plan, never by the walker's
@@ -307,7 +307,7 @@ commits stay.
         Wait.
 
       Say `Walks round <r>: <p> passed, <f> failed`. Then the next round
-      from 8a; every walk again, from the start. After round three with
+      from 9a; every walk again, from the start. After round three with
       a failed walk: `box.sh down`, then stop with the failing videos'
       paths, one per line.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# box.sh: hold the one proofbox Sandbox of a build-and-prove run. The Mac
-# edits; every command that runs the project's code runs in this Sandbox.
+# box.sh: hold the one proofbox Sandbox of a build-and-prove run. Coding runs
+# on the local machine; the Gates, the app, and the walks run in this Sandbox.
 #
 #   box.sh auth <linux|macos>
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
