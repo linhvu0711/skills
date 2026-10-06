@@ -41,7 +41,7 @@ say; with nothing to say, the heading goes too.
      door** is not: it writes stored data in a new shape, deletes data,
      sends something out (an email, a webhook, a published package), or
      removes something callers use. A one-way door names what cannot
-     come back.
+     come back, in brackets after `door`.
    - The **blast radius** is what breaks if the change is wrong, in a
      few words: one screen, one command, every caller of an API, all
      stored orders.
@@ -51,7 +51,7 @@ say; with nothing to say, the heading goes too.
 
    ```markdown
    Risk: two-way door, blast radius: the CSV export only.
-   Risk: one-way door, the migration rewrites every order date; blast radius: all stored orders.
+   Risk: one-way door (the migration rewrites every order date), blast radius: all stored orders.
    ```
 
    Then one to three bullets that point:
