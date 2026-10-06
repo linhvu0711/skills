@@ -305,9 +305,10 @@ commits stay.
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
 
-      **Video check.** After mode, before the sort: for each
-      `video-<n>.mp4` in `PROOF`, take two frames a second into a temp
-      folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
+      **Video check.** After mode, when the walker did not end with
+      `GONE`, before the sort: for each video under the plan's `Videos`,
+      the `video-<n>.mp4` this round filmed, take two frames a second
+      into a temp folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
       -vf fps=2 <tmp>/f-%03d.png`, and Read them in order. The caption
       at the top names the step (`step <k>: …`); a `» <N> s later` label
       marks a cut. Each step's action must show: typed letters
@@ -315,7 +316,9 @@ commits stay.
       changing after a key. A step whose action falls in a cut, as when
       the frame before a `» <N> s later` label shows none or part of the
       typed text and the frame after shows all of it, hides its action.
-      That fails the walk the step belongs to, the one whose `Shows`
+      Only a cut hides an action: a quick click or key that falls
+      between two frames, in a step with no `» <N> s later` label, is
+      not hidden. That fails the walk the step belongs to, the one whose `Shows`
       step is the first at or after it: write its line in
       `walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
       hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
