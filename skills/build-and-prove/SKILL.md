@@ -130,7 +130,10 @@ commits stay.
 5. **Coding.** Install the repo's packages in `$WT` on the local
    machine, with the install command its lockfile calls for (the one
    step 4 reads for the setup script); a repo with no lockfile installs
-   nothing. No Sandbox runs yet: `proofbox list` shows none of this run
+   nothing. The install fails because the local machine lacks its tool
+   (`command not found`, exit 127): say `<tool> is not installed on this
+   machine; install it and run again.` and stop. Coding has not started,
+   and no Sandbox runs. No Sandbox runs yet: `proofbox list` shows none of this run
    until the last slice is committed, unless a slice test needed a tool
    the local machine lacks (§ Sandbox).
 
