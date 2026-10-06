@@ -118,7 +118,7 @@ t_ko_large_opus_high_plan() {
   ko_go https://github.com/acme/app/issues/42
   has start "$(ko_start opus high)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
-  eq stdout "#42 Export orders → w1/w1:t2/w1:p2 · /plan-up · model opus (default) · effort high (default) · size L · base main · new tab w1:t2" "$out"
+  eq stdout "#42 Export orders → w1/w1:t2/w1:p2 · /plan-up (default) · model opus (default) · effort high (default) · size L · base main · new tab w1:t2" "$out"
 }
 
 t_ko_no_size_opus_high_plan() {
@@ -204,7 +204,7 @@ t_ko_overrides() {
   ko_go --model haiku --effort low --command plan-up https://github.com/acme/app/issues/42
   has start "$(ko_start haiku low)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
-  has report " · /plan-up · model haiku (set) · effort low (set) · ready-to-build · " "$out"
+  has report " · /plan-up (set) · model haiku (set) · effort low (set) · ready-to-build · " "$out"
 }
 
 t_ko_bad_command() {

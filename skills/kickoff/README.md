@@ -31,7 +31,7 @@ In a group of tickets, the biggest one picks the row. `manual` tickets do not co
 The chat gets one line and stops:
 
 ```
-#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up · model opus (default) · effort medium (default) · size M · base main · split in w4:t1
+#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1
 ```
 
 Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh copy of the base branch.

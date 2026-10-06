@@ -125,7 +125,7 @@ running.
 **User:** `/kickoff https://github.com/acme/shop/issues/42`
 
 Run the script. It prints
-`#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
+`#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
 Say that line. Stop.
 
 **User:** `/kickoff 42` with edits in the tree, on a feature branch,

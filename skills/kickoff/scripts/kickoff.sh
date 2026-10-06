@@ -157,10 +157,10 @@ if [ "$counted" -gt 1 ]; then
 elif [ "$guessed" -gt 0 ]; then reason="$reason, guessed"; fi
 
 # A value the user named wins over the row.
-model_from=default; effort_from=default
+model_from=default; effort_from=default; command_from=default
 if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
 if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
-if [ -n "$set_command" ]; then command="$set_command"; fi
+if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
@@ -270,5 +270,5 @@ if [ "$status" != "working" ]; then
   die "/$command did not start in $new_pane (status $status); the pane is left as is"
 fi
 
-printf '#%s %s → %s/%s/%s · /%s · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
-  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$model" "$model_from" "$effort" "$effort_from" "$reason" "base $base" "$placed"
+printf '#%s %s → %s/%s/%s · /%s (%s) · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
+  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$command_from" "$model" "$model_from" "$effort" "$effort_from" "$reason" "base $base" "$placed"
