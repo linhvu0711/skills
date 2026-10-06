@@ -1,6 +1,6 @@
 ---
 name: kickoff
-description: "Open a new herdr pane beside this one and run /plan-up there on an issue, a run of epic tickets, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the effort from the size label; places and names the pane. Stops once /plan-up is running."
+description: "Open a new herdr pane beside this one and run /ship or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
 
@@ -24,8 +24,8 @@ The arguments are `/plan-up`'s, passed through unchanged:
   and knows.
 - `/kickoff <issue-url> on <pr-url>`: a new layer on an open stack.
 
-Exit 0: print the script's one report line and stop. `/plan-up` now talks
-to the user in the new pane. Do not watch it, read its plan, or run
+Exit 0: print the script's one report line and stop. `/ship` or
+`/plan-up` now talks to the user in the new pane. Do not watch it, read its plan, or run
 `/handoff` from here.
 
 Exit 1: the last stderr line starts with `stop:` and says why. Show it
@@ -43,10 +43,15 @@ Flags you may add:
 
 What the script decides, so you can answer questions about it:
 
-- Model is not set, so claude uses its default model. Effort is
-  `medium` for one ticket labelled XS or S, matched loosely (`size/S`,
-  `Size: Small`). Everything else is `high`: M and up, no size label, a
-  run, a set, a whole epic.
+- Model, effort, and command, from the size and `ready-to-build`
+  labels. Sizes match loosely (`size/S`, `Size: Medium`):
+
+  | Tickets | Model | Effort | Command |
+  |---|---|---|---|
+  | every one `ready-to-build` | `sonnet` | `high` | `/ship` |
+  | all XS or S | `opus` | `medium` | `/ship` |
+  | any M | `opus` | `medium` | `/plan-up` |
+  | any L, XL, or no size | `opus` | `high` | `/plan-up` |
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,
   `../../shared-skill-core/checkout.sh main <owner/repo>`, whose header
@@ -59,8 +64,8 @@ What the script decides, so you can answer questions about it:
   columns, else the tab in this workspace with the fewest columns under
   3, else a new tab. Never reuses a pane. Never takes focus. Columns are
   equalized after a split.
-- Label: first four words of the title in kebab case, `-run` for a run,
-  a set, or an epic, `-on-<pr>` for the `on` form. Made unique among live agents.
+- Label: `i` and the issue numbers, as `i42`, `i42-43`, `i42-on-80`,
+  and `i70` for a whole epic. Made unique among live agents.
 
 ## Resolving the target from the session
 
@@ -81,7 +86,7 @@ say what you found, name the candidates, and ask which one. The word
 **User:** `/kickoff https://github.com/acme/shop/issues/42`
 
 Run the script. It prints
-`#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · base main · split in w4:t1`.
+`#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
 Say that line. Stop.
 
 **User:** `/kickoff https://github.com/acme/shop/issues/42` with edits in

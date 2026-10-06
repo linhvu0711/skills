@@ -1,6 +1,6 @@
 # kickoff
 
-Opens a new herdr pane next to the one you are in and starts `/plan-up` there on an issue, a run of tickets, or a whole epic.
+Opens a new herdr pane next to the one you are in and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or a whole epic.
 
 ## Use it when
 
@@ -16,10 +16,19 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 
 ## What you get
 
-A script finds the repo on disk, picks the effort from the size label (`medium` for XS or S, else `high`), opens the pane without taking focus, and types `/plan-up` into it. The chat gets one line and stops:
+A script finds the repo on disk, picks the model, effort, and command from the tickets' labels, opens the pane without taking focus, starts Claude Code there, and types the command into it:
+
+| Tickets | Model | Effort | Command |
+|---|---|---|---|
+| every one `ready-to-build` | sonnet | high | `/ship` |
+| all XS or S | opus | medium | `/ship` |
+| any M | opus | medium | `/plan-up` |
+| any L, XL, or no size | opus | high | `/plan-up` |
+
+The chat gets one line and stops:
 
 ```
-#42 Export orders as CSV → w4/w4:t1/w4:p9M · effort high (size above S or no size label) · base main · split in w4:t1
+#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up · model opus (default) · effort medium (default) · size M · base main · split in w4:t1
 ```
 
 Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh copy of the base branch.
@@ -30,11 +39,11 @@ Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh 
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
-- The [plan-up](../plan-up/) skill in the new pane.
+- The [ship](../ship/) and [plan-up](../plan-up/) skills in the new pane.
 
 ## Fits with
 
-- Starts [plan-up](../plan-up/) in the new pane.
+- Starts [ship](../ship/) or [plan-up](../plan-up/) in the new pane.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 - It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [ship](../ship/) uses its `equalize_columns.py` to even out pane widths.
 

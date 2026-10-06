@@ -53,7 +53,7 @@ A `ready-to-build` ticket takes a short path: its Steps are trusted and only the
 - Takes tickets from [to-issue](../to-issue/) and runs from [to-epic](../to-epic/).
 - Sends a failed gate to [grill](../grill/) or [triage](../triage/).
 - Its plan goes to [build-and-prove](../build-and-prove/), which builds it on your machine with proofbox, or to [handoff](../handoff/), which sends it to Devin or Cursor. [ship](../ship/) picks one.
-- [ship](../ship/) runs it as its first step, and [kickoff](../kickoff/) runs it in a new pane.
+- [ship](../ship/) runs it as its first step, and [kickoff](../kickoff/) runs it, or ship, in a new pane.
 
 ## Tests
 

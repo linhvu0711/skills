@@ -66,17 +66,44 @@ elif [ "${#tickets[@]}" -gt 0 ]; then
 elif [ "$sub_count" -gt 0 ]; then form="epic"
 else form="issue"; fi
 
-# ---------- effort ----------
-# medium only for a single ticket whose size label says XS or S.
-is_small=0
-if [ "$form" = "issue" ] || [ "$form" = "on" ]; then
+# ---------- model, effort, command ----------
+# size_of <label>: XS, S, M, L, or XL when the label names a size, matched
+# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
+size_of() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
+    xs|xsmall|extrasmall) echo XS ;;
+    s|small) echo S ;;
+    m|med|medium) echo M ;;
+    l|large) echo L ;;
+    xl|xlarge|extralarge) echo XL ;;
+  esac
+}
+
+# add_ticket <issue json>: counts one ticket. The biggest ticket picks the
+# row, and a ticket with no size is the biggest. Only a target whose every
+# ticket is ready-to-build takes the sonnet row.
+all_ready=1; top=0; top_size=""
+add_ticket() {
+  local lab size="" ready=0 rank
   while IFS= read -r lab; do
-    norm="$(printf '%s' "$lab" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')"
-    case "$norm" in xs|s|small|extrasmall|xsmall) is_small=1 ;; esac
-  done < <(jq -r '.labels[].name' <<<"$issue_json")
+    if [ "$(printf '%s' "$lab" | tr '[:upper:]' '[:lower:]')" = ready-to-build ]; then ready=1; fi
+    [ -n "$size" ] || size="$(size_of "$lab")"
+  done < <(jq -r '.labels[].name' <<<"$1")
+  [ "$ready" -eq 1 ] || all_ready=0
+  # ready-to-build goes only on XS and S tickets, so one with no size is S.
+  [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
+  case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
+  if [ "$rank" -gt "$top" ]; then top=$rank; top_size="$size"; fi
+}
+add_ticket "$issue_json"
+
+if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship; reason="ready-to-build"
+else
+  if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship
+  elif [ "$top" -eq 3 ]; then model=opus; effort=medium; command=plan-up
+  else model=opus; effort=high; command=plan-up; fi
+  if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
-if [ "$is_small" -eq 1 ]; then effort="medium"; rule="size XS/S"
-else effort="high"; case "$form" in run) rule="run" ;; set) rule="set of tickets" ;; epic) rule="whole epic" ;; *) rule="size above S or no size label" ;; esac; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
@@ -91,13 +118,24 @@ found="$(bash "$here/../../../shared-skill-core/checkout.sh" main "$slug")" || e
 path_from="${found%% *}"; path_from="${path_from#FROM=}"; path="${found#* MAIN=}"
 
 # ---------- label ----------
+# The issue numbers: i42, i42-43, i42-on-80, and i70 for a whole epic. Too
+# long: the whole numbers that fit in 27 characters, then -more.
 if [ -z "$label" ]; then
-  label="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/ /g' \
-    | awk '{n=0; for(i=1;i<=NF;i++){ if($i ~ /^[0-9]+$/) continue; if(n>0) printf "-"; printf "%s",$i; n++; if(n==4) break } }')"
   case "$form" in
-    run|epic|set) label="${label}-run" ;;
-    on) label="${label}-on-${pr_number}" ;;
+    run) nums=("${tickets[@]}") ;;
+    set) nums=("$number" "${tickets[@]}") ;;
+    *) nums=("$number") ;;
   esac
+  label="i$(IFS=-; printf '%s' "${nums[*]}")"
+  if [ "${#label}" -gt 32 ]; then
+    label="i${nums[0]}"
+    for n in "${nums[@]:1}"; do
+      [ $(( ${#label} + ${#n} + 1 )) -le 27 ] || break
+      label="${label}-$n"
+    done
+    label="${label}-more"
+  fi
+  if [ "$form" = on ]; then label="${label}-on-${pr_number}"; fi
 fi
 label="$(printf '%s' "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
 [ -n "$label" ] || label="prep-$number"
@@ -140,8 +178,8 @@ fi
 
 if [ "$dry_run" -eq 1 ]; then
   place="new tab"; [ -n "$target_tab" ] && place="split $split_pane in $target_tab"
-  printf 'dry-run: #%s %s · form %s · effort %s (%s) · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
-    "$number" "$title" "$form" "$effort" "$rule" "$path" "$path_from" "base $base" "$label" "$place" "$prep_args"
+  printf 'dry-run: #%s %s · form %s · /%s · model %s · effort %s · %s · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
+    "$number" "$title" "$form" "$command" "$model" "$effort" "$reason" "$path" "$path_from" "base $base" "$label" "$place" "$prep_args"
   exit 0
 fi
 
@@ -162,7 +200,7 @@ herdr pane rename "$new_pane" "$label" >/dev/null
 started=0
 for _ in $(seq 1 20); do
   if err="$(herdr agent start "$label" --kind claude --pane "$new_pane" --timeout 60000 \
-      -- --effort "$effort" --permission-mode auto 2>&1 >/dev/null)"; then
+      -- --model "$model" --effort "$effort" --permission-mode auto 2>&1 >/dev/null)"; then
     started=1; break
   fi
   grep -q agent_pane_busy <<<"$err" || { say "$err"; break; }
@@ -171,12 +209,12 @@ done
 [ "$started" -eq 1 ] || die "claude did not come up in $new_pane; the pane is left as is"
 
 if [ "$no_prompt" -eq 1 ]; then
-  printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s · no prompt sent\n' \
-    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
+  printf '#%s %s → %s/%s/%s · model %s · effort %s · %s · %s · %s · no prompt sent\n' \
+    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$model" "$effort" "$reason" "base $base" "$placed"
   exit 0
 fi
 
-herdr agent prompt "$label" "/plan-up $prep_args" >/dev/null
+herdr agent prompt "$label" "/$command $prep_args" >/dev/null
 status="idle"
 for _ in $(seq 1 30); do
   status="$(herdr agent get "$label" | jq -r .result.agent.agent_status)"
@@ -185,8 +223,8 @@ for _ in $(seq 1 30); do
 done
 if [ "$status" != "working" ]; then
   herdr agent read "$label" --source visible --lines 40 >&2 || true
-  die "/plan-up did not start in $new_pane (status $status); the pane is left as is"
+  die "/$command did not start in $new_pane (status $status); the pane is left as is"
 fi
 
-printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s\n' \
-  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
+printf '#%s %s → %s/%s/%s · /%s · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
+  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$model" "default" "$effort" "default" "$reason" "base $base" "$placed"

@@ -39,6 +39,7 @@ flowchart LR
   ticket --> kickoff
   ticket --> planup[plan-up]
   kickoff -->|new pane| planup
+  kickoff -->|new pane| ship
   subgraph ship [ship: one run]
     direction LR
     sp[plan-up] --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
@@ -55,7 +56,7 @@ flowchart LR
 ```
 
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, then ready it. Use it when you do not need to watch each step. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
-- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; to [handoff](skills/handoff/), which sends it to Devin or Cursor; or build it by hand.
+- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it, or ship, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; to [handoff](skills/handoff/), which sends it to Devin or Cursor; or build it by hand.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder. After a build by hand, [commit](skills/commit/) and [make-pr](skills/make-pr/) open the PR, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
 
@@ -80,7 +81,7 @@ flowchart LR
 
 | Skill | What it does |
 |---|---|
-| [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/plan-up` there on an issue, a run of tickets, or an epic. |
+| [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or an epic. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
