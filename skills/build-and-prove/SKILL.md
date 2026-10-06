@@ -29,8 +29,9 @@ prints its usage with no arguments.
   default max life of 3h, and no `--provider`, so proofbox's own config
   picks the Provider. It shows every line proofbox prints as it makes
   the Sandbox, so a failed setup script's last lines come before the
-  `stop:` line. It reads the setup script, the env file, and the
-  optional size file from `~/.agents/proofbox/<owner>-<repo>/`. With a
+  `stop:` line. It reads the setup script, the Secrets file `app.env`,
+  which it passes as `--secrets`, and the optional size file from
+  `~/.agents/proofbox/<owner>-<repo>/`. With a
   Sandbox already in `<proof-dir>`, it keeps that one and prints its id.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits

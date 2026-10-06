@@ -39,10 +39,10 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
-# state <id> [<remade>] [<size>]: an up Sandbox, without running up.
+# state <id> [<remade>] [<size>] [<secrets>]: an up Sandbox, without running up.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" "${3:-}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
 }
 
 t_box_up_flags() {
@@ -54,13 +54,13 @@ t_box_up_flags() {
   has state "BOX_ID=ns:us:abc" "$(cat "$P/box.env")"
 }
 
-t_box_up_env_file() {
+t_box_up_secrets() {
   fake_proofbox
   echo ns:us:abc > "$FAKE_PB/create.out"
   printf 'KEY=v\n' > "$HOME/.agents/proofbox/acme-shop/app.env"
   box up "$P" "$R" linux acme/shop
   eq exit 0 "$code"
-  has "create args" "--setup $SETUP --env-file $HOME/.agents/proofbox/acme-shop/app.env" "$(cat "$FAKE_PB/log")"
+  eq "create args" "create --os linux --work $R --setup $SETUP --secrets $HOME/.agents/proofbox/acme-shop/app.env --idle 30m" "$(cat "$FAKE_PB/log")"
 }
 
 t_box_up_reuses() {
@@ -231,6 +231,16 @@ t_box_run_remake_no_size() {
   eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
 }
 
+t_box_run_remake_secrets() {
+  fake_proofbox
+  state ns:us:abc 0 "" "$HOME/.agents/proofbox/acme-shop/app.env"
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --secrets $HOME/.agents/proofbox/acme-shop/app.env --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
+}
+
 t_box_up_size_not_offered() {
   fake_proofbox
   echo 3x3 > "$HOME/.agents/proofbox/acme-shop/size"
@@ -320,7 +330,7 @@ cases=(
   "up creates macos with idle 10m|t_box_up_macos_idle"
   "run counts each Sandbox it makes again|t_box_run_counts_remakes"
   "down prints how many times the Sandbox was made again|t_box_down_prints_remakes"
-  "up passes the setup and env files from the repo's folder|t_box_up_env_file"
+  "up passes the setup script and the Secrets file from the repo's folder|t_box_up_secrets"
   "run uploads then execs and passes the exit code|t_box_run_passes_code"
   "run recreates a gone Sandbox once|t_box_run_recreates"
   "run stops when the new Sandbox is gone too|t_box_run_gone_twice"
@@ -337,6 +347,7 @@ cases=(
   "up passes the repo's size|t_box_up_size"
   "run makes the Sandbox again at the same size|t_box_run_remake_size"
   "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
+  "run makes the Sandbox again with the Secrets file|t_box_run_remake_secrets"
   "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
   "up reuses the Sandbox already in the proof folder|t_box_up_reuses"
   "auth stops with the login command when not logged in|t_box_auth_not_logged_in"
