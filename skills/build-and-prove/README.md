@@ -23,7 +23,7 @@ On the way:
 - **A walker.** A Sonnet subagent that does each walk as a test user: it gets the walks and what it must see, never the code, records each video with proofbox, and says what passed and what broke. A broken walk goes back to the builder when the app is wrong, or into the plan when the walk is wrong. At most three rounds.
 - **Setup files.** On the first run for a repo it writes `~/.agents/proofbox/<owner>-<repo>/setup-<os>.sh` from the repo, with the tools its checks and its walks need, and an `app.env` with an empty line for each secret you fill in. Later runs reuse them. An optional `size` file there, one line such as `8x16`, sets the Sandbox size for that repo; without it proofbox's default applies.
 
-It stops, with the Sandbox deleted and your commits kept, when proofbox is missing, a login is missing or expired (the login command goes to your clipboard), a Sandbox will not start, or the app will not start. Run it again on the same plan and it picks up at the first slice with no commit. The last message:
+It stops at once when proofbox is missing. It checks the proofbox login first, before any code is written: a missing or expired login stops the run with the login command on your clipboard. Later it stops, with the Sandbox deleted and your commits kept, when a Sandbox will not start or the app will not start. Run it again on the same plan and it picks up at the first slice with no commit. The last message:
 
 ```
 Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits

@@ -2,9 +2,15 @@
 # box.sh: hold the one proofbox Sandbox of a build-and-prove run. The Mac
 # edits; every command that runs the project's code runs in this Sandbox.
 #
+#   box.sh auth <linux|macos>
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh down <proof-dir>
+#
+# auth checks the login of the Provider that ~/.config/proofbox/config picks
+# for the OS (namespace when it names none), from `proofbox auth status`, so a
+# run can stop before any work. Logged in, or no login needed: it prints
+# PROVIDER=<name>.
 #
 # up creates the Sandbox with the repo's setup script, and its env file and
 # size when there are, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh,
@@ -38,7 +44,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
-usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
@@ -143,6 +149,22 @@ case "$verb" in
     proofbox delete "$BOX_ID" >/dev/null
     rm -f "$dir/box.env"
     printf 'REMADE=%s\n' "$BOX_REMADE"
+    ;;
+  auth)
+    [ $# -eq 1 ] || die "$usage"
+    case "$1" in linux|macos) ;; *) die "os must be linux or macos, not $1" ;; esac
+    conf="$HOME/.config/proofbox/config"; provider=""
+    [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
+    provider="${provider:-namespace}"
+    status="$(proofbox auth status 2>/dev/null)" || die "proofbox auth status failed"
+    line="$(grep -m 1 "^$provider " <<<"$status" || true)"
+    [ -n "$line" ] || die "proofbox auth status has no line for $provider"
+    state="$(sed 's/^[^ ]*  *//' <<<"$line")"
+    case "$state" in
+      "logged in"*|"no login needed"*) printf 'PROVIDER=%s\n' "$provider" ;;
+      "not logged in"*|expired*) die "log in first: proofbox auth login $provider" ;;
+      *) die "$state" ;;
+    esac
     ;;
   *) die "$usage" ;;
 esac

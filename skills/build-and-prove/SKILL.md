@@ -79,7 +79,16 @@ commits stay.
    `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 
 2. **proofbox.** `command -v proofbox`. Missing: say `proofbox is not
-   installed: https://github.com/linhvu0711/proofbox` and stop.
+   installed: https://github.com/linhvu0711/proofbox` and stop. Then
+   the login, before any work:
+
+   ```bash
+   bash scripts/box.sh auth <os>
+   ```
+
+   - `stop: log in first: <command>`: show the command, copy it with
+     `pbcopy` when there is one, and stop. Coding has not started.
+   - Any other `stop:`: show it, stop.
 
 3. **Worktree.** The branch follows the PR shape § Branch
    (`../../shared-skill-core/pr-shape.md`): the issue's type, its
@@ -195,8 +204,9 @@ commits stay.
    bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
    ```
 
-   - `stop: log in first: <command>`: show the command, copy it with
-     `pbcopy` when there is one, and stop.
+   - `stop: log in first: <command>`: the login expired since step 2.
+     Show the command, copy it with `pbcopy` when there is one, and
+     stop.
    - A line that says the setup script failed: proofbox printed its
      last 50 lines above it. Fix the script and run `up` again; after
      three tries, stop with the last line.
@@ -361,9 +371,9 @@ its screenshot shows the `Export` button disabled with rows on screen:
 an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
 pass. `proof.md` written, `box.sh down`, report.
 
-**`box.sh up`** prints `stop: log in first: proofbox auth login namespace`.
+**`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 
-Show it, `pbcopy` it, stop. Nothing to delete: no Sandbox was made.
+Show it, `pbcopy` it, stop. No worktree, no Coding, and no Sandbox yet.
 
 **Walker** reports walk 2 failed: step 3 says click `Save`, the screen
 shows `Save changes`, and after it the saved row is there.

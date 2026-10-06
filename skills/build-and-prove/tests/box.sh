@@ -273,6 +273,48 @@ t_box_state_not_run() {
   [ ! -e "$T/pwned" ] || { echo "box.env ran as shell" >&2; exit 1; }
 }
 
+t_box_auth_not_logged_in() {
+  fake_proofbox
+  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  box auth linux
+  eq exit 1 "$code"
+  has stderr "stop: log in first: proofbox auth login namespace" "$err"
+}
+
+t_box_auth_expired() {
+  fake_proofbox
+  echo "namespace  expired 2026-10-01T00:00:00Z. Run: proofbox auth login namespace" > "$FAKE_PB/auth.out"
+  box auth macos
+  eq exit 1 "$code"
+  has stderr "stop: log in first: proofbox auth login namespace" "$err"
+}
+
+t_box_auth_rejected() {
+  fake_proofbox
+  echo "namespace  PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" > "$FAKE_PB/auth.out"
+  box auth linux
+  eq exit 1 "$code"
+  has stderr "stop: PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" "$err"
+}
+
+t_box_auth_ok() {
+  fake_proofbox
+  echo "namespace  logged in as Personal, region us, expires 2026-10-31T02:02:57Z, saved login" > "$FAKE_PB/auth.out"
+  box auth linux
+  eq exit 0 "$code"
+  eq stdout "PROVIDER=namespace" "$out"
+}
+
+t_box_auth_config() {
+  fake_proofbox
+  mkdir -p "$HOME/.config/proofbox"
+  echo '{ "linux": "docker", "macos": "namespace" }' > "$HOME/.config/proofbox/config"
+  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  box auth linux
+  eq exit 0 "$code"
+  eq stdout "PROVIDER=docker" "$out"
+}
+
 cases=(
   "up creates linux with idle 30m and no max life or provider|t_box_up_flags"
   "up creates macos with idle 10m|t_box_up_macos_idle"
@@ -297,4 +339,9 @@ cases=(
   "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
   "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
   "up reuses the Sandbox already in the proof folder|t_box_up_reuses"
+  "auth stops with the login command when not logged in|t_box_auth_not_logged_in"
+  "auth stops with the login command when the login expired|t_box_auth_expired"
+  "auth stops when an env token is not accepted|t_box_auth_rejected"
+  "auth passes a logged-in Provider|t_box_auth_ok"
+  "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
 )
