@@ -239,6 +239,13 @@ commits stay.
    prompt` § Follow-up, `# Check` naming the Gate, then the Gates
    again.
 
+   A Gate the Sandbox cannot run, such as `pnpm test:docker` with no
+   Docker in the Sandbox (exit 127, or its output names a tool or
+   service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
+   <command>`, and its line ends `(local machine)`. It can run in
+   neither place: its line is `<command> · <short SHA> · not run:
+   <why>`.
+
 9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
    to step 10. Else rounds, at most three:
 
@@ -310,7 +317,9 @@ commits stay.
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
    `PROOF`. A row proved by a command carries the command, the short
-   SHA, and the result from `checks.txt`.
+   SHA, and the result from `checks.txt`. A `not run` line from
+   `checks.txt` goes in as its command, `not run: <why>`, and the words
+   `CI must prove it`.
 
 11. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
     count for the report.
