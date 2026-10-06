@@ -44,20 +44,21 @@ flowchart LR
     direction LR
     sp[plan-up] --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
   end
-  planup --> bp[build-and-prove] --> makepr
+  planup --> bp[build-and-prove] --> makepr[make-pr] --> readypr[ready-pr]
   planup --> ho[handoff]
-  planup --> hand[build by hand]
-  hand --> gitcommit[commit] --> makepr[make-pr] --> readypr[ready-pr]
   ship --> done([PR ready: you merge])
   ho --> done
   readypr --> done
-  readypr -.-> vpr[validate-pr-review]
-  readypr -.-> fc[fix-conflicts]
+  readypr -.->|judges each comment| vpr[validate-pr-review]
+  readypr -.->|on a rebase conflict| fc[fix-conflicts]
 ```
 
+Solid line: next step. Dotted line: a skill it calls during its run.
+
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, then ready it. Use it when you do not need to watch each step. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
-- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it, or ship, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; to [handoff](skills/handoff/), which sends it to Devin or Cursor; or build it by hand.
-- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder. After a build by hand, [commit](skills/commit/) and [make-pr](skills/make-pr/) open the PR, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
+- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it, or ship, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
+- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
+- Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
 
 ## Skills
