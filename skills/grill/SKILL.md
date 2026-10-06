@@ -25,7 +25,7 @@ The grill ends per `grilling.md` § Done, when the user confirms shared understa
 
 When the plan touches an existing codebase, pull the relevant context before the first question.
 
-Fan out per `facts.md`. The usual split is the code the plan touches, the callers and tests of that code, and the docs (`CONTEXT.md`, `docs/adr/`, the research folder, README, design notes). The docs include the open issues with a `## Docs to write` section (`gh issue list --state open --search '"Docs to write" in:body'`): their text is decided, not built, and binds the plan like an ADR. Add or drop agents to fit the plan. Existing research notes are caches, so check the date on each before you lean on it.
+Fan out per `facts.md`. The usual split is the code the plan touches, the callers and tests of that code, and the docs (`CONTEXT.md`, `docs/adr/`, the research folder, README, design notes). The docs include the open issues with a `## Docs to write` section (`gh issue list --state open --limit 500 --search '"Docs to write" in:body'`): their text is decided, not built, and binds the plan like an ADR. Add or drop agents to fit the plan. Existing research notes are caches, so check the date on each before you lean on it.
 
 Explore in rounds. Round 1 ends when every file, symbol, and doc the plan names has been fetched. Run another round only when the picture has a gap that a question to the user would fall into. A round that comes back with nothing new ends the exploring. Carry what is still open into the frontier as a question.
 

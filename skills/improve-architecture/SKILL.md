@@ -39,7 +39,7 @@ Explore agents retrieve, short lookups are yours.
 
    Read `CONTEXT.md` and every ADR that touches the area, and the open
    issues with a `## Docs to write` section in the area
-   (`gh issue list --state open --search '"Docs to write" in:body'`):
+   (`gh issue list --state open --limit 500 --search '"Docs to write" in:body'`):
    their text is decided, not built, and counts like an ADR. Done when you
    can name the paths in scope and the decisions already made about them.
 
