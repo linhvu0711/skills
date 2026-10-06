@@ -46,11 +46,11 @@ report. This file is the order of operations.
 
    ```bash
    gh issue create --repo owner/repo --title "<title>" --body-file "$f" \
-     --label "<size label>" [--label "<handoff-ready label>"] [--label "<priority label>"] \
+     --label "<size label>" [--label "<ready-to-build label>"] [--label "<priority label>"] \
      [--type <Name>]
    ```
 
-   `handoff-ready` goes on every ticket that has Steps, and on no other.
+   `ready-to-build` goes on every ticket that has Steps, and on no other.
    A `task` is the exception: its only label is `manual`, no size label.
 
    A missing label from the rules file: create it, retry once. Any other
@@ -79,7 +79,7 @@ epoch numbers, and pinned it to `src/orders/export.ts:57` and the
 `formatDate` helper in `src/lib/date.ts:12`.
 
 Size XS: one file, one test. Title `[FIX] CSV export shows dates as epoch
-numbers`. Labels `size/XS`, `handoff-ready`. Body has Expected, Actual, Repro,
+numbers`. Labels `size/XS`, `ready-to-build`. Body has Expected, Actual, Repro,
 two Done-when boxes, and three Steps: wrap the value at `export.ts:57` in
 `formatDate` like `export.ts:49` already does, add case `formats createdAt
 as ISO date` to `export.test.ts`, run `pnpm test export`. One line back with
