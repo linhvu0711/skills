@@ -4,15 +4,16 @@ Opens a new herdr pane next to the one you are in and starts `/ship` or `/plan-u
 
 ## Use it when
 
-You work in herdr (a terminal workspace for AI coding agents) and want planning to start in its own pane while you keep going in this one. It takes the same arguments as [plan-up](../plan-up/):
+You work in herdr (a terminal workspace for AI coding agents) and want planning or a full ship to start in its own pane while you keep going in this one. Name the issues the way you would to a person:
 
-- `/kickoff <issue-url>`: one ticket.
-- `/kickoff <epic-url> #12 #14`: those tickets from the epic, as a stack.
-- `/kickoff <issue-url> #12 #14`: a set of plain tickets, planned together.
-- `/kickoff <epic-url>`: every open ticket in the epic.
-- `/kickoff <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
+- `/kickoff 42`: one ticket.
+- `/kickoff 12 and 14`: two tickets in one pane, as a stack.
+- `/kickoff all of P1 in this epic`: the open tickets of that phase.
+- `/kickoff the whole epic`: every open ticket in it.
+- `/kickoff 42 on PR 80`: one ticket as a new layer on an open stack.
+- `/kickoff on this`, right after making an issue: it finds the issue in the chat.
 
-`/kickoff on this` right after making an issue works too; it finds the issue in the chat. Name a model, an effort, or the command in your words to change the defaults below. It only runs when you call it.
+More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command (`ship` or "plan only") in your words to change the defaults below. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
 
 ## What you get
 

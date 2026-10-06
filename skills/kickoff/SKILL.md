@@ -6,27 +6,29 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-One script does the whole job. You run it and relay what it says.
+One script does the whole job. You turn what the user said into its
+arguments (§ Resolving the target), run it, and relay what it says.
 
 ```bash
-scripts/kickoff.sh <args as the user typed them>
+scripts/kickoff.sh [flags] <target>
 ```
 
-The arguments are `/plan-up`'s, passed through unchanged:
+The target takes `/plan-up`'s forms, with full URLs. The script passes
+it on unchanged:
 
-- `/kickoff <issue-url>`: one ticket.
-- `/kickoff <epic-url> #12 #14`: a run of the named tickets under that epic.
-- `/kickoff <issue-url> #12 #14`: a set. Plain tickets with no shared
-  parent, planned together in one pane, in the order given. The first
-  URL is the first ticket. The script tells a set from a run by whether
-  the first issue has sub-issues.
-- `/kickoff <epic-url>`: the whole epic. The script sees the sub-issues
-  and knows.
-- `/kickoff <issue-url> on <pr-url>`: a new layer on an open stack.
+- `<issue-url>`: one ticket.
+- `<epic-url> #12 #14`: a run of the named tickets under that epic.
+- `<issue-url> #12 #14`: a set. Plain tickets with no shared parent,
+  in one pane, in the order given. The first URL is the first ticket.
+  The script tells a set from a run by whether the first issue has
+  sub-issues.
+- `<epic-url>`: the whole epic. The script sees the sub-issues and
+  knows.
+- `<issue-url> on <pr-url>`: a new layer on an open stack.
 
 Exit 0: print the script's one report line and stop. `/ship` or
-`/plan-up` now talks to the user in the new pane. Do not watch it, read its plan, or run
-`/handoff` from here.
+`/plan-up` now talks to the user in the new pane. Do not watch it, read
+its plan, or run `/handoff` from here.
 
 Exit 1: the last stderr line starts with `stop:` and says why. Show it
 as is and stop. Nothing is half done: the script makes no pane until
@@ -35,7 +37,7 @@ stays for the user to look at; the message names it.
 
 Flags you may add:
 
-- `--label <name>` when the auto label from the title reads badly.
+- `--label <name>` when the user names the pane.
   Names match `[a-z][a-z0-9_-]{0,31}`.
 - `--size <n>=<size>`, size one of XS, S, M, L, XL, once for each
   ticket with no size label: the size you guessed from its body
@@ -84,17 +86,39 @@ What the script decides, so you can answer questions about it:
 
 ## Resolving the target from the session
 
-The user need not paste a URL. They may say `/kickoff on this`, `/kickoff that
-issue`, or just `/kickoff` right after making an issue. Before you run the
-script, turn that reference into the URL and `#numbers` it takes: look
-back through the session for the issue or epic they mean (one just made
-with `/to-issue` or `/capture`, a link pasted earlier, the PR the work
-sits on).
+The user seldom pastes a URL. They name issues by number or in words,
+most often ones this session made or talked about: `/kickoff 12`,
+`/kickoff 12 and 14`, `/kickoff all of P1 in this epic`, `/kickoff on
+this`, or just `/kickoff` right after `/to-issue`. Before you run the
+script, do these steps.
 
-Run the script only when one target is clear. None or several match:
-say what you found, name the candidates, and ask which one. The word
-`on` is overloaded: `/kickoff on this` can mean "target this issue" or the `on
-<pr-url>` stack form. When that is unclear, ask before running.
+1. **Repo.** Take it from the session: the issues made or linked here,
+   or the repo of the current folder (`gh repo view --json
+   nameWithOwner`). Two repos fit, or none: ask.
+2. **Issues.** Find each issue the user means. A number is an issue in
+   that repo. Words point back into the session: "this", "that issue",
+   "the one we just made", a link pasted earlier, the PR the work sits
+   on. A phase, as in "P1 of this epic", is the `### Phase 1` section
+   under `## Phases` in the epic's body; take its open tickets, top to
+   bottom (`gh issue view <epic> --json body,subIssues`). None or
+   several match: say what you found, name the candidates, and ask.
+3. **Panes.** One pane for all the issues, unless the user asks for
+   "one pane each" or the like. One pane: tickets that are all
+   sub-issues of one epic go as a run, `<epic-url> #a #b`; else as a
+   set, `<first-url> #b #c`, in the order the user gave. Never attach
+   tickets to an epic to make a run. One pane each: run the script
+   once per issue, one after the other.
+4. **Sizes.** For each ticket with no size label (`gh issue view <n>
+   --json labels,title,body`), read its title and body and size it by
+   `../../shared-skill-core/size.md`. Pass `--size <n>=<size>`. Skip a
+   ticket that has a size label.
+5. **Flags.** A model, an effort, or a command in the user's words
+   becomes `--model`, `--effort`, or `--command` (see Flags). A word
+   the flags do not take: ask.
+
+The word `on` is overloaded: `/kickoff on this` can mean "target this
+issue" or the `on <pr-url>` stack form. When that is unclear, ask before
+running.
 
 ## Examples
 
@@ -104,11 +128,17 @@ Run the script. It prints
 `#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
 Say that line. Stop.
 
-**User:** `/kickoff https://github.com/acme/shop/issues/42` with edits in
-the tree, on a feature branch
+**User:** `/kickoff 42` with edits in the tree, on a feature branch,
+in a session about acme/shop
 
-Same as above: the script runs and prints its line. The edits and the
-branch stay as they are. Say the line. Stop.
+Run `kickoff.sh https://github.com/acme/shop/issues/42`. The edits and
+the branch stay as they are. Say the line. Stop.
+
+**User:** `/kickoff 42 with opus xhigh`
+
+Run `kickoff.sh --model opus --effort xhigh
+https://github.com/acme/shop/issues/42`. The command still comes from
+the table.
 
 **User:** `what would /kickoff do for issue 70?`
 
@@ -120,13 +150,18 @@ the model, effort, and command it would pick, and why.
 One fresh issue in the session, so the target is clear. Run the script on
 that issue's URL. Say the line. Stop.
 
-**User:** `/kickoff 34 35 36 33` right after filing those four with `/to-issue`,
-no epic among them
+**User:** `/kickoff 34 35 36 33` right after filing those four with
+`/to-issue`, no epic among them; #35 has no size label
 
-A set. Run the script with the first as the URL and the rest as numbers:
-`kickoff.sh https://github.com/acme/shop/issues/34 '#35' '#36' '#33'`. One
-pane, one `/plan-up`, four layers in that order. Never one pane per
-issue, and never attach the tickets to an epic just to satisfy the form.
+A set, in one pane. Read #35 and size it, say S. Run
+`kickoff.sh --size 35=S https://github.com/acme/shop/issues/34 '#35' '#36' '#33'`.
+One pane, one command, four layers in that order.
+
+**User:** `/kickoff P1 of this epic, one pane each`, in a session about
+epic #70, whose `### Phase 1` lists #71 and #72, both open
+
+Run the script twice: `kickoff.sh https://github.com/acme/shop/issues/71`,
+then `kickoff.sh https://github.com/acme/shop/issues/72`. Say both lines.
 
 **User:** `/kickoff on this` with no issue or PR anywhere in the session
 
