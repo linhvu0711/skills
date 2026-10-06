@@ -299,6 +299,68 @@ t_build_bad_record_headings() {
   bad_ticket 's/Video 1, Setup of walk 1, shows walks 1/Video 1, Setup of walk 1, shows walks one/' 'videos: Video 1, Setup of walk 1, shows walks one is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
 }
 
+t_build_video_step_semicolon() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type `tally status; tally list`, press Return./' \
+    'video 1 step 2: `tally status; tally list` joins commands with `;`; type one command per step'
+}
+
+t_build_walk_steps_and() {
+  bad_ticket 's/  Steps:    click Export, pick CSV/  Steps:    type `tally status \&\& tally list`, press Return/' \
+    'walk 1 steps: `tally status && tally list` joins commands with `&&`; type one command per step'
+}
+
+t_build_before_clear_and() {
+  bad_ticket 's/  Before:   none/  Before:   type `clear \&\& tally status`, press Return/' \
+    'walk 1 before: `clear && tally status` joins commands with `&&`; type one command per step
+walk 1 before: `clear && tally status` starts with `clear`; never clear the screen in a walk'
+}
+
+t_build_video_step_clear() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type `clear`, press Return./' \
+    'video 1 step 2: `clear` starts with `clear`; never clear the screen in a walk'
+}
+
+t_build_quoted_semicolon() {
+  T="$(mktemp -d)"
+  sed "s/  2\\. Click Export, pick CSV\\./  2. Type \`tally list | awk '{print \$1; print \$2}'\`, press Return./;
+    s/  Before:   none/  Before:   the list shows \`a; b\` under the type filter/" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
+t_build_video_step_two_commands() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type `tally status`, press Return; type `tally list`, press Return./' \
+    'video 1 step 2: types 2 commands; type one command per step'
+}
+
+t_build_escaped_semicolon() {
+  T="$(mktemp -d)"
+  sed 's/  2\. Click Export, pick CSV\./  2. Type `echo a\\;b "c\\"; d"`, press Return./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
+t_build_untyped_video_step() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type tally status; tally list, press Return./' \
+    'video 1 step 2: put the text to type in backticks right after `type`'
+}
+
+t_build_untyped_walk_steps() {
+  bad_ticket 's/  Steps:    click Export, pick CSV/  Steps:    click Export, then type Alice in Name/' \
+    'walk 1 steps: put the text to type in backticks right after `type`'
+}
+
+t_build_typed_spacing_and_output() {
+  T="$(mktemp -d)"
+  sed 's/  2\. Click Export, pick CSV\./  2. Type  `tally status`, press Return./;
+    s/  Before:   none/  Before:   the screen shows `Ready, type a name`/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 t_build_task_protections() {
   T="$(mktemp -d)"
   sed 's/Task done: full suite green, lint green, build green./Task done: full suite green, and these existing tests untouched and green:\n  `src\/orders.test.ts` "exports JSON"./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -349,4 +411,14 @@ cases=(
   "build-page refuses malformed or mismatched Stack rows|t_build_stack_identity"
   "build-page refuses malformed Slice Walk and Video headings|t_build_bad_record_headings"
   "build-page keeps existing test protections in Task done text|t_build_task_protections"
+  "build-page refuses a video step that joins commands with a semicolon|t_build_video_step_semicolon"
+  "build-page refuses walk steps that join commands with &&|t_build_walk_steps_and"
+  "build-page refuses a Before that starts with clear and joins|t_build_before_clear_and"
+  "build-page refuses a video step that types clear|t_build_video_step_clear"
+  "build-page passes a semicolon inside quotes|t_build_quoted_semicolon"
+  "build-page refuses a video step that types two commands|t_build_video_step_two_commands"
+  "build-page passes an escaped semicolon|t_build_escaped_semicolon"
+  "build-page refuses a video step that types text with no backticks|t_build_untyped_video_step"
+  "build-page refuses walk steps that type text with no backticks|t_build_untyped_walk_steps"
+  "build-page passes two spaces before a typed command and type inside quoted output|t_build_typed_spacing_and_output"
 )

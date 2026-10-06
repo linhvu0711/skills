@@ -414,6 +414,21 @@ whose `See` matches another walk's proves nothing on its own. Change the
 steps until each walk ends in its own state; a `Cancel` walk first types
 a new value, then cancels, and `See` names the old value.
 
+A step is one action: one click, one key, or one command typed and sent
+with `Return`. Text to type, a command or a value, sits in backticks
+right after the word `type`. A command stands alone: never two joined
+with `;` or `&&`, never two in one step, and never `clear` first, since
+a viewer of the video must see each command and its result.
+`scripts/build-page.py` refuses a step that breaks this, naming the walk
+or video and the step. In a terminal:
+
+```markdown
+  1. Type `tally status`, press Return.
+  2. Type `tally rules list`, press Return.
+```
+
+never one step that types `clear; tally status; tally rules list`.
+
 **Before shots.** A walk's `Before` line names steps when
 its screen exists on the base and the change alters what a person sees
 there: a fix for a bug on a screen, a new look, layout, or text, or new
@@ -473,8 +488,9 @@ facts or forks.
   and a rule the copied line breaks is quoted.
 - Every slice on a screen names its mockup frame and the component or
   screen it copies; every open look choice is under `Decided`.
-- Every walk step names an exact label, route, key, or element; every
-  walk has `Setup` and `Must not`; no two walks end in the same picture;
+- Every walk step names an exact label, route, key, or element, and
+  does one action, a typed command alone; every walk has `Setup` and
+  `Must not`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on
   which line it proves.
 - Every walk has a `Before` line: `none`, `as walk n` for an earlier

@@ -35,6 +35,11 @@ Every command takes the Sandbox id as `<id>`.
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
   the default human pace: a person watches these videos. Add
   `--screenshot <folder>/look.png` to an action to see its result.
+- A command in a terminal: one `proofbox type` per command, then
+  `proofbox key <id> Return --screenshot <folder>/look.png`, and Read
+  it, so you look at the screen after Enter before the next step. Never
+  join commands with `;` or `&&`, and never start with `clear`: a viewer
+  of the video must see each command and its result on their own.
 - Open the app with the command the brief gives, through `proofbox exec
   <id> -- sh -c '<command> >/dev/null 2>&1 &'`. A web page: the browser
   opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
