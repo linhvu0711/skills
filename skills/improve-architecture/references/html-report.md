@@ -9,6 +9,20 @@ Page rules that shape the file:
 - Mermaid draws every `<pre class="mermaid">` block once its module loads, in its dark or default theme by the system setting.
 - The page follows the system light or dark theme through the `:root` tokens. A new colour is a token, set in both themes.
 
+## Serve and open
+
+Serve the page with the shared serve script, which prints its URL:
+
+```sh
+URL=$(../../shared-skill-core/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<repo>.html")
+```
+
+The script exits with an error (no free port, or the server does not give back the file): chat gets its error line and the `.html` path, and the run stops.
+
+Then open it in the user's browser: `open "$URL?v=$(date +%s)"` on macOS, `xdg-open` on Linux. The `v` makes a rerun on the same repo show the new page, not the cached one. Chat gives `$URL`.
+
+**Headless host** (`command -v open xdg-open` finds neither): there is no browser to leave the page in. Skip the server. Publish the page with the `to-artifact` skill and give the artifact link in place of the URL. Publish fails: say why, give the `.html` path, stop.
+
 ## Scaffold
 
 `assets/report.html` holds the head, the tokens, the Mermaid loader, and the `<main>` with its `header`, `#candidates`, and `#top-recommendation` sections.
