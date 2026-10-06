@@ -45,10 +45,12 @@ where the build runs (step 2).
    rule, page. Its stop points are yours: a base that cannot be fetched,
    a gate that fails, a `manual` ticket, a claimed ticket you do not
    build anyway, a stale step, and every big fork
-   (one question per message, wait). Two changes at step 8: build and
-   open the page, print the summary, and go on at once as if `ok` were
-   given: the base copy is removed, `Ready for /handoff.` is left
-   out. Done when the plan
+   (one question per message, wait). Two changes at step 8. No page
+   for a person: write the `.md`, run `build-page.py` on it and fix its
+   problem lines, as plan-up says, but serve, open, and publish
+   nothing. Then print the summary of `plan-page.md` § Chat with no URL
+   line, and go on at once as if `ok` were given: the base copy is
+   removed, `Ready for /handoff.` is left out. Done when the plan
    `.md` exists at the path the summary names and you hold it.
 
 2. **Route.** Cloud when the command named `devin` or `cursor`. Local
@@ -154,7 +156,7 @@ picks the start; `devin` or `cursor` is taken off first, as in § Forms.
 **User:** `/ship https://github.com/acme/shop/issues/57` on Fable inside
 herdr; #57 is a `[fix]`, size S, `ready-to-build`, no screen.
 
-Plan-up runs its short path, page opens, summary printed, no wait.
+Plan-up runs its short path, summary printed, no page, no wait.
 `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
 Sandbox up, a Claude Code pane on Sonnet at high effort builds, every test
