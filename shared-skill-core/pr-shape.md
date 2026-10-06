@@ -24,17 +24,37 @@ The body is for a reader who never saw the plan or the chat. Plan words
 such as `slice 2`, `walk 1`, or `step 3` mean nothing to them, so the
 body names behavior, tests, and what is on screen.
 
-The parts, in this order. `Summary` and `Proof` are always there. Every
-other part is there only when it has something to say; with nothing to
-say, the heading goes too.
+The parts, in this order. `Summary`, `Where to look`, and `Proof` are
+always there. Every other part is there only when it has something to
+say; with nothing to say, the heading goes too.
 
 1. **The issue line**, first line of the body. `Closes #<n>` when the
    PR finishes the issue. `Refs #<n>` when it is part of the issue and
    another PR finishes it. No issue: no line.
 2. **`## Summary`**: what the change does, why, and how to try it, in a
    few plain sentences.
-3. **`## Where to look`**: one to three bullets that tell the reviewer
-   where to spend their time:
+3. **`## Where to look`**: how hard the change is to undo, then where
+   the reviewer spends their time.
+
+   First line, always: `Risk: <door> door, blast radius: <what>.`
+   - A **two-way door** is undone by reverting the PR. A **one-way
+     door** is not: it writes stored data in a new shape, deletes data,
+     sends something out (an email, a webhook, a published package), or
+     removes something callers use. A one-way door names what cannot
+     come back, in brackets after `door`.
+   - The **blast radius** is what breaks if the change is wrong, in a
+     few words: one screen, one command, every caller of an API, all
+     stored orders.
+   - Judge from the issue, the plan, and the diff, not the diff alone. A
+     big fork the plan settled is the first place to look. In doubt,
+     call it one-way.
+
+   ```markdown
+   Risk: two-way door, blast radius: the CSV export only.
+   Risk: one-way door (the migration rewrites every order date), blast radius: all stored orders.
+   ```
+
+   Then one to three bullets that point:
    - the core change, as `file:line`;
    - what they can skim: wiring, renames, moved code, generated files;
    - a choice they may question, with its reason: a decision made
@@ -42,8 +62,9 @@ say, the heading goes too.
      (the code was not what the plan or the issue said, and the change
      went another way).
 
-   The diff already lists the files; this part points. A PR whose diff
-   is one place that the Summary already names leaves it out.
+   The diff already lists the files; the bullets point. A PR whose diff
+   is one place that the Summary already names keeps only the `Risk`
+   line.
 4. **`## Breaking changes`**: what else must happen for the change to
    work. Who it breaks and what they do now; a migration to run; an env
    var or a config to set; the order to deploy in. Undo steps only when
