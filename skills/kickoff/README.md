@@ -25,7 +25,7 @@ A script finds the repo on disk, picks the model, effort, and command from the t
 | any M | opus | medium | `/plan-up` |
 | any L, XL, or no size | opus | high | `/plan-up` |
 
-In a group of tickets, the biggest one picks the row. `manual` tickets do not count.
+In a group of tickets, the biggest one picks the row. `manual` tickets do not count. A ticket with no size label gets a size from its text, guessed by the agent, and the line says `guessed`.
 
 The chat gets one line and stops:
 

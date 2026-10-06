@@ -19,10 +19,13 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*" >&2; }
 
 # ---------- args ----------
-label=""; dry_run=0; no_prompt=0; args=()
+label=""; dry_run=0; no_prompt=0; args=(); sizes=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --label) label="$2"; shift 2 ;;
+    --size)
+      [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
+      sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
     --dry-run) dry_run=1; shift ;;
     --no-prompt) no_prompt=1; shift ;;
     *) args+=("$1"); shift ;;
@@ -79,22 +82,37 @@ size_of() {
   esac
 }
 
+# guess_of <n>: the size a --size flag gave ticket n, else nothing.
+guess_of() {
+  local s
+  for s in ${sizes[@]+"${sizes[@]}"}; do
+    if [ "${s%%=*}" = "$1" ]; then echo "${s#*=}"; fi
+  done
+}
+
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
-# ticket is ready-to-build takes the sonnet row.
-all_ready=1; top=0; top_size=""
+# ticket is ready-to-build takes the sonnet row. A guessed size wins over a
+# label.
+all_ready=1; top=0; top_size=""; top_guessed=0
 add_ticket() {
-  local lab size="" ready=0 rank
+  local lab size="" ready=0 rank guess
   while IFS= read -r lab; do
     if [ "$(printf '%s' "$lab" | tr '[:upper:]' '[:lower:]')" = ready-to-build ]; then ready=1; fi
     [ -n "$size" ] || size="$(size_of "$lab")"
   done < <(jq -r '.labels[].name' <<<"$1")
   [ "$ready" -eq 1 ] || all_ready=0
+  guess="$(guess_of "$(jq -r .number <<<"$1")")"
+  if [ -n "$guess" ]; then size="$guess"; fi
   # ready-to-build goes only on XS and S tickets, so one with no size is S.
   [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
   case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
-  if [ "$rank" -gt "$top" ]; then top=$rank; top_size="$size"; fi
+  if [ "$rank" -gt "$top" ]; then
+    top=$rank; top_size="$size"; top_guessed=0
+    if [ -n "$guess" ]; then top_guessed=1; fi
+  fi
 }
+
 # The tickets the target holds: a run's #n, a set's issue and #n, an epic's
 # open sub-issues, else the issue. A manual ticket is a person's work, so it
 # does not count.
@@ -113,6 +131,9 @@ for n in ${list[@]+"${list[@]}"}; do
   add_ticket "$json"; counted=$((counted+1))
 done
 [ "$counted" -gt 0 ] || die "#$number has no open ticket for an agent"
+for s in ${sizes[@]+"${sizes[@]}"}; do
+  case " ${list[*]} " in *" ${s%%=*} "*) ;; *) die "--size names #${s%%=*}, which is not in this target" ;; esac
+done
 
 if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship; reason="ready-to-build"
 else
@@ -122,6 +143,7 @@ else
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
 if [ "$counted" -gt 1 ]; then reason="$reason of $counted tickets"; fi
+if [ "$top_guessed" -eq 1 ]; then reason="$reason, guessed"; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then

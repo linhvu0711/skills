@@ -175,6 +175,22 @@ t_ko_epic_none_open() {
   [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
 }
 
+t_ko_guessed_size() {
+  ko_herdr; ko_issue '[]'
+  ko_go --size 42=S https://github.com/acme/app/issues/42
+  has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has report " · size S, guessed · " "$out"
+}
+
+t_ko_bad_size() {
+  ko_herdr; ko_issue '[]'
+  ko_go --size 42=huge https://github.com/acme/app/issues/42
+  eq exit 1 "$code"
+  eq stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
+  [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -188,4 +204,6 @@ cases=(
   "a run all ready-to-build goes to sonnet|t_ko_run_all_ready"
   "an epic counts open tickets, not manual|t_ko_epic_open_not_manual"
   "an epic with no open ticket stops|t_ko_epic_none_open"
+  "a guessed size counts|t_ko_guessed_size"
+  "a bad size stops|t_ko_bad_size"
 )

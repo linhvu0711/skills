@@ -37,6 +37,10 @@ Flags you may add:
 
 - `--label <name>` when the auto label from the title reads badly.
   Names match `[a-z][a-z0-9_-]{0,31}`.
+- `--size <n>=<size>`, size one of XS, S, M, L, XL, once for each
+  ticket with no size label: the size you guessed from its body
+  (§ Resolving the target). It counts like a label, and the report line
+  says `guessed`.
 - `--dry-run` to show every decision (form, effort, repo path, base,
   label, placement) with no pane made. Use it when the user asks
   what would happen.
