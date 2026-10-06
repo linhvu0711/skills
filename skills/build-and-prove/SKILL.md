@@ -342,7 +342,11 @@ commits stay.
         builder's and not the plan's: no follow-up, no plan change; the
         next round films the video again.
       - **Wrong walk**: a label, route, or step the plan named is not on
-        the screen, and the Done-when line still holds there. Sort it
+        the screen, and the Done-when line still holds there. A change
+        to a failed walk's `See` or `Must not`, or to a number in them
+        such as a time limit, is a Wrong walk fix too, never a pass: it
+        gets a `Decided` line with the reason, and the walk counts as
+        passed only when a later round's video shows it pass. Sort it
         by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
         fix the walk in the plan `.md`, add a `Decided` line, and say so
         in one line. Big fork, such as a walk whose fix changes what a
