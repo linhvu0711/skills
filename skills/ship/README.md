@@ -30,7 +30,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 
 ```
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
-Route: local · built by: devin pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
+Route: local · built by: claude pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
 Worktree: ~/development/worktrees/acme/app/feat-42-login
 After merge: /prune-worktrees
 READY https://github.com/acme/app/pull/43

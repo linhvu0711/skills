@@ -47,7 +47,7 @@ _Avoid_: session list, sessions file
 ## Local build
 
 **Builder**:
-The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Devin CLI pane, or the session itself.
+The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
 _Avoid_: implementer, coder
 
 **Walker**:
