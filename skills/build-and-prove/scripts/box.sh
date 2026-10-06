@@ -12,10 +12,10 @@
 # run can stop before any work. Logged in, or no login needed: it prints
 # PROVIDER=<name>.
 #
-# up creates the Sandbox with the repo's setup script, and its env file and
+# up creates the Sandbox with the repo's setup script, and its Secrets file and
 # size when there are, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh,
-# app.env, and size, one line such as 8x16, passed as --size; with no size
-# file it passes no --size, so proofbox's default applies. It passes no
+# app.env, passed as --secrets, and size, one line such as 8x16, passed as
+# --size; with no size file it passes no --size, so proofbox's default applies. It passes no
 # --provider, so ~/.config/proofbox/config picks it. It shows on stderr every
 # line proofbox prints while it makes the Sandbox: the Setup script's last
 # lines when it fails, the Snapshot line when it reuses one.
@@ -52,7 +52,7 @@ command -v proofbox >/dev/null || die "proofbox is not installed"
 # stderr reaches the caller live; a copy is kept for its last line.
 create() {
   local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf c=0
-  [ -z "$BOX_ENV" ] || args+=(--env-file "$BOX_ENV")
+  [ -z "$BOX_ENV" ] || args+=(--secrets "$BOX_ENV")
   [ -z "$BOX_SIZE" ] || args+=(--size "$BOX_SIZE")
   args+=(--idle "$(idle "$BOX_OS")")
   errf="$(mktemp)"
