@@ -49,7 +49,7 @@ where the build runs (step 2).
    for a person: write the `.md`, run `build-page.py` on it and fix its
    problem lines, as plan-up says, but serve, open, and publish
    nothing. Then print the summary of `plan-page.md` § Chat with no URL
-   line, and go on at once as if `ok` were given: the base copy is
+   line and no `Say ok` line, since nothing waits, and go on at once as if `ok` were given: the base copy is
    removed, `Ready for /handoff.` is left out. Done when the plan
    `.md` exists at the path the summary names and you hold it.
 
