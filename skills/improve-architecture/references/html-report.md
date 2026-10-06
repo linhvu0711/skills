@@ -1,6 +1,6 @@
 # HTML report
 
-The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/architecture/architecture-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report, and create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
+The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/architecture/architecture-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
 
 Page rules that shape the file:
 
@@ -21,7 +21,7 @@ The script exits with an error (no free port, or the server does not give back t
 
 Then open it in the user's browser: `open "$URL?v=$(date +%s)"` on macOS, `xdg-open "$URL?v=$(date +%s)"` on Linux. The `v` makes a rerun on the same repo show the new page, not the cached one. Chat gives `$URL`.
 
-**Headless host** (`command -v open xdg-open` finds neither, or the open command exits with an error, as `xdg-open` does on a Linux host with no display): there is no browser to leave the page in. Give no local URL. Publish the page with the `to-artifact` skill and give the artifact link in place of the URL. Publish fails: say why, give the `.html` path, stop.
+**Headless host** (`command -v open xdg-open` finds neither, or the open command exits with an error, as `xdg-open` does on a Linux host with no display): there is no browser to leave the page in. Give no local URL. Publish the page with the `to-artifact` skill and give the artifact link in place of the URL. When the open command failed, chat also gives its error line, so the user can fix the browser setup. Publish fails: say why, give the `.html` path, stop.
 
 ## Scaffold
 
