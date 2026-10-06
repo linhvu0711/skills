@@ -297,6 +297,23 @@ commits stay.
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
 
+      **Video check.** After mode, before the sort: for each
+      `video-<n>.mp4` in `PROOF`, take two frames a second into a temp
+      folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
+      -vf fps=2 <tmp>/f-%03d.png`, and Read them in order. The caption
+      at the top names the step (`step <k>: …`); a `» <N> s later` label
+      marks a cut. Each step's action must show: typed letters
+      appearing, the pointer reaching what it clicks, the screen
+      changing after a key. A step whose action falls in a cut, as when
+      the frame before a `» <N> s later` label shows none or part of the
+      typed text and the frame after shows all of it, hides its action.
+      That fails the walk the step belongs to, the one whose `Shows`
+      step is the first at or after it: write its line in
+      `walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
+      hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
+      step 1 (typing)`, and lower the passed count in its `WALKS` line.
+      Remove the temp folder.
+
    c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
       under it, idle or at its max life. No walk failed; run the round
       again from 9a, where `box.sh run` makes a new Sandbox, and it does
@@ -321,6 +338,9 @@ commits stay.
         Check` names the tests to run again. The pane gets it with
         `herdr-send`; as the builder, you do it yourself. Then the
         Gates again (step 8).
+      - **Video cut**: the video check found a hidden step. Not the
+        builder's and not the plan's: no follow-up, no plan change; the
+        next round films the video again.
       - **Wrong walk**: a label, route, or step the plan named is not on
         the screen, and the Done-when line still holds there. Sort it
         by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
