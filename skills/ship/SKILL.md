@@ -95,12 +95,19 @@ where the build runs (step 2).
    checks already ran in the Sandbox, so it runs none here.
 
 6. **Make ready.** Read `../ready-pr/SKILL.md` and follow it whole on
-   each PR, bottom of the stack first, in its worktree. Its fixes run
-   their tests in a Sandbox too, never on this machine: the build ended
-   with `box.sh down`, so the first fix runs `box.sh up` again with the
-   build's arguments (`../build-and-prove/SKILL.md` step 5), each test
-   goes through `box.sh run`, and `box.sh down` follows ready-pr's last
-   round. It ends with `READY` or a stop point.
+   each PR, bottom of the stack first, in its worktree.
+   Its fixes run their tests on the local machine, `cd "$WT" && …`, as
+   ready-pr says, and start no Sandbox: the full suite and the Build
+   command are left to the PR's CI. Two cases start one, with the
+   build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
+   and end with `box.sh down`:
+   - A fix that changes code a UI walk's screen shows: that walk runs
+     again, as build-and-prove step 9 runs it, that walk only.
+   - A repo with no CI, no `*.yml` or `*.yaml` under
+     `$WT/.github/workflows/`: the Gates run there, as build-and-prove
+     step 8 runs them, before each push of fixes.
+
+   It ends with `READY` or a stop point.
 
 7. **Report.** Chat gets this and nothing more:
 
