@@ -63,6 +63,15 @@ t_box_up_env_file() {
   has "create args" "--setup $SETUP --env-file $HOME/.agents/proofbox/acme-shop/app.env" "$(cat "$FAKE_PB/log")"
 }
 
+t_box_up_reuses() {
+  fake_proofbox
+  state ns:us:abc
+  box up "$P" "$R" linux acme/shop
+  eq exit 0 "$code"
+  eq stdout "SANDBOX=ns:us:abc" "$out"
+  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+}
+
 t_box_up_macos_idle() {
   fake_proofbox
   printf '#!/bin/sh\n' > "$HOME/.agents/proofbox/acme-shop/setup-macos.sh"
@@ -287,4 +296,5 @@ cases=(
   "run makes the Sandbox again at the same size|t_box_run_remake_size"
   "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
   "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
+  "up reuses the Sandbox already in the proof folder|t_box_up_reuses"
 )

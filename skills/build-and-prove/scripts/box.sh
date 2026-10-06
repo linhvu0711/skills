@@ -26,6 +26,9 @@
 # the exec is made again once, from the same setup, and the command runs
 # again; BOX_REMADE counts these.
 #
+# up with a box.env already in <proof-dir> reuses that Sandbox and prints its
+# id; it creates nothing.
+#
 # down deletes the Sandbox and the state, and prints REMADE=<n>.
 #
 # Exit 1: `stop: <why>` as the last stderr line.
@@ -108,6 +111,9 @@ case "$verb" in
     [ -f "$BOX_SETUP" ] || die "no setup script at $BOX_SETUP"
     BOX_ENV=""; [ ! -f "$home/app.env" ] || BOX_ENV="$home/app.env"
     BOX_SIZE=""; [ ! -f "$home/size" ] || BOX_SIZE="$(tr -d '[:space:]' < "$home/size")"
+    # A Sandbox already in <proof-dir>, such as one Coding started for a
+    # missing tool, is the run's Sandbox: keep it.
+    if [ -f "$dir/box.env" ]; then load; printf 'SANDBOX=%s\n' "$BOX_ID"; exit 0; fi
     mkdir -p "$dir"
     create
     printf 'SANDBOX=%s\n' "$BOX_ID"
