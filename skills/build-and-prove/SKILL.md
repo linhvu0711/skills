@@ -100,8 +100,9 @@ commits stay.
    outside every repo, as proofbox wants (its ADR 0007).
    - No `setup-<os>.sh`: write it from what the repo shows: the runtime
      versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
-     the install command its lockfile calls for, and the tools the
-     plan's `Test`, `Lint`, `Build`, and `Run` lines need. It runs once
+     the install command its lockfile calls for, the tools the plan's
+     `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
+     commands of its UI walks and videos use. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. Say `Setup: wrote <path>`.
    - The app needs settings (`.env.example`, the plan's `Run` line): no
