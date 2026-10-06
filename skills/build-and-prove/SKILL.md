@@ -228,10 +228,18 @@ commits stay.
    (step 9a), send the walker in `before` mode and round 1 (step 9b),
    and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
-   once more, round 2, as step 9c says. A before shot that shows a
-   Sandbox fault (step 9c): fix the setup script, `box.sh down`, and
-   start again from step 6. Remove the temp worktree only when this step ends,
-   with the shots or with a stop. The next `box.sh run` without
+   once more, round 2, as step 9c says. Each `FAIL` line in the
+   `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
+   is deleted, so no failed shot stays in `PROOF`:
+   - A Sandbox fault: fix the setup script, `box.sh down`, and start
+     again from step 6.
+   - Any other `FAIL`: the `Before` line's steps do not reach the screen
+     it names on the base, a Wrong walk. Fix the line in the plan `.md`,
+     add a `Decided` line, and send the walker again for that walk. A
+     second `FAIL` for it: `box.sh down`, then stop with that line.
+
+   Remove the temp worktree only when this step ends, with the shots
+   or with a stop. The next `box.sh run` without
    `--from` puts the branch back. Say `Before shots: <n>`.
 
 8. **Gates.** Yourself, once, on the head commit: the full suite,
