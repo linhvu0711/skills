@@ -117,7 +117,15 @@ commits stay.
      `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
      commands of its UI walks and videos use. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
-     is built. Say `Setup: wrote <path>`.
+     is built. `$HOME` is the Work folder, so the script keeps every
+     tool, cache, and store outside it, in `/tmp/pb`. It puts them in
+     reach of every later command by writing `NAME=value` lines to the
+     file at `$PROOFBOX_ENV`, the Setup env: `PATH`, with its tool
+     folders first (`echo "PATH=/tmp/pb/bin:$PATH" >> "$PROOFBOX_ENV"`),
+     `LANG=C.UTF-8`, so a terminal's xterm draws `✔`, and any other
+     setting its tools need. It writes no `env.sh`, and no command loads
+     a file first. A name in `app.env` never goes in the Setup env:
+     proofbox stops on it. Say `Setup: wrote <path>`.
    - The app needs settings (`.env.example`, the plan's `Run` line): no
      `app.env` yet, or one that lacks a name: write the names whose
      values the repo shows (a test port, a local URL), and an empty
