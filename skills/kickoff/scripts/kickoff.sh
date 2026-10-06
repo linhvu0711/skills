@@ -95,7 +95,24 @@ add_ticket() {
   case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
   if [ "$rank" -gt "$top" ]; then top=$rank; top_size="$size"; fi
 }
-add_ticket "$issue_json"
+# The tickets the target holds: a run's #n, a set's issue and #n, an epic's
+# open sub-issues, else the issue. A manual ticket is a person's work, so it
+# does not count.
+case "$form" in
+  run) list=("${tickets[@]}") ;;
+  set) list=("$number" "${tickets[@]}") ;;
+  epic) list=(); while IFS= read -r n; do list+=("$n"); done \
+          < <(jq -r '.subIssues.nodes[] | select(.state == "OPEN") | .number' <<<"$issue_json") ;;
+  *) list=("$number") ;;
+esac
+counted=0
+for n in ${list[@]+"${list[@]}"}; do
+  if [ "$n" = "$number" ]; then json="$issue_json"
+  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || die "gh could not read #$n in $slug"; fi
+  jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null && continue
+  add_ticket "$json"; counted=$((counted+1))
+done
+[ "$counted" -gt 0 ] || die "#$number has no open ticket for an agent"
 
 if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship; reason="ready-to-build"
 else
@@ -104,6 +121,7 @@ else
   else model=opus; effort=high; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
+if [ "$counted" -gt 1 ]; then reason="$reason of $counted tickets"; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then

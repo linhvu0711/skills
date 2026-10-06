@@ -52,6 +52,11 @@ What the script decides, so you can answer questions about it:
   | all XS or S | `opus` | `medium` | `/ship` |
   | any M | `opus` | `medium` | `/plan-up` |
   | any L, XL, or no size | `opus` | `high` | `/plan-up` |
+
+  In a run, a set, or a whole epic the biggest ticket picks the row;
+  only a target whose every ticket is `ready-to-build` takes the sonnet
+  row. A whole epic counts its open tickets. `manual` tickets do not
+  count; a target with none left stops.
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,
   `../../shared-skill-core/checkout.sh main <owner/repo>`, whose header

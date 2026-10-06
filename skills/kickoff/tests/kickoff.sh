@@ -129,6 +129,52 @@ t_ko_no_size_opus_high_plan() {
   has report " · no size · " "$out"
 }
 
+# ko_view <call> <number> <labels-json> [<sub-issues-json>]: the answer to the
+# fake gh's nth `issue view`.
+ko_view() {
+  printf '{"number":%s,"title":"Ticket %s","labels":%s,"subIssues":{"nodes":%s},"state":"OPEN"}\n' "$2" "$2" "$3" "${4:-[]}" > "$FAKE_GH/issue-view.$1.json"
+}
+
+t_ko_set_biggest() {
+  ko_herdr
+  ko_view 1 42 '[{"name":"size/S"}]'
+  ko_view 2 43 '[{"name":"size/M"}]'
+  ko_go https://github.com/acme/app/issues/42 '#43'
+  has start "$(ko_start opus medium i42-43)" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42-43 /plan-up https://github.com/acme/app/issues/42 #43" "$(cat "$T/herdr.log")"
+  has report " · size M of 2 tickets · " "$out"
+}
+
+t_ko_run_all_ready() {
+  ko_herdr
+  ko_view 1 70 '[]' '[{"number":71,"state":"OPEN"},{"number":73,"state":"OPEN"}]'
+  ko_view 2 71 '[{"name":"ready-to-build"},{"name":"size/XS"}]'
+  ko_view 3 73 '[{"name":"ready-to-build"},{"name":"size/S"}]'
+  ko_go https://github.com/acme/app/issues/70 '#71' '#73'
+  has start "$(ko_start sonnet high i71-73)" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i71-73 /ship https://github.com/acme/app/issues/70 #71 #73" "$(cat "$T/herdr.log")"
+}
+
+t_ko_epic_open_not_manual() {
+  ko_herdr
+  ko_view 1 70 '[]' '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"},{"number":74,"state":"OPEN"}]'
+  ko_view 2 71 '[{"name":"size/S"}]'
+  ko_view 3 74 '[{"name":"manual"}]'
+  ko_go https://github.com/acme/app/issues/70
+  has start "$(ko_start opus medium i70)" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i70 /ship https://github.com/acme/app/issues/70" "$(cat "$T/herdr.log")"
+  eq "issue view calls" 3 "$(cat "$FAKE_GH/issue-view.calls")"
+}
+
+t_ko_epic_none_open() {
+  ko_herdr
+  ko_view 1 70 '[]' '[{"number":71,"state":"CLOSED"}]'
+  ko_go https://github.com/acme/app/issues/70
+  eq exit 1 "$code"
+  eq stderr "stop: #70 has no open ticket for an agent" "$err"
+  [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -138,4 +184,8 @@ cases=(
   "size M goes to opus medium /plan-up|t_ko_medium_opus_plan"
   "size L goes to opus high /plan-up|t_ko_large_opus_high_plan"
   "no size goes to opus high /plan-up|t_ko_no_size_opus_high_plan"
+  "a set takes its biggest ticket|t_ko_set_biggest"
+  "a run all ready-to-build goes to sonnet|t_ko_run_all_ready"
+  "an epic counts open tickets, not manual|t_ko_epic_open_not_manual"
+  "an epic with no open ticket stops|t_ko_epic_none_open"
 )
