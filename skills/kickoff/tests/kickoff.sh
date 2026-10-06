@@ -191,6 +191,22 @@ t_ko_bad_size() {
   [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
 }
 
+t_ko_overrides() {
+  ko_herdr; ko_issue '[{"name":"ready-to-build"},{"name":"size/XS"}]'
+  ko_go --model haiku --effort low --command plan-up https://github.com/acme/app/issues/42
+  has start "$(ko_start haiku low)" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has report " · /plan-up · model haiku (set) · effort low (set) · ready-to-build · " "$out"
+}
+
+t_ko_bad_command() {
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  ko_go --command deploy https://github.com/acme/app/issues/42
+  eq exit 1 "$code"
+  eq stderr "stop: --command must be ship or plan-up, got: deploy" "$err"
+  [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -206,4 +222,6 @@ cases=(
   "an epic with no open ticket stops|t_ko_epic_none_open"
   "a guessed size counts|t_ko_guessed_size"
   "a bad size stops|t_ko_bad_size"
+  "overrides win and the report says set|t_ko_overrides"
+  "a bad command stops|t_ko_bad_command"
 )

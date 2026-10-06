@@ -12,7 +12,7 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 - `/kickoff <epic-url>`: every open ticket in the epic.
 - `/kickoff <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
 
-`/kickoff on this` right after making an issue works too; it finds the issue in the chat. Add `--dry-run` to see what it would do. It only runs when you call it.
+`/kickoff on this` right after making an issue works too; it finds the issue in the chat. Name a model, an effort, or the command in your words to change the defaults below. It only runs when you call it.
 
 ## What you get
 

@@ -20,9 +20,17 @@ say() { printf '%s\n' "$*" >&2; }
 
 # ---------- args ----------
 label=""; dry_run=0; no_prompt=0; args=(); sizes=()
+set_model=""; set_effort=""; set_command=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --label) label="$2"; shift 2 ;;
+    --model) [ -n "${2:-}" ] || die "--model needs a name"; set_model="$2"; shift 2 ;;
+    --effort)
+      case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
+      set_effort="$2"; shift 2 ;;
+    --command)
+      case "${2:-}" in ship|plan-up) ;; *) die "--command must be ship or plan-up, got: ${2:-nothing}" ;; esac
+      set_command="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
@@ -144,6 +152,12 @@ else
 fi
 if [ "$counted" -gt 1 ]; then reason="$reason of $counted tickets"; fi
 if [ "$top_guessed" -eq 1 ]; then reason="$reason, guessed"; fi
+
+# A value the user named wins over the row.
+model_from=default; effort_from=default
+if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
+if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
+if [ -n "$set_command" ]; then command="$set_command"; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
@@ -267,4 +281,4 @@ if [ "$status" != "working" ]; then
 fi
 
 printf '#%s %s → %s/%s/%s · /%s · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
-  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$model" "default" "$effort" "default" "$reason" "base $base" "$placed"
+  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$model" "$model_from" "$effort" "$effort_from" "$reason" "base $base" "$placed"

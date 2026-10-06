@@ -41,9 +41,15 @@ Flags you may add:
   ticket with no size label: the size you guessed from its body
   (§ Resolving the target). It counts like a label, and the report line
   says `guessed`.
-- `--dry-run` to show every decision (form, effort, repo path, base,
-  label, placement) with no pane made. Use it when the user asks
-  what would happen.
+- `--model <name>` when the user names a model: an alias (`opus`,
+  `sonnet`, `haiku`) or a full model name. It goes to claude as is.
+- `--effort <level>` when the user names an effort: `low`, `medium`,
+  `high`, `xhigh`, or `max`.
+- `--command ship` or `--command plan-up` when the user names the
+  command: "plan only" is `plan-up`, "ship it" is `ship`.
+
+A value the user does not name comes from the table below. The report
+line marks each value `(default)` or `(set)`.
 
 What the script decides, so you can answer questions about it:
 
