@@ -500,11 +500,12 @@ def md_before_problems(walks):
 
 TYPED = re.compile(r"\btype\s+`([^`]+)`", re.I)
 # `type` that starts a step or a clause, with no backtick span after it.
-UNTYPED = re.compile(r"(?:(?:^|[,;])\s*|\b(?:and|then)\s+)type\s+(?!`)", re.I)
+UNTYPED = re.compile(r"(?:(?:^|[,;])\s*|\b(?:and|then)\s+)type\s+(?=[^\s`])", re.I)
 
 
 def typed_problems(name, step):
-    if UNTYPED.search(step):
+    # Each backtick span is emptied first: a `,` or a `type` inside quoted output is not a clause.
+    if UNTYPED.search(re.sub(r"`[^`]*`", "``", step)):
         yield f"{name}: put the text to type in backticks right after `type`"
     # A typed command is the backtick span right after `type`; a See or Before line quotes output in backticks too.
     for cmd in TYPED.findall(step):

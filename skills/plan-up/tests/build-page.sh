@@ -352,6 +352,15 @@ t_build_untyped_walk_steps() {
     'walk 1 steps: put the text to type in backticks right after `type`'
 }
 
+t_build_typed_spacing_and_output() {
+  T="$(mktemp -d)"
+  sed 's/  2\. Click Export, pick CSV\./  2. Type  `tally status`, press Return./;
+    s/  Before:   none/  Before:   the screen shows `Ready, type a name`/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 t_build_task_protections() {
   T="$(mktemp -d)"
   sed 's/Task done: full suite green, lint green, build green./Task done: full suite green, and these existing tests untouched and green:\n  `src\/orders.test.ts` "exports JSON"./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -411,4 +420,5 @@ cases=(
   "build-page passes an escaped semicolon|t_build_escaped_semicolon"
   "build-page refuses a video step that types text with no backticks|t_build_untyped_video_step"
   "build-page refuses walk steps that type text with no backticks|t_build_untyped_walk_steps"
+  "build-page passes two spaces before a typed command and type inside quoted output|t_build_typed_spacing_and_output"
 )
