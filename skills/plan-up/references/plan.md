@@ -397,6 +397,11 @@ wrong about code no slice touches is not this plan's: it goes under
 `Out of scope` with its `file:line`. A doc the facts round found that
 stays true goes under `Decided`, one line, with why. `Docs` lines need
 no test and no Proof row, unless a Done-when line is about the doc.
+Each entry under the issue's `## Docs to write` is a `Docs` line in the
+slice whose change makes it true, its text copied word for word: the
+words were agreed, and the plan does not write them again. An entry
+already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
+the builder takes the next free number on its base when the slice runs.
 
 **Look.** The executor has no taste, so the plan holds every look
 decision. A slice on a screen names in `Change` the mockup frame it

@@ -180,7 +180,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      now, for the walk's `Before` line;
    - the repo's own words and code rules, wherever they live:
      `CONTEXT.md`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`,
-     `CONVENTIONS.md`, `STYLE*.md`, `docs/**`, ADRs, `AGENTS.md`,
+     `CONVENTIONS.md`, `STYLE*.md`, `docs/**`, ADRs, the
+     `## Docs to write` of other open issues in the area
+     (decided, not built: they bind the plan like an ADR), `AGENTS.md`,
      `CLAUDE.md`, `.cursor/rules/**`, `.editorconfig`, lint and formatter
      configs; and where no file rules, the shape the code keeps: names,
      layout, errors, logging, tests. The plan's names and every `Change`
@@ -194,7 +196,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    - the docs that describe what each Done-when line changes: `README`,
      `docs/**`, guides, `CHANGELOG`, ADRs, API docs, `--help` text,
      `.env.example`, and the rules files above. The plan updates each
-     one in the slice that makes it stale, per `plan.md` § Slices.
+     one in the slice that makes it stale, per `plan.md` § Slices. Each
+     entry under the issue's `## Docs to write` is such a doc, its text
+     given.
 
    Known lines in the issue's Context are facts in hand, proved by a run.
    Take them as read. Ask for nothing a Known line settles. In a run, a
