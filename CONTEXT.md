@@ -13,8 +13,16 @@ The title and body that every pull request opened by these skills follows. It is
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
 **Close-out**:
-The grill's last step after `Grill done.`. It cleans the wording of the files it wrote and opens one PR for them. When the skill that called the grill writes its own files afterwards, that skill takes the PR step instead, so all the files go in one PR.
+The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead, or take the written files into its own PR.
 _Avoid_: wrap-up, finish
+
+**Docs to write**:
+The section of an issue that holds doc text agreed on but not true yet: a glossary entry, an ADR, a README line, each with its file and full text. The PR whose code makes it true writes it. Until then other skills read it as decided, not built.
+_Avoid_: pending docs, doc drafts
+
+**Origin seed**:
+The `seed` issue, or the cleared map, that the work grew from. It is rewritten in place into the ticket, the map, or the epic parent, so one number runs from the idea to the work. It is never closed for growing.
+_Avoid_: parent seed, source issue
 
 ## Plans
 

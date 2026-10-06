@@ -1,10 +1,10 @@
 # Domain modeling
 
-Build and sharpen the project's domain model as you design, and write it down the moment it settles.
+Build and sharpen the project's domain model as you design. Keep each settled term and decision in a list, and write it down at the grill's close-out, where it goes with the work that makes it true.
 
 ## Files
 
-The glossary is `CONTEXT.md`. Decisions are ADRs under `docs/adr/`. [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md) gives the glossary format and the single- vs multi-context layout. [ADR-FORMAT.md](./ADR-FORMAT.md) gives the ADR format and the three conditions for offering one. Create a file or folder the first time you have something to write into it.
+The glossary is `CONTEXT.md`. Decisions are ADRs under `docs/adr/`. [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md) gives the glossary format and the single- vs multi-context layout. [ADR-FORMAT.md](./ADR-FORMAT.md) gives the ADR format and the three conditions for offering one. At the close-out, create a file or folder the first time there is something to write into it.
 
 ## During the session
 
@@ -24,12 +24,12 @@ When you discuss domain relationships, stress-test them with specific scenarios.
 
 When the user states how something works, check whether the code agrees, or the research note when the fact comes from outside the repo. If you find a contradiction, surface it. "Your code cancels entire Orders, but you just said partial cancellation is possible. Which is right?"
 
-### Update CONTEXT.md inline
+### Keep the glossary entries
 
-Update `CONTEXT.md` the moment a term is resolved. It holds terms only; implementation detail lives in code and ADRs.
+When a term is resolved, write its glossary entry in the list, in the `CONTEXT.md` format, and name it in chat. `CONTEXT.md` holds terms only; implementation detail lives in code and ADRs. No file changes during the session: the user agrees to the whole grill first, and the close-out places the entries.
 
-The glossary work is done when every term the session used is in `CONTEXT.md` or was judged a general programming concept.
+The glossary work is done when every term the session used is in `CONTEXT.md`, in the list, or was judged a general programming concept.
 
 ### Offer ADRs
 
-Offer an ADR only when all three conditions in [ADR-FORMAT.md](./ADR-FORMAT.md) hold. When the decision rests on a researched fact, the ADR cites the primary source, per `research.md` § Using an existing note.
+Offer an ADR only when all three conditions in [ADR-FORMAT.md](./ADR-FORMAT.md) hold. An accepted ADR joins the list as its full text, with no number yet. When the decision rests on a researched fact, the ADR cites the primary source, per `research.md` § Using an existing note.
