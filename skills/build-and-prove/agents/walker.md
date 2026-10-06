@@ -58,7 +58,8 @@ For each walk whose `Before` line names steps: do the walk's `Setup`, go
 to `Where`, do the steps the `Before` line names, and take
 `proofbox screenshot <id> --out <folder>/before-<walk>.png`. Check that
 it shows what the `Before` line says. A walk whose `Before` is `none` or
-`as walk n` gets no shot. No recording in this mode.
+`as walk n` gets no shot. No recording in this mode. Then write the
+report (§ Report).
 
 ## Mode after
 
@@ -93,8 +94,8 @@ most twice.
 
 ## Report
 
-Write `<folder>/walk-report-<round>.md` and end with the same lines,
-nothing else:
+In mode after, write `<folder>/walk-report-after-<round>.md` and end
+with the same lines, nothing else:
 
 ```
 WALKS <passed>/<total> · mode after · round 1
@@ -102,6 +103,18 @@ walk 1: pass · after-1.png · video 1 @ step 4
 walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
 walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step 2
 ```
+
+In mode before, write `<folder>/walk-report-before-<round>.md` and end
+with the same lines, nothing else:
+
+```
+BEFORE <shots>/<walks> · round 1
+walk 1: before-1.png · shows the hint cut at column 60
+walk 3: FAIL · saw the login page; the Before line says the orders list · before-3.png
+```
+
+`<shots>` counts the shots that show what their `Before` line says,
+`<walks>` the walks whose `Before` names steps.
 
 Say what you saw, in the screen's own words, and what the walk said you
 should see. Never say why it broke.

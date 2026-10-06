@@ -225,10 +225,10 @@ commits stay.
    committed: add a detached worktree of `BASE` in a temp
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 9a), send the walker in `before` mode (step 9b), and stop the
-   app unless the walker ended with `GONE <id>`. On `GONE`, start the
-   app again from the same temp worktree and send the walker once more,
-   as step 9c says. Remove the temp worktree only when this step ends,
+   (step 9a), send the walker in `before` mode and round 1 (step 9b),
+   and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
+   start the app again from the same temp worktree and send the walker
+   once more, round 2, as step 9c says. Remove the temp worktree only when this step ends,
    with the shots or with a stop. The next `box.sh run` without
    `--from` puts the branch back. Say `Before shots: <n>`.
 
@@ -281,7 +281,9 @@ commits stay.
       - the folder to write in, `PROOF`.
 
       It does not get the code, the slices, or the diff. It returns
-      one line per walk and writes `walk-report-<round>.md` in `PROOF`.
+      one line per walk and writes `walk-report-<mode>-<round>.md` in
+      `PROOF`: `walk-report-before-<round>.md` or
+      `walk-report-after-<round>.md`, so neither overwrites the other.
       It ended with `GONE <id>`: the app died with its Sandbox, so stop
       nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
       sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
