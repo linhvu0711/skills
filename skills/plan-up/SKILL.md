@@ -76,7 +76,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
 2. **Read the issue.** `gh issue view <n> --json number,title,body,labels,comments`.
    Read the comments too; a later comment can change a line. Carrying
-   `handoff-ready`: the **short path**, `plan.md` § Handoff-ready. The
+   `ready-to-build`: the **short path**, `plan.md` § Ready-to-build. The
    Steps are trusted. Step 4 asks only what that section lists, step 5
    closes only the issue's `Open` lines, steps 6 to 8 run as written.
 
@@ -97,9 +97,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
    Walk the order: each
    ticket's `Blocked by` is closed, or earlier in this run. A ticket that
-   fails names the pair, stop. A `handoff-ready` ticket in a run takes
+   fails names the pair, stop. A `ready-to-build` ticket in a run takes
    the short path too: its Steps become the layer's slices per `plan.md`
-   § Handoff-ready, and its facts round asks only what that section lists.
+   § Ready-to-build, and its facts round asks only what that section lists.
 
    **Claims.** Check whether someone is already on a ticket before you
    plan it. Run `python3 scripts/claims.py <owner/repo> <n>...` once,
@@ -332,7 +332,7 @@ then the question with `A` review their PR instead, `B` build anyway,
 remove the base copy. Stop.
 
 **User:** `/plan-up https://github.com/acme/shop/issues/57` (size/XS fix,
-`handoff-ready`, three Steps, two Done-when lines)
+`ready-to-build`, three Steps, two Done-when lines)
 
 Step 2 sees the label: short path. One Explore round: `pnpm test` and
 `pnpm typecheck` from `package.json`, the seam of `export.ts:57` is

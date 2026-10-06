@@ -38,7 +38,7 @@ http://127.0.0.1:8765/plan-acme-shop-42.html
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
-A `handoff-ready` ticket takes a short path: its Steps are trusted and only the gaps are read.
+A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read.
 
 ## Needs
 

@@ -229,9 +229,9 @@ A single ticket prepped `on` an open stack is a run of one layer whose
 Base is `PR #<n>`. It has both the stack Review and the layer Review.
 The H1 and Date come first and once; each layer has its own Summary.
 
-## Handoff-ready
+## Ready-to-build
 
-An issue with `handoff-ready` carries Steps that `to-issue` checked line
+An issue with `ready-to-build` carries Steps that `to-issue` checked line
 by line: every `file:line` was seen, no choice is open. The plan trusts
 them. This is the **short path**: the repo is read only for what the
 Steps do not say, and no step is re-planned. The plan still has every

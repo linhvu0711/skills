@@ -91,6 +91,6 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 A run: one line per layer under the first. A chat plan: its first line
 has no `#<n>`, as in
 `Plan: [feat] Export orders as CSV · size/M · base main`. A
-`handoff-ready` ticket adds `· short path` after the size, so the user
+`ready-to-build` ticket adds `· short path` after the size, so the user
 knows the Steps were trusted. `doc` counts `Docs` lines and `probe` counts `Proved` lines;
 each drops when it is 0. The whole plan never goes in chat.
