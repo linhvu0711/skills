@@ -130,7 +130,7 @@ Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff](skills/kickoff/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route.
-- Devin: [handoff](skills/handoff/), [ship](skills/ship/) when you name it, and Devin Review for [ready-pr](skills/ready-pr/).
+- Devin: [handoff](skills/handoff/), [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
