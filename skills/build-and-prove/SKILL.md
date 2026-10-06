@@ -263,8 +263,16 @@ commits stay.
    prompt` § Follow-up, `# Check` naming the Gate, then the Gates
    again.
 
-   A Gate the Sandbox cannot run, such as `pnpm test:docker` with no
-   Docker in the Sandbox (exit 127, or its output names a tool or
+   A Gate that fails with `not found` (exit 127) for a tool a setup
+   script can install, such as one the `Test`, `Lint`, or `Build` line
+   names, is the setup script's, as at step 9a: rewrite it per step 4,
+   `box.sh down`, then step 6 again and the Gates again. This is how a
+   setup script from an earlier run, one that writes no
+   `$PROOFBOX_ENV`, gets rewritten. After three rewrites, stop with the
+   last line.
+
+   A Gate the Sandbox cannot run in any case, such as `pnpm test:docker`
+   with no Docker in the Sandbox (exit 127, or its output names a
    service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
    <command>`, and its line ends `(local machine)`. It can run in
    neither place: its line is `<command> · <short SHA> · not run:
