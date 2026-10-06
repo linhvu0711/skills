@@ -235,8 +235,9 @@ commits stay.
      again from step 6.
    - Any other `FAIL`: the `Before` line's steps do not reach the screen
      it names on the base, a Wrong walk. Fix the line in the plan `.md`,
-     add a `Decided` line, and send the walker again for that walk. A
-     second `FAIL` for it: `box.sh down`, then stop with that line.
+     add a `Decided` line, start the app again from the same temp
+     worktree (step 9a), send the walker again for that walk, and stop
+     the app. A second `FAIL` for it: `box.sh down`, then stop with that line.
 
    Remove the temp worktree only when this step ends, with the shots
    or with a stop. The next `box.sh run` without
