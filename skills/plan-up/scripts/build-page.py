@@ -526,7 +526,11 @@ def step_problems(layers):
         for head, video in zip(heads, records(body.get("Videos", []), "video")):
             number = head.split()[1].rstrip(",")
             for k, step in enumerate(video["steps"], 1):
-                yield from typed_problems(f"{layer}video {number} step {k}", step)
+                name = f"{layer}video {number} step {k}"
+                typed = len(TYPED.findall(step))
+                if typed > 1:
+                    yield f"{name}: types {typed} commands; type one command per step"
+                yield from typed_problems(name, step)
 
 
 def strings(node, path="DATA"):

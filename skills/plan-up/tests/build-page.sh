@@ -329,6 +329,11 @@ t_build_quoted_semicolon() {
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
 }
 
+t_build_video_step_two_commands() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type `tally status`, press Return; type `tally list`, press Return./' \
+    'video 1 step 2: types 2 commands; type one command per step'
+}
+
 t_build_escaped_semicolon() {
   T="$(mktemp -d)"
   sed 's/  2\. Click Export, pick CSV\./  2. Type `echo a\\;b "c\\"; d"`, press Return./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -392,5 +397,6 @@ cases=(
   "build-page refuses a Before that starts with clear and joins|t_build_before_clear_and"
   "build-page refuses a video step that types clear|t_build_video_step_clear"
   "build-page passes a semicolon inside quotes|t_build_quoted_semicolon"
+  "build-page refuses a video step that types two commands|t_build_video_step_two_commands"
   "build-page passes an escaped semicolon|t_build_escaped_semicolon"
 )
