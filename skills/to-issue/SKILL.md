@@ -41,7 +41,8 @@ report. This file is the order of operations.
    XS becomes S, and S gets no Steps. `task`: body per the rules file § Task
    body, Steps always. Doc text the chat agreed on (a glossary entry, an
    ADR) goes under `## Docs to write`, word for word, per the rules file.
-   A map as origin is epic-sized: say `to-epic` is the tool, and stop.
+   A cleared map as origin becomes the ticket when its work fits one
+   ticket; its `## Docs to write` entries move into the ticket's.
 
 6. **Create.** Origin bug or seed: rewrite it instead, per the rules file
    § Origin bug or § Origin seed, with the same labels and `--repo`.

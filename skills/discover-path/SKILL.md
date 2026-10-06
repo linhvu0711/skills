@@ -171,8 +171,10 @@ work already decided. The map comes first.
    Decisions so far list, unhappy paths included. Each gap becomes one
    ticket, created now, then report as above. No gap: print `Map clear.`,
    the Decisions so far list in full, and `Run /to-epic <map-url> in this
-   chat.` to-epic rewrites the map into the epic parent, same number, and
-   gives each doc entry to the sub-issue whose code makes it true. A
+   chat.`, or `Run /to-issue <map-url> in this chat.` when the work fits
+   one ticket. Either rewrites the map in place, same number: to-epic into
+   the epic parent, giving each doc entry to the sub-issue whose code
+   makes it true; to-issue into the ticket, with every entry. A
    destination with no code to build (a decision to lock): the map's doc
    entries are true now, so write them and open one docs PR per
    `../grill/SKILL.md` § Close out, no work, with `Closes #<map>`.

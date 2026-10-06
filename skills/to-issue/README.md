@@ -27,7 +27,7 @@ https://github.com/acme/shop/issues/42 · size/M · feat
 ## Fits with
 
 - Fed by [grill](../grill/) and [discover-path](../discover-path/). Called by [triage](../triage/) as its last step.
-- Turns a `[bug]` or a `seed` from [capture](../capture/), or any bug or seed issue the chat names, into the ticket in place: same number, new title and body. Nothing new is opened and nothing is closed.
+- Turns a `[bug]` or a `seed` from [capture](../capture/), any bug or seed issue the chat names, or a one-ticket map that [discover-path](../discover-path/) cleared, into the ticket in place: same number, new title and body. Nothing new is opened and nothing is closed.
 - Puts doc text that a [grill](../grill/) agreed on (a glossary entry, an ADR) under `## Docs to write`, so it lands in the PR that ships the code.
 - Sends XL work to [to-epic](../to-epic/).
 - Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff](../kickoff/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
