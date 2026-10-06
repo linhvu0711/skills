@@ -50,4 +50,4 @@ A PR that waits only for a person's approval ends with `READY <url> (waiting for
 - Calls [plan-up](../plan-up/), then [build-and-prove](../build-and-prove/) and [make-pr](../make-pr/), or [handoff](../handoff/) when you name the cloud, then [ready-pr](../ready-pr/).
 - A failed readiness gate sends you to [grill](../grill/) first.
 - After the merge, [prune-worktrees](../prune-worktrees/) removes the worktree and its branch.
-- Nothing calls this skill; you run it.
+- [kickoff](../kickoff/) starts it in a new pane; else you run it.

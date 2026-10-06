@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
-# kickoff.sh: open a herdr pane and run /plan-up there.
+# kickoff.sh: open a herdr pane and run /ship or /plan-up there.
 #
-# Usage: kickoff.sh [--label L] [--dry-run] [--no-prompt] <issue-url> [#n ...] [on <pr-url>]
+# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up]
+#                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
 # the numbers are a run under it. When it has none, it is the first ticket of a
 # set: plain issues with no shared parent, planned together in the order given.
 #
-# Exit 0: the pane is running /plan-up, one report line on stdout.
+# The model, effort, and command come from the tickets' size and
+# ready-to-build labels unless a flag names them; --size gives a ticket with
+# no size label the size the agent guessed.
+#
+# Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Nothing is half done: no pane exists until every check passed.
-# The tree is left as is: /plan-up reads its own copy of the base.
+# The tree is left as is: /ship and /plan-up read their own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,16 +24,26 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*" >&2; }
 
 # ---------- args ----------
-label=""; dry_run=0; no_prompt=0; args=()
+label=""; args=(); sizes=()
+set_model=""; set_effort=""; set_command=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --label) label="$2"; shift 2 ;;
-    --dry-run) dry_run=1; shift ;;
-    --no-prompt) no_prompt=1; shift ;;
+    --model) [ -n "${2:-}" ] || die "--model needs a name"; set_model="$2"; shift 2 ;;
+    --effort)
+      case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
+      set_effort="$2"; shift 2 ;;
+    --command)
+      case "${2:-}" in ship|plan-up) ;; *) die "--command must be ship or plan-up, got: ${2:-nothing}" ;; esac
+      set_command="$2"; shift 2 ;;
+    --size)
+      [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
+      sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
+    -*) die "unexpected argument: $1" ;;
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -66,17 +81,86 @@ elif [ "${#tickets[@]}" -gt 0 ]; then
 elif [ "$sub_count" -gt 0 ]; then form="epic"
 else form="issue"; fi
 
-# ---------- effort ----------
-# medium only for a single ticket whose size label says XS or S.
-is_small=0
-if [ "$form" = "issue" ] || [ "$form" = "on" ]; then
+# ---------- model, effort, command ----------
+# size_of <label>: XS, S, M, L, or XL when the label names a size, matched
+# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
+size_of() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
+    xs|xsmall|extrasmall) echo XS ;;
+    s|small) echo S ;;
+    m|med|medium) echo M ;;
+    l|large) echo L ;;
+    xl|xlarge|extralarge) echo XL ;;
+  esac
+}
+
+# guess_of <n>: the size a --size flag gave ticket n, else nothing.
+guess_of() {
+  local s
+  for s in ${sizes[@]+"${sizes[@]}"}; do
+    if [ "${s%%=*}" = "$1" ]; then echo "${s#*=}"; fi
+  done
+}
+
+# add_ticket <issue json>: counts one ticket. The biggest ticket picks the
+# row, and a ticket with no size is the biggest. Only a target whose every
+# ticket is ready-to-build takes the sonnet row. A guessed size wins over a
+# label, and each guess is counted for the report.
+all_ready=1; top=0; top_size=""; guessed=0
+add_ticket() {
+  local lab size="" ready=0 rank guess
   while IFS= read -r lab; do
-    norm="$(printf '%s' "$lab" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')"
-    case "$norm" in xs|s|small|extrasmall|xsmall) is_small=1 ;; esac
-  done < <(jq -r '.labels[].name' <<<"$issue_json")
+    if [ "$(printf '%s' "$lab" | tr '[:upper:]' '[:lower:]')" = ready-to-build ]; then ready=1; fi
+    [ -n "$size" ] || size="$(size_of "$lab")"
+  done < <(jq -r '.labels[].name' <<<"$1")
+  [ "$ready" -eq 1 ] || all_ready=0
+  guess="$(guess_of "$(jq -r .number <<<"$1")")"
+  if [ -n "$guess" ]; then size="$guess"; guessed=$((guessed+1)); fi
+  # ready-to-build goes only on XS and S tickets, so one with no size is S.
+  [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
+  case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
+  if [ "$rank" -gt "$top" ]; then top=$rank; top_size="$size"; fi
+}
+
+# The tickets the target holds: a run's #n, a set's issue and #n, an epic's
+# open sub-issues, else the issue. A manual ticket is a person's work, so it
+# does not count.
+case "$form" in
+  run) list=("${tickets[@]}") ;;
+  set) list=("$number" "${tickets[@]}") ;;
+  epic) list=(); while IFS= read -r n; do list+=("$n"); done \
+          < <(jq -r '.subIssues.nodes[] | select(.state == "OPEN") | .number' <<<"$issue_json") ;;
+  *) list=("$number") ;;
+esac
+counted=0
+for n in ${list[@]+"${list[@]}"}; do
+  if [ "$n" = "$number" ]; then json="$issue_json"
+  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || die "gh could not read #$n in $slug"; fi
+  jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null && continue
+  add_ticket "$json"; counted=$((counted+1))
+done
+[ "$counted" -gt 0 ] || die "#$number has no open ticket for an agent"
+for s in ${sizes[@]+"${sizes[@]}"}; do
+  case " ${list[*]} " in *" ${s%%=*} "*) ;; *) die "--size names #${s%%=*}, which is not in this target" ;; esac
+done
+
+if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship; reason="ready-to-build"
+else
+  if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship
+  elif [ "$top" -eq 3 ]; then model=opus; effort=medium; command=plan-up
+  else model=opus; effort=high; command=plan-up; fi
+  if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
-if [ "$is_small" -eq 1 ]; then effort="medium"; rule="size XS/S"
-else effort="high"; case "$form" in run) rule="run" ;; set) rule="set of tickets" ;; epic) rule="whole epic" ;; *) rule="size above S or no size label" ;; esac; fi
+if [ "$counted" -gt 1 ]; then
+  reason="$reason of $counted tickets"
+  if [ "$guessed" -gt 0 ]; then reason="$reason, $guessed guessed"; fi
+elif [ "$guessed" -gt 0 ]; then reason="$reason, guessed"; fi
+
+# A value the user named wins over the row.
+model_from=default; effort_from=default; command_from=default
+if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
+if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
+if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
@@ -88,16 +172,27 @@ fi
 # ---------- repo path ----------
 # The checkout resolver finds the main checkout; its stop line is ours.
 found="$(bash "$here/../../../shared-skill-core/checkout.sh" main "$slug")" || exit 1
-path_from="${found%% *}"; path_from="${path_from#FROM=}"; path="${found#* MAIN=}"
+path="${found#* MAIN=}"
 
 # ---------- label ----------
+# The issue numbers: i42, i42-43, i42-on-80, and i70 for a whole epic. Too
+# long: the whole numbers that fit in 27 characters, then -more.
 if [ -z "$label" ]; then
-  label="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/ /g' \
-    | awk '{n=0; for(i=1;i<=NF;i++){ if($i ~ /^[0-9]+$/) continue; if(n>0) printf "-"; printf "%s",$i; n++; if(n==4) break } }')"
   case "$form" in
-    run|epic|set) label="${label}-run" ;;
-    on) label="${label}-on-${pr_number}" ;;
+    run) nums=("${tickets[@]}") ;;
+    set) nums=("$number" "${tickets[@]}") ;;
+    *) nums=("$number") ;;
   esac
+  label="i$(IFS=-; printf '%s' "${nums[*]}")"
+  if [ "${#label}" -gt 32 ]; then
+    label="i${nums[0]}"
+    for n in "${nums[@]:1}"; do
+      [ $(( ${#label} + ${#n} + 1 )) -le 27 ] || break
+      label="${label}-$n"
+    done
+    label="${label}-more"
+  fi
+  if [ "$form" = on ]; then label="${label}-on-${pr_number}"; fi
 fi
 label="$(printf '%s' "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
 [ -n "$label" ] || label="prep-$number"
@@ -138,13 +233,6 @@ if [ -z "$target_tab" ]; then
   done
 fi
 
-if [ "$dry_run" -eq 1 ]; then
-  place="new tab"; [ -n "$target_tab" ] && place="split $split_pane in $target_tab"
-  printf 'dry-run: #%s %s · form %s · effort %s (%s) · repo %s (%s) · %s · label %s · %s · prep args: %s\n' \
-    "$number" "$title" "$form" "$effort" "$rule" "$path" "$path_from" "base $base" "$label" "$place" "$prep_args"
-  exit 0
-fi
-
 if [ -n "$target_tab" ]; then
   new_pane="$(herdr pane split --pane "$split_pane" --direction right --ratio 0.5 --cwd "$path" --no-focus | jq -r .result.pane.pane_id)"
   python3 "$here/equalize_columns.py" "$new_pane" >/dev/null
@@ -162,7 +250,7 @@ herdr pane rename "$new_pane" "$label" >/dev/null
 started=0
 for _ in $(seq 1 20); do
   if err="$(herdr agent start "$label" --kind claude --pane "$new_pane" --timeout 60000 \
-      -- --effort "$effort" --permission-mode auto 2>&1 >/dev/null)"; then
+      -- --model "$model" --effort "$effort" --permission-mode auto 2>&1 >/dev/null)"; then
     started=1; break
   fi
   grep -q agent_pane_busy <<<"$err" || { say "$err"; break; }
@@ -170,13 +258,7 @@ for _ in $(seq 1 20); do
 done
 [ "$started" -eq 1 ] || die "claude did not come up in $new_pane; the pane is left as is"
 
-if [ "$no_prompt" -eq 1 ]; then
-  printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s · no prompt sent\n' \
-    "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
-  exit 0
-fi
-
-herdr agent prompt "$label" "/plan-up $prep_args" >/dev/null
+herdr agent prompt "$label" "/$command $prep_args" >/dev/null
 status="idle"
 for _ in $(seq 1 30); do
   status="$(herdr agent get "$label" | jq -r .result.agent.agent_status)"
@@ -185,8 +267,8 @@ for _ in $(seq 1 30); do
 done
 if [ "$status" != "working" ]; then
   herdr agent read "$label" --source visible --lines 40 >&2 || true
-  die "/plan-up did not start in $new_pane (status $status); the pane is left as is"
+  die "/$command did not start in $new_pane (status $status); the pane is left as is"
 fi
 
-printf '#%s %s → %s/%s/%s · effort %s (%s) · %s · %s\n' \
-  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$effort" "$rule" "base $base" "$placed"
+printf '#%s %s → %s/%s/%s · /%s (%s) · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
+  "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$command_from" "$model" "$model_from" "$effort" "$effort_from" "$reason" "base $base" "$placed"
