@@ -26,7 +26,9 @@ arguments.
 - `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
   it with an idle time of 30m on Linux and 10m on macOS, proofbox's
   default max life of 3h, and no `--provider`, so proofbox's own config
-  picks the Provider. It reads the setup script and env file
+  picks the Provider. It shows every line proofbox prints as it makes
+  the Sandbox, so a failed setup script's last lines come before the
+  `stop:` line. It reads the setup script and env file
   from `~/.agents/proofbox/<owner>-<repo>/`.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits

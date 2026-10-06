@@ -9,8 +9,11 @@
 # up creates the Sandbox with the repo's setup script, and its env file when
 # there is one, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh and
 # app.env. It passes no --provider, so ~/.config/proofbox/config picks it.
+# It shows on stderr every line proofbox prints while it makes the Sandbox:
+# the Setup script's last lines when it fails, the Snapshot line when it
+# reuses one.
 # The idle time is 30m on linux and 10m on macos, where a minute costs ten
-# times more and a new Sandbox costs about one. It passes no --max-life, so
+# times more and a new Sandbox costs 1 to 3. It passes no --max-life, so
 # proofbox's 3h applies, which every Namespace plan allows. The state goes in
 # <proof-dir>/box.env as KEY=value lines: BOX_ID, BOX_OS, BOX_WORK,
 # BOX_SETUP, BOX_ENV, BOX_REMADE.
@@ -35,13 +38,17 @@ usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run 
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
-# create: make a Sandbox from the BOX_* values and write the state.
+# create: make a Sandbox from the BOX_* values and write the state. proofbox's
+# stderr reaches the caller live; a copy is kept for its last line.
 create() {
-  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf
+  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf c=0
   [ -z "$BOX_ENV" ] || args+=(--env-file "$BOX_ENV")
   args+=(--idle "$(idle "$BOX_OS")")
   errf="$(mktemp)"
-  if ! id="$(proofbox "${args[@]}" 2>"$errf")"; then
+  set +e
+  id="$( { proofbox "${args[@]}" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; exit "${PIPESTATUS[0]}"; } 3>&1 )"; c=$?
+  set -e
+  if [ "$c" -ne 0 ]; then
     local why login
     why="$(tail -n 1 "$errf")"; rm -f "$errf"
     login="$(grep -o 'proofbox auth login [a-z]*' <<<"$why" || true)"

@@ -8,8 +8,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # folder, and the setup script for acme/shop on linux in place. The fake logs
 # each call as one line in $FAKE_PB/log and answers by verb from fixture files
 # in $FAKE_PB: call n of a verb prints <verb>.<n>.fail or <verb>.fail to stderr
-# and exits 125 when one exists, else prints <verb>.<n>.out or <verb>.out.
-# `exec` then exits with the number in exec.code, or 0.
+# and exits 125 when one exists, else prints <verb>.err to stderr when it
+# exists, then <verb>.<n>.out or <verb>.out. `exec` then exits with the number
+# in exec.code, or 0.
 fake_proofbox() {
   repo
   mkdir -p "$T/bin" "$T/pb" "$T/home/.agents/proofbox/acme-shop"
@@ -22,6 +23,7 @@ printf '%s\n' "$*" >> "$FAKE_PB/log"
 for f in "$FAKE_PB/$verb.$n.fail" "$FAKE_PB/$verb.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 125; fi
 done
+if [ -f "$FAKE_PB/$verb.err" ]; then cat "$FAKE_PB/$verb.err" >&2; fi
 for f in "$FAKE_PB/$verb.$n.out" "$FAKE_PB/$verb.out"; do
   if [ -f "$f" ]; then cat "$f"; break; fi
 done
@@ -158,6 +160,37 @@ t_box_login() {
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
 }
 
+t_box_up_setup_fails() {
+  fake_proofbox
+  printf '%s\n' "npm: command not found" "setup-linux.sh: line 4: pnpm: command not found" \
+    "Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq stderr "npm: command not found
+setup-linux.sh: line 4: pnpm: command not found
+Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted.
+stop: Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." "$err"
+}
+
+t_box_up_snapshot_reused() {
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  printf '%s\n' "proofbox: uploading the work folder" "proofbox: Snapshot reused, Fingerprint 3f9a2c71" > "$FAKE_PB/create.err"
+  box up "$P" "$R" linux acme/shop
+  eq exit 0 "$code"
+  has stderr "proofbox: Snapshot reused, Fingerprint 3f9a2c71" "$err"
+  eq stdout "SANDBOX=ns:us:abc" "$out"
+}
+
+t_box_up_login_last() {
+  fake_proofbox
+  echo "Not logged in to namespace. Run: proofbox auth login namespace" > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq stderr "Not logged in to namespace. Run: proofbox auth login namespace
+stop: log in first: proofbox auth login namespace" "$err"
+}
+
 t_box_run_exec_gone() {
   fake_proofbox
   state ns:us:abc
@@ -205,4 +238,7 @@ cases=(
   "up stops when proofbox is missing|t_box_no_proofbox"
   "up stops with proofbox's line when create fails|t_box_create_fails"
   "up names the login command when the login is missing|t_box_login"
+  "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"
+  "up shows the Snapshot line and prints only the id on stdout|t_box_up_snapshot_reused"
+  "up ends with the login stop line after proofbox's line|t_box_up_login_last"
 )
