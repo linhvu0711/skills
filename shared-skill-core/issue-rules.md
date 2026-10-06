@@ -240,9 +240,13 @@ ticket, each as `#N owns <thing>. Do not build it here.`
 
 ## Docs to write
 ### `CONTEXT.md`
+~~~markdown
 <the glossary entry, word for word as agreed>
+~~~
 ### `docs/adr/<next>-no-job-queue.md`
+~~~markdown
 <the whole ADR, word for word as agreed>
+~~~
 ```
 
 Type variants:
@@ -264,7 +268,8 @@ README or a spec. It waits here, not in the doc, so no doc says what the
 code does not do yet. The PR that ships the code writes it, word for word.
 
 - One `###` heading per file, the path in backticks. Under it the full
-  text in a fenced `markdown` block, as agreed. Never a summary: the
+  text, as agreed, fenced with `~~~markdown` and `~~~`, so a code block
+  inside the doc stays whole. Never a summary: the
   builder copies it and does not write it again.
 - A new ADR has no number yet: `docs/adr/<next>-<slug>.md`. The build
   takes the next free number on its base.
@@ -551,8 +556,11 @@ gh issue edit <seed> --title "<title>" --body-file "$f" \
 
 The labels are the ones a new issue of that kind gets. The old body goes
 at the end of Context, in `<details><summary>Original seed</summary>…</details>`;
-skip it when the new body restates it. A map keeps its closed question
-tickets as sub-issues: they are the record of how the work was decided.
+skip it when the new body restates it. From a map, leave its
+`## Docs to write` out of the kept body: each entry now lives on the
+ticket that writes it, and a second copy in an open issue would read as
+a decision still waiting. A map keeps its closed question tickets as
+sub-issues: they are the record of how the work was decided.
 A bug that grows into an epic becomes the parent the same way.
 
 ## Report
