@@ -407,8 +407,12 @@ rule to copy: a big fork, ask.
 
 **UI walks.** Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
-fixture the repo has. `Must not` is the negative check the screenshot
-cannot show. One walk per row on a screen, happy and unhappy. No two
+fixture the repo has. `Must not` is the negative check. In a web or
+desktop walk it is often what the screenshot cannot show (a console
+error, a failed request). In a terminal walk it is text the screen
+shows or must not show, as in `no line starting Error:`, never `stderr`
+or `stdout`, which a terminal shows mixed; `scripts/build-page.py`
+refuses those words there. One walk per row on a screen, happy and unhappy. No two
 walks end in the same picture: the screenshot is the proof, so a walk
 whose `See` matches another walk's proves nothing on its own. Change the
 steps until each walk ends in its own state; a `Cancel` walk first types
@@ -490,7 +494,8 @@ facts or forks.
   screen it copies; every open look choice is under `Decided`.
 - Every walk step names an exact label, route, key, or element, and
   does one action, a typed command alone; every walk has `Setup` and
-  `Must not`; no two walks end in the same picture;
+  `Must not`; a terminal walk's `Must not` names screen text, never
+  `stderr` or `stdout`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on
   which line it proves.
 - Every walk has a `Before` line: `none`, `as walk n` for an earlier
