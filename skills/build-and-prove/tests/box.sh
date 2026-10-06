@@ -8,8 +8,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # folder, and the setup script for acme/shop on linux in place. The fake logs
 # each call as one line in $FAKE_PB/log and answers by verb from fixture files
 # in $FAKE_PB: call n of a verb prints <verb>.<n>.fail or <verb>.fail to stderr
-# and exits 125 when one exists, else prints <verb>.<n>.out or <verb>.out.
-# `exec` then exits with the number in exec.code, or 0.
+# and exits 125 when one exists, else prints <verb>.err to stderr when it
+# exists, then <verb>.<n>.out or <verb>.out. `exec` then exits with the number
+# in exec.code, or 0.
 fake_proofbox() {
   repo
   mkdir -p "$T/bin" "$T/pb" "$T/home/.agents/proofbox/acme-shop"
@@ -22,6 +23,7 @@ printf '%s\n' "$*" >> "$FAKE_PB/log"
 for f in "$FAKE_PB/$verb.$n.fail" "$FAKE_PB/$verb.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 125; fi
 done
+if [ -f "$FAKE_PB/$verb.err" ]; then cat "$FAKE_PB/$verb.err" >&2; fi
 for f in "$FAKE_PB/$verb.$n.out" "$FAKE_PB/$verb.out"; do
   if [ -f "$f" ]; then cat "$f"; break; fi
 done
@@ -37,10 +39,10 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
-# state: an up Sandbox, without running up.
+# state <id> [<remade>] [<size>]: an up Sandbox, without running up.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" "${3:-}" > "$P/box.env"
 }
 
 t_box_up_flags() {
@@ -158,6 +160,79 @@ t_box_login() {
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
 }
 
+t_box_up_setup_fails() {
+  fake_proofbox
+  printf '%s\n' "npm: command not found" "setup-linux.sh: line 4: pnpm: command not found" \
+    "Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq stderr "npm: command not found
+setup-linux.sh: line 4: pnpm: command not found
+Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted.
+stop: Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." "$err"
+}
+
+t_box_up_snapshot_reused() {
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  printf '%s\n' "proofbox: uploading the work folder" "proofbox: Snapshot reused, Fingerprint 3f9a2c71" > "$FAKE_PB/create.err"
+  box up "$P" "$R" linux acme/shop
+  eq exit 0 "$code"
+  has stderr "proofbox: Snapshot reused, Fingerprint 3f9a2c71" "$err"
+  eq stdout "SANDBOX=ns:us:abc" "$out"
+}
+
+t_box_up_login_last() {
+  fake_proofbox
+  echo "Not logged in to namespace. Run: proofbox auth login namespace" > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq stderr "Not logged in to namespace. Run: proofbox auth login namespace
+stop: log in first: proofbox auth login namespace" "$err"
+}
+
+t_box_up_size() {
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  echo 8x16 > "$HOME/.agents/proofbox/acme-shop/size"
+  box up "$P" "$R" linux acme/shop
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(cat "$FAKE_PB/log")"
+  has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
+}
+
+t_box_run_remake_size() {
+  fake_proofbox
+  state ns:us:abc 0 8x16
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
+  has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
+}
+
+t_box_run_remake_no_size() {
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
+}
+
+t_box_up_size_not_offered() {
+  fake_proofbox
+  echo 3x3 > "$HOME/.agents/proofbox/acme-shop/size"
+  echo "Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" "$(printf '%s\n' "$err" | tail -n 1)"
+  [ ! -e "$P/box.env" ] || { echo "box.env written" >&2; exit 1; }
+  eq log "create --os linux --work $R --setup $SETUP --size 3x3 --idle 30m" "$(cat "$FAKE_PB/log")"
+}
+
 t_box_run_exec_gone() {
   fake_proofbox
   state ns:us:abc
@@ -205,4 +280,11 @@ cases=(
   "up stops when proofbox is missing|t_box_no_proofbox"
   "up stops with proofbox's line when create fails|t_box_create_fails"
   "up names the login command when the login is missing|t_box_login"
+  "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"
+  "up shows the Snapshot line and prints only the id on stdout|t_box_up_snapshot_reused"
+  "up ends with the login stop line after proofbox's line|t_box_up_login_last"
+  "up passes the repo's size|t_box_up_size"
+  "run makes the Sandbox again at the same size|t_box_run_remake_size"
+  "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
+  "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
 )

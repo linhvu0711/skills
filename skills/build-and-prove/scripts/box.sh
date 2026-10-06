@@ -6,14 +6,18 @@
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh down <proof-dir>
 #
-# up creates the Sandbox with the repo's setup script, and its env file when
-# there is one, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh and
-# app.env. It passes no --provider, so ~/.config/proofbox/config picks it.
+# up creates the Sandbox with the repo's setup script, and its env file and
+# size when there are, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh,
+# app.env, and size, one line such as 8x16, passed as --size; with no size
+# file it passes no --size, so proofbox's default applies. It passes no
+# --provider, so ~/.config/proofbox/config picks it. It shows on stderr every
+# line proofbox prints while it makes the Sandbox: the Setup script's last
+# lines when it fails, the Snapshot line when it reuses one.
 # The idle time is 30m on linux and 10m on macos, where a minute costs ten
-# times more and a new Sandbox costs about one. It passes no --max-life, so
+# times more and a new Sandbox costs 1 to 3. It passes no --max-life, so
 # proofbox's 3h applies, which every Namespace plan allows. The state goes in
 # <proof-dir>/box.env as KEY=value lines: BOX_ID, BOX_OS, BOX_WORK,
-# BOX_SETUP, BOX_ENV, BOX_REMADE.
+# BOX_SETUP, BOX_ENV, BOX_REMADE, BOX_SIZE.
 #
 # run uploads the worktree's changed files, runs the command in the Sandbox,
 # and exits with its code. --from uploads that folder instead, such as a copy
@@ -35,13 +39,18 @@ usage="usage: box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo> | run 
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
-# create: make a Sandbox from the BOX_* values and write the state.
+# create: make a Sandbox from the BOX_* values and write the state. proofbox's
+# stderr reaches the caller live; a copy is kept for its last line.
 create() {
-  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf
+  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf c=0
   [ -z "$BOX_ENV" ] || args+=(--env-file "$BOX_ENV")
+  [ -z "$BOX_SIZE" ] || args+=(--size "$BOX_SIZE")
   args+=(--idle "$(idle "$BOX_OS")")
   errf="$(mktemp)"
-  if ! id="$(proofbox "${args[@]}" 2>"$errf")"; then
+  set +e
+  id="$( { proofbox "${args[@]}" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; exit "${PIPESTATUS[0]}"; } 3>&1 )"; c=$?
+  set -e
+  if [ "$c" -ne 0 ]; then
     local why login
     why="$(tail -n 1 "$errf")"; rm -f "$errf"
     login="$(grep -o 'proofbox auth login [a-z]*' <<<"$why" || true)"
@@ -50,19 +59,20 @@ create() {
   fi
   rm -f "$errf"
   BOX_ID="$(tail -n 1 <<<"$id")"
-  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\n' \
-    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" > "$dir/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' \
+    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" "$BOX_SIZE" > "$dir/box.env"
 }
 
-# load: read the state as text, its six keys only; the file never runs.
+# load: read the state as text, its seven keys only; the file never runs.
 load() {
   [ -f "$dir/box.env" ] || die "no Sandbox for $dir; run box.sh up first"
-  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_REMADE=0
+  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_REMADE=0; BOX_SIZE=""
   local k v
   while IFS='=' read -r k v; do
     case "$k" in
       BOX_ID) BOX_ID="$v" ;; BOX_OS) BOX_OS="$v" ;; BOX_WORK) BOX_WORK="$v" ;;
       BOX_SETUP) BOX_SETUP="$v" ;; BOX_ENV) BOX_ENV="$v" ;; BOX_REMADE) BOX_REMADE="$v" ;;
+      BOX_SIZE) BOX_SIZE="$v" ;;
     esac
   done < "$dir/box.env"
 }
@@ -97,6 +107,7 @@ case "$verb" in
     BOX_SETUP="$home/setup-$BOX_OS.sh"
     [ -f "$BOX_SETUP" ] || die "no setup script at $BOX_SETUP"
     BOX_ENV=""; [ ! -f "$home/app.env" ] || BOX_ENV="$home/app.env"
+    BOX_SIZE=""; [ ! -f "$home/size" ] || BOX_SIZE="$(tr -d '[:space:]' < "$home/size")"
     mkdir -p "$dir"
     create
     printf 'SANDBOX=%s\n' "$BOX_ID"

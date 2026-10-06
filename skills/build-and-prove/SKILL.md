@@ -26,8 +26,10 @@ arguments.
 - `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
   it with an idle time of 30m on Linux and 10m on macOS, proofbox's
   default max life of 3h, and no `--provider`, so proofbox's own config
-  picks the Provider. It reads the setup script and env file
-  from `~/.agents/proofbox/<owner>-<repo>/`.
+  picks the Provider. It shows every line proofbox prints as it makes
+  the Sandbox, so a failed setup script's last lines come before the
+  `stop:` line. It reads the setup script, the env file, and the
+  optional size file from `~/.agents/proofbox/<owner>-<repo>/`.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits
   with its code. A Sandbox that is gone, idle too long or past its max
@@ -98,8 +100,9 @@ commits stay.
    outside every repo, as proofbox wants (its ADR 0007).
    - No `setup-<os>.sh`: write it from what the repo shows: the runtime
      versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
-     the install command its lockfile calls for, and the tools the
-     plan's `Test`, `Lint`, `Build`, and `Run` lines need. It runs once
+     the install command its lockfile calls for, the tools the plan's
+     `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
+     commands of its UI walks and videos use. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. Say `Setup: wrote <path>`.
    - The app needs settings (`.env.example`, the plan's `Run` line): no
@@ -108,6 +111,10 @@ commits stay.
      `NAME=` line for each secret. Then one message: the file's path
      and the names to fill in, never a value. Wait until the user says
      it is done. Never print the file.
+   - `size`, optional, one line such as `8x16`: the Sandbox size for
+     every run of this repo, which `box.sh` passes as `--size`, on `up`
+     and on each remake. The skill never writes it; the user does, when
+     proofbox's default (4x8 on Linux) is too slow.
 
 5. **Sandbox up.**
 
