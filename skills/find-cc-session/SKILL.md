@@ -20,8 +20,8 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
 2. **Judge the candidates.** The score is a keyword heuristic, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
 
 3. **Act on the verdict.**
-   - One match: `printf "%s" "<id>" | pbcopy`, then report the ID with its title, age, and prompt count on one line.
+   - One match: `printf "%s" "<id>" | bash ../../shared-skill-core/copy.sh`, then report the ID with its title, age, and prompt count on one line. Any other exit than 0: the line ends `(clipboard copy skipped)`.
    - Several: list them (title, age, prompts, ID), ask which one, and copy the pick. A tie-breaker in the description ("the most recent") settles it without asking.
    - None: say so, show the closest one or two, and suggest a rephrase, `--all`, or a check that this is the right project folder.
 
-Done when the ID is on the clipboard, or the user knows there is no match. After a copy, offer `/load-cc-session <id>` in Claude Code or `$load-cc-session <id>` in Codex; load only on request.
+Done when the ID is on the clipboard, or the copy was skipped, or the user knows there is no match. After a copy, offer `/load-cc-session <id>` in Claude Code or `$load-cc-session <id>` in Codex; load only on request.

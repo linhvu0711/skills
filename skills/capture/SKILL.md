@@ -260,15 +260,15 @@ If the retry also fails, show the error and stop.
 
 ### 7. Report
 
-Copy the URL to the clipboard when `pbcopy` exists, then say one line:
+Copy the URL to the clipboard, then say one line:
 
 ```bash
-command -v pbcopy >/dev/null && printf "%s" "<url>" | pbcopy
+printf "%s" "<url>" | bash ../../shared-skill-core/copy.sh
 ```
 
 > Captured: <url> (on your clipboard)
 
-No `pbcopy` (a headless host): `Captured: <url>`.
+Any other exit than 0: `Captured: <url> (clipboard copy skipped)`.
 
 Nothing else, except the `Screenshot not attached` note from step 6 when it
 applies. No summary of the body, no next steps.

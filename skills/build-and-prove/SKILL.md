@@ -87,7 +87,8 @@ commits stay.
    ```
 
    - `stop: log in first: <command>`: show the command, copy it with
-     `pbcopy` when there is one, and stop. Coding has not started.
+     `../../shared-skill-core/copy.sh` (any other exit than 0: say
+     `Clipboard copy skipped.`), and stop. Coding has not started.
    - Any other `stop:`: show it, stop.
 
 3. **Worktree.** The branch follows the PR shape § Branch
@@ -208,8 +209,8 @@ commits stay.
    ```
 
    - `stop: log in first: <command>`: the login expired since step 2.
-     Show the command, copy it with `pbcopy` when there is one, and
-     stop.
+     Show the command, copy it with `../../shared-skill-core/copy.sh` (any
+     other exit than 0: say `Clipboard copy skipped.`), and stop.
    - A line that says the setup script failed: proofbox printed its
      last 50 lines above it. Fix the script and run `up` again; after
      three tries, stop with the last line.
@@ -385,7 +386,7 @@ pass. `proof.md` written, `box.sh down`, report.
 
 **`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 
-Show it, `pbcopy` it, stop. No worktree, no Coding, and no Sandbox yet.
+Show it, copy it with `copy.sh`, stop. No worktree, no Coding, and no Sandbox yet.
 
 **Walker** reports walk 2 failed: step 3 says click `Save`, the screen
 shows `Save changes`, and after it the saved row is there.

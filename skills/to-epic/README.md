@@ -30,7 +30,7 @@ Over 12 tickets, it proposes splitting into several epics first.
 - `gh`, signed in, on a repo with sub-issues and issue dependencies.
 - `python3`, for [to-issue](../to-issue/)'s `scripts/conventions.py`, which remembers each repo's title style and size labels.
 - Sub-agents for the lookup round (Explore agents in Claude Code, with web search for a task's platform docs; Codex reads the files itself).
-- `pbcopy`, optional, for the parent URL.
+- A clipboard tool, optional, for the parent URL, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md), which every sub-issue follows.
 
 ## Fits with

@@ -22,7 +22,7 @@ When no ticket and no fog is left, it prints `Map clear.`, the full list of deci
 
 - `gh`, signed in, on a repo with sub-issues and issue dependencies. When the plan lacks them, it falls back to task lists and `Blocked by:` lines.
 - Sub-agents for research tickets (Explore agents with web search in Claude Code).
-- `pbcopy`, optional, to put the map URL on the clipboard.
+- A clipboard tool, optional, to put the map URL on the clipboard, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [grill](../grill/) for the charting and every grill ticket.
 - [commit](../commit/) to commit research notes.
 - [create-mockup](../create-mockup/) and [create-diagram](../create-diagram/) for experiment tickets.

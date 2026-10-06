@@ -522,9 +522,13 @@ are ever closed this way.
 
 ## Report
 
+Put the URL on the clipboard with `copy.sh`, the script next to this
+file. Call it by its absolute path: `<shared core>` is the folder you
+read this file from, not the working directory.
+
 ```bash
-command -v pbcopy >/dev/null && printf "%s" "<url>" | pbcopy
+printf "%s" "<url>" | bash "<shared core>/copy.sh"
 ```
 
-The URL is on the clipboard. Say so in one line. No `pbcopy` (a headless
-host): print the URL on its own line instead.
+Exit 0: the URL is on the clipboard. Say so in one line. Any other exit:
+print the URL on its own line and say `Clipboard copy skipped.`

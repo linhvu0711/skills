@@ -20,7 +20,7 @@ Everything lives under `~/.codex/artifacts/mockup/<slug>/` (or `$CODEX_HOME` whe
 
 - `python3`, to serve the page on `127.0.0.1`.
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
-- Optional: Playwright MCP in Claude Code (or the Codex in-app browser) so the agent can click through the mock itself; `pbcopy` to copy the URL; the `impeccable` skill for the visual design.
+- Optional: Playwright MCP in Claude Code (or the Codex in-app browser) so the agent can click through the mock itself; a clipboard tool, through [copy.sh](../../shared-skill-core/copy.sh), to copy the URL; the `impeccable` skill for the visual design.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.
 
 ## Fits with

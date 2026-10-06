@@ -47,7 +47,7 @@ _Avoid_: session list, sessions file
 ## Local build
 
 **Local machine**:
-The machine the session runs on, where the worktree lives and the Builder edits. It can be a Mac, a Linux box, or a Windows machine. A proofbox Sandbox is never the local machine.
+The machine the session runs on, where the worktree lives and the Builder edits. It can run macOS, Linux, or Windows. A proofbox Sandbox is never the local machine.
 _Avoid_: Mac, laptop, host
 
 **Coding**:

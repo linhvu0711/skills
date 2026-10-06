@@ -20,7 +20,7 @@ It is a seed (an idea nobody has decided to do) or a bug (something seen broken 
 
 - `gh`, signed in. Screenshots need `--attach` on `gh issue create` (see `gh issue create --help`); without it the issue is still filed, with a sentence in place of each screenshot.
 - `python3`, for `scripts/conventions.py`, which stores each repo's title style in `~/.config/capture/conventions.json` and its priority labels in `~/.config/gh-issues/priority-labels.json`.
-- `pbcopy`, optional, for the clipboard.
+- A clipboard tool, optional, for the URL, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md), which owns the label names and colors and the rules for writing for a stranger.
 
 ## Fits with

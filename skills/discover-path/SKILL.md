@@ -108,8 +108,9 @@ work already decided. The map comes first.
 6. **Origin seed.** When there is one:
    `gh issue close <seed> --comment "Grew into #<map>"`.
 
-7. **Report.** Map URL on its own line, and on the clipboard when `pbcopy`
-   exists. One line per ticket: name, type, blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
+7. **Report.** Map URL on its own line, and on the clipboard through
+   `../../shared-skill-core/copy.sh`; on any other exit than 0, say
+   `Clipboard copy skipped.` One line per ticket: name, type, blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
    one.` Stop. Charting resolves nothing.
 
 ## Work

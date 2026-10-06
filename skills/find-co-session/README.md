@@ -20,7 +20,7 @@ Words like "yesterday" or "last week" narrow the search by date. When a few sess
 
 - `python3` (standard library only).
 - The script in the shared core folder [`sessions/codex/`](../../shared-skill-core/sessions/codex/), which retro uses too.
-- `pbcopy` for the clipboard, so macOS as written.
+- A clipboard tool, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - Codex rollouts under `~/.codex/sessions/`. It runs from Claude Code or Codex.
 
 ## Fits with
