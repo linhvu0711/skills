@@ -30,7 +30,7 @@ The repo is left as it found it, and your machine is yours to change: a local fi
 - `git`, for the log and for `git bisect`.
 - `gh`, signed in, to read the issue you name and to file the ticket.
 - Sub-agents: Explore agents to read and Runner agents to run repro loops and bisects, in Claude Code. In Codex it does both itself.
-- `pbcopy`, optional, for the fix command on a local-env bug.
+- A clipboard tool, optional, for the fix command on a local-env bug, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [grill](../grill/), when a decision is open.
 - [to-issue](../to-issue/), to file the ticket.
 

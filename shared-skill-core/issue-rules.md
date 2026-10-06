@@ -522,9 +522,12 @@ are ever closed this way.
 
 ## Report
 
+Put the URL on the clipboard with `copy.sh`, the script in this file's
+folder:
+
 ```bash
-command -v pbcopy >/dev/null && printf "%s" "<url>" | pbcopy
+printf "%s" "<url>" | bash copy.sh
 ```
 
-The URL is on the clipboard. Say so in one line. No `pbcopy` (a headless
-host): print the URL on its own line instead.
+Exit 0: the URL is on the clipboard. Say so in one line. Any other exit:
+print the URL on its own line and say `Clipboard copy skipped.`

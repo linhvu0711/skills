@@ -20,7 +20,7 @@ When a few sessions fit, it lists them and asks you to pick. When nothing fits, 
 
 - `python3` (standard library only).
 - The script in the shared core folder [`sessions/claude/`](../../shared-skill-core/sessions/claude/), which retro uses too.
-- `pbcopy` for the clipboard, so macOS as written.
+- A clipboard tool, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - Claude Code transcripts under `~/.claude/projects/`. It runs from Claude Code or Codex.
 
 ## Fits with

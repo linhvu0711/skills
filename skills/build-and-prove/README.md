@@ -38,7 +38,8 @@ BUILT feat/42-export-orders-csv
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
 - `git`, and `gh` (signed in) for the issue.
 - The walker's agent file, linked once into Claude Code: `ln -s "$PWD/skills/build-and-prove/agents/walker.md" ~/.claude/agents/walker.md`, run from this repo's root. Codex has no sub-agents, so the session walks under the same rules.
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh`, `../../shared-skill-core/pr-shape.md`, and the templates in `../../shared-skill-core/handoff/`.
+- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh`, `../../shared-skill-core/copy.sh`, `../../shared-skill-core/pr-shape.md`, and the templates in `../../shared-skill-core/handoff/`.
+- A clipboard tool, optional, for the login command, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - For a Claude Code pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Claude Code CLI `claude`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
 
 ## Fits with

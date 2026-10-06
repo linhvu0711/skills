@@ -21,7 +21,7 @@ https://github.com/acme/shop/issues/42 · size/M · feat
 - `gh`, signed in.
 - `python3`, for `scripts/conventions.py`, which remembers each repo's title style and size labels.
 - Sub-agents for the lookup round (Explore agents in Claude Code; Codex reads the files itself).
-- `pbcopy`, optional, for the clipboard.
+- A clipboard tool, optional, for the URL, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md) (gate, types, body template, labels) and [size.md](../../shared-skill-core/size.md), the size ruler.
 
 ## Fits with

@@ -116,7 +116,8 @@ nothing.
    ```
 
    When the category is local env, show the fix command in a code block and
-   put it on the clipboard when `pbcopy` exists. The user runs it. You do
+   put it on the clipboard with `../../shared-skill-core/copy.sh`; on any
+   other exit than 0, say `Clipboard copy skipped.` The user runs it. You do
    not change their machine. The same holds for the ops fix of live env and
    the data fix of data: name it in the report, the user does it.
 

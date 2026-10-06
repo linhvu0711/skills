@@ -44,8 +44,8 @@ Serve the mockup folder on `127.0.0.1` (`python3 -m http.server 8765 --bind 127.
 
 ## 5. Deliver and iterate
 
-Open `http://127.0.0.1:<port>/<slug>.html` in the browser and leave the finished page up for the user. Copy the local URL to the clipboard when `pbcopy` exists. Reply with the local URL, the HTML file path, `scope.md` as a checklist, which data is fake, what is out of scope, and that the backtick key hides the panel.
+Open `http://127.0.0.1:<port>/<slug>.html` in the browser and leave the finished page up for the user. Copy the local URL to the clipboard with `../../shared-skill-core/copy.sh`; on any other exit than 0, say `Clipboard copy skipped.` Reply with the local URL, the HTML file path, `scope.md` as a checklist, which data is fake, what is out of scope, and that the backtick key hides the panel.
 
-On each change request, edit the same file, re-verify only the changed lines, reload the same local URL, and copy it again when `pbcopy` exists. A later session continues from the same file path. To publish the finished mock as a Claude artifact, run `/to-artifact <path>`.
+On each change request, edit the same file, re-verify only the changed lines, reload the same local URL, and copy it again with `copy.sh`. A later session continues from the same file path. To publish the finished mock as a Claude artifact, run `/to-artifact <path>`.
 
 **Headless host** (`command -v open xdg-open` finds neither): there is no browser to leave the page in. Skip the local URL. Publish the page with the `to-artifact` skill and reply with the artifact link in place of the URL. A change request republishes to the same artifact. Publish fails: say why, give the HTML file path, stop.
