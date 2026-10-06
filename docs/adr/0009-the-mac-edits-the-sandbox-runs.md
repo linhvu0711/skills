@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0011
+---
+
 # The Mac edits, the sandbox runs
 
 In `/build-and-prove`, the Mac only edits files, runs git, and calls proofbox. Everything that runs the project's code runs in one proofbox Sandbox per run: each slice's red and green test, typecheck, lint, the full suite, the build, and the app the walker uses. Each test run takes a few seconds more for the upload and the network round trip, but the user's Mac stays free for other work, and the builder never has to guess which command counts as heavy. Do not move "just the quick test" back to the Mac.

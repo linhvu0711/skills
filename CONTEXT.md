@@ -46,6 +46,22 @@ _Avoid_: session list, sessions file
 
 ## Local build
 
+**Local machine**:
+The machine the session runs on, where the worktree lives and the Builder edits. It can be a Mac, a Linux box, or a Windows machine. A proofbox Sandbox is never the local machine.
+_Avoid_: Mac, laptop, host
+
+**Coding**:
+The part of `/build-and-prove` where the Builder writes the plan's slices, one at a time: a test that fails, the code that makes it pass, one commit. It runs on the local machine.
+_Avoid_: the build (that word also names the Build command)
+
+**Build command**:
+The plan's `Build:` line, such as `pnpm build`, which turns the code into what the app runs. It is one of the Gates.
+_Avoid_: the build (that word also names Coding)
+
+**Gates**:
+The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. They run once in the run's Sandbox after Coding, and each line in `checks.txt` says where it ran.
+_Avoid_: CI, final checks
+
 **Builder**:
 The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
 _Avoid_: implementer, coder
