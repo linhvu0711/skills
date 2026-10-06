@@ -11,8 +11,9 @@ Read `references/codebase-design.md` first. It holds the vocabulary
 **locality**) and the principles (the deletion test, "the interface is the
 test surface", "one adapter = hypothetical seam, two = real"). Use these
 terms exactly, in every brief, every card, and every sentence to the user.
-The domain terms come from `CONTEXT.md`. ADRs under `docs/adr/` record
-decisions this skill does not re-litigate.
+The domain terms come from `CONTEXT.md`. ADRs under `docs/adr/`, and the
+`## Docs to write` text in open issues, record decisions this skill does
+not re-litigate.
 
 You find **deepening candidates**: refactors that turn shallow modules into
 deep ones, so tests hit one interface and an agent can navigate the code.
@@ -36,8 +37,11 @@ Explore agents retrieve, short lookups are yours.
      look. Scattered changes with no hot spot: widen the net to the whole
      repo.
 
-   Read `CONTEXT.md` and every ADR that touches the area. Done when you can
-   name the paths in scope and the decisions already made about them.
+   Read `CONTEXT.md` and every ADR that touches the area, and the open
+   issues with a `## Docs to write` section in the area
+   (`gh issue list --state open --search '"Docs to write" in:body'`):
+   their text is decided, not built, and counts like an ADR. Done when you
+   can name the paths in scope and the decisions already made about them.
 
 2. **Explore.** Dispatch Explore agents per `facts.md`, one per hot spot
    or subsystem. A brief holds:
@@ -94,7 +98,8 @@ Explore agents retrieve, short lookups are yours.
    Skill tool. Seed: the card. Open decisions: the constraints on the
    deepened module; which dependencies sit behind the seam and how each
    is tested (per its category); the shape of the deepened module; which
-   tests survive and which are replaced.
+   tests survive and which are replaced. The grill's close-out files the
+   refactor as an issue or an epic, with its doc text inside.
 
    When the user wants to see alternative interfaces for the deepened
    module, run `references/design-it-twice.md`: three or more sub-agents

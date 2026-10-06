@@ -124,9 +124,10 @@ nothing.
 9. **Grill.** Test the report against § When grill fits. It fits: write
    the seed block in the same message, right after the report, and invoke
    the grill skill with the Skill tool. The seed is the report, and the bug
-   issue when there is one; the open decisions are the choices you found.
-   After `Grill done.`, go to step 10. It does not fit: go to step 10, with
-   no question to the user. The report is the agreement.
+   issue when there is one; the open decisions are the choices you found;
+   `Close out: text.`, since step 10 files the ticket. After `Grill done.`,
+   go to step 10 with the doc entries it handed back. It does not fit: go
+   to step 10, with no question to the user. The report is the agreement.
 
 10. **File.** Invoke the to-issue skill with the Skill tool, in the same
     turn. Do not ask first, and do not end with `Ready for /to-issue`.
@@ -135,10 +136,14 @@ nothing.
       `references/categories.md`: its type and its work, or nothing when
       the exit says so. A perf hot spot is a `perf` ticket. Only the code
       part of an exit is filed; the user's part stays in the report.
-      Carry the settled decisions after a grill.
+      Carry the settled decisions after a grill, and its doc entries
+      under `## Docs to write`, per
+      `../../shared-skill-core/issue-rules.md` § Docs to write.
     - Cause not found: a `spike` ticket on the open question.
     - Nothing to file: say why in one line and stop. The bug issue from
-      step 1, if any, stays as it is.
+      step 1, if any, stays as it is. The grill handed back doc entries:
+      they are true now, so write them and open the docs PR per
+      `../grill/SKILL.md` § Close out, no work, with `Refs #<bug>`.
 
     The bug issue from step 1 is the origin: to-issue rewrites it into the
     ticket, per `../../shared-skill-core/issue-rules.md` § Origin bug. No

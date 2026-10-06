@@ -8,15 +8,15 @@ The idea is big and foggy, and you can't cut it into tickets yet because too muc
 
 ## What you get
 
-The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. Nothing reaches GitHub until you approve, except one docs PR for the glossary entries and ADRs the grill writes while charting. After that you get a map issue labelled `discovery/map` and one child ticket per question, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
+The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. Nothing reaches GitHub until you approve. After that you get a map issue labelled `discovery/map` (a seed issue you started from becomes the map, same number) and one child ticket per question, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
 
-Each later run takes the next free ticket, settles it with you, posts the answer, closes the ticket, and updates the map:
+Each later run takes the next free ticket, settles it with you, posts the answer, closes the ticket, and updates the map. Glossary entries and ADRs the grills agree on wait on the map, under `## Docs to write`, not in your doc files, and no docs PR opens while you work:
 
 ```
 Closed [grill] Which plan model: per seat or per team?. Next free: [research] Does Stripe support per-seat proration?. Run /discover-path <map-url> again.
 ```
 
-When no ticket and no fog is left, it prints `Map clear.`, the full list of decisions, and hands over to [to-epic](../to-epic/).
+When no ticket and no fog is left, it prints `Map clear.`, the full list of decisions, and hands over to [to-epic](../to-epic/). The map becomes the epic, same number, and each doc entry goes to the sub-issue whose code makes it true, so it lands in that PR. When the end is a decision with no code to build, the doc entries ship in one docs PR.
 
 ## Needs
 

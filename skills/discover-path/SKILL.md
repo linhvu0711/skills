@@ -52,7 +52,7 @@ work already decided. The map comes first.
 
 - An issue URL or number carrying `discovery/map`: **Work**.
 - One carrying `seed`: **Chart**, the seed is the idea. Keep it as the origin
-  seed.
+  seed: step 5 rewrites it into the map, same number.
 - Any other issue: say what it is and stop.
 - Text, or nothing: **Chart** from the text or the chat.
 
@@ -63,21 +63,24 @@ work already decided. The map comes first.
 1. **Destination.** Invoke the `grill` skill with the Skill tool. Seed: the
    idea. Open decisions: what reaching the end of this map looks like (a
    spec to hand off, a decision to lock, a change made in place); what is
-   near but out. Close out: caller. Then continue at step 2. Done when
-   the destination is one or two lines the user agreed to.
+   near but out. Close out: text. Then continue at step 2. Keep the doc
+   entries it hands back for the map. Done when the destination is one or
+   two lines the user agreed to.
 
 2. **Wide grill.** Invoke `grill` again, breadth-first: fan out across the
    whole space, one level deep on every thread. Open decisions: every
    question that must be settled before the work can be cut; which are sharp
    now and which are fog; which need an outside fact (research), a thing to
-   react to (experiment), or manual work first (task); what gates what. Then
-   continue at step 3. Its close-out counts the files the step 1 grill
-   named as its own, so they get a PR even when step 2 changed none.
-   Done when grill has said `Grill done.` and every settled question
-   carries a type.
+   react to (experiment), or manual work first (task); what gates what.
+   Close out: text. Then continue at step 3. Its doc entries join step
+   1's; all of them wait for the map, so charting opens no docs PR. Done
+   when grill has said `Grill done.` and every settled question carries a
+   type.
 
-   No fog, and the whole thing fits one session: say `/grill settled it.
-   /to-issue or /to-epic is the tool.` and stop.
+   No fog, and the whole thing fits one session: say `/grill settled it.`,
+   then file the work as the grill's close-out does with no line
+   (`../grill/SKILL.md` § Close out): to-issue or to-epic, the seed as the
+   origin, the doc entries under `## Docs to write`. Stop.
 
 3. **Propose in chat.** The proposal format in `references/map.md`. End with
    the three questions, verbatim:
@@ -97,7 +100,10 @@ work already decided. The map comes first.
    when each label exists and `t grill "x?"` prints a title in the repo's
    style.
 
-5. **Create.** Map first, then tickets in proposal order, free ones first,
+5. **Create.** Map first: the origin seed, when there is one, rewritten
+   into the map with `gh issue edit`, never closed; otherwise a new issue.
+   Its body holds every doc entry from steps 1 and 2 under
+   `## Docs to write`. Then tickets in proposal order, free ones first,
    one `gh issue create` each per `references/map.md` § Commands. Numbers
    from earlier calls feed `--blocked-by` on later ones. Then rewrite the
    map body with real links. On failure: stop, report what exists and what
@@ -105,10 +111,7 @@ work already decided. The map comes first.
    the rest. Done when every proposed ticket exists and the map body links
    each closed-or-fog line correctly.
 
-6. **Origin seed.** When there is one:
-   `gh issue close <seed> --comment "Grew into #<map>"`.
-
-7. **Report.** Map URL on its own line, and on the clipboard through
+6. **Report.** Map URL on its own line, and on the clipboard through
    `../../shared-skill-core/copy.sh`; on any other exit than 0, say
    `Clipboard copy skipped.` One line per ticket: name, type, blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
    one.` Stop. Charting resolves nothing.
@@ -129,8 +132,8 @@ work already decided. The map comes first.
    rests on it.
    - **grill**: invoke `grill` with the Skill tool. Seed: the ticket's
      question, the map's Destination, and Decisions so far. Open decisions:
-     the question and the terms it touches. Then continue at step 5.
-     `CONTEXT.md` and ADRs are grill's.
+     the question and the terms it touches. Close out: text. Then continue
+     at step 5 with the doc entries it hands back.
    - **research**: one Explore agent, `SEARCH=on`, brief inline. The note
      lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
      committed with `/commit`.
@@ -148,8 +151,11 @@ work already decided. The map comes first.
 
 5. **Record.** The resolution comment per `references/map.md`, then
    `gh issue close <n>`, then one gist line with the link under Decisions so
-   far, map body re-read first. Done when the ticket is closed and the map
-   links it.
+   far, and each doc entry the grill handed back under the map's
+   `## Docs to write`, map body re-read first. Nothing is written to a doc
+   file and no docs PR opens while the map is open: the map shows the
+   decision to every later ticket. Done when the ticket is closed and the
+   map links it and holds its doc entries.
 
 6. **Advance the map.** A question the answer made sharp becomes a ticket,
    titled with the `t` helper, create then wire, and its fog line leaves
@@ -164,7 +170,12 @@ work already decided. The map comes first.
    `../../shared-skill-core/issue-rules.md` § Readiness gate over the whole
    Decisions so far list, unhappy paths included. Each gap becomes one
    ticket, created now, then report as above. No gap: print `Map clear.`,
-   the Decisions so far list in full, and `Run /to-epic in this chat.`
+   the Decisions so far list in full, and `Run /to-epic <map-url> in this
+   chat.` to-epic rewrites the map into the epic parent, same number, and
+   gives each doc entry to the sub-issue whose code makes it true. A
+   destination with no code to build (a decision to lock): the map's doc
+   entries are true now, so write them and open one docs PR per
+   `../grill/SKILL.md` § Close out, no work, with `Closes #<map>`.
 
 ## Revisit
 
@@ -177,8 +188,10 @@ tickets around it.
    closed.
 3. Every ticket that rested on the old answer gets the new one as a blocker.
 4. When the new ticket resolves, the old map line becomes `superseded by
-   <name with link>`, and an ADR born of the old answer gets
-   `status: superseded by ADR-NNNN`.
+   <name with link>`. A doc entry of the old answer that still waits in the
+   map's `## Docs to write` is edited in place: it never shipped, so it
+   needs no superseded ADR. An ADR of the old answer that already shipped
+   gets `status: superseded by ADR-NNNN`.
 
 ## Unhappy paths
 
