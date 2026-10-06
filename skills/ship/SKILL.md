@@ -144,8 +144,9 @@ picks the start; `devin` or `cursor` is taken off first, as in § Forms.
    with no build yet. Hold its `.md`, the path its summary names, and
    say `Plan: <path>`. Its base copy still there (no `ok` was given):
    remove it, per plan-up step 1. Words with it are an edit to the plan:
-   make it per plan-up step 8 (change the `.md`, rebuild, bump `v`),
-   with no wait. Then step 2.
+   make it per plan-up step 8 as step 1 here changes it: change the
+   `.md` and run `build-page.py` on it, with no page and no wait. Then
+   step 2.
 3. **Work this chat agreed on, with no issue and no plan.** Step 1
    runs plan-up's chat form, `/plan-up <words>`: the brief comes from
    the chat, and its gate stops the run when the chat left a gap. Then
