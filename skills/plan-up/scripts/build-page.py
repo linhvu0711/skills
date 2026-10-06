@@ -498,6 +498,33 @@ def md_before_problems(walks):
                 yield f"{name}: `{kind}` must name an earlier walk of its layer whose `Before` names steps"
 
 
+def typed_problems(name, step):
+    # A typed command is the backtick span right after `type`; a See or Before line quotes output in backticks too.
+    for cmd in re.findall(r"\btype\s+`([^`]+)`", step, re.I):
+        cmd = cmd.strip()
+        join = re.search(r";|&&", re.sub(r"'[^']*'|\"[^\"]*\"", "", cmd))
+        if join:
+            yield f"{name}: `{cmd}` joins commands with `{join.group()}`; type one command per step"
+        if re.match(r"clear(?:\s|;|&|$)", cmd):
+            yield f"{name}: `{cmd}` starts with `clear`; never clear the screen in a walk"
+
+
+def step_problems(layers):
+    for n, body in enumerate(layers, 1):
+        layer = f"layer {n} " if len(layers) > 1 else ""
+        heads = [l.strip() for l in body.get("UI walks", []) if RECORD["walk"].fullmatch(l.strip())]
+        for head, walk in zip(heads, records(body.get("UI walks", []), "walk")):
+            number = head.split()[1].rstrip(",")
+            for step in walk["steps"]:
+                yield from typed_problems(f"{layer}walk {number} steps", step)
+            yield from typed_problems(f"{layer}walk {number} before", walk.get("before", ""))
+        heads = [l.strip() for l in body.get("Videos", []) if RECORD["video"].fullmatch(l.strip())]
+        for head, video in zip(heads, records(body.get("Videos", []), "video")):
+            number = head.split()[1].rstrip(",")
+            for k, step in enumerate(video["steps"], 1):
+                yield from typed_problems(f"{layer}video {number} step {k}", step)
+
+
 def strings(node, path="DATA"):
     if isinstance(node, str):
         yield path, node
@@ -598,6 +625,7 @@ def plan_problems(lines):
         for number, walk in zip(numbers, records(body.get("UI walks", []), "walk")):
             walks.append({"layer": n, "n": number, "kind": before_kind(walk["before"]) if "before" in walk else None})
     yield from md_before_problems(walks)
+    yield from step_problems(layers)
 
 
 def main():
