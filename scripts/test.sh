@@ -515,8 +515,8 @@ t_render_names_box() {
   run bash "$here/../shared-skill-core/handoff/render.sh" local rules
   eq exit 0 "$code"
   eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
-  eq "lines with the box.sh path" 1 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
-  f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //')"
+  eq "lines with the box.sh path" 2 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
+  f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //' | sort -u)"
   [ -f "$f" ] || eq "box.sh path" "a file" "$f"
 }
 

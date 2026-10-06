@@ -82,7 +82,7 @@ flowchart LR
 |---|---|
 | [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/plan-up` there on an issue, a run of tickets, or an epic. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
-| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine with one proofbox Sandbox for every test and the app, and has a walker film the UI walks as proof. |
+| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |

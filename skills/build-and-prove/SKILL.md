@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it with proofbox: the Mac edits and commits, one proofbox Sandbox runs every test, the build, and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it with proofbox: Coding runs on the local machine, then one proofbox Sandbox runs the Gates and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
 disable-model-invocation: true
 ---
 
@@ -16,12 +16,13 @@ git command in the worktree is `git -C "$WT" …`.
 
 ## Sandbox
 
-One run has one proofbox Sandbox, and every command that runs the
-project's code runs there: each slice's red and green test, typecheck,
-lint, the full suite, the build, an install, and the app. The Mac only
-edits files, runs git, and calls proofbox (ADR 0009 in this repo).
-`scripts/box.sh` holds the Sandbox; it prints its usage with no
-arguments.
+Coding runs on the local machine: each slice's red and green test,
+typecheck, and lint, in the worktree, with the repo's packages installed
+there. One run has one proofbox Sandbox. It starts after Coding and runs
+the Gates, the app, the before shots, and the walks (ADR 0011 in this
+repo). A slice test that needs a tool the local machine lacks starts it
+early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
+prints its usage with no arguments.
 
 - `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
   it with an idle time of 30m on Linux and 10m on macOS, proofbox's
@@ -29,7 +30,8 @@ arguments.
   picks the Provider. It shows every line proofbox prints as it makes
   the Sandbox, so a failed setup script's last lines come before the
   `stop:` line. It reads the setup script, the env file, and the
-  optional size file from `~/.agents/proofbox/<owner>-<repo>/`.
+  optional size file from `~/.agents/proofbox/<owner>-<repo>/`. With a Sandbox already in
+  `<proof-dir>`, it keeps that one and prints its id.
 - `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
   worktree's changed files, or `<folder>`'s, runs the command, and exits
   with its code. A Sandbox that is gone, idle too long or past its max
@@ -116,35 +118,14 @@ commits stay.
      and on each remake. The skill never writes it; the user does, when
      proofbox's default (4x8 on Linux) is too slow.
 
-5. **Sandbox up.**
+5. **Coding.** Install the repo's packages in `$WT` on the local
+   machine, with the install command its lockfile calls for (the one
+   step 4 reads for the setup script); a repo with no lockfile installs
+   nothing. No Sandbox runs yet: `proofbox list` shows none of this run
+   until the last slice is committed, unless a slice test needed a tool
+   the local machine lacks (§ Sandbox).
 
-   ```bash
-   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
-   ```
-
-   - `stop: log in first: <command>`: show the command, copy it with
-     `pbcopy` when there is one, and stop.
-   - A line that says the setup script failed: proofbox printed its
-     last 50 lines above it. Fix the script and run `up` again; after
-     three tries, stop with the last line.
-   - Any other `stop:`: show it, stop.
-
-   Say `Sandbox: <id>`.
-
-6. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
-   line names steps, and only for a walk with no `before-<walk>.png` in
-   `PROOF` yet. The Sandbox must hold the base, even on a rerun whose
-   worktree has commits: add a detached worktree of `BASE` in a temp
-   folder, and run every command of this step as `box.sh run "$PROOF"
-   --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 8a), send the walker in `before` mode (step 8b), and stop the
-   app unless the walker ended with `GONE <id>`. On `GONE`, start the
-   app again from the same temp worktree and send the walker once more,
-   as step 8c says. Remove the temp worktree only when this step ends,
-   with the shots or with a stop. The next `box.sh run` without
-   `--from` puts the branch back. Say `Before shots: <n>`.
-
-7. **Build.** Assemble the prompt per
+   Assemble the prompt per
    `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
    head lines with `Branch`, `Worktree`, and `Proof folder` (`PROOF`),
    the issue's `Task` and `Done when` verbatim (a chat plan: its
@@ -193,7 +174,7 @@ commits stay.
        question in a fenced block, then one question to the user, two
        options at most, your pick first. The user answers
        `/build-and-prove <note>`. Stop.
-     - The last line is `BUILT <branch>`: step 8.
+     - The last line is `BUILT <branch>`: step 6.
      - The last line is `NOT BUILT <branch>: …`: show it, stop.
      - Neither, and no question: the pane stopped short. Show the last
        20 lines and stop.
@@ -201,22 +182,55 @@ commits stay.
        and stop.
 
    **Any other model**: you build. Read the prompt file and follow it
-   whole as its builder, in `$WT`: slices in order, tests first, every
-   command through `box.sh run`, one commit per slice. Say `Build:
+   whole as its builder, in `$WT`: slices in order, tests first, each
+   slice's test, typecheck, and lint on the local machine, in `$WT`, one
+   commit per slice. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are
    yours: stop and ask the user where it says stop and ask. It ends at
    `BUILT <branch>`.
 
-   Then the gates once more, yourself, on the head commit: the full
-   suite, typecheck, lint, and build under `Facts`, and every command
-   the repo's `AGENTS.md` or `CLAUDE.md` names as a check, each through
-   `box.sh run`. Write each to `$PROOF/checks.txt`, one line per
-   command: the command, the short SHA, and the result, as in
-   `pnpm test · 1a2b3c4 · 116 pass, 0 fail`. `/make-pr` counts these
-   and runs none of them on this machine. A fix round rewrites the file.
+6. **Sandbox up.** After Coding.
 
-8. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
-   to step 9. Else rounds, at most three:
+   ```bash
+   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
+   ```
+
+   - `stop: log in first: <command>`: show the command, copy it with
+     `pbcopy` when there is one, and stop.
+   - A line that says the setup script failed: proofbox printed its
+     last 50 lines above it. Fix the script and run `up` again; after
+     three tries, stop with the last line.
+   - Any other `stop:`: show it, stop.
+
+   When Coding started one for a missing tool, `up` keeps it and prints
+   the same id. Say `Sandbox: <id>`.
+
+7. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
+   line names steps, and only for a walk with no `before-<walk>.png` in
+   `PROOF` yet. The Sandbox must hold the base, since Coding has
+   committed: add a detached worktree of `BASE` in a temp
+   folder, and run every command of this step as `box.sh run "$PROOF"
+   --from <that folder> -- …`, so the base is what runs. Start the app
+   (step 9a), send the walker in `before` mode (step 9b), and stop the
+   app unless the walker ended with `GONE <id>`. On `GONE`, start the
+   app again from the same temp worktree and send the walker once more,
+   as step 9c says. Remove the temp worktree only when this step ends,
+   with the shots or with a stop. The next `box.sh run` without
+   `--from` puts the branch back. Say `Before shots: <n>`.
+
+8. **Gates.** Yourself, once, on the head commit: the full suite,
+   typecheck, lint, and build under `Facts`, and every command the
+   repo's `AGENTS.md` or `CLAUDE.md` names as a check, each through
+   `box.sh run`. Write each to `$PROOF/checks.txt`, one line per
+   command: the command, the short SHA, the result, and where it ran,
+   as in `pnpm test · 1a2b3c4 · 116 pass, 0 fail (sandbox)`. `/make-pr`
+   counts these and runs none of them again. A fix round rewrites the
+   file. A red Gate is the builder's: a follow-up per `render.sh local
+   prompt` § Follow-up, `# Check` naming the Gate, then the Gates
+   again.
+
+9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
+   to step 10. Else rounds, at most three:
 
    a. **Start the app.** You start it; the walker never does.
 
@@ -229,8 +243,8 @@ commits stay.
       curl -fsS -o /dev/null <url> && exit 0; sleep 2; done; exit 1'`.
       It does not answer: read `box.sh run "$PROOF" -- tail -n 50
       /tmp/app.log`. A missing tool or package is the setup script's:
-      fix it, `box.sh down`, then step 5 again. A crash in the code is
-      the builder's: a follow-up (step 8c). Still down after that:
+      fix it, `box.sh down`, then step 6 again. A crash in the code is
+      the builder's: a follow-up (step 9c). Still down after that:
       `box.sh down`, then stop with the log's last line.
 
    b. **Walker.** In Claude Code, the `walker` agent
@@ -257,7 +271,7 @@ commits stay.
       under it, idle or at its max life. No walk failed; run the round
       again from 8a, where `box.sh run` makes a new Sandbox, and it does
       not count as a round. A second `GONE` in the same round: `box.sh
-      down`, then stop with that line. Every walk passed: step 9. Each
+      down`, then stop with that line. Every walk passed: step 10. Each
       failed walk, by its screenshot and the plan, never by the walker's
       guess:
       - **App bug**: the steps reached the screen the walk names, and
@@ -266,7 +280,7 @@ commits stay.
         names the walk, what it saw, and the screenshot's path; `#
         Check` names the tests to run again. The pane gets it with
         `herdr-send`; as the builder, you do it yourself. Then the
-        gates again (end of step 7).
+        Gates again (step 8).
       - **Wrong walk**: a label, route, or step the plan named is not on
         the screen, and the Done-when line still holds there. Sort it
         by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
@@ -280,7 +294,7 @@ commits stay.
       a failed walk: `box.sh down`, then stop with the failing videos'
       paths, one per line.
 
-9. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
+10. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
    `../../shared-skill-core/pr-shape.md` § Proof, one row per Done-when
    line from the plan's Proof table, the test case by name, and for a
    plan with walks the `Screenshot` and `Video` columns and the
@@ -288,10 +302,10 @@ commits stay.
    `PROOF`. A row proved by a command carries the command, the short
    SHA, and the result from `checks.txt`.
 
-10. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
+11. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
     count for the report.
 
-11. **Report.** Chat gets this and nothing more:
+12. **Report.** Chat gets this and nothing more:
 
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
@@ -316,8 +330,7 @@ The user commits or drops them, then runs again. The commits ahead of `BASE` are
 each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
 number done, and the prompt starts at the next one. A count at or past
 the number of slices means every slice is in, since fix rounds commit
-only after the last slice: no builder, go to the gates at the end of
-step 7. Before shots in
+only after the last slice: no builder, go to step 6. Before shots in
 `PROOF` are kept. Every walk runs again from the start, since a video
 must show the final code.
 
@@ -327,7 +340,7 @@ must show the final code.
 sort the note by plan-up step 5 (a big fork it leaves open goes to the
 user first), shape it per `render.sh local prompt` § Answer when it
 answers a `QUESTION`, else § Follow-up, `herdr-send <PANE> --file
-<file>`, then back to step 7's sort. This chat started none: say so and
+<file>`, then back to step 5's sort. This chat started none: say so and
 stop.
 
 ## Examples
@@ -339,12 +352,13 @@ Plan read, slug `acme-shop-42`. proofbox found. Worktree
 `~/development/worktrees/acme/shop/feat-42-export-orders-csv` from
 `main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`;
 `app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it
-in. `box.sh up` prints `SANDBOX=ns:us:abc`. Walk 1's `Before` names
-steps: app started, walker in `before` mode, `before-1.png`. Prompt
-written, this session builds four slices, each test red then green
-through `box.sh run`. Gates green on `1a2b3c4`. Round 1: walk 3 fails,
+in. Prompt written, this session builds four slices, each test red
+then green on the local machine. After the fourth, `box.sh up` prints
+`SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from
+the base, walker in `before` mode, `before-1.png`. Gates green on
+`1a2b3c4` in the Sandbox. Round 1: walk 3 fails,
 its screenshot shows the `Export` button disabled with rows on screen:
-an app bug, a follow-up, slice 4's code fixed, gates again. Round 2: all
+an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
 pass. `proof.md` written, `box.sh down`, report.
 
 **`box.sh up`** prints `stop: log in first: proofbox auth login namespace`.

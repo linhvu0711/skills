@@ -31,8 +31,39 @@ t_render_media_once() {
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^ *### Screenshots$')"
 }
 
+t_render_local_split() {
+  render local rules
+  eq exit 0 "$code"
+  has "slice checks" "Each slice's tests, the typecheck, and lint run here" "$out"
+  lacks "old rule" "Never run one of those commands here" "$out"
+}
+
+t_render_local_gates() {
+  render local rules
+  eq exit 0 "$code"
+  has "gates" "runs the Gates in the run's proofbox Sandbox" "$out"
+  lacks "full suite" "Run the full test suite" "$out"
+}
+
+t_render_local_missing_tool() {
+  render local rules
+  eq exit 0 "$code"
+  has "missing tool" "command not found" "$out"
+  has "box.sh up" "box.sh up <Proof folder> <Worktree> <os> <Repo>" "$out"
+}
+
+t_render_cloud_full_suite() {
+  render devin rules
+  eq exit 0 "$code"
+  has "full suite" "Run the full test suite, typecheck, lint, and build" "$out"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
+  "local rules run each slice's checks here|t_render_local_split"
+  "local rules leave the Gates to the Sandbox|t_render_local_gates"
+  "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
+  "cloud rules still run the full suite|t_render_cloud_full_suite"
 )

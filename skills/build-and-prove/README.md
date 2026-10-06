@@ -1,10 +1,10 @@
 # build-and-prove
 
-Builds a plan on your machine and proves it, the way a cloud agent would, without its cost. Your Mac only edits files and runs git. One proofbox Sandbox runs every test, the build, and the app, and a walker films the UI walks like a test user.
+Builds a plan on your machine and proves it, the way a cloud agent would, without its cost. Coding, each slice's test, typecheck, and lint, runs on the local machine. Then one proofbox Sandbox runs the Gates (the full suite, lint, the build, and the repo's own checks) and the app, and a walker films the UI walks like a test user.
 
 ## Use it when
 
-You have a plan from [plan-up](../plan-up/) and want it built and proved with videos, while your Mac stays free for other work. [ship](../ship/) runs it for you by default. Run it alone with:
+You have a plan from [plan-up](../plan-up/) and want it built and proved with videos, with the full suite and the app kept off your machine. [ship](../ship/) runs it for you by default. Run it alone with:
 
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: one layer of a run.
@@ -14,11 +14,11 @@ It only runs when you call it.
 
 ## What you get
 
-A worktree under `~/development/worktrees` on the issue's branch (a plan with no issue gets a branch with no number, as in `feat/export-orders-csv`), with one commit per slice, every check green in the Sandbox. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<slug>/`, named like the plan file (`<owner>-<repo>-<n>`, or `<owner>-<repo>-chat-<words>`): the videos, the before and after screenshots, `proof.md`, the PR's `Proof` part, and `checks.txt`, the repo's checks it ran on the head commit in the Sandbox, so make-pr runs none of them on your Mac. [make-pr](../make-pr/) turns that into the PR.
+A worktree under `~/development/worktrees` on the issue's branch (a plan with no issue gets a branch with no number, as in `feat/export-orders-csv`), with one commit per slice, every Gate green in the Sandbox. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<slug>/`, named like the plan file (`<owner>-<repo>-<n>`, or `<owner>-<repo>-chat-<words>`): the videos, the before and after screenshots, `proof.md`, the PR's `Proof` part, and `checks.txt`, the Gates it ran on the head commit, each line ending with where it ran, so make-pr runs none of them again. [make-pr](../make-pr/) turns that into the PR.
 
 On the way:
 
-- **One Sandbox per run.** `scripts/box.sh` creates it, runs each command there, and makes it again from its Snapshot when it dies, so a run can outlast one Sandbox. Namespace deletes a Sandbox after 30 idle minutes on Linux and 10 on a Mac, where a minute costs ten times more, and after proofbox's 3-hour max life, which every Namespace plan allows. A new one takes 1 to 3 minutes, and your code stays on your Mac, so nothing is lost. A Sandbox the builder started early, for a tool your machine lacks, is the same one the run keeps. The report says how many times it was made again. `up` shows what proofbox prints as it makes the Sandbox: the setup script's last lines when it fails, the Snapshot line when it reuses one. Each test is a `proofbox upload` of the changed files plus a `proofbox exec`.
+- **One Sandbox per run.** It starts after Coding. `scripts/box.sh` creates it, runs each Gate and the app there, and makes it again from its Snapshot when it dies, so a run can outlast one Sandbox. Namespace deletes a Sandbox after 30 idle minutes on Linux and 10 on a Mac, where a minute costs ten times more, and after proofbox's 3-hour max life, which every Namespace plan allows. A new one takes 1 to 3 minutes, and your code stays on your Mac, so nothing is lost. A Sandbox the builder started early, for a tool your machine lacks, is the same one the run keeps. The report says how many times it was made again. `up` shows what proofbox prints as it makes the Sandbox: the setup script's last lines when it fails, the Snapshot line when it reuses one. Each command there is a `proofbox upload` of the changed files plus a `proofbox exec`.
 - **A builder.** On Fable inside herdr, a Claude Code pane on Sonnet at high effort; on any other model, this chat. It follows the handoff rules for a local build.
 - **A walker.** A Sonnet subagent that does each walk as a test user: it gets the walks and what it must see, never the code, records each video with proofbox, and says what passed and what broke. A broken walk goes back to the builder when the app is wrong, or into the plan when the walk is wrong. At most three rounds.
 - **Setup files.** On the first run for a repo it writes `~/.agents/proofbox/<owner>-<repo>/setup-<os>.sh` from the repo, with the tools its checks and its walks need, and an `app.env` with an empty line for each secret you fill in. Later runs reuse them. An optional `size` file there, one line such as `8x16`, sets the Sandbox size for that repo; without it proofbox's default applies.
@@ -46,4 +46,4 @@ BUILT feat/42-export-orders-csv
 - Builds the plan [plan-up](../plan-up/) writes, with the rules [handoff](../handoff/) renders for a local builder.
 - Called by [ship](../ship/), which then runs [make-pr](../make-pr/) with the proof folder and [ready-pr](../ready-pr/).
 - Uses [kickoff](../kickoff/)'s `equalize_columns.py` to even out pane widths.
-- Why every command runs in the Sandbox, and why the walker never reads code: ADRs 0009 and 0010 in this repo.
+- Why Coding runs on the local machine and the Gates in the Sandbox, and why the walker never reads code: ADRs 0011 and 0010 in this repo.
