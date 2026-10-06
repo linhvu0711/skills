@@ -39,10 +39,10 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
-# state: an up Sandbox, without running up.
+# state <id> [<remade>] [<size>]: an up Sandbox, without running up.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${2:-0}" "${3:-}" > "$P/box.env"
 }
 
 t_box_up_flags() {
@@ -191,6 +191,48 @@ t_box_up_login_last() {
 stop: log in first: proofbox auth login namespace" "$err"
 }
 
+t_box_up_size() {
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  echo 8x16 > "$HOME/.agents/proofbox/acme-shop/size"
+  box up "$P" "$R" linux acme/shop
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(cat "$FAKE_PB/log")"
+  has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
+}
+
+t_box_run_remake_size() {
+  fake_proofbox
+  state ns:us:abc 0 8x16
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
+  has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
+}
+
+t_box_run_remake_no_size() {
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  box run "$P" -- pnpm test
+  eq exit 0 "$code"
+  eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
+}
+
+t_box_up_size_not_offered() {
+  fake_proofbox
+  echo 3x3 > "$HOME/.agents/proofbox/acme-shop/size"
+  echo "Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" > "$FAKE_PB/create.fail"
+  box up "$P" "$R" linux acme/shop
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" "$(printf '%s\n' "$err" | tail -n 1)"
+  [ ! -e "$P/box.env" ] || { echo "box.env written" >&2; exit 1; }
+  eq log "create --os linux --work $R --setup $SETUP --size 3x3 --idle 30m" "$(cat "$FAKE_PB/log")"
+}
+
 t_box_run_exec_gone() {
   fake_proofbox
   state ns:us:abc
@@ -241,4 +283,8 @@ cases=(
   "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"
   "up shows the Snapshot line and prints only the id on stdout|t_box_up_snapshot_reused"
   "up ends with the login stop line after proofbox's line|t_box_up_login_last"
+  "up passes the repo's size|t_box_up_size"
+  "run makes the Sandbox again at the same size|t_box_run_remake_size"
+  "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
+  "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
 )
