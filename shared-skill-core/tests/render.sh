@@ -31,6 +31,20 @@ t_render_media_once() {
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^ *### Screenshots$')"
 }
 
+t_render_risk_line() {
+  eq "risk line" 1 "$(grep -c '^   First line, always: `Risk: <door> door, blast radius: <what>.`$' "$here/../pr-shape.md")"
+  eq "one place" 1 "$(grep -c 'keeps only the `Risk`' "$here/../pr-shape.md")"
+}
+
+t_render_cloud_risk_once() {
+  render devin rules
+  eq exit 0 "$code"
+  eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c 'Risk: <door> door, blast radius: <what>.')"
+  render cursor rules
+  eq exit 0 "$code"
+  eq "cursor rules" 1 "$(printf '%s\n' "$out" | grep -c 'Risk: <door> door, blast radius: <what>.')"
+}
+
 t_render_local_split() {
   render local rules
   eq exit 0 "$code"
@@ -62,6 +76,8 @@ cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
+  "pr-shape opens Where to look with the Risk line|t_render_risk_line"
+  "cloud rules carry the Risk line once|t_render_cloud_risk_once"
   "local rules run each slice's checks here|t_render_local_split"
   "local rules leave the Gates to the Sandbox|t_render_local_gates"
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
