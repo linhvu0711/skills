@@ -65,7 +65,7 @@ Explore agents retrieve, short lookups are yours.
    adapters, mock). Done when every candidate has files, a friction, a
    deletion-test verdict, and a dependency category.
 
-3. **Report.** Build the candidate report as an Artifact, per
+3. **Report.** Build the candidate report as a local HTML page, per
    `references/html-report.md`. One card per candidate:
 
    - **Files**: which modules are involved.
@@ -86,8 +86,9 @@ Explore agents retrieve, short lookups are yours.
 
    End with a **Top recommendation**: which candidate first, and why.
 
-   Publish, give the user the link, and ask: "Which of these would you
-   like to explore?" Stop and wait.
+   Serve and open it per `references/html-report.md` § Serve and open,
+   give the user the URL, and ask: "Which of these would you like to
+   explore?" Stop and wait.
 
 4. **Grill.** The user picked a candidate. Invoke the `grill` skill with the
    Skill tool. Seed: the card. Open decisions: the constraints on the

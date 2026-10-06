@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Architecture review: {{repo name}}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: light dark; --bg: #fafaf9; --fg: #0f172a; --card: #ffffff; --line: #e2e8f0; --deep: #0f172a; --leak: #dc2626; --warn: #f59e0b; --accent: #059669; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --fg: #e7e5e4; --card: #1c1917; --line: #292524; --deep: #e7e5e4; }
+  }
+  body { background: var(--bg); color: var(--fg); }
+  .card { background: var(--card); border-color: var(--line); }
+  .seam { stroke-dasharray: 4 4; }
+  .leak { stroke: var(--leak); }
+  .deep { background: var(--deep); color: var(--bg); }
+</style>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "default" });
+  await mermaid.run();
+</script>
+</head>
+<body>
+<main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+  <header>
+    <h1 class="font-serif text-3xl">Architecture review: {{repo name}}</h1>
+    <p class="font-mono text-sm">{{branch}} · {{commit}} · {{date}}</p>
+  </header>
+  <section id="candidates" class="space-y-10">
+    <article class="card rounded-xl border p-6">
+      <h2 class="font-serif text-2xl">Example: replace this card</h2>
+      <div class="card rounded-lg border p-4">
+        <pre class="mermaid">
+          flowchart LR
+            A[OrderHandler] --> B[OrderValidator]
+            B --> C[OrderRepo]
+            C -.leak.-> D[PricingClient]
+            classDef leak stroke:#dc2626,stroke-width:2px;
+            class C,D leak
+        </pre>
+      </div>
+    </article>
+  </section>
+  <section id="top-recommendation"></section>
+</main>
+</body>
+</html>

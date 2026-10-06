@@ -1,10 +1,10 @@
 #!/bin/sh
-# Serve a plan page on 127.0.0.1 and print its URL.
+# Serve a page on 127.0.0.1 and print its URL.
 #
 #   serve.sh <dir> <file.html>
 #
 # A port counts only when it serves this exact file from <dir>. A server
-# on 8765 that holds some other folder (an old plan folder, a diagram, an
+# on 8765 that holds some other folder (an old page folder, a diagram, an
 # other session) is left alone, and the next free port gets a new server.
 set -eu
 dir=$1 file=$2

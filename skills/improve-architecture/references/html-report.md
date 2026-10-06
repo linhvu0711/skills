@@ -1,37 +1,31 @@
 # HTML report
 
-The candidate report is one HTML file, published with the Artifact tool. Write it to the scratchpad as `architecture-review-<repo>.html`, then publish with favicon `🏗️`. Load the `artifact-design` skill before writing.
+The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/architecture/architecture-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
 
-Artifact rules that shape the file:
+Page rules that shape the file:
 
-- The host wraps the file in the document skeleton. Write no `<!doctype>`, `<html>`, `<head>`, or `<body>`. Put `<title>` and `<style>` at the top.
-- Tailwind loads from its play CDN (`<script src="https://cdn.tailwindcss.com"></script>`). It is the one allowed script.
-- Mermaid renders natively in `<pre class="mermaid">` blocks. Load no Mermaid library.
-- The page renders in the viewer's theme. Define the light palette on `:root`, redefine it under `@media (prefers-color-scheme: dark)` guarded as `:root:not([data-theme="light"])`, and again under `:root[data-theme="dark"]`. Give `body` a token background.
+- A full document that shows correctly when it is opened alone. Keep the head of `assets/report.html` as it is.
+- Tailwind loads from its play CDN, and Mermaid 11 from jsdelivr. They are the only scripts.
+- Mermaid draws every `<pre class="mermaid">` block once its module loads, in its dark or default theme by the system setting.
+- The page follows the system light or dark theme through the `:root` tokens. A new colour is a token, set in both themes.
+
+## Serve and open
+
+Serve the page with the shared serve script, which prints its URL:
+
+```sh
+URL=$(../../shared-skill-core/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<owner>-<repo>.html")
+```
+
+The script exits with an error (no free port, or the server does not give back the file): chat gets its error line and the `.html` path, and the run stops.
+
+Then open it in the user's browser: `open "$URL?v=$(date +%s)"` on macOS, `xdg-open "$URL?v=$(date +%s)"` on Linux. The `v` makes a rerun on the same repo show the new page, not the cached one. Chat gives `$URL`.
+
+**Headless host** (`command -v open xdg-open` finds neither, or the open command exits with an error, as `xdg-open` does on a Linux host with no display): there is no browser to leave the page in. Give no local URL. Publish the page with the `to-artifact` skill and give the artifact link in place of the URL. When the open command failed, chat also gives its error line, so the user can fix the browser setup. Publish fails: say why, give the `.html` path, stop.
 
 ## Scaffold
 
-```html
-<title>Architecture review: {{repo name}}</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  :root { --bg: #fafaf9; --fg: #0f172a; --card: #ffffff; --line: #e2e8f0; --deep: #0f172a; --leak: #dc2626; --warn: #f59e0b; --accent: #059669; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #0c0a09; --fg: #e7e5e4; --card: #1c1917; --line: #292524; --deep: #e7e5e4; }
-  }
-  :root[data-theme="dark"] { --bg: #0c0a09; --fg: #e7e5e4; --card: #1c1917; --line: #292524; --deep: #e7e5e4; }
-  body { background: var(--bg); color: var(--fg); }
-  .card { background: var(--card); border-color: var(--line); }
-  .seam { stroke-dasharray: 4 4; }
-  .leak { stroke: var(--leak); }
-  .deep { background: var(--deep); color: var(--bg); }
-</style>
-<main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
-  <header>...</header>
-  <section id="candidates" class="space-y-10">...</section>
-  <section id="top-recommendation">...</section>
-</main>
-```
+`assets/report.html` holds the head, the tokens, the Mermaid loader, and the `<main>` with its `header`, `#candidates`, and `#top-recommendation` sections.
 
 ## Header
 

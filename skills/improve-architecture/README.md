@@ -8,7 +8,7 @@ The code has become hard to change or hard to test, and you want to know where a
 
 ## What you get
 
-An HTML report published as an Artifact, one card per candidate. Each card names the files, the problem, the change in plain words, the wins, a before and after diagram, and a strength badge (`Strong`, `Worth exploring`, `Speculative`). The report ends with a top pick. You choose a card, and a [grill](../grill/) works out the shape of the deeper module with you. If you want to compare interfaces, three or more sub-agents each design one under a different constraint, and you get a side-by-side comparison with a pick.
+An HTML report that opens in your browser as a local page, one card per candidate. Each card names the files, the problem, the change in plain words, the wins, a before and after diagram, and a strength badge (`Strong`, `Worth exploring`, `Speculative`). The report ends with a top pick. You choose a card, and a [grill](../grill/) works out the shape of the deeper module with you. If you want to compare interfaces, three or more sub-agents each design one under a different constraint, and you get a side-by-side comparison with a pick.
 
 It changes no code and proposes no interface on its own.
 
@@ -16,9 +16,9 @@ It changes no code and proposes no interface on its own.
 
 - `git`, for the recent history.
 - Sub-agents: Explore agents to read the code, and for the design-it-twice step an `interface-designer` agent in Claude Code (its definition is not in this repo) or Codex's normal sub-agent.
-- Claude Code's Artifact tool and its `artifact-design` skill, to publish the report.
+- A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the chosen candidate.
-- From the shared core: [facts.md](../../shared-skill-core/facts.md).
+- From the shared core: [facts.md](../../shared-skill-core/facts.md), and [serve.sh](../../shared-skill-core/serve.sh) to serve the report.
 
 ## Fits with
 

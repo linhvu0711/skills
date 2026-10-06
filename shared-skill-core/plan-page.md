@@ -44,11 +44,12 @@ the `.md` line, rebuild.
 
 ## Serve, open
 
-Serve with the script, which prints the page URL; the review path is
-that URL, not `file://`.
+Serve with `serve.sh`, the script next to this file, which prints the
+page URL; the review path is that URL, not `file://`. `<shared core>`
+is the folder you read this file from, not the working directory.
 
 ```sh
-URL=$(../skills/plan-up/scripts/serve.sh "$DIR" "plan-<slug>.html")
+URL=$("<shared core>/serve.sh" "$DIR" "plan-<slug>.html")
 ```
 
 It reuses a server only when that server gives back this exact file.

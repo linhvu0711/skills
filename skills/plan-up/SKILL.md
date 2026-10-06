@@ -276,7 +276,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 8. **Present.** Per `../../shared-skill-core/plan-page.md`: write the plan to its `.md`,
    run `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
    the `.md` and run it again. Never write `DATA`: the builder makes it.
-   Serve with `scripts/serve.sh`, open it in the browser, or publish it on a
+   Serve with `../../shared-skill-core/serve.sh`, open it in the browser, or publish it on a
    headless host. Chat
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary
