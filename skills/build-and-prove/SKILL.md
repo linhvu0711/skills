@@ -46,6 +46,19 @@ prints its usage with no arguments.
 `down` first, so no Sandbox is left running; the worktree and its
 commits stay.
 
+**Sandbox fault.** A command in the Sandbox that prints `not found`
+for a tool a setup script can install is the setup script's, not the
+code's, whatever its exit code: a script can catch the 127 and exit 1,
+as a check script that prints `stop: not inside a git repo` after
+`git: command not found` does. Check the tool with `box.sh run
+"$PROOF" -- sh -c 'command -v <tool>'`; exit 1 confirms it. A setup
+script from an earlier run, one that writes no `$PROOFBOX_ENV`, fails
+this way. Rewrite the script per step 4, `box.sh down`, `box.sh up`
+(step 6), and run the command again. This holds wherever the command
+ran: a slice test in a Sandbox Coding started early, a Gate, the app,
+a walk. After three in one run: `box.sh down`, then stop with the last
+one.
+
 ## Forms
 
 - `/build-and-prove <plan.md>`: the plan of one ticket.
@@ -185,7 +198,11 @@ commits stay.
      it ends. In Codex run it in the foreground with a long timeout.
      Read the tail, `herdr agent read <AGENT> --source visible --lines
      80`, and sort:
-     - The last message starts with `QUESTION`: sort it by the two
+     - The last message starts with `QUESTION` about a tool `not found`
+       in the Sandbox: a Sandbox fault (§ Sandbox). Fix it, answer per
+       `render.sh local prompt` § Answer that the tool is there now and
+       to run the command again, send it, and wait again.
+     - Any other `QUESTION`: sort it by the two
        tests in `../plan-up/SKILL.md` step 5. **Small fork**: the plan,
        the issue (a chat plan: its brief), or the repo holds the
        answer; fetch the `file:line` with Explore, shape it per `render.sh local prompt` § Answer,
@@ -206,7 +223,9 @@ commits stay.
    **Any other model**: you build. Read the prompt file and follow it
    whole as its builder, in `$WT`: slices in order, tests first, each
    slice's test, typecheck, and lint on the local machine, in `$WT`, one
-   commit per slice. Say `Build:
+   commit per slice. A slice test in the Sandbox that stops on a tool
+   `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
+   again. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are
    yours: stop and ask the user where it says stop and ask. It ends at
    `BUILT <branch>`.
@@ -263,13 +282,9 @@ commits stay.
    prompt` § Follow-up, `# Check` naming the Gate, then the Gates
    again.
 
-   A Gate that fails with `not found` (exit 127) for a tool a setup
-   script can install, such as one the `Test`, `Lint`, or `Build` line
-   names, is the setup script's, as at step 9a: rewrite it per step 4,
-   `box.sh down`, then step 6 again and the Gates again. This is how a
-   setup script from an earlier run, one that writes no
-   `$PROOFBOX_ENV`, gets rewritten. After three rewrites, stop with the
-   last line.
+   A Gate that prints `not found` for a tool, such as one the `Test`,
+   `Lint`, or `Build` line names, is a Sandbox fault (§ Sandbox),
+   whatever its exit code: fix it, then the Gates again.
 
    A Gate the Sandbox cannot run in any case, such as `pnpm test:docker`
    with no Docker in the Sandbox (exit 127, or its output names a
