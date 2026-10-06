@@ -18,8 +18,8 @@ folder. The rest is this skill's.
 
 A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the
 finished `## Proof` part, with the screenshots and videos it names as
-`./<file>` beside it, and `checks.txt`, the repo's checks it ran on HEAD
-in its Sandbox. With one set, `gh` must be 2.99 or newer
+`./<file>` beside it, and `checks.txt`, the repo's checks it did on HEAD,
+each line ending with where it ran. With one set, `gh` must be 2.99 or newer
 (`gh --version`), so that `gh pr edit --attach` exists; older: say so
 and stop before step 7.
 
@@ -77,8 +77,13 @@ and stop before step 7.
    `typecheck` script in `package.json`, each command once. Neither
    source has one: the checks `CONTRIBUTING.md` names. Run each one. A check that passed in this session after the last file change
    already counts: use that result and say so. So does a check a proof
-   folder's `checks.txt` lists with HEAD's short SHA: it ran in a proofbox
-   Sandbox, and it does not run again on this machine. A red check: show its
+   folder's `checks.txt` lists with HEAD's short SHA and a result: it ran
+   in the Sandbox or on the local machine, as the line's end says, and it
+   does not run again here. A `not run: <why>` line is not a result: do
+   not run that check either, and `Proof` says `CI must prove it`. When
+   no file under `.github/workflows/` names its command, nothing will
+   prove it: stop before the push, name the check, and ask the user how
+   to prove it. A red check: show its
    failing lines and stop, with the PR not opened. Done when every
    check is green and you hold each command, the short SHA of HEAD, and
    the result, for `Proof`.

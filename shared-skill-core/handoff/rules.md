@@ -59,20 +59,29 @@ branch; the main checkout and every other worktree are not yours.
 Never print a token, a `Token:` line, or an `Authorization` header,
 even masked.
 
-This machine only edits files and runs git. Every command that runs
-the project's code, a test, the typecheck, lint, the build, an
-install, the app, runs in the run's proofbox Sandbox, from the
-worktree:
+This machine is the local machine, and the repo's packages are
+already installed in the worktree.
+Each slice's tests, the typecheck, and lint run here, in the worktree,
+with the commands under `Facts`. The full suite, the build, and the app
+never run here: after you finish, `/build-and-prove`
+runs the Gates in the run's proofbox Sandbox.
+
+A slice's command that fails because this machine lacks a tool
+(`command not found`, exit 127): install nothing here. Start the
+Sandbox once, then run that command there, every time it runs:
 
 ```bash
+bash {{skills}}/build-and-prove/scripts/box.sh up <Proof folder> <Worktree> <os> <Repo>
 bash {{skills}}/build-and-prove/scripts/box.sh run <Proof folder> -- <command>
 ```
 
-`<Proof folder>` is the line of that name at the top of the prompt. It
-sends the files you changed, runs the command there, and exits with the
-command's code, so a red test is a non-zero exit. Never run one of those
-commands here, not even one quick test. A `stop:` line from it: stop and
-ask (see Asking below), say what it printed.
+`<Proof folder>`, `<Worktree>`, and `<Repo>` are the lines of those
+names at the top of the prompt; `<os>` is `macos` when `Facts` say
+`Platform: macos-outpost`, else `linux`. `run` sends the files you
+changed, runs the command there, and exits with the command's code, so
+a red test is a non-zero exit. The Sandbox stays for the rest of the
+run: never run `box.sh down`. A `stop:` line from it: stop and ask (see
+Asking below), say what it printed.
 <!-- /local -->
 
 <!-- cloud -->
@@ -182,13 +191,15 @@ test("exports one order as CSV", async () => {
 
 ## When every slice of a layer is green
 
+<!-- cloud -->
 1. Run the full test suite, typecheck, lint, and build, with the commands
    under `Facts`. All green before you go on.
+<!-- /cloud -->
 <!-- local -->
-2. Anything red is work: a test, the typecheck, lint, or the build. Fix
-   it and run the checks again. Repeat until all of it is green.
-3. Then go to Finish. You open no PR and push nothing:
-   `/build-and-prove` has the walks filmed, and `/make-pr` opens the PR.
+1. Run nothing more. The full suite and the build are Gates, and
+   `/build-and-prove` runs them in the Sandbox.
+2. Go to Finish. You open no PR and push nothing: `/build-and-prove`
+   runs the Gates and has the walks filmed, and `/make-pr` opens the PR.
 <!-- /local -->
 <!-- cloud -->
 <!-- devin -->
@@ -545,8 +556,8 @@ order. The proof is already in the PR. Secrets, tokens, and keys stay
 out of the PR, the commits, the screenshots, and the videos.
 <!-- /cursor -->
 <!-- local -->
-When every slice is committed and the full suite, typecheck, lint, and
-build are green in the Sandbox, end the turn with one message: every
+When every slice is committed and its tests, the typecheck, and lint
+are green, end the turn with one message: every
 surprise, one line each, then as the last line `BUILT <branch>`, the
 branch under `Branch`. Something stays red and you could not close it:
 the same message, last line `NOT BUILT <branch>: <what is open>`.
