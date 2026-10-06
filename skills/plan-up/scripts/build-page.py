@@ -518,7 +518,7 @@ def typed_problems(name, step):
             yield f"{name}: `{cmd}` starts with `clear`; never clear the screen in a walk"
 
 
-def step_problems(layers):
+def step_problems(layers, terminal):
     for n, body in enumerate(layers, 1):
         layer = f"layer {n} " if len(layers) > 1 else ""
         heads = [l.strip() for l in body.get("UI walks", []) if RECORD["walk"].fullmatch(l.strip())]
@@ -527,6 +527,10 @@ def step_problems(layers):
             for step in walk["steps"]:
                 yield from typed_problems(f"{layer}walk {number} steps", step)
             yield from typed_problems(f"{layer}walk {number} before", walk.get("before", ""))
+            # A terminal shows stdout and stderr mixed, so a walk can only check text on the screen.
+            if terminal and (m := re.search(r"\b(stderr|stdout)\b", walk.get("mustNot", ""), re.I)):
+                yield (f"{layer}walk {number} must not: names `{m.group(1)}`; a terminal shows stdout and stderr"
+                       " mixed, so name text on the screen, as in `no line starting Error:`")
         heads = [l.strip() for l in body.get("Videos", []) if RECORD["video"].fullmatch(l.strip())]
         for head, video in zip(heads, records(body.get("Videos", []), "video")):
             number = head.split()[1].rstrip(",")
@@ -638,7 +642,7 @@ def plan_problems(lines):
         for number, walk in zip(numbers, records(body.get("UI walks", []), "walk")):
             walks.append({"layer": n, "n": number, "kind": before_kind(walk["before"]) if "before" in walk else None})
     yield from md_before_problems(walks)
-    yield from step_problems(layers)
+    yield from step_problems(layers, key_values(section.get("Facts", []), FACTS).get("ui") == "terminal")
 
 
 def main():

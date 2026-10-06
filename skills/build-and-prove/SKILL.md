@@ -225,11 +225,22 @@ commits stay.
    committed: add a detached worktree of `BASE` in a temp
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 9a), send the walker in `before` mode (step 9b), and stop the
-   app unless the walker ended with `GONE <id>`. On `GONE`, start the
-   app again from the same temp worktree and send the walker once more,
-   as step 9c says. Remove the temp worktree only when this step ends,
-   with the shots or with a stop. The next `box.sh run` without
+   (step 9a), send the walker in `before` mode and round 1 (step 9b),
+   and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
+   start the app again from the same temp worktree and send the walker
+   once more, round 2, as step 9c says. Each `FAIL` line in the
+   `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
+   is deleted, so no failed shot stays in `PROOF`:
+   - A Sandbox fault: fix the setup script, `box.sh down`, and start
+     again from step 6.
+   - Any other `FAIL`: the `Before` line's steps do not reach the screen
+     it names on the base, a Wrong walk. Fix the line in the plan `.md`,
+     add a `Decided` line, start the app again from the same temp
+     worktree (step 9a), send the walker again for that walk, and stop
+     the app. A second `FAIL` for it: `box.sh down`, then stop with that line.
+
+   Remove the temp worktree only when this step ends, with the shots
+   or with a stop. The next `box.sh run` without
    `--from` puts the branch back. Say `Before shots: <n>`.
 
 8. **Gates.** Yourself, once, on the head commit: the full suite,
@@ -281,12 +292,39 @@ commits stay.
       - the folder to write in, `PROOF`.
 
       It does not get the code, the slices, or the diff. It returns
-      one line per walk and writes `walk-report-<round>.md` in `PROOF`.
+      one line per walk and writes `walk-report-<mode>-<round>.md` in
+      `PROOF`: `walk-report-before-<round>.md` or
+      `walk-report-after-<round>.md`, so neither overwrites the other.
+      Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
+      `GONE <id>`. It does not: send it back once with § Report of
+      `agents/walker.md` pasted whole (in Claude Code, a message to the
+      same walker). A second miss: `box.sh down`, then stop with
+      `Walker report unreadable`.
       It ended with `GONE <id>`: the app died with its Sandbox, so stop
       nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
       sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
       that the screen cannot show (console errors, failed requests):
       one found is a failed walk.
+
+      **Video check.** After mode, when the walker did not end with
+      `GONE`, before the sort: for each video under the plan's `Videos`,
+      the `video-<n>.mp4` this round filmed, take two frames a second
+      into a temp folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
+      -vf fps=2 <tmp>/f-%03d.png`, and Read them in order. The caption
+      at the top names the step (`step <k>: …`); a `» <N> s later` label
+      marks a cut. Each step's action must show: typed letters
+      appearing, the pointer reaching what it clicks, the screen
+      changing after a key. A step whose action falls in a cut, as when
+      the frame before a `» <N> s later` label shows none or part of the
+      typed text and the frame after shows all of it, hides its action.
+      Only a cut hides an action: a quick click or key that falls
+      between two frames, in a step with no `» <N> s later` label, is
+      not hidden. That fails the walk the step belongs to, the one whose `Shows`
+      step is the first at or after it: write its line in
+      `walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
+      hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
+      step 1 (typing)`, and lower the passed count in its `WALKS` line.
+      Remove the temp folder.
 
    c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
       under it, idle or at its max life. No walk failed; run the round
@@ -295,6 +333,16 @@ commits stay.
       down`, then stop with that line. Every walk passed: step 10. Each
       failed walk, by its screenshot and the plan, never by the walker's
       guess:
+      - **Sandbox fault**: the screen shows the Sandbox, not the app, is
+        wrong: `command not found` for a tool the walk or the `Open` line
+        uses, a window the `Open` line starts never shows, or a mark
+        drawn as other bytes (`â` where the app prints `✔`). Check a tool
+        with `box.sh run "$PROOF" -- sh -c 'command -v <tool>'`; exit 1
+        is a Sandbox fault. Fix the setup script (step 4), run `box.sh
+        down`, start again from step 6, and walk the round again. Like
+        `GONE`, it does not count as a round, and the other failed walks
+        wait for that round. After three Sandbox faults in one run:
+        `box.sh down`, then stop with the last one.
       - **App bug**: the steps reached the screen the walk names, and
         `See` is not there or a `Must not` is. A follow-up to the
         builder per `render.sh local prompt` § Follow-up: `# Changed`
@@ -302,8 +350,15 @@ commits stay.
         Check` names the tests to run again. The pane gets it with
         `herdr-send`; as the builder, you do it yourself. Then the
         Gates again (step 8).
+      - **Video cut**: the video check found a hidden step. Not the
+        builder's and not the plan's: no follow-up, no plan change; the
+        next round films the video again.
       - **Wrong walk**: a label, route, or step the plan named is not on
-        the screen, and the Done-when line still holds there. Sort it
+        the screen, and the Done-when line still holds there. A change
+        to a failed walk's `See` or `Must not`, or to a number in them
+        such as a time limit, is a Wrong walk fix too, never a pass: it
+        gets a `Decided` line with the reason, and the walk counts as
+        passed only when a later round's video shows it pass. Sort it
         by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
         fix the walk in the plan `.md`, add a `Decided` line, and say so
         in one line. Big fork, such as a walk whose fix changes what a

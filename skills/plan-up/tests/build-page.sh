@@ -369,6 +369,19 @@ t_build_task_protections() {
   eq DATA "$(jq -S '.layers[0].gates.task = "full suite green, and these existing tests untouched and green: `src/orders.test.ts` \"exports JSON\"."' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_terminal_must_not_stream() {
+  bad_ticket 's/UI: web/UI: terminal/; s/  Must not: a console error/  Must not: output on stderr/' \
+    'walk 1 must not: names `stderr`; a terminal shows stdout and stderr mixed, so name text on the screen, as in `no line starting Error:`'
+}
+
+t_build_terminal_must_not_screen() {
+  T="$(mktemp -d)"
+  sed 's/UI: web/UI: terminal/; s/  Must not: a console error/  Must not: a line starting Error:/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -421,4 +434,6 @@ cases=(
   "build-page refuses a video step that types text with no backticks|t_build_untyped_video_step"
   "build-page refuses walk steps that type text with no backticks|t_build_untyped_walk_steps"
   "build-page passes two spaces before a typed command and type inside quoted output|t_build_typed_spacing_and_output"
+  "build-page refuses stderr in a terminal walk's Must not|t_build_terminal_must_not_stream"
+  "build-page passes screen text in a terminal walk's Must not|t_build_terminal_must_not_screen"
 )
