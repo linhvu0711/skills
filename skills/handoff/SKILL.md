@@ -252,7 +252,7 @@ Simulator, or a walk in Safari on macOS. `--platform windows` when the
 code or the gates need Windows: a `.sln` or `.csproj` for WPF,
 WinForms, or WinUI, a PowerShell-only build, a walk in a Windows-native
 app, or a gate that only runs on Windows. A web app, a CLI, or a server
-stays on Linux even when the user runs a Mac. A `.devin/blueprint.yaml`
+stays on Linux whatever OS the local machine runs. A `.devin/blueprint.yaml`
 in the repo with a single `runs-on` wins over this rule: that is the
 platform the snapshot is built for. Say the pick and the reason in one
 line before `start`. A value the org does not have is a 400 that lists

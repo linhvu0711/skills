@@ -15,7 +15,7 @@ With no executor named, a follow-up goes to the executor that started the issue,
 
 ## What you get
 
-A prompt file holding the issue, the plan, and the build rules. Devin gets it as an attachment, on a machine picked for the repo (Linux unless it needs macOS or Windows). Cursor gets it whole as the agent's prompt, and the agent commits as you and opens the PR on the branch the plan names. Missing size labels are created; a size-label bot in the base branch's workflows, whatever branch your checkout is on, owns them instead. The prompt itself stays out of the chat:
+A prompt file holding the issue, the plan, and the build rules. Devin gets it as an attachment, on a machine picked for the repo (Linux unless it needs macOS or Windows, whatever your local machine runs). Cursor gets it whole as the agent's prompt, and the agent commits as you and opens the PR on the branch the plan names. Missing size labels are created; a size-label bot in the base branch's workflows, whatever branch your checkout is on, owns them instead. The prompt itself stays out of the chat:
 
 ```
 Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
