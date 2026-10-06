@@ -60,7 +60,7 @@ set's, the first ticket URL. Say the pick in one line, as
    `.md` file, the path `/plan-up` gave in its summary
    (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
    `../../shared-skill-core/plan-page.md`). No plan: say
-   `Run /plan-up first.` and stop. A `handoff-ready` issue or a run
+   `Run /plan-up first.` and stop. A `ready-to-build` issue or a run
    is no exception. No URL: the issue is the plan's, from its
    `# Plan: #<n>` title and its `Repo:` line. A chat plan, with no
    `#<n>` there, has no issue, and a cloud session is keyed to one: say

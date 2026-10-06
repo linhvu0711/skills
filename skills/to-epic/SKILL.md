@@ -57,10 +57,10 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
       holding titles only. The parent holds no prerequisite prose: every
       "before you start" item is a task ticket in the phase list.
    2. Phase 1 tickets: `--parent <P>`, size label, body per the rules file
-      with `Part of #P`. XS tickets carry Steps and `--label handoff-ready`.
+      with `Part of #P`. XS tickets carry Steps and `--label ready-to-build`.
       S tickets carry both only when the steps are free, per the rules file.
       An XS ticket whose Steps cannot be written is really S: no Steps, no
-      `handoff-ready`, the S size label. A `task` ticket, in this or any
+      `ready-to-build`, the S size label. A `task` ticket, in this or any
       phase: `--parent <P>`, `--label manual`, no size label, body per the
       rules file § Task body. A task the code needs first: the code ticket
       carries `--blocked-by` the task's number. A task that follows the

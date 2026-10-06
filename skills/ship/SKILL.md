@@ -152,7 +152,7 @@ picks the start; `devin` or `cursor` is taken off first, as in § Forms.
 ## Examples
 
 **User:** `/ship https://github.com/acme/shop/issues/57` on Fable inside
-herdr; #57 is a `[fix]`, size S, `handoff-ready`, no screen.
+herdr; #57 is a `[fix]`, size S, `ready-to-build`, no screen.
 
 Plan-up runs its short path, page opens, summary printed, no wait.
 `Route: local (no UI)`. build-and-prove: worktree

@@ -142,7 +142,7 @@ size and write the unknown under `Open` in Context.
 
 XS is special. By the time a ticket is XS, the chat plus the one lookup round
 already say which lines change and what to copy. So an XS ticket carries a
-`Steps` section (see Body) and the `handoff-ready` label. The Steps are
+`Steps` section (see Body) and the `ready-to-build` label. The Steps are
 final: `plan-up` trusts them and takes its short path (no repo read for
 seams, no forks), and the executor gets a plan built from them. If the
 steps cannot be written from what is known, the ticket was never XS. Make
@@ -150,7 +150,7 @@ it S, and drop Steps and the label.
 
 S gets Steps only when they are free. Free means every step names a file and
 line that the chat or the lookup actually showed, and no step needs a choice
-the chat did not make. Then write Steps and add `handoff-ready`, same as XS.
+the chat did not make. Then write Steps and add `ready-to-build`, same as XS.
 One step that would be a guess: no Steps, no label. M and L never carry
 Steps.
 
@@ -159,15 +159,15 @@ Steps.
 - **Size**: always one, from the convention's `size` map.
 - **Priority**: only when the user named one in this request. Words map as in
   the table below. Never ask for one, never infer one.
-- **Handoff**: `handoff-ready`, on every ticket that carries Steps (see
+- **Ready to build**: `ready-to-build`, on every ticket that carries Steps (see
   Size). It says the Steps are final. `plan-up` reads it as "trust the
   Steps" and takes its short path
-  (`../skills/plan-up/references/plan.md` § Handoff-ready); the ticket
+  (`../skills/plan-up/references/plan.md` § Ready-to-build); the ticket
   still gets a plan before it goes to an executor. Created on first use. Never on a
   `task`, even though a task always carries Steps: the label means code
   steps a plan can be built from.
 - **Manual**: `manual`, on every `task` and on nothing else. It is the one
-  label a task carries: no size, no handoff. `plan-up` skips tickets that
+  label a task carries: no size, no `ready-to-build`. `plan-up` skips tickets that
   carry it, and lists them before planning an epic or a run. Created on first
   use.
 - **Type**: no label. The prefix carries the type. Exceptions, both only when
@@ -176,7 +176,7 @@ Steps.
   keeps such labels. Never create a type label. The one group outside this
   rule is `discovery/*`, owned by `discover-path` and made only by it.
 - **Plain names**: labels are plain text, no icon. A name in a command or a
-  convention (`handoff-ready`, `size/M`) means the repo's existing
+  convention (`ready-to-build`, `size/M`) means the repo's existing
   label of that name, matched case folded. Only a label the repo lacks is
   created, from the block below. A repo's labels are used as they are and
   are never renamed. One color per family (the block below) tells families
@@ -462,7 +462,7 @@ gh label create "size/XS" --color BFDADC --description "Fits one place, 1-2 file
 gh label create "size/S"  --color 7FC8CC --description "One thin path, existing seams"
 gh label create "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
 gh label create "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
-gh label create "handoff-ready" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
+gh label create "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
 gh label create "manual" --color 6E7781 --description "Human work in a platform outside the repo; agents skip it"
 ```
 
@@ -471,7 +471,7 @@ a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by
 `capture`.
 
 One hue per family, never reused: size teal, priority red to yellow,
-handoff-ready green, manual grey, seed light blue, bug purple,
+ready-to-build green, manual grey, seed light blue, bug purple,
 `discovery/*` pink (`../skills/discover-path/references/map.md`).
 
 A label the convention names that no longer exists: `forget` the repo, learn
@@ -499,7 +499,7 @@ the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
 gh issue edit <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
-  --add-label "<size label>" [--add-label "<handoff-ready label>"] \
+  --add-label "<size label>" [--add-label "<ready-to-build label>"] \
   [--add-label "<priority label>"] [--type <Name>]
 ```
 
