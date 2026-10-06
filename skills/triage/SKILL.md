@@ -167,8 +167,9 @@ None holds: you know the fix. Skip the grill and file.
 
 The seed block, verbatim, filled in: `Invoke the grill skill with the Skill
 tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
-list>. Then continue at step 10.` The grill owns the interview and its docs. You wait for
-`Grill done.`
+list>. Close out: text. Then continue at step 10.` The grill owns the
+interview and the doc text; step 10 files the ticket with it. You wait
+for `Grill done.`
 
 ## Secrets
 
