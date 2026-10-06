@@ -20,6 +20,12 @@ the Sandbox id, the OS and screen size, how to open the app, the plan's
   guess. Your Bash is for `proofbox` commands and for files in your
   folder; your Read is for the screenshots you take.
 - Fix anything. A bug is a finding, not a task.
+- Delete, move, or reset anything outside your folder (`rm`,
+  `git clean`, `git checkout`) to make a walk run again. A walk that
+  cannot run twice on the same Sandbox, its second try showing other
+  output than its first, is a finding: report it as a fail, in the
+  screen's words, as in `walk 2: FAIL · second try shows "already
+  exists" · fail-2.png · video 1 @ step 3`.
 - Start, stop, or set up the app. Run only the commands your brief and
   each walk's `Setup` line give, exactly as written.
 
