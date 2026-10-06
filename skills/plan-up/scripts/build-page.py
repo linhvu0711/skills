@@ -498,11 +498,15 @@ def md_before_problems(walks):
                 yield f"{name}: `{kind}` must name an earlier walk of its layer whose `Before` names steps"
 
 
+TYPED = re.compile(r"\btype\s+`([^`]+)`", re.I)
+
+
 def typed_problems(name, step):
     # A typed command is the backtick span right after `type`; a See or Before line quotes output in backticks too.
-    for cmd in re.findall(r"\btype\s+`([^`]+)`", step, re.I):
+    for cmd in TYPED.findall(step):
         cmd = cmd.strip()
-        join = re.search(r";|&&", re.sub(r"'[^']*'|\"[^\"]*\"", "", cmd))
+        # An escaped or quoted `;` is part of one command.
+        join = re.search(r";|&&", re.sub(r"\\.|'[^']*'|\"(?:\\.|[^\"\\])*\"", "", cmd))
         if join:
             yield f"{name}: `{cmd}` joins commands with `{join.group()}`; type one command per step"
         if re.match(r"clear(?:\s|;|&|$)", cmd):

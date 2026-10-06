@@ -329,6 +329,14 @@ t_build_quoted_semicolon() {
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
 }
 
+t_build_escaped_semicolon() {
+  T="$(mktemp -d)"
+  sed 's/  2\. Click Export, pick CSV\./  2. Type `echo a\\;b "c\\"; d"`, press Return./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 t_build_task_protections() {
   T="$(mktemp -d)"
   sed 's/Task done: full suite green, lint green, build green./Task done: full suite green, and these existing tests untouched and green:\n  `src\/orders.test.ts` "exports JSON"./' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -384,4 +392,5 @@ cases=(
   "build-page refuses a Before that starts with clear and joins|t_build_before_clear_and"
   "build-page refuses a video step that types clear|t_build_video_step_clear"
   "build-page passes a semicolon inside quotes|t_build_quoted_semicolon"
+  "build-page passes an escaped semicolon|t_build_escaped_semicolon"
 )
