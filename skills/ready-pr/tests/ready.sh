@@ -229,7 +229,7 @@ t_ready_no_devin_flag() {
   ready --tools none
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: none on this repo · open threads: 0 · merge state: CLEAN" "$(line 2)"
+  eq "line 2" "Review tools: none · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
 t_ready_blocked_and_waiting() {
@@ -387,6 +387,25 @@ t_ready_wait_stops_on_red() {
   eq "status calls" 4 "$(cat "$FAKE_GH/status.calls")"
 }
 
+t_ready_wait_absent_waits_for_pending() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  statuses "Devin Review=pending"
+  ready --tools devin,coderabbit --wait abc1234def5678 --none-sec 2 --timeout-sec 4 --poll-sec 1
+  eq exit 2 "$code"
+  eq "line 2" "Devin Review is PENDING; no CodeRabbit status on abc1234" "$(line 2)"
+  # Five polls (0 to 4 seconds) and the verdict, two status reads each.
+  eq "status calls" 12 "$(cat "$FAKE_GH/status.calls")"
+}
+
+t_ready_wait_absent_after_green() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  statuses "Devin Review=success"
+  ready --tools devin,coderabbit --wait abc1234def5678 --none-sec 2 --timeout-sec 4 --poll-sec 1
+  eq exit 2 "$code"
+  eq "line 2" "no CodeRabbit status on abc1234" "$(line 2)"
+  eq "status calls" 8 "$(cat "$FAKE_GH/status.calls")"
+}
+
 t_ready_tools_required() {
   fake_gh
   run bash "$here/../scripts/ready.sh" acme/app 7 --me author
@@ -440,6 +459,8 @@ cases=(
   "ready-pr: a tool with no status reads no status and is never polled|t_ready_tool_without_status"
   "ready-pr: a review status for a tool not named counts as a check|t_ready_untold_tool_is_a_check"
   "ready-pr: --wait stops when one tool goes red|t_ready_wait_stops_on_red"
+  "ready-pr: --wait keeps waiting for a pending tool past an absent one|t_ready_wait_absent_waits_for_pending"
+  "ready-pr: --wait stops on an absent tool once the rest are green|t_ready_wait_absent_after_green"
   "ready-pr: no --tools stops with exit 64|t_ready_tools_required"
   "ready-pr: an unknown tool stops with exit 64|t_ready_unknown_tool"
 )

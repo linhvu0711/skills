@@ -176,7 +176,8 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    restack: no `Stack:` line. One line per finding over every round,
    id, verdict, SHA or URL.
    `Filed: none` when nothing was filed. A run with `TOOLS` `none` says
-   `Review tools: none on this repo`. A PR that waits only for a
+   `Review tools: none`. Each tool taken out in step 3 adds
+   ` · no status from <tool>` at the end of the second line. A PR that waits only for a
    person's approval ends with `READY <url> (waiting for approval)`; the
    approval and the merge are the user's. A stop point that ended the run
    prints the same block with `NOT READY <url>: <what is open>` last; a
@@ -229,4 +230,4 @@ green on the head; a thread from either is judged the same way.
 
 `TOOLS` is `none`: no review status to wait for. Threads from people are
 still judged. A tool that does post a status on this PR still counts, as
-one more check. The report says `Review tools: none on this repo`.
+one more check. The report says `Review tools: none`.

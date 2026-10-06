@@ -24,9 +24,9 @@
 # name. Devin Review's turns pending soon after a push and success a few
 # minutes later, whether or not it found anything; it posts a review only when
 # it did. review_state is the one place that reads one. --wait <sha> first
-# polls them on that commit, every --poll-sec, until all are green, one is
-# red, one was absent for --none-sec, or one was pending for --timeout-sec;
-# then the verdict. The wait polls an API, so it costs no model tokens; in
+# polls them on that commit, every --poll-sec, until one is red, until none
+# is pending and every absent one was absent for --none-sec, or until one was
+# pending for --timeout-sec; then the verdict. The wait polls an API, so it costs no model tokens; in
 # Claude Code run it in the background, and the tool wakes the session when
 # it ends.
 #
@@ -43,7 +43,7 @@
 #   READY <url>                          0  the reason is `Review tools: <tool> <state>,
 #   READY <url> (waiting for approval)   0  … on <sha> · open threads: 0 · merge state: <state>`;
 #                                           a tool with no status reads `<tool> no status`,
-#                                           and --tools none `Review tools: none on this repo`
+#                                           and --tools none `Review tools: none`
 #   BLOCKED <url>                        1  the reason lists every reason, `; ` between
 #   WAITING <url>                        2  (no blocked reason among them)
 # A gh call that fails is BLOCKED with the reason `gh failed: <its last error
@@ -184,14 +184,17 @@ if [ -n "$wait_sha" ] && [ "${#statuses[@]}" -gt 0 ]; then
   waited=0; fails=0
   while :; do
     if review_states "$wait_sha"; then
-      fails=0; red=0; green=1; absent=0
+      # An absent status stops the wait only once none is pending, so a
+      # PENDING reason always means --timeout-sec passed.
+      fails=0; red=0; pending=0; absent=0
       for s in "${states[@]}"; do
-        review_red "$s" && red=1
-        review_green "$s" || green=0
-        [ -n "$s" ] || absent=1
+        if review_red "$s"; then red=1
+        elif [ -z "$s" ]; then absent=1
+        elif ! review_green "$s"; then pending=1
+        fi
       done
-      if [ "$red" -eq 1 ] || [ "$green" -eq 1 ]; then break; fi
-      if [ "$absent" -eq 1 ] && [ "$waited" -ge "$none_sec" ]; then break; fi
+      [ "$red" -eq 0 ] || break
+      if [ "$pending" -eq 0 ] && { [ "$absent" -eq 0 ] || [ "$waited" -ge "$none_sec" ]; }; then break; fi
       [ "$waited" -lt "$timeout" ] || break
     else
       fails=$((fails + 1))
@@ -285,7 +288,7 @@ if [ "$code" -eq 0 ]; then
     else d+=("$t $(tr '[:upper:]' '[:lower:]' <<<"${states[$j]}")"); j=$((j + 1))
     fi
   done
-  if [ "${#d[@]}" -eq 0 ]; then tl="none on this repo"
+  if [ "${#d[@]}" -eq 0 ]; then tl="none"
   else tl="$(printf '%s, ' "${d[@]}")"; tl="${tl%, }"; [ "${#statuses[@]}" -eq 0 ] || tl="$tl on $sha7"
   fi
   reason="Review tools: $tl · open threads: $open · merge state: $(get MERGE_STATE)"
