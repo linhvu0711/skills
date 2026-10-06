@@ -415,9 +415,10 @@ steps until each walk ends in its own state; a `Cancel` walk first types
 a new value, then cancels, and `See` names the old value.
 
 A step is one action: one click, one key, or one command typed and sent
-with `Return`. A command to type sits in backticks right after the word
-`type`, alone: never two joined with `;` or `&&`, and never `clear`
-first, since a viewer of the video must see each command and its result.
+with `Return`. Text to type, a command or a value, sits in backticks
+right after the word `type`. A command stands alone: never two joined
+with `;` or `&&`, never two in one step, and never `clear` first, since
+a viewer of the video must see each command and its result.
 `scripts/build-page.py` refuses a step that breaks this, naming the walk
 or video and the step. In a terminal:
 

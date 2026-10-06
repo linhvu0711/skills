@@ -323,7 +323,7 @@ t_build_video_step_clear() {
 t_build_quoted_semicolon() {
   T="$(mktemp -d)"
   sed "s/  2\\. Click Export, pick CSV\\./  2. Type \`tally list | awk '{print \$1; print \$2}'\`, press Return./;
-    s/  Before:   none/  Before:   the list shows \`a; b\`/" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+    s/  Before:   none/  Before:   the list shows \`a; b\` under the type filter/" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 0 "$code"
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
@@ -340,6 +340,16 @@ t_build_escaped_semicolon() {
   build "$T/plan-acme-shop-42.md"
   eq exit 0 "$code"
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
+t_build_untyped_video_step() {
+  bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type tally status; tally list, press Return./' \
+    'video 1 step 2: put the text to type in backticks right after `type`'
+}
+
+t_build_untyped_walk_steps() {
+  bad_ticket 's/  Steps:    click Export, pick CSV/  Steps:    click Export, then type Alice in Name/' \
+    'walk 1 steps: put the text to type in backticks right after `type`'
 }
 
 t_build_task_protections() {
@@ -399,4 +409,6 @@ cases=(
   "build-page passes a semicolon inside quotes|t_build_quoted_semicolon"
   "build-page refuses a video step that types two commands|t_build_video_step_two_commands"
   "build-page passes an escaped semicolon|t_build_escaped_semicolon"
+  "build-page refuses a video step that types text with no backticks|t_build_untyped_video_step"
+  "build-page refuses walk steps that type text with no backticks|t_build_untyped_walk_steps"
 )
