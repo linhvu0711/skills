@@ -105,8 +105,8 @@ guess_of() {
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
 # ticket is ready-to-build takes the sonnet row. A guessed size wins over a
-# label.
-all_ready=1; top=0; top_size=""; top_guessed=0
+# label, and each guess is counted for the report.
+all_ready=1; top=0; top_size=""; guessed=0
 add_ticket() {
   local lab size="" ready=0 rank guess
   while IFS= read -r lab; do
@@ -115,14 +115,11 @@ add_ticket() {
   done < <(jq -r '.labels[].name' <<<"$1")
   [ "$ready" -eq 1 ] || all_ready=0
   guess="$(guess_of "$(jq -r .number <<<"$1")")"
-  if [ -n "$guess" ]; then size="$guess"; fi
+  if [ -n "$guess" ]; then size="$guess"; guessed=$((guessed+1)); fi
   # ready-to-build goes only on XS and S tickets, so one with no size is S.
   [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
   case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
-  if [ "$rank" -gt "$top" ]; then
-    top=$rank; top_size="$size"; top_guessed=0
-    if [ -n "$guess" ]; then top_guessed=1; fi
-  fi
+  if [ "$rank" -gt "$top" ]; then top=$rank; top_size="$size"; fi
 }
 
 # The tickets the target holds: a run's #n, a set's issue and #n, an epic's
@@ -154,8 +151,10 @@ else
   else model=opus; effort=high; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
-if [ "$counted" -gt 1 ]; then reason="$reason of $counted tickets"; fi
-if [ "$top_guessed" -eq 1 ]; then reason="$reason, guessed"; fi
+if [ "$counted" -gt 1 ]; then
+  reason="$reason of $counted tickets"
+  if [ "$guessed" -gt 0 ]; then reason="$reason, $guessed guessed"; fi
+elif [ "$guessed" -gt 0 ]; then reason="$reason, guessed"; fi
 
 # A value the user named wins over the row.
 model_from=default; effort_from=default

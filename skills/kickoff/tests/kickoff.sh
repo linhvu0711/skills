@@ -183,6 +183,14 @@ t_ko_guessed_size() {
   has report " · size S, guessed · " "$out"
 }
 
+t_ko_guessed_smaller() {
+  ko_herdr
+  ko_view 1 42 '[{"name":"size/M"}]'
+  ko_view 2 43 '[]'
+  ko_go --size 43=S https://github.com/acme/app/issues/42 '#43'
+  has report " · size M of 2 tickets, 1 guessed · " "$out"
+}
+
 t_ko_bad_size() {
   ko_herdr; ko_issue '[]'
   ko_go --size 42=huge https://github.com/acme/app/issues/42
@@ -243,6 +251,7 @@ cases=(
   "an epic counts open tickets, not manual|t_ko_epic_open_not_manual"
   "an epic with no open ticket stops|t_ko_epic_none_open"
   "a guessed size counts|t_ko_guessed_size"
+  "a guessed smaller ticket is in the report|t_ko_guessed_smaller"
   "a bad size stops|t_ko_bad_size"
   "overrides win and the report says set|t_ko_overrides"
   "a bad command stops|t_ko_bad_command"
