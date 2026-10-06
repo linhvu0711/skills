@@ -97,15 +97,16 @@ where the build runs (step 2).
 6. **Make ready.** Read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
-   ready-pr says, and start no Sandbox: the full suite and the Build
-   command are left to the PR's CI. Two cases start one, with the
+   ready-pr says, and start no Sandbox: a Gate that CI covers is left to
+   the PR's CI. CI covers a Gate when a file under `$WT/.github/workflows/`
+   names its command. Two cases start a Sandbox, with the
    build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
    and end with `box.sh down`:
    - A fix that changes code a UI walk's screen shows: that walk runs
      again, as build-and-prove step 9 runs it, that walk only.
-   - A repo with no CI, no `*.yml` or `*.yaml` under
-     `$WT/.github/workflows/`: the Gates run there, as build-and-prove
-     step 8 runs them, before each push of fixes.
+   - A Gate that CI does not cover: before each push of fixes, it runs
+     there, as build-and-prove step 8 runs it. A repo with no CI covers
+     no Gate, so all of them run.
 
    It ends with `READY` or a stop point.
 
