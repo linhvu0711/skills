@@ -228,7 +228,9 @@ commits stay.
    (step 9a), send the walker in `before` mode and round 1 (step 9b),
    and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
-   once more, round 2, as step 9c says. Remove the temp worktree only when this step ends,
+   once more, round 2, as step 9c says. A before shot that shows a
+   Sandbox fault (step 9c): fix the setup script, `box.sh down`, and
+   start again from step 6. Remove the temp worktree only when this step ends,
    with the shots or with a stop. The next `box.sh run` without
    `--from` puts the branch back. Say `Before shots: <n>`.
 
@@ -302,6 +304,16 @@ commits stay.
       down`, then stop with that line. Every walk passed: step 10. Each
       failed walk, by its screenshot and the plan, never by the walker's
       guess:
+      - **Sandbox fault**: the screen shows the Sandbox, not the app, is
+        wrong: `command not found` for a tool the walk or the `Open` line
+        uses, a window the `Open` line starts never shows, or a mark
+        drawn as other bytes (`â` where the app prints `✔`). Check a tool
+        with `box.sh run "$PROOF" -- sh -c 'command -v <tool>'`; exit 1
+        is a Sandbox fault. Fix the setup script (step 4), run `box.sh
+        down`, start again from step 6, and walk the round again. Like
+        `GONE`, it does not count as a round, and the other failed walks
+        wait for that round. After three Sandbox faults in one run:
+        `box.sh down`, then stop with the last one.
       - **App bug**: the steps reached the screen the walk names, and
         `See` is not there or a `Must not` is. A follow-up to the
         builder per `render.sh local prompt` § Follow-up: `# Changed`
