@@ -282,13 +282,16 @@ one.
    prompt` § Follow-up, `# Check` naming the Gate, then the Gates
    again.
 
-   A Gate that prints `not found` for a tool, such as one the `Test`,
-   `Lint`, or `Build` line names, is a Sandbox fault (§ Sandbox),
-   whatever its exit code: fix it, then the Gates again.
+   A Gate that prints `not found` sorts in this order. First, a tool no
+   setup script can make work in the Sandbox, such as `docker`, which
+   needs a daemon and root: the Gate runs on the local machine, below.
+   Any other tool, such as one the `Test`, `Lint`, or `Build` line
+   names, is a Sandbox fault (§ Sandbox), whatever its exit code: fix
+   it, then the Gates again.
 
    A Gate the Sandbox cannot run in any case, such as `pnpm test:docker`
-   with no Docker in the Sandbox (exit 127, or its output names a
-   service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
+   with no Docker in the Sandbox (`docker: command not found`, or its
+   output names a service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
    <command>`, and its line ends `(local machine)`. It can run in
    neither place: its line is `<command> · <short SHA> · not run:
    <why>`.
