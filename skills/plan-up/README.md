@@ -27,6 +27,8 @@ Under the blast radius sits a change map, drawn only when the plan adds or remov
 
 The tabs after it are for the agent that builds. The plan holds the facts it proved by a probe, one Proof row per Done-when line, the seams, one slice per change in tracer-bullet order, each with the tests that prove it (Given, When, and a literal Then) and the docs its change makes stale, so code and docs land in one commit (doc text a grill agreed on, under the issue's `## Docs to write`, goes in word for word), UI walks and videos for each line a person checks by looking (a web page, a window, or a command's output in a terminal), each walk step one action, so a typed command stands alone in backticks and the builder refuses a step that types text with no backticks, types two commands, joins commands with `;` or `&&`, or starts with `clear`, or a terminal walk whose `Must not` names `stderr` or `stdout`, a before shot for each walk that changes a screen that exists already, the gates, and every small decision it made, so you can veto any of them by name. Big decisions, and every new dependency, are asked in chat first, one question at a time, with the cleaner option as the pick, package or not.
 
+A new module or seam must earn its place, by the rules improve-architecture uses too. The plan says what a new module hides, so deleting it would push work back into its callers, and a seam that swaps one thing for another needs two adapters, such as the real one and a test fake.
+
 When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
 
 Chat gets only a summary:
@@ -38,7 +40,7 @@ http://127.0.0.1:8765/plan-acme-shop-42.html
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
-A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read.
+A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
 
 ## Needs
 
@@ -46,7 +48,7 @@ A `ready-to-build` ticket takes a short path: its Steps are trusted and only the
 - `python3`, to check for claims and to build and serve the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
-- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, [plan-page.md](../../shared-skill-core/plan-page.md) for the page, and [serve.sh](../../shared-skill-core/serve.sh) to serve the page.
+- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [codebase-design.md](../../shared-skill-core/codebase-design.md) for the rules a new module or seam must pass, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, [plan-page.md](../../shared-skill-core/plan-page.md) for the page, and [serve.sh](../../shared-skill-core/serve.sh) to serve the page.
 
 ## Fits with
 
