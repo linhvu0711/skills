@@ -1,6 +1,6 @@
 # Deepening
 
-How to deepen a cluster of shallow modules safely, given its dependencies. Assumes the vocabulary in [codebase-design.md](codebase-design.md): **module**, **interface**, **seam**, **adapter**.
+How to deepen a cluster of shallow modules safely, given its dependencies. Assumes the vocabulary in `../../shared-skill-core/codebase-design.md`: **module**, **interface**, **seam**, **adapter**.
 
 ## Dependency categories
 

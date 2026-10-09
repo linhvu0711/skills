@@ -18,7 +18,7 @@ It changes no code and proposes no interface on its own.
 - Sub-agents: Explore agents to read the code, and for the design-it-twice step an `interface-designer` agent in Claude Code (its definition is not in this repo) or Codex's normal sub-agent.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the chosen candidate.
-- From the shared core: [facts.md](../../shared-skill-core/facts.md), and [serve.sh](../../shared-skill-core/serve.sh) to serve the report.
+- From the shared core: [facts.md](../../shared-skill-core/facts.md), [codebase-design.md](../../shared-skill-core/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared-skill-core/serve.sh) to serve the report.
 
 ## Fits with
 
@@ -27,4 +27,4 @@ It changes no code and proposes no interface on its own.
 
 ## Credits
 
-Adapted from the `improve-codebase-architecture` and `codebase-design` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. `references/codebase-design.md`, `references/deepening.md`, and `references/design-it-twice.md` are copied as they are.
+Adapted from the `improve-codebase-architecture` and `codebase-design` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. `codebase-design.md`, `references/deepening.md`, and `references/design-it-twice.md` are copied as they are, with only their links to each other changed; `codebase-design.md` lives in the shared core, so plan-up reads it too.

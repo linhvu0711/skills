@@ -133,7 +133,8 @@ SOFTWARE.
 | `skills/grill` | `skills/productivity/grilling`, `skills/productivity/grill-me`, `skills/engineering/grill-with-docs`, `skills/engineering/domain-modeling`, `skills/engineering/research` | heavy adaptation (`references/ADR-FORMAT.md` and `references/CONTEXT-FORMAT.md` are copies from `skills/engineering/domain-modeling`) |
 | `shared-skill-core/grilling.md` | the same five as `skills/grill` | heavy adaptation |
 | `shared-skill-core/facts.md` | the same five as `skills/grill` | heavy adaptation |
-| `skills/improve-architecture` | `skills/engineering/improve-codebase-architecture`, `skills/engineering/codebase-design` | heavy adaptation (`references/codebase-design.md`, `references/deepening.md`, and `references/design-it-twice.md` are copies from `skills/engineering/codebase-design`) |
+| `skills/improve-architecture` | `skills/engineering/improve-codebase-architecture`, `skills/engineering/codebase-design` | heavy adaptation (`references/deepening.md` and `references/design-it-twice.md` are copies from `skills/engineering/codebase-design`, with their links to `codebase-design.md` pointed at the shared core) |
+| `shared-skill-core/codebase-design.md` | `skills/engineering/codebase-design` | copy (its two links point at improve-architecture's references) |
 | `skills/triage` | `skills/engineering/diagnosing-bugs` | heavy adaptation |
 | `skills/discover-path` | `skills/engineering/wayfinder` | heavy adaptation |
 | `skills/to-epic` | `skills/engineering/to-tickets` | heavy adaptation |
