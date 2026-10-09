@@ -260,16 +260,21 @@ block above, and the Done rule holds whole.
   scripts, or README; the seam each changed line sits behind; the tests
   that already cover those seams; the standards files; the docs the
   Steps make stale; the UI kind and how it opens when a line is on a
-  screen. Every field of `Facts` is filled. No probe, unless an `Open`
+  screen; the nearest existing one for each function, component, type,
+  or file a Step adds. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
 - **Seams and Gates.** From that round. A seam is the public thing the
   changed line sits behind, the one its existing test uses.
 - **Decided.** Only the issue's `Open` lines, each closed by a fact from
-  the round or by a question to the user, and the docs the round found
-  that stay as they are. Nothing else is decided here; the Steps decided
-  it.
+  the round or by a question to the user, the docs the round found
+  that stay as they are, and the line § Done asks for each function,
+  component, type, or file a Step adds, written from the Step and the
+  round. Nothing else is decided here; the Steps decided it. A Step whose
+  new module fails the deletion test, or whose new swap seam has one
+  adapter, is a choice the issue got wrong, and ends the short path as
+  a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
   only the `Decided` lines the issue's `Open` lines left.

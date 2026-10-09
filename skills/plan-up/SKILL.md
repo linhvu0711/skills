@@ -11,10 +11,10 @@ filled, and the done rule. Read `references/executor.md` too: what the
 executor has and how it works a plan, so the plan fits it. At step 8,
 read `../../shared-skill-core/plan-page.md`: where the plan is written
 and how it is shown. At step 4, read `references/probes.md` before the
-first probe. At step 5, before a `Decided` line adds a module or a seam,
-read `../../shared-skill-core/codebase-design.md`: the new one must pass
-its deletion test, and a seam needs two adapters. This file is the order
-of operations.
+first probe. Before a `Decided` line adds a module or a seam, on the full
+path or the short one, read `../../shared-skill-core/codebase-design.md`:
+the new one must pass its deletion test, and a seam needs two adapters.
+This file is the order of operations.
 
 You plan; you do not build, and the repo is left as you found it. Facts
 come from reading, and from a probe when reading leaves a doubt the plan
