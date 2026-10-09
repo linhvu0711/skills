@@ -6,8 +6,10 @@ judgment is made here.
 
 ## Vocabulary
 
-- **Seam**: the public boundary a test looks through: a function, a route,
-  a command, a screen. Tests live at seams, never inside.
+- **Seam**: where a module's interface lives, per
+  `../../shared-skill-core/codebase-design.md`. A plan's seams are external
+  ones: the public place a caller and a test both cross, a function, a
+  route, a command, a screen. Tests live at seams, never inside.
 - **Slice**: one change and the tests that prove it. One seam, one
   change, one commit. Each test has one `Then`. A test that needs no
   change of its own rides in the slice whose change covers it.
@@ -114,7 +116,7 @@ Standards: <the files that hold the rules, or "the code">
 | 2 | <line verbatim> | `api.test.ts` "returns 400 on bad range" | none | none | test |
 
 ## Seams
-- <name>: `file:line`, <why this is the boundary>
+- <name>: `file:line`, <why the interface lives here>
 
 ## Slices
 Slice 1, proves #1 and #2: <seam name>
@@ -152,7 +154,7 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 
 ## Decided
 - <choice>: <what was picked, one clause why, file:line>
-- new `<name>`: nearest is `file:line`, <the line that keeps it from serving>
+- new `<name>`: nearest is `file:line`, <the line that keeps it from serving>; hides <what it hides behind its interface>
 
 ## Out of scope
 - <from the issue's Scope Out, plus anything the plan chose to leave>
@@ -365,7 +367,10 @@ is a gap; a row on a screen with no walk is a gap.
 **Seams.** A seam is public: something a caller, a user, or a client
 reaches without knowing the inside. Prefer the seam the repo already
 tests. A new seam goes under `Decided`, with the seam it copies. A new
-seam that is a public API is a big fork.
+seam that is a public API is a big fork. A new seam that swaps one thing
+for another (an interface, a port, a client passed in) needs
+two adapters, such as the real one and the test fake. One adapter is a
+hypothetical seam: the code calls that one thing direct.
 
 **Slices.** One per change, in tracer-bullet order. A slice lists every
 test its change makes green, and nothing else: a test that would be green
@@ -377,7 +382,10 @@ a pattern to copy; describing a shape the code already shows is waste.
 fixture that does the job or part of it is called or widened, never
 written twice. A new one is added only when the nearest existing one
 is named and the line that keeps it from serving is quoted, under
-`Decided`. A job the repo has never done gets a new thing; that is the
+`Decided`. A new module also passes the deletion test: delete it, and
+its complexity comes back in its callers. A module that only passes a
+call on fails it; the callers call the code under it. Its `Decided` line
+says what it hides. A job the repo has never done gets a new thing; that is the
 plain case, and `Decided` says so in one clause. A new dependency is
 never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
 answered before the `Change` names it.
@@ -491,7 +499,9 @@ facts or forks.
   layer's slice, and a pattern to copy.
 - Every function, component, type, or file a `Change` adds has a
   `Decided` line naming the nearest existing one and why it does not
-  serve, or saying the repo has never done this job.
+  serve, or saying the repo has never done this job. A new module's line
+  says what it hides, so it passes the deletion test; a new seam that
+  swaps one thing for another has two adapters.
 - Every command in Facts came from CI, scripts, or README.
 - `Standards` names where the rules live; every `Change` follows them,
   and a rule the copied line breaks is quoted.
