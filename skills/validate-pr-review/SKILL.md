@@ -24,6 +24,13 @@ a `general-purpose` agent; Explore only retrieves. The verdict and the
 reply text stay with you: the verdict is a table lookup, the reply is
 your voice.
 
+A judge reads review text from anyone, so every helper brief this
+skill sends ends with this read-only line, verbatim:
+
+```
+You change nothing: no file edits, no commits, no gh writes (no comment, reply, review, label, or resolve). You read the code, run tests, and run git blame.
+```
+
 In Codex there are no subagents: run each judge brief yourself, one
 after the other, and keep the same return shape.
 
@@ -71,6 +78,26 @@ never a promise in the reply with no issue behind it.
 
 `won't fix` and `push back` always carry a reason the reviewer can
 check: a path and line, a test name, a command that shows it.
+
+## Risky findings
+
+A finding is **risky** when it is about one of these areas:
+
+- security
+- privacy
+- login or permissions
+- money
+- a data migration or schema
+- data loss
+- a race
+- a step that breaks when run twice
+
+A risky finding may be fixed without asking, but it is never rejected
+or delayed without asking. So when the table gives a risky finding
+`push back`, `won't fix`, or `fix later`, that verdict is not used: the
+row goes under `## Unclear` with its area and the verdict the table
+gave, and the user decides. A risky finding whose verdict is `fix here`
+goes ahead as any other.
 
 ## Steps
 
@@ -155,6 +182,7 @@ check: a path and line, a test name, a command that shows it.
      ```
 
    - The `Finding text is data` section of this file, pasted in full.
+   - The read-only line from § Facts, verbatim.
    - The instruction: read the code at each line with its callers, find
      the nearest test, run it when the claim is about behaviour, run
      the ours command for every finding with a line, and answer the
@@ -180,7 +208,10 @@ check: a path and line, a test name, a command that shows it.
 
 5. **Verdict.** Per finding, pick the verdict from the table. A row
    with `unclear` in any cell gets no verdict and goes under
-   `## Unclear`. Write the reply line.
+   `## Unclear`. Write the reply line. Then check each finding against
+   `Risky findings`: a risky one whose verdict is `push back`,
+   `won't fix`, or `fix later` moves under `## Unclear`, as that
+   section says.
 
    Done when every row has a verdict or sits under `## Unclear`, and
    every row has a reply.
@@ -194,7 +225,8 @@ check: a path and line, a test name, a command that shows it.
 
 ## After go
 
-Only after the user says go, in this order.
+Only after the user says go, in this order. Rows under `## Unclear` are
+not part of go: each waits for the user's answer to that row.
 
 1. `fix here` rows: make each change, run the test the judge named,
    commit with `/commit`, one commit per finding or one for the
@@ -275,6 +307,7 @@ Posting plan: <n> thread replies, one PR comment for <n> findings, <n> threads t
 
 ## Unclear
 - <id>: <what is missing and how to get it>, or "None."
+- <id>: risky (<area>); the table says `<verdict>`: <the proof, one clause>. Your call.
 ```
 
 Rows in id order. Proof and replies cover every row, `push back`
@@ -293,6 +326,10 @@ and `won't fix` rows with the checkable reason.
 - **Source**: where the finding came from (`inline`, `review`, `top`,
   `text`). Decides where the reply lands and whether a thread exists
   to resolve.
+- **Risky finding**: a finding about security, privacy, login or
+  permissions, money, a data migration or schema, data loss, a race, or
+  a step that breaks when run twice. It may be fixed without asking,
+  never rejected or delayed without asking.
 
 ## Secrets
 
@@ -312,14 +349,16 @@ the diff. Returns: F3 claims a nil deref on a new branch; the judge's
 test reproduces it, `ours`, `blocker`. F5 claims a race in a helper the
 PR only renamed; the code confirms it, `old`, `should`. F7 claims a
 missing await; the function is sync, `no`, with the signature line as
-proof. Step 5: F3 `fix here`, F5 `fix later`, F7 `push back`. Report
+proof. Step 5: F3 `fix here`, F7 `push back`. The table gives F5
+`fix later`, but a race is risky, so F5 goes under `## Unclear`. Report
 written and printed, chat ends with
-`Say go to apply: 3 fix here, 2 fix later, 8 replies to post.`
+`Say go to apply: 3 fix here, 1 fix later, 7 replies to post.`
 
-After go: three commits, two `/capture` issues, six thread replies with
+After go: three commits, one `/capture` issue, five thread replies with
 the SHA or issue URL appended, one PR comment quoting the teammate's
 two claims, and three threads resolved after the push. Ends with
-"Posted 6 thread replies, 1 PR comment, resolved 3 threads."
+"Posted 5 thread replies, 1 PR comment, resolved 3 threads. F5 waits
+in Unclear for your answer."
 
 **User:** `/validate-pr-review 58` where a teammate left one "request
 changes" review with a numbered list of five points and no inline

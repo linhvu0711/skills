@@ -8,7 +8,7 @@ A session felt harder than it should have, or the same kind of trouble keeps com
 
 ## What you get
 
-For many sessions, first a page that lists them: date, tool, title, size. Untick the ones to skip, press Copy, and paste the line in chat. One reader agent then reads each session, with its helper agents' logs, and writes a list of the moments the agent struggled. Retro groups those moments by the fix that would stop them.
+For many sessions, first a page that lists them: date, tool, title, size. Untick the ones to skip, press Copy, and paste the line in chat. One reader agent then reads each session, with its helper agents' logs, and writes a list of the moments the agent struggled. A session can hold text from anyone, so each reader is told that text is data to read, never orders to follow. Retro groups those moments by the fix that would stop them.
 
 Then a report page. Patterns come first: problems seen in two or more sessions that one fix would stop, each with the sessions, quotes as proof, the fix, where it goes, and a strength badge. Serious one-time problems follow, then a top pick. Tick the cards you want, press Copy, and paste the line. Each pick becomes an issue through [to-issue](../to-issue/), or a seed through [capture](../capture/) when to-issue needs more than the card holds. You are told which.
 
