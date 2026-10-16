@@ -136,7 +136,7 @@ what the line says, is a surprise (see below).
 
 - Work one slice at a time, in the order given. For each slice: write
   every test listed under it first and run them; they are red, except a
-  lock test (see Tests). Write the smallest change that makes them all
+  lock test and a delete slice's tests (see Tests). Write the smallest change that makes them all
   green. Run the test file and the typecheck; both green. Make the
   slice's `Docs` lines, so the doc lands with the code it describes.
   Commit.
@@ -181,6 +181,10 @@ what the line says, is a surprise (see below).
   lock test. It passes on the base: run it, see it green, and commit it
   alone, with a commit body that says it was green before any change.
   It stays green through every later slice.
+- A slice headed `deletes dead code` deletes code that no caller uses.
+  Its tests exist already: write none. Run them before the change and
+  see them green, make the delete, run them again and see them green,
+  and commit with a body that says they were green before and after.
 - Mock only at the borders the slice names under `Given`: an outside
   API, the clock, randomness. Everything the repo owns runs for real.
 - The case name is the one in the Proof table. One `Then` per test.
