@@ -175,7 +175,7 @@ A serious moment from one session that is part of no pattern. The retro report l
 _Avoid_: outlier
 
 **Repeated correction**:
-The same thing the user told the agent in two or more sessions. Its fix is a check first, a skill fix next, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
+The same thing the user told the agent in two or more sessions. Its first fix is to delete the old code or the old way the agent keeps copying; then a check, a skill fix, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
 _Avoid_: feedback, nag
 
 **Repeated manual work**:
