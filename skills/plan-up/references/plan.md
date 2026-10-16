@@ -126,6 +126,7 @@ Slice 1, proves #1 and #2: <seam name>
     Given:  <fixtures, data, login state, exact values>
     When:   <the one call through the seam>
     Then:   <a literal result, never computed>
+    Red:    <a fix's first test only: what it shows on the base, § Type variants>
   Test `orders.test.ts` "exports nothing for an empty store"
     Given:  <...>
     When:   <...>

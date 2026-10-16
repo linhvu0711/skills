@@ -399,6 +399,17 @@ t_build_marks_in_backticks() {
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
 }
 
+t_build_red_line() {
+  T="$(mktemp -d)"
+  sed '66a\
+    Red:    the rows split at the note
+' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].slices[0].tests[0].red = "the rows split at the note"' "$here/build-page/ticket.json")" \
+    "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -456,4 +467,5 @@ cases=(
   "build-page refuses a long dash|t_build_long_dash"
   "build-page refuses curly quotes|t_build_curly_quotes"
   "build-page passes a long dash and a curly quote inside backticks|t_build_marks_in_backticks"
+  "build-page keeps a test's Red line|t_build_red_line"
 )

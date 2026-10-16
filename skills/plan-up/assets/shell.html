@@ -606,7 +606,8 @@ const DATA = {};
         el('div', { class: 'gwt' },
           el('b', {}, 'Given'), R(t.given),
           el('b', {}, 'When'), R(t.when),
-          el('b', {}, 'Then'), el('span', { class: 'then', html: rich(t.then) }))));
+          el('b', {}, 'Then'), el('span', { class: 'then', html: rich(t.then) }),
+          t.red ? [el('b', {}, 'Red'), R(t.red)] : [])));
       return card(`S${i + 1}`, `Slice ${i + 1} · ${s.seam}`, provesText(s.proves), el('div', {}, changes, tests), i === 0);
     }));
   }

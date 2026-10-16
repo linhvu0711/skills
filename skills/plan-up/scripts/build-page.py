@@ -260,9 +260,9 @@ def records(lines, kind):
         elif kind == "video" and (m := re.match(r"\d+\.\s*(.*)", t)):
             current["steps"].append(m.group(1))
             last = (current["steps"], len(current["steps"]) - 1)
-        elif (m := re.match(r"(Change|Docs|Given|When|Then|Setup|Where|Steps|See|Must not|Before|Shows):\s*(.*)", t)):
+        elif (m := re.match(r"(Change|Docs|Given|When|Then|Red|Setup|Where|Steps|See|Must not|Before|Shows):\s*(.*)", t)):
             key, value = m.group(1).lower().replace("must not", "mustNot"), m.group(2)
-            target = current["tests"][-1] if key in ("given", "when", "then") and current.get("tests") else current
+            target = current["tests"][-1] if key in ("given", "when", "then", "red") and current.get("tests") else current
             if key in ("change", "docs", "steps"):
                 target[key].append(value)
                 last = (target[key], len(target[key]) - 1)
