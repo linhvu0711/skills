@@ -81,6 +81,44 @@ t_render_local_red_rule() {
   has "red rule" "A missing symbol, an import error, or a crash before the assertion is not red" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
 }
 
+# every_rules_hold <needle>: each executor's rules, their lines joined since a
+# rule wraps, hold the needle.
+every_rules_hold() {
+  local ex
+  for ex in local devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    has "$ex rules" "$1" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+  done
+}
+
+t_render_belief_rule() {
+  every_rules_hold "before a third fix, write down the cause you believe, and one check that shows whether it is the cause"
+}
+
+t_render_same_kind_rule() {
+  every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
+}
+
+t_render_same_kind_before_fallback() {
+  local ex same any
+  for ex in local devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    same="$(printf '%s\n' "$out" | grep -n '^- A second surprise of the same kind' | cut -d: -f1)"
+    any="$(printf '%s\n' "$out" | grep -n '^- Anything else: \*\*pick the nearest existing pattern' | cut -d: -f1)"
+    eq "$ex same-kind rule before the fallback" yes "$([ -n "$same" ] && [ -n "$any" ] && [ "$same" -lt "$any" ] && echo yes || echo no)"
+  done
+}
+
+t_render_comment_rule() {
+  every_rules_hold "Keep a comment in the code you write only when it says why"
+}
+
+t_render_edge_rule() {
+  every_rules_hold "Check data at the edge where it comes in"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -92,4 +130,9 @@ cases=(
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
+  "every executor's rules test a belief before a third fix|t_render_belief_rule"
+  "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
+  "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
+  "every executor's rules keep a comment only when it says why|t_render_comment_rule"
+  "every executor's rules check data at the edge|t_render_edge_rule"
 )

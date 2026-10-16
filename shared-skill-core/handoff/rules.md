@@ -152,6 +152,14 @@ what the line says, is a surprise (see below).
   change says so in the commit body, not the summary.
 - Build what the plan says and only that. Code outside the slices stays
   as it is, including code that looks like it could be tidier.
+- Keep a comment in the code you write only when it says why: a reason,
+  a limit, or a source the code cannot show. A comment that says what
+  the next line does is left out. The `Given`, `When`, and `Then` lines
+  in a test stay; they tie the test to its entry in the plan.
+- Check data at the edge where it comes in: a request body, a
+  command's arguments, a file or an env var read, an outside API's
+  reply. Code past the edge trusts what the edge checked and does not
+  check it again.
 - The `Decided` block is closed. Follow it. `Proved` lines are facts
   that were run before the plan; build on them, do not run them again.
 - Anything under `Out of scope` stays out, even when it is one line away.
@@ -525,8 +533,19 @@ Sort each one:
 - It changes a seam, a Done-when line, a schema, an API, a `Decided`
   line, or makes a `Gates` test fail: **stop and ask** (see Asking).
 <!-- /local -->
-- Something stays red after real tries at fixing it: stop and ask.
-  Say what is red, what you tried, and what you think is wrong.
+- The same red after two fixes that did not turn it green: before a
+  third fix, write down the cause you believe, and one check that shows
+  whether it is the cause: a log line, a smaller test, or a value read
+  at the seam. Run the check. It holds: fix that cause. It shows the
+  belief wrong: that is a new lead; write the next belief from what the
+  check showed, and test it the same way. No check can test the belief:
+  stop and ask. Say what is red, each fix you tried, and the belief.
+  Say each belief and what its check showed {{here}}.
+- A second surprise of the same kind as an earlier one, where the plan
+  was wrong about the code in the same way twice (two helpers it names
+  that do not exist, two callers that expect another shape), means the
+  design may be wrong: **stop and ask**, rather than pick the nearest
+  pattern again. Say both surprises and what they share.
 - Anything else: **pick the nearest existing pattern**, go on, and say
   so {{here}} in one line: plan said X, code had Y, did Z. When it
   changed what the code does, it is also a bullet under `Where to look`

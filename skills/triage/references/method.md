@@ -78,6 +78,18 @@ the one thing, symptom gone; change it back, symptom returns. For perf, the
 number moves when the hot spot is stubbed. A cause that has not flipped the
 symptom is still a hypothesis. Say so.
 
+## Same mistake
+
+A confirmed cause is one place a mistake was made, and the same mistake
+is often made again: the same call skipped, the same field read raw, the
+same check left out. Name the mistake as a pattern, not as the line.
+Search where the cause lives for that pattern: `rg` for the names and
+the shape, and a search by meaning when the mistake can wear other
+names. Read each hit and keep only the ones that make the same mistake.
+Each one kept is a `file:line` on the `Also at:` line. None kept:
+`Also at: none found`, with the search that ran, so a reader can run it
+again.
+
 ## Clean
 
 Every probe, log line, throwaway file, and changed setting goes. The repo
