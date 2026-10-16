@@ -54,8 +54,8 @@ judgment is made here.
 ## Shape
 
 Write every block in this order. Drop a block only when no probe ran
-(`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`), or
-nothing was decided (`Decided`).
+(`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`),
+nothing was decided (`Decided`), or the issue is not a `perf` (`Perf`).
 
 ```markdown
 # Plan: #<n> <issue title>
@@ -101,6 +101,12 @@ Open: <how the executor reaches the UI after Run>
 Screen: <web: 1440 and 375 wide | desktop: window size | terminal: cols x rows>
 Platform: linux | windows | macos-outpost
 Standards: <the files that hold the rules, or "the code">
+
+## Perf
+Metric:    <what is measured, and its unit>
+Command:   <one command that prints the metric>
+Before:    <the issue's Baseline line, word for word>
+Pass rule: <median of n runs per side, in turns on base and head; head reaches the Target; the gap is larger than the spread>
 
 ## Proved
 - P1 <the fact, with the value, shape, or limit the build needs>: <what ran,
@@ -297,15 +303,16 @@ In a run, a labelled layer is built the same way.
 
 ## Type variants
 
-The shape above proves new behavior works, as a `feat` needs. Two types
-need other proof: a `fix` proves the old bug is gone, and a `refactor`
-proves nothing changed. The type is the leading word of the issue's
-title, per `../../shared-skill-core/issue-rules.md` § Types. A repo
-that writes another word for a type keeps it in the `words` map of
-`python3 ../to-issue/scripts/conventions.py get <owner/repo>`, as
-`bug` for `fix`; that word is read as the type it stands for. A `fix` or
-a `refactor` issue adds the rules of its type below to every other rule
-in this file, on the full path and the short one. In a run, each layer
+The shape above proves new behavior works, as a `feat` needs. Three
+types need other proof: a `fix` proves the old bug is gone, a `refactor`
+proves nothing changed, and a `perf` proves a number moved. The type is
+the leading word of the issue's title, per
+`../../shared-skill-core/issue-rules.md` § Types. A repo that writes
+another word for a type keeps it in the `words` map of `python3
+../to-issue/scripts/conventions.py get <owner/repo>`, as `bug` for
+`fix`; that word is read as the type it stands for. A `fix`, `refactor`,
+or `perf` issue adds the rules of its type below to every other rule in
+this file, on the full path and the short one. In a run, each layer
 reads its own ticket's type. A Step of a `ready-to-build` issue that
 breaks one of these rules is a choice the issue got wrong, and ends the
 short path as § Ready-to-build says.
@@ -352,6 +359,25 @@ The structure changes and the behavior does not.
 - **Rename.** Each hit of the old name's search is a `Change` or a
   `Docs` line, or a `Decided` line that says why it stays. `Gates`
   holds the search command and the hits that may stay.
+
+### perf
+
+Read `../../shared-skill-core/benchmark.md` first: it says when a speed
+number can be trusted.
+
+- The `Perf` block sits after `Facts`. Its `Metric`, `Command`, and
+  `Before` come from the issue's `Baseline:` line.
+- A perf issue with no `Baseline:` line gets one from a probe on the
+  base copy, measured per the checklist. Its `Proved` line is the
+  `Before`.
+- The `Command` runs from the repo root, with the tools the `Platform`
+  has.
+- The `Pass rule` names its run count, at least 5 per side, and the
+  issue's `Target:`.
+- The Done-when line that names the Target is the perf Proof row. Its
+  Test column is `Perf: <Command>`, and its artifact is `before → after`.
+- The slices keep behavior the same, so their tests are the existing
+  tests at each seam, named under `Gates`.
 
 ## Filling the blocks
 
@@ -589,6 +615,9 @@ facts or forks.
 - Every dependency a `Change` adds or bumps was asked as a big fork,
   and its `Decided` line is marked `(user)`.
 - Gates name the existing tests on the touched seams.
+- A `perf` plan: the `Perf` block has all four lines, its `Pass rule`
+  names a run count of at least 5, and the Proof row of the Target line
+  names the `Command`.
 - A run: the Stack block lists every layer with its base, and the order
   respects every `Blocked by` edge.
 - The Review block has every part, each in its limit: `Change`,

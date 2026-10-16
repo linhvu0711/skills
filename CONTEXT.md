@@ -50,6 +50,10 @@ _Avoid_: unproven, unverified, assumed
 A test that passes on the code before a refactor and must still pass after it. It pins today's behavior where no existing test does.
 _Avoid_: pin test, characterization test, snapshot test
 
+**Type variant**:
+The extra plan rules for a `fix`, `refactor`, or `perf` issue, on top of the plan that every type gets.
+_Avoid_: playbook, mode
+
 ## Handoff
 
 **Executor**:
