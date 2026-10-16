@@ -187,6 +187,27 @@ t_prune_size_unknown() {
   eq stdout "$(printf 'removed %s (size ?), branch feat/1-a deleted (-D)\nfreed size ?' "$T/elsewhere/feat-1-a")" "$out"
 }
 
+t_prune_keeps_in_use() {
+  wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  # The full path: $T/bin/sleep is the no-op one.
+  local pid; cd "$T/w/feat-1-a"; /bin/sleep 30 & pid=$!; cd "$R"
+  run bash "$P"
+  kill "$pid"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'kept %s (<1M): in use by sleep (pid %s)\nnothing to prune' "$T/w/feat-1-a" "$pid")" "$out"
+  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
+}
+
+t_prune_in_use_unknown() {
+  wt_repo; gh_remote; fake_gh; wt "$T/elsewhere/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$T/bin/lsof"; chmod +x "$T/bin/lsof"
+  run env PRUNE_WORKTREES_PROC="$T/no-proc" bash "$P"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'in-use check not possible: lsof failed\nremoved %s (<1M), branch feat/1-a deleted (-D)\nfreed <1M' "$T/elsewhere/feat-1-a")" "$out"
+}
+
 cases=(
   "prune removes a merged worktree outside the root|t_prune_removes_merged"
   "prune keeps a branch with no PR|t_prune_keeps_no_pr"
@@ -205,4 +226,6 @@ cases=(
   "prune keeps a locked worktree|t_prune_keeps_locked"
   "prune shows each size and the total it frees|t_prune_shows_sizes"
   "prune shows size ? when du fails|t_prune_size_unknown"
+  "prune keeps a worktree a live process is in|t_prune_keeps_in_use"
+  "prune says when it cannot check for live processes|t_prune_in_use_unknown"
 )

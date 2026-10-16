@@ -9,9 +9,12 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 A worktree is **safe to prune** when it is clean, its PR is merged on
-GitHub, and its branch tip is the PR's last commit. The script removes
-those and their branches without asking, and lists every other worktree
-with the reason it stays. The user decides about the rest.
+GitHub, its branch tip is the PR's last commit, and no live process,
+such as a terminal pane's shell, has its working folder in it. The
+script removes those and their branches without asking, and lists every
+other worktree with the reason it stays. The user decides about the
+rest. A worktree in use stays as `in use by <command> (pid <n>)`, even
+under `--remove`.
 
 ## Hard rules
 

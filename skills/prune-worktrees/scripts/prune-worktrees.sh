@@ -12,9 +12,14 @@
 # printed. Every worktree is judged first, then the
 # safe ones are removed.
 #
+# A worktree that a live process has as its working folder, or a folder in
+# it, stays: a terminal pane's shell, a dev server. The working folders come
+# from ${PRUNE_WORKTREES_PROC:-/proc} on Linux, else from lsof on macOS.
+#
 # --remove: only the worktrees the user named, each removed with --force
-# whatever its reason, unless the session is in it or it is locked. Its branch
-# goes by the same rule as below; a branch git will not take with -d stays.
+# whatever its reason, unless the session is in it, a live process is in it,
+# or it is locked. Its branch goes by the same rule as below; a branch git
+# will not take with -d stays.
 #
 # Safe to prune: a clean worktree whose PR is merged on GitHub with the branch
 # tip as its last commit; the branch goes with `git branch -D`. Or, with no
@@ -23,8 +28,11 @@
 # test, and no gh call.
 #
 # Prints, in this order:
+#   in-use check not possible: <why>  when neither /proc nor lsof can say;
+#                                    the rest runs as without the check
 #   kept <path> (<size>): <reason>   one per worktree that stays. The reasons:
-#     `this session is in it`, `locked`, `detached HEAD`,
+#     `this session is in it`, `in use by <command> (pid <n>)`, `locked`,
+#     `detached HEAD`,
 #     `<n> uncommitted files`, `PR #<n> open`, `PR #<n> closed, not merged`,
 #     `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
@@ -120,9 +128,14 @@ human() {
 # branch flag (-D or -d) when the worktree is safe to prune, else `reason` to
 # why it stays. The first reason that holds is the one given.
 judge() {
-  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid=""
+  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid="" phys user
   flag="" reason=""
-  if [ "$(cd "$path" 2>/dev/null && pwd -P)" = "$session" ]; then reason="this session is in it"; return; fi
+  phys="$(cd "$path" 2>/dev/null && pwd -P)" || phys=""
+  if [ "$phys" = "$session" ]; then reason="this session is in it"; return; fi
+  if [ -n "$phys" ]; then
+    user="$(in_use "$phys")"
+    [ -z "$user" ] || { reason="in use by $user"; return; }
+  fi
   [ "$locked" -eq 0 ] || { reason="locked"; return; }
   [ -n "$branch" ] || { reason="detached HEAD"; return; }
   n="$(git -C "$path" status --porcelain | wc -l | tr -d ' ')"
@@ -153,6 +166,41 @@ judge() {
   reason="no PR"
 }
 
+# live_cwds: one `<pid> SEP <command> SEP <folder>` line per live process this
+# user can see, from /proc when it is there, else from lsof. Neither can say:
+# the reason on stdout, and return 1.
+live_cwds() {
+  local d c n out line pid="" rc=0
+  if [ -e "$proc/self/cwd" ]; then
+    for d in "$proc"/[0-9]*; do
+      c="$(readlink "$d/cwd" 2>/dev/null)" || continue
+      n="$(cat "$d/comm" 2>/dev/null)" || n="?"
+      printf '%s%s%s%s%s\n' "${d##*/}" "$sep" "$n" "$sep" "$c"
+    done
+    return 0
+  fi
+  command -v lsof >/dev/null || { printf 'no /proc and no lsof'; return 1; }
+  out="$(lsof +c 0 -a -d cwd -Fpcn 2>/dev/null)" || rc=$?
+  [ "$rc" -eq 0 ] || [ -n "$out" ] || { printf 'lsof failed'; return 1; }
+  while IFS= read -r line; do
+    case "$line" in
+      p*) pid="${line#p}" ;;
+      c*) n="${line#c}" ;;
+      n*) printf '%s%s%s%s%s\n' "$pid" "$sep" "$n" "$sep" "${line#n}" ;;
+    esac
+  done <<<"$out"
+}
+
+# in_use <physical path>: `<command> (pid <n>)` of the first live process whose
+# working folder is the worktree or a folder in it; nothing when none is.
+in_use() {
+  local u rest c
+  for u in ${users[@]+"${users[@]}"}; do
+    rest="${u#*"$sep"}"; c="${rest#*"$sep"}"
+    case "$c" in "$1"|"$1"/*) printf '%s (pid %s)' "${rest%%"$sep"*}" "${u%%"$sep"*}"; return ;; esac
+  done
+}
+
 # named <path>: whether the user named this worktree with --remove.
 named() {
   local p
@@ -171,7 +219,7 @@ sort_one() {
     found+=("$path")
     judge "$@"
     [ "$reason" != "this session is in it" ] || die "this session is in $(show "$path")"
-    if [ "$reason" = "locked" ]; then kept+=("$path${sep}locked"); return; fi
+    case "$reason" in locked|"in use by "*) kept+=("$path$sep$reason"); return ;; esac
     removals+=("$main$sep$path$sep$branch$sep${flag:--d}$sep--force")
     return
   fi
@@ -248,6 +296,15 @@ if [ "$all" -eq 1 ]; then
     done
   done
 fi
+# Every live process's working folder, read once before any worktree is judged.
+proc="${PRUNE_WORKTREES_PROC:-/proc}"
+users=()      # <pid> SEP <command> SEP <folder>
+in_use_note=""
+if cwds="$(live_cwds)"; then
+  while IFS= read -r l; do [ -z "$l" ] || users+=("$l"); done <<<"$cwds"
+else
+  in_use_note="$cwds"
+fi
 for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
 for p in ${names[@]+"${names[@]}"}; do
   named_found=0
@@ -255,6 +312,7 @@ for p in ${names[@]+"${names[@]}"}; do
   [ "$named_found" -eq 1 ] || die "$(show "$p") is not a worktree of $(show "${repos[0]:-this repo}")"
 done
 
+[ -z "$in_use_note" ] || printf 'in-use check not possible: %s\n' "$in_use_note"
 for k in ${kept[@]+"${kept[@]}"}; do
   printf 'kept %s (%s): %s\n' "$(show "${k%%"$sep"*}")" "$(human "$(size_of "${k%%"$sep"*}")")" "${k#*"$sep"}"
 done
