@@ -649,9 +649,13 @@ def plan_problems(lines):
     yield from map_problems(md_maps(lines), is_run)
     for n, body in enumerate(layers, 1):
         yield from record_problems(body)
-        for k, rec in enumerate(records(body.get("Slices", []), "slice")[1:], 2):
-            if rec.get("deletes"):
+        heads = [l.strip() for l in body.get("Slices", []) if RECORD["slice"].fullmatch(l.strip())]
+        for k, head in enumerate(heads, 1):
+            m = re.match(r"Slice (\d+), deletes dead code:", head)
+            if m and k > 1:
                 yield f"slices: layer {n} slice {k} deletes dead code; only slice 1 may"
+            elif m and m.group(1) != "1":
+                yield f"slices: layer {n} delete slice is headed `Slice {m.group(1)}`; it is `Slice 1`"
         for row in table_rows(body.get("Proof", [])):
             if row and row[0].isdigit() and len(row) != 6:
                 yield f"proof: layer {n} row {row[0]} has {len(row)} cells, needs 6"

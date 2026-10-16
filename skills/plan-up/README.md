@@ -83,7 +83,7 @@ The agent writes only the Markdown, never `DATA`. On an invalid block the builde
 
 A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
 
-A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so; the builder refuses that heading on any slice but the first of a layer.
+A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so; the builder refuses that heading on any slice but the first of a layer, and with any number but 1.
 
 ## Credits
 
