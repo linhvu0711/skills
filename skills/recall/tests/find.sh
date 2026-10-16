@@ -72,6 +72,15 @@ t_rc_no_match() {
   eq out "No sessions on export." "$out"
 }
 
+t_rc_common_words() {
+  rc_home
+  rc_claude s1 "fix the export"
+  rc_codex c1 "export button"
+  run python3 "$F" the
+  eq exit 1 "$code"
+  eq out "No sessions on the." "$out"
+}
+
 t_rc_ten_newest() {
   rc_home
   local k
@@ -105,6 +114,7 @@ cases=(
   "finds a topic in Claude Code and Codex sessions, newest first|t_rc_both_tools"
   "leaves out this session and earlier recall runs|t_rc_leaves_out_recall"
   "no session matches|t_rc_no_match"
+  "a topic of only common words matches nothing|t_rc_common_words"
   "keeps the 10 newest and says how many it skipped|t_rc_ten_newest"
   "Codex is not installed|t_rc_no_codex"
 )

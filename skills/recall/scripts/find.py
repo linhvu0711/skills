@@ -5,7 +5,8 @@
 
 Runs the shared Claude Code and Codex finders on the topic, in the current
 folder and the folders below it, and prints one line per session that
-matches, newest first:
+matches, newest first. A topic of only common words (`the`) matches
+nothing:
 
     <tool> <id> <age> · <n> prompts · <title or first prompt>
 
@@ -31,13 +32,15 @@ NEWEST = 10
 
 
 def sessions(finder, topic):
-    """The sessions the finder matches on the topic; none when it has none."""
+    """The sessions the finder scores above 0 on the topic. A topic with no
+    word the finder keeps scores nothing, since the finder then lists every
+    session unscored."""
     r = subprocess.run([sys.executable, str(finder), topic, "--json", "--limit", "0", "--include-subdirs"],
                        capture_output=True, text=True)
     if r.returncode != 0:
         return []
     found = json.loads(r.stdout)
-    return [] if "error" in found else found["sessions"]
+    return [] if "error" in found else [s for s in found["sessions"] if s["score"] > 0]
 
 
 def is_recall(s):
