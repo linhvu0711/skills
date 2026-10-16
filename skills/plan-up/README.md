@@ -73,6 +73,8 @@ The cases for [prune.sh](scripts/prune.sh) are in [tests/prune.sh](tests/prune.s
 
 The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
 
+A perf plan's `## Perf` block shows on the Overview tab under the facts, and the builder refuses a Perf block that lacks one of its four lines.
+
 A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them.
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.

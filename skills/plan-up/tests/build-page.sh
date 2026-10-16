@@ -81,6 +81,30 @@ bad_ticket() {
   [ ! -e "$T/plan-acme-shop-42.html.tmp" ]
 }
 
+t_build_perf() {
+  T="$(mktemp -d)"
+  cp "$here/build-page/perf.md" "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq perf '{"before":"1200 ms, median of 5, spread 1150 to 1260 ms","command":"pnpm bench orders","metric":"p95 of GET /orders, ms","pass rule":"median of 5 runs in turns, base and head; head under 300 ms"}' \
+    "$(page_data "$T/plan-acme-shop-42.html" | jq -c .layers[0].perf)"
+}
+
+bad_perf() {
+  T="$(mktemp -d)"
+  sed "$1" "$here/build-page/perf.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 1 "$code"
+  eq stdout "$2" "$out"
+  eq stderr "" "$err"
+  [ ! -e "$T/plan-acme-shop-42.html" ]
+  [ ! -e "$T/plan-acme-shop-42.html.tmp" ]
+}
+
+t_build_perf_no_pass() {
+  bad_perf '/^Pass rule:/d' 'perf: layer 1 has no `Pass rule:` line'
+}
+
 t_build_no_review() {
   bad_ticket '/^## Review$/d' 'not a plan-up .md: plan-acme-shop-42.md'
 }
@@ -415,6 +439,8 @@ cases=(
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
+  "build-page shows the Perf block of a perf plan|t_build_perf"
+  "build-page refuses a Perf block with no Pass rule|t_build_perf_no_pass"
   "build-page builds a chat plan with no issue|t_build_chat"
   "build-page refuses a chat plan with no Brief|t_build_chat_no_brief"
   "build-page refuses a Brief with no Task or Done when|t_build_chat_brief_gaps"
