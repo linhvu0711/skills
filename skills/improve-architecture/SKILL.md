@@ -106,6 +106,8 @@ Explore agents retrieve, short lookups are yours.
    in parallel, each with a different constraint and each starting from
    how callers use the module, then a score on the 3 to 6 points named
    before the designs came back, one point at a time, and your own pick.
+   Designs that differ wildly send the question back to be reframed,
+   never averaged.
 
 ## Examples
 

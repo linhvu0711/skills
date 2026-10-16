@@ -50,4 +50,11 @@ Present designs sequentially so the user can absorb each one.
 
 Then score them one point at a time, in the order Step 1 named the points: for each point, give every design `strong`, `fair`, or `weak`, with one clause why, before you move to the next point. No point joins after the designs come back. End with a table: one row per point, one column per design.
 
-After comparing, give your own recommendation: which design you think is strongest and why. If elements from different designs would combine well, propose a hybrid. Be opinionated: the user wants a strong read, not a menu.
+### 4. Read agreement and divergence
+
+- **The designs agree** on a part (the same seam, the same entry point, the same thing hidden): a strong sign that part is right. Say so, and carry it into the pick.
+- **The designs differ wildly** (each puts the seam in a different place, or hides a different thing): the question is unclear, not the designs. Do not average them. Name the split, ask the user the question that would settle it, reframe the problem space of Step 1 with the answer, and run Step 2 again. After one reframe, designs that still differ go to the user as the open choice, with their scores.
+
+### 5. Recommend
+
+Give your own recommendation: which design you think is strongest, by its scores, and why. Be opinionated: the user wants a strong read, not a menu. A hybrid takes one or two parts from each design at most; a merge that takes more is an average, and is not offered.
