@@ -81,6 +81,21 @@ t_render_local_red_rule() {
   has "red rule" "A missing symbol, an import error, or a crash before the assertion is not red" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
 }
 
+# every_rules_hold <needle>: each executor's rules, their lines joined since a
+# rule wraps, hold the needle.
+every_rules_hold() {
+  local ex
+  for ex in local devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    has "$ex rules" "$1" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+  done
+}
+
+t_render_belief_rule() {
+  every_rules_hold "before a third fix, write down the cause you believe, and one check that shows whether it is the cause"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -92,4 +107,5 @@ cases=(
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
+  "every executor's rules test a belief before a third fix|t_render_belief_rule"
 )

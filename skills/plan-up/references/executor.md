@@ -31,8 +31,9 @@ belong to `/handoff` or `/build-and-prove`; the plan never names it.
 - No cheap way to ask. A question stops the session until the user
   answers, so the plan leaves nothing that needs one. It asks only on a
   surprise that changes a seam, a Done-when line, a schema, an API, a
-  `Decided` line, or a `Gates` test; anything smaller it settles by the
-  nearest existing pattern and says so.
+  `Decided` line, or a `Gates` test, or on a red it cannot explain after
+  two fixes; anything smaller it settles by the nearest existing pattern
+  and says so.
 
 ## How it works the plan
 

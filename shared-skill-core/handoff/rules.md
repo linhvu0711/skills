@@ -525,8 +525,14 @@ Sort each one:
 - It changes a seam, a Done-when line, a schema, an API, a `Decided`
   line, or makes a `Gates` test fail: **stop and ask** (see Asking).
 <!-- /local -->
-- Something stays red after real tries at fixing it: stop and ask.
-  Say what is red, what you tried, and what you think is wrong.
+- The same red after two fixes that did not turn it green: before a
+  third fix, write down the cause you believe, and one check that shows
+  whether it is the cause: a log line, a smaller test, or a value read
+  at the seam. Run the check. It holds: fix that cause. It shows the
+  belief wrong: that is a new lead; write the next belief from what the
+  check showed, and test it the same way. No check can test the belief:
+  stop and ask. Say what is red, each fix you tried, and the belief.
+  Say each belief and what its check showed {{here}}.
 - Anything else: **pick the nearest existing pattern**, go on, and say
   so {{here}} in one line: plan said X, code had Y, did Z. When it
   changed what the code does, it is also a bullet under `Where to look`
