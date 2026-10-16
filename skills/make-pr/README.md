@@ -20,6 +20,8 @@ It never merges.
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
+
 ## Needs
 
 - `gh`, signed in, and `git`. With a proof folder, `gh` 2.99 or newer.

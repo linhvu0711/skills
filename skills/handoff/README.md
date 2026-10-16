@@ -30,6 +30,8 @@ Then it watches. When the agent asks something, this chat answers from the plan 
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
+
 ## Needs
 
 - For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID`, in the environment or as `export` lines in `~/.zshrc`. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.

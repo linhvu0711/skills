@@ -119,6 +119,12 @@ t_render_edge_rule() {
   every_rules_hold "Check data at the edge where it comes in"
 }
 
+t_render_cloud_perf_row() {
+  render devin rules
+  eq exit 0 "$code"
+  has "perf row" "1200 → 280" "$out"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -135,4 +141,5 @@ cases=(
   "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
   "every executor's rules keep a comment only when it says why|t_render_comment_rule"
   "every executor's rules check data at the edge|t_render_edge_rule"
+  "cloud rules carry the perf row|t_render_cloud_perf_row"
 )

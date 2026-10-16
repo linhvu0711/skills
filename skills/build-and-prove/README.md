@@ -38,6 +38,8 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
+
 ## Needs
 
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.

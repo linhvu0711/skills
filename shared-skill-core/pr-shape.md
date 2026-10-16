@@ -84,6 +84,14 @@ say; with nothing to say, the heading goes too.
      commit. Each item is the command, the short SHA, and the result,
      or a test the PR added or changed, linked. The list holds only
      checks that ran.
+   - A `perf` plan's Target line: its `Test` cell is one result, the
+     metric and unit, `before → after`, the run count, and the command,
+     run on the head commit. `before` is the base median and `after` the
+     head median, measured in turns on one machine.
+
+     ```markdown
+     | 1 | p95 of `GET /orders` is under 300 ms. | p95 of `GET /orders`, ms: 1200 → 280, median of 5 in turns, `pnpm bench orders` on `9e18c16` |
+     ```
    - The plan has UI walks: the Proof table has two more columns after `Test`: `Screenshot` and
      `Video`. `Screenshot` holds no image: it names the screenshot below
      that shows the line holding, as `Screenshot n`. Two lines one screenshot shows both name it. A
