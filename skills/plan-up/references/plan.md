@@ -330,6 +330,26 @@ and `Repro:`.
   state they reach, so the before shot shows the bug, and its `See` is
   the `Expected:` state.
 
+### refactor
+
+The structure changes and the behavior does not.
+
+- **Facts.** The facts round asks for the tests that cover the code
+  the refactor moves, every caller of the old form, and, for a rename,
+  every hit of the old name in strings, docs, and config.
+- **Covering tests.** `Gates` names the existing tests that cover the
+  code. They stay untouched and green from the first slice to the last.
+- **Lock test.** Where no test covers the code, slice 1 is a lock test
+  alone, with `Change: none, a lock test`. It passes on the base and
+  stays green to the end; its commit body says it was green before any
+  change.
+- **Callers.** Every caller moves to the new form, and the last slice
+  deletes the old one, in the same PR. In a run, the old form is gone
+  by the last layer.
+- **Rename.** Each hit of the old name's search is a `Change` or a
+  `Docs` line, or a `Decided` line that says why it stays. `Gates`
+  holds the search command and the hits that may stay.
+
 ## Filling the blocks
 
 Write plain marks: no long dash and no curly quote outside backticks.

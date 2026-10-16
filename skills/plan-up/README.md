@@ -29,7 +29,7 @@ The tabs after it are for the agent that builds. The plan holds the facts it pro
 
 A new module or seam must earn its place, by the rules improve-architecture uses too. The plan says what a new module hides, so deleting it would push work back into its callers, and a seam that swaps one thing for another needs two adapters, such as the real one and a test fake.
 
-A `fix` plan proves the bug is gone. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it.
+A `fix` plan proves the bug is gone. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it. A `refactor` plan proves nothing changed: it names the tests that cover the code, or adds a lock test that passes before the change and after it. Every caller moves to the new form, the old form is deleted in the same PR, and a rename gets a search for the old name in strings, docs, and config.
 
 When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
 

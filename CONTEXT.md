@@ -42,6 +42,10 @@ _Avoid_: lock, reservation
 A risk in the Review view that no probe has checked. Each risk names the `Proved` line that proves it, or says `not proved`. Reading the code does not prove a risk.
 _Avoid_: unproven, unverified, assumed
 
+**Lock test**:
+A test that passes on the code before a refactor and must still pass after it. It pins today's behavior where no existing test does.
+_Avoid_: pin test, characterization test, snapshot test
+
 ## Handoff
 
 **Executor**:
