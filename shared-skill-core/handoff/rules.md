@@ -540,6 +540,11 @@ Sort each one:
 <!-- local -->
   `/build-and-prove` puts it there through `/make-pr`.
 <!-- /local -->
+- A second surprise of the same kind as an earlier one, where the plan
+  was wrong about the code in the same way twice (two helpers it names
+  that do not exist, two callers that expect another shape), means the
+  design may be wrong: **stop and ask**, rather than pick the nearest
+  pattern again. Say both surprises and what they share.
 
 ## Finish
 

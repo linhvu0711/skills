@@ -33,7 +33,8 @@ belong to `/handoff` or `/build-and-prove`; the plan never names it.
   surprise that changes a seam, a Done-when line, a schema, an API, a
   `Decided` line, or a `Gates` test, or on a red it cannot explain after
   two fixes; anything smaller it settles by the nearest existing pattern
-  and says so.
+  and says so, until a second surprise of the same kind, which it asks
+  about too.
 
 ## How it works the plan
 

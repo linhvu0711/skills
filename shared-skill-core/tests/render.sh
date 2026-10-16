@@ -96,6 +96,10 @@ t_render_belief_rule() {
   every_rules_hold "before a third fix, write down the cause you believe, and one check that shows whether it is the cause"
 }
 
+t_render_same_kind_rule() {
+  every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -108,4 +112,5 @@ cases=(
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
   "every executor's rules test a belief before a third fix|t_render_belief_rule"
+  "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
 )
