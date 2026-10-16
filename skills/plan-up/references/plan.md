@@ -18,8 +18,9 @@ judgment is made here.
 - **Stale doc**: a doc that says what the code did before the change: a
   README section, a guide, a `CHANGELOG`, an ADR, `--help` text, an
   `.env.example`. A doc the change needs and nobody wrote is stale too.
-- **Tracer bullet**: the first slice runs the thinnest path end to end, so
-  every later slice widens a path that already works.
+- **Tracer bullet**: the first slice, after a delete slice when there is
+  one, runs the thinnest path end to end, so every later slice widens a
+  path that already works.
 - **On a screen**: a Done-when line a person checks by looking at the
   running app: text, layout, color, wrap, width, order, a dialog. A web
   page, a desktop window, and a command's printed output in a terminal
@@ -328,13 +329,14 @@ and `Repro:`.
 - **Proof.** Row 1 is the `Repro:`, word for word in the Done-when
   column; numbered steps go on one line, each keeping its number. The
   Done-when lines follow from row 2.
-- **Slice 1.** Its first test proves row 1. It runs the repro through a
-  seam that exists on the base, never through a name a slice adds, so
-  the test runs before any change. `Then` is the `Expected:` result, as
-  a literal. A `Red:` line under `Then` is the `Actual:` result, as the
-  failed assertion shows it on the base. A missing symbol, an import
-  error, or a crash before the assertion is not red: the test must
-  fail on its assertion, for the bug's reason.
+- **First slice.** Slice 1, or slice 2 after a delete slice. Its first
+  test proves row 1. It runs the repro through a seam that exists on the
+  base, never through a name a slice adds, so the test runs before any
+  change. `Then` is the `Expected:` result, as a literal. A `Red:` line
+  under `Then` is the `Actual:` result, as the failed assertion shows it
+  on the base. A missing symbol, an import error, or a crash before the
+  assertion is not red: the test must fail on its assertion, for the
+  bug's reason.
 - **Walk.** A bug a person sees on a screen gets walk 1, which proves
   row 1. Its `Before:` line holds the `Repro:` steps and the `Actual:`
   state they reach, so the before shot shows the bug, and its `See` is
@@ -349,10 +351,10 @@ The structure changes and the behavior does not.
   every hit of the old name in strings, docs, and config.
 - **Covering tests.** `Gates` names the existing tests that cover the
   code. They stay untouched and green from the first slice to the last.
-- **Lock test.** Where no test covers the code, slice 1 is a lock test
-  alone, with `Change: none, a lock test`. It passes on the base and
-  stays green to the end; its commit body says it was green before any
-  change.
+- **Lock test.** Where no test covers the code, the first slice after
+  any delete slice is a lock test alone, with
+  `Change: none, a lock test`. It passes on the base and stays green to
+  the end; its commit body says it was green before any change.
 - **Callers.** Every caller moves to the new form, and the last slice
   deletes the old one, in the same PR. In a run, the old form is gone
   by the last layer.
@@ -504,6 +506,25 @@ words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
 
+**Delete slice.** Dead code the facts round found in the area the
+ticket touches is deleted first, alone, so the new code is built on the
+simpler base and nothing copies the old way. Code is dead only when a
+search shows
+no caller in the code, in strings, in scripts, and in config,
+and nothing can call it by name at run time (a route table, a plugin
+list, a name built from a string). A hit on any search, or a
+name that can be called at run time, keeps the code: a `Decided` line
+names it and says why it stays. The delete slice is slice 1, headed
+`Slice 1, deletes dead code: <area>`. Its `Change` lines delete and do
+nothing else, each with the search that showed no caller. A doc that
+names the deleted code is a `Docs` line in it. Its tests are the
+existing tests under `Gates` that cover the area, each with `Given: the
+base`, `When:` the command that runs it, and `Then: pass, before and
+after the delete`; when no Gate covers the area, the `Test` command
+under `Facts`. It proves no Done-when line. The tracer bullet is the
+first slice after it.
+No dead code found: no delete slice and no line about it.
+
 **Look.** The executor has no taste, so the plan holds every look
 decision. A slice on a screen names in `Change` the mockup frame it
 matches and the component or screen it copies, `file:line`. What the
@@ -595,6 +616,12 @@ facts or forks.
   serve, or saying the repo has never done this job. A new module's line
   says what it hides, so it passes the deletion test; a new seam that
   swaps one thing for another has two adapters.
+- Dead code the facts round found is a delete slice, slice 1, whose
+  `Change` lines only delete, each with the search that showed
+  no caller in the code, in strings, in scripts, and in config;
+  code that a search hit or a run-time name keeps has a `Decided` line
+  that says why.
+  No dead code found: no delete slice and no line about it.
 - Every command in Facts came from CI, scripts, or README.
 - `Standards` names where the rules live; every `Change` follows them,
   and a rule the copied line breaks is quoted.

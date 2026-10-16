@@ -29,7 +29,7 @@ The tabs after it are for the agent that builds. The plan holds the facts it pro
 
 A new module or seam must earn its place, by the rules improve-architecture uses too. The plan says what a new module hides, so deleting it would push work back into its callers, and a seam that swaps one thing for another needs two adapters, such as the real one and a test fake.
 
-Before it adds, it looks for dead code in the area the ticket touches: a function, file, flag, or stub that no caller uses, or an old way that a newer one replaced.
+Before it adds, it looks for dead code in the area the ticket touches: a function, file, flag, or stub that no caller uses, or an old way that a newer one replaced. Code is dead only when a search finds no caller in the code, strings, scripts, and config, and nothing calls it by name at run time; anything else stays, with a line that says why. Dead code goes in the plan's first slice, alone, with the tests that cover the area passing before and after. With no dead code, the plan has no such slice.
 
 A `fix` plan proves the bug is gone. The type comes from the title's first word, and a repo that writes `bug:` for a fix counts too. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it. A `refactor` plan proves nothing changed: it names the tests that cover the code, or adds a lock test that passes before the change and after it. Every caller moves to the new form, the old form is deleted in the same PR, and a rename gets a search for the old name in strings, docs, and config.
 
@@ -90,3 +90,5 @@ A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
 
 The perf block takes an idea from `poteto-mode/playbooks/perf-issue.md` and `benchmark-checklist` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+Deleting dead code before adding takes an idea from `principle-subtract-before-you-add` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
