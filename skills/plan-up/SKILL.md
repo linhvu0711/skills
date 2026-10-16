@@ -177,6 +177,12 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      helper, a service, a component, a type, a fixture, a script; where
      each lives, who calls it, how far it reaches. The plan extends
      these before it adds, per `plan.md` § Slices;
+   - the dead code in the area the ticket touches: a function, a file, a
+     flag, or a stub that no caller uses, and an old way that a newer
+     way replaced; for each, the searches that show no caller in the
+     code, in strings, in scripts, and in config, and whether it can be
+     called by name at run time. The plan deletes it first, per
+     `plan.md` § Slices;
    - how the repo runs test, typecheck, lint, build, and the app, read
      from CI config, package scripts, and README;
    - the nearest existing test at each candidate seam, and how the repo

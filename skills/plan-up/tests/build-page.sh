@@ -324,8 +324,8 @@ t_build_stack_identity() {
 }
 
 t_build_bad_record_headings() {
-  bad_ticket 's/Slice 2, proves/Slice two, proves/' 'slices: Slice two, proves #2: export route is not a `Slice <n>, proves #<n>: <seam>` heading'
-  bad_ticket 's/Slice 1, proves #1:/Slice 1, proves #1 and two:/' 'slices: Slice 1, proves #1 and two: export route is not a `Slice <n>, proves #<n>: <seam>` heading'
+  bad_ticket 's/Slice 2, proves/Slice two, proves/' 'slices: Slice two, proves #2: export route is not a `Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>` heading'
+  bad_ticket 's/Slice 1, proves #1:/Slice 1, proves #1 and two:/' 'slices: Slice 1, proves #1 and two: export route is not a `Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>` heading'
   bad_ticket 's/Walk 1, proves/Walk one, proves/' 'UI walks: Walk one, proves #1 is not a `Walk <n>, proves #<n>` heading'
   bad_ticket 's/Video 1, Setup/Video one, Setup/' 'videos: Video one, Setup of walk 1, shows walks 1 is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
   bad_ticket 's/Video 1, Setup of walk 1, shows walks 1/Video 1, Setup of walk 1, shows walks one/' 'videos: Video 1, Setup of walk 1, shows walks one is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
@@ -442,11 +442,51 @@ t_build_red_line() {
     "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+# delete_slice: ticket.md with slice 1 turned into a delete slice: one Change
+# that deletes, no Docs, and the existing test it keeps green.
+delete_slice() {
+  sed -e 's/^Slice 1, proves #1: export route$/Slice 1, deletes dead code: export route/' \
+    -e 's/^  Change: `src\/orders\/export.ts:31`, stream CSV beside JSON\.$/  Change: `src\/orders\/export.ts:12`, delete `exportXml`. No caller: `rg -n exportXml` hits only its definition./' \
+    -e '/^  Docs:   `src\/README.md:88`, CSV next to JSON\.$/d' \
+    -e 's/^    Given:  three orders, one note with a newline$/    Given:  the base/' \
+    -e '1,/^Slice 2/s/^    When:   export CSV$/    When:   `pnpm test export`/' \
+    -e 's/^    Then:   all three rows with the note whole$/    Then:   pass, before and after the delete/' \
+    "$here/build-page/ticket.md"
+}
+
+t_build_delete_slice() {
+  T="$(mktemp -d)"
+  delete_slice > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].slices[0] |= (.proves = [] | .deletes = true | .docs = []
+    | .change = ["`src/orders/export.ts:12`, delete `exportXml`. No caller: `rg -n exportXml` hits only its definition."]
+    | .tests[0] += {given: "the base", when: "`pnpm test export`", then: "pass, before and after the delete"})' "$here/build-page/ticket.json")" \
+    "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
+t_build_delete_slice_number() {
+  T="$(mktemp -d)"
+  delete_slice | sed 's/^Slice 1, deletes dead code:/Slice 2, deletes dead code:/; s/^Slice 2, proves #2:/Slice 3, proves #2:/' \
+    > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 1 "$code"
+  eq stdout 'slices: layer 1 delete slice is headed `Slice 2`; it is `Slice 1`' "$out"
+}
+
+t_build_late_delete_slice() {
+  bad_ticket 's/^Slice 2, proves #2: export route$/Slice 2, deletes dead code: export route/' \
+    'slices: layer 1 slice 2 deletes dead code; only slice 1 may'
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
+  "build-page builds a plan whose first slice deletes dead code|t_build_delete_slice"
+  "build-page refuses a delete slice that is not slice 1|t_build_late_delete_slice"
+  "build-page refuses a first delete slice not headed Slice 1|t_build_delete_slice_number"
   "build-page shows the Perf block of a perf plan|t_build_perf"
   "build-page refuses a Perf block with no Pass rule|t_build_perf_no_pass"
   "build-page refuses a [perf] ticket with no Perf block|t_build_perf_no_block"

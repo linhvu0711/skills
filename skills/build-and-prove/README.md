@@ -42,6 +42,8 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 
 On a `perf` plan it runs the plan's command in the Sandbox in turns on the base and the head, by the benchmark checklist, and the PR's Proof shows `before → after`.
 
+A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
+
 ## Needs
 
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.

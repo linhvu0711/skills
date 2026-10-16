@@ -47,6 +47,8 @@ belong to `/handoff` or `/build-and-prove`; the plan never names it.
   tests that prove it and the docs it makes stale, and every `Then` a
   literal it can compare against. A doc no `Docs` line names stays as
   it is.
+- A delete slice (`Slice 1, deletes dead code`) has no new test: its
+  tests exist already, green before the delete and after it.
 - `Proved` lines are facts someone ran. It builds on them and does not
   run them again.
 - Tests look through the seam the slice names and never at internals.

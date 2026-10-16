@@ -31,7 +31,7 @@ FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
 REFS = r"#\d+(?:(?:,\s*|\s+and\s+)#\d+)*"
 RECORD = {
-    "slice": re.compile(rf"Slice \d+, proves ({REFS}):\s*(.+)"),
+    "slice": re.compile(rf"Slice \d+, (?:proves ({REFS})|(deletes dead code)):\s*(.+)"),
     "walk": re.compile(rf"Walk \d+, proves ({REFS})"),
     "video": re.compile(r"Video \d+, (Setup of walk (\d+)), shows walks (\d+(?:,\s*\d+)*)"),
 }
@@ -241,7 +241,9 @@ def records(lines, kind):
     for line in lines:
         t = line.strip()
         if kind == "slice" and (m := RECORD[kind].fullmatch(t)):
-            current = {"seam": m.group(2), "proves": proves(m.group(1)), "change": [], "docs": [], "tests": []}
+            current = {"seam": m.group(3), "proves": proves(m.group(1) or ""), "change": [], "docs": [], "tests": []}
+            if m.group(2):
+                current["deletes"] = True
             got.append(current)
             last = None
         elif kind == "walk" and (m := RECORD[kind].fullmatch(t)):
@@ -583,7 +585,7 @@ def stack_problems(lines, layers):
 
 def record_problems(section):
     for block, kind, form in [
-        ("Slices", "slice", "Slice <n>, proves #<n>: <seam>"),
+        ("Slices", "slice", "Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>"),
         ("UI walks", "walk", "Walk <n>, proves #<n>"),
         ("Videos", "video", "Video <n>, Setup of walk <n>, shows walks <n>"),
     ]:
@@ -647,6 +649,13 @@ def plan_problems(lines):
     yield from map_problems(md_maps(lines), is_run)
     for n, body in enumerate(layers, 1):
         yield from record_problems(body)
+        heads = [l.strip() for l in body.get("Slices", []) if RECORD["slice"].fullmatch(l.strip())]
+        for k, head in enumerate(heads, 1):
+            m = re.match(r"Slice (\d+), deletes dead code:", head)
+            if m and k > 1:
+                yield f"slices: layer {n} slice {k} deletes dead code; only slice 1 may"
+            elif m and m.group(1) != "1":
+                yield f"slices: layer {n} delete slice is headed `Slice {m.group(1)}`; it is `Slice 1`"
         for row in table_rows(body.get("Proof", [])):
             if row and row[0].isdigit() and len(row) != 6:
                 yield f"proof: layer {n} row {row[0]} has {len(row)} cells, needs 6"

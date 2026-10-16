@@ -29,6 +29,8 @@ The tabs after it are for the agent that builds. The plan holds the facts it pro
 
 A new module or seam must earn its place, by the rules improve-architecture uses too. The plan says what a new module hides, so deleting it would push work back into its callers, and a seam that swaps one thing for another needs two adapters, such as the real one and a test fake.
 
+Before it adds, it looks for dead code in the area the ticket touches: a function, file, flag, or stub that no caller uses, or an old way that a newer one replaced. Code is dead only when a search finds no caller in the code, strings, scripts, and config, and nothing calls it by name at run time; anything else stays, with a line that says why. Dead code goes in the plan's first slice, alone, with the tests that cover the area passing before and after; with no such test, the search that found no caller must find nothing after the delete. With no dead code, the plan has no such slice.
+
 A `fix` plan proves the bug is gone. The type comes from the title's first word, and a repo that writes `bug:` for a fix counts too. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it. A `refactor` plan proves nothing changed: it names the tests that cover the code, or adds a lock test that passes before the change and after it. Every caller moves to the new form, the old form is deleted in the same PR, and a rename gets a search for the old name in strings, docs, and config.
 
 When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
@@ -44,7 +46,7 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 
 A `perf` ticket's plan gets a Perf block (Metric, Command, Before, and a Pass rule with its run count) from the issue's Baseline and Target, read by the shared benchmark checklist.
 
-A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
+A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. It still looks for dead code, and a delete slice goes before the Steps. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
@@ -81,8 +83,12 @@ The agent writes only the Markdown, never `DATA`. On an invalid block the builde
 
 A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
 
+A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so, and its Read this first note names slice 2 as where the build starts; the builder refuses that heading on any slice but the first of a layer, and with any number but 1.
+
 ## Credits
 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
 
 The perf block takes an idea from `poteto-mode/playbooks/perf-issue.md` and `benchmark-checklist` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+Deleting dead code before adding takes an idea from `principle-subtract-before-you-add` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
