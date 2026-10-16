@@ -8,7 +8,7 @@ You want to continue, or build on, work from a Codex session and you have its ID
 
 ## What you get
 
-A brief of the old session (goal, done, decisions, open, files, PRs and branches with their live state, next step), the last three things you typed there word for word, and a wait for your go. Say "go" and the agent starts on the next step.
+A brief of the old session (goal, done, decisions, open, files, PRs and branches with their live state, next step), the last three things you typed there word for word, and a wait for your go. Say "go" and the agent starts on the next step. It skips what the brief says is done, and at the end it shows the goal working on the real thing.
 
 ```
 Goal: add CSV export to the orders page

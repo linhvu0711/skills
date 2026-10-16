@@ -65,8 +65,12 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    one line that this is the thin version because the brief writer failed,
    and wait the same way.
 
-5. **On go**, start the brief's Next step. Files in another folder: say so
-   first, then do it.
+5. **On go**, start at the brief's Next step. Each `Done` bullet, and each
+   `[merged #n]` PR, is finished: do not do it again, and do not check it
+   again from scratch; the brief is the record. When the last `Open` bullet
+   is done, prove the Goal on the real thing: run the command, test, or app
+   that shows the Goal holds, and show its output. The old session's word
+   is not the proof. Files in another folder: say so first, then do it.
 
 The user asks for the whole transcript instead: render it in a mode below,
 picked from the token sizes in the peek (balanced under ~30K tokens, else

@@ -22,7 +22,7 @@ Next step: port the date picker
 
 Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, or `[state unknown]` when `gh` cannot answer.
 
-The last three things you typed in that session come along word for word. Say "go" and the agent starts on the next step. Ask for the whole transcript and you get that instead, trimmed to fit.
+The last three things you typed in that session come along word for word. Say "go" and the agent starts on the next step. It skips what the brief says is done, and at the end it shows the goal working on the real thing. Ask for the whole transcript and you get that instead, trimmed to fit.
 
 ## Needs
 
