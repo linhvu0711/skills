@@ -87,7 +87,7 @@ When `CODING_STANDARDS.md` is missing, the code next to the diff is the
 standard and the smell list below is the floor. Say once in the review:
 "no CODING_STANDARDS.md; run /set-coding-standards".
 
-Smell list (Fowler, _Refactoring_ ch.3, plus ten for code agents write).
+Smell list (Fowler, _Refactoring_ ch.3, plus eleven for code agents write).
 Each is a judgement call, labelled "possible", and a written repo rule
 always wins over it:
 
@@ -109,6 +109,9 @@ always wins over it:
   own copy of it.
 - **Two Ways**: two ways to do the same job, so new code copies
   whichever it finds first.
+- **Left Behind**: code the diff made unused (a function, an import, a
+  flag, a file) is still in the code. An old way kept next to its new
+  one is `Two Ways`.
 - **Importable Internals**: other modules can import a module's
   internals, so they turn into its interface.
 - **Hand-Synced List**: the same items listed in more than one place
