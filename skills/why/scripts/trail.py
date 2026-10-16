@@ -19,7 +19,8 @@ a line `skipped <k> commits` between them. One block per commit:
         issue #<n> <title> <url>
           body: <the issue body>
 
-or `  no PR found` in place of the PR lines. Review comments on other files
+or `  no PR found` in place of the PR lines, or `  PR #<n> (as above)` for a
+PR an earlier block showed. Review comments on other files
 are left out. Each PR, review, comment, and issue body is one line, cut at
 400 characters with ` [cut]`. Exits 0. Line numbers are the file's on disk;
 git reads the lines at HEAD.
@@ -164,7 +165,7 @@ def main():
     skipped = max(0, len(found) - KEEP)
     if skipped:
         found = found[:KEEP - 1] + found[-1:]
-    repo, failed = None, None
+    repo, failed, shown = None, None, set()
     for i, (sha, day, author, subject, body) in enumerate(found):
         if skipped and i == KEEP - 1:
             print(f"skipped {skipped} commits")
@@ -180,8 +181,13 @@ def main():
         except RuntimeError as e:
             failed = (str(e), sha[:7])
             continue
-        for line in pr_lines(pr, path) if pr else ["  no PR found"]:
-            print(line)
+        if not pr:
+            print("  no PR found")
+        elif pr["number"] in shown:
+            print(f"  PR #{pr['number']} (as above)")
+        else:
+            shown.add(pr["number"])
+            print("\n".join(pr_lines(pr, path)))
     if failed:
         print(f"GitHub: not reached: {failed[0]}. Commits from {failed[1]} on are git only.")
 

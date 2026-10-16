@@ -85,6 +85,19 @@ GitHub: not reached: error connecting to api.github.com. Commits from $new on ar
   eq "graphql calls" "" "$(cat "$FAKE_GH/graphql.calls" 2>/dev/null)"
 }
 
+t_trail_same_pr_once() {
+  repo; fake_gh; two_commits; repo_view
+  pr='{"data":{"repository":{"object":{"associatedPullRequests":{"nodes":[{"number":12,"title":"Use a set for ids","url":"https://github.com/o/r/pull/12","body":"","closingIssuesReferences":{"nodes":[]},"reviews":{"nodes":[]},"comments":{"nodes":[]}}]}}}}}'
+  echo "$pr" > "$FAKE_GH/graphql.json"
+  trail app.py:2
+  eq exit 0 "$code"
+  eq stdout "commit $new 2026-10-01 t: use a set for the ids
+  Order does not matter here.
+  PR #12 Use a set for ids https://github.com/o/r/pull/12
+commit $old 2026-09-01 t: add app
+  PR #12 (as above)" "$out"
+}
+
 # subjects: the subject of each `commit` line of the output, one per line.
 subjects() { printf '%s\n' "$out" | grep '^commit ' | sed 's/^[^:]*: //'; }
 
@@ -123,6 +136,7 @@ c1" "$(subjects)"
 
 cases=(
   "trail names each commit, its PR, the review comment on the file, and the issue it closes|t_trail_commit_pr_issue"
+  "trail: a second commit of the same PR points at the first|t_trail_same_pr_once"
   "trail: a whole file follows its renames|t_trail_whole_file_renames"
   "trail: more than 10 commits keeps the 9 newest and the oldest|t_trail_keeps_newest_and_oldest"
   "trail: a file that does not exist|t_trail_no_file"
