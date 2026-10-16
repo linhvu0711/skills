@@ -23,7 +23,7 @@
 # test, and no gh call.
 #
 # Prints, in this order:
-#   kept <path>: <reason>            one per worktree that stays. The reasons:
+#   kept <path> (<size>): <reason>   one per worktree that stays. The reasons:
 #     `this session is in it`, `locked`, `detached HEAD`,
 #     `<n> uncommitted files`, `PR #<n> open`, `PR #<n> closed, not merged`,
 #     `PR #<n> merged, tip is not its last commit`,
@@ -31,10 +31,14 @@
 #     `not in <default>` (a repo with no GitHub remote),
 #     `its repo is gone` (all: a folder under the root whose repo is deleted)
 #   cleared <n> stale entries        when folders were gone
-#   removed <path>, branch <b> deleted (-D|-d)
-#   removed <path>, branch <b> kept: git branch -d refused
+#   removed <path> (<size>), branch <b> deleted (-D|-d)
+#   removed <path> (<size>), branch <b> kept: git branch -d refused
 #                                    one of these per worktree removed
+#   freed <total>                    after the removed lines, their sizes summed;
+#                                    `freed size ?` when one of them is unknown
 #   nothing to prune                 when nothing was cleared or removed
+# A size is the worktree's disk use from `du -sk`: `<1M`, whole M, or G with
+# one decimal, as in `412M` or `1.2G`; `size ?` when du fails.
 # A path under $HOME is printed with ~.
 # Exit 1: `stop: <why>` on stderr, and nothing was removed.
 set -euo pipefail
@@ -94,6 +98,23 @@ stale=()      # <main> SEP <entries whose folder is gone>
 
 # plural <n> <one> <many>: `<n> <one>` or `<n> <many>`.
 plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
+
+# size_of <path>: the folder's disk use in KiB, or `?` when du fails.
+size_of() {
+  local k
+  k="$(du -sk "$1" 2>/dev/null | cut -f1)" && [ -n "$k" ] || { printf '?'; return; }
+  printf '%s' "$k"
+}
+
+# human <KiB or ?>: `<1M` under 1 MiB, whole M under 1 GiB, else G with one
+# decimal; `size ?` for `?`.
+human() {
+  local g
+  if [ "$1" = "?" ]; then printf 'size ?'
+  elif [ "$1" -lt 1024 ]; then printf '<1M'
+  elif [ "$1" -lt 1048576 ]; then printf '%sM' "$(($1 / 1024))"
+  else g=$(($1 * 10 / 1048576)); printf '%s.%sG' "${g%?}" "${g#"${g%?}"}"; fi
+}
 
 # judge <main> <owner/repo> <path> <branch> <locked>: sets `flag` to the
 # branch flag (-D or -d) when the worktree is safe to prune, else `reason` to
@@ -235,9 +256,10 @@ for p in ${names[@]+"${names[@]}"}; do
 done
 
 for k in ${kept[@]+"${kept[@]}"}; do
-  printf 'kept %s: %s\n' "$(show "${k%%"$sep"*}")" "${k#*"$sep"}"
+  printf 'kept %s (%s): %s\n' "$(show "${k%%"$sep"*}")" "$(human "$(size_of "${k%%"$sep"*}")")" "${k#*"$sep"}"
 done
 done_any=0
+freed=0       # KiB of the removed worktrees, or ? when one is unknown
 for st in ${stale[@]+"${stale[@]}"}; do
   git -C "${st%%"$sep"*}" worktree prune
   printf 'cleared %s\n' "$(plural "${st#*"$sep"}" "stale entry" "stale entries")"
@@ -245,14 +267,17 @@ for st in ${stale[@]+"${stale[@]}"}; do
 done
 for r in ${removals[@]+"${removals[@]}"}; do
   IFS="$sep" read -r main path branch flag force <<<"$r"
+  k="$(size_of "$path")"
+  if [ "$k" = "?" ] || [ "$freed" = "?" ]; then freed="?"; else freed=$((freed + k)); fi
   git -C "$main" worktree remove ${force:+"$force"} "$path"
   if [ -z "$branch" ]; then
-    printf 'removed %s\n' "$(show "$path")"
+    printf 'removed %s (%s)\n' "$(show "$path")" "$(human "$k")"
   elif git -C "$main" branch "$flag" "$branch" >/dev/null 2>&1; then
-    printf 'removed %s, branch %s deleted (%s)\n' "$(show "$path")" "$branch" "$flag"
+    printf 'removed %s (%s), branch %s deleted (%s)\n' "$(show "$path")" "$(human "$k")" "$branch" "$flag"
   else
-    printf 'removed %s, branch %s kept: git branch %s refused\n' "$(show "$path")" "$branch" "$flag"
+    printf 'removed %s (%s), branch %s kept: git branch %s refused\n' "$(show "$path")" "$(human "$k")" "$branch" "$flag"
   fi
   done_any=1
 done
+[ "${#removals[@]}" -eq 0 ] || printf 'freed %s\n' "$(human "$freed")"
 [ "$done_any" -eq 1 ] || echo "nothing to prune"

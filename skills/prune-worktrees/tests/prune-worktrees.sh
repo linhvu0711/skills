@@ -36,7 +36,7 @@ t_prune_removes_merged() {
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
   run bash "$P"
   eq exit 0 "$code"
-  eq stdout "removed $T/elsewhere/feat-1-a, branch feat/1-a deleted (-D)" "$out"
+  eq stdout "$(printf 'removed %s (<1M), branch feat/1-a deleted (-D)\nfreed <1M' "$T/elsewhere/feat-1-a")" "$out"
   [ ! -e "$T/elsewhere/feat-1-a" ] || eq "$T/elsewhere/feat-1-a" "gone" "still there"
   eq "branch list" "" "$(git branch --list feat/1-a)"
 }
@@ -46,7 +46,7 @@ t_prune_keeps_no_pr() {
   git update-ref refs/remotes/origin/feat/1-a feat/1-a
   run bash "$P"
   eq exit 0 "$code"
-  eq stdout "$(printf 'kept %s: no PR\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): no PR\nnothing to prune' "$T/w/feat-1-a")" "$out"
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
@@ -55,28 +55,28 @@ t_prune_keeps_dirty() {
   printf 'a\n' > "$T/w/feat-1-a/a.txt"; printf 'b\n' > "$T/w/feat-1-a/b.txt"
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
   run bash "$P"
-  eq stdout "$(printf 'kept %s: 2 uncommitted files\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): 2 uncommitted files\nnothing to prune' "$T/w/feat-1-a")" "$out"
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
 t_prune_keeps_unpushed() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a 2
   run bash "$P"
-  eq stdout "$(printf 'kept %s: 2 commits not on GitHub\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): 2 commits not on GitHub\nnothing to prune' "$T/w/feat-1-a")" "$out"
 }
 
 t_prune_keeps_open_pr() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
   head_pr feat/1-a 159 OPEN "$(git rev-parse feat/1-a)"
   run bash "$P"
-  eq stdout "$(printf 'kept %s: PR #159 open\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): PR #159 open\nnothing to prune' "$T/w/feat-1-a")" "$out"
 }
 
 t_prune_keeps_moved_tip() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
   head_pr feat/1-a 43 MERGED 0000000000000000000000000000000000000000
   run bash "$P"
-  eq stdout "$(printf 'kept %s: PR #43 merged, tip is not its last commit\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): PR #43 merged, tip is not its last commit\nnothing to prune' "$T/w/feat-1-a")" "$out"
   eq "branch list" "+ feat/1-a" "$(git branch --list feat/1-a)"
 }
 
@@ -85,7 +85,7 @@ t_prune_git_only() {
   git merge -q --ff-only feat/2-b
   run bash "$P"
   eq exit 0 "$code"
-  eq stdout "removed $T/w/feat-2-b, branch feat/2-b deleted (-d)" "$out"
+  eq stdout "$(printf 'removed %s (<1M), branch feat/2-b deleted (-d)\nfreed <1M' "$T/w/feat-2-b")" "$out"
   [ ! -e "$FAKE_GH/pr-list.args" ] || eq "gh calls" "none" "$(cat "$FAKE_GH/pr-list.args")"
 }
 
@@ -105,7 +105,7 @@ t_prune_skips_session() {
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
   cd "$T/w/feat-1-a"; run bash "$P"
   eq exit 0 "$code"
-  eq stdout "$(printf 'kept %s: this session is in it\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): this session is in it\nnothing to prune' "$T/w/feat-1-a")" "$out"
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
@@ -125,7 +125,7 @@ t_prune_all() {
   git -C "$T/b" merge -q --ff-only feat/2-b
   run env WORKTREES_ROOT="$T/root" bash "$P" all
   eq exit 0 "$code"
-  eq stdout "removed $T/root/b/feat-2-b, branch feat/2-b deleted (-d)" "$out"
+  eq stdout "$(printf 'removed %s (<1M), branch feat/2-b deleted (-d)\nfreed <1M' "$T/root/b/feat-2-b")" "$out"
   [ ! -e "$T/root/b/feat-2-b" ] || eq "$T/root/b/feat-2-b" "gone" "still there"
 }
 
@@ -141,14 +141,14 @@ t_prune_all_both_shapes() {
   git -C "$T/c" worktree add -q -b feat/3-c "$T/root/acme/c/feat-3-c" main
   git -C "$T/c" merge -q --ff-only feat/3-c
   run env WORKTREES_ROOT="$T/root" bash "$P" all
-  eq stdout "$(printf 'removed %s, branch feat/3-c deleted (-d)\nremoved %s, branch feat/2-b deleted (-d)' "$T/root/acme/c/feat-3-c" "$T/root/b/feat-2-b")" "$out"
+  eq stdout "$(printf 'removed %s (<1M), branch feat/3-c deleted (-d)\nremoved %s (<1M), branch feat/2-b deleted (-d)\nfreed <1M' "$T/root/acme/c/feat-3-c" "$T/root/b/feat-2-b")" "$out"
 }
 
 t_prune_removes_named() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-3-c" feat/3-c; printf 'a\n' > "$T/w/feat-3-c/a.txt"
   run bash "$P" --remove "$T/w/feat-3-c"
   eq exit 0 "$code"
-  eq stdout "removed $T/w/feat-3-c, branch feat/3-c kept: git branch -d refused" "$out"
+  eq stdout "$(printf 'removed %s (<1M), branch feat/3-c kept: git branch -d refused\nfreed <1M' "$T/w/feat-3-c")" "$out"
   [ ! -e "$T/w/feat-3-c" ] || eq "$T/w/feat-3-c" "gone" "still there"
   eq "branch list" "  feat/3-c" "$(git branch --list feat/3-c)"
 }
@@ -165,7 +165,26 @@ t_prune_keeps_locked() {
   git worktree lock "$T/w/feat-1-a"
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
   run bash "$P"
-  eq stdout "$(printf 'kept %s: locked\nnothing to prune' "$T/w/feat-1-a")" "$out"
+  eq stdout "$(printf 'kept %s (<1M): locked\nnothing to prune' "$T/w/feat-1-a")" "$out"
+}
+
+t_prune_shows_sizes() {
+  wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
+  dd if=/dev/zero of="$T/w/feat-1-a/big.bin" bs=1024 count=2048 2>/dev/null
+  git -C "$T/w/feat-1-a" add big.bin; git -C "$T/w/feat-1-a" commit -qm big
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  run bash "$P"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'removed %s (2M), branch feat/1-a deleted (-D)\nfreed 2M' "$T/w/feat-1-a")" "$out"
+}
+
+t_prune_size_unknown() {
+  wt_repo; gh_remote; fake_gh; wt "$T/elsewhere/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$T/bin/du"; chmod +x "$T/bin/du"
+  run bash "$P"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'removed %s (size ?), branch feat/1-a deleted (-D)\nfreed size ?' "$T/elsewhere/feat-1-a")" "$out"
 }
 
 cases=(
@@ -184,4 +203,6 @@ cases=(
   "prune all finds old and new shapes|t_prune_all_both_shapes"
   "prune removes a named worktree and keeps an unmerged branch|t_prune_removes_named"
   "prune keeps a locked worktree|t_prune_keeps_locked"
+  "prune shows each size and the total it frees|t_prune_shows_sizes"
+  "prune shows size ? when du fails|t_prune_size_unknown"
 )
