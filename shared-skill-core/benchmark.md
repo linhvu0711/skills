@@ -1,6 +1,9 @@
 <!-- template: the benchmark checklist, one source. triage, plan-up, and build-and-prove read it; render.sh pastes it into the handoff rules under ## A perf plan. Keep it free of executor blocks and of links to other files: the include pastes it raw. Edit here only. -->
 A speed number is trusted only when every check below holds. A number
 that fails one is reported with the check it fails, never as a result.
+A baseline measures one side alone, so `Alternate` and `Both sides
+tuned` wait until old and new are compared; every other check holds for
+it.
 
 ### Repeat
 
@@ -12,10 +15,10 @@ asked for, and it is labelled `1 run`.
 
 ### Alternate
 
-Old and new run in turns on one machine: old, new, old, new. Never all
-old runs and then all new ones, since warm caches and a busy machine
-then favor one side. A gap smaller than the spread is
-`no measurable change`.
+When old and new are compared, they run in turns on one machine: old,
+new, old, new. Never all old runs and then all new ones, since warm
+caches and a busy machine then favor one side. A gap smaller than the
+spread is `no measurable change`.
 
 ### Name the limit
 
@@ -25,8 +28,9 @@ the code. No limit named: the result is `inconclusive`.
 
 ### Both sides tuned
 
-Old and new use the same build mode, flags, data, versions, pool sizes,
-and cache state, warm or cold as production runs. A side left untuned
+When old and new are compared, they use the same build mode, flags,
+data, versions, pool sizes, and cache state, warm or cold as production
+runs. A side left untuned
 gives no winner.
 
 ### Physical limit

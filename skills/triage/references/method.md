@@ -62,7 +62,9 @@ baseline, the target. The metric and the baseline are yours to measure. The
 target is the user's; ask once with a default.
 
 The baseline is measured per `../../shared-skill-core/benchmark.md`,
-and passes every check in it before it is a baseline. A check it fails
+and passes every check in it that holds for one side before it is a
+baseline. `Alternate` and `Both sides tuned` come in when Confirm
+compares the number with the hot spot stubbed. A check it fails
 goes in the report, with the number.
 
 Then halve on the numbers. A profiler when one exists. Else timers around
