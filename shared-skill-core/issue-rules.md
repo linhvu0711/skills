@@ -512,7 +512,8 @@ again, retry once.
 
 ## Duplicates and seeds
 
-Before creating, one search:
+Before creating, two searches on the same 2 or 3 keywords. First the open
+issues:
 
 ```bash
 gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number,title,labels,url
@@ -523,6 +524,18 @@ gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number
 - A result that is clearly the same work and carries the `seed`, `bug`, or
   `discovery/map` label, or a seed, bug, or map number the conversation
   named: it is the **origin**. Continue.
+
+Then the closed issues, so work that comes back keeps its history:
+
+```bash
+gh issue list --state closed --search "<2 or 3 keywords>" --limit 10 --json number,title,url
+```
+
+- A result that is clearly the same work does not stop the run. The new
+  issue's Context gets `#<n> (closed)` on its Related line, one per match,
+  or a line `- Related: #<n> (closed)` when it has none.
+- The search fails: go on without it, and say in chat
+  `Closed-issue search failed: <first error line>. Filed without it.`
 
 ### Origin bug
 

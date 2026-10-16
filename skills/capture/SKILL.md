@@ -147,7 +147,10 @@ gh issue list --state open --search "<keywords>" --limit 10 --json number,title,
 ```
 
 A result that is clearly the same thing: show it to the user and stop.
-Otherwise continue.
+Otherwise run the closed search of
+`../../shared-skill-core/issue-rules.md` § Duplicates and seeds, on the
+same keywords. A clear closed match does not stop it: it goes in the
+body's Context as one `Related: #<n> (closed)` line.
 
 ### 5. Write the title and body
 
@@ -167,9 +170,10 @@ One to three sentences in the user's own words. What the thing is.
 ## Context
 Only facts already in the conversation: code as permalinks, an error
 verbatim in a code block, the few log lines that matter, a PR or issue
-ref, the environment when it matters. One `Open:` line for a suspected
-cause. One `Found while …, YYYY-MM-DD.` line. Drop this section if there
-is nothing concrete.
+ref, the environment when it matters. One `Related: #<n> (closed)` line
+per closed match from step 4. One `Open:` line for a suspected cause. One
+`Found while …, YYYY-MM-DD.` line. Drop this section if there is nothing
+concrete.
 
 ## Status
 Seed only. Not triaged, not planned. May be dropped.
