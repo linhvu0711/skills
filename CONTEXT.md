@@ -177,3 +177,7 @@ _Avoid_: outlier
 **Repeated correction**:
 The same thing the user told the agent in two or more sessions. Its fix is a check first, a skill fix next, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
 _Avoid_: feedback, nag
+
+**Repeated manual work**:
+The same steps the user did by hand, or spelled out one by one, in two or more sessions. Its fix is a new skill that runs those steps.
+_Avoid_: chore, toil
