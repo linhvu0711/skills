@@ -136,7 +136,9 @@ where the build runs (step 2).
    rules; its fixes are committed and pushed. A push makes a new head
    that review-pr has not seen: review it again, and judge that report
    the same way, until a round pushes nothing. After three rounds that
-   push: say what keeps coming back and stop. The cloud route skips
+   push, review-pr runs once more on the last head and nothing is
+   fixed: a `fix here` it finds, say what keeps coming back and stop;
+   none, go on. The cloud route skips
    this: its PRs are the executor's.
 
    Then read `../ready-pr/SKILL.md` and follow it whole on
