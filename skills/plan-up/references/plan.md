@@ -250,7 +250,9 @@ block above, and the Done rule holds whole.
 - **Slices.** Each step that changes code is one slice, in step order.
   Its `file:line` is the `Change`; the pattern the step names to copy
   stays in `Change`. A step that only adds or edits a test case is not a
-  slice; it is a test in the slice whose change it proves.
+  slice; it is a test in the slice whose change it proves. Dead code the
+  round found goes first, in a delete slice per § Slices; the Steps'
+  slices follow it, and no step is re-planned.
 - **Tests.** The last step names the test file, the case, and the
   command. `Given`, `When`, `Then` come from the Done-when line the case
   proves; `Then` is the literal the issue gives (`116 pass`, the ISO
@@ -269,7 +271,8 @@ block above, and the Done rule holds whole.
   that already cover those seams; the standards files; the docs the
   Steps make stale; the UI kind and how it opens when a line is on a
   screen; the nearest existing one for each function, component, type,
-  or file a Step adds. Every field of `Facts` is filled. No probe, unless an `Open`
+  or file a Step adds; the dead code in the area the Steps touch, as
+  `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
@@ -279,7 +282,8 @@ block above, and the Done rule holds whole.
   the round or by a question to the user, the docs the round found
   that stay as they are, and the line § Done asks for each function,
   component, type, or file a Step adds, written from the Step and the
-  round. Nothing else is decided here; the Steps decided it. A Step whose
+  round, and the line § Slices asks for code a delete search kept.
+  Nothing else is decided here; the Steps decided it. A Step whose
   new module fails the deletion test, or whose new swap seam has one
   adapter, is a choice the issue got wrong, and ends the short path as
   a choice does, below.
