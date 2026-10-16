@@ -83,7 +83,8 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    Steps are trusted. Step 4 asks only what that section lists, step 5
    closes only the issue's `Open` lines, steps 6 to 8 run as written.
 
-   The title's leading word is the issue's type. A `fix` or a
+   The title's leading word is the issue's type, read through the
+   repo's `words` map, per `plan.md` § Type variants. A `fix` or a
    `refactor` also follows `plan.md` § Type variants for its type: step
    4 asks what that section adds, and steps 6 and 7 hold its rules.
 

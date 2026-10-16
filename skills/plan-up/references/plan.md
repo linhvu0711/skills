@@ -300,7 +300,10 @@ In a run, a labelled layer is built the same way.
 The shape above proves new behavior works, as a `feat` needs. Two types
 need other proof: a `fix` proves the old bug is gone, and a `refactor`
 proves nothing changed. The type is the leading word of the issue's
-title, per `../../shared-skill-core/issue-rules.md` § Types. A `fix` or
+title, per `../../shared-skill-core/issue-rules.md` § Types. A repo
+that writes another word for a type keeps it in the `words` map of
+`python3 ../to-issue/scripts/conventions.py get <owner/repo>`, as
+`bug` for `fix`; that word is read as the type it stands for. A `fix` or
 a `refactor` issue adds the rules of its type below to every other rule
 in this file, on the full path and the short one. In a run, each layer
 reads its own ticket's type. A Step of a `ready-to-build` issue that
