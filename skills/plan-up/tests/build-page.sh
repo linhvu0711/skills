@@ -105,6 +105,14 @@ t_build_perf_no_pass() {
   bad_perf '/^Pass rule:/d' 'perf: layer 1 has no `Pass rule:` line'
 }
 
+t_build_perf_no_block() {
+  bad_ticket 's/^# Plan: #42 \[feat\]/# Plan: #42 [perf]/' 'perf: layer 1 is a `[perf]` ticket with no `## Perf` block'
+}
+
+t_build_run_perf_no_block() {
+  bad_run 's/#73 Add a member/#73 [perf] Add a member/' 'perf: layer 2 is a `[perf]` ticket with no `## Perf` block'
+}
+
 t_build_no_review() {
   bad_ticket '/^## Review$/d' 'not a plan-up .md: plan-acme-shop-42.md'
 }
@@ -441,6 +449,8 @@ cases=(
   "build-page builds a None map page|t_build_none_map"
   "build-page shows the Perf block of a perf plan|t_build_perf"
   "build-page refuses a Perf block with no Pass rule|t_build_perf_no_pass"
+  "build-page refuses a [perf] ticket with no Perf block|t_build_perf_no_block"
+  "build-page refuses a [perf] run layer with no Perf block|t_build_run_perf_no_block"
   "build-page builds a chat plan with no issue|t_build_chat"
   "build-page refuses a chat plan with no Brief|t_build_chat_no_brief"
   "build-page refuses a Brief with no Task or Done when|t_build_chat_brief_gaps"

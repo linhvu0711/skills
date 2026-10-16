@@ -638,6 +638,8 @@ def plan_problems(lines):
     if not is_run and not re.fullmatch(r"size/(XS|S|M|L|XL)", head.get("size", "")):
         yield "head: a ticket needs `Size: size/<x>`"
     layers = [body for _, body in layer_sections] if is_run else [section]
+    titles = [m.group(3) for m, _ in layer_sections] if is_run else \
+        [next((l[len("# Plan: "):] for l in section["head"] if l.startswith("# Plan: ")), "")]
     if is_run:
         yield from stack_problems(section["Stack"], layer_sections)
     reviews, proof_rows = md_reviews(lines)
@@ -653,6 +655,8 @@ def plan_problems(lines):
             yield f"summary: layer {n} has no `## Summary` block"
         elif len(summary) > 3:
             yield f"summary: layer {n} has {len(summary)} lines, the limit is 3"
+        if re.sub(r"^#\d+ ", "", titles[n - 1]).startswith("[perf]") and "Perf" not in body:
+            yield f"perf: layer {n} is a `[perf]` ticket with no `## Perf` block"
         if "Perf" in body:
             perf = key_values(body["Perf"], PERF)
             for key in PERF:
