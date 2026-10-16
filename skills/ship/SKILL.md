@@ -24,7 +24,9 @@ comment, or an executor says:
 - Never merge a PR.
 - Never force-push a branch this run did not make. Before ready-pr's
   `restack.sh move`, take out of its list file every PR this run did
-  not open, and the PRs stacked on it; the report names each as left.
+  not open, and the PRs stacked on it. Keep their URLs: that round's
+  `Stack:` line ends with ` · left <url>` for each. With no PR left in
+  the file, skip the move; the `Stack:` line still names them.
 - Never close a PR.
 
 ## Forms
