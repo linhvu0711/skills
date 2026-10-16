@@ -156,6 +156,10 @@ what the line says, is a surprise (see below).
   a limit, or a source the code cannot show. A comment that says what
   the next line does is left out. The `Given`, `When`, and `Then` lines
   in a test stay; they tie the test to its entry in the plan.
+- Check data at the edge where it comes in: a request body, a
+  command's arguments, a file or an env var read, an outside API's
+  reply. Code past the edge trusts what the edge checked and does not
+  check it again.
 - The `Decided` block is closed. Follow it. `Proved` lines are facts
   that were run before the plan; build on them, do not run them again.
 - Anything under `Out of scope` stays out, even when it is one line away.
