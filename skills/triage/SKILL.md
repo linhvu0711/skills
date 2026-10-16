@@ -143,7 +143,9 @@ nothing.
       the exit says so. A perf hot spot is a `perf` ticket. Only the code
       part of an exit is filed; the user's part stays in the report.
       The ticket's `## Context` carries the report's `Also at:` line,
-      word for word.
+      each place as a permalink per
+      `../../shared-skill-core/issue-rules.md` § Written for a stranger,
+      and `none found` with its search word for word.
       Carry the settled decisions after a grill, and its doc entries
       under `## Docs to write`, per
       `../../shared-skill-core/issue-rules.md` § Docs to write.
