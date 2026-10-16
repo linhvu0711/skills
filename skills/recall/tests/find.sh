@@ -64,7 +64,47 @@ t_rc_leaves_out_recall() {
   eq sessions "claude s1" "$(heads)"
 }
 
+t_rc_no_match() {
+  rc_home
+  rc_claude s2 "add the flag"
+  run python3 "$F" export
+  eq exit 1 "$code"
+  eq out "No sessions on export." "$out"
+}
+
+t_rc_ten_newest() {
+  rc_home
+  local k
+  for k in 0 1 2 3 4 5 6 7 8 9 10 11; do rc_claude "n$k" "fix the export" "$k"; done
+  run python3 "$F" export
+  eq exit 0 "$code"
+  eq sessions "claude n0
+claude n1
+claude n2
+claude n3
+claude n4
+claude n5
+claude n6
+claude n7
+claude n8
+claude n9" "$(printf '%s\n' "$out" | head -10 | cut -d' ' -f1,2)"
+  eq last "Skipped 2 older sessions." "$(printf '%s\n' "$out" | sed -n '11,$p')"
+}
+
+t_rc_no_codex() {
+  rc_home
+  rm -rf "$HOME/.codex"
+  rc_claude s1 "fix the export"
+  run python3 "$F" export
+  eq exit 0 "$code"
+  eq first "claude s1" "$(printf '%s\n' "$out" | head -1 | cut -d' ' -f1,2)"
+  eq last "Codex is not installed: Claude Code sessions only." "$(printf '%s\n' "$out" | sed -n '2,$p')"
+}
+
 cases=(
   "finds a topic in Claude Code and Codex sessions, newest first|t_rc_both_tools"
   "leaves out this session and earlier recall runs|t_rc_leaves_out_recall"
+  "no session matches|t_rc_no_match"
+  "keeps the 10 newest and says how many it skipped|t_rc_ten_newest"
+  "Codex is not installed|t_rc_no_codex"
 )

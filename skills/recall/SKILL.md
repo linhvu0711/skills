@@ -25,7 +25,15 @@ starts no work.
    ```
 
    One line per session, newest first: `<tool> <id> <age> · <n> prompts
-   · <title>`, with `<tool>` `claude` or `codex`.
+   · <title>`, with `<tool>` `claude` or `codex`. At most 10; a
+   `Skipped <k> older sessions.` line says how many more matched. A
+   `Codex is not installed: Claude Code sessions only.` line means only
+   Claude Code was searched. Both go on the brief's `Sessions:` line in
+   step 5, as in `Sessions: 10 (Claude Code 10, Codex 0) · skipped 2 older
+   · Codex is not installed`.
+
+   Exit 1: no session is on the topic. Show its last line, `No sessions
+   on <topic>.`, and stop.
 
 3. **Render** each session's transcript for its brief writer, in summary
    mode. `<out>` is `<scratchpad>/recall-<id8>.md` in Claude Code and

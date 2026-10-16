@@ -25,6 +25,10 @@ Sessions: 2 (Claude Code 1, Codex 1)
 
 Each line ends with the session it came from, so `/load-cc-session 3f2a9c1e` or `/load-co-session 019e631d` pulls that session in. Recall only reads: it writes nothing and starts no work.
 
+- No session on the topic: `No sessions on <topic>.`, and it stops.
+- More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
+- No Codex on this machine: Claude Code sessions only, and the `Sessions:` line says so.
+
 ## Needs
 
 - `python3` (standard library only).
