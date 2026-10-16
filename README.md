@@ -111,6 +111,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [find-co-session](skills/find-co-session/) | Finds a past Codex CLI session in this project from a rough description. |
 | [load-cc-session](skills/load-cc-session/) | Pulls an earlier Claude Code session into this chat as a short state brief. |
 | [load-co-session](skills/load-co-session/) | Pulls an earlier Codex CLI session into this chat as a short state brief. |
+| [recall](skills/recall/) | Rebuilds where you left off on a topic from recent Claude Code and Codex sessions, with the live state of each PR. |
 
 ### Writing and search
 

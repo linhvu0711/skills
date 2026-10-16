@@ -1,0 +1,6 @@
+interface:
+  display_name: "Recall"
+  short_description: "Rebuild where you left off on a topic."
+  default_prompt: "$recall <topic>"
+policy:
+  allow_implicit_invocation: false
