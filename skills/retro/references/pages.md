@@ -56,7 +56,7 @@ A bar fixed to the bottom of the page: a read-only text box with the line, and a
   - Sessions: the numbers and dates of the sessions it came from.
   - Quotes: one blockquote per moment or manual-steps line, each with its session number and `Where`.
   - Fix: one sentence; a check also names the mistake it would have failed on, by session number and `Where`. Where: the file it changes and the skill that owns it, as SKILL.md § Kinds of finding names.
-  - A checkbox, not ticked.
+  - A checkbox, not ticked. A tip (SKILL.md § Kinds of finding, Repeated manual work) has none, so it can never be picked to file.
 - **One-time problems**: smaller cards after the patterns, numbered on from the last pattern, same parts, badge `One-time`.
 - **Top pick**: one larger card at the end: the card number, its title, why it goes first in one sentence, and an anchor link to it.
 - `MODE = "pick"`.
