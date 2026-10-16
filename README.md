@@ -72,6 +72,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [discover-path](skills/discover-path/) | Turns an idea too big for one grill into a map on GitHub: a parent issue whose child tickets are the questions to settle. |
 | [triage](skills/triage/) | Finds the root cause of a bug, or the hot spot behind something slow, then turns the bug into a fix ticket. |
 | [improve-architecture](skills/improve-architecture/) | Finds shallow modules worth deepening, shows them in a visual report, then grills you on the one you pick. |
+| [why](skills/why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
 | [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
 | [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |
 | [plan-up](skills/plan-up/) | Turns a ready issue, or a run of tickets, into a plan a coding agent can follow cold: seams, tests, slices, doc updates, UI walks. |
