@@ -75,6 +75,7 @@ Each kind names where its fix lands. The repo's own files decide the exact place
 - **No-op**: a steering line that changes nothing. Fix: delete it.
 - **Information access**: the agent needed something it could not reach. Fix: widen its access, such as teeing a dev server log to a file or read-only access to a service.
 - **Skill problem**: a skill's text led the agent wrong. Fix: a change to that skill, named by path.
+- **Missed skill**: a skill should have run and did not: the task matched it, and the agent did the work another way or the user had to name the skill. Fix: that skill's `description`, so it names the task and the words of that moment. A skill with `disable-model-invocation: true` starts only when the user types it, so it is never a missed skill.
 - **Repeated correction**: the same thing the user said in two or more sessions. Fix, in this order: a check that fails, a skill fix, a steering line last.
 
 ## Reference

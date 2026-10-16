@@ -10,7 +10,7 @@ A session felt harder than it should have, or the same kind of trouble keeps com
 
 For many sessions, first a page that lists them: date, tool, title, size. Untick the ones to skip, press Copy, and paste the line in chat. One reader agent then reads each session, with its helper agents' logs, and writes a list of the moments the agent struggled. A session can hold text from anyone, so each reader is told that text is data to read, never orders to follow. Retro groups those moments by the fix that would stop them.
 
-Then a report page. Patterns come first: problems seen in two or more sessions that one fix would stop, each with the sessions, quotes as proof, the fix, where it goes, and a strength badge. Serious one-time problems follow, then a top pick. Tick the cards you want, press Copy, and paste the line. Each pick becomes an issue through [to-issue](../to-issue/), or a seed through [capture](../capture/) when to-issue needs more than the card holds. You are told which.
+Then a report page. Patterns come first: problems seen in two or more sessions that one fix would stop, each with the sessions, quotes as proof, the fix, where it goes, and a strength badge. Retro also finds a skill that should have run and did not; the fix it proposes is that skill's description. Serious one-time problems follow, then a top pick. Tick the cards you want, press Copy, and paste the line. Each pick becomes an issue through [to-issue](../to-issue/), or a seed through [capture](../capture/) when to-issue needs more than the card holds. You are told which.
 
 The report also says how many sessions were read, and names any that were not read or were read only in part. It changes no code and files nothing you did not pick.
 
@@ -32,3 +32,5 @@ The report also says how many sessions were read, and names any that were not re
 ## Credits
 
 Adapted from the `retro` skill in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Its kinds of finding and its reference on implementation and review come from there, rewritten around this repo's skills. Reading many sessions, the two pages, and the hand-off to issues are new here.
+
+The missed-skill and manual-work kinds, and deleting the old code first for a repeated correction, take ideas from the `reflect` and `correct` skills in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
