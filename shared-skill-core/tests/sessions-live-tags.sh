@@ -49,6 +49,16 @@ t_lt_origin_only() {
   eq bullet "- [branch only] branch feat/70-r · pushed elsewhere" "$(printf '%s\n' "$out" | sed -n 2p)"
 }
 
+t_lt_branch_denied() {
+  repo; fake_gh
+  printf 'gh: Resource not accessible by integration (HTTP 403)\n' > "$FAKE_GH/branch.fail"
+  printf '{"login":"me"}' > "$FAKE_GH/user.json"
+  brief "**PRs and branches:**" "- branch feat/70-r · private"
+  run python3 "$L" "$T/brief.md"
+  eq exit 0 "$code"
+  eq bullet "- [state unknown] branch feat/70-r · private" "$(printf '%s\n' "$out" | sed -n 2p)"
+}
+
 t_lt_missing_pr() {
   repo; fake_gh
   printf 'GraphQL: Could not resolve to a PullRequest with the number of 999.\n' > "$FAKE_GH/pr-view.1.fail"
@@ -101,6 +111,7 @@ cases=(
   "tags each PR and branch from gh and git|t_lt_tags"
   "a branch with no PR, here or on GitHub, is gone|t_lt_branch_gone"
   "a branch with no PR that is only on GitHub is branch only|t_lt_origin_only"
+  "a branch GitHub will not show is state unknown, not gone|t_lt_branch_denied"
   "a PR gh cannot find is state unknown, and later PRs still get tags|t_lt_missing_pr"
   "gh cannot be reached: every PR is state unknown|t_lt_gh_down"
   "gh not logged in: every PR is state unknown|t_lt_logged_out"

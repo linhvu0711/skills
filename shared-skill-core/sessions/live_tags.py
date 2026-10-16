@@ -11,7 +11,7 @@ right after `- `:
 - `[merged #n]`, `[open PR #n]`, `[closed #n]`: the PR's state from `gh`;
   a branch tags as its newest PR;
 - `[branch only]`: a branch with no PR, local or on GitHub;
-- `[branch gone]`: a branch with no PR, neither local nor on GitHub;
+- `[branch gone]`: a branch with no PR, not local, and a 404 from GitHub;
 - `[state unknown]`: `gh` could not say.
 
 Every `gh` and `git` call runs in `--cwd`, the current folder by default.
@@ -40,8 +40,8 @@ class GhDown(Exception):
     """gh cannot answer anything: down, missing, or logged out."""
 
 
-class NotFound(Exception):
-    """gh works, but this one lookup failed."""
+class LookupFailed(Exception):
+    """gh works, but this one lookup failed; the message is gh's error."""
 
 
 class Tagger:
@@ -63,11 +63,12 @@ class Tagger:
         r = self.run("gh", *args)
         if r.returncode == 0:
             return json.loads(r.stdout)
-        if self.run("gh", "api", "user", "--jq", ".login").returncode == 0:
-            raise NotFound
-        self.gh_down = True
         lines = [l for l in r.stderr.splitlines() if l.strip()]
-        print(f"live tags: gh failed: {lines[-1] if lines else f'gh exited {r.returncode}'}", file=sys.stderr)
+        error = lines[-1] if lines else f"gh exited {r.returncode}"
+        if self.run("gh", "api", "user", "--jq", ".login").returncode == 0:
+            raise LookupFailed(error)
+        self.gh_down = True
+        print(f"live tags: gh failed: {error}", file=sys.stderr)
         raise GhDown
 
     def branch_tag(self, branch):
@@ -76,8 +77,8 @@ class Tagger:
         try:
             self.gh("api", f"repos/{{owner}}/{{repo}}/branches/{branch}")
             return "[branch only]"
-        except NotFound:
-            return "[branch gone]"
+        except LookupFailed as e:
+            return "[branch gone]" if "(HTTP 404)" in str(e) else "[state unknown]"
 
     def tag(self, kind, ref):
         try:
@@ -88,7 +89,7 @@ class Tagger:
                 if not prs:
                     return self.branch_tag(ref)
                 pr = prs[0]
-        except (GhDown, NotFound):
+        except (GhDown, LookupFailed):
             return "[state unknown]"
         return TAGS.get(pr["state"], "[state unknown]").format(n=pr["number"])
 
