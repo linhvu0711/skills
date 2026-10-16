@@ -349,14 +349,16 @@ the diff. Returns: F3 claims a nil deref on a new branch; the judge's
 test reproduces it, `ours`, `blocker`. F5 claims a race in a helper the
 PR only renamed; the code confirms it, `old`, `should`. F7 claims a
 missing await; the function is sync, `no`, with the signature line as
-proof. Step 5: F3 `fix here`, F5 `fix later`, F7 `push back`. Report
+proof. Step 5: F3 `fix here`, F7 `push back`. The table gives F5
+`fix later`, but a race is risky, so F5 goes under `## Unclear`. Report
 written and printed, chat ends with
-`Say go to apply: 3 fix here, 2 fix later, 8 replies to post.`
+`Say go to apply: 3 fix here, 1 fix later, 7 replies to post.`
 
-After go: three commits, two `/capture` issues, six thread replies with
+After go: three commits, one `/capture` issue, five thread replies with
 the SHA or issue URL appended, one PR comment quoting the teammate's
 two claims, and three threads resolved after the push. Ends with
-"Posted 6 thread replies, 1 PR comment, resolved 3 threads."
+"Posted 5 thread replies, 1 PR comment, resolved 3 threads. F5 waits
+in Unclear for your answer."
 
 **User:** `/validate-pr-review 58` where a teammate left one "request
 changes" review with a numbered list of five points and no inline
