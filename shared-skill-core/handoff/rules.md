@@ -152,6 +152,10 @@ what the line says, is a surprise (see below).
   change says so in the commit body, not the summary.
 - Build what the plan says and only that. Code outside the slices stays
   as it is, including code that looks like it could be tidier.
+- Keep a comment in the code you write only when it says why: a reason,
+  a limit, or a source the code cannot show. A comment that says what
+  the next line does is left out. The `Given`, `When`, and `Then` lines
+  in a test stay; they tie the test to its entry in the plan.
 - The `Decided` block is closed. Follow it. `Proved` lines are facts
   that were run before the plan; build on them, do not run them again.
 - Anything under `Out of scope` stays out, even when it is one line away.

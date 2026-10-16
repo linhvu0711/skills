@@ -100,6 +100,10 @@ t_render_same_kind_rule() {
   every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
 }
 
+t_render_comment_rule() {
+  every_rules_hold "Keep a comment in the code you write only when it says why"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -113,4 +117,5 @@ cases=(
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
   "every executor's rules test a belief before a third fix|t_render_belief_rule"
   "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
+  "every executor's rules keep a comment only when it says why|t_render_comment_rule"
 )
