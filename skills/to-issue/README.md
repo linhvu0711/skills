@@ -16,6 +16,8 @@ You get one line back, with the URL on your clipboard:
 https://github.com/acme/shop/issues/42 · size/M · feat
 ```
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - `gh`, signed in.

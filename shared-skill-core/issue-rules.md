@@ -253,6 +253,11 @@ Type variants:
 
 - `fix`: inside **What to build**, three labelled lines: `Expected:`,
   `Actual:`, `Repro:` (numbered steps or a command).
+- `perf`: inside **What to build**, two labelled lines: `Baseline:` the
+  number now, with its unit, the median and spread of how many runs, the
+  command, and the machine; and `Target:` the number to reach, the
+  user's, in the same metric and unit. One Done-when line names the
+  Target.
 - `spike`: replace **Done when** with `Question:` (one line), `Time box:`
   (a duration), `Output:` (where the decision is written, usually an ADR or a
   comment on this issue).

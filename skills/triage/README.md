@@ -26,6 +26,8 @@ Then it files the ticket itself, through [to-issue](../to-issue/). The ticket fo
 
 The repo is left as it found it, and your machine is yours to change: a local fix comes back as a command on the clipboard.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - `git`, for the log and for `git bisect`.
