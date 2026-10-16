@@ -13,6 +13,7 @@ Before spawning sub-agents, write a user-facing explanation of the problem space
 - The constraints any new interface would need to satisfy
 - The dependencies it would rely on, and which category they fall into (see [deepening.md](deepening.md))
 - A rough illustrative code sketch to ground the constraints, not a proposal, just a way to make the constraints concrete
+- The scoring points: 3 to 6 named points the designs will be scored on, each one line that says what a good design does on it. Start from **depth**, **locality**, and **seam placement**, and add the points this candidate's constraints ask for, such as the error modes a caller must handle or the tests that survive. Name them now, before any design comes back, so no design picks its own measure.
 
 Show this to the user, then immediately proceed to Step 2. The user reads and thinks while the sub-agents work in parallel.
 
@@ -31,6 +32,8 @@ Prompt each sub-agent with a separate technical brief (file paths, coupling deta
 
 Include both `../../shared-skill-core/codebase-design.md` vocabulary and CONTEXT.md vocabulary in the brief so each sub-agent names things consistently with the architecture language and the project's domain language.
 
+Keep the scoring points out of the briefs. Each sub-agent pushes its own constraint; a designer that knows the measure drifts toward the middle.
+
 Each sub-agent outputs, in this order:
 
 1. Usage example: how the callers use the module, written first, from the real callers it traced
@@ -41,8 +44,10 @@ Each sub-agent outputs, in this order:
 
 The usage comes first on purpose: the interface fits how the code is used, not the other way round. A design whose usage example has to work around its own interface has failed its first test.
 
-### 3. Present and compare
+### 3. Present and score
 
-Present designs sequentially so the user can absorb each one, then compare them in prose. Contrast by **depth** (leverage at the interface), **locality** (where change concentrates), and **seam placement**.
+Present designs sequentially so the user can absorb each one.
+
+Then score them one point at a time, in the order Step 1 named the points: for each point, give every design `strong`, `fair`, or `weak`, with one clause why, before you move to the next point. No point joins after the designs come back. End with a table: one row per point, one column per design.
 
 After comparing, give your own recommendation: which design you think is strongest and why. If elements from different designs would combine well, propose a hybrid. Be opinionated: the user wants a strong read, not a menu.

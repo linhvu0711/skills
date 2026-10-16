@@ -103,8 +103,9 @@ Explore agents retrieve, short lookups are yours.
 
    When the user wants to see alternative interfaces for the deepened
    module, run `references/design-it-twice.md`: three or more sub-agents
-   in parallel, each with a different constraint, then compare on depth,
-   locality, and seam placement and give your own pick.
+   in parallel, each with a different constraint and each starting from
+   how callers use the module, then a score on the 3 to 6 points named
+   before the designs came back, one point at a time, and your own pick.
 
 ## Examples
 
