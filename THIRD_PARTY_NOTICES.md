@@ -85,11 +85,11 @@ SOFTWARE.
 
 - Upstream: https://github.com/cursor/plugins/tree/main/pstack (plugin version 0.15.9)
 - License: MIT
-- Commit: `e43c7ee26e0038c6c1fa8380dd34ce86ff94cb2a` (the commit rules 26 to 33 were copied from)
+- Commit: `e43c7ee26e0038c6c1fa8380dd34ce86ff94cb2a` (the commit rule 16 and rules 26 to 33 were copied from)
 
 | Skill or file | Upstream path | Level |
 |---|---|---|
-| `skills/unslop` | `pstack/skills/unslop` (rules 26 to 33) | copy |
+| `skills/unslop` | `pstack/skills/unslop` (rules 16 and 26 to 33, plugin version 0.15.9) | copy |
 
 `pstack/LICENSE` is the same text as poteto/noodle's, with the same copyright line, so `skills/unslop/LICENSE` covers both.
 
