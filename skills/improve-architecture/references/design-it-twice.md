@@ -31,13 +31,15 @@ Prompt each sub-agent with a separate technical brief (file paths, coupling deta
 
 Include both `../../shared-skill-core/codebase-design.md` vocabulary and CONTEXT.md vocabulary in the brief so each sub-agent names things consistently with the architecture language and the project's domain language.
 
-Each sub-agent outputs:
+Each sub-agent outputs, in this order:
 
-1. Interface (types, methods, params, plus invariants, ordering, error modes)
-2. Usage example showing how callers use it
+1. Usage example: how the callers use the module, written first, from the real callers it traced
+2. Interface (types, methods, params, plus invariants, ordering, error modes), shaped to fit the usage above
 3. What the implementation hides behind the seam
 4. Dependency strategy and adapters (see [deepening.md](deepening.md))
 5. Trade-offs: where leverage is high, where it's thin
+
+The usage comes first on purpose: the interface fits how the code is used, not the other way round. A design whose usage example has to work around its own interface has failed its first test.
 
 ### 3. Present and compare
 
