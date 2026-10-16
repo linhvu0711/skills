@@ -14,7 +14,7 @@ A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a s
 Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md
 ```
 
-The logic check also flags a test that would still pass if every function it imports returned `undefined`, and a fix that hides a failure instead of fixing its cause. The standards check adds five possible smells: split state, two ways to do one job, importable internals, hand-synced lists, and code that could be simpler. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
+The logic check also flags a test that would still pass if every function it imports returned `undefined`, a test that breaks when only the inside of the code changes, a fix that hides a failure instead of fixing its cause, and a guard for a state that should never happen. Its regression check also looks for the names grep misses: keys in data formats, database columns, and flags. The standards check adds ten possible smells: split state, two ways to do one job, importable internals, hand-synced lists, code that could be simpler, a check in the wrong place, an if/else chain that grows by one branch per case, two true/false values that must stay in sync, a comment that says what the code does instead of why, and a step that is not safe to run twice. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
 
 ## Needs
 
@@ -31,4 +31,4 @@ The logic check also flags a test that would still pass if every function it imp
 
 Thanks to [mattpocock/skills](https://github.com/mattpocock/skills) for the `code-review` skill, which gave us the idea (MIT license). No text was copied.
 
-Some logic checks and smells take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT): its root-cause and legacy-API principles and its design red flags. No text was copied.
+Some logic checks and smells take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT): its root-cause, legacy-API, boundary, domain-model, idempotency, and test-behavior principles and its design red flags. No text was copied.
