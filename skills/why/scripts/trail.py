@@ -25,7 +25,7 @@ are left out. Each PR, review, comment, and issue body is one line, cut at
 400 characters with ` [cut]`. Exits 0. Line numbers are the file's on disk:
 each one is mapped to its line at HEAD through `git diff -U0 HEAD`, and git
 reads the lines at HEAD. Lines in the range that differ from HEAD come first,
-as `Not committed yet: <file>:<lines>`, and the rest are traced.
+as `Not committed yet: <file>:<lines>`, and only the rest are traced.
 
 A file on neither disk nor HEAD, or a line past the end of the file on
 disk: prints `No such code: <target>` and exits 2. A file HEAD does not have,
@@ -103,15 +103,20 @@ def to_head(path, start, end):
     return head, changed
 
 
-def spans(lines):
-    """[2, 3, 4, 7] as `2-4, 7`."""
+def runs(lines):
+    """[2, 3, 4, 7] as [(2, 4), (7, 7)]."""
     out = []
     for n in lines:
         if out and out[-1][1] == n - 1:
             out[-1][1] = n
         else:
             out.append([n, n])
-    return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in out)
+    return [tuple(r) for r in out]
+
+
+def spans(lines):
+    """[2, 3, 4, 7] as `2-4, 7`."""
+    return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in runs(lines))
 
 
 def gh(*args):
@@ -126,14 +131,14 @@ def gh(*args):
     return r.stdout
 
 
-def commits(path, start, end):
-    """Each commit that changed the lines, or the whole file when start is None,
-    newest first, as (sha, day, author, subject, body)."""
+def commits(path, runs):
+    """Each commit that changed the runs of HEAD lines, or the whole file when
+    runs is None, newest first, as (sha, day, author, subject, body)."""
     fmt = ["-s", "--date=short", "--format=%H%x1f%ad%x1f%an%x1f%s%x1f%b%x1e"]
-    if start is None:
+    if runs is None:
         out = git("log", "--follow", *fmt, "--", path)
     else:
-        out = git("log", f"-L{start},{end}:{path}", *fmt)
+        out = git("log", *[f"-L{a},{b}:{path}" for a, b in runs], *fmt)
     return [tuple(rec.strip("\n").split("\x1f")) for rec in out.split("\x1e") if rec.strip()]
 
 
@@ -199,6 +204,7 @@ def main():
     if head is None:
         print(f"No commits: {target} is not committed yet.")
         return
+    traced = None
     if start is not None:
         mapped, changed = to_head(path, start, end)
         if not mapped:
@@ -206,8 +212,9 @@ def main():
             return
         if changed:
             print(f"Not committed yet: {path}:{spans(changed)}")
-        start, end = min(mapped), max(mapped)
-    found = commits(path, start, end)
+        # One -L per run, so a HEAD line the edit replaced or deleted is not traced.
+        traced = runs(mapped)
+    found = commits(path, traced)
     skipped = max(0, len(found) - KEEP)
     if skipped:
         found = found[:KEEP - 1] + found[-1:]

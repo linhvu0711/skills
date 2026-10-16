@@ -101,6 +101,15 @@ t_trail_part_not_committed() {
 add app" "$(subjects)"
 }
 
+t_trail_gap_not_traced() {
+  repo; fake_gh; two_commits; repo_view; echo "$no_pr" > "$FAKE_GH/graphql.json"
+  printf 'a = 1\nids = {}\nb = 2\n' > app.py
+  trail app.py:1-3
+  eq exit 0 "$code"
+  eq "line 1" "Not committed yet: app.py:2" "$(printf '%s\n' "$out" | head -1)"
+  eq subjects "add app" "$(subjects)"
+}
+
 t_trail_gh_unreachable() {
   repo; fake_gh; two_commits
   echo "error connecting to api.github.com" > "$FAKE_GH/repo-view.fail"
@@ -173,5 +182,6 @@ cases=(
   "trail: a changed line not committed yet has no history|t_trail_changed_not_committed"
   "trail: a line moved by an uncommitted insert keeps its history|t_trail_moved_by_insert"
   "trail: a range with an uncommitted line traces the rest|t_trail_part_not_committed"
+  "trail: an uncommitted line inside a range is not traced|t_trail_gap_not_traced"
   "trail: gh cannot be reached: git only|t_trail_gh_unreachable"
 )
