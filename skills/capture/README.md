@@ -14,7 +14,7 @@ One issue, in the repo's own title style, and one line back with its URL (also o
 Captured: https://github.com/acme/shop/issues/88 (on your clipboard)
 ```
 
-It is a seed (an idea nobody has decided to do) or a bug (something seen broken today). The body holds your words, the facts already in the chat, and a status line that says it is not triaged. A bug also gets a Repro: the commands the chat ran, what failed, and how often when the chat measured it, or `Not known yet.` The body is written for a stranger with neither the chat nor your machine: code as permalinks, errors verbatim, screenshots uploaded, and no local paths, throwaway IDs, or session words. The first time it sees a repo it reads 30 recent titles and the labels to learn the prefix style and the priority labels, and it remembers them. It asks at most one question, "Which repo?", and only when it can't tell.
+It is a seed (an idea nobody has decided to do) or a bug (something seen broken today). The body holds your words, the facts already in the chat, and a status line that says it is not triaged. A bug also gets a Repro: the commands the chat ran, what failed, and how often when the chat measured it, or `Not known yet.` The body is written for a stranger with neither the chat nor your machine: code as permalinks, errors verbatim, screenshots uploaded, and no local paths, throwaway IDs, or session words. The first time it sees a repo it reads 30 recent titles and the labels to learn the prefix style and the priority labels, and it remembers them. Before it files, it searches open and closed issues. An open one on the same thing stops it; a closed one does not, and the new issue links it in Context as `Related: #<n> (closed)`, so a bug that came back keeps its history. It asks at most one question, "Which repo?", and only when it can't tell.
 
 ## Needs
 
@@ -31,4 +31,4 @@ It is a seed (an idea nobody has decided to do) or a bug (something seen broken 
 
 ## Credits
 
-None. This skill was written for this repo.
+This skill was written for this repo. The closed-issue search before filing comes from the triage dedupe of `automations/benny` in pstack, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.

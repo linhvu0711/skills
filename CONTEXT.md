@@ -157,7 +157,7 @@ _Avoid_: legacy rules, old conventions
 ## Worktrees
 
 **Safe to prune**:
-A worktree that is clean, whose PR is merged on GitHub (or whose branch is in the default branch), and whose branch tip is the PR's last commit. `prune-worktrees` removes it and its branch without asking. Any other worktree waits for the user.
+A worktree that is clean, whose PR is merged on GitHub (or whose branch is in the default branch), whose branch tip is the PR's last commit, and that no live process has as its working folder. `prune-worktrees` removes it and its branch without asking. Any other worktree waits for the user.
 _Avoid_: stale, old, abandoned
 
 **Checkout resolver**:

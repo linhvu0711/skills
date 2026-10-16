@@ -48,9 +48,11 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    breakdown again, ask the three questions again. Nothing exists on GitHub
    before the approve word.
 
-6. **Duplicate check.** One search on the epic's keywords. Same work, not a
+6. **Duplicate check.** Two searches on the epic's keywords, open then
+   closed, per the rules file § Duplicates and seeds. Same open work, not a
    seed: show it, stop. Origin seed, or the map `/discover-path` cleared:
-   remember it. It becomes the parent, per the rules file § Origin seed.
+   remember it. It becomes the parent, per the rules file § Origin seed. A
+   closed match goes on the parent's Related line.
 
 7. **Create, in phase order.** Each call is one `gh issue create`. Numbers
    from earlier calls feed later ones.
@@ -221,6 +223,7 @@ Work the frontier: any ticket whose "after" tickets are closed. Start a phase wh
 
 ## Context
 - Terms, ADRs, files, Open. As in the rules file.
+- Related: `#<n> (closed)`, from the closed search. Drop when none.
 - Docs: `#13 writes docs/adr/<next>-no-job-queue.md`, one line per entry of
   the Docs rule. Drop when none.
 ```

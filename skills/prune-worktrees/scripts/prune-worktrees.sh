@@ -12,9 +12,17 @@
 # printed. Every worktree is judged first, then the
 # safe ones are removed.
 #
+# A worktree that a live process has as its working folder, or a folder in
+# it, stays: a terminal pane's shell, a dev server. The working folders come
+# from ${PRUNE_WORKTREES_PROC:-/proc} on Linux, else from lsof on macOS, and
+# only of the processes this user can see: another user's shell in a
+# worktree is not seen. They are read before any worktree is judged, and
+# again after the GitHub calls, just before the first removal.
+#
 # --remove: only the worktrees the user named, each removed with --force
-# whatever its reason, unless the session is in it or it is locked. Its branch
-# goes by the same rule as below; a branch git will not take with -d stays.
+# whatever its reason, unless the session is in it, a live process is in it,
+# or it is locked. Its branch goes by the same rule as below; a branch git
+# will not take with -d stays.
 #
 # Safe to prune: a clean worktree whose PR is merged on GitHub with the branch
 # tip as its last commit; the branch goes with `git branch -D`. Or, with no
@@ -23,18 +31,25 @@
 # test, and no gh call.
 #
 # Prints, in this order:
-#   kept <path>: <reason>            one per worktree that stays. The reasons:
-#     `this session is in it`, `locked`, `detached HEAD`,
+#   in-use check not possible: <why>  when neither /proc nor lsof can say;
+#                                    the rest runs as without the check
+#   kept <path> (<size>): <reason>   one per worktree that stays. The reasons:
+#     `this session is in it`, `in use by <command> (pid <n>)`, `locked`,
+#     `detached HEAD`,
 #     `<n> uncommitted files`, `PR #<n> open`, `PR #<n> closed, not merged`,
 #     `PR #<n> merged, tip is not its last commit`,
 #     `<n> commits not on GitHub` (a branch with no PR), `no PR`,
 #     `not in <default>` (a repo with no GitHub remote),
 #     `its repo is gone` (all: a folder under the root whose repo is deleted)
 #   cleared <n> stale entries        when folders were gone
-#   removed <path>, branch <b> deleted (-D|-d)
-#   removed <path>, branch <b> kept: git branch -d refused
+#   removed <path> (<size>), branch <b> deleted (-D|-d)
+#   removed <path> (<size>), branch <b> kept: git branch -d refused
 #                                    one of these per worktree removed
+#   freed <total>                    after the removed lines, their sizes summed;
+#                                    `freed size ?` when one of them is unknown
 #   nothing to prune                 when nothing was cleared or removed
+# A size is the worktree's disk use from `du -sk`: `<1M`, whole M, or G with
+# one decimal, as in `412M` or `1.2G`; `size ?` when du fails.
 # A path under $HOME is printed with ~.
 # Exit 1: `stop: <why>` on stderr, and nothing was removed.
 set -euo pipefail
@@ -95,13 +110,35 @@ stale=()      # <main> SEP <entries whose folder is gone>
 # plural <n> <one> <many>: `<n> <one>` or `<n> <many>`.
 plural() { if [ "$1" -eq 1 ]; then printf '%s %s' "$1" "$2"; else printf '%s %s' "$1" "$3"; fi; }
 
+# size_of <path>: the folder's disk use in KiB, or `?` when du fails.
+size_of() {
+  local k
+  k="$(du -sk "$1" 2>/dev/null | cut -f1)" && [ -n "$k" ] || { printf '?'; return; }
+  printf '%s' "$k"
+}
+
+# human <KiB or ?>: `<1M` under 1 MiB, whole M under 1 GiB, else G with one
+# decimal; `size ?` for `?`.
+human() {
+  local g
+  if [ "$1" = "?" ]; then printf 'size ?'
+  elif [ "$1" -lt 1024 ]; then printf '<1M'
+  elif [ "$1" -lt 1048576 ]; then printf '%sM' "$(($1 / 1024))"
+  else g=$(($1 * 10 / 1048576)); printf '%s.%sG' "${g%?}" "${g#"${g%?}"}"; fi
+}
+
 # judge <main> <owner/repo> <path> <branch> <locked>: sets `flag` to the
 # branch flag (-D or -d) when the worktree is safe to prune, else `reason` to
 # why it stays. The first reason that holds is the one given.
 judge() {
-  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid=""
+  local main="$1" slug="$2" path="$3" branch="$4" locked="$5" tip n ref pr="" num="" state="" oid="" phys user
   flag="" reason=""
-  if [ "$(cd "$path" 2>/dev/null && pwd -P)" = "$session" ]; then reason="this session is in it"; return; fi
+  phys="$(cd "$path" 2>/dev/null && pwd -P)" || phys=""
+  if [ "$phys" = "$session" ]; then reason="this session is in it"; return; fi
+  if [ -n "$phys" ]; then
+    user="$(in_use "$phys")"
+    [ -z "$user" ] || { reason="in use by $user"; return; }
+  fi
   [ "$locked" -eq 0 ] || { reason="locked"; return; }
   [ -n "$branch" ] || { reason="detached HEAD"; return; }
   n="$(git -C "$path" status --porcelain | wc -l | tr -d ' ')"
@@ -132,6 +169,41 @@ judge() {
   reason="no PR"
 }
 
+# live_cwds: one `<pid> SEP <command> SEP <folder>` line per live process this
+# user can see, from /proc when it is there, else from lsof. Neither can say:
+# the reason on stdout, and return 1.
+live_cwds() {
+  local d c n out line pid="" rc=0
+  if [ -e "$proc/self/cwd" ]; then
+    for d in "$proc"/[0-9]*; do
+      c="$(readlink "$d/cwd" 2>/dev/null)" || continue
+      n="$(cat "$d/comm" 2>/dev/null)" || n="?"
+      printf '%s%s%s%s%s\n' "${d##*/}" "$sep" "$n" "$sep" "$c"
+    done
+    return 0
+  fi
+  command -v lsof >/dev/null || { printf 'no /proc and no lsof'; return 1; }
+  out="$(lsof +c 0 -a -d cwd -Fpcn 2>/dev/null)" || rc=$?
+  [ "$rc" -eq 0 ] || [ -n "$out" ] || { printf 'lsof failed'; return 1; }
+  while IFS= read -r line; do
+    case "$line" in
+      p*) pid="${line#p}" ;;
+      c*) n="${line#c}" ;;
+      n*) printf '%s%s%s%s%s\n' "$pid" "$sep" "$n" "$sep" "${line#n}" ;;
+    esac
+  done <<<"$out"
+}
+
+# in_use <physical path>: `<command> (pid <n>)` of the first live process whose
+# working folder is the worktree or a folder in it; nothing when none is.
+in_use() {
+  local u rest c
+  for u in ${users[@]+"${users[@]}"}; do
+    rest="${u#*"$sep"}"; c="${rest#*"$sep"}"
+    case "$c" in "$1"|"$1"/*) printf '%s (pid %s)' "${rest%%"$sep"*}" "${u%%"$sep"*}"; return ;; esac
+  done
+}
+
 # named <path>: whether the user named this worktree with --remove.
 named() {
   local p
@@ -150,7 +222,7 @@ sort_one() {
     found+=("$path")
     judge "$@"
     [ "$reason" != "this session is in it" ] || die "this session is in $(show "$path")"
-    if [ "$reason" = "locked" ]; then kept+=("$path${sep}locked"); return; fi
+    case "$reason" in locked|"in use by "*) kept+=("$path$sep$reason"); return ;; esac
     removals+=("$main$sep$path$sep$branch$sep${flag:--d}$sep--force")
     return
   fi
@@ -227,17 +299,46 @@ if [ "$all" -eq 1 ]; then
     done
   done
 fi
+# load_users: every live process's working folder into `users`. Neither /proc
+# nor lsof can say: `in_use_note` holds why, and `users` stays as it was.
+proc="${PRUNE_WORKTREES_PROC:-/proc}"
+users=()      # <pid> SEP <command> SEP <folder>
+in_use_note=""
+load_users() {
+  local cwds l
+  if cwds="$(live_cwds)"; then
+    users=()
+    while IFS= read -r l; do [ -z "$l" ] || users+=("$l"); done <<<"$cwds"
+  else
+    in_use_note="$cwds"
+  fi
+}
+load_users
 for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
 for p in ${names[@]+"${names[@]}"}; do
   named_found=0
   for q in ${found[@]+"${found[@]}"}; do [ "$q" = "$p" ] && named_found=1; done
   [ "$named_found" -eq 1 ] || die "$(show "$p") is not a worktree of $(show "${repos[0]:-this repo}")"
 done
+# A process can enter a worktree while the GitHub calls run: read the working
+# folders again, and keep each worktree to remove that one is in now.
+if [ -z "$in_use_note" ] && [ "${#removals[@]}" -gt 0 ]; then
+  load_users
+  still=()
+  for r in "${removals[@]}"; do
+    IFS="$sep" read -r main path branch flag force <<<"$r"
+    user="$(in_use "$(cd "$path" && pwd -P)")"
+    if [ -n "$user" ]; then kept+=("$path${sep}in use by $user"); else still+=("$r"); fi
+  done
+  removals=(${still[@]+"${still[@]}"})
+fi
 
+[ -z "$in_use_note" ] || printf 'in-use check not possible: %s\n' "$in_use_note"
 for k in ${kept[@]+"${kept[@]}"}; do
-  printf 'kept %s: %s\n' "$(show "${k%%"$sep"*}")" "${k#*"$sep"}"
+  printf 'kept %s (%s): %s\n' "$(show "${k%%"$sep"*}")" "$(human "$(size_of "${k%%"$sep"*}")")" "${k#*"$sep"}"
 done
 done_any=0
+freed=0       # KiB of the removed worktrees, or ? when one is unknown
 for st in ${stale[@]+"${stale[@]}"}; do
   git -C "${st%%"$sep"*}" worktree prune
   printf 'cleared %s\n' "$(plural "${st#*"$sep"}" "stale entry" "stale entries")"
@@ -245,14 +346,17 @@ for st in ${stale[@]+"${stale[@]}"}; do
 done
 for r in ${removals[@]+"${removals[@]}"}; do
   IFS="$sep" read -r main path branch flag force <<<"$r"
+  k="$(size_of "$path")"
+  if [ "$k" = "?" ] || [ "$freed" = "?" ]; then freed="?"; else freed=$((freed + k)); fi
   git -C "$main" worktree remove ${force:+"$force"} "$path"
   if [ -z "$branch" ]; then
-    printf 'removed %s\n' "$(show "$path")"
+    printf 'removed %s (%s)\n' "$(show "$path")" "$(human "$k")"
   elif git -C "$main" branch "$flag" "$branch" >/dev/null 2>&1; then
-    printf 'removed %s, branch %s deleted (%s)\n' "$(show "$path")" "$branch" "$flag"
+    printf 'removed %s (%s), branch %s deleted (%s)\n' "$(show "$path")" "$(human "$k")" "$branch" "$flag"
   else
-    printf 'removed %s, branch %s kept: git branch %s refused\n' "$(show "$path")" "$branch" "$flag"
+    printf 'removed %s (%s), branch %s kept: git branch %s refused\n' "$(show "$path")" "$(human "$k")" "$branch" "$flag"
   fi
   done_any=1
 done
+[ "${#removals[@]}" -eq 0 ] || printf 'freed %s\n' "$(human "$freed")"
 [ "$done_any" -eq 1 ] || echo "nothing to prune"

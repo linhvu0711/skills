@@ -8,7 +8,7 @@ You've talked a piece of work through, a feature, a fix, a refactor, and it's re
 
 ## What you get
 
-One issue with a type prefix in the repo's title style, a size label from XS to L, and a body with What to build, Done when (checkboxes, observable from outside the code), Scope, and Context. XS tickets, and S tickets whose every step is already known, also get Steps with `file:line` and the `ready-to-build` label, so a planner can trust them as they are. Work too big for one PR is sized XL and sent to [to-epic](../to-epic/) instead. Human work in a platform (make an account, get a key) becomes a `task` ticket labelled `manual`. Every ticket is written for a stranger with neither the chat nor your machine: code in Context as permalinks, errors and evidence in the issue, and no local paths or session words.
+One issue with a type prefix in the repo's title style, a size label from XS to L, and a body with What to build, Done when (checkboxes, observable from outside the code), Scope, and Context. XS tickets, and S tickets whose every step is already known, also get Steps with `file:line` and the `ready-to-build` label, so a planner can trust them as they are. Work too big for one PR is sized XL and sent to [to-epic](../to-epic/) instead. Human work in a platform (make an account, get a key) becomes a `task` ticket labelled `manual`. Every ticket is written for a stranger with neither the chat nor your machine: code in Context as permalinks, errors and evidence in the issue, and no local paths or session words. Before it files, it searches open and closed issues. A closed issue on the same work does not stop it: the new issue links it on its Related line, so a bug that came back keeps its history.
 
 You get one line back, with the URL on your clipboard:
 
@@ -34,4 +34,4 @@ https://github.com/acme/shop/issues/42 · size/M · feat
 
 ## Credits
 
-The idea of turning a conversation into agent-ready tickets comes from the `to-tickets` and `to-spec` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
+The idea of turning a conversation into agent-ready tickets comes from the `to-tickets` and `to-spec` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied. The closed-issue search before filing comes from the triage dedupe of `automations/benny` in pstack, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.

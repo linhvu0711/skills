@@ -9,9 +9,12 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 A worktree is **safe to prune** when it is clean, its PR is merged on
-GitHub, and its branch tip is the PR's last commit. The script removes
-those and their branches without asking, and lists every other worktree
-with the reason it stays. The user decides about the rest.
+GitHub, its branch tip is the PR's last commit, and no live process,
+such as a terminal pane's shell, has its working folder in it. The
+script removes those and their branches without asking, and lists every
+other worktree with the reason it stays. The user decides about the
+rest. A worktree in use stays as `in use by <command> (pid <n>)`, even
+under `--remove`.
 
 ## Hard rules
 
@@ -50,15 +53,17 @@ with the reason it stays. The user decides about the rest.
 **User:** `/prune-worktrees` after two PRs merged; a third PR is open.
 
 ```
-kept ~/development/worktrees/acme/app/feat-7-search: PR #159 open
-removed ~/development/worktrees/acme/app/feat-42-login, branch feat/42-login deleted (-D)
-removed ~/development/worktrees/acme/app/fix-43-date, branch fix/43-date deleted (-D)
+kept ~/development/worktrees/acme/app/feat-7-search (412M): PR #159 open
+removed ~/development/worktrees/acme/app/feat-42-login (1.2G), branch feat/42-login deleted (-D)
+removed ~/development/worktrees/acme/app/fix-43-date (96M), branch fix/43-date deleted (-D)
+freed 1.3G
 ```
 
-The reply is those three lines.
+The reply is those four lines.
 
 **User:** `remove the search one` after that reply.
 
 `bash scripts/prune-worktrees.sh --remove ~/development/worktrees/acme/app/feat-7-search`
-prints `removed ~/development/worktrees/acme/app/feat-7-search, branch
-feat/7-search kept: git branch -d refused`. The reply is that line.
+prints `removed ~/development/worktrees/acme/app/feat-7-search (412M), branch
+feat/7-search kept: git branch -d refused` and `freed 412M`. The reply is
+those two lines.
