@@ -8,7 +8,7 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 
 The user asked for a **retrospective**. You suggest changes to the coding agent's **environment** (checks, pointers, review rules, skills, steering files, tools) so future runs go better. You change no code and no file here: every finding comes from the sessions' own record, and the user picks what becomes an issue.
 
-Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time problem**, **repeated correction**.
+Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time problem**, **repeated correction**, **repeated manual work**.
 
 ## Steps
 
@@ -46,11 +46,11 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
 
 5. **Read.** One reader per session, per `references/reader.md`: up to ten readers in one message, the next ten after those return. Each returns one struggle list. A reader that fails or returns no `# Struggle list`: send it once more; still nothing, the session is **not read**. Done when every session has a struggle list or is marked not read.
 
-6. **Patterns.** Read the struggle lists, never the transcripts. Group moments by the fix that would stop them: two moments are one pattern only when **one fix** stops both, and a pattern needs two or more sessions. A moment in one session that cost a lot (lost work, a wrong change shipped, many turns wasted) is a one-time problem; the rest stay out. The same correction from the user in two or more sessions is a repeated correction, a pattern of its own.
+6. **Patterns.** Read the struggle lists, never the transcripts. Group moments by the fix that would stop them: two moments are one pattern only when **one fix** stops both, and a pattern needs two or more sessions. A moment in one session that cost a lot (lost work, a wrong change shipped, many turns wasted) is a one-time problem; the rest stay out. The same correction from the user in two or more sessions is a repeated correction, a pattern of its own. The same steps done by hand in two or more sessions, from the lists' `Manual steps`, are repeated manual work, a pattern of its own too.
 
-   For each candidate, name its kind and where the fix goes, per § Kinds of finding. Before you propose a new check, read the repo's own: its check scripts, hooks, CI workflow. A check that exists but is unwired or broken is the finding. Every candidate cites sessions and quotes from the struggle lists; one you cannot trace to a moment goes. Order by cost to future runs, then pick the top one.
+   For each candidate, name its kind and where the fix goes, per § Kinds of finding. Before you propose a new check, read the repo's own: its check scripts, hooks, CI workflow. A check that exists but is unwired or broken is the finding. A proposed check names the past mistake it would have failed on: the session, its `Where`, and the quote. A check with no such mistake goes. Every candidate cites sessions and quotes from the struggle lists; one you cannot trace to a moment or a manual-steps line goes. Order by cost to future runs, then pick the top one.
 
-   Done when every moment in every struggle list is in a pattern, a one-time problem, or judged too small.
+   Done when every moment and every manual-steps line in every struggle list is in a pattern, a one-time problem, or judged too small.
 
 7. **Report.** Build the report page per `references/pages.md` § Report, publish it, give the link, and ask the user to paste the line its Copy button gives (`issue 1 3 4`). A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Wait.
 
@@ -75,7 +75,9 @@ Each kind names where its fix lands. The repo's own files decide the exact place
 - **No-op**: a steering line that changes nothing. Fix: delete it.
 - **Information access**: the agent needed something it could not reach. Fix: widen its access, such as teeing a dev server log to a file or read-only access to a service.
 - **Skill problem**: a skill's text led the agent wrong. Fix: a change to that skill, named by path.
-- **Repeated correction**: the same thing the user said in two or more sessions. Fix, in this order: a check that fails, a skill fix, a steering line last.
+- **Missed skill**: a skill should have run and did not: the task matched it, and the agent did the work another way or the user had to name the skill. Fix: that skill's `description`, so it names the task and the words of that moment. A skill with `disable-model-invocation: true` starts only when the user types it, so it is never a missed skill.
+- **Repeated manual work**: the user did the same steps by hand in two or more sessions. Fix: a proposed new skill that runs those steps: its name, its `description`, and the steps, from the sessions. Look first for a skill that already does the job. One the agent can start on its own is a missed skill. One the user must type (`disable-model-invocation: true`) needs no new skill and no change: its card is a **tip** that names the skill and its command, so the user types it next time. A tip is never filed.
+- **Repeated correction**: the same thing the user said in two or more sessions. Fix, in this order: delete the old code or the old way the agent keeps copying; then a check that fails; then a skill fix; a steering line last.
 
 ## Reference
 
