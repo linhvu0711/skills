@@ -49,7 +49,7 @@ Issue: #42 <title> (<url>) · size M
 <What to build, verbatim from the issue. For a fix: Expected, Actual, Repro.>
 
 # Done when
-<the Done-when list, verbatim, numbered to match the Proof rows>
+<the Done-when list, verbatim, numbered to match the Proof rows. A fix's Proof row 1 is its Repro, so the list starts with the Repro as line 1.>
 
 # Facts
 <the plan's Facts block>

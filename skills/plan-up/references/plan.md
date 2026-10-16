@@ -126,6 +126,7 @@ Slice 1, proves #1 and #2: <seam name>
     Given:  <fixtures, data, login state, exact values>
     When:   <the one call through the seam>
     Then:   <a literal result, never computed>
+    Red:    <a fix's first test only: what it shows on the base, § Type variants>
   Test `orders.test.ts` "exports nothing for an empty store"
     Given:  <...>
     When:   <...>
@@ -294,7 +295,68 @@ Two things end the short path:
 
 In a run, a labelled layer is built the same way.
 
+## Type variants
+
+The shape above proves new behavior works, as a `feat` needs. Two types
+need other proof: a `fix` proves the old bug is gone, and a `refactor`
+proves nothing changed. The type is the leading word of the issue's
+title, per `../../shared-skill-core/issue-rules.md` § Types. A repo
+that writes another word for a type keeps it in the `words` map of
+`python3 ../to-issue/scripts/conventions.py get <owner/repo>`, as
+`bug` for `fix`; that word is read as the type it stands for. A `fix` or
+a `refactor` issue adds the rules of its type below to every other rule
+in this file, on the full path and the short one. In a run, each layer
+reads its own ticket's type. A Step of a `ready-to-build` issue that
+breaks one of these rules is a choice the issue got wrong, and ends the
+short path as § Ready-to-build says.
+
+### fix
+
+The issue's What to build holds three lines: `Expected:`, `Actual:`,
+and `Repro:`.
+
+- **Facts.** The facts round asks for the code the `Repro:` runs
+  through on the base, the seam a test reaches it by, and the nearest
+  test at that seam.
+- **Proof.** Row 1 is the `Repro:`, word for word in the Done-when
+  column; numbered steps go on one line, each keeping its number. The
+  Done-when lines follow from row 2.
+- **Slice 1.** Its first test proves row 1. It runs the repro through a
+  seam that exists on the base, never through a name a slice adds, so
+  the test runs before any change. `Then` is the `Expected:` result, as
+  a literal. A `Red:` line under `Then` is the `Actual:` result, as the
+  failed assertion shows it on the base. A missing symbol, an import
+  error, or a crash before the assertion is not red: the test must
+  fail on its assertion, for the bug's reason.
+- **Walk.** A bug a person sees on a screen gets walk 1, which proves
+  row 1. Its `Before:` line holds the `Repro:` steps and the `Actual:`
+  state they reach, so the before shot shows the bug, and its `See` is
+  the `Expected:` state.
+
+### refactor
+
+The structure changes and the behavior does not.
+
+- **Facts.** The facts round asks for the tests that cover the code
+  the refactor moves, every caller of the old form, and, for a rename,
+  every hit of the old name in strings, docs, and config.
+- **Covering tests.** `Gates` names the existing tests that cover the
+  code. They stay untouched and green from the first slice to the last.
+- **Lock test.** Where no test covers the code, slice 1 is a lock test
+  alone, with `Change: none, a lock test`. It passes on the base and
+  stays green to the end; its commit body says it was green before any
+  change.
+- **Callers.** Every caller moves to the new form, and the last slice
+  deletes the old one, in the same PR. In a run, the old form is gone
+  by the last layer.
+- **Rename.** Each hit of the old name's search is a `Change` or a
+  `Docs` line, or a `Decided` line that says why it stays. `Gates`
+  holds the search command and the hits that may stay.
+
 ## Filling the blocks
+
+Write plain marks: no long dash and no curly quote outside backticks.
+`scripts/build-page.py` refuses each one and names its line.
 
 **Summary.** Two to three lines: what changes, the path slice 1 takes,
 and the counts. The page shows it as the layer's Overview lead.
@@ -534,6 +596,8 @@ facts or forks.
   at most 2; `Blast radius` all six lines; `Choices` every big fork and
   at most 3 `Decided` lines; `Risks` at most 3; `Works when` one line
   per Proof row. A run: one stack Review, and one small Review per layer.
+- A `fix` or `refactor` issue: every rule of § Type variants for its
+  type holds.
 - The Change map block is there: a map, or the `None` line when no
   part, job, or flow changes. A map has at most 12 parts, each with a
   job, a `Change`, and a free `Grid` cell outside other groups' areas;

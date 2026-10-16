@@ -74,6 +74,13 @@ t_render_cloud_full_suite() {
   has "full suite" "Run the full test suite, typecheck, lint, and build" "$out"
 }
 
+t_render_local_red_rule() {
+  render local rules
+  eq exit 0 "$code"
+  # The rule wraps, so its lines are joined first.
+  has "red rule" "A missing symbol, an import error, or a crash before the assertion is not red" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -84,4 +91,5 @@ cases=(
   "local rules leave the Gates to the Sandbox|t_render_local_gates"
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
   "cloud rules still run the full suite|t_render_cloud_full_suite"
+  "local rules hold the red rule for a Red test|t_render_local_red_rule"
 )

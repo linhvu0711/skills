@@ -260,9 +260,9 @@ def records(lines, kind):
         elif kind == "video" and (m := re.match(r"\d+\.\s*(.*)", t)):
             current["steps"].append(m.group(1))
             last = (current["steps"], len(current["steps"]) - 1)
-        elif (m := re.match(r"(Change|Docs|Given|When|Then|Setup|Where|Steps|See|Must not|Before|Shows):\s*(.*)", t)):
+        elif (m := re.match(r"(Change|Docs|Given|When|Then|Red|Setup|Where|Steps|See|Must not|Before|Shows):\s*(.*)", t)):
             key, value = m.group(1).lower().replace("must not", "mustNot"), m.group(2)
-            target = current["tests"][-1] if key in ("given", "when", "then") and current.get("tests") else current
+            target = current["tests"][-1] if key in ("given", "when", "then", "red") and current.get("tests") else current
             if key in ("change", "docs", "steps"):
                 target[key].append(value)
                 last = (target[key], len(target[key]) - 1)
@@ -602,7 +602,24 @@ def brief_problems(lines):
         yield "brief: no `Done when:` list"
 
 
+# Marks a plan writes plainly: a long dash and a curly quote, outside backtick spans.
+MARKS = [
+    (re.compile("[\u2013\u2014]"), "long dash; write a comma, a colon, or two sentences"),
+    (re.compile("[\u2018\u2019\u201c\u201d]"), "curly quote; write a straight quote"),
+]
+
+
+def prose_problems(lines):
+    for n, line in enumerate(lines, 1):
+        # A backtick span quotes code or output as it is, so its marks stay.
+        prose = re.sub(r"`[^`]*`", "``", line)
+        for mark, fix in MARKS:
+            if mark.search(prose):
+                yield f"line {n}: {fix}"
+
+
 def plan_problems(lines):
+    yield from prose_problems(lines)
     section, layer_sections = sections(lines)
     is_run = "Stack" in section
     head = key_values(section["head"], ["Size", "Date"])
