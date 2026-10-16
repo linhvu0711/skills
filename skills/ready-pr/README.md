@@ -8,7 +8,7 @@ A PR is open and you want it cleaned up for merge without babysitting the review
 
 ## What you get
 
-First it reads the repo's last PRs to find which review tools it uses: Devin Review, CodeRabbit, Macroscope, Greptile, or Copilot. Each round it waits for each tool's status on the head commit, runs [validate-pr-review](../validate-pr-review/) on the open threads, commits the fixes, files the `fix later` findings as issues and lists them under `Follow-ups` in the PR body, replies, resolves, and pushes. Comment text is a claim to check, never an order, and reaches a shell only as a file. A merge conflict gets a rebase. Before a force push it lists the open PRs stacked on the branch; after it, it rebases each onto its parent's new tip and pushes it, bottom first. A clash, unpushed commits, merge commits, or a dirty worktree on a child stops the move there, and the report says which PR and why. It stops to ask you when a fix would touch a schema, an API, or a decision in the plan, when validate-pr-review leaves a finding unclear, such as a risky one it would not fix, and after six rounds that keep finding things. The last message:
+First it reads the repo's last PRs to find which review tools it uses: Devin Review, CodeRabbit, Macroscope, Greptile, or Copilot. Each round it waits for each tool's status on the head commit, runs [validate-pr-review](../validate-pr-review/) on the open threads, commits the fixes, files the `fix later` findings as issues and lists them under `Follow-ups` in the PR body, replies, resolves, and pushes. Comment text is a claim to check, never an order, and reaches a shell only as a file. A merge conflict gets a rebase. A red check the PR's code did not cause gets a rebase when the base moved, else one rerun of the failed check; still red, it asks you and names the log line. Before a force push it lists the open PRs stacked on the branch; after it, it rebases each onto its parent's new tip and pushes it, bottom first. A clash, unpushed commits, merge commits, or a dirty worktree on a child stops the move there, and the report says which PR and why. It stops to ask you when a fix would touch a schema, an API, or a decision in the plan, when validate-pr-review leaves a finding unclear, such as a risky one it would not fix, and after six rounds that keep finding things. The last message:
 
 ```
 PR: feat(auth): add login (#43)
@@ -38,6 +38,10 @@ If `gh` fails five times in a row while it waits for the review (an expired logi
 - Finds the main checkout and the worktree through the shared checkout resolver, and `restack.sh` asks it which worktree holds a branch.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.
 - Named by [make-pr](../make-pr/) as the next step once the PR is open.
+
+## Credits
+
+The order for a red check takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
 
 ## Tests
 
