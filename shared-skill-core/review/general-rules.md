@@ -87,7 +87,7 @@ When `CODING_STANDARDS.md` is missing, the code next to the diff is the
 standard and the smell list below is the floor. Say once in the review:
 "no CODING_STANDARDS.md; run /set-coding-standards".
 
-Smell list (Fowler, _Refactoring_ ch.3, plus five for code agents write).
+Smell list (Fowler, _Refactoring_ ch.3, plus ten for code agents write).
 Each is a judgement call, labelled "possible", and a written repo rule
 always wins over it:
 
@@ -116,6 +116,17 @@ always wins over it:
 - **Could Be Simpler**: the diff keeps branches, helpers, or layers that
   a restructure would delete, or wraps an existing helper instead of
   using it.
+- **Misplaced Check**: a check on data our own code made, while data
+  that comes in from outside (a user, a file, a network reply) goes
+  unchecked.
+- **Growing If Chain**: an if/else chain that gets one more branch for
+  each new case.
+- **Twin Flags**: two true/false values that must stay in sync, where
+  one value with named states would do.
+- **Narrating Comment**: a comment that says what the code does, not why
+  it does it.
+- **Unsafe Rerun**: a step that breaks or doubles data when it runs
+  twice.
 
 Done when every hunk has been read against the rules and each finding
 cites a rule or names a smell.
