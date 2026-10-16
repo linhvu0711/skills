@@ -182,9 +182,11 @@ what the line says, is a surprise (see below).
   alone, with a commit body that says it was green before any change.
   It stays green through every later slice.
 - A slice headed `deletes dead code` deletes code that no caller uses.
-  Its tests exist already: write none. Run them before the change and
-  see them green, make the delete, run them again and see them green,
-  and commit with a body that says they were green before and after.
+  Its tests exist already, or its test is a search from its `Change`
+  lines: write none. Run them before the change: the tests are green,
+  and a search hits only the code it deletes. Make the delete, run them
+  again: the tests are green, and a search has no hit. Commit with a
+  body that says so.
 - Mock only at the borders the slice names under `Given`: an outside
   API, the clock, randomness. Everything the repo owns runs for real.
 - The case name is the one in the Proof table. One `Then` per test.

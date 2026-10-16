@@ -520,8 +520,9 @@ nothing else, each with the search that showed no caller. A doc that
 names the deleted code is a `Docs` line in it. Its tests are the
 existing tests under `Gates` that cover the area, each with `Given: the
 base`, `When:` the command that runs it, and `Then: pass, before and
-after the delete`; when no Gate covers the area, the `Test` command
-under `Facts`. It proves no Done-when line. The tracer bullet is the
+after the delete`. When no Gate covers the area, its one test is the
+search: each search from its `Change` lines, run after the delete, with
+`Then: no hit`. It proves no Done-when line. The tracer bullet is the
 first slice after it.
 No dead code found: no delete slice and no line about it.
 
