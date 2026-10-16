@@ -10,18 +10,23 @@ right after `- `:
 
 - `[merged #n]`, `[open PR #n]`, `[closed #n]`: the PR's state from `gh`;
   a branch tags as its newest PR;
-- `[branch only]`: a branch with no PR, local or at origin;
-- `[branch gone]`: a branch with no PR, neither local nor at origin;
-- `[state unknown]`: `gh` failed or is missing.
+- `[branch only]`: a branch with no PR, local or on GitHub;
+- `[branch gone]`: a branch with no PR, neither local nor on GitHub;
+- `[state unknown]`: `gh` could not say.
 
 Every `gh` and `git` call runs in `--cwd`, the current folder by default.
-The first `gh` call that fails writes `live tags: gh failed: <its last
-error line>` to stderr, and no later bullet calls `gh`. Every other line
-comes out as it went in; a brief with no such section comes out
-unchanged. Exits 0.
+A failed `gh` call is checked with `gh api user`. When that works too,
+only the one lookup failed: a PR that `gh` cannot find is
+`[state unknown]`, and the next bullets still ask. When it fails, `gh`
+is down, missing, or logged out: `live tags: gh failed: <its last error
+line>` goes to stderr, and that bullet and every later one is
+`[state unknown]` with no more `gh` calls. A `--cwd` that is not a
+folder counts as `gh` down. Every other line comes out as it went in; a
+brief with no such section comes out unchanged. Exits 0.
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -31,32 +36,48 @@ BULLET = re.compile(r"^- (PR|branch) (\S+)")
 TAGS = {"MERGED": "[merged #{n}]", "OPEN": "[open PR #{n}]", "CLOSED": "[closed #{n}]"}
 
 
-class GhFailed(Exception):
-    pass
+class GhDown(Exception):
+    """gh cannot answer anything: down, missing, or logged out."""
+
+
+class NotFound(Exception):
+    """gh works, but this one lookup failed."""
 
 
 class Tagger:
     def __init__(self, cwd):
         self.cwd = cwd
-        self.gh_down = False
+        self.gh_down = cwd is not None and not os.path.isdir(cwd)
+        if self.gh_down:
+            print(f"live tags: gh failed: no folder {cwd}", file=sys.stderr)
+
+    def run(self, *args):
+        try:
+            return subprocess.run(args, cwd=self.cwd, capture_output=True, text=True)
+        except FileNotFoundError:
+            return subprocess.CompletedProcess(args, 127, "", f"{args[0]}: command not found")
 
     def gh(self, *args):
         if self.gh_down:
-            raise GhFailed
-        try:
-            r = subprocess.run(["gh", *args], cwd=self.cwd, capture_output=True, text=True)
-        except FileNotFoundError:
-            r = subprocess.CompletedProcess(args, 127, "", "gh: command not found")
-        if r.returncode != 0:
-            self.gh_down = True
-            lines = [l for l in r.stderr.splitlines() if l.strip()]
-            print(f"live tags: gh failed: {lines[-1] if lines else f'gh exited {r.returncode}'}", file=sys.stderr)
-            raise GhFailed
-        return json.loads(r.stdout)
+            raise GhDown
+        r = self.run("gh", *args)
+        if r.returncode == 0:
+            return json.loads(r.stdout)
+        if self.run("gh", "api", "user", "--jq", ".login").returncode == 0:
+            raise NotFound
+        self.gh_down = True
+        lines = [l for l in r.stderr.splitlines() if l.strip()]
+        print(f"live tags: gh failed: {lines[-1] if lines else f'gh exited {r.returncode}'}", file=sys.stderr)
+        raise GhDown
 
-    def has_ref(self, branch):
-        return any(subprocess.run(["git", "show-ref", "--verify", "--quiet", ref], cwd=self.cwd).returncode == 0
-                   for ref in (f"refs/heads/{branch}", f"refs/remotes/origin/{branch}"))
+    def branch_tag(self, branch):
+        if self.run("git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}").returncode == 0:
+            return "[branch only]"
+        try:
+            self.gh("api", f"repos/{{owner}}/{{repo}}/branches/{branch}")
+            return "[branch only]"
+        except NotFound:
+            return "[branch gone]"
 
     def tag(self, kind, ref):
         try:
@@ -65,9 +86,9 @@ class Tagger:
             else:
                 prs = self.gh("pr", "list", "--head", ref, "--state", "all", "--limit", "1", "--json", "number,state")
                 if not prs:
-                    return "[branch only]" if self.has_ref(ref) else "[branch gone]"
+                    return self.branch_tag(ref)
                 pr = prs[0]
-        except GhFailed:
+        except (GhDown, NotFound):
             return "[state unknown]"
         return TAGS.get(pr["state"], "[state unknown]").format(n=pr["number"])
 

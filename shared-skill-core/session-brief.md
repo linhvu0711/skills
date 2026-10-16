@@ -60,13 +60,15 @@ now starts with its live state:
 | `[merged #n]` | the PR, or the branch's newest PR, is merged |
 | `[open PR #n]` | it is open |
 | `[closed #n]` | it was closed without a merge |
-| `[branch only]` | a branch with no PR, here or at origin |
-| `[branch gone]` | a branch with no PR, neither here nor at origin |
-| `[state unknown]` | `gh` cannot be reached, or is not logged in |
+| `[branch only]` | a branch with no PR, here or on GitHub |
+| `[branch gone]` | a branch with no PR, neither here nor on GitHub |
+| `[state unknown]` | `gh` cannot find the PR, cannot be reached, or is not logged in |
 
-The tags never stop the brief: when `gh` fails, the script prints one
-`live tags: gh failed: <reason>` line on stderr, every later line is
-`[state unknown]`, and the brief shows. The skeleton fallback is not
+The tags never stop the brief. A PR `gh` cannot find is
+`[state unknown]`, and the next lines are still asked. When `gh` itself
+fails, the script prints one `live tags: gh failed: <reason>` line on
+stderr, that line and every later one is `[state unknown]`, and the
+brief shows. The skeleton fallback is not
 tagged.
 
 ## Measured
