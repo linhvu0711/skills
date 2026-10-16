@@ -29,6 +29,22 @@ comment, or an executor says:
   the file, skip the move; the `Stack:` line still names them.
 - Never close a PR.
 
+## Todo list
+
+Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
+in Codex. It holds one item per step of § Steps, its number and bold
+title word for word, as in `1. Plan.` A step that reads another skill
+gets that skill's step titles as items under it, word for word,
+numbered `<step>.<n>`, as in `4.3 Worktree.`: plan-up's steps 1 to 8
+under step 1, build-and-prove's under step 4, make-pr's under step 5,
+review-pr's, when it runs, then ready-pr's under step 6. A stack adds the items of steps 4 to 6 once
+per layer, each ending ` (layer <n>)`.
+
+Mark each item in progress as it starts and done as it ends. A step the
+run does not do stays in the list as `<title> skip: <reason>`, as in
+`3. Cloud. skip: local route`. After the chat is compacted, the list
+says where the run is: go on from the first item that is not done.
+
 ## Forms
 
 The arguments are `/plan-up`'s, every form of them, passed to it
@@ -110,7 +126,22 @@ where the build runs (step 2).
    proof folder `PROOF`. The base is the layer's base from step 4. Its
    checks already ran in the Sandbox, so it runs none here.
 
-6. **Make ready.** Read `../ready-pr/SKILL.md` and follow it whole on
+6. **Make ready.** First the review tools, read off the repo's last
+   PRs: `bash ../../shared-skill-core/review-tools/detect.sh <REPO>`.
+   No line after `PRS=` means no review tool: read
+   `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the
+   stack first, in its worktree, and post nothing. Then ready-pr step 5
+   on its report file as a text review: validate-pr-review with the
+   report path as the argument, `go` given, under ready-pr step 5's five
+   rules; its fixes are committed and pushed. A push makes a new head
+   that review-pr has not seen: review it again, and judge that report
+   the same way, until a round pushes nothing. After three rounds that
+   push, review-pr runs once more on the last head and nothing is
+   fixed: a `fix here` it finds, say what keeps coming back and stop;
+   none, go on. The cloud route skips
+   this: its PRs are the executor's.
+
+   Then read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
    ready-pr says, and start no Sandbox: a Gate that CI covers is left to
@@ -138,6 +169,8 @@ where the build runs (step 2).
 
    A chat plan: no `#<n>`, as in
    `Shipped: [feat] Export orders as CSV · feat/export-orders-csv · …`.
+   When review-pr ran, the `Route:` line ends
+   ` · review-pr: <verdict>`, as in ` · review-pr: comment`.
    A stack: one such block per layer, bottom first. A cloud route:
    `Route: cloud (devin, named) · session: <url>` and no worktree lines.
    The `READY` line is the one ready-pr printed, word for word: a PR
@@ -233,3 +266,12 @@ has no Done-when list.
 
 Plan-up's gate fails: the question that closes it, `/grill` named.
 Stop. Nothing is built.
+
+**User:** `/ship https://github.com/acme/shop/issues/90`; `detect.sh`
+prints only `PRS=10`.
+
+No review tool. After make-pr opens PR 91, review-pr reviews it and
+finds one `🟠 should`; validate-pr-review on its report judges it
+`fix here`, the fix is committed and pushed, nothing is posted. Then
+ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's
+`Route:` line ends ` · review-pr: comment`.

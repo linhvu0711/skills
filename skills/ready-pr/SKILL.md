@@ -148,10 +148,27 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
    `BLOCKED`, by reason:
    - `merge state is DIRTY`: the rebase path of step 5, then step 3.
-   - `check(s) red`: `cd "$WT" && gh pr checks <NUMBER>`, read the
-     failing log. A cause inside the PR's own change is work: fix,
-     commit, push, step 3. A cause outside it is a question to the
-     user.
+   - `check(s) red`: `cd "$WT" && gh pr checks <NUMBER> --json
+     name,state,bucket,link,workflow`, then read each failing log. A
+     GitHub Actions check has a `workflow`, and its run id is the
+     number after `/runs/` in its `link`: `cd "$WT" && gh run view
+     <run-id> --log-failed`. A cause inside the PR's own change is
+     work: fix, commit, push, step 3. A cause outside it, in this order:
+     1. The base moved: after `git -C "$WT" fetch origin <BASE>`,
+        `git -C "$WT" merge-base --is-ancestor origin/<BASE> HEAD`
+        fails. The rebase path of step 5, then step 3.
+     2. Else, an Actions check not rerun yet in this run: note its
+        attempt, `cd "$WT" && gh run view <run-id> --json attempt -q
+        .attempt`, then `cd "$WT" && gh run rerun <run-id> --failed`.
+        The rerun starts late, and until then the PR shows the old red
+        state: run `gh run view` again until the attempt is higher, for
+        at most two minutes, then `cd "$WT" && gh run watch <run-id>`
+        until it ends, then ready again. A rerun that fails to start,
+        or no new attempt in two minutes: say so, then 3.
+     3. Still red, already rerun once, or a check from outside Actions:
+        one question to the user that names the check and the log line
+        with the cause, in the format of
+        `../../shared-skill-core/grilling.md`. Wait.
    - `thread(s) wait for the author`: step 5, with the thread lines.
    - anything else: say it, stop.
 
@@ -212,6 +229,13 @@ add the migration in this PR, `B` `fix later` as its own ticket. Wait.
 Rebase on `origin/main`; two hunks conflict; fix-conflicts resolves them
 and the suite is green; `push --force-with-lease`. Step 3 again on the
 new head.
+
+**`ready.sh`** says `BLOCKED`, reason `1 other check(s) red`.
+
+The `test` job's log fails in a file the PR does not touch, and
+`origin/main` is not in `HEAD`: the base moved. Rebase on `origin/main`,
+push, step 3. The next round's checks are green. Had the base not
+moved, one rerun of the `test` job; still red, one question.
 
 **PR 43 is under PRs 44 and 45**, and its merge state is `DIRTY`.
 

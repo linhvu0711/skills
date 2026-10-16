@@ -69,6 +69,20 @@ one.
 - No plan named and none in this chat: say `Run /plan-up first.` and
   stop.
 
+## Todo list
+
+Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
+in Codex. It holds one item per step of § Steps, its number and bold
+title word for word, as in `5. Coding.` Run by `/ship`, open no list of
+your own: ship's list already holds these steps under its step 4, so
+mark those items.
+
+Mark each item in progress as it starts and done as it ends. A step the
+run does not do stays in the list as `<title> skip: <reason>`, as in
+`7. Before shots. skip: no Before steps`. After the chat is compacted,
+the list says where the run is: go on from the first item that is not
+done.
+
 ## Steps
 
 1. **Plan.** Read the plan `.md` whole. Stop with one line on each of
