@@ -54,7 +54,10 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    edited, last reply), then the last 3 user turns verbatim.
 
 4. **Show the brief and wait.** Take the brief as `session-brief.md` § Return
-   says for your harness and show it to the user unchanged. Then one line:
+   says for your harness, tag it with
+   `../../shared-skill-core/sessions/live_tags.py` as `session-brief.md`
+   § Live tags says, with the folder the peek of step 1 printed, and show
+   the tagged brief to the user unchanged. Then one line:
    the loaded session's folder, and "say go to start the Next step". Stop.
    The last 3 turns are already in your context from step 3.
 

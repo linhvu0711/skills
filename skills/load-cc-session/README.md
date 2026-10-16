@@ -16,8 +16,11 @@ Done: fields and validation ported, tests green
 Decisions: keep the old save endpoint for now
 Open: the date picker still uses the old component
 Files: src/settings/Form.tsx, src/settings/schema.ts
+PRs and branches: [open PR #45] PR #45 · settings form
 Next step: port the date picker
 ```
+
+Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, or `[state unknown]` when `gh` cannot answer.
 
 The last three things you typed in that session come along word for word. Say "go" and the agent starts on the next step. Ask for the whole transcript and you get that instead, trimmed to fit.
 
@@ -28,6 +31,7 @@ The last three things you typed in that session come along word for word. Say "g
 - A sub-agent to write the brief: the Explore agent in Claude Code, an `explorer` agent in Codex.
 - The shared core file [`session-brief.md`](../../shared-skill-core/session-brief.md), which holds the brief's shape.
 - Claude Code transcripts under `~/.claude/projects/`.
+- `gh` and `git`, for the live state of each PR and branch.
 
 ## Fits with
 
