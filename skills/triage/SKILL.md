@@ -96,15 +96,20 @@ nothing.
 5. **Stuck.** Halving cannot cut further: write at most two hypotheses,
    each with the one check that kills it. Run the checks. A must-know row
    still empty after you looked and asked once, or no loop per `method.md`:
-   stop looking. Skip step 6, go to step 7, and the exit is a `spike`.
+   stop looking. Skip steps 6 and 7, go to step 8, and the exit is a `spike`.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
    § Confirm.
 
-7. **Clean up.** Per `method.md` § Clean: every debug line, throwaway file,
+7. **Same mistake.** The confirmed cause is one place the mistake was
+   made. Search for the same mistake elsewhere, per `method.md` § Same
+   mistake. The report gets an `Also at:` line: each place found, as
+   `file:line`, or `Also at: none found` with the search used.
+
+8. **Clean up.** Per `method.md` § Clean: every debug line, throwaway file,
    and changed setting goes, and `git status` is what it was.
 
-8. **Report.** In chat, in this shape:
+9. **Report.** In chat, in this shape:
 
    ```
    Expected: <one line>
@@ -113,6 +118,7 @@ nothing.
    Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; spike: Not found, <the open question>)
    Category: <from categories.md>
    Evidence: <the probe, and what it showed>
+   Also at: <file:line, one per place>, or none found, <the search used>   (spike: no line)
    ```
 
    When the category is local env, show the fix command in a code block and
@@ -121,21 +127,23 @@ nothing.
    not change their machine. The same holds for the ops fix of live env and
    the data fix of data: name it in the report, the user does it.
 
-9. **Grill.** Test the report against § When grill fits. It fits: write
-   the seed block in the same message, right after the report, and invoke
-   the grill skill with the Skill tool. The seed is the report, and the bug
-   issue when there is one; the open decisions are the choices you found;
-   `Close out: text.`, since step 10 files the ticket. After `Grill done.`,
-   go to step 10 with the doc entries it handed back. It does not fit: go
-   to step 10, with no question to the user. The report is the agreement.
+10. **Grill.** Test the report against § When grill fits. It fits: write
+    the seed block in the same message, right after the report, and invoke
+    the grill skill with the Skill tool. The seed is the report, and the bug
+    issue when there is one; the open decisions are the choices you found;
+    `Close out: text.`, since step 11 files the ticket. After `Grill done.`,
+    go to step 11 with the doc entries it handed back. It does not fit: go
+    to step 11, with no question to the user. The report is the agreement.
 
-10. **File.** Invoke the to-issue skill with the Skill tool, in the same
+11. **File.** Invoke the to-issue skill with the Skill tool, in the same
     turn. Do not ask first, and do not end with `Ready for /to-issue`.
 
     - Cause found: the ticket is the Exit of the category in
       `references/categories.md`: its type and its work, or nothing when
       the exit says so. A perf hot spot is a `perf` ticket. Only the code
       part of an exit is filed; the user's part stays in the report.
+      The ticket's `## Context` carries the report's `Also at:` line,
+      word for word.
       Carry the settled decisions after a grill, and its doc entries
       under `## Docs to write`, per
       `../../shared-skill-core/issue-rules.md` § Docs to write.
@@ -167,8 +175,8 @@ None holds: you know the fix. Skip the grill and file.
 
 The seed block, verbatim, filled in: `Invoke the grill skill with the Skill
 tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
-list>. Close out: text. Then continue at step 10.` The grill owns the
-interview and the doc text; step 10 files the ticket with it. You wait
+list>. Close out: text. Then continue at step 11.` The grill owns the
+interview and the doc text; step 11 files the ticket with it. You wait
 for `Grill done.`
 
 ## Secrets
@@ -208,7 +216,7 @@ only if the setup docs never mention the variable; else nothing to file.
 
 Read issue 42 with its comments. The body says "checkout button does
 nothing"; the last comment says it only fails in Safari. Gate passes, and
-"where it does not work" is already Safari. Go on at step 2. At step 10,
+"where it does not work" is already Safari. Go on at step 2. At step 11,
 to-issue rewrites #42 into the `fix` ticket: new title, new body, the
 old body kept under Original report. Same number, nothing closed.
 
