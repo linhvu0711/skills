@@ -67,7 +67,7 @@ The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh
 
 A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them.
 
-The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place.
+The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.
 
 A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
 

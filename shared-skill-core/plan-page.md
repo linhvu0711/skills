@@ -34,7 +34,7 @@ python3 ../skills/plan-up/scripts/build-page.py "$DIR/plan-<slug>.md"
 ```
 
 It writes `plan-<slug>.html` and prints `page: <path>`. Problem lines
-name the block to fix in the `.md`; fix it and run the builder again.
+name the block, or the `.md` line, to fix; fix it and run the builder again.
 Never write `DATA` or edit the `.html`: the builder makes it.
 
 Refs the page shows, and the user names in chat: `M1` map part 1, `P1`

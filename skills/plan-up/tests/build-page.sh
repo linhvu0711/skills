@@ -382,6 +382,23 @@ t_build_terminal_must_not_screen() {
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
 }
 
+t_build_long_dash() {
+  bad_ticket 's/export route, not/export route — not/' 'line 6: long dash; write a comma, a colon, or two sentences'
+}
+
+t_build_curly_quotes() {
+  bad_ticket 's/the orders export/the order’s export/; s/receives the chosen format/receives the “chosen” format/' \
+    "$(printf 'line 48: curly quote; write a straight quote\nline 57: curly quote; write a straight quote')"
+}
+
+t_build_marks_in_backticks() {
+  T="$(mktemp -d)"
+  sed 's/delimiter is `,`/delimiter is `—’`/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -436,4 +453,7 @@ cases=(
   "build-page passes two spaces before a typed command and type inside quoted output|t_build_typed_spacing_and_output"
   "build-page refuses stderr in a terminal walk's Must not|t_build_terminal_must_not_stream"
   "build-page passes screen text in a terminal walk's Must not|t_build_terminal_must_not_screen"
+  "build-page refuses a long dash|t_build_long_dash"
+  "build-page refuses curly quotes|t_build_curly_quotes"
+  "build-page passes a long dash and a curly quote inside backticks|t_build_marks_in_backticks"
 )

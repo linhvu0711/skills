@@ -296,6 +296,9 @@ In a run, a labelled layer is built the same way.
 
 ## Filling the blocks
 
+Write plain marks: no long dash and no curly quote outside backticks.
+`scripts/build-page.py` refuses each one and names its line.
+
 **Summary.** Two to three lines: what changes, the path slice 1 takes,
 and the counts. The page shows it as the layer's Overview lead.
 
