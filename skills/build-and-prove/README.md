@@ -38,7 +38,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
-A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command, plus the issue's Baseline when the base median falls outside its spread.
 
 On a `perf` plan it runs the plan's command in the Sandbox in turns on the base and the head, by the benchmark checklist, and the PR's Proof shows `before → after`.
 

@@ -318,9 +318,11 @@ done.
    `box.sh run "$PROOF" -- <Command>`, as many times each as the `Pass
    rule` says. Write one line to `checks.txt`: `<Command> · <short SHA>
    · <metric>: <base median> → <head median> <unit>, median of <n> in
-   turns, spread <low> to <high> (sandbox)`. A head that misses the
-   `Pass rule` is a red Gate: a follow-up, as above. Remove the temp
-   worktree.
+   turns, spread <low> to <high> (sandbox)`. A base median outside the
+   `Before` spread adds ` (issue Baseline: <Before>)` before
+   `(sandbox)`, per `../../shared-skill-core/pr-shape.md` § Proof. A
+   head that misses the `Pass rule` is a red Gate: a follow-up, as
+   above. Remove the temp worktree.
 
 9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
    to step 10. Else rounds, at most three:

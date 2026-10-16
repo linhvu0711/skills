@@ -87,7 +87,11 @@ say; with nothing to say, the heading goes too.
    - A `perf` plan's Target line: its `Test` cell is one result, the
      metric and unit, `before → after`, the run count, and the command,
      run on the head commit. `before` is the base median and `after` the
-     head median, measured in turns on one machine.
+     head median, measured in turns on one machine. A base median
+     outside the spread of the issue's `Baseline:` ends the cell with
+     that Baseline in brackets, as in
+     `(issue Baseline: 1200 ms, spread 1150 to 1260 ms)`, so a reader
+     sees the two numbers differ.
 
      ```markdown
      | 1 | p95 of `GET /orders` is under 300 ms. | p95 of `GET /orders`, ms: 1200 → 280, median of 5 in turns, `pnpm bench orders` on `9e18c16` |

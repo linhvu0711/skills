@@ -295,9 +295,9 @@ measures after the full suite is green, before the PR. A prompt with no
 3. Write the Proof row of the Target line as `## The pull request`
    shows: the metric and unit, `before → after`, the run count, and the
    command.
-4. A base median outside the `Before` spread is one line in
-   `## Summary`, with both numbers. A head that misses the `Pass rule`
-   is a surprise (see `## Surprises`).
+4. A base median outside the `Before` spread: the row ends with the
+   issue's Baseline in brackets, as `## The pull request` shows. A head
+   that misses the `Pass rule` is a surprise (see `## Surprises`).
 5. Remove the second worktree.
 
 <!-- include ../benchmark.md -->

@@ -30,7 +30,7 @@ Then it watches. When the agent asks something, this chat answers from the plan 
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
-A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command, plus the issue's Baseline when the base median falls outside its spread.
 
 On a `perf` plan the cloud executor runs the plan's command in turns on the base and the head, by the benchmark checklist its rules carry, and writes `before → after` in the Proof.
 
