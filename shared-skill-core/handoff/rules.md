@@ -135,10 +135,11 @@ what the line says, is a surprise (see below).
 ## How to work
 
 - Work one slice at a time, in the order given. For each slice: write
-  every test listed under it first and run them; they are red. Write the
-  smallest change that makes them all green. Run the test file and the
-  typecheck; both green. Make the slice's `Docs` lines, so the doc lands
-  with the code it describes. Commit.
+  every test listed under it first and run them; they are red, except a
+  lock test (see Tests). Write the smallest change that makes them all
+  green. Run the test file and the typecheck; both green. Make the
+  slice's `Docs` lines, so the doc lands with the code it describes.
+  Commit.
 - Green ends the slice. Tidying comes later, from review. The next slice
   starts.
 - One slice is one commit. The layer's PR reads in slice order.
@@ -168,6 +169,10 @@ what the line says, is a surprise (see below).
   names. A missing symbol, an import error, or a crash before the
   assertion is not red: change the test until it fails for the bug's
   reason, then make the change.
+- A slice whose `Change` says `none, a lock test` holds a refactor's
+  lock test. It passes on the base: run it, see it green, and commit it
+  alone, with a commit body that says it was green before any change.
+  It stays green through every later slice.
 - Mock only at the borders the slice names under `Given`: an outside
   API, the clock, randomness. Everything the repo owns runs for real.
 - The case name is the one in the Proof table. One `Then` per test.
