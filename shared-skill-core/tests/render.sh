@@ -153,6 +153,12 @@ t_render_cloud_perf_drift() {
   has "drift note" "(issue Baseline: 1200 ms, spread 1150 to 1260 ms)" "$out"
 }
 
+t_render_cloud_perf_refix() {
+  render devin rules
+  eq exit 0 "$code"
+  has "measure again" "measure again, steps 1 to 5, before its push" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -171,6 +177,7 @@ cases=(
   "every executor's rules check data at the edge|t_render_edge_rule"
   "cloud rules carry the perf row|t_render_cloud_perf_row"
   "cloud rules show a drifted base next to the issue's Baseline|t_render_cloud_perf_drift"
+  "cloud rules measure a perf PR again after a review fix|t_render_cloud_perf_refix"
   "cloud rules carry the perf part and its checklist once|t_render_cloud_perf"
   "local rules leave the perf part out|t_render_local_no_perf"
   "cloud prompt has a Perf heading and local has none|t_render_prompt_perf"

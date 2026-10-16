@@ -146,7 +146,7 @@ where the build runs (step 2).
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
    ready-pr says, and start no Sandbox: a Gate that CI covers is left to
    the PR's CI. CI covers a Gate when a file under `$WT/.github/workflows/`
-   names its command. Two cases start a Sandbox, with the
+   names its command. Three cases start a Sandbox, with the
    build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
    and end with `box.sh down`:
    - A fix that changes code a UI walk's screen shows: that walk runs
@@ -154,6 +154,10 @@ where the build runs (step 2).
    - A Gate that CI does not cover: before each push of fixes, it runs
      there, as build-and-prove step 8 runs it. A repo with no CI covers
      no Gate, so all of them run.
+   - A plan with a `Perf` block and a fix that changes code its
+     `Command` runs: before the push, the perf measure runs again, as
+     build-and-prove step 8 runs it, and the Target line's row in the PR
+     body is written again for the new head.
 
    It ends with `READY` or a stop point.
 

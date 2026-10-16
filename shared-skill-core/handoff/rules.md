@@ -299,6 +299,9 @@ measures after the full suite is green, before the PR. A prompt with no
    issue's Baseline in brackets, as `## The pull request` shows. A head
    that misses the `Pass rule` is a surprise (see `## Surprises`).
 5. Remove the second worktree.
+6. A fix after the PR opens that changes code the `Command` runs:
+   measure again, steps 1 to 5, before its push, and write the row
+   again for the new head.
 
 <!-- include ../benchmark.md -->
 <!-- /cloud -->
