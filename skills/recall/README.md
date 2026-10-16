@@ -20,10 +20,12 @@ Sessions: 2 (Claude Code 1, Codex 1)
 **Open:**
 - the button still has no loading state (3f2a9c1e)
 **PRs and branches:**
-- PR #45 · date fix (3f2a9c1e)
+- [open PR #45] PR #45 · date fix (3f2a9c1e)
+- [merged #42] PR #42 · export endpoint (3f2a9c1e)
+Next: /ready-pr #45
 ```
 
-Each line ends with the session it came from, so `/load-cc-session 3f2a9c1e` or `/load-co-session 019e631d` pulls that session in. Recall only reads: it writes nothing and starts no work.
+Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, a branch that is gone, or `[state unknown]` when `gh` cannot answer. The last line is the one next step. Each line ends with the session it came from, so `/load-cc-session 3f2a9c1e` or `/load-co-session 019e631d` pulls that session in. Recall only reads: it writes nothing and starts no work.
 
 - No session on the topic: `No sessions on <topic>.`, and it stops.
 - More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
@@ -35,6 +37,7 @@ Each line ends with the session it came from, so `/load-cc-session 3f2a9c1e` or 
 - The finders and extractors in the shared core folder [`sessions/`](../../shared-skill-core/sessions/).
 - The shared core file [`session-brief.md`](../../shared-skill-core/session-brief.md), which holds the shape of each session's brief.
 - A sub-agent per session to write its brief: the Explore agent in Claude Code, an `explorer` agent in Codex.
+- `gh` and `git`, for the live state of each PR and branch.
 
 ## Fits with
 

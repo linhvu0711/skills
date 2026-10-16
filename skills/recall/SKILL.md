@@ -62,12 +62,27 @@ starts no work.
    **Decisions:**
    **Open:**
    **PRs and branches:**
+   Next: <one step>
    ```
 
    Each bullet keeps its brief's words and ends with ` (<id8>)`, the
    session it came from, so the user can load that session. The same
    fact in two briefs: keep the newer session's. A `Done` bullet that a
    newer brief lists as `Open`, or the other way round: keep the newer
-   one. A section with nothing: `none`.
+   one. A section with nothing: `none`. Under `**PRs and branches:**`,
+   one line per PR or branch, with the newest session's `<what it is>`.
 
-6. **Show** the brief and stop.
+6. **Live tags.** Write the brief to `<scratchpad>/recall-brief.md`
+   (`/tmp/recall/brief.md` in Codex) and tag it with
+   `../../shared-skill-core/sessions/live_tags.py` as
+   `../../shared-skill-core/session-brief.md` § Live tags says, with
+   `--cwd` this folder. The tagged brief is the one you show.
+
+7. **Next line.** The brief's last line is `Next: <one step>`, from the
+   first of these that holds:
+   - an `[open PR #n]` line: `Next: /ready-pr #<n>`, the newest session's;
+   - a `[branch only]` line: `Next: /make-pr` on that branch;
+   - an `**Open:**` bullet: `Next:` and that bullet's action;
+   - else `Next: nothing open on <topic>.`
+
+8. **Show** the brief and stop.
