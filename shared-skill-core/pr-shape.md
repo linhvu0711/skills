@@ -73,7 +73,8 @@ say; with nothing to say, the heading goes too.
    the other is.
 5. **`## Proof`**: the evidence that the change does what it says.
    - The issue or the plan has Done-when lines: one table, one row per
-     Done-when line, in order. Columns: `#`, `Behavior`, `Test`.
+     Done-when line, in order. A fix's first row is its Repro, as in the
+     plan's Proof table. Columns: `#`, `Behavior`, `Test`.
      `Behavior` is the Done-when line verbatim. `Test` is the case name,
      linked to the test on the branch; or the command and its output in
      a fenced block, run on the head commit; or the URL of the CI run on
