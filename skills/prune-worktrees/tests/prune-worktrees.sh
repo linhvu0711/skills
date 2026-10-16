@@ -208,6 +208,22 @@ t_prune_in_use_unknown() {
   eq stdout "$(printf 'in-use check not possible: lsof failed\nremoved %s (<1M), branch feat/1-a deleted (-D)\nfreed <1M' "$T/elsewhere/feat-1-a")" "$out"
 }
 
+t_prune_keeps_late_in_use() {
+  wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  # A gh that starts a process in the worktree while the script waits on it,
+  # after the first read of the working folders.
+  mv "$T/bin/gh" "$T/bin/gh-fake"
+  printf '#!/usr/bin/env bash\ncd "%s"; /bin/sleep 30 >/dev/null 2>&1 & echo $! > "%s"; cd /\nexec "%s" "$@"\n' \
+    "$T/w/feat-1-a" "$T/late.pid" "$T/bin/gh-fake" > "$T/bin/gh"
+  chmod +x "$T/bin/gh"
+  run bash "$P"
+  local pid; pid="$(cat "$T/late.pid")"; kill "$pid"
+  eq exit 0 "$code"
+  eq stdout "$(printf 'kept %s (<1M): in use by sleep (pid %s)\nnothing to prune' "$T/w/feat-1-a" "$pid")" "$out"
+  [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
+}
+
 cases=(
   "prune removes a merged worktree outside the root|t_prune_removes_merged"
   "prune keeps a branch with no PR|t_prune_keeps_no_pr"
@@ -228,4 +244,5 @@ cases=(
   "prune shows size ? when du fails|t_prune_size_unknown"
   "prune keeps a worktree a live process is in|t_prune_keeps_in_use"
   "prune says when it cannot check for live processes|t_prune_in_use_unknown"
+  "prune keeps a worktree a process enters while it runs|t_prune_keeps_late_in_use"
 )

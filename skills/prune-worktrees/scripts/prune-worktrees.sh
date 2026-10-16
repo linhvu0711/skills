@@ -14,7 +14,10 @@
 #
 # A worktree that a live process has as its working folder, or a folder in
 # it, stays: a terminal pane's shell, a dev server. The working folders come
-# from ${PRUNE_WORKTREES_PROC:-/proc} on Linux, else from lsof on macOS.
+# from ${PRUNE_WORKTREES_PROC:-/proc} on Linux, else from lsof on macOS, and
+# only of the processes this user can see: another user's shell in a
+# worktree is not seen. They are read before any worktree is judged, and
+# again after the GitHub calls, just before the first removal.
 #
 # --remove: only the worktrees the user named, each removed with --force
 # whatever its reason, unless the session is in it, a live process is in it,
@@ -296,21 +299,39 @@ if [ "$all" -eq 1 ]; then
     done
   done
 fi
-# Every live process's working folder, read once before any worktree is judged.
+# load_users: every live process's working folder into `users`. Neither /proc
+# nor lsof can say: `in_use_note` holds why, and `users` stays as it was.
 proc="${PRUNE_WORKTREES_PROC:-/proc}"
 users=()      # <pid> SEP <command> SEP <folder>
 in_use_note=""
-if cwds="$(live_cwds)"; then
-  while IFS= read -r l; do [ -z "$l" ] || users+=("$l"); done <<<"$cwds"
-else
-  in_use_note="$cwds"
-fi
+load_users() {
+  local cwds l
+  if cwds="$(live_cwds)"; then
+    users=()
+    while IFS= read -r l; do [ -z "$l" ] || users+=("$l"); done <<<"$cwds"
+  else
+    in_use_note="$cwds"
+  fi
+}
+load_users
 for r in ${repos[@]+"${repos[@]}"}; do sort_repo "$r"; done
 for p in ${names[@]+"${names[@]}"}; do
   named_found=0
   for q in ${found[@]+"${found[@]}"}; do [ "$q" = "$p" ] && named_found=1; done
   [ "$named_found" -eq 1 ] || die "$(show "$p") is not a worktree of $(show "${repos[0]:-this repo}")"
 done
+# A process can enter a worktree while the GitHub calls run: read the working
+# folders again, and keep each worktree to remove that one is in now.
+if [ -z "$in_use_note" ] && [ "${#removals[@]}" -gt 0 ]; then
+  load_users
+  still=()
+  for r in "${removals[@]}"; do
+    IFS="$sep" read -r main path branch flag force <<<"$r"
+    user="$(in_use "$(cd "$path" && pwd -P)")"
+    if [ -n "$user" ]; then kept+=("$path${sep}in use by $user"); else still+=("$r"); fi
+  done
+  removals=(${still[@]+"${still[@]}"})
+fi
 
 [ -z "$in_use_note" ] || printf 'in-use check not possible: %s\n' "$in_use_note"
 for k in ${kept[@]+"${kept[@]}"}; do
