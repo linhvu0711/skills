@@ -19,7 +19,7 @@ Guess and Unknown come only after you tried to see the fact yourself: read it, s
 
 Never ask the user to run a check you can run yourself. Ask the user only for what no try reaches: a decision, a secret, a login, or a fact only they hold.
 
-Every try is safe: read, search, run tests, or run a probe in a sandbox or a temp copy. Nothing hard to undo, and no writes to shared places like GitHub or prod. A try that needs more is not made: the fact stays Guess or Unknown, and its list names that try and why it was not made.
+Every try is safe: read, search, run tests, or run a probe in a sandbox or a temp copy. Nothing hard to undo, and no writes to shared places like GitHub or prod. A try that costs money or needs a credential waits for the user's yes, and a try that is hard to undo or writes to a shared place is never made. Until a yes, the fact stays Guess or Unknown, and its list names that try and why it was not made.
 
 ## Brain and hands
 
