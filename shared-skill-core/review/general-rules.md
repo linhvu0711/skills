@@ -22,7 +22,10 @@ Does the change work, and does it break anything? Seven checks on every PR:
    says why it is not.
 3. **Regressions**: every caller of changed code still gets what it
    expects. Find the callers. Changed signatures, return shapes, and side
-   effects are where regressions live.
+   effects are where regressions live. A grep for the changed name misses
+   callers that write it as text: names in data formats (JSON or YAML
+   keys, wire fields), database columns, and flags (command-line flags,
+   feature flags, env vars). Search for those too.
 4. **Security**: injection, missing auth checks, secrets in the diff,
    unsafe deserialization, path traversal. Anything that touches user
    input or credentials gets read twice.
@@ -31,12 +34,18 @@ Does the change work, and does it break anything? Seven checks on every PR:
 6. **Tests**: the change has a test that fails without it. A test edited
    so it passes is a finding. So is a test that would still pass if every
    function it imports returned `undefined` (or the language's empty
-   value): it proves nothing.
+   value): it proves nothing. Ask too whether each test keeps passing
+   when only the inside of the code changes and its behavior stays the
+   same. A test that breaks then checks how the code works, not what it
+   does: that is a finding.
 7. **Fix at the cause**: a new guard, null check, or catch whose only job
    is to hide a failure, with no cause named, is a finding. So is a new
    API or path added while the old one stays with only internal callers
    and no issue to remove it. That second part does not apply when
-   outside users depend on the old API.
+   outside users depend on the old API. For each new guard, ask whether
+   the state it handles is legitimate: can a correct caller or a real
+   input reach it? If it should never happen, the guard hides the bug
+   that makes it happen; the fix belongs at that cause.
 
 Performance is a check only when the diff touches a hot path or a loop
 over data.

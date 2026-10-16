@@ -14,7 +14,7 @@ A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a s
 Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md
 ```
 
-The logic check also flags a test that would still pass if every function it imports returned `undefined`, and a fix that hides a failure instead of fixing its cause. The standards check adds five possible smells: split state, two ways to do one job, importable internals, hand-synced lists, and code that could be simpler. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
+The logic check also flags a test that would still pass if every function it imports returned `undefined`, a test that breaks when only the inside of the code changes, a fix that hides a failure instead of fixing its cause, and a guard for a state that should never happen. Its regression check also looks for the names grep misses: keys in data formats, database columns, and flags. The standards check adds five possible smells: split state, two ways to do one job, importable internals, hand-synced lists, and code that could be simpler. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
 
 ## Needs
 
