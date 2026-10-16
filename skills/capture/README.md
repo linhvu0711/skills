@@ -16,6 +16,8 @@ Captured: https://github.com/acme/shop/issues/88 (on your clipboard)
 
 It is a seed (an idea nobody has decided to do) or a bug (something seen broken today). The body holds your words, the facts already in the chat, and a status line that says it is not triaged. A bug also gets a Repro: the commands the chat ran, what failed, and how often when the chat measured it, or `Not known yet.` The body is written for a stranger with neither the chat nor your machine: code as permalinks, errors verbatim, screenshots uploaded, and no local paths, throwaway IDs, or session words. The first time it sees a repo it reads 30 recent titles and the labels to learn the prefix style and the priority labels, and it remembers them. Before it files, it searches open and closed issues. An open one on the same thing stops it; a closed one does not, and the new issue links it in Context as `Related: #<n> (closed)`, so a bug that came back keeps its history. It asks at most one question, "Which repo?", and only when it can't tell.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - `gh`, signed in. Screenshots need `--attach` on `gh issue create` (see `gh issue create --help`); without it the issue is still filed, with a sentence in place of each screenshot.

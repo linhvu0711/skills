@@ -36,13 +36,19 @@ BUILT feat/42-export-orders-csv
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command, plus the issue's Baseline when the base median falls outside its spread.
+
+On a `perf` plan it runs the plan's command in the Sandbox in turns on the base and the head, by the benchmark checklist, and the PR's Proof shows `before → after`.
+
 ## Needs
 
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.
 - The walker's agent file, linked once into Claude Code: `ln -s "$PWD/skills/build-and-prove/agents/walker.md" ~/.claude/agents/walker.md`, run from this repo's root. Codex has no sub-agents, so the session walks under the same rules.
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh`, `../../shared-skill-core/copy.sh`, `../../shared-skill-core/pr-shape.md`, and the templates in `../../shared-skill-core/handoff/`.
+- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh`, `../../shared-skill-core/copy.sh`, `../../shared-skill-core/pr-shape.md`, `../../shared-skill-core/benchmark.md`, pasted into the cloud rules and read in its own perf step, and the templates in `../../shared-skill-core/handoff/`.
 - A clipboard tool, optional, for the login command, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - For a Claude Code pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Claude Code CLI `claude`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
 
@@ -56,3 +62,5 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Credits
 
 The todo list takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+The perf step takes an idea from the `benchmark-checklist` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

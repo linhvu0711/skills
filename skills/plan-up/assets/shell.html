@@ -577,8 +577,11 @@ const DATA = {};
     const proved = (d.proved || []).length ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Proved by a probe'),
       el('ul', { class: 'plain decided' }, d.proved.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `P${i + 1}`), ' ', R(`**${x.fact}**`),
         el('span', { class: 'why', html: rich([x.ran, x.date, x.usedBy && 'used by ' + x.usedBy].filter(Boolean).join(' · ')) }))))) : null;
+    const pf = L.perf;
+    const perf = pf ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Perf'),
+      el('div', { class: 'facts' }, [['metric', 'Metric'], ['command', 'Command'], ['before', 'Before'], ['pass rule', 'Pass rule']].filter(([k]) => pf[k]).map(([k, lab]) => el('div', {}, el('span', {}, lab), R(k === 'command' ? code(pf[k]) : pf[k]))))) : null;
     const seams = (L.seams || []).length ? el('div', {}, el('h2', { style: 'font-size:15px;margin:18px 0 6px' }, 'Seams'), el('ul', { class: 'plain' }, L.seams.map((s) => el('li', {}, R(`**${s.name}**: ${code(s.at)} — ${s.why}`))))) : null;
-    return el('div', {}, path, forks, facts, proved, seams);
+    return el('div', {}, path, forks, facts, perf, proved, seams);
   }
 
   function proofView(L) {

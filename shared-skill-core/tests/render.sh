@@ -119,6 +119,46 @@ t_render_edge_rule() {
   every_rules_hold "Check data at the edge where it comes in"
 }
 
+t_render_cloud_perf_row() {
+  render devin rules
+  eq exit 0 "$code"
+  has "perf row" "1200 → 280" "$out"
+}
+
+t_render_cloud_perf() {
+  render devin rules
+  eq exit 0 "$code"
+  has "perf part" "## A perf plan" "$out"
+  eq "checklist" 1 "$(printf '%s\n' "$out" | grep -c '^### Alternate$')"
+}
+
+t_render_local_no_perf() {
+  render local rules
+  eq exit 0 "$code"
+  lacks "perf part" "## A perf plan" "$out"
+}
+
+t_render_prompt_perf() {
+  render devin prompt
+  eq exit 0 "$code"
+  has "cloud prompt" "# Perf" "$out"
+  render local prompt
+  eq exit 0 "$code"
+  lacks "local prompt" "# Perf" "$out"
+}
+
+t_render_cloud_perf_drift() {
+  render devin rules
+  eq exit 0 "$code"
+  has "drift note" "(issue Baseline: 1200 ms, spread 1150 to 1260 ms)" "$out"
+}
+
+t_render_cloud_perf_refix() {
+  render devin rules
+  eq exit 0 "$code"
+  has "measure again" "measure again, steps 1 to 5, before its push" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -135,4 +175,10 @@ cases=(
   "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
   "every executor's rules keep a comment only when it says why|t_render_comment_rule"
   "every executor's rules check data at the edge|t_render_edge_rule"
+  "cloud rules carry the perf row|t_render_cloud_perf_row"
+  "cloud rules show a drifted base next to the issue's Baseline|t_render_cloud_perf_drift"
+  "cloud rules measure a perf PR again after a review fix|t_render_cloud_perf_refix"
+  "cloud rules carry the perf part and its checklist once|t_render_cloud_perf"
+  "local rules leave the perf part out|t_render_local_no_perf"
+  "cloud prompt has a Perf heading and local has none|t_render_prompt_perf"
 )

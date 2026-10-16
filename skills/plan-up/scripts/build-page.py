@@ -14,6 +14,7 @@ from pathlib import Path
 
 
 FACTS = "Repo Base Test Typecheck Lint Build Run UI Open Screen Platform Standards".split()
+PERF = ["Metric", "Command", "Before", "Pass rule"]
 PART = re.compile(r"(Change|Approach|Blast radius|Choices|Risks|Works when|In|Out):\s*(.*)$")
 BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
 CHANGES = {"new", "changed", "removed", "same"}
@@ -294,11 +295,14 @@ def page_layer(section, issue, title, parts):
         what, _, why = re.sub(r"^D\d+ ", "", item).partition(": ")
         decided.append({"what": what, "why": why})
     gates = key_values(section.get("Gates", []), ["Slice done", "Task done"])
-    return {"issue": issue, "title": title, "summary": text(section.get("Summary", [])), "review": review,
-            "forks": forks, "seams": seams, "proof": proof, "slices": records(section.get("Slices", []), "slice"),
-            "walks": records(section.get("UI walks", []), "walk"), "videos": records(section.get("Videos", []), "video"),
-            "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
-            "decided": decided, "out": [re.sub(r"^O\d+ ", "", x) for x in list_items(section.get("Out of scope", []))]}
+    layer = {"issue": issue, "title": title, "summary": text(section.get("Summary", [])), "review": review,
+             "forks": forks, "seams": seams, "proof": proof, "slices": records(section.get("Slices", []), "slice"),
+             "walks": records(section.get("UI walks", []), "walk"), "videos": records(section.get("Videos", []), "video"),
+             "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
+             "decided": decided, "out": [re.sub(r"^O\d+ ", "", x) for x in list_items(section.get("Out of scope", []))]}
+    if "Perf" in section:
+        layer["perf"] = key_values(section["Perf"], PERF)
+    return layer
 
 
 def page_data(lines):
@@ -634,6 +638,8 @@ def plan_problems(lines):
     if not is_run and not re.fullmatch(r"size/(XS|S|M|L|XL)", head.get("size", "")):
         yield "head: a ticket needs `Size: size/<x>`"
     layers = [body for _, body in layer_sections] if is_run else [section]
+    titles = [m.group(3) for m, _ in layer_sections] if is_run else \
+        [next((l[len("# Plan: "):] for l in section["head"] if l.startswith("# Plan: ")), "")]
     if is_run:
         yield from stack_problems(section["Stack"], layer_sections)
     reviews, proof_rows = md_reviews(lines)
@@ -649,6 +655,13 @@ def plan_problems(lines):
             yield f"summary: layer {n} has no `## Summary` block"
         elif len(summary) > 3:
             yield f"summary: layer {n} has {len(summary)} lines, the limit is 3"
+        if re.sub(r"^#\d+ ", "", titles[n - 1]).startswith("[perf]") and "Perf" not in body:
+            yield f"perf: layer {n} is a `[perf]` ticket with no `## Perf` block"
+        if "Perf" in body:
+            perf = key_values(body["Perf"], PERF)
+            for key in PERF:
+                if not perf.get(key.lower()):
+                    yield f"perf: layer {n} has no `{key}:` line"
     for item in list_items(section.get("Proved", [])):
         if not PROVED.fullmatch(item):
             ref = item.split()[0]

@@ -42,9 +42,13 @@ http://127.0.0.1:8765/plan-acme-shop-42.html
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
+A `perf` ticket's plan gets a Perf block (Metric, Command, Before, and a Pass rule with its run count) from the issue's Baseline and Target, read by the shared benchmark checklist.
+
 A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
 ## Needs
 
@@ -52,7 +56,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - `python3`, to check for claims and to build and serve the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Sub-agents that read code (Explore agents in Claude Code, with web search for library docs; Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
-- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [codebase-design.md](../../shared-skill-core/codebase-design.md) for the rules a new module or seam must pass, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, [plan-page.md](../../shared-skill-core/plan-page.md) for the page, and [serve.sh](../../shared-skill-core/serve.sh) to serve the page.
+- From the shared core: [facts.md](../../shared-skill-core/facts.md), [grilling.md](../../shared-skill-core/grilling.md) for the question format and how to pick, [codebase-design.md](../../shared-skill-core/codebase-design.md) for the rules a new module or seam must pass, [issue-rules.md](../../shared-skill-core/issue-rules.md) for the gate, [plan-page.md](../../shared-skill-core/plan-page.md) for the page, [benchmark.md](../../shared-skill-core/benchmark.md) for a perf plan, and [serve.sh](../../shared-skill-core/serve.sh) to serve the page.
 
 ## Fits with
 
@@ -69,6 +73,8 @@ The cases for [prune.sh](scripts/prune.sh) are in [tests/prune.sh](tests/prune.s
 
 The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
 
+A perf plan's `## Perf` block shows on the Overview tab under the facts, and the builder refuses a Perf block that lacks one of its four lines, and a `[perf]` ticket or run layer with no Perf block.
+
 A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them.
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.
@@ -78,3 +84,5 @@ A slice can prove several lines joined by `and` or commas. A map's quoted file l
 ## Credits
 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
+
+The perf block takes an idea from `poteto-mode/playbooks/perf-issue.md` and `benchmark-checklist` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

@@ -25,6 +25,8 @@ Every ticket is written for a stranger with neither the chat nor your machine: c
 
 Over 12 tickets, it proposes splitting into several epics first.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - `gh`, signed in, on a repo with sub-issues and issue dependencies.

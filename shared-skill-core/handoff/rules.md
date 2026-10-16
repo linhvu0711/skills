@@ -283,6 +283,30 @@ test("exports one order as CSV", async () => {
 <!-- /cloud -->
 
 <!-- cloud -->
+## A perf plan
+
+A prompt with a `# Perf` block, or a layer with a `## Perf` block,
+measures after the full suite is green, before the PR. A prompt with no
+`Perf` block skips this part.
+
+1. Add a second worktree of the base branch.
+2. Run the block's `Command` in turns, base then head, as many times
+   each as its `Pass rule` says, per the checklist below.
+3. Write the Proof row of the Target line as `## The pull request`
+   shows: the metric and unit, `before → after`, the run count, and the
+   command.
+4. A base median outside the `Before` spread: the row ends with the
+   issue's Baseline in brackets, as `## The pull request` shows. A head
+   that misses the `Pass rule` is a surprise (see `## Surprises`).
+5. Remove the second worktree.
+6. A fix after the PR opens that changes code the `Command` runs:
+   measure again, steps 1 to 5, before its push, and write the row
+   again for the new head.
+
+<!-- include ../benchmark.md -->
+<!-- /cloud -->
+
+<!-- cloud -->
 ## The pull request
 
 <!-- include ../pr-shape.md -->

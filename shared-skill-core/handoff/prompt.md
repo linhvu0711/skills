@@ -10,8 +10,8 @@ follow it` as its first prompt, or the session follows the file itself.
 The head lines (everything above the first `# ` heading) open the file,
 because the rules block reads `Repo`, `Base branch`, `Branch`, and
 `Proof folder` by name. A local prompt never has `UI walks`, `Videos`,
-or a `Stack`: the walker does the walks, and a run is built one layer
-per prompt.
+`Perf`, or a `Stack`: the walker does the walks, `/build-and-prove`
+measures the `Perf` block, and a run is built one layer per prompt.
 <!-- /local -->
 <!-- devin -->
 full, in this order. `devin.sh` sends it as an attachment: Devin's
@@ -53,6 +53,11 @@ Issue: #42 <title> (<url>) · size M
 
 # Facts
 <the plan's Facts block>
+
+<!-- cloud -->
+# Perf
+<the plan's Perf block; drop when the plan has none>
+<!-- /cloud -->
 
 # Proved
 <the plan's Proved block; drop when no probe ran>
@@ -147,6 +152,7 @@ Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
 <What to build, verbatim from #71>
 ## Done when
 <#71's list, verbatim, numbered to match its Proof rows>
+## Perf
 ## Proof
 ## Seams
 ## Slices
@@ -155,7 +161,7 @@ Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
 ## Gates
 ## Decided
 ## Out of scope
-<each from layer 1 of the plan>
+<each from layer 1 of the plan; `Perf` only when the layer has one>
 
 # Layer 2 · #73 Add a member
 <same headings, from layer 2 of the plan>

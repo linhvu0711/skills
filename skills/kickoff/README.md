@@ -36,6 +36,8 @@ The chat gets one line and stops:
 
 Your tree stays as it is: any branch, edits or not. plan-up reads its own fresh copy of the base branch.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - herdr, and this chat running inside a herdr pane (`HERDR_ENV=1`).

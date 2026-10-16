@@ -18,6 +18,8 @@ Closed [grill] Which plan model: per seat or per team?. Next free: [research] Do
 
 When no ticket and no fog is left, it prints `Map clear.`, the full list of decisions, and hands over to [to-epic](../to-epic/), or to [to-issue](../to-issue/) when the work fits one ticket. The map becomes the epic or the ticket, same number, and each doc entry goes to the sub-issue whose code makes it true, so it lands in that PR. When the end is a decision with no code to build, the doc entries ship in one docs PR.
 
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
 ## Needs
 
 - `gh`, signed in, on a repo with sub-issues and issue dependencies. When the plan lacks them, it falls back to task lists and `Blocked by:` lines.
