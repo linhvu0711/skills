@@ -40,6 +40,8 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
 
+On a `perf` plan it runs the plan's command in the Sandbox in turns on the base and the head, by the benchmark checklist, and the PR's Proof shows `before → after`.
+
 ## Needs
 
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
@@ -60,3 +62,5 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Credits
 
 The todo list takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+The perf step takes an idea from the `benchmark-checklist` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

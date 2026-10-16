@@ -100,8 +100,9 @@ done.
 
    Hold `REPO` (the `Repo:` line), `BASE` (`--base`, else the `Base:`
    line), the issue number `N`, `UI` (the `UI:` line), the OS (`linux`,
-   or `macos` for `macos-outpost`), and the layer's blocks: for a run,
-   only the blocks under `## Layer <n>`. The slug is `<owner>-<repo>-<N>`.
+   or `macos` for `macos-outpost`), `PERF` (the plan's `Perf` block, or
+   none), and the layer's blocks: for a run, only the blocks under
+   `## Layer <n>`, and `PERF` is the layer's. The slug is `<owner>-<repo>-<N>`.
    A chat plan (`../plan-up/references/plan.md` § Chat plan) has no
    `N`: its slug is the plan file's, `plan-<slug>.md`.
    `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
@@ -310,6 +311,17 @@ done.
    neither place: its line is `<command> · <short SHA> · not run:
    <why>`.
 
+   With a `PERF` block, after the Gates, measure per
+   `../../shared-skill-core/benchmark.md`. Add a detached worktree of
+   `BASE` in a temp folder, as step 7 does. Run the block's `Command` in
+   turns, `box.sh run "$PROOF" --from <that folder> -- <Command>` then
+   `box.sh run "$PROOF" -- <Command>`, as many times each as the `Pass
+   rule` says. Write one line to `checks.txt`: `<Command> · <short SHA>
+   · <metric>: <base median> → <head median> <unit>, median of <n> in
+   turns, spread <low> to <high> (sandbox)`. A head that misses the
+   `Pass rule` is a red Gate: a follow-up, as above. Remove the temp
+   worktree.
+
 9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
    to step 10. Else rounds, at most three:
 
@@ -425,7 +437,9 @@ done.
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
    `PROOF`. A row proved by a command carries the command, the short
-   SHA, and the result from `checks.txt`. A `not run` line from
+   SHA, and the result from `checks.txt`. The Target line's row of a
+   plan with a `PERF` block carries the perf line from `checks.txt`, per
+   `../../shared-skill-core/pr-shape.md` § Proof. A `not run` line from
    `checks.txt` goes in as its command, `not run: <why>`, and the words
    `CI must prove it`.
 
