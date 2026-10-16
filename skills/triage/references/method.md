@@ -61,15 +61,23 @@ Measure with a profiler or timers, not log lines. Three numbers before anything 
 baseline, the target. The metric and the baseline are yours to measure. The
 target is the user's; ask once with a default.
 
-A number becomes the baseline only after three checks. Run the measure
-at least five times and take the median. Count the errors in each run;
-a run with errors is not a timing. Check that each run did the same
-amount of work, the same rows, requests, or items; a run that did less
-is not comparable.
+The baseline is measured per `../../shared-skill-core/benchmark.md`,
+and passes every check in it before it is a baseline. A check it fails
+goes in the report, with the number.
 
 Then halve on the numbers. A profiler when one exists. Else timers around
 the halves of the path. The hot spot is the part that holds most of the
 time, with its share stated: "900 of 1200 ms". Stop there.
+
+The fix the ticket names takes the first rung of this order that
+reaches the target:
+
+1. Don't do it: remove work whose result nobody uses.
+2. Don't repeat it: keep a result and use it again.
+3. Do less: fewer rows, calls, or bytes.
+4. Do it later: when the result is needed, not before.
+5. Do it in parallel: run work that waits on nothing else at the same time.
+6. Do it cheaper: a faster way to do the same work.
 
 ## Confirm
 

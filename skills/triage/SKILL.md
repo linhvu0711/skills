@@ -116,6 +116,8 @@ nothing.
    Actual: <one line>
    Repro: <command or numbered steps>
    Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; spike: Not found, <the open question>)
+   Baseline: <the number, as benchmark.md § Write it down says>   (perf only)
+   Target: <number and unit>                     (perf only, the user's)
    Category: <from categories.md>
    Evidence: <the probe, and what it showed>
    Also at: <file:line, one per place>, or none found, <the search used>   (spike: no line)

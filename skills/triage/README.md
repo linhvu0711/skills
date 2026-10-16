@@ -20,7 +20,7 @@ Evidence: the export test with an ISO assertion fails on that field
 Also at: src/orders/invoice.ts:31, writes the raw createdAt too
 ```
 
-Once the cause is confirmed, it searches for the same mistake elsewhere: the `Also at:` line names each place, or says `none found` with the search it ran, and the ticket carries the same places as links to the lines, so they still point at the right code after later changes. For a slow thing the cause line is a hot spot with its share of the time, like `900 of 1200 ms`. The baseline is the median of at least five runs, each with its errors counted and the same amount of work done. When the fix is a real choice (two fixes with a different blast radius, or a trade-off like batch or cache), it runs a grill on that choice first, and the doc text the grill agrees on goes into the ticket, so the fix PR writes it. When the fix is clear, it skips the grill.
+Once the cause is confirmed, it searches for the same mistake elsewhere: the `Also at:` line names each place, or says `none found` with the search it ran, and the ticket carries the same places as links to the lines, so they still point at the right code after later changes. For a slow thing the cause line is a hot spot with its share of the time, like `900 of 1200 ms`. The baseline passes the shared [benchmark checklist](../../shared-skill-core/benchmark.md): repeat runs with the median and spread, old and new in turns, the limit named, both sides tuned, the physical limit, and the share of the path. The report then carries `Baseline:` and `Target:` lines. The fix takes the first rung of the fix order that reaches the target: don't do it, don't repeat it, do less, do it later, do it in parallel, do it cheaper. When the fix is a real choice (two fixes with a different blast radius, or a trade-off like batch or cache), it runs a grill on that choice first, and the doc text the grill agrees on goes into the ticket, so the fix PR writes it. When the fix is clear, it skips the grill.
 
 Then it files the ticket itself, through [to-issue](../to-issue/). The ticket follows the bug's category: a `fix` for our code, a `perf` for a hot spot, a `chore` for a missing guard or a pinned dependency, a `docs` for a missing setup step, or nothing when no code work is left. It files a `spike` when it cannot find the cause. The part that is yours (an ops fix, a data fix, a local command) stays in the report. You do not run `/to-issue`. When you started from an issue, like `/triage #42`, that issue becomes the ticket: new title, new body, same number, and the old text kept under "Original report". Nothing new is opened and nothing is closed.
 
@@ -32,6 +32,7 @@ The repo is left as it found it, and your machine is yours to change: a local fi
 - `gh`, signed in, to read the issue you name and to file the ticket.
 - Sub-agents: Explore agents to read and Runner agents to run repro loops and bisects, in Claude Code. In Codex it does both itself.
 - A clipboard tool, optional, for the fix command on a local-env bug, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
+- [benchmark.md](../../shared-skill-core/benchmark.md) from the shared core: the checks a speed number must pass.
 - [grill](../grill/), when a decision is open.
 - [to-issue](../to-issue/), to file the ticket.
 
@@ -45,4 +46,4 @@ The repo is left as it found it, and your machine is yours to change: a local fi
 
 Adapted from the `diagnosing-bugs` skill in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills.
 
-The perf baseline checks and the search for the same mistake elsewhere take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+The perf baseline checks, the fix order, and the search for the same mistake elsewhere take ideas from the `benchmark-checklist` skill and `poteto-mode/playbooks/perf-issue.md` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
