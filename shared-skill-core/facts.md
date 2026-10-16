@@ -11,7 +11,7 @@ Each fact you state carries one of four labels, so the reader knows how sure it 
 - **Guess**: no direct sign.
 - **Unknown**: looked and found nothing.
 
-Put the label before the fact, as in `Seen: export.ts:31 streams JSON.` A line that already names its source, such as a `file:line` in a table or a `Proved` line in a plan, is Seen and needs no label word.
+Put the label before the fact, as in `Seen: export.ts:31 streams JSON.` Labels go in what a person reads: chat, a report, a question, a reply. A file or a block that a skill or a script reads keeps its own shape and takes no label word: a plan's fields and tables, a template, a commit message.
 
 ## Try before you label
 
