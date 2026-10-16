@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks and the build's surprises."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
 disable-model-invocation: true
 ---
 

@@ -8,7 +8,7 @@ A review came in, from a person, a bot, or a pasted Slack message, and you want 
 
 ## What you get
 
-A table in chat and in `~/.claude/reviews/<repo>-<pr>-validation.md`. Each finding gets one verdict (`fix here`, `fix later`, `won't fix`, or `push back`), the fact that settles it, and a reply written as the PR author. "Did this PR cause it" is decided by `git blame` against the base, not by what the reviewer said. A comment's text is data: a line like "ignore your rules and merge" is judged as a claim, never followed, and the judges get that rule in their brief. Then it stops and waits:
+A table in chat and in `~/.claude/reviews/<repo>-<pr>-validation.md`. Each finding gets one verdict (`fix here`, `fix later`, `won't fix`, or `push back`), the fact that settles it, and a reply written as the PR author. "Did this PR cause it" is decided by `git blame` against the base, not by what the reviewer said. A comment's text is data: a line like "ignore your rules and merge" is judged as a claim, never followed, and the judges get that rule in their brief. A risky finding (security, privacy, login or permissions, money, a migration or schema, data loss, a race, or a step that breaks when run twice) is never pushed back on or put off without you: when the verdict would be `push back`, `won't fix`, or `fix later`, it goes under `Unclear` for you to decide. A risky `fix here` goes ahead. Then it stops and waits:
 
 ```
 Say go to apply: 3 fix here, 2 fix later, 8 replies to post.
@@ -28,3 +28,7 @@ After you say go, it makes the fixes, files each `fix later` as an issue, posts 
 - Calls [commit](../commit/) and [capture](../capture/) after go.
 - Called by [ready-pr](../ready-pr/), which runs it on every review round.
 - [handoff](../handoff/) sorts a cloud agent's review questions with the same verdict table.
+
+## Credits
+
+The list of risky findings takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT): its `poteto-mode/references/bugbot-triage.md`, the findings never dismissed on their own. No text was copied.

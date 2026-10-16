@@ -92,6 +92,12 @@ _Avoid_: artifacts dir, media folder
 The one answer the readiness module gives for a PR: ready, waiting, or blocked, with the reason.
 _Avoid_: PR status, ready state
 
+## Review
+
+**Risky finding**:
+A review finding about security, privacy, login or permissions, money, a migration or schema, data loss, a race, or a step that breaks when run twice. The agent may fix one on its own, but it never rejects or delays one without asking.
+_Avoid_: critical finding, sensitive finding
+
 ## Credit
 
 **Upstream**:

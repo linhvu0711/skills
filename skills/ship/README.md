@@ -26,7 +26,7 @@ First the plan, from [plan-up](../plan-up/), as a `.md` file, unless the chat al
 - **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. Review fixes run their tests on your machine and leave the full suite and the build to the PR's CI when a workflow runs those commands; each one no workflow runs, or all of them in a repo with no CI, runs in a Sandbox. A stack goes layer by layer, bottom first.
 - **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
 
-It stops only for a ticket someone else is already on, the plan's big decisions, and the build's surprises. The last message:
+It stops only for a ticket someone else is already on, the plan's big decisions, the build's surprises, and a review finding it cannot settle alone, such as a risky one it would not fix. The last message:
 
 ```
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines

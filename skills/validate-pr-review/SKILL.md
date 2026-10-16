@@ -72,6 +72,26 @@ never a promise in the reply with no issue behind it.
 `won't fix` and `push back` always carry a reason the reviewer can
 check: a path and line, a test name, a command that shows it.
 
+## Risky findings
+
+A finding is **risky** when it is about one of these areas:
+
+- security
+- privacy
+- login or permissions
+- money
+- a data migration or schema
+- data loss
+- a race
+- a step that breaks when run twice
+
+A risky finding may be fixed without asking, but it is never rejected
+or delayed without asking. So when the table gives a risky finding
+`push back`, `won't fix`, or `fix later`, that verdict is not used: the
+row goes under `## Unclear` with its area and the verdict the table
+gave, and the user decides. A risky finding whose verdict is `fix here`
+goes ahead as any other.
+
 ## Steps
 
 1. **Preflight.** `git rev-parse --show-toplevel`. No repo: say so, stop.
@@ -180,7 +200,10 @@ check: a path and line, a test name, a command that shows it.
 
 5. **Verdict.** Per finding, pick the verdict from the table. A row
    with `unclear` in any cell gets no verdict and goes under
-   `## Unclear`. Write the reply line.
+   `## Unclear`. Write the reply line. Then check each finding against
+   `Risky findings`: a risky one whose verdict is `push back`,
+   `won't fix`, or `fix later` moves under `## Unclear`, as that
+   section says.
 
    Done when every row has a verdict or sits under `## Unclear`, and
    every row has a reply.
@@ -194,7 +217,8 @@ check: a path and line, a test name, a command that shows it.
 
 ## After go
 
-Only after the user says go, in this order.
+Only after the user says go, in this order. Rows under `## Unclear` are
+not part of go: each waits for the user's answer to that row.
 
 1. `fix here` rows: make each change, run the test the judge named,
    commit with `/commit`, one commit per finding or one for the
@@ -275,6 +299,7 @@ Posting plan: <n> thread replies, one PR comment for <n> findings, <n> threads t
 
 ## Unclear
 - <id>: <what is missing and how to get it>, or "None."
+- <id>: risky (<area>); the table says `<verdict>`: <the proof, one clause>. Your call.
 ```
 
 Rows in id order. Proof and replies cover every row, `push back`
@@ -293,6 +318,10 @@ and `won't fix` rows with the checkable reason.
 - **Source**: where the finding came from (`inline`, `review`, `top`,
   `text`). Decides where the reply lands and whether a thread exists
   to resolve.
+- **Risky finding**: a finding about security, privacy, login or
+  permissions, money, a data migration or schema, data loss, a race, or
+  a step that breaks when run twice. It may be fixed without asking,
+  never rejected or delayed without asking.
 
 ## Secrets
 
