@@ -66,12 +66,13 @@ written to the repo or to GitHub.
    are the file name without its extension and the symbol.
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<words>" --json --limit 3 --include-subdirs --project-dir <top> --project-dir <wt>
-   python3 ../../shared-skill-core/sessions/codex/find_session.py "<words>" --json --limit 3 --include-subdirs --cwd <top> --cwd <wt>
+   python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<words>" --json --limit 0 --include-subdirs --project-dir <top> --project-dir <wt>
+   python3 ../../shared-skill-core/sessions/codex/find_session.py "<words>" --json --limit 0 --include-subdirs --cwd <top> --cwd <wt>
    ```
 
    Drop a session whose `is_current` is true, or whose `first_prompt`
-   starts with `/why` or `$why`. Render each one left, Claude Code with
+   starts with `/why` or `$why`, then keep the first 3 of each tool, in
+   the finder's order. Render each one kept, Claude Code with
    `python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --summary > <out>`
    and Codex with
    `python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --summary > <out>`.
