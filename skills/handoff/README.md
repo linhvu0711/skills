@@ -32,13 +32,15 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command.
 
+On a `perf` plan the cloud executor runs the plan's command in turns on the base and the head, by the benchmark checklist its rules carry, and writes `before → after` in the Proof.
+
 ## Needs
 
 - For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID`, in the environment or as `export` lines in `~/.zshrc`. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.
 - For Cursor: cloud agents and an API key in `CURSOR_API_KEY` (environment or `~/.zshrc`), the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
 - `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
 - A plan from [plan-up](../plan-up/), and [to-issue](../to-issue/)'s `../to-issue/scripts/conventions.py` for the repo's size labels.
-- The shared core files in `../../shared-skill-core/handoff/` (prompt and rules templates, `render.sh`), `../../shared-skill-core/plan-page.md`, and `../../shared-skill-core/issue-rules.md`.
+- The shared core files in `../../shared-skill-core/handoff/` (prompt and rules templates, `render.sh`), `../../shared-skill-core/plan-page.md`, `../../shared-skill-core/issue-rules.md`, and `../../shared-skill-core/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
 
 ## Fits with
 
@@ -51,3 +53,5 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Credits
 
 The `undefined` test question and the root-cause rules (a tested belief before a third fix, a stop on two surprises of one kind, data checked at its edge) take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+The perf part takes an idea from the `benchmark-checklist` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
