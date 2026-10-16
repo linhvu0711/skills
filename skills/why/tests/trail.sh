@@ -47,6 +47,48 @@ commit $old 2026-09-01 t: add app
   no PR found" "$out"
 }
 
+t_trail_no_file() {
+  repo; fake_gh
+  trail nope.py:3
+  eq exit 2 "$code"
+  eq stdout "No such code: nope.py:3" "$out"
+  eq "repo-view calls" "" "$(cat "$FAKE_GH/repo-view.calls" 2>/dev/null)"
+}
+
+t_trail_past_end() {
+  repo; fake_gh
+  printf 'a = 1\nids = []\nb = 2\n' > app.py; commit_app 2026-09-01 "add app"
+  trail app.py:40
+  eq exit 2 "$code"
+  eq stdout "No such code: app.py:40" "$out"
+}
+
+t_trail_not_committed() {
+  repo; fake_gh
+  printf 'a = 1\nids = []\nb = 2\n' > app.py; commit_app 2026-09-01 "add app"
+  printf 'c = 3\n' >> app.py
+  trail app.py:4
+  eq exit 0 "$code"
+  eq stdout "No commits: app.py:4 is not committed yet." "$out"
+  eq "repo-view calls" "" "$(cat "$FAKE_GH/repo-view.calls" 2>/dev/null)"
+}
+
+t_trail_gh_unreachable() {
+  repo; fake_gh; two_commits
+  echo "error connecting to api.github.com" > "$FAKE_GH/repo-view.fail"
+  trail app.py:2
+  eq exit 0 "$code"
+  eq stdout "commit $new 2026-10-01 t: use a set for the ids
+  Order does not matter here.
+commit $old 2026-09-01 t: add app
+GitHub: not reached: error connecting to api.github.com. Commits from $new on are git only." "$out"
+  eq "graphql calls" "" "$(cat "$FAKE_GH/graphql.calls" 2>/dev/null)"
+}
+
 cases=(
   "trail names each commit, its PR, the review comment on the file, and the issue it closes|t_trail_commit_pr_issue"
+  "trail: a file that does not exist|t_trail_no_file"
+  "trail: a line past the end of the file|t_trail_past_end"
+  "trail: a line not committed yet has no history|t_trail_not_committed"
+  "trail: gh cannot be reached: git only|t_trail_gh_unreachable"
 )

@@ -19,9 +19,18 @@ One block per commit:
 
 or `  no PR found` in place of the PR lines. Review comments on other files
 are left out. Each PR, review, comment, and issue body is one line, cut at
-400 characters with ` [cut]`. Exits 0.
+400 characters with ` [cut]`. Exits 0. Line numbers are the file's on disk;
+git reads the lines at HEAD.
+
+A file on neither disk nor HEAD, or a line past the end of the file on
+disk: prints `No such code: <target>` and exits 2. A file or a line on disk
+that HEAD does not have yet: prints `No commits: <target> is not committed
+yet.` and exits 0, with no gh call. The first gh call that fails ends the gh
+calls: that commit and the later ones get no PR lines, and the last line is
+`GitHub: not reached: <gh's error line>. Commits from <sha7> on are git only.`
 """
 import json
+import os
 import subprocess
 import sys
 
@@ -49,6 +58,17 @@ def git(*args):
     if r.returncode != 0:
         sys.exit(r.stderr.strip() or f"git exited {r.returncode}")
     return r.stdout
+
+
+def lines_in(path):
+    """How many lines the file has on disk and at HEAD; None where it is not."""
+    disk = None
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8", errors="replace") as f:
+            disk = len(f.read().splitlines())
+    r = subprocess.run(["git", "show", f"HEAD:./{path}"], capture_output=True, text=True)
+    head = len(r.stdout.splitlines()) if r.returncode == 0 else None
+    return disk, head
 
 
 def gh(*args):
@@ -109,7 +129,7 @@ def parse(target):
     if not path or not lines:
         sys.exit(__doc__.split("\n\n")[1].strip())
     start, _, end = lines.partition("-")
-    if not start.isdigit() or (end and not end.isdigit()):
+    if not start.isdigit() or (end and not end.isdigit()) or int(start) < 1 or int(end or start) < int(start):
         sys.exit(__doc__.split("\n\n")[1].strip())
     return path, int(start), int(end or start)
 
@@ -117,17 +137,35 @@ def parse(target):
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__.split("\n\n")[1].strip())
-    path, start, end = parse(sys.argv[1])
+    target = sys.argv[1]
+    path, start, end = parse(target)
+    disk, head = lines_in(path)
+    known = disk if disk is not None else head
+    if known is None or end > known:
+        print(f"No such code: {target}")
+        sys.exit(2)
+    if head is None or end > head:
+        print(f"No commits: {target} is not committed yet.")
+        return
     found = commits(path, start, end)
-    owner, name = gh("repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner").strip().split("/", 1)
+    repo, failed = None, None
     for sha, day, author, subject, body in found:
         print(f"commit {sha[:7]} {day} {author}: {subject}")
         for line in body.splitlines():
             if line.strip():
                 print(f"  {line}")
-        pr = pr_of(owner, name, sha)
+        if failed:
+            continue
+        try:
+            repo = repo or gh("repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner").strip().split("/", 1)
+            pr = pr_of(*repo, sha)
+        except RuntimeError as e:
+            failed = (str(e), sha[:7])
+            continue
         for line in pr_lines(pr, path) if pr else ["  no PR found"]:
             print(line)
+    if failed:
+        print(f"GitHub: not reached: {failed[0]}. Commits from {failed[1]} on are git only.")
 
 
 if __name__ == "__main__":

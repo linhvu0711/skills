@@ -24,6 +24,9 @@ written to the repo or to GitHub.
    - A question in words: read the code it names and pick the range the
      same way.
 
+   No hit, or step 2 prints `No such code`: say `Which code do you mean?
+   <what you looked for> is not in this repo.` and stop.
+
 2. **Trail.** From the repo:
 
    ```bash
@@ -33,6 +36,12 @@ written to the repo or to GitHub.
    It prints each commit that changed the lines, newest first, with its
    body, its PR, the PR's reviews and comments on this file, and the
    issue the PR closes.
+
+   - `No commits: ...`: the lines have no history yet. Go on with steps 3
+     and 4.
+   - A last line `GitHub: not reached: <error>. ...`: go on with git, the
+     docs, and the sessions only. The answer's `Searched:` line says
+     `GitHub (not reached: <error>)` in place of the PR and issue counts.
 
 3. **Docs.** Search the ADRs and the glossary for the file name without
    its extension, the symbol, and each `#<n>` of a PR or issue from step
@@ -86,3 +95,9 @@ written to the repo or to GitHub.
 
    One line per reason, the most direct first. Keep only the line types
    that have a reason.
+
+   - No source gives a reason: one `Unknown` line, and its `Searched:`
+     names each place looked.
+   - Two sources give reasons that do not agree: list both, each with its
+     own label and source, and after them one line
+     `Disagree: <source> and <source>.` Keep both; the reader picks.

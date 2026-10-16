@@ -20,12 +20,19 @@ Code: src/app.py:40-40
 Searched: git (2 commits), GitHub (1 PR, 1 issue), docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0)
 ```
 
+When the record is thin or odd:
+
+- No history, as for code not committed yet: an `Unknown` line that lists where it looked.
+- `gh` cannot reach GitHub: it answers from git, the docs, and the sessions, and its `Searched:` line says GitHub was not reached.
+- Two sources disagree: both reasons, each with its label and source, then a `Disagree:` line.
+- The code you name is not in the repo: it asks which code you mean.
+
 It only reads: no change to the repo, no comment on GitHub.
 
 ## Needs
 
 - `git`.
-- `gh`, signed in, for the PR, its reviews, and the issue of each commit: one call per commit.
+- `gh`, signed in, for the PR, its reviews, and the issue of each commit: one call per commit. Without it, the answer comes from git, the docs, and the sessions, and says so.
 - `python3` (standard library only).
 - The shared finders and extractors in [`sessions/`](../../shared-skill-core/sessions/), for past sessions.
 - The evidence labels in [`facts.md`](../../shared-skill-core/facts.md).
