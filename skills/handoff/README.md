@@ -22,7 +22,7 @@ Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
 Session started: https://app.devin.ai/sessions/… · devin · linux
 ```
 
-The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`.
+The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`. A fix's first test must also fail before the change, on its assertion and for the bug's reason, not on a missing name.
 
 The PR shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk, recorded at real speed and checked for length before it is attached.
 

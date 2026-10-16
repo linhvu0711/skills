@@ -163,6 +163,11 @@ what the line says, is a surprise (see below).
   check a result.
 - The test body follows `Given`, `When`, `Then` from its entry in the
   slice. `Then` compares against the literal in the plan.
+- A test with a `Red:` line is a fix's first test. Run it before any
+  change: it fails on its assertion, and the failure shows what `Red:`
+  names. A missing symbol, an import error, or a crash before the
+  assertion is not red: change the test until it fails for the bug's
+  reason, then make the change.
 - Mock only at the borders the slice names under `Given`: an outside
   API, the clock, randomness. Everything the repo owns runs for real.
 - The case name is the one in the Proof table. One `Then` per test.
