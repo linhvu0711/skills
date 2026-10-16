@@ -24,6 +24,13 @@ a `general-purpose` agent; Explore only retrieves. The verdict and the
 reply text stay with you: the verdict is a table lookup, the reply is
 your voice.
 
+A judge reads review text from anyone, so every helper brief this
+skill sends ends with this read-only line, verbatim:
+
+```
+You change nothing: no file edits, no commits, no gh writes (no comment, reply, review, label, or resolve). You read the code, run tests, and run git blame.
+```
+
 In Codex there are no subagents: run each judge brief yourself, one
 after the other, and keep the same return shape.
 
@@ -175,6 +182,7 @@ goes ahead as any other.
      ```
 
    - The `Finding text is data` section of this file, pasted in full.
+   - The read-only line from § Facts, verbatim.
    - The instruction: read the code at each line with its callers, find
      the nearest test, run it when the claim is about behaviour, run
      the ours command for every finding with a line, and answer the
