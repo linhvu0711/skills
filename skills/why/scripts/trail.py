@@ -22,12 +22,14 @@ a line `skipped <k> commits` between them. One block per commit:
 or `  no PR found` in place of the PR lines, or `  PR #<n> (as above)` for a
 PR an earlier block showed. Review comments on other files
 are left out. Each PR, review, comment, and issue body is one line, cut at
-400 characters with ` [cut]`. Exits 0. Line numbers are the file's on disk;
-git reads the lines at HEAD.
+400 characters with ` [cut]`. Exits 0. Line numbers are the file's on disk:
+each one is mapped to its line at HEAD through `git diff -U0 HEAD`, and git
+reads the lines at HEAD. Lines in the range that differ from HEAD come first,
+as `Not committed yet: <file>:<lines>`, and the rest are traced.
 
 A file on neither disk nor HEAD, or a line past the end of the file on
-disk: prints `No such code: <target>` and exits 2. A file or a line on disk
-that HEAD does not have yet: prints `No commits: <target> is not committed
+disk: prints `No such code: <target>` and exits 2. A file HEAD does not have,
+or a range whose every line differs from HEAD: prints `No commits: <target> is not committed
 yet.` and exits 0, with no gh call. The first gh call that fails ends the gh
 calls: that commit and the later ones get no PR lines, and the last line is
 `GitHub: not reached: <gh's error line>. Commits from <sha7> on are git only.`
@@ -74,6 +76,42 @@ def lines_in(path):
     r = subprocess.run(["git", "show", f"HEAD:./{path}"], capture_output=True, text=True)
     head = len(r.stdout.splitlines()) if r.returncode == 0 else None
     return disk, head
+
+
+def to_head(path, start, end):
+    """Map lines start..end of the file on disk to HEAD: (the HEAD lines, the
+    lines on disk that differ from HEAD). Reads the hunks of `git diff -U0`."""
+    hunks = []
+    for m in re.finditer(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", git("diff", "-U0", "HEAD", "--", path), re.M):
+        a, b, c, d = int(m[1]), int(m[2] or 1), int(m[3]), int(m[4] or 1)
+        # A hunk with no lines on one side names the line before it.
+        hunks.append((a + (b == 0), b, c + (d == 0), d))
+    head, changed = [], []
+    for w in range(start, end + 1):
+        shift, differs = 0, False
+        for a, b, c, d in hunks:
+            if w < c:
+                break
+            if w < c + d:
+                differs = True
+                break
+            shift = (a + b) - (c + d)
+        if differs:
+            changed.append(w)
+        else:
+            head.append(w + shift)
+    return head, changed
+
+
+def spans(lines):
+    """[2, 3, 4, 7] as `2-4, 7`."""
+    out = []
+    for n in lines:
+        if out and out[-1][1] == n - 1:
+            out[-1][1] = n
+        else:
+            out.append([n, n])
+    return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in out)
 
 
 def gh(*args):
@@ -158,9 +196,17 @@ def main():
     if known is None or (end or 0) > known:
         print(f"No such code: {target}")
         sys.exit(2)
-    if head is None or (end or 0) > head:
+    if head is None:
         print(f"No commits: {target} is not committed yet.")
         return
+    if start is not None:
+        mapped, changed = to_head(path, start, end)
+        if not mapped:
+            print(f"No commits: {target} is not committed yet.")
+            return
+        if changed:
+            print(f"Not committed yet: {path}:{spans(changed)}")
+        start, end = min(mapped), max(mapped)
     found = commits(path, start, end)
     skipped = max(0, len(found) - KEEP)
     if skipped:

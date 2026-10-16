@@ -73,6 +73,34 @@ t_trail_not_committed() {
   eq "repo-view calls" "" "$(cat "$FAKE_GH/repo-view.calls" 2>/dev/null)"
 }
 
+t_trail_changed_not_committed() {
+  repo; fake_gh; two_commits
+  printf 'a = 1\nids = {}\nb = 2\n' > app.py
+  trail app.py:2
+  eq exit 0 "$code"
+  eq stdout "No commits: app.py:2 is not committed yet." "$out"
+  eq "repo-view calls" "" "$(cat "$FAKE_GH/repo-view.calls" 2>/dev/null)"
+}
+
+t_trail_moved_by_insert() {
+  repo; fake_gh; two_commits; repo_view; echo "$no_pr" > "$FAKE_GH/graphql.json"
+  printf 'a = 1\nx = 0\nids = set()\nb = 2\n' > app.py
+  trail app.py:3
+  eq exit 0 "$code"
+  eq subjects "use a set for the ids
+add app" "$(subjects)"
+}
+
+t_trail_part_not_committed() {
+  repo; fake_gh; two_commits; repo_view; echo "$no_pr" > "$FAKE_GH/graphql.json"
+  printf 'a = 1\nids = set()\nb = 3\n' > app.py
+  trail app.py:2-3
+  eq exit 0 "$code"
+  eq "line 1" "Not committed yet: app.py:3" "$(printf '%s\n' "$out" | head -1)"
+  eq subjects "use a set for the ids
+add app" "$(subjects)"
+}
+
 t_trail_gh_unreachable() {
   repo; fake_gh; two_commits
   echo "error connecting to api.github.com" > "$FAKE_GH/repo-view.fail"
@@ -142,5 +170,8 @@ cases=(
   "trail: a file that does not exist|t_trail_no_file"
   "trail: a line past the end of the file|t_trail_past_end"
   "trail: a line not committed yet has no history|t_trail_not_committed"
+  "trail: a changed line not committed yet has no history|t_trail_changed_not_committed"
+  "trail: a line moved by an uncommitted insert keeps its history|t_trail_moved_by_insert"
+  "trail: a range with an uncommitted line traces the rest|t_trail_part_not_committed"
   "trail: gh cannot be reached: git only|t_trail_gh_unreachable"
 )

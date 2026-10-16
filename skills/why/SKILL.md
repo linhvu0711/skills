@@ -42,6 +42,8 @@ written to the repo or to GitHub.
 
    - `No commits: ...`: the lines have no history yet. Go on with steps 3
      and 4.
+   - A first line `Not committed yet: <file>:<lines>`: those lines differ
+     from HEAD and have no history yet; the commits below are for the rest.
    - A last line `GitHub: not reached: <error>. ...`: go on with git, the
      docs, and the sessions only. The answer's `Searched:` line says
      `GitHub (not reached: <error>)` in place of the PR and issue counts.

@@ -24,7 +24,7 @@ A long history shows the 9 newest commits and the oldest one, which made the lin
 
 When the record is thin or odd:
 
-- No history, as for code not committed yet: an `Unknown` line that lists where it looked.
+- No history, as for code not committed yet: an `Unknown` line that lists where it looked. Lines you edited but did not commit have no history; the lines around them keep theirs.
 - `gh` cannot reach GitHub: it answers from git, the docs, and the sessions, and its `Searched:` line says GitHub was not reached.
 - Two sources disagree: both reasons, each with its label and source, then a `Disagree:` line.
 - The code you name is not in the repo: it asks which code you mean.
