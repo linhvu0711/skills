@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Print the record behind some lines of code: the commits, their PRs, and the issues.
 
-    trail.py <file>:<start>[-<end>]
+    trail.py <file>[:<start>[-<end>]]
 
-Run it from inside the repo. It asks `git log -L` for every commit that
-changed the lines, newest first, and GitHub for the PR of each commit.
-One block per commit:
+Run it from the repo's top folder, so a path matches GitHub's. It asks `git log -L` for every commit that
+changed the lines, newest first, or `git log --follow` for a whole file,
+which follows its renames, and GitHub for the PR of each commit. More than
+10 commits: it keeps the 9 newest and the oldest, which made the lines, with
+a line `skipped <k> commits` between them. One block per commit:
 
     commit <sha7> <date> <author>: <subject>
       <each line of the commit body>
@@ -31,10 +33,12 @@ calls: that commit and the later ones get no PR lines, and the last line is
 """
 import json
 import os
+import re
 import subprocess
 import sys
 
 CUT = 400
+KEEP = 10
 QUERY = """query($owner: String!, $name: String!, $oid: GitObjectID!) {
   repository(owner: $owner, name: $name) {
     object(oid: $oid) {
@@ -73,7 +77,10 @@ def lines_in(path):
 
 def gh(*args):
     """gh's stdout, or raise RuntimeError with gh's last error line."""
-    r = subprocess.run(["gh", *args], capture_output=True, text=True)
+    try:
+        r = subprocess.run(["gh", *args], capture_output=True, text=True)
+    except FileNotFoundError:
+        raise RuntimeError("gh: command not found")
     if r.returncode != 0:
         lines = [l for l in r.stderr.splitlines() if l.strip()]
         raise RuntimeError(lines[-1] if lines else f"gh exited {r.returncode}")
@@ -81,9 +88,13 @@ def gh(*args):
 
 
 def commits(path, start, end):
-    """Each commit that changed the lines, newest first, as (sha, day, author, subject, body)."""
-    out = git("log", f"-L{start},{end}:{path}", "-s", "--date=short",
-              "--format=%H%x1f%ad%x1f%an%x1f%s%x1f%b%x1e")
+    """Each commit that changed the lines, or the whole file when start is None,
+    newest first, as (sha, day, author, subject, body)."""
+    fmt = ["-s", "--date=short", "--format=%H%x1f%ad%x1f%an%x1f%s%x1f%b%x1e"]
+    if start is None:
+        out = git("log", "--follow", *fmt, "--", path)
+    else:
+        out = git("log", f"-L{start},{end}:{path}", *fmt)
     return [tuple(rec.strip("\n").split("\x1f")) for rec in out.split("\x1e") if rec.strip()]
 
 
@@ -125,13 +136,15 @@ def pr_of(owner, name, sha):
 
 
 def parse(target):
-    path, _, lines = target.rpartition(":")
-    if not path or not lines:
-        sys.exit(__doc__.split("\n\n")[1].strip())
+    """(path, start, end); start and end are None for a whole file."""
+    path, sep, lines = target.rpartition(":")
+    if not sep or not re.fullmatch(r"\d+(-\d+)?", lines):
+        return target, None, None
     start, _, end = lines.partition("-")
-    if not start.isdigit() or (end and not end.isdigit()) or int(start) < 1 or int(end or start) < int(start):
+    start, end = int(start), int(end or start)
+    if not path or start < 1 or end < start:
         sys.exit(__doc__.split("\n\n")[1].strip())
-    return path, int(start), int(end or start)
+    return path, start, end
 
 
 def main():
@@ -141,15 +154,20 @@ def main():
     path, start, end = parse(target)
     disk, head = lines_in(path)
     known = disk if disk is not None else head
-    if known is None or end > known:
+    if known is None or (end or 0) > known:
         print(f"No such code: {target}")
         sys.exit(2)
-    if head is None or end > head:
+    if head is None or (end or 0) > head:
         print(f"No commits: {target} is not committed yet.")
         return
     found = commits(path, start, end)
+    skipped = max(0, len(found) - KEEP)
+    if skipped:
+        found = found[:KEEP - 1] + found[-1:]
     repo, failed = None, None
-    for sha, day, author, subject, body in found:
+    for i, (sha, day, author, subject, body) in enumerate(found):
+        if skipped and i == KEEP - 1:
+            print(f"skipped {skipped} commits")
         print(f"commit {sha[:7]} {day} {author}: {subject}")
         for line in body.splitlines():
             if line.strip():

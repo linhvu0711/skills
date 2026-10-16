@@ -18,6 +18,8 @@ written to the repo or to GitHub.
 
 1. **Code.** The words after `/why` (`$why` in Codex) name the code:
    - `<file>:<line>` or `<file>:<start>-<end>`: that range.
+   - A file named alone, or a question about a whole file: the whole file,
+     and step 2 runs `python3 scripts/trail.py <file>`.
    - A symbol, or a line of code: `git grep -n -F '<it>'`. One hit: the
      range is the function or block around it, read from the file.
      Several: the one the question names, else the first, and say which.
@@ -27,7 +29,7 @@ written to the repo or to GitHub.
    No hit, or step 2 prints `No such code`: say `Which code do you mean?
    <what you looked for> is not in this repo.` and stop.
 
-2. **Trail.** From the repo:
+2. **Trail.** From the repo's top folder, with `<file>` from there:
 
    ```bash
    python3 scripts/trail.py <file>:<start>-<end>
@@ -35,7 +37,8 @@ written to the repo or to GitHub.
 
    It prints each commit that changed the lines, newest first, with its
    body, its PR, the PR's reviews and comments on this file, and the
-   issue the PR closes.
+   issue the PR closes. More than 10 commits: the 9 newest and the
+   oldest, which made the lines.
 
    - `No commits: ...`: the lines have no history yet. Go on with steps 3
      and 4.

@@ -85,8 +85,46 @@ GitHub: not reached: error connecting to api.github.com. Commits from $new on ar
   eq "graphql calls" "" "$(cat "$FAKE_GH/graphql.calls" 2>/dev/null)"
 }
 
+# subjects: the subject of each `commit` line of the output, one per line.
+subjects() { printf '%s\n' "$out" | grep '^commit ' | sed 's/^[^:]*: //'; }
+
+t_trail_whole_file_renames() {
+  repo; fake_gh; repo_view; echo "$no_pr" > "$FAKE_GH/graphql.json"
+  printf 'a = 1\n' > old.py; git add old.py; git commit -qm "add old"
+  git mv old.py app.py; git commit -qm "rename to app"
+  printf 'b = 2\n' >> app.py; git commit -qam "edit app"
+  trail app.py
+  eq exit 0 "$code"
+  eq subjects "edit app
+rename to app
+add old" "$(subjects)"
+}
+
+t_trail_keeps_newest_and_oldest() {
+  repo; fake_gh; repo_view; echo "$no_pr" > "$FAKE_GH/graphql.json"
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    printf 'v = %s\n' "$i" > app.py; git add app.py; git commit -qm "c$i"
+  done
+  trail app.py:1
+  eq exit 0 "$code"
+  eq subjects "c12
+c11
+c10
+c9
+c8
+c7
+c6
+c5
+c4
+c1" "$(subjects)"
+  eq "after c4" "skipped 2 commits" "$(printf '%s\n' "$out" | grep -A2 ': c4$' | tail -1)"
+  eq "graphql calls" 10 "$(cat "$FAKE_GH/graphql.calls")"
+}
+
 cases=(
   "trail names each commit, its PR, the review comment on the file, and the issue it closes|t_trail_commit_pr_issue"
+  "trail: a whole file follows its renames|t_trail_whole_file_renames"
+  "trail: more than 10 commits keeps the 9 newest and the oldest|t_trail_keeps_newest_and_oldest"
   "trail: a file that does not exist|t_trail_no_file"
   "trail: a line past the end of the file|t_trail_past_end"
   "trail: a line not committed yet has no history|t_trail_not_committed"

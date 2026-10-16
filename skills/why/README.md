@@ -4,7 +4,7 @@ Answers why code is the way it is from the record: git history, the PR and its r
 
 ## Use it when
 
-You look at odd code and want the reason before you change it. Type `/why src/app.py:40`, `/why src/app.py:40-52`, a symbol, or a question such as `/why is ids a set?` (`$why ...` in Codex). It only runs when you call it.
+You look at odd code and want the reason before you change it. Type `/why src/app.py:40`, `/why src/app.py:40-52`, a symbol, or a question such as `/why is ids a set?` (`$why ...` in Codex). `/why src/app.py` asks about the whole file, and its history follows renames. It only runs when you call it.
 
 ## What you get
 
@@ -19,6 +19,8 @@ Code: src/app.py:40-40
 - Unknown: why 50k ids are loaded at once. Searched: git (2 commits), PR #12 and its reviews, issue #7, docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0)
 Searched: git (2 commits), GitHub (1 PR, 1 issue), docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0)
 ```
+
+A long history shows the 9 newest commits and the oldest one, which made the lines.
 
 When the record is thin or odd:
 
