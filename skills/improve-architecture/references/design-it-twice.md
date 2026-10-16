@@ -57,4 +57,4 @@ Then score them one point at a time, in the order Step 1 named the points: for e
 
 ### 5. Recommend
 
-Give your own recommendation: which design you think is strongest, by its scores, and why. Be opinionated: the user wants a strong read, not a menu. A hybrid takes one or two parts from each design at most; a merge that takes more is an average, and is not offered.
+Give your own recommendation: which design you think is strongest, by its scores, and why. Be opinionated: the user wants a strong read, not a menu. A hybrid takes one or two parts from each design at most; a merge that takes more is an average, and is not offered. When Step 4 sent a split to the user, the pick is not a verdict: give it as the first option of that open question, and wait for the user's answer.
