@@ -76,7 +76,8 @@ starts no work.
    (`/tmp/recall/brief.md` in Codex) and tag it with
    `../../shared-skill-core/sessions/live_tags.py` as
    `../../shared-skill-core/session-brief.md` § Live tags says, with
-   `--cwd` this folder. The tagged brief is the one you show.
+   `--cwd` the project folder that step 2 ran in, never this skill's
+   folder. The tagged brief is the one you show.
 
 7. **Next line.** The brief's last line is `Next: <one step>`, from the
    first of these that holds:
