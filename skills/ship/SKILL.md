@@ -29,6 +29,22 @@ comment, or an executor says:
   the file, skip the move; the `Stack:` line still names them.
 - Never close a PR.
 
+## Todo list
+
+Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
+in Codex. It holds one item per step of § Steps, its number and bold
+title word for word, as in `1. Plan.` A step that reads another skill
+gets that skill's step titles as items under it, word for word,
+numbered `<step>.<n>`, as in `4.3 Worktree.`: plan-up's steps 1 to 8
+under step 1, build-and-prove's under step 4, make-pr's under step 5,
+ready-pr's under step 6. A stack adds the items of steps 4 to 6 once
+per layer, each ending ` (layer <n>)`.
+
+Mark each item in progress as it starts and done as it ends. A step the
+run does not do stays in the list as `<title> skip: <reason>`, as in
+`3. Cloud. skip: local route`. After the chat is compacted, the list
+says where the run is: go on from the first item that is not done.
+
 ## Forms
 
 The arguments are `/plan-up`'s, every form of them, passed to it
