@@ -54,7 +54,7 @@ A bar fixed to the bottom of the page: a read-only text box with the line, and a
   - Title: the fix, short ("Add a check for unpushed worktrees").
   - Badges: the kind of finding, and strength: `Strong` (three or more sessions, or a costly moment), `Worth exploring` (two sessions), `Speculative` (the fix guess is the reader's, not seen in the repo).
   - Sessions: the numbers and dates of the sessions it came from.
-  - Quotes: one blockquote per moment, each with its session number and `Where`.
+  - Quotes: one blockquote per moment or manual-steps line, each with its session number and `Where`.
   - Fix: one sentence; a check also names the mistake it would have failed on, by session number and `Where`. Where: the file it changes and the skill that owns it, as SKILL.md § Kinds of finding names.
   - A checkbox, not ticked.
 - **One-time problems**: smaller cards after the patterns, numbered on from the last pattern, same parts, badge `One-time`.

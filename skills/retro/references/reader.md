@@ -36,7 +36,9 @@ Read: <characters read> of <total characters> (main and helper logs)
 - "<the user's words, exact>" (<turn>)
 
 ## Manual steps
-- <the steps the user did by hand, in order, one line> (<turns>)
+- <the steps the user did by hand, in order, one line>
+  Where: <file name and the turn numbers>
+  Quote: "<the exact words or command from the file that show it, 200 characters at most>"
 
 Rules: only moments the files show; quote, never paraphrase, in Quote. A smooth session gets "none" under Moments. A correction the user gave once goes in Moments; Repeated corrections holds one the user gave more than once in this session, or "none". Manual steps holds each run of steps the user did by hand or spelled out one by one, or "none". Number moments from 1. Keep each line under 40 words.
 ```
