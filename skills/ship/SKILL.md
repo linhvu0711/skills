@@ -133,7 +133,10 @@ where the build runs (step 2).
    stack first, in its worktree, and post nothing. Then ready-pr step 5
    on its report file as a text review: validate-pr-review with the
    report path as the argument, `go` given, under ready-pr step 5's five
-   rules; its fixes are committed and pushed. The cloud route skips
+   rules; its fixes are committed and pushed. A push makes a new head
+   that review-pr has not seen: review it again, and judge that report
+   the same way, until a round pushes nothing. After three rounds that
+   push: say what keeps coming back and stop. The cloud route skips
    this: its PRs are the executor's.
 
    Then read `../ready-pr/SKILL.md` and follow it whole on
