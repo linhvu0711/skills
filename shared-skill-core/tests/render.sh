@@ -100,6 +100,17 @@ t_render_same_kind_rule() {
   every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
 }
 
+t_render_same_kind_before_fallback() {
+  local ex same any
+  for ex in local devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    same="$(printf '%s\n' "$out" | grep -n '^- A second surprise of the same kind' | cut -d: -f1)"
+    any="$(printf '%s\n' "$out" | grep -n '^- Anything else: \*\*pick the nearest existing pattern' | cut -d: -f1)"
+    eq "$ex same-kind rule before the fallback" yes "$([ -n "$same" ] && [ -n "$any" ] && [ "$same" -lt "$any" ] && echo yes || echo no)"
+  done
+}
+
 t_render_comment_rule() {
   every_rules_hold "Keep a comment in the code you write only when it says why"
 }
@@ -121,6 +132,7 @@ cases=(
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
   "every executor's rules test a belief before a third fix|t_render_belief_rule"
   "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
+  "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
   "every executor's rules keep a comment only when it says why|t_render_comment_rule"
   "every executor's rules check data at the edge|t_render_edge_rule"
 )

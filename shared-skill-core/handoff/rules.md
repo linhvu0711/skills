@@ -541,6 +541,11 @@ Sort each one:
   check showed, and test it the same way. No check can test the belief:
   stop and ask. Say what is red, each fix you tried, and the belief.
   Say each belief and what its check showed {{here}}.
+- A second surprise of the same kind as an earlier one, where the plan
+  was wrong about the code in the same way twice (two helpers it names
+  that do not exist, two callers that expect another shape), means the
+  design may be wrong: **stop and ask**, rather than pick the nearest
+  pattern again. Say both surprises and what they share.
 - Anything else: **pick the nearest existing pattern**, go on, and say
   so {{here}} in one line: plan said X, code had Y, did Z. When it
   changed what the code does, it is also a bullet under `Where to look`
@@ -548,11 +553,6 @@ Sort each one:
 <!-- local -->
   `/build-and-prove` puts it there through `/make-pr`.
 <!-- /local -->
-- A second surprise of the same kind as an earlier one, where the plan
-  was wrong about the code in the same way twice (two helpers it names
-  that do not exist, two callers that expect another shape), means the
-  design may be wrong: **stop and ask**, rather than pick the nearest
-  pattern again. Say both surprises and what they share.
 
 ## Finish
 
