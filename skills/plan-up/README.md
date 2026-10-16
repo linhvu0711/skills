@@ -83,6 +83,8 @@ The agent writes only the Markdown, never `DATA`. On an invalid block the builde
 
 A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
 
+A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so; the builder refuses that heading on any slice but the first of a layer.
+
 ## Credits
 
 The idea of planning test-first slices for an agent to build comes from the `tdd` and `implement` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Thanks. No text was copied.
