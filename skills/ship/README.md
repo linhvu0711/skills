@@ -38,6 +38,8 @@ READY https://github.com/acme/app/pull/43
 
 A PR that waits only for a person's approval ends with `READY <url> (waiting for approval)`.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `gh` (signed in), `git`, `jq`, and `python3`.

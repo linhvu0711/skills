@@ -16,6 +16,8 @@ Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claud
 
 The logic check also flags a test that would still pass if every function it imports returned `undefined`, and a fix that hides a failure instead of fixing its cause. The standards check adds five possible smells: split state, two ways to do one job, importable internals, hand-synced lists, and code that could be simpler. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `git` and `gh`, signed in.

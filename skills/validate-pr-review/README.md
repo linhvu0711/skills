@@ -16,6 +16,8 @@ Say go to apply: 3 fix here, 2 fix later, 8 replies to post.
 
 After you say go, it makes the fixes, files each `fix later` as an issue, posts the replies where each comment came from, and resolves the threads it fixed. "go, fixes only" does just that part.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `git` and `gh`, signed in (it reads review comments with `gh api` and resolves threads with `gh api graphql`).

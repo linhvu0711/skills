@@ -24,6 +24,10 @@ _Avoid_: pending docs, doc drafts
 The `seed` issue, or the cleared map, that the work grew from. It is rewritten in place into the ticket, the map, or the epic parent, so one number runs from the idea to the work. It is never closed for growing.
 _Avoid_: parent seed, source issue
 
+**Evidence label**:
+How sure a stated fact is: Seen (read in a source, or run and observed), Inferred (follows from what was seen), Guess (no direct sign), Unknown (looked and found nothing). Guess and Unknown come only after tries to see it, and they name the tries.
+_Avoid_: confidence level, certainty
+
 ## Plans
 
 **Review view**:

@@ -44,6 +44,8 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 
 A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `gh`, signed in, and `git`.

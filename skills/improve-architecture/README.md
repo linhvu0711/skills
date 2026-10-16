@@ -12,6 +12,8 @@ An HTML report that opens in your browser as a local page, one card per candidat
 
 It changes no code and proposes no interface on its own.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `git`, for the recent history.
