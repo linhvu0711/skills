@@ -24,6 +24,8 @@ A repo with no review tool on its recent PRs still works: it judges the comments
 
 If `gh` fails five times in a row while it waits for the review (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `gh` (signed in), `git`, and `jq`.

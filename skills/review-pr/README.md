@@ -16,6 +16,8 @@ Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claud
 
 The logic check also flags a test that would still pass if every function it imports returned `undefined`, a test that breaks when only the inside of the code changes, a fix that hides a failure instead of fixing its cause, and a guard for a state that should never happen. Its regression check also looks for the names grep misses: keys in data formats, database columns, and flags. The standards check adds ten possible smells: split state, two ways to do one job, importable internals, hand-synced lists, code that could be simpler, a check in the wrong place, an if/else chain that grows by one branch per case, two true/false values that must stay in sync, a comment that says what the code does instead of why, and a step that is not safe to run twice. Every helper agent it starts is told it changes nothing: no file edits, no commits, no `gh` writes, since it reads PR text from anyone.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `git` and `gh`, signed in.

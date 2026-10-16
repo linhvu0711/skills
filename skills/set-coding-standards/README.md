@@ -16,6 +16,8 @@ When the grill ends, a `CODING_STANDARDS.md` at the root, one rule per line, gro
 Ready for /commit
 ```
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - The [grill](../grill/) skill, which it uses to ask you about each finding.

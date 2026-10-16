@@ -27,6 +27,8 @@ On `clean`, the only change is the date and version on the Sources table rows it
 
 Research only runs for the stack parts that are due. It reads the Sources table at the end of `CODING_STANDARDS.md` and checks a part again only after a major version bump, after 6 months, or when the part has no row yet. Each finding cites what it came from: a page read on this run, or what most of the code already does, never the model's memory. The details are in [research.md](../../shared-skill-core/coding-standards/research.md).
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - The [grill](../grill/) skill, which it uses to ask you about each finding.

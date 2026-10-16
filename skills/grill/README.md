@@ -23,6 +23,8 @@ When no code follows ("we will not build X", or a word for code that exists), th
 
 When another skill calls it and writes its own docs afterwards (set-review-rules, set-coding-standards, audit-coding-standards), the grill writes its files and opens no PR, so one PR holds all of them. When the caller files the work itself ([triage](../triage/)) or keeps a map ([discover-path](../discover-path/)), the grill writes nothing and hands back the doc text.
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `gh`, signed in, for seed issues.

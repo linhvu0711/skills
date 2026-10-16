@@ -21,8 +21,6 @@ Removing patterns is half the job. Sterile, voiceless writing is just as obvious
 - **Have opinions.** React to facts instead of neutrally listing pros and cons.
 - **Vary rhythm.** Short sentences. Then longer ones that take their time. Mix it up.
 - **Acknowledge complexity.** "Impressive but also kind of unsettling" beats "impressive."
-- **Use "I" when it fits.** First person isn't unprofessional.
-- **Let some mess in.** Perfect structure feels algorithmic.
 - **Be specific.** Not "this is concerning" but "there's something unsettling about agents churning away at 3am."
 
 ## Patterns to detect and fix
@@ -50,7 +48,7 @@ Removing patterns is half the job. Sterile, voiceless writing is just as obvious
 13. **Em dash overuse** — avoid em dashes entirely. Use periods, commas, or parentheses. Em dashes are an AI tell.
 14. **Colon overuse** — colons are fine before a list or example. Not as mid-sentence connectors. "If you're coming from traditional automation: instead of registering event handlers, you describe conditions" adds nothing with the colon. Rewrite to let the point stand on its own without comparison framing. "Describing when the scheduler should fire works best as plain English." Same meaning, no crutch punctuation.
 15. **Boldface overuse** — don't bold every proper noun or acronym.
-16. **Inline-header lists** — "**Performance:** Performance improved..." Convert to prose.
+16. **Inline-header lists.** The tell is a bold label and colon that restates the line: "**Performance:** Performance improved...". Convert those to prose. A bold lead-in that ends in a period, names the item, and is followed by genuinely new detail ("**Schema in TypeScript.** Tables live in one file.") is fine, not a tell. A bold lead-in that ends in a colon and is followed by new detail ("**Cache:** entries expire after ten minutes.") is fine too.
 17. **Title case headings** — use sentence case.
 18. **Decorative emojis** — remove from headings and bullets.
 19. **Curly quotes** — replace with straight quotes.

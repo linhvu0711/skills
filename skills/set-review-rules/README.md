@@ -14,6 +14,8 @@ A `REVIEW.md` at the root. The top block is fixed and checks three things: does 
 Ready for /commit
 ```
 
+Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+
 ## Needs
 
 - `git` and `gh` (`gh issue view` checks that an issue a rule names still exists).

@@ -18,6 +18,8 @@ It also adds voice back: opinions, varied rhythm, specific detail.
 
 It also flags jargon and stiff prose: metaphor nouns like "substrate" or "north star", lines about how a thing feels instead of what it does, dense sentences, passive voice, adverbs, fancy words, mannered prose, and notes compressed past reading. Parentheses stay allowed.
 
+A bold lead-in that ends in a period or a colon and is followed by new detail stays; only a bold label that repeats its line becomes prose. It no longer asks for first person or for a little mess in the structure.
+
 ## Needs
 
 Nothing beyond Claude Code or Codex. No tools, no other skills.
@@ -28,4 +30,4 @@ Nothing beyond Claude Code or Codex. No tools, no other skills.
 
 ## Credits
 
-A copy of the `unslop` skill from [poteto/noodle](https://github.com/poteto/noodle) (`.agents/skills/unslop`), MIT license, with rules 26 to 33 copied from the `unslop` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) (`pstack/skills/unslop`), also by Lauren Tan, MIT license. pstack's ban on parentheses is left out. The skill text is upstream's; this repo does not reword it.
+A copy of the `unslop` skill from [poteto/noodle](https://github.com/poteto/noodle) (`.agents/skills/unslop`), MIT license, with rule 16 and rules 26 to 33 copied from the `unslop` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) (`pstack/skills/unslop`), also by Lauren Tan, MIT license. pstack's ban on parentheses is left out. Two changes are this repo's: rule 16 adds one sentence that allows a bold lead-in ending in a colon, and the Adding soul part drops its "Use I when it fits" and "Let some mess in" lines, which fight plain writing. The rest of the skill text is upstream's; this repo does not reword it.
