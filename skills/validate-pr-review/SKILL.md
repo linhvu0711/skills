@@ -68,7 +68,9 @@ A rule acts on Worth only:
   at least `should`, and `blocker` when the rule says it breaks
   something.
 - A rule that says the code as written is the repo's way makes the verdict
-  `won't fix`, whatever the table gives.
+  `won't fix`, whatever the table gives. The judge marks it so: Worth
+  `nit`, and the proof starts `allowed by REVIEW.md:<line>`. Step 5
+  reads that mark.
 
 Either way, the proof names `REVIEW.md:<line>`. A rule
 never answers True or Ours, never adds a finding, and is not read from
@@ -237,10 +239,6 @@ goes ahead as any other.
 
    While the judges run, answer the trivial pile yourself from the
    diff, in the same shape, with the same repo rules.
-
-   A Worth set by a repo rule names `REVIEW.md:<line>` in the proof
-   cell. A rule that allows the code as written: Worth `nit`, and the
-   proof cell starts `allowed by REVIEW.md:<line>`.
 
    Done when every finding has a line in the return shape. A judge
    whose return misses an id it was given is sent back for that id
