@@ -1,0 +1,14 @@
+# reviewers.tsv: the review bots reviewers.sh knows, one row each, tab between
+# columns. A new bot is one new row.
+#
+#   tool   its short name, as reviewers.sh prints it
+#   login  its GitHub app login, without `[bot]`: the author of its reviews
+#          and comments, the creator of its commit status, or the app of its
+#          check run
+#
+# Each row was read off a public PR the bot reviewed, on 2026-10-18.
+devin	devin-ai-integration
+coderabbit	coderabbitai
+bugbot	cursor
+greptile	greptile-apps
+macroscope	macroscopeapp

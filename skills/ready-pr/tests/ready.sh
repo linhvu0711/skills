@@ -7,8 +7,13 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 ci_green='{"__typename":"CheckRun","name":"check","status":"COMPLETED","conclusion":"SUCCESS"}'
 ci_red='{"__typename":"CheckRun","name":"check","status":"COMPLETED","conclusion":"FAILURE"}'
 ci_pending='{"__typename":"CheckRun","name":"check","status":"IN_PROGRESS","conclusion":null}'
-# The rollup lists Devin Review too, as GitHub does; only a required check is read from it.
-devin_in_rollup='{"__typename":"StatusContext","context":"Devin Review","state":"SUCCESS"}'
+# Review bots post into the rollup like CI: Devin Review as a commit status,
+# Cursor Bugbot as a check run.
+devin_green='{"__typename":"StatusContext","context":"Devin Review","state":"SUCCESS"}'
+devin_pending='{"__typename":"StatusContext","context":"Devin Review","state":"PENDING"}'
+bugbot_running='{"__typename":"CheckRun","name":"Cursor Bugbot","status":"IN_PROGRESS","conclusion":null}'
+bugbot_neutral='{"__typename":"CheckRun","name":"Cursor Bugbot","status":"COMPLETED","conclusion":"NEUTRAL"}'
+bugbot_red='{"__typename":"CheckRun","name":"Cursor Bugbot","status":"COMPLETED","conclusion":"FAILURE"}'
 
 # pr_json <file> <mergeStateStatus> <mergeable> <reviewDecision> <isDraft> <rollup>:
 # a `gh pr view` answer for PR 7 of acme/app, head abc1234def5678, in $FAKE_GH.
@@ -34,22 +39,11 @@ required_json() {
     parameters: {required_status_checks: [$c[] | {context: .}]}}]' > "$FAKE_GH/rules.json"
 }
 
-# devin_status <state>: the Devin Review commit status on the head, as the
-# status API gives it. `none` writes no status at all.
-devin_status() {
-  if [ "$1" = none ]; then printf '{"statuses":[]}\n' > "$FAKE_GH/status.json"; return; fi
-  printf '{"statuses":[{"context":"Devin Review","state":"%s"}]}\n' "$1" > "$FAKE_GH/status.json"
-}
-
-# ready [<flag>...]: ready.sh on PR 7 as `author`, with `--tools devin` unless
-# the flags start with --tools; Devin Review success, no check runs, no
-# threads, and no required checks unless written.
+# ready [<flag>...]: ready.sh on PR 7 as `author`, with no threads and no
+# required checks unless written.
 ready() {
-  [ -f "$FAKE_GH/status.json" ] || [ -f "$FAKE_GH/status.1.json" ] || devin_status success
-  [ -f "$FAKE_GH/check-runs.json" ] || printf '{"check_runs":[]}\n' > "$FAKE_GH/check-runs.json"
   [ -f "$FAKE_GH/graphql.json" ] || threads_json '[]'
   [ -f "$FAKE_GH/branch.json" ] || required_json '[]' '[]'
-  if [ "${1:-}" != --tools ]; then set -- --tools devin "$@"; fi
   run bash "$here/../scripts/ready.sh" acme/app 7 --me author "$@"
 }
 
@@ -63,7 +57,7 @@ t_ready_clean() {
   ready
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: devin success on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
+  eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
 t_ready_behind() {
@@ -71,7 +65,7 @@ t_ready_behind() {
   ready
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: devin success on abc1234 · open threads: 0 · merge state: BEHIND" "$(line 2)"
+  eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: BEHIND" "$(line 2)"
 }
 
 t_ready_dirty() {
@@ -91,12 +85,12 @@ t_ready_unknown_then_clean() {
   eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
-t_ready_devin_pending() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status pending
+t_ready_bot_pending() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$devin_pending]"
   ready
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "Devin Review is PENDING" "$(line 2)"
+  eq "line 2" "1 check(s) pending: Devin Review" "$(line 2)"
 }
 
 t_ready_thread_waits() {
@@ -114,7 +108,7 @@ t_ready_blocked_waiting_approval() {
   ready
   eq exit 0 "$code"
   eq "line 1" "READY $url (waiting for approval)" "$(line 1)"
-  eq "line 2" "Review tools: devin success on abc1234 · open threads: 0 · merge state: BLOCKED" "$(line 2)"
+  eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: BLOCKED" "$(line 2)"
 }
 
 t_ready_blocked_changes_requested() {
@@ -130,7 +124,7 @@ t_ready_blocked_red_check() {
   ready
   eq exit 1 "$code"
   eq "line 1" "BLOCKED $url" "$(line 1)"
-  eq "line 2" "1 other check(s) red" "$(line 2)"
+  eq "line 2" "1 check(s) red: check" "$(line 2)"
 }
 
 t_ready_blocked_no_review_rule() {
@@ -165,11 +159,11 @@ t_ready_required_missing_while_pending() {
   ready
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "1 other check(s) pending; required check(s) not posted: build" "$(line 2)"
+  eq "line 2" "1 check(s) pending: check; required check(s) not posted: build" "$(line 2)"
 }
 
 t_ready_required_checks_posted() {
-  fake_gh; pr_json pr-view.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_in_rollup]"
+  fake_gh; pr_json pr-view.json BLOCKED MERGEABLE REVIEW_REQUIRED false "[$ci_green,$devin_green]"
   required_json '["check"]' '["Devin Review"]'
   ready
   eq exit 0 "$code"
@@ -194,50 +188,26 @@ t_ready_draft() {
 }
 
 t_ready_zero_checks() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"; devin_status none
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"
   ready
-  eq exit 2 "$code"
-  eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
-}
-
-t_ready_zero_checks_no_devin() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"; devin_status none
-  ready --tools none
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
   eq "line 2" "no checks on abc1234 yet" "$(line 2)"
 }
 
 t_ready_absent_rollup() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false null; devin_status none
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false null
   ready
   eq exit 2 "$code"
-  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
-}
-
-t_ready_no_devin_status() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
-  ready
-  eq exit 2 "$code"
-  eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "no Devin Review status on abc1234" "$(line 2)"
-}
-
-t_ready_no_devin_flag() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
-  ready --tools none
-  eq exit 0 "$code"
-  eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: none · open threads: 0 · merge state: CLEAN" "$(line 2)"
+  eq "line 2" "no checks on abc1234 yet" "$(line 2)"
 }
 
 t_ready_blocked_and_waiting() {
-  fake_gh; pr_json pr-view.json DIRTY CONFLICTING "" false "[$ci_green]"; devin_status pending
+  fake_gh; pr_json pr-view.json DIRTY CONFLICTING "" false "[$ci_green,$devin_pending]"
   ready
   eq exit 1 "$code"
   eq "line 1" "BLOCKED $url" "$(line 1)"
-  eq "line 2" "Devin Review is PENDING; mergeable is CONFLICTING; merge state is DIRTY" "$(line 2)"
+  eq "line 2" "mergeable is CONFLICTING; merge state is DIRTY; 1 check(s) pending: Devin Review" "$(line 2)"
 }
 
 t_ready_bad_flag() {
@@ -247,58 +217,115 @@ t_ready_bad_flag() {
   eq stderr "stop: unknown flag --bogus" "$err"
 }
 
-t_ready_devin_check_run() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
-  printf '{"check_runs":[{"name":"Devin Review","status":"completed","conclusion":"success"}]}\n' > "$FAKE_GH/check-runs.json"
+t_ready_tools_flag_gone() {
+  # Given: the fake gh
+  fake_gh
+  # When
+  ready --tools devin
+  # Then
+  eq exit 64 "$code"
+  eq stderr "stop: unknown flag --tools" "$err"
+}
+
+t_ready_bot_check_counts() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$bugbot_neutral]"
   ready
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: devin success on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
+  eq "line 2" "checks: 2 green on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
-t_ready_wait_success() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  printf '{"statuses":[{"context":"Devin Review","state":"pending"}]}\n' > "$FAKE_GH/status.1.json"
-  devin_status success
+t_ready_wait_bot_then_ready() {
+  # Given: Cursor Bugbot runs for two polls, then ends neutral
+  fake_gh
+  pr_json pr-view.1.json CLEAN MERGEABLE "" false "[$bugbot_running]"
+  pr_json pr-view.2.json CLEAN MERGEABLE "" false "[$bugbot_running]"
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$bugbot_neutral]"
+  # When
   ready --wait abc1234def5678 --poll-sec 1
+  # Then
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "status calls" 3 "$(cat "$FAKE_GH/status.calls")"
+  eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
-t_ready_wait_none() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
-  ready --wait abc1234def5678 --none-sec 2 --poll-sec 1
-  eq exit 2 "$code"
-  eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "no Devin Review status on abc1234" "$(line 2)"
+t_ready_wait_settles_first() {
+  # Given: a sleep that writes each argument; one green check
+  fake_gh
+  printf '#!/usr/bin/env bash\necho "$1" >> "%s/sleep.args"\n' "$T" > "$T/bin/sleep"
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  # When
+  ready --wait abc1234def5678 --settle-sec 7 --poll-sec 1
+  # Then
+  eq "first sleep" 7 "$(head -1 "$T/sleep.args")"
+}
+
+t_ready_wait_settle_default() {
+  fake_gh
+  printf '#!/usr/bin/env bash\necho "$1" >> "%s/sleep.args"\n' "$T" > "$T/bin/sleep"
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  ready --wait abc1234def5678
+  eq "first sleep" 60 "$(head -1 "$T/sleep.args")"
+}
+
+t_ready_wait_stops_on_red() {
+  # Given: Cursor Bugbot red while the test check still runs
+  fake_gh
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$bugbot_red,{\"__typename\":\"CheckRun\",\"name\":\"test\",\"status\":\"IN_PROGRESS\",\"conclusion\":null}]"
+  # When
+  ready --wait abc1234def5678 --poll-sec 1
+  # Then
+  eq exit 1 "$code"
+  eq "line 2" "1 check(s) red: Cursor Bugbot; 1 check(s) pending: test" "$(line 2)"
+  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_wait_timeout() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status pending
+  # Given: Devin Review pending on every poll
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  # When
   ready --wait abc1234def5678 --timeout-sec 2 --poll-sec 1
+  # Then
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "Devin Review is PENDING" "$(line 2)"
+  eq "line 2" "1 check(s) pending: Devin Review" "$(line 2)"
+}
+
+t_ready_wait_zero_checks() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"
+  ready --wait abc1234def5678 --poll-sec 1
+  eq exit 2 "$code"
+  eq "line 2" "no checks on abc1234 yet" "$(line 2)"
+  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
+}
+
+t_ready_wait_head_moved() {
+  # Given: the head is abc1234, not the sha the wait was given
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  # When
+  ready --wait 0000000aaaaaaa --poll-sec 1
+  # Then
+  eq exit 2 "$code"
+  eq "line 2" "head moved to abc1234; 1 check(s) pending: Devin Review" "$(line 2)"
+  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_wait_gh_fails() {
-  fake_gh; printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/status.fail"
+  fake_gh; printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.fail"
   ready --wait abc1234def5678
   eq exit 1 "$code"
   eq "line 1" "BLOCKED $url" "$(line 1)"
   eq "line 2" "gh failed: gh: Bad credentials (HTTP 401)" "$(line 2)"
-  eq "status calls" 5 "$(cat "$FAKE_GH/status.calls")"
+  eq "pr view calls" 5 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_wait_one_failure() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/status.1.fail"
-  devin_status success
+  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.1.fail"
   ready --wait abc1234def5678 --poll-sec 1
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
-  eq "status calls" 3 "$(cat "$FAKE_GH/status.calls")"
+  eq "pr view calls" 3 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_pr_view_fails() {
@@ -309,15 +336,8 @@ t_ready_pr_view_fails() {
   eq "line 2" "gh failed: HTTP 502: Bad Gateway" "$(line 2)"
 }
 
-t_ready_wait_none_zero_checks() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"; devin_status none
-  ready --wait abc1234def5678 --none-sec 2 --poll-sec 1
-  eq exit 2 "$code"
-  eq "line 2" "no checks on abc1234 yet; no Devin Review status on abc1234" "$(line 2)"
-}
-
-t_ready_required_missing_after_devin() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_in_rollup]"
+t_ready_required_missing_after_bot() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_green]"
   required_json '["build"]' '[]'
   ready
   eq exit 1 "$code"
@@ -325,107 +345,12 @@ t_ready_required_missing_after_devin() {
   eq "line 2" "required check(s) not posted: build" "$(line 2)"
 }
 
-t_ready_devin_read_whole() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"; devin_status none
-  printf '{"check_runs":[{"name":"Devin Review","status":"completed","conclusion":"success"}]}\n' > "$FAKE_GH/check-runs.json"
-  ready
-  eq exit 0 "$code"
-  has "status call reads every page" "--paginate" "$(cat "$FAKE_GH/status.args")"
-  has "check runs asked by name" "check_name=Devin%20Review" "$(cat "$FAKE_GH/check-runs.args")"
-}
-
-# Items of the rollup and the status API for CodeRabbit, a second tool.
-rabbit_pending_in_rollup='{"__typename":"StatusContext","context":"CodeRabbit","state":"PENDING"}'
-devin_pending_in_rollup='{"__typename":"StatusContext","context":"Devin Review","state":"PENDING"}'
-
-# statuses <context>=<state>...: these commit statuses on the head.
-statuses() {
-  local a="" kv
-  for kv in "$@"; do a="$a${a:+,}{\"context\":\"${kv%%=*}\",\"state\":\"${kv#*=}\"}"; done
-  printf '{"statuses":[%s]}\n' "$a" > "$FAKE_GH/status.json"
-}
-
-t_ready_two_tools_green() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  statuses "Devin Review=success" "CodeRabbit=success"
-  ready --tools devin,coderabbit
-  eq exit 0 "$code"
-  eq "line 1" "READY $url" "$(line 1)"
-  eq "line 2" "Review tools: devin success, coderabbit success on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
-}
-
-t_ready_second_tool_pending() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$rabbit_pending_in_rollup]"
-  statuses "Devin Review=success" "CodeRabbit=pending"
-  ready --tools devin,coderabbit
-  eq exit 2 "$code"
-  eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "CodeRabbit is PENDING" "$(line 2)"
-}
-
-t_ready_tool_without_status() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  ready --tools copilot
-  eq exit 0 "$code"
-  eq "line 2" "Review tools: copilot no status · open threads: 0 · merge state: CLEAN" "$(line 2)"
-  [ ! -f "$FAKE_GH/status.calls" ] || { echo "status was read for a tool with none" >&2; exit 1; }
-}
-
-t_ready_untold_tool_is_a_check() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$devin_pending_in_rollup]"
-  ready --tools none
-  eq exit 2 "$code"
-  eq "line 2" "1 other check(s) pending" "$(line 2)"
-}
-
-t_ready_wait_stops_on_red() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  statuses "Devin Review=pending" "CodeRabbit=failure"
-  ready --tools devin,coderabbit --wait abc1234def5678 --poll-sec 1
-  eq exit 1 "$code"
-  eq "line 2" "Devin Review is PENDING; CodeRabbit is FAILURE" "$(line 2)"
-  eq "status calls" 4 "$(cat "$FAKE_GH/status.calls")"
-}
-
-t_ready_wait_absent_waits_for_pending() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  statuses "Devin Review=pending"
-  ready --tools devin,coderabbit --wait abc1234def5678 --none-sec 2 --timeout-sec 4 --poll-sec 1
-  eq exit 2 "$code"
-  eq "line 2" "Devin Review is PENDING; no CodeRabbit status on abc1234" "$(line 2)"
-  # Five polls (0 to 4 seconds) and the verdict, two status reads each.
-  eq "status calls" 12 "$(cat "$FAKE_GH/status.calls")"
-}
-
-t_ready_wait_absent_after_green() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  statuses "Devin Review=success"
-  ready --tools devin,coderabbit --wait abc1234def5678 --none-sec 2 --timeout-sec 4 --poll-sec 1
-  eq exit 2 "$code"
-  eq "line 2" "no CodeRabbit status on abc1234" "$(line 2)"
-  eq "status calls" 8 "$(cat "$FAKE_GH/status.calls")"
-}
-
-t_ready_tools_required() {
-  fake_gh
-  run bash "$here/../scripts/ready.sh" acme/app 7 --me author
-  eq exit 64 "$code"
-  has stderr "--tools is required" "$err"
-}
-
-t_ready_unknown_tool() {
-  fake_gh
-  ready --tools devin,nosuch
-  eq exit 64 "$code"
-  eq stderr "stop: unknown review tool nosuch, not in known.tsv" "$err"
-}
-
 cases=(
   "ready-pr: CLEAN reads READY|t_ready_clean"
   "ready-pr: BEHIND reads READY|t_ready_behind"
   "ready-pr: DIRTY reads BLOCKED|t_ready_dirty"
   "ready-pr: UNKNOWN then CLEAN reads READY|t_ready_unknown_then_clean"
-  "ready-pr: Devin pending reads WAITING|t_ready_devin_pending"
+  "ready-pr: a review bot's pending check reads WAITING with its name|t_ready_bot_pending"
   "ready-pr: a thread waiting for the author reads BLOCKED with its line|t_ready_thread_waits"
   "ready-pr: BLOCKED waiting for approval reads READY|t_ready_blocked_waiting_approval"
   "ready-pr: BLOCKED with changes requested reads BLOCKED|t_ready_blocked_changes_requested"
@@ -438,29 +363,20 @@ cases=(
   "ready-pr: a base with a slash is encoded in the required checks calls|t_ready_slash_base"
   "ready-pr: a draft reads BLOCKED|t_ready_draft"
   "ready-pr: zero checks reads WAITING|t_ready_zero_checks"
-  "ready-pr: zero checks under --tools none reads WAITING|t_ready_zero_checks_no_devin"
   "ready-pr: an absent rollup is zero checks|t_ready_absent_rollup"
-  "ready-pr: no Devin Review status reads WAITING|t_ready_no_devin_status"
-  "ready-pr: --tools none with green checks reads READY|t_ready_no_devin_flag"
   "ready-pr: a blocked and a waiting reason read BLOCKED|t_ready_blocked_and_waiting"
   "ready-pr: an unknown flag stops with exit 64|t_ready_bad_flag"
-  "ready-pr: a Devin Review check run reads READY|t_ready_devin_check_run"
-  "ready-pr: --wait waits for success, then READY|t_ready_wait_success"
-  "ready-pr: --wait with no status reads WAITING|t_ready_wait_none"
-  "ready-pr: --wait past the timeout reads WAITING|t_ready_wait_timeout"
+  "ready-pr: --tools is an unknown flag|t_ready_tools_flag_gone"
+  "ready-pr: a review bot's check run counts like any check|t_ready_bot_check_counts"
+  "ready-pr: --wait waits for a bot check, then READY|t_ready_wait_bot_then_ready"
+  "ready-pr: --wait sleeps the settle time first|t_ready_wait_settles_first"
+  "ready-pr: --wait settles 60 seconds by default|t_ready_wait_settle_default"
+  "ready-pr: --wait stops on a red check|t_ready_wait_stops_on_red"
+  "ready-pr: --wait past the timeout names the pending check|t_ready_wait_timeout"
+  "ready-pr: --wait with zero checks after the settle reads WAITING|t_ready_wait_zero_checks"
+  "ready-pr: --wait names a head that moved|t_ready_wait_head_moved"
   "ready-pr: --wait stops BLOCKED after 5 failed calls|t_ready_wait_gh_fails"
   "ready-pr: --wait goes on after one failed call|t_ready_wait_one_failure"
   "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"
-  "ready-pr: --wait with no checks at all names the missing Devin status|t_ready_wait_none_zero_checks"
-  "ready-pr: a required check not posted after Devin success reads BLOCKED|t_ready_required_missing_after_devin"
-  "ready-pr: Devin Review is read across pages and by name|t_ready_devin_read_whole"
-  "ready-pr: two tools green read READY and name both|t_ready_two_tools_green"
-  "ready-pr: a second tool pending reads WAITING, not as another check|t_ready_second_tool_pending"
-  "ready-pr: a tool with no status reads no status and is never polled|t_ready_tool_without_status"
-  "ready-pr: a review status for a tool not named counts as a check|t_ready_untold_tool_is_a_check"
-  "ready-pr: --wait stops when one tool goes red|t_ready_wait_stops_on_red"
-  "ready-pr: --wait keeps waiting for a pending tool past an absent one|t_ready_wait_absent_waits_for_pending"
-  "ready-pr: --wait stops on an absent tool once the rest are green|t_ready_wait_absent_after_green"
-  "ready-pr: no --tools stops with exit 64|t_ready_tools_required"
-  "ready-pr: an unknown tool stops with exit 64|t_ready_unknown_tool"
+  "ready-pr: a required check not posted after a bot's green reads BLOCKED|t_ready_required_missing_after_bot"
 )

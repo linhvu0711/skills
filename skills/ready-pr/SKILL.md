@@ -1,15 +1,16 @@
 ---
 name: ready-pr
-description: "Take an open PR to ready-to-merge: wait for the repo's review tools (Devin Review, CodeRabbit, …) on the head commit, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
+description: "Take an open PR to ready-to-merge: wait for every check on the head commit, CI and review bots (Devin Review, CodeRabbit, Cursor Bugbot, …) alike, judge every finding with /validate-pr-review, fix, reply, resolve, rebase on a conflict, push, and repeat until the status is green with no open thread. Never merges."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-You own one PR until it is ready. The reviewers are the review tools the
-repo uses, found from its recent PRs, and people. Each tool posts a review
-status on the head; Devin Review's turns pending after each push, `success`
-a few minutes later, and it posts a review only when it found something.
+You own one PR until it is ready. The reviewers are the review bots on
+the repo and people. A bot posts a check on the head seconds after each
+push, like CI, and ends it after its comments; Devin Review's turns
+`success` a few minutes later, and it posts a review only when it found
+something. So every check counts the same, with no list of bot names.
 When a push fixes a thread, Devin replies `✅ Resolved` and closes it.
 People's comments count the same way, without a status.
 Short lookups are yours; the judging is `/validate-pr-review`'s, read
@@ -39,15 +40,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    not mine`, stop. `me` is `gh api user -q .login`. Done when you hold
    `REPO` (the `owner/repo` in the URL), `NUMBER`, `URL`, `BASE`
    (`baseRefName`), `HEAD` (`headRefName`), `SHA` (`headRefOid`), and
-   `me`. Then the review tools, read off the repo's last PRs:
-
-   ```bash
-   bash ../../shared-skill-core/review-tools/detect.sh <REPO>
-   ```
-
-   `TOOLS` is the first word of each line after `PRS=`, comma separated,
-   or `none` when there is no such line. Say `Review tools: <TOOLS>` once.
-   `stop:` on stderr: show it, stop.
+   `me`.
 
 2. **Checkout.** In a checkout already on `HEAD` with a clean tree:
    `WT` is that directory. Otherwise, the checkout resolver finds the
@@ -65,22 +58,20 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 3. **Wait.** Round `r` starts here, `r` from 1.
 
    ```bash
-   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA> --tools <TOOLS>
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA>
    ```
 
-   It waits for each tool's review status on `SHA`, then gives the
+   It waits a minute for the checks to start, then until every check on
+   `SHA`, CI and review bots alike, is done or one is red, then gives the
    readiness verdict. Run it in the background in Claude Code; in Codex,
-   in the foreground. By the reason line, `<status>` being a tool's
-   status name in `../../shared-skill-core/review-tools/known.tsv`:
-   - `<status> is PENDING`: it stayed pending for thirty minutes; say
-     so, stop.
-   - `no <status> status`: none in ten minutes; say `No <status> on this
-     PR` once, take that tool out of `TOOLS` (`none` when it was the
-     last), go on.
-   - `<status> is` any other state (`FAILURE`, `ERROR`, …): say the
-     state and the PR URL, stop; the user decides.
+   in the foreground. By the reason line:
+   - `head moved to <sha7>`: someone pushed during the wait. `git -C
+     "$WT" pull --ff-only`, `SHA` is the new head, step 3 again; this
+     round's count stays.
+   - `check(s) pending: <names>`: they stayed pending for thirty
+     minutes; say the names and the PR URL, stop.
    - `gh failed:`: say the error and the PR URL, stop.
-   - anything else: go on.
+   - anything else: go on. A red check is step 6's.
 
 4. **Open?** The thread lines under step 3's reason line. None: step 6.
    Else hold them.
@@ -133,13 +124,12 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 6. **Ready.**
 
    ```bash
-   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --tools <TOOLS>
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me>
    ```
 
    It prints the readiness verdict on line 1, its reason on line 2, then
    one line per open thread. `READY <url>`, or `READY <url> (waiting for
    approval)`: step 7. `WAITING`, by reason:
-   - `<status> is PENDING`: step 3.
    - `check(s) pending`, `no checks on … yet`, or `required check(s)
      not posted`: wait for them, `cd "$WT" && gh pr checks <NUMBER>
      --watch`, then ready again.
@@ -178,7 +168,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 
    ```
    PR: feat(auth): add login (#43)
-   Rounds: 2 · Review tools: devin success on 9e18c16 · open threads: 0 · merge state: CLEAN
+   Rounds: 2 · checks: 3 green on 9e18c16 · open threads: 0 · merge state: CLEAN
    Stack: moved https://github.com/acme/app/pull/44, https://github.com/acme/app/pull/45
    F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issues/140
    Filed: https://github.com/…/issues/140
@@ -192,9 +182,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
    restack: no `Stack:` line. One line per finding over every round,
    id, verdict, SHA or URL.
-   `Filed: none` when nothing was filed. A run with `TOOLS` `none` says
-   `Review tools: none`. Each tool taken out in step 3 adds
-   ` · no status from <tool>` at the end of the second line. A PR that waits only for a
+   `Filed: none` when nothing was filed. A PR that waits only for a
    person's approval ends with `READY <url> (waiting for approval)`; the
    approval and the merge are the user's. A stop point that ended the run
    prints the same block with `NOT READY <url>: <what is open>` last; a
@@ -230,7 +218,7 @@ Rebase on `origin/main`; two hunks conflict; fix-conflicts resolves them
 and the suite is green; `push --force-with-lease`. Step 3 again on the
 new head.
 
-**`ready.sh`** says `BLOCKED`, reason `1 other check(s) red`.
+**`ready.sh`** says `BLOCKED`, reason `1 check(s) red: test`.
 
 The `test` job's log fails in a file the PR does not touch, and
 `origin/main` is not in `HEAD`: the base moved. Rebase on `origin/main`,
@@ -245,13 +233,14 @@ lines, 44 first, and `RESTACK=moved 2`. The report's `Stack:` line names
 both URLs. Had 44 clashed, the move stops there with `CLASH` and the
 files; 45 is `LEFT`, not pushed.
 
-**`detect.sh`** prints `PRS=10`, `devin 10/10`, `coderabbit 9/10`.
+**Devin Review and Cursor Bugbot** both review the repo.
 
-`TOOLS` is `devin,coderabbit`. The wait returns once both statuses are
-green on the head; a thread from either is judged the same way.
+Step 3 waits until both checks are done on the head, with CI; a thread
+from either is judged the same way. Bugbot ends grey (neutral) when it
+leaves findings, and grey counts as done, not red.
 
-**`detect.sh`** prints only `PRS=0`, on a new repo.
+**A new repo**, on its first PR, with a bot just turned on.
 
-`TOOLS` is `none`: no review status to wait for. Threads from people are
-still judged. A tool that does post a status on this PR still counts, as
-one more check. The report says `Review tools: none`.
+No list and no old PRs are read: the bot's check is on the head within
+the minute step 3 waits first, so it is waited for like CI. A bot set to
+skip a push posts no check, and nothing waits for it.
