@@ -23,7 +23,7 @@ It only runs when you call it.
 
 First the plan, from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. No page opens in your browser: the chat gets a short summary with the file's path, and the run goes on. To read and approve the plan as a page first, run [plan-up](../plan-up/) alone. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; a step it skips stays in the list with the reason. It never merges, never force-pushes a branch it did not make, and never closes a PR; the three rules sit together at the top of the skill. Then the route:
 
-- **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. In a repo with no review tool on its recent PRs, [review-pr](../review-pr/) reviews the PR first, and its findings are judged and fixed like a review tool's, with nothing posted. Each push of fixes gets a new review; after three rounds that push, one last review fixes nothing and stops the run if it still finds something. Review fixes run their tests on your machine and leave the full suite and the build to the PR's CI when a workflow runs those commands; each one no workflow runs, or all of them in a repo with no CI, runs in a Sandbox. A stack goes layer by layer, bottom first. On a `perf` plan, a review fix to the code the perf command runs measures base and head again in a Sandbox, and the PR's `before → after` row is written again.
+- **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. After the PR's first checks are done, it looks on that PR for a review bot from a short list in `scripts/reviewers.tsv` (Devin Review, CodeRabbit, Cursor Bugbot, Greptile, Macroscope). With none there, [review-pr](../review-pr/) reviews the PR first, and its findings are judged and fixed like a bot's, with nothing posted. A bot not on the list gets a local review too: one review too many, never one too few. Each push of fixes gets a new review; after three rounds that push, one last review fixes nothing and stops the run if it still finds something. Review fixes run their tests on your machine and leave the full suite and the build to the PR's CI when a workflow runs those commands; each one no workflow runs, or all of them in a repo with no CI, runs in a Sandbox. A stack goes layer by layer, bottom first. On a `perf` plan, a review fix to the code the perf command runs measures base and head again in a Sandbox, and the PR's `before → after` row is written again.
 - **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
 
 It stops only for a ticket someone else is already on, the plan's big decisions, the build's surprises, and a review finding it cannot settle alone, such as a risky one it would not fix. The last message:
@@ -44,7 +44,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - The skills it chains: [plan-up](../plan-up/), [build-and-prove](../build-and-prove/), [make-pr](../make-pr/), [review-pr](../review-pr/), [ready-pr](../ready-pr/), and [handoff](../handoff/) for the cloud, and what they need. build-and-prove needs proofbox.
-- The shared core files `../../shared-skill-core/facts.md` and `../../shared-skill-core/review-tools/detect.sh`.
+- The shared core file `../../shared-skill-core/facts.md`.
 - For the cloud route: a Devin or Cursor account, as [handoff](../handoff/) describes.
 
 ## Fits with
@@ -57,3 +57,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Credits
 
 The todo list and the order for a red check in [ready-pr](../ready-pr/) take an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+## Tests
+
+The cases for its script are in [tests/](tests/), one file per script, on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

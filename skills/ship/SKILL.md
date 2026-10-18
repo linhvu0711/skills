@@ -126,9 +126,12 @@ where the build runs (step 2).
    proof folder `PROOF`. The base is the layer's base from step 4. Its
    checks already ran in the Sandbox, so it runs none here.
 
-6. **Make ready.** First the review tools, read off the repo's last
-   PRs: `bash ../../shared-skill-core/review-tools/detect.sh <REPO>`.
-   No line after `PRS=` means no review tool: read
+6. **Make ready.** First the checks on each PR, bottom of the stack
+   first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me>
+   --wait <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's
+   head and `me` is `gh api user -q .login`. Then the review bots on that
+   PR: `bash scripts/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
+   show it, stop. No line means no review bot: read
    `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the
    stack first, in its worktree, and post nothing. Then ready-pr step 5
    on its report file as a text review: validate-pr-review with the
@@ -271,10 +274,10 @@ has no Done-when list.
 Plan-up's gate fails: the question that closes it, `/grill` named.
 Stop. Nothing is built.
 
-**User:** `/ship https://github.com/acme/shop/issues/90`; `detect.sh`
-prints only `PRS=10`.
+**User:** `/ship https://github.com/acme/shop/issues/90`; after the
+first wait on PR 91, `reviewers.sh` prints nothing.
 
-No review tool. After make-pr opens PR 91, review-pr reviews it and
+No review bot. Review-pr reviews PR 91 and
 finds one `🟠 should`; validate-pr-review on its report judges it
 `fix here`, the fix is committed and pushed, nothing is posted. Then
 ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's
