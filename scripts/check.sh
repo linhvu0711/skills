@@ -69,7 +69,8 @@ allowed_emails='cursoragent@cursor.com'
 # Paths a skill or a shared core file names in the user's repo, not in its own
 # folder, as `<skill folder or core folder> <path>`, one per line.
 allowed_paths='skills/embed-source scripts/sync-repos.sh
-shared-skill-core/review ../REVIEW.md'
+shared-skill-core/review ../REVIEW.md
+skills/set-review-rules ../REVIEW.md'
 
 staged=0; msg=""; paths=()
 while [ $# -gt 0 ]; do
