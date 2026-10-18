@@ -85,12 +85,14 @@ Explore agents retrieve, short lookups are yours.
      `REVIEW.md` before you review a pull request." When neither exists,
      create `AGENTS.md` with that one line.
    - Each confirmed review bot's file: its pointer, per rule-sources.md
-     § Review bots. The pointer only, never a copy of the rules.
+     § Review bots. The pointer only, never a copy of the rules. A file
+     § Review bots says is never made, such as a missing CodeRabbit
+     config, is not made: step 7 names the dashboard step instead.
 
    Done when every settled rule is in `REVIEW.md` exactly once under its
-   axis, the markers are present, every confirmed bot with a pointer in
-   § Review bots has it, and `git status` lists only the files above and
-   the ones the grill named.
+   axis, the markers are present, every confirmed bot's file that exists
+   or may be made holds its pointer, and `git status` lists only the
+   files above and the ones the grill named.
 
 7. **Hand off.** In chat:
 
