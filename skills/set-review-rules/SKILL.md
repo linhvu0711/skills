@@ -95,7 +95,9 @@ Explore agents retrieve, short lookups are yours.
 7. **Hand off.** In chat:
 
    - Files changed, one line each, the grill's among them.
-   - Review bots, one line each: the pointer written and its file, or
+   - Review bots, one line each: the pointer written and its file;
+     for CodeRabbit with no file in the repo, `add "**/REVIEW.md" to the
+     code guidelines file patterns in the CodeRabbit dashboard`; or
      `no pointer known` for a bot § Review bots has none for.
    - Last line: `Ready for /commit`.
 

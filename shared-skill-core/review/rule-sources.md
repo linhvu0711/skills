@@ -7,8 +7,8 @@ Fixed list, always checked, every path looked for:
 `.github/PULL_REQUEST_TEMPLATE*`, `.github/pull_request_template*`,
 `.github/CODEOWNERS`, `CODEOWNERS`, CI config (`.github/workflows/**`,
 `.gitlab-ci.yml`, `Jenkinsfile`), review bot configs
-(`.coderabbit.yaml`, `.github/copilot-instructions.md`, `.cursorrules`,
-`.cursor/rules/**`).
+(`.coderabbit.yaml`, `.coderabbit.yml`, `.cursor/BUGBOT.md`,
+`.github/copilot-instructions.md`, `.cursorrules`, `.cursor/rules/**`).
 
 Read each hit. Sort it into one of three bins:
 
@@ -38,10 +38,14 @@ rules, so the rules change in one file:
 | Bot | File | Pointer |
 |---|---|---|
 | devin | none | none: it reads `REVIEW.md` itself |
-| coderabbit | `.coderabbit.yaml` | `"**/REVIEW.md"` in `knowledge_base.code_guidelines.filePatterns` |
+| coderabbit | `.coderabbit.yaml` or `.coderabbit.yml`, never made | `"**/REVIEW.md"` in `knowledge_base.code_guidelines.filePatterns` |
 | bugbot | `.cursor/BUGBOT.md` | `- [Review rules](../REVIEW.md)` |
 | any other | | none known |
 
-A missing file is made with the pointer alone. A file that holds the
-pointer stays as it is. A file that holds more keeps all of it; the
-pointer is added and nothing else changes.
+A file that holds the pointer stays as it is. A file that holds more
+keeps all of it; the pointer is added and nothing else changes. A
+missing `.cursor/BUGBOT.md` is made with the pointer alone. A missing
+CodeRabbit file is never made: a repo file replaces the settings in
+CodeRabbit's dashboard, which do not carry over unless the file sets
+`inheritance: true`. The user adds the pattern in the dashboard
+instead, under the code guidelines file patterns.
