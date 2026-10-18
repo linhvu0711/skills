@@ -1,11 +1,11 @@
-# reviewers.sh: the cases for this skill's reviewers.sh, driven through the
-# fake gh. The repo's test.sh sources this file after test-lib.sh and runs
-# its cases.
+# reviewers.sh: the cases for the shared core's review/reviewers.sh, driven
+# through the fake gh. The repo's test.sh sources this file after test-lib.sh
+# and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # reviewers <args...>: run reviewers.sh on the fake gh.
-reviewers() { run bash "$here/../scripts/reviewers.sh" "$@"; }
+reviewers() { run bash "$here/../review/reviewers.sh" "$@"; }
 
 # pr_node [reviews] [comments] [contexts]: the graphql answer for one PR,
 # each part a JSON array body.

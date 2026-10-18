@@ -130,7 +130,7 @@ where the build runs (step 2).
    first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me>
    --wait <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's
    head and `me` is `gh api user -q .login`. Then the review bots on that
-   PR: `bash scripts/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
+   PR: `bash ../../shared-skill-core/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
    show it, stop. No line means no review bot: read
    `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the
    stack first, in its worktree, and post nothing. Then ready-pr step 5

@@ -3,10 +3,11 @@
 #
 #   reviewers.sh <owner/repo> <number>
 #
-# ship asks this after the first wait on the PR it opened, to choose whether
-# review-pr runs here. Waiting needs no bot names: ready-pr waits for every
-# check. Only this choice does, since a deploy bot comments and posts checks
-# too. A bot from reviewers.tsv is seen when any of these is its login: a
+# Two skills ask it. ship asks after the first wait on the PR it opened, to
+# choose whether review-pr runs there. Waiting needs no bot names: ready-pr
+# waits for every check. Only this choice does, since a deploy bot comments
+# and posts checks too. set-review-rules asks it on a repo's recent PRs, to
+# find the bots to point at REVIEW.md. A bot from reviewers.tsv is seen when any of these is its login: a
 # review's author, a comment's author, a commit status's creator, or a check
 # run's app on the PR's last commit. A bot not in the table is not seen, so
 # review-pr runs: one review too many, never one too few.
