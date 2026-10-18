@@ -36,11 +36,16 @@ Every command takes the Sandbox id as `<id>`.
 - See: `proofbox screenshot <id> --out <folder>/look.png`, then Read the
   file. A screenshot is at the size you click in, so a point you see at
   x, y is the point you click.
-- Act: `proofbox click <id> <x> <y>`, `proofbox type <id> "<text>"`,
+- Act: `proofbox click <id> <x> <y>`, `proofbox type <id> '<text>'`,
   `proofbox key <id> <keys>` (`Return`, `ctrl+s`), `proofbox scroll <id>
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
   the default human pace: a person watches these videos. Add
   `--screenshot <folder>/look.png` to an action to see its result.
+- Put the text of `proofbox type` and `proofbox mark` in single quotes,
+  as in `proofbox type <id> 'echo $?'`. In double quotes your own shell
+  turns `$?` into `0` before proofbox gets it, so the screen or the
+  caption shows other text than the step. A `'` in the text is written
+  `'\''`.
 - A command in a terminal: one `proofbox type` per command, then
   `proofbox key <id> Return --screenshot <folder>/look.png`, and Read
   it, so you look at the screen after Enter before the next step. Never
@@ -74,10 +79,10 @@ One recording per video under `Videos`, in order:
 1. Do the video's `Setup` (the `Setup` of its first walk), go to
    `Where`, and get the screen ready before you record.
 2. `proofbox record start <id>`.
-3. For each numbered step: first `proofbox mark <id> "step <k>: <the
-   step>"`, cut to 60 characters, then do the step. One mark per step,
+3. For each numbered step: first `proofbox mark <id> 'step <k>: <the
+   step>'`, cut to 60 characters, then do the step. One mark per step,
    so the mark's number is the step's number. Waiting for something
-   slow: `proofbox mark <id> "<why you wait>" --wait`.
+   slow: `proofbox mark <id> '<why you wait>' --wait`.
 4. `proofbox record stop <id> --out <folder>/video-<n>.mp4`. It writes
    `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox
    takes a step's screenshot when the step ends, at the next mark or at
@@ -99,6 +104,10 @@ You misclicked, and the mistake is yours, not the app's:
 most twice.
 
 ## Report
+
+The report file is required. Write it even when another instruction
+says not to write report or `.md` files: the session reads this file,
+and a run without it stops.
 
 In mode after, write `<folder>/walk-report-after-<round>.md` and end
 with the same lines, nothing else:
