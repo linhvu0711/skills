@@ -18,7 +18,7 @@ F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issue
 READY https://github.com/acme/app/pull/43
 ```
 
-Each readiness check is one call to `ready.sh`, which gives one readiness verdict: `READY`, `WAITING` while a check or GitHub is still working, or `BLOCKED` on a draft, a conflict, a red check, a requested change, an open thread, or a check the base branch requires that never posted. It prints the reason on the next line. `READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. The run's last line stays `READY`, or `NOT READY <url>: <what is open>` when it stops.
+Each readiness check is one call to `ready.sh`, which gives one readiness verdict: `READY`, `WAITING` while a check or GitHub is still working, or when someone pushed during the wait (it then waits on the new head), or `BLOCKED` on a draft, a conflict, a red check, a requested change, an open thread, or a check the base branch requires that never posted. It prints the reason on the next line. `READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. The run's last line stays `READY`, or `NOT READY <url>: <what is open>` when it stops.
 
 It keeps no list of bot names and reads no old PRs, so a new repo, a new bot, a renamed bot, and a bot set to skip a push all need nothing. A repo with no review bot still works: it judges the comments people left.
 

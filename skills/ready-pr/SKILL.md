@@ -65,6 +65,9 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    `SHA`, CI and review bots alike, is done or one is red, then gives the
    readiness verdict. Run it in the background in Claude Code; in Codex,
    in the foreground. By the reason line:
+   - `head moved to <sha7>`: someone pushed during the wait. `git -C
+     "$WT" pull --ff-only`, `SHA` is the new head, step 3 again; this
+     round's count stays.
    - `check(s) pending: <names>`: they stayed pending for thirty
      minutes; say the names and the PR URL, stop.
    - `gh failed:`: say the error and the PR URL, stop.

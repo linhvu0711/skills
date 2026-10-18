@@ -300,9 +300,13 @@ t_ready_wait_zero_checks() {
 }
 
 t_ready_wait_head_moved() {
+  # Given: the head is abc1234, not the sha the wait was given
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  # When
   ready --wait 0000000aaaaaaa --poll-sec 1
+  # Then
   eq exit 2 "$code"
+  eq "line 2" "head moved to abc1234; 1 check(s) pending: Devin Review" "$(line 2)"
   eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
@@ -370,7 +374,7 @@ cases=(
   "ready-pr: --wait stops on a red check|t_ready_wait_stops_on_red"
   "ready-pr: --wait past the timeout names the pending check|t_ready_wait_timeout"
   "ready-pr: --wait with zero checks after the settle reads WAITING|t_ready_wait_zero_checks"
-  "ready-pr: --wait stops when the head moved|t_ready_wait_head_moved"
+  "ready-pr: --wait names a head that moved|t_ready_wait_head_moved"
   "ready-pr: --wait stops BLOCKED after 5 failed calls|t_ready_wait_gh_fails"
   "ready-pr: --wait goes on after one failed call|t_ready_wait_one_failure"
   "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"

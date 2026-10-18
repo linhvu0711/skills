@@ -28,7 +28,7 @@
 #
 # Each reason it is not ready is `waiting` when time alone clears it (a check
 # still pending, no checks yet, GitHub still computing, a required check not
-# posted while a check is pending) and `blocked` when it needs work or a
+# posted while a check is pending, a head that moved during --wait) and `blocked` when it needs work or a
 # person. Prints line 1 the verdict, line 2 the reason, then one line per
 # review thread that waits for the author:
 #   <thread node id> <path>:<line> last=<login> :: <first comment, 120 chars>
@@ -178,6 +178,9 @@ blocked() { why+=("$1"); has_blocked=1; }
 waiting() { why+=("$1"); has_waiting=1; }
 
 [ "$(get STATE)" = "OPEN" ] || blocked "state is $(get STATE)"
+# A push after the waited-for sha: its checks are new, so the pending ones
+# are not a timeout. The caller pulls and waits on the new head.
+[ -z "$wait_sha" ] || [ "$(get SHA)" = "$wait_sha" ] || waiting "head moved to $sha7"
 [ "$(get DRAFT)" != "true" ] || blocked "draft"
 checks=$(( $(get CHECKS_RED) + $(get CHECKS_PENDING) + $(get CHECKS_GREEN) ))
 [ "$checks" -ne 0 ] || waiting "no checks on $sha7 yet"
