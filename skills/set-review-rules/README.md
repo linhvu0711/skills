@@ -26,7 +26,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 - Calls [grill](../grill/).
 - Hands off to [commit](../commit/).
-- [review-pr](../review-pr/) reads the `REVIEW.md` it writes, and suggests this skill when a repo has no review rules.
+- [review-pr](../review-pr/) reads the `REVIEW.md` it writes, and suggests this skill when a repo has no review rules. [validate-pr-review](../validate-pr-review/) reads it too, to grade review findings.
 
 ## Credits
 
