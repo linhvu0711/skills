@@ -1,6 +1,6 @@
 ---
 name: set-review-rules
-description: "Write REVIEW.md for a repo: the fixed three-axis review (logic, scope, standards) on top, repo-specific rules below. Finds rules already in the repo, proposes more, grills the user, writes. Points CLAUDE.md and AGENTS.md at the file. No commit."
+description: "Write REVIEW.md for a repo: the fixed three-axis review (logic, scope, standards) on top, repo-specific rules below. Finds rules already in the repo, proposes more, grills the user, writes. Points CLAUDE.md, AGENTS.md, and each review bot the repo uses at the file. No commit."
 disable-model-invocation: true
 ---
 
@@ -25,17 +25,20 @@ Explore agents retrieve, short lookups are yours.
 
 1. **Preflight.** `git rev-parse --show-toplevel`. No repo: say so, stop.
    Count source files, ignoring vendored and generated trees. Zero: the
-   repo gets the general block only. Skip to step 6 with no repo rules
-   and say in the hand-off that repo rules can come later.
+   repo gets the general block only. Find its review bots as step 2 says,
+   ask the user in one question to confirm them, add one, or drop one,
+   then skip to step 6 with no repo rules and say in the hand-off that
+   repo rules can come later.
 
 2. **Find the rules.** Search the repo for every file that says how code
    is reviewed. The list of paths and the three bins (review rule, bot
    config, not a rule) are in
    `../../shared-skill-core/review/rule-sources.md`. Read it, look
-   for every path, sort every hit.
+   for every path, sort every hit. Then find the review bots the repo
+   uses, per its § Review bots.
 
-   Done when every path in the list has been looked for and every hit is
-   in a bin.
+   Done when every path in the list has been looked for, every hit is
+   in a bin, and the review bots are listed.
 
 3. **Hot spots.** One command, seconds on any repo:
 
@@ -62,12 +65,13 @@ Explore agents retrieve, short lookups are yours.
    <axis>: <rule in positive, checkable form>   (<file:line> | hot spot, <n> commits | dead: <what is gone>)
    ```
 
-   Print them grouped by axis, then the bot configs found, then the files
-   that hold review prose to fold in. Invoke the `grill` skill with the
-   Skill tool. Seed: this report. Open decisions: for each proposal,
-   accept, change, or drop; for each dead rule, drop or fix; for each
-   file with review prose, fold it into `REVIEW.md` or leave it; and what
-   rules the user adds. Close out: caller. Then continue at step 6.
+   Print them grouped by axis, then the review bots found, each with the
+   file or PR that showed it, then the files that hold review prose to
+   fold in. Invoke the `grill` skill with the Skill tool. Seed: this
+   report. Open decisions: for each proposal, accept, change, or drop;
+   for each dead rule, drop or fix; for each file with review prose, fold
+   it into `REVIEW.md` or leave it; the review bots, confirm the list,
+   add one, or drop one; and what rules the user adds. Close out: caller. Then continue at step 6.
 
 6. **Write.** Files in the working tree, nothing else:
 
@@ -80,16 +84,23 @@ Explore agents retrieve, short lookups are yours.
    - `CLAUDE.md` and `AGENTS.md`, where they exist: one line, "Read
      `REVIEW.md` before you review a pull request." When neither exists,
      create `AGENTS.md` with that one line.
+   - Each confirmed review bot's file: its pointer, per rule-sources.md
+     § Review bots. The pointer only, never a copy of the rules. A file
+     § Review bots says is never made, such as a missing CodeRabbit
+     config, is not made: step 7 names the dashboard step instead.
 
    Done when every settled rule is in `REVIEW.md` exactly once under its
-   axis, the markers are present, and `git status` lists only the files
-   above and the ones the grill named.
+   axis, the markers are present, every confirmed bot's file that exists
+   or may be made holds its pointer, and `git status` lists only the
+   files above and the ones the grill named.
 
 7. **Hand off.** In chat:
 
    - Files changed, one line each, the grill's among them.
-   - Bot configs found, one line each, with the pointer line you
-     recommend adding to each. You did not edit them.
+   - Review bots, one line each: the pointer written and its file;
+     for CodeRabbit with no file in the repo, `add "**/REVIEW.md" to the
+     code guidelines file patterns in the CodeRabbit dashboard`; or
+     `no pointer known` for a bot § Review bots has none for.
    - Last line: `Ready for /commit`.
 
 ## File shape
@@ -155,6 +166,8 @@ the rest untouched. Hand off lists `REVIEW.md` only.
 
 **User:** `/set-review-rules` in a repo with only a README.
 
-Zero source files. Write `REVIEW.md` with the general block and three
-empty axis headings, create `AGENTS.md` with the pointer line. Say repo
-rules can come later. `Ready for /commit`.
+Zero source files. `reviewers.sh` names `bugbot` on two of the last 10
+PRs; the user confirms it. Write `REVIEW.md` with the general block and
+three empty axis headings, create `AGENTS.md` with the pointer line, and
+create `.cursor/BUGBOT.md` with `- [Review rules](../REVIEW.md)` alone.
+Say repo rules can come later. `Ready for /commit`.

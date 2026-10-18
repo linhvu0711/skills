@@ -66,9 +66,11 @@ home_re='(^|[^A-Za-z0-9._-])/(Users|home)/[A-Za-z0-9._-]+'
 email_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 # Public addresses the skills name on purpose, one per line.
 allowed_emails='cursoragent@cursor.com'
-# Paths a skill names in the user's repo, not in its own folder, as
-# `<skill folder> <path>`, one per line.
-allowed_paths='skills/embed-source scripts/sync-repos.sh'
+# Paths a skill or a shared core file names in the user's repo, not in its own
+# folder, as `<skill folder or core folder> <path>`, one per line.
+allowed_paths='skills/embed-source scripts/sync-repos.sh
+shared-skill-core/review ../REVIEW.md
+skills/set-review-rules ../REVIEW.md'
 
 staged=0; msg=""; paths=()
 while [ $# -gt 0 ]; do
