@@ -510,6 +510,26 @@ words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
 
+**Shape first.** A `Change` that adds or changes data names its shape
+before its logic: the type, the table, or the file or key format, in
+the first slice that needs it. A new need goes into that shape as if it
+was there from the start. A flag, a mode, or one more branch for the
+new case at the side, where a wider type or model would hold it, is
+planned again. A new kind of ID gets its own type. Data from outside is
+parsed into a type at the edge. A type that a schema, a spec, or a
+generator already defines is taken from there, never written by hand.
+
+**Rerun and crash.** A `Change` that writes outside memory (a file, a
+row, a remote call) reads what is there and writes only the
+difference, and it writes a file under a temp name, then renames it.
+So a second run, and a run after a crash, end in the same state. Its
+slice has a test that runs the step twice; `Then` is the end state.
+
+**One writer.** Two actors that write one target (a file, a key, a
+row) each get their own target, joined when it is read. A lock is
+planned only when one shared target must stay, and its `Decided` line
+says why.
+
 **Delete slice.** Dead code the facts round found in the area the
 ticket touches is deleted first, alone, so the new code is built on the
 simpler base and nothing copies the old way. Code is dead only when a
@@ -623,6 +643,13 @@ facts or forks.
   serve, or saying the repo has never done this job. A new module's line
   says what it hides, so it passes the deletion test; a new seam that
   swaps one thing for another has two adapters.
+- Every `Change` that adds or changes data names its shape in the
+  first slice that needs it, and no slice adds a flag or a branch at
+  the side that the shape could hold (Shape first).
+- Every `Change` that writes outside memory has a test that runs it
+  twice (Rerun and crash).
+- Every target that two actors write has one target per actor, or a
+  `Decided` line for its lock (One writer).
 - Dead code the facts round found is a delete slice, slice 1, whose
   `Change` lines only delete, each with the search that showed
   no caller in the code, in strings, in scripts, and in config;
