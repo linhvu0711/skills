@@ -271,8 +271,9 @@ block above, and the Done rule holds whole.
   that already cover those seams; the standards files; the docs the
   Steps make stale; the UI kind and how it opens when a line is on a
   screen; the nearest existing one for each function, component, type,
-  or file a Step adds; the dead code in the area the Steps touch, as
-  `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
+  or file a Step adds; the data the Steps read and write, with where
+  its type is defined and its other writers; the dead code in the area
+  the Steps touch, as `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
@@ -282,10 +283,12 @@ block above, and the Done rule holds whole.
   the round or by a question to the user, the docs the round found
   that stay as they are, and the line § Done asks for each function,
   component, type, or file a Step adds, written from the Step and the
-  round, and the line § Slices asks for code a delete search kept.
+  round, the line § Slices asks for code a delete search kept, and
+  the line § Slices asks for a lock (One writer).
   Nothing else is decided here; the Steps decided it. A Step whose
-  new module fails the deletion test, or whose new swap seam has one
-  adapter, is a choice the issue got wrong, and ends the short path as
+  new module fails the deletion test, whose new swap seam has one
+  adapter, or that breaks Shape first, Rerun and crash, or One writer,
+  is a choice the issue got wrong, and ends the short path as
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
