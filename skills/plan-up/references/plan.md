@@ -521,8 +521,8 @@ generator already defines is taken from there, never written by hand.
 
 **Rerun and crash.** A `Change` that writes outside memory (a file, a
 row, a remote call) reads what is there and writes only the
-difference, and it writes a file under a temp name, then renames it.
-So a second run, and a run after a crash, end in the same state. Its
+difference. A file is written under a temp name, then renamed into
+place. So a second run, and a run after a crash, end in the same state. Its
 slice has a test that runs the step twice; `Then` is the end state.
 
 **One writer.** Two actors that write one target (a file, a key, a
