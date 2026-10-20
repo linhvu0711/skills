@@ -87,7 +87,7 @@ When `CODING_STANDARDS.md` is missing, the code next to the diff is the
 standard and the smell list below is the floor. Say once in the review:
 "no CODING_STANDARDS.md; run /set-coding-standards".
 
-Smell list (Fowler, _Refactoring_ ch.3, plus eleven for code agents write).
+Smell list (Fowler, _Refactoring_ ch.3, plus sixteen for code agents write).
 Each is a judgement call, labelled "possible", and a written repo rule
 always wins over it:
 
@@ -121,7 +121,7 @@ always wins over it:
   using it.
 - **Misplaced Check**: a check on data our own code made, while data
   that comes in from outside (a user, a file, a network reply) goes
-  unchecked.
+  unchecked, or is used with no parse into a type.
 - **Growing If Chain**: an if/else chain that gets one more branch for
   each new case.
 - **Twin Flags**: two true/false values that must stay in sync, where
@@ -129,7 +129,20 @@ always wins over it:
 - **Narrating Comment**: a comment that says what the code does, not why
   it does it.
 - **Unsafe Rerun**: a step that breaks or doubles data when it runs
-  twice.
+  twice, or that a crash leaves half done (a temp file, a lock, a
+  half-written record) in a state the next run takes as done.
+- **Wrong Shape**: code that works around a data shape that does not
+  fit the job: a loop to find what a map would key, fields packed into
+  one string, the same value turned back and forth.
+- **Bolted-On Case**: a new need added at the side as a flag, a mode,
+  or one more branch, where a change to the model would make it part of
+  the design.
+- **Mixable IDs**: two kinds of ID with the same plain type, so one can
+  pass where the other belongs.
+- **Hand-Copied Type**: a type written by hand that a schema, a spec,
+  or a generator already defines.
+- **Lock First**: a lock, a retry, or a doc rule added so two writers
+  can share one target, where each could write its own.
 
 Done when every hunk has been read against the rules and each finding
 cites a rule or names a smell.
