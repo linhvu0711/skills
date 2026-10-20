@@ -271,8 +271,9 @@ block above, and the Done rule holds whole.
   that already cover those seams; the standards files; the docs the
   Steps make stale; the UI kind and how it opens when a line is on a
   screen; the nearest existing one for each function, component, type,
-  or file a Step adds; the dead code in the area the Steps touch, as
-  `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
+  or file a Step adds; the data the Steps read and write, with where
+  its type is defined and its other writers; the dead code in the area
+  the Steps touch, as `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
@@ -282,10 +283,12 @@ block above, and the Done rule holds whole.
   the round or by a question to the user, the docs the round found
   that stay as they are, and the line § Done asks for each function,
   component, type, or file a Step adds, written from the Step and the
-  round, and the line § Slices asks for code a delete search kept.
+  round, the line § Slices asks for code a delete search kept, and
+  the line § Slices asks for a lock (One writer).
   Nothing else is decided here; the Steps decided it. A Step whose
-  new module fails the deletion test, or whose new swap seam has one
-  adapter, is a choice the issue got wrong, and ends the short path as
+  new module fails the deletion test, whose new swap seam has one
+  adapter, or that breaks Shape first, Rerun and crash, or One writer,
+  is a choice the issue got wrong, and ends the short path as
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
@@ -510,6 +513,26 @@ words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
 
+**Shape first.** A `Change` that adds or changes data names its shape
+before its logic: the type, the table, or the file or key format, in
+the first slice that needs it. A new need goes into that shape as if it
+was there from the start. A flag, a mode, or one more branch for the
+new case at the side, where a wider type or model would hold it, is
+planned again. A new kind of ID gets its own type. Data from outside is
+parsed into a type at the edge. A type that a schema, a spec, or a
+generator already defines is taken from there, never written by hand.
+
+**Rerun and crash.** A `Change` that writes outside memory (a file, a
+row, a remote call) reads what is there and writes only the
+difference. A file is written under a temp name, then renamed into
+place. So a second run, and a run after a crash, end in the same state. Its
+slice has a test that runs the step twice; `Then` is the end state.
+
+**One writer.** Two actors that write one target (a file, a key, a
+row) each get their own target, joined when it is read. A lock is
+planned only when one shared target must stay, and its `Decided` line
+says why.
+
 **Delete slice.** Dead code the facts round found in the area the
 ticket touches is deleted first, alone, so the new code is built on the
 simpler base and nothing copies the old way. Code is dead only when a
@@ -623,6 +646,13 @@ facts or forks.
   serve, or saying the repo has never done this job. A new module's line
   says what it hides, so it passes the deletion test; a new seam that
   swaps one thing for another has two adapters.
+- Every `Change` that adds or changes data names its shape in the
+  first slice that needs it, and no slice adds a flag or a branch at
+  the side that the shape could hold (Shape first).
+- Every `Change` that writes outside memory has a test that runs it
+  twice (Rerun and crash).
+- Every target that two actors write has one target per actor, or a
+  `Decided` line for its lock (One writer).
 - Dead code the facts round found is a delete slice, slice 1, whose
   `Change` lines only delete, each with the search that showed
   no caller in the code, in strings, in scripts, and in config;

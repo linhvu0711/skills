@@ -31,6 +31,8 @@ A new module or seam must earn its place, by the rules improve-architecture uses
 
 Before it adds, it looks for dead code in the area the ticket touches: a function, file, flag, or stub that no caller uses, or an old way that a newer one replaced. Code is dead only when a search finds no caller in the code, strings, scripts, and config, and nothing calls it by name at run time; anything else stays, with a line that says why. Dead code goes in the plan's first slice, alone, with the tests that cover the area passing before and after; with no such test, the search that found no caller must find nothing after the delete. With no dead code, the plan has no such slice.
 
+The plan names the data shape before the logic: the type, the table, or the file format. A new need goes into that shape, not into a flag at the side. Each kind of ID gets its own type, data from outside is parsed into a type at the edge, and a type comes from a schema when one exists. A step that writes a file, a row, or a remote call is safe to run twice and after a crash, and a test runs it twice. Two writers get their own targets before the plan names any lock.
+
 A `fix` plan proves the bug is gone. The type comes from the title's first word, and a repo that writes `bug:` for a fix counts too. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it. A `refactor` plan proves nothing changed: it names the tests that cover the code, or adds a lock test that passes before the change and after it. Every caller moves to the new form, the old form is deleted in the same PR, and a rename gets a search for the old name in strings, docs, and config.
 
 When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
@@ -46,7 +48,7 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 
 A `perf` ticket's plan gets a Perf block (Metric, Command, Before, and a Pass rule with its run count) from the issue's Baseline and Target, read by the shared benchmark checklist.
 
-A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. It still looks for dead code, and a delete slice goes before the Steps. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
+A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. It still looks for dead code, and a delete slice goes before the Steps. It also reads the data the Steps touch, and a Step that breaks the data shape, rerun, or one-writer rules sends the ticket down the full path. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
@@ -92,3 +94,5 @@ The idea of planning test-first slices for an agent to build comes from the `tdd
 The perf block takes an idea from `poteto-mode/playbooks/perf-issue.md` and `benchmark-checklist` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
 
 Deleting dead code before adding takes an idea from `principle-subtract-before-you-add` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+Shape first, rerun and crash, and one writer take ideas from `principle-foundational-thinking`, `principle-redesign-from-first-principles`, `principle-model-the-domain`, `principle-type-system-discipline`, `principle-make-operations-idempotent`, and `principle-separate-before-serializing-shared-state` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
