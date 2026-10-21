@@ -273,7 +273,8 @@ block above, and the Done rule holds whole.
   screen; the nearest existing one for each function, component, type,
   or file a Step adds; the data the Steps read and write, with where
   its type is defined and its other writers; the dead code in the area
-  the Steps touch, as `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
+  the Steps touch, and the design of each part the Steps touch, as
+  `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
@@ -287,7 +288,8 @@ block above, and the Done rule holds whole.
   the line § Slices asks for a lock (One writer).
   Nothing else is decided here; the Steps decided it. A Step whose
   new module fails the deletion test, whose new swap seam has one
-  adapter, or that breaks Shape first, Rerun and crash, or One writer,
+  adapter, or that breaks Right design first, Shape first, Rerun and
+  crash, or One writer,
   is a choice the issue got wrong, and ends the short path as
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
@@ -479,8 +481,10 @@ test its change makes green, and nothing else: a test that would be green
 without a change of its own belongs to the slice that covers it, not to a
 slice of its own. `Then` is a known literal: a value from the issue, the
 spec, or a worked example. `Change` names a line you saw this session and
-a pattern to copy; describing a shape the code already shows is waste.
-`Change` extends before it adds: a helper, a component, a type, a
+a pattern to copy, or, in a rebuild with no pattern that fits, a
+`Decided` line that says why; describing a shape the code already shows is waste.
+`Change` extends before it adds when the part's design fits (Right
+design first): a helper, a component, a type, a
 fixture that does the job or part of it is called or widened, never
 written twice. A new one is added only when the nearest existing one
 is named and the line that keeps it from serving is quoted, under
@@ -512,6 +516,19 @@ slice whose change makes it true, its text copied word for word: the
 words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
+
+**Right design first.** The plan first says what each part the work
+touches would look like if it was built today for every job it has,
+the new one too. The facts round brings the signs that the current
+design is wrong: a flag or a branch for one case, the same logic in two
+places, a caller that works around the part, a new need that fits only
+at the side. The design fits: the plan extends it by the simplest change
+that keeps the code clear. The design does not fit: the part is rebuilt,
+a big fork per `SKILL.md` step 5, where the patch is the lower option
+with what it costs later. A rebuild is slices in this order: the new
+form, each caller moved to it, and last the old form deleted, all in the
+same PR. The simplest path then decides how: the fewest parts moved,
+each slice green on its own.
 
 **Shape first.** A `Change` that adds or changes data names its shape
 before its logic: the type, the table, or the file or key format, in
@@ -640,7 +657,8 @@ facts or forks.
   layer's slice.
 - Every `Then` is a literal.
 - Every `Change` names a `file:line` seen this session, or an earlier
-  layer's slice, and a pattern to copy.
+  layer's slice, and a pattern to copy, or, in a rebuild, a `Decided`
+  line that says why no pattern fits.
 - Every function, component, type, or file a `Change` adds has a
   `Decided` line naming the nearest existing one and why it does not
   serve, or saying the repo has never done this job. A new module's line
@@ -649,6 +667,9 @@ facts or forks.
 - Every `Change` that adds or changes data names its shape in the
   first slice that needs it, and no slice adds a flag or a branch at
   the side that the shape could hold (Shape first).
+- Every part a `Change` touches fits its design, or is rebuilt per
+  Right design first: the new form, each caller moved, the old form
+  deleted last, in the same PR, and its fork asked and marked `(user)`.
 - Every `Change` that writes outside memory has a test that runs it
   twice (Rerun and crash).
 - Every target that two actors write has one target per actor, or a
