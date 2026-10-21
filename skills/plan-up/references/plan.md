@@ -285,7 +285,10 @@ block above, and the Done rule holds whole.
   that stay as they are, and the line § Done asks for each function,
   component, type, or file a Step adds, written from the Step and the
   round, the line § Slices asks for code a delete search kept, and
-  the line § Slices asks for a lock (One writer).
+  the line § Slices asks for a lock (One writer), and, for a rebuild
+  the Steps plan in the order Right design first asks, a line marked
+  `(user)` that says the issue chose it, since the user approved the
+  issue.
   Nothing else is decided here; the Steps decided it. A Step whose
   new module fails the deletion test, whose new swap seam has one
   adapter, or that breaks Right design first, Shape first, Rerun and
@@ -294,7 +297,8 @@ block above, and the Done rule holds whole.
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
-  only the `Decided` lines the issue's `Open` lines left.
+  only the `Decided` lines the issue's `Open` lines left, and the
+  rebuild line above when there is one.
 - **Change map.** As for any plan. The Explore round adds one ask: the
   parts and flows around each seam the Steps touch.
 
@@ -670,8 +674,7 @@ facts or forks.
 - Every part a `Change` touches fits its design, or has a `Decided`
   line, marked `(user)`, for its fork per Right design first: the
   rebuild (the new form, each caller moved, the old form deleted last,
-  in the same PR) or the patch. On the short path, a rebuild that the
-  issue's Steps already plan in that order needs no fork.
+  in the same PR) or the patch.
 - Every `Change` that writes outside memory has a test that runs it
   twice (Rerun and crash).
 - Every target that two actors write has one target per actor, or a
