@@ -176,7 +176,15 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    - what the repo already holds that does the job, or part of it: a
      helper, a service, a component, a type, a fixture, a script; where
      each lives, who calls it, how far it reaches. The plan extends
-     these before it adds, per `plan.md` § Slices;
+     these before it adds when their design fits, per `plan.md`
+     § Slices;
+   - for each part the work touches: what it would look like if built
+     today for every job it has, the new one too; the signs in the code
+     that its current design is wrong (a flag or a branch for one case,
+     the same logic in two places, a caller that works around it, a new
+     need that fits only at the side); and the simplest path to that
+     design: what can stay, what moves, how many callers move. The plan
+     picks extend or rebuild per `plan.md` § Slices, Right design first;
    - the data the work reads and writes: its type, table, file, or key;
      where its type is defined (a schema, a spec, a generator, or by
      hand); and every other code that writes it. The plan builds on
@@ -253,7 +261,9 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    a secret, data that leaves the system,
    a pattern new to the repo (first queue, cache, job), a move
    of work between layers, a choice that scales with size or load, a
-   Done-when line that reads two ways.
+   Done-when line that reads two ways, a rebuild of a part whose design
+   the facts round found wrong (`plan.md` § Slices, Right design first),
+   with the patch as a lower option and what it costs later.
 
    **A new dependency is a big fork every time.** The two tests do not
    apply; do not reason it down to a small fork. A dependency is any
@@ -272,8 +282,8 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
    Neither holds: **small fork**. The repo shows the answer. Decide,
    write it under `Decided` with the `file:line` that settles it. Code
-   shape, which seam to test at, and extend-or-add (`plan.md` § Slices)
-   are small forks.
+   shape, which seam to test at, and extend-or-add when the part's
+   design fits (`plan.md` § Slices) are small forks.
 
    A probe can settle either test. A big fork asked after a probe carries
    its `Proved` line in the option it backs.
