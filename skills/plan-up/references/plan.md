@@ -667,9 +667,11 @@ facts or forks.
 - Every `Change` that adds or changes data names its shape in the
   first slice that needs it, and no slice adds a flag or a branch at
   the side that the shape could hold (Shape first).
-- Every part a `Change` touches fits its design, or is rebuilt per
-  Right design first: the new form, each caller moved, the old form
-  deleted last, in the same PR, and its fork asked and marked `(user)`.
+- Every part a `Change` touches fits its design, or has a `Decided`
+  line, marked `(user)`, for its fork per Right design first: the
+  rebuild (the new form, each caller moved, the old form deleted last,
+  in the same PR) or the patch. On the short path, a rebuild that the
+  issue's Steps already plan in that order needs no fork.
 - Every `Change` that writes outside memory has a test that runs it
   twice (Rerun and crash).
 - Every target that two actors write has one target per actor, or a
