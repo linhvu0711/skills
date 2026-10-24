@@ -6,9 +6,7 @@ One reader per session. It reads that session's rendered files and writes one st
 
 Send each reader this prompt, verbatim, with the placeholders filled. `<files>` is one line per file from step 4: the main transcript first, then each helper log, each with its size in characters. `<tool>` is `Claude Code` or `Codex CLI`.
 
-In Claude Code the reader is an Explore agent; put this line first:
-`This is a research brief. Pass it whole through the Explore bridge heredoc; do not read the file yourself.`
-In Codex the reader is one `explorer`; send the prompt as it is.
+In Claude Code the reader is an Explore agent; in Codex it is one `explorer`. Send the prompt as it is.
 
 ```
 Read these files in full, in order, each in parts if it is long. They are one past <tool> session: the main transcript, then the logs of helper agents it started.
@@ -45,6 +43,6 @@ Rules: only moments the files show; quote, never paraphrase, in Quote. A smooth 
 
 ## Return
 
-Claude Code: the Explore agent's final message is a `STATUS=OK OUT=<path>` line. Read that file with `cat`; the struggle list is in it. Codex: the `explorer` reply carries it inline, from the `# Struggle list` heading to the end.
+Claude Code: the Explore agent returns the struggle list. Codex: the `explorer` reply carries it inline, from the `# Struggle list` heading to the end.
 
 Any other reply, or one with no `# Struggle list`, is a failure; SKILL.md step 5 says what follows. A `Read:` line under the total means the reader read only part: the report marks that session "read in part".
