@@ -9,9 +9,8 @@ Send the research agent this prompt, verbatim, with the two placeholders
 filled. `<transcript>` is the file the extractor wrote in summary mode.
 `<tool>` is `Claude Code` or `Codex CLI`.
 
-In Claude Code the agent is Explore; put this line first:
-`This is a research brief. Pass it whole through the Explore bridge heredoc; do not read the file yourself.`
-In Codex the agent is one `explorer`; send the prompt as it is.
+In Claude Code the agent is Explore; in Codex it is one `explorer`. Send the
+prompt as it is.
 
 ```
 Read the file <transcript> in full. It is the transcript of a past <tool> session (user prompts and assistant replies only; tool calls omitted). If it starts with a compaction summary, that summary recaps the earlier part of the chat; treat it as part of the history.
@@ -33,9 +32,10 @@ Rules: only facts from the transcript; if a section has nothing, write "none". Q
 
 ## Return
 
-Claude Code: the Explore agent's final message is a `STATUS=OK OUT=<path>`
-line. Read that file with `cat`; the brief is in it. Any other reply (an
-error, or the agent saying it cannot read the file) is a failure.
+Claude Code: the Explore agent returns the brief in its final message. If
+that message is a `STATUS=OK OUT=<path>` line, the brief is in that file:
+read it. A status that is not OK, a missing brief, or the agent saying it
+cannot read the transcript is a failure.
 
 Codex: the `explorer` reply carries the brief inline. Take it from the
 `# State brief` heading to the `Read:` line. A reply with no `# State brief`
