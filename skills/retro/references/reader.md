@@ -43,6 +43,6 @@ Rules: only moments the files show; quote, never paraphrase, in Quote. A smooth 
 
 ## Return
 
-Claude Code: the Explore agent returns the struggle list in its final message. If that message is a `STATUS=OK OUT=<path>` line, the list is in that file: read it. A status that is not OK is a failure. Codex: the `explorer` reply carries it inline, from the `# Struggle list` heading to the end.
+Claude Code: the Explore agent returns the struggle list. Codex: the `explorer` reply carries it inline, from the `# Struggle list` heading to the end.
 
 Any other reply, or one with no `# Struggle list`, is a failure; SKILL.md step 5 says what follows. A `Read:` line under the total means the reader read only part: the report marks that session "read in part".

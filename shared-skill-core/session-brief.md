@@ -32,10 +32,8 @@ Rules: only facts from the transcript; if a section has nothing, write "none". Q
 
 ## Return
 
-Claude Code: the Explore agent returns the brief in its final message. If
-that message is a `STATUS=OK OUT=<path>` line, the brief is in that file:
-read it. A status that is not OK, a missing brief, or the agent saying it
-cannot read the transcript is a failure.
+Claude Code: the Explore agent returns the brief. No brief, an error, or
+the agent saying it cannot read the transcript is a failure.
 
 Codex: the `explorer` reply carries the brief inline. Take it from the
 `# State brief` heading to the `Read:` line. A reply with no `# State brief`
