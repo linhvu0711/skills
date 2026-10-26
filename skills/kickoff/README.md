@@ -1,10 +1,10 @@
 # kickoff
 
-Opens a new herdr pane next to the one you are in and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or a whole epic.
+Opens a new herdr pane next to the one you are in and starts `/ship-ready`, `/ship-full`, or `/plan-up` there on an issue, a run of tickets, or a whole epic.
 
 ## Use it when
 
-You work in herdr (a terminal workspace for AI coding agents) and want planning or a full ship to start in its own pane while you keep going in this one. Name the issues the way you would to a person:
+You work in herdr (a terminal workspace for AI coding agents) and want planning or a whole ship-ready or ship-full run to start in its own pane while you keep going in this one. Name the issues the way you would to a person:
 
 - `/kickoff 42`: one ticket.
 - `/kickoff 12 and 14`: two tickets in one pane, as a stack.
@@ -13,7 +13,7 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 - `/kickoff 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command (`ship` or "plan only") in your words to change the defaults below. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
+More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
 
 ## What you get
 
@@ -21,8 +21,8 @@ A script finds the repo on disk, picks the model, effort, and command from the t
 
 | Tickets | Model | Effort | Command |
 |---|---|---|---|
-| every one `ready-to-build` | sonnet | high | `/ship` |
-| all XS or S | opus | medium | `/ship` |
+| every one `ready-to-build` | sonnet | high | `/ship-ready` |
+| all XS or S | opus | medium | `/ship-ready` |
 | any M | opus | medium | `/plan-up` |
 | any L, XL, or no size | opus | high | `/plan-up` |
 
@@ -44,13 +44,13 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
-- The [ship](../ship/) and [plan-up](../plan-up/) skills in the new pane.
+- The [ship-ready](../ship-ready/), [ship-full](../ship-full/), and [plan-up](../plan-up/) skills in the new pane.
 
 ## Fits with
 
-- Starts [ship](../ship/) or [plan-up](../plan-up/) in the new pane.
+- Starts [ship-ready](../ship-ready/), [ship-full](../ship-full/), or [plan-up](../plan-up/) in the new pane. It starts ship-full only when you ask for the merge.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
+- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship-ready](../ship-ready/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
 
 ## Tests
 

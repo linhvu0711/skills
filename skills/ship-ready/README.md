@@ -1,18 +1,18 @@
-# ship
+# ship-ready
 
-Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges.
+Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges; [ship-full](../ship-full/) does the same run and merges.
 
 ## Use it when
 
 You have a ready issue and want the whole path done without starting each step by hand. It takes the same arguments as [plan-up](../plan-up/):
 
-- `/ship <issue-url>`: one ticket, one PR.
-- `/ship <epic-url> #12 #14`: those tickets from the epic, as a stack of PRs.
-- `/ship <issue-url> #14 #15`: a set of plain tickets, as a stack of PRs.
-- `/ship <epic-url>`: every open ticket in the epic.
-- `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
+- `/ship-ready <issue-url>`: one ticket, one PR.
+- `/ship-ready <epic-url> #12 #14`: those tickets from the epic, as a stack of PRs.
+- `/ship-ready <issue-url> #14 #15`: a set of plain tickets, as a stack of PRs.
+- `/ship-ready <epic-url>`: every open ticket in the epic.
+- `/ship-ready <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
 - Any of the above with `devin` or `cursor` at the end: built in the cloud instead.
-- `/ship` with no URL, and words after it or none. What the chat holds picks the start:
+- `/ship-ready` with no URL, and words after it or none. What the chat holds picks the start:
   - a build this chat started: the words are an answer or a follow-up for it;
   - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
   - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.
@@ -57,7 +57,3 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Credits
 
 The todo list and the order for a red check in [ready-pr](../ready-pr/) take an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
-
-## Tests
-
-The cases for its script are in [tests/](tests/), one file per script, on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

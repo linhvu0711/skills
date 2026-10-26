@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# kickoff.sh: open a herdr pane and run /ship or /plan-up there.
+# kickoff.sh: open a herdr pane and run /ship-ready, /ship-full, or /plan-up there.
 #
-# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up]
+# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -15,7 +15,7 @@
 # Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Nothing is half done: no pane exists until every check passed.
-# The tree is left as is: /ship and /plan-up read their own copy of the base.
+# The tree is left as is: /ship-ready, /ship-full, and /plan-up read their own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship|plan-up) ;; *) die "--command must be ship or plan-up, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship-ready|ship-full|plan-up) ;; *) die "--command must be ship-ready, ship-full, or plan-up, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -144,9 +144,9 @@ for s in ${sizes[@]+"${sizes[@]}"}; do
   case " ${list[*]} " in *" ${s%%=*} "*) ;; *) die "--size names #${s%%=*}, which is not in this target" ;; esac
 done
 
-if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship; reason="ready-to-build"
+if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship-ready; reason="ready-to-build"
 else
-  if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship
+  if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship-ready
   elif [ "$top" -eq 3 ]; then model=opus; effort=medium; command=plan-up
   else model=opus; effort=high; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi

@@ -3,7 +3,7 @@
 #
 #   reviewers.sh <owner/repo> <number>
 #
-# Two skills ask it. ship asks after the first wait on the PR it opened, to
+# Two skills ask it. ship-ready asks after the first wait on the PR it opened, to
 # choose whether review-pr runs there. Waiting needs no bot names: ready-pr
 # waits for every check. Only this choice does, since a deploy bot comments
 # and posts checks too. set-review-rules asks it on a repo's recent PRs, to
