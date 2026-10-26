@@ -12,6 +12,7 @@
 # Prints `MERGED <url> <merge|squash|rebase> <sha7>`, the merge commit, or
 # `MERGED <url> already <sha7>` when it was merged before (exit 0). Each stop
 # is one `stop:` line on stderr, exit 1:
+#   stop: --sha needs the full 40-character head SHA, got: <sha>
 #   stop: #<n> is <state>, not open
 #   stop: head moved to <sha7>; ready it again
 #   stop: merge refused: <gh's last line>
@@ -23,6 +24,8 @@ usage='usage: merge.sh <owner/repo> <number> --sha <sha>'
 repo="$1"; number="$2"; sha="$4"
 
 die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
+# A short SHA never equals GitHub's headRefOid, so it would read as a moved head.
+[[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "--sha needs the full 40-character head SHA, got: $sha"
 
 # view: the PR's url, state, head, and merge commit, one per line.
 view() {

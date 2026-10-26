@@ -111,6 +111,16 @@ t_merge_stops_when_pr_stays_open() {
   eq stderr "stop: #43 is still open after the merge; a merge queue or a rule holds it" "$err"
 }
 
+t_merge_stops_on_short_sha() {
+  # Given: PR 43 open at head_sha
+  fake_gh; open_then_merged; methods true true true
+  # When: the SHA is the short one from a report line
+  run bash "$merge" o/r 43 --sha aaaaaaa
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --sha needs the full 40-character head SHA, got: aaaaaaa" "$err"
+}
+
 t_merge_prints_usage() {
   # Given: no fixture
   T="$(cd "$(mktemp -d)" && pwd -P)"
@@ -130,5 +140,6 @@ cases=(
   "merge.sh stops on a closed PR|t_merge_stops_on_closed_pr"
   "merge.sh stops when gh refuses|t_merge_stops_when_gh_refuses"
   "merge.sh stops when the PR stays open|t_merge_stops_when_pr_stays_open"
+  "merge.sh stops on a short SHA|t_merge_stops_on_short_sha"
   "merge.sh prints its usage|t_merge_prints_usage"
 )
