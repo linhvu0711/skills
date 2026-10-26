@@ -108,9 +108,14 @@ and stop before step 7.
    and each file the body attaches. A leak is a token, a key, a
    password, a `.env` value, or a private detail: a home path, an
    email address, a private host or URL, or a person's data the repo
-   does not already show. Look at each screenshot. Look at a video
-   one frame each 5 seconds:
-   `ffmpeg -i <video> -vf fps=1/5 "$(mktemp -d)/frame-%03d.png"`.
+   does not already show. Look at each screenshot. For a video, write
+   one frame each 5 seconds to a folder you keep, look at every frame
+   in it, then remove the folder:
+
+   ```bash
+   frames=$(mktemp -d)
+   ffmpeg -i <video> -vf fps=1/5 "$frames/frame-%03d.png"
+   ```
    - A leak in the title or the body: take it out, or put a
      placeholder in its place.
    - A leak in an image or a video: stop before step 9, and name the
