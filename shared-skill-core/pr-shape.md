@@ -13,6 +13,10 @@ joined by `-`, no spaces, no other punctuation.
 
 The shape of a commit summary, `type(scope): summary`, naming the whole
 change, as in `feat(todos): undo delete, clear done, due badges`.
+The summary names what the change gets a user or a caller,
+not how it works inside: `perf(server): cut websocket frames by 70%
+with gzip`, not `perf(server): negotiate permessage-deflate on the
+websocket`.
 Imperative, lower case, no period, 72 characters at most. A change that
 breaks a caller, a config, or a deploy puts `!` before the colon, as in
 `feat(cli)!: rename --out to --output`, and its body has
@@ -31,8 +35,14 @@ say; with nothing to say, the heading goes too.
 1. **The issue line**, first line of the body. `Closes #<n>` when the
    PR finishes the issue. `Refs #<n>` when it is part of the issue and
    another PR finishes it. No issue: no line.
-2. **`## Summary`**: what the change does, why, and how to try it, in a
-   few plain sentences.
+2. **`## Summary`**: first the problem, in a sentence or two a user
+   would say: what went wrong, or what was missing. Then the fix, and
+   how to try it. Not a list of the functions, files, or entry points
+   that changed: `Where to look` points at those.
+
+   ```markdown
+   A new thread on a worktree ignored my "new worktree" default. Now new threads always start from the defaults in settings.
+   ```
 3. **`## Where to look`**: how hard the change is to undo, then where
    the reviewer spends their time.
 

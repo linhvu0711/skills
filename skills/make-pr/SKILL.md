@@ -102,9 +102,29 @@ and stop before step 7.
    A proof folder: `## Proof` is its `proof.md`, pasted whole, with each
    test case linked on the branch as the shape says; and the body file
    is `pr-body.md` inside the proof folder, next to the media, not a
-   temp file. Done when every part of the shape
-   is written or left out for the reason the shape gives, and no
-   placeholder is left.
+   temp file.
+
+   Then read what the PR will show for a leak: the title, the body,
+   and each file the body attaches. A leak is a token, a key, a
+   password, a `.env` value, or a private detail: a home path, an
+   email address, a private host or URL, or a person's data the repo
+   does not already show. Look at each screenshot. For a video, write
+   one frame each 5 seconds to a folder you keep, look at every frame
+   in it, then remove the folder:
+
+   ```bash
+   frames=$(mktemp -d)
+   ffmpeg -i <video> -vf fps=1/5 "$frames/frame-%03d.png"
+   ```
+   - A leak in the title or the body: take it out, or put a
+     placeholder in its place.
+   - A leak in an image or a video: stop before step 9, and name the
+     file and what it shows. The shot is taken again by
+     `/build-and-prove`, not here.
+
+   Done when every part of the shape is written or left out for the
+   reason the shape gives, no placeholder of the shape is left, and no
+   leak is in the title, the body, or a file it attaches.
 
 9. **Open.** The open PR from step 1 decides.
    - No PR: `gh pr create --base <base> --head <branch> --title
@@ -173,6 +193,12 @@ files `CONTEXT.md` and `docs/adr/0004-no-job-queue.md`, `Closes #12`,
 the settled decisions for `Summary`.
 
 The steps run with those four set. The report goes back to grill.
+
+**A screenshot** in the proof folder shows a terminal whose title bar
+holds a home path.
+
+Stop before the PR opens: `after-2.png` shows a home path in the
+terminal title. No PR.
 
 **`npm run lint`** fails on the new HEAD.
 
