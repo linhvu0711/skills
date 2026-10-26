@@ -45,6 +45,12 @@ t_render_title_result() {
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c 'not how it works inside')"
 }
 
+t_render_summary_problem() {
+  local item
+  item="$(sed -n '/^2\. \*\*`## Summary`\*\*/,/^3\. /p' "$here/../pr-shape.md")"
+  eq "summary" 1 "$(printf '%s\n' "$item" | grep -c '^2\. \*\*`## Summary`\*\*: first the problem')"
+}
+
 t_render_cloud_risk_once() {
   render devin rules
   eq exit 0 "$code"
@@ -173,6 +179,7 @@ cases=(
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
   "cloud rules carry the Risk line once|t_render_cloud_risk_once"
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
+  "pr-shape Summary opens with the problem|t_render_summary_problem"
   "local rules run each slice's checks here|t_render_local_split"
   "local rules leave the Gates to the Sandbox|t_render_local_gates"
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
