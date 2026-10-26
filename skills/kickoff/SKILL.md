@@ -1,6 +1,6 @@
 ---
 name: kickoff
-description: "Open a new herdr pane beside this one and run /ship-ready or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
+description: "Open a new herdr pane beside this one and run /ship-ready, /ship-full, or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
 
@@ -26,8 +26,8 @@ it on unchanged:
   knows.
 - `<issue-url> on <pr-url>`: a new layer on an open stack.
 
-Exit 0: print the script's one report line and stop. `/ship-ready` or
-`/plan-up` now talks to the user in the new pane. Do not watch it, read
+Exit 0: print the script's one report line and stop. The command it
+started now talks to the user in the new pane. Do not watch it, read
 its plan, or run `/handoff` from here.
 
 Exit 1: the last stderr line starts with `stop:` and says why. Show it
@@ -47,8 +47,10 @@ Flags you may add:
   `sonnet`, `haiku`) or a full model name. It goes to claude as is.
 - `--effort <level>` when the user names an effort: `low`, `medium`,
   `high`, `xhigh`, or `max`.
-- `--command ship` or `--command plan-up` when the user names the
-  command: "plan only" is `plan-up`, "ship it" is `ship`.
+- `--command ship-ready`, `--command ship-full`, or `--command plan-up`
+  when the user names the command: "plan only" is `plan-up`, "ship it"
+  is `ship-ready`, "ship and merge" or "full ship" is `ship-full`. The
+  table never picks `ship-full`: a merge needs the user's words.
 
 A value the user does not name comes from the table below. The report
 line marks each value `(default)` or `(set)`.
