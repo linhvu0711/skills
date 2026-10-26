@@ -172,6 +172,24 @@ t_render_cloud_perf_refix() {
   has "measure again" "measure again, steps 1 to 5, before its push" "$(printf '%s' "$out" | tr -s ' \n' '  ')"
 }
 
+t_render_local_writing() {
+  render local rules
+  eq exit 0 "$code"
+  has "agent files" "write-for-agents/SKILL.md" "$out"
+  has "prose" "unslop/SKILL.md" "$out"
+  lacks "skills word" "{{skills}}" "$out"
+}
+
+t_render_cloud_no_writing() {
+  local ex
+  for ex in devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    lacks "$ex prose" "unslop/SKILL.md" "$out"
+    lacks "$ex agent files" "write-for-agents/SKILL.md" "$out"
+  done
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -196,4 +214,6 @@ cases=(
   "cloud rules carry the perf part and its checklist once|t_render_cloud_perf"
   "local rules leave the perf part out|t_render_local_no_perf"
   "cloud prompt has a Perf heading and local has none|t_render_prompt_perf"
+  "local rules name the writing skills|t_render_local_writing"
+  "cloud rules leave the writing skills out|t_render_cloud_no_writing"
 )

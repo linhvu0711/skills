@@ -140,6 +140,13 @@ what the line says, is a surprise (see below).
   green. Run the test file and the typecheck; both green. Make the
   slice's `Docs` lines, so the doc lands with the code it describes.
   Commit.
+<!-- local -->
+- A file a slice writes for an agent, a skill (`SKILL.md` and the files
+  it reads), `AGENTS.md`, or `CLAUDE.md`, follows
+  `{{skills}}/write-for-agents/SKILL.md`. Prose a slice writes for
+  people, a README or a doc, goes through `{{skills}}/unslop/SKILL.md`
+  before the commit. Code, commands, and paths stay as they are.
+<!-- /local -->
 - Green ends the slice. Tidying comes later, from review. The next slice
   starts.
 - One slice is one commit. The layer's PR reads in slice order.
