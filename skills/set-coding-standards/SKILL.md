@@ -15,7 +15,7 @@ the Standard exists, `audit-coding-standards` checks and changes it.
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first: you are the brain,
+Read `../../shared/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps
@@ -24,11 +24,11 @@ Explore agents retrieve, short lookups are yours.
    already exists. Run `/audit-coding-standards` to check and change
    it." Stop. Done when you know the root has no `CODING_STANDARDS.md`.
 
-2. **Find and size.** Read `../../shared-skill-core/coding-standards/checks.md`.
+2. **Find and size.** Read `../../shared/coding-standards/checks.md`.
    Run its `Find the rules` and `Size the repo`. Every rule found is
    scattered. Empty bucket: say what the table says, stop.
 
-3. **Research.** Read `../../shared-skill-core/coding-standards/research.md`
+3. **Research.** Read `../../shared/coding-standards/research.md`
    and follow it. With no Sources table, every stack part is due.
    Done when the done line at the end of `research.md` holds.
 
@@ -54,7 +54,7 @@ Explore agents retrieve, short lookups are yours.
 5. **Report.** Print the report in `checks.md` § Report shape, the set
    lines. Done when it is in chat.
 
-6. **Grill.** Read `../../shared-skill-core/coding-standards/write.md`
+6. **Grill.** Read `../../shared/coding-standards/write.md`
    and run its `Grill` with the report as the seed. A stopped grill
    ends the run there.
 

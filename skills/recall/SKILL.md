@@ -40,12 +40,12 @@ starts no work.
    `/tmp/recall/<id8>.md` in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --summary --after-compact > <out>   # a claude line
-   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --summary > <out>                    # a codex line
+   python3 ../../shared/sessions/claude/extract_session.py <id> --summary --after-compact > <out>   # a claude line
+   python3 ../../shared/sessions/codex/extract_session.py <id> --summary > <out>                    # a codex line
    ```
 
 4. **Brief writers.** One per session, all in one message. Build each
-   prompt from `../../shared-skill-core/session-brief.md` § Dispatch,
+   prompt from `../../shared/session-brief.md` § Dispatch,
    with its transcript path and its tool (`Claude Code` or `Codex CLI`)
    filled in. In Claude Code, send each to an Explore agent. In Codex,
    spawn one `explorer` agent per prompt (`fork_turns = "none"`) and
@@ -74,8 +74,8 @@ starts no work.
 
 6. **Live tags.** Write the brief to `<scratchpad>/recall-brief.md`
    (`/tmp/recall/brief.md` in Codex) and tag it with
-   `../../shared-skill-core/sessions/live_tags.py` as
-   `../../shared-skill-core/session-brief.md` § Live tags says, with
+   `../../shared/sessions/live_tags.py` as
+   `../../shared/session-brief.md` § Live tags says, with
    `--cwd` the project folder that step 2 ran in, never this skill's
    folder. The tagged brief is the one you show.
 

@@ -25,14 +25,14 @@ On `needs work`, the grill starts at once: one question per finding, with a reco
 
 On `clean`, the only change is the date and version on the Sources table rows it checked again.
 
-Research only runs for the stack parts that are due. It reads the Sources table at the end of `CODING_STANDARDS.md` and checks a part again only after a major version bump, after 6 months, or when the part has no row yet. Each finding cites what it came from: a page read on this run, or what most of the code already does, never the model's memory. The details are in [research.md](../../shared-skill-core/coding-standards/research.md).
+Research only runs for the stack parts that are due. It reads the Sources table at the end of `CODING_STANDARDS.md` and checks a part again only after a major version bump, after 6 months, or when the part has no row yet. Each finding cites what it came from: a page read on this run, or what most of the code already does, never the model's memory. The details are in [research.md](../../shared/coding-standards/research.md).
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
 ## Needs
 
 - The [grill](../grill/) skill, which it uses to ask you about each finding.
-- The shared core files `../../shared-skill-core/facts.md` and `../../shared-skill-core/coding-standards/` (`checks.md`, `research.md`, `write.md`), which it shares with set.
+- The shared core files `../../shared/facts.md` and `../../shared/coding-standards/` (`checks.md`, `research.md`, `write.md`), which it shares with set.
 - `git`, for the author count and the age of the rules file.
 - `gh`, to read open issues for planned work.
 - Web search or the context7 MCP server, for the research. Without them the code checks still run, the research is marked not done, and the hand-off tells you to run it again with web access.

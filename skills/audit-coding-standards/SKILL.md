@@ -14,7 +14,7 @@ and write what was settled. The first Standard is
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first: you are the brain,
+Read `../../shared/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps
@@ -23,11 +23,11 @@ Explore agents retrieve, short lookups are yours.
    yet. Run `/set-coding-standards` to make one." Stop. Done when you
    hold the Standard's files.
 
-2. **Find and size.** Read `../../shared-skill-core/coding-standards/checks.md`.
+2. **Find and size.** Read `../../shared/coding-standards/checks.md`.
    Run its `Find the rules` and `Size the repo`. Empty bucket: say what
    the table says, stop.
 
-3. **Research.** Read `../../shared-skill-core/coding-standards/research.md`
+3. **Research.** Read `../../shared/coding-standards/research.md`
    and follow it: research only the stack parts that § Re-check calls
    due from the Sources table. Done when the done line at the end of
    `research.md` holds.
@@ -47,7 +47,7 @@ Explore agents retrieve, short lookups are yours.
    table is the only change. Stop.
 
 7. **Grill.** Verdict `needs work`: read
-   `../../shared-skill-core/coding-standards/write.md` and run its
+   `../../shared/coding-standards/write.md` and run its
    `Grill` with the report as the seed, at once. The user who wants
    only the report says stop at the first question. A stopped grill
    ends the run there. When `Not researched` is the only finding,

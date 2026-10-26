@@ -6,7 +6,7 @@ description: "Open or update the pull request for the work in this checkout, in 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 Turn the work in this checkout into one pull request. Read
-`../../shared-skill-core/pr-shape.md` first: it owns the branch name,
+`../../shared/pr-shape.md` first: it owns the branch name,
 the title, the body, and the label. This skill owns the steps around
 it. It stops when the PR is open, and it never merges.
 
@@ -136,20 +136,20 @@ and stop before step 7.
 
    A proof folder: then, from inside it, attach every file the body
    names, `gh pr edit <n> --body-file pr-body.md --attach <file> …`,
-   and unwrap the video lines, both per `../../shared-skill-core/pr-shape.md`
+   and unwrap the video lines, both per `../../shared/pr-shape.md`
    § Proof. Open the PR and check that each image shows and each video
    plays.
 
    Done when `gh pr view <n> --json title,body` shows what you wrote.
 
 10. **Label.** Find the repo's size labels the way
-    `../../shared-skill-core/issue-rules.md` § Repo convention reads its
+    `../../shared/issue-rules.md` § Repo convention reads its
     `size` line: the saved map from `python3
     ../to-issue/scripts/conventions.py get <owner/repo>`, else the labels
     that clearly name a size (`size/S`, `Size: Small`, `effort-large`,
     bare `S`) in `gh label list --limit 200 --json name -q '.[].name'`,
     plus an XL label when the repo has one. Size the diff with
-    `../../shared-skill-core/size.md`, put on the label for that size,
+    `../../shared/size.md`, put on the label for that size,
     and take off any other size label. No size labels: no label, and
     none created. Done when the PR has one size label, or the repo has
     none.

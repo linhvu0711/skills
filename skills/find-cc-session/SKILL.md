@@ -14,13 +14,13 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
 ## Steps
 
 1. **Run the finder.**
-   `python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<description>"`
+   `python3 ../../shared/sessions/claude/find_sessions.py "<description>"`
    No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
 2. **Judge the candidates.** The score is a keyword heuristic, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
 
 3. **Act on the verdict.**
-   - One match: `printf "%s" "<id>" | bash ../../shared-skill-core/copy.sh`, then report the ID with its title, age, and prompt count on one line. Any other exit than 0: the line ends `(clipboard copy skipped)`.
+   - One match: `printf "%s" "<id>" | bash ../../shared/copy.sh`, then report the ID with its title, age, and prompt count on one line. Any other exit than 0: the line ends `(clipboard copy skipped)`.
    - Several: list them (title, age, prompts, ID), ask which one, and copy the pick. A tie-breaker in the description ("the most recent") settles it without asking.
    - None: say so, show the closest one or two, and suggest a rephrase, `--all`, or a check that this is the right project folder.
 

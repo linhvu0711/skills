@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - The [grill](../grill/) skill, which it uses to ask you about each finding.
-- The shared core files `../../shared-skill-core/facts.md` and `../../shared-skill-core/coding-standards/` (`checks.md`, `research.md`, `write.md`), which it shares with the audit.
+- The shared core files `../../shared/facts.md` and `../../shared/coding-standards/` (`checks.md`, `research.md`, `write.md`), which it shares with the audit.
 - `git`, for the author count and the age of the rules files.
 - `gh`, to read open issues for planned work.
 - Web search or the context7 MCP server, for the research. Without them the code checks still run, the research is marked not done, and the hand-off tells you to run the audit later with web access.

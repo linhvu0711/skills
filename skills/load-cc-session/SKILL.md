@@ -13,7 +13,7 @@ into a **state brief** (goal, done, decisions, open, files, next step) plus
 the last three user turns verbatim, so the work continues here.
 
 Sibling: **load-co-session** does the same for Codex CLI sessions. Both read
-`../../shared-skill-core/session-brief.md`, and both run in Claude Code and
+`../../shared/session-brief.md`, and both run in Claude Code and
 in Codex; steps 2 and 3 name the difference.
 
 ## Input
@@ -27,7 +27,7 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
 1. **Peek.** Check that the ID resolves, and see the size:
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --list
+   python3 ../../shared/sessions/claude/extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: pass on the script's message and stop.
@@ -37,17 +37,17 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
    Code and `/tmp/load-cc-session/<id8>.md` in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --summary --after-compact > <out>
+   python3 ../../shared/sessions/claude/extract_session.py <id> --summary --after-compact > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in one message.**
-   Build the prompt from `../../shared-skill-core/session-brief.md` § Dispatch,
+   Build the prompt from `../../shared/session-brief.md` § Dispatch,
    with the transcript path and `Claude Code` filled in. In Claude Code, send
    it to the Explore agent. In Codex, spawn one `explorer` agent with it
    (`fork_turns = "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --skeleton
+   python3 ../../shared/sessions/claude/extract_session.py <id> --skeleton
    ```
 
    The skeleton is the fixed part (title, first prompt, recap rows, files
@@ -55,7 +55,7 @@ or list recent sessions with `ls -t ~/.claude/projects/*/*.jsonl | head`.
 
 4. **Show the brief and wait.** Take the brief as `session-brief.md` § Return
    says for your harness, tag it with
-   `../../shared-skill-core/sessions/live_tags.py` as `session-brief.md`
+   `../../shared/sessions/live_tags.py` as `session-brief.md`
    § Live tags says, with the folder the peek of step 1 printed, and show
    the tagged brief to the user unchanged. Then one line:
    the loaded session's folder, and "say go to start the Next step". Stop.

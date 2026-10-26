@@ -131,14 +131,14 @@ SOFTWARE.
 | `skills/fix-conflicts` | `skills/engineering/resolving-merge-conflicts` | copy |
 | `skills/write-for-agents` | `skills/productivity/writing-for-agents` | copy |
 | `skills/grill` | `skills/productivity/grilling`, `skills/productivity/grill-me`, `skills/engineering/grill-with-docs`, `skills/engineering/domain-modeling`, `skills/engineering/research` | heavy adaptation (`references/ADR-FORMAT.md` and `references/CONTEXT-FORMAT.md` are copies from `skills/engineering/domain-modeling`) |
-| `shared-skill-core/grilling.md` | the same five as `skills/grill` | heavy adaptation |
-| `shared-skill-core/facts.md` | the same five as `skills/grill` | heavy adaptation |
+| `shared/grilling.md` | the same five as `skills/grill` | heavy adaptation |
+| `shared/facts.md` | the same five as `skills/grill` | heavy adaptation |
 | `skills/improve-architecture` | `skills/engineering/improve-codebase-architecture`, `skills/engineering/codebase-design` | heavy adaptation (`references/deepening.md` is a copy from `skills/engineering/codebase-design`, and `references/design-it-twice.md` started as one and is now rewritten in parts, with their links to `codebase-design.md` pointed at the shared core) |
-| `shared-skill-core/codebase-design.md` | `skills/engineering/codebase-design` | copy (its two links point at improve-architecture's references) |
+| `shared/codebase-design.md` | `skills/engineering/codebase-design` | copy (its two links point at improve-architecture's references) |
 | `skills/triage` | `skills/engineering/diagnosing-bugs` | heavy adaptation |
 | `skills/discover-path` | `skills/engineering/wayfinder` | heavy adaptation |
 | `skills/to-epic` | `skills/engineering/to-tickets` | heavy adaptation |
-| `shared-skill-core/review/general-rules.md` | `skills/engineering/code-review` | heavy adaptation |
+| `shared/review/general-rules.md` | `skills/engineering/code-review` | heavy adaptation |
 | `skills/retro` | `skills/engineering/retro` | heavy adaptation |
 
 ### License text

@@ -9,10 +9,10 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 Read `references/plan.md` first: the plan shape, how each block is
 filled, and the done rule. Read `references/executor.md` too: what the
 executor has and how it works a plan, so the plan fits it. At step 8,
-read `../../shared-skill-core/plan-page.md`: where the plan is written
+read `../../shared/plan-page.md`: where the plan is written
 and how it is shown. At step 4, read `references/probes.md` before the
 first probe. Before a `Decided` line adds a module or a seam, on the full
-path or the short one, read `../../shared-skill-core/codebase-design.md`:
+path or the short one, read `../../shared/codebase-design.md`:
 the new one must pass its deletion test, and a seam needs two adapters.
 This file is the order of operations.
 
@@ -23,7 +23,7 @@ down.
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first: you are the brain,
+Read `../../shared/facts.md` first: you are the brain,
 Explore agents retrieve, `SEARCH=on` for outside facts.
 
 ## Six forms
@@ -126,7 +126,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    `PR #70 Add the claim check · @bob · <url>`, an assignee as
    `assigned to @dave`, a comment quoted whole with `@<author>`. Then
    one question for all of them, in the format of
-   `../../shared-skill-core/grilling.md`. A PR named: `A` review their
+   `../../shared/grilling.md`. A PR named: `A` review their
    PR instead (pick: their code exists), `B` build anyway, `C` stop. No
    PR named: `A` stop (pick: ask them first), `B` build anyway. Wait;
    nothing is planned before the answer. Review: print one
@@ -139,13 +139,13 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    stop.
 
    **Chat plan.** No issue to read: write the **brief** from the chat
-   instead, per `../../shared-skill-core/issue-rules.md`: a `Title`
+   instead, per `../../shared/issue-rules.md`: a `Title`
    (§ Title, the repo's style), a `Task` in one to three lines, the
    `Done when` lines (§ Done when), the `Known` and `Open` lines of
    § Context, and a size (§ Size). A chat plan has no Steps and takes
    no short path, whatever its size. The facts are only what the chat
    said or ran; nothing is made up to fill a line. Its slug is picked
-   free, per `../../shared-skill-core/plan-page.md` § Files, before
+   free, per `../../shared/plan-page.md` § Files, before
    step 8 writes a file. From here on, the brief stands for the issue:
    its `Done when` lines, `Known` lines, and `Open` lines are read as an
    issue's are. Print it in chat in this shape and go on, with no wait:
@@ -162,7 +162,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    to check: skip all three.
 
 3. **Gate.** Apply `## Readiness gate` from
-   `../../shared-skill-core/issue-rules.md` to the issue
+   `../../shared/issue-rules.md` to the issue
    text, each ticket of a run on its own; to a chat plan's brief, and
    its gaps name `/grill` only. Pass: continue. Fail: name the
    ticket, list the gaps, each as the question that closes it, name
@@ -255,7 +255,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
    Either holds: **big fork**. Ask the user, one question per message, in
    the question format of
-   `../../shared-skill-core/grilling.md`, each option with
+   `../../shared/grilling.md`, each option with
    the `file:line` behind it. Wait. Big forks look like:
    a schema or stored data, a public API, auth, input a user controls,
    a secret, data that leaves the system,
@@ -305,10 +305,10 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
 
-8. **Present.** Per `../../shared-skill-core/plan-page.md`: write the plan to its `.md`,
+8. **Present.** Per `../../shared/plan-page.md`: write the plan to its `.md`,
    run `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
    the `.md` and run it again. Never write `DATA`: the builder makes it.
-   Serve with `../../shared-skill-core/serve.sh`, open it in the browser, or publish it on a
+   Serve with `../../shared/serve.sh`, open it in the browser, or publish it on a
    headless host. Chat
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary

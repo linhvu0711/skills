@@ -124,7 +124,7 @@ nothing.
    ```
 
    When the category is local env, show the fix command in a code block and
-   put it on the clipboard with `../../shared-skill-core/copy.sh`; on any
+   put it on the clipboard with `../../shared/copy.sh`; on any
    other exit than 0, say `Clipboard copy skipped.` The user runs it. You do
    not change their machine. The same holds for the ops fix of live env and
    the data fix of data: name it in the report, the user does it.
@@ -146,11 +146,11 @@ nothing.
       part of an exit is filed; the user's part stays in the report.
       The ticket's `## Context` carries the report's `Also at:` line,
       each place as a permalink per
-      `../../shared-skill-core/issue-rules.md` § Written for a stranger,
+      `../../shared/issue-rules.md` § Written for a stranger,
       and `none found` with its search word for word.
       Carry the settled decisions after a grill, and its doc entries
       under `## Docs to write`, per
-      `../../shared-skill-core/issue-rules.md` § Docs to write.
+      `../../shared/issue-rules.md` § Docs to write.
     - Cause not found: a `spike` ticket on the open question.
     - Nothing to file: say why in one line and stop. The bug issue from
       step 1, if any, stays as it is. The grill handed back doc entries:
@@ -158,7 +158,7 @@ nothing.
       `../grill/SKILL.md` § Close out, no work, with `Refs #<bug>`.
 
     The bug issue from step 1 is the origin: to-issue rewrites it into the
-    ticket, per `../../shared-skill-core/issue-rules.md` § Origin bug. No
+    ticket, per `../../shared/issue-rules.md` § Origin bug. No
     new issue, nothing closed. The to-issue gate fails: show its gaps and
     stop. The report stays in chat.
 

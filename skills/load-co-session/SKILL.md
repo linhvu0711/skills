@@ -16,7 +16,7 @@ files, next step) plus the last three user turns verbatim, so the work
 continues here.
 
 Sibling: **load-cc-session** does the same for Claude Code sessions. Both read
-`../../shared-skill-core/session-brief.md`, and both run in Claude Code and
+`../../shared/session-brief.md`, and both run in Claude Code and
 in Codex; steps 2 and 3 name the difference.
 
 ## Input
@@ -31,7 +31,7 @@ for one, or list recent sessions with
 1. **Peek.** Check that the ID resolves, and see the size:
 
    ```bash
-   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --list
+   python3 ../../shared/sessions/codex/extract_session.py <id> --list
    ```
 
    *Not found* or *ambiguous*: pass on the script's message and stop. The peek
@@ -43,17 +43,17 @@ for one, or list recent sessions with
    in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --summary > <out>
+   python3 ../../shared/sessions/codex/extract_session.py <id> --summary > <out>
    ```
 
 3. **Dispatch the brief writer and pull the skeleton, in one message.**
-   Build the prompt from `../../shared-skill-core/session-brief.md`
+   Build the prompt from `../../shared/session-brief.md`
    § Dispatch, with the transcript path and `Codex CLI` filled in. In Claude
    Code, send it to the Explore agent. In Codex, spawn one `explorer` agent
    with it (`fork_turns = "none"`) and `wait_agent`. In the same message run:
 
    ```bash
-   python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --skeleton
+   python3 ../../shared/sessions/codex/extract_session.py <id> --skeleton
    ```
 
    The skeleton is the fixed part (first prompt, files patched, last reply),
@@ -61,7 +61,7 @@ for one, or list recent sessions with
 
 4. **Show the brief and wait.** Take the brief as `session-brief.md` § Return
    says for your harness, tag it with
-   `../../shared-skill-core/sessions/live_tags.py` as `session-brief.md`
+   `../../shared/sessions/live_tags.py` as `session-brief.md`
    § Live tags says, with the folder the peek of step 1 printed, and show
    the tagged brief to the user unchanged. Then one line:
    the loaded session's folder, and "say go to start the Next step". Stop.

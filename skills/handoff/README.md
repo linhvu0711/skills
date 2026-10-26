@@ -40,7 +40,7 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 - For Cursor: cloud agents and an API key in `CURSOR_API_KEY` (environment or `~/.zshrc`), the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
 - `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
 - A plan from [plan-up](../plan-up/), and [to-issue](../to-issue/)'s `../to-issue/scripts/conventions.py` for the repo's size labels.
-- The shared core files in `../../shared-skill-core/handoff/` (prompt and rules templates, `render.sh`), `../../shared-skill-core/plan-page.md`, `../../shared-skill-core/issue-rules.md`, and `../../shared-skill-core/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
+- The shared core files in `../../shared/handoff/` (prompt and rules templates, `render.sh`), `../../shared/plan-page.md`, `../../shared/issue-rules.md`, and `../../shared/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
 
 ## Fits with
 

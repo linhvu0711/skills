@@ -24,11 +24,11 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `gh`, signed in, on a repo with sub-issues and issue dependencies. When the plan lacks them, it falls back to task lists and `Blocked by:` lines.
 - Sub-agents for research tickets (Explore agents with web search in Claude Code).
-- A clipboard tool, optional, to put the map URL on the clipboard, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
+- A clipboard tool, optional, to put the map URL on the clipboard, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [grill](../grill/) for the charting and every grill ticket.
 - [commit](../commit/) to commit research notes.
 - [create-mockup](../create-mockup/) and [create-diagram](../create-diagram/) for experiment tickets.
-- From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md). From grill: [research.md](../grill/references/research.md).
+- From the shared core: [issue-rules.md](../../shared/issue-rules.md). From grill: [research.md](../grill/references/research.md).
 
 ## Fits with
 

@@ -81,7 +81,7 @@ Each brief, inline:
 
 A probe that cannot answer inside its box is not a probe. It is a big
 fork: ask whether to plan on what reading shows, or to stop for a
-`spike` ticket first (`../../shared-skill-core/issue-rules.md`).
+`spike` ticket first (`../../shared/issue-rules.md`).
 
 A `no` is a fact like a `yes`: the tool cannot do it, so the fork
 changes. A probe that shows the issue itself is wrong (a Done-when line

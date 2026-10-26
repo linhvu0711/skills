@@ -22,8 +22,8 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
 2. **List.** The current session alone (in Claude Code its ID is `$CLAUDE_CODE_SESSION_ID`), or one named ID, skips to step 4 with that one session; its path is the extractor's `--list` line. Otherwise run each finder once, with `--json --limit 0`, the day count, and the topic as the query (no topic: `--all`):
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<topic>" --project-dir <root> [--project-dir <root>...] --include-subdirs --days <N> --json --limit 0
-   python3 ../../shared-skill-core/sessions/codex/find_session.py "<topic>" --cwd <root> [--cwd <root>...] --include-subdirs --interactive --active-days <N> --json --limit 0
+   python3 ../../shared/sessions/claude/find_sessions.py "<topic>" --project-dir <root> [--project-dir <root>...] --include-subdirs --days <N> --json --limit 0
+   python3 ../../shared/sessions/codex/find_session.py "<topic>" --cwd <root> [--cwd <root>...] --include-subdirs --interactive --active-days <N> --json --limit 0
    ```
 
    Both count a session by its last activity: Codex keeps a resumed session in the folder of the day it started, so its window flag is `--active-days`. "All projects": `--all-projects` in place of the roots. Named IDs: `--all` in the window, kept by id prefix. A topic score is a keyword count, so read each title and first prompt and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. Each row keeps: tool, id, date of last activity (`modified`, for both tools), project (`cwd`), title (Claude `title`, else the first prompt), `size`, `path`, and `subagents`, its helper agents' logs.
@@ -38,8 +38,8 @@ Words from `CONTEXT.md` § Retro: **struggle list**, **pattern**, **one-time pro
 4. **Render.** Make a scratch folder. For each kept session `n`, render its transcript and each helper log in balanced mode:
 
    ```bash
-   python3 ../../shared-skill-core/sessions/<claude|codex>/extract_session.py <path> --max-result-chars 300 > <scratch>/<n>-main.md
-   python3 ../../shared-skill-core/sessions/<claude|codex>/extract_session.py <subagent path> --max-result-chars 300 > <scratch>/<n>-helper-<k>.md
+   python3 ../../shared/sessions/<claude|codex>/extract_session.py <path> --max-result-chars 300 > <scratch>/<n>-main.md
+   python3 ../../shared/sessions/<claude|codex>/extract_session.py <subagent path> --max-result-chars 300 > <scratch>/<n>-helper-<k>.md
    ```
 
    Done when every kept session has its files, or a line saying why one could not render.

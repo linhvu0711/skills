@@ -13,7 +13,7 @@
 # line, case-insensitive, blank and `#` lines skipped. The list is local and
 # never tracked; without it that check is skipped. Private words are matched
 # against file paths too. Last, a relative path in a `.md`, `.sh`, or `.py` file
-# under skills/ or shared-skill-core/ must point to a file: a path in a skill
+# under skills/ or shared/ must point to a file: a path in a skill
 # starts at the skill's folder, a path in the shared core at the file's own
 # folder, and `$here/` in a script at the script's folder. A path is read when
 # it starts with `../` or its first folder exists there; a path that starts
@@ -23,7 +23,7 @@
 # In tree and --staged mode, two whole-repo checks read the index, so the hook
 # sees what the commit holds. Each `copy` or `heavy adaptation` row in
 # THIRD_PARTY_NOTICES.md needs its upstream's license next to it:
-# `skills/<name>/LICENSE` for a skill, `shared-skill-core/LICENSE-<owner>` for a
+# `skills/<name>/LICENSE` for a skill, `shared/LICENSE-<owner>` for a
 # shared core file, <owner> from the section's `## <owner>/<repo>` heading.
 # Each skill with a SKILL.md needs a README.md with the headings `## Use it
 # when`, `## What you get`, `## Needs`, and `## Fits with`, plus `## Credits`
@@ -69,7 +69,7 @@ allowed_emails='cursoragent@cursor.com'
 # Paths a skill or a shared core file names in the user's repo, not in its own
 # folder, as `<skill folder or core folder> <path>`, one per line.
 allowed_paths='skills/embed-source scripts/sync-repos.sh
-shared-skill-core/review ../REVIEW.md
+shared/review ../REVIEW.md
 skills/set-review-rules ../REVIEW.md'
 
 staged=0; msg=""; paths=()
@@ -107,13 +107,13 @@ skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1
 
 # refs <file> <text>: each relative path that <file> names, read from the file
 # <text>, as `<line>\t<path>\t<from>/<path>`, by the rules in the header. Prints
-# nothing for a file outside skills/ and shared-skill-core/, or not `.md`, `.sh`,
+# nothing for a file outside skills/ and shared/, or not `.md`, `.sh`,
 # or `.py`.
 refs() {
   local f="$1" text="$2" base line tok p from nl=$'\n'
   case "$f" in
     skills/*/*) base="${f#skills/}"; base="skills/${base%%/*}" ;;
-    shared-skill-core/*) base="$(dirname "$f")" ;;
+    shared/*) base="$(dirname "$f")" ;;
     *) return 0 ;;
   esac
   case "$f" in *.md|*.sh|*.py) ;; *) return 0 ;; esac
@@ -142,7 +142,7 @@ core_refs() {
     { n = 0; for (i = 1; i <= NF; i++) { if ($i == "" || $i == ".") continue
                                          if ($i == "..") { if (n) n--; continue }
                                          p[++n] = $i }
-      if (n == 0 || p[1] != "shared-skill-core") next
+      if (n == 0 || p[1] != "shared") next
       print (n >= 2 ? p[1] "/" p[2] : p[1]) }' | sort -u
 }
 
@@ -164,11 +164,11 @@ if [ -n "$msg" ]; then
   awk -F/ '$1 == "skills" && NF >= 3 { print $1 "/" $2 }' "$tmp/changed" > "$tmp/asked"
   # A changed shared core file asks each skill that reads it: one of the
   # skill's files names it or its subfolder, or a core file the skill reads does.
-  grep '^shared-skill-core/' "$tmp/changed" > "$tmp/core" || true
+  grep '^shared/' "$tmp/changed" > "$tmp/core" || true
   if [ -s "$tmp/core" ]; then
     while IFS= read -r f; do
       printf '%s\n' "$f" | core_refs | awk -v f="$f" '{ print f "\t" $0 }'
-    done < <(git ls-files -- shared-skill-core) > "$tmp/edges"
+    done < <(git ls-files -- shared) > "$tmp/edges"
     while IFS= read -r skill; do
       git ls-files -- "$skill/" | core_refs > "$tmp/reads"
       while :; do
@@ -267,7 +267,7 @@ if [ ${#paths[@]} -eq 0 ]; then
     case "$level" in copy*|"heavy adaptation"*) ;; *) continue ;; esac
     case "$p" in
       skills/*) p="${p#skills/}"; lic="skills/${p%%/*}/LICENSE" ;;
-      shared-skill-core/*) lic="shared-skill-core/LICENSE-$owner" ;;
+      shared/*) lic="shared/LICENSE-$owner" ;;
       *) continue ;;
     esac
     in_index "$lic" || problems+=("THIRD_PARTY_NOTICES.md:$line: missing license: $lic")

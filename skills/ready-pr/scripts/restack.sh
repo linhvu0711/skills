@@ -30,7 +30,7 @@ set -euo pipefail
 
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file>'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-checkout="$here/../../../shared-skill-core/checkout.sh"
+checkout="$here/../../../shared/checkout.sh"
 
 # children <branch>: the open PRs on <branch>, one line each, by number.
 children() {

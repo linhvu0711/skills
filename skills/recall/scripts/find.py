@@ -26,8 +26,8 @@ import sys
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parents[1]
-CLAUDE = SKILL / "../../shared-skill-core/sessions/claude/find_sessions.py"
-CODEX = SKILL / "../../shared-skill-core/sessions/codex/find_session.py"
+CLAUDE = SKILL / "../../shared/sessions/claude/find_sessions.py"
+CODEX = SKILL / "../../shared/sessions/codex/find_session.py"
 NEWEST = 10
 
 

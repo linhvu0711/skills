@@ -9,7 +9,7 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 A chain of skills, run as one. You read each skill's `SKILL.md` and
 follow it step by step, gates and forks as written; the Skill tool
 cannot fire them. Facts come from reading, per
-`../../shared-skill-core/facts.md`. Big forks go to the user.
+`../../shared/facts.md`. Big forks go to the user.
 Everything else you decide, write down, and go on.
 
 In Claude Code every Bash call starts in the session's directory. Every
@@ -130,7 +130,7 @@ where the build runs (step 2).
    first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me>
    --wait <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's
    head and `me` is `gh api user -q .login`. Then the review bots on that
-   PR: `bash ../../shared-skill-core/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
+   PR: `bash ../../shared/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
    show it, stop. No line means no review bot: read
    `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the
    stack first, in its worktree, and post nothing. Then ready-pr step 5

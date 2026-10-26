@@ -25,9 +25,9 @@ Codex encrypts its reasoning on disk, so nothing here can show what Codex was th
 ## Needs
 
 - `python3` (standard library only).
-- The script in the shared core folder [`sessions/codex/`](../../shared-skill-core/sessions/codex/), which retro uses too.
+- The script in the shared core folder [`sessions/codex/`](../../shared/sessions/codex/), which retro uses too.
 - A sub-agent to write the brief: the Explore agent in Claude Code, an `explorer` agent in Codex.
-- The shared core file [`session-brief.md`](../../shared-skill-core/session-brief.md), which holds the brief's shape.
+- The shared core file [`session-brief.md`](../../shared/session-brief.md), which holds the brief's shape.
 - Codex rollouts under `~/.codex/sessions/` or `~/.codex/archived_sessions/`.
 - `gh` and `git`, for the live state of each PR and branch.
 

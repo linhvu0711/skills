@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-Read `../../shared-skill-core/codebase-design.md` first. It holds the vocabulary
+Read `../../shared/codebase-design.md` first. It holds the vocabulary
 (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**,
 **locality**) and the principles (the deletion test, "the interface is the
 test surface", "one adapter = hypothetical seam, two = real"). Use these
@@ -22,7 +22,7 @@ report and a grill.
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first: you are the brain,
+Read `../../shared/facts.md` first: you are the brain,
 Explore agents retrieve, short lookups are yours.
 
 ## Steps
@@ -45,7 +45,7 @@ Explore agents retrieve, short lookups are yours.
 
 2. **Explore.** Dispatch Explore agents per `facts.md`, one per hot spot
    or subsystem. A brief holds:
-   the paths in scope, the glossary from `../../shared-skill-core/codebase-design.md`
+   the paths in scope, the glossary from `../../shared/codebase-design.md`
    pasted in, the domain terms from `CONTEXT.md`, and these questions:
 
    - Where does understanding one concept mean bouncing between many small

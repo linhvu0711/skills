@@ -29,7 +29,7 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 
 - [ship-ready](../ship-ready/) ends with `After merge: /prune-worktrees` for the worktree it built in.
 - [ship-full](../ship-full/) runs it after its merges.
-- It removes what `../../shared-skill-core/checkout.sh` makes for [ship-ready](../ship-ready/) and [ready-pr](../ready-pr/), and reads each repo's worktree list through it.
+- It removes what `../../shared/checkout.sh` makes for [ship-ready](../ship-ready/) and [ready-pr](../ready-pr/), and reads each repo's worktree list through it.
 - Nothing calls this skill; you run it.
 
 ## Tests
