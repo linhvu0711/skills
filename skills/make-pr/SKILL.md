@@ -102,7 +102,10 @@ and stop before step 7.
    A proof folder: `## Proof` is its `proof.md`, pasted whole, with each
    test case linked on the branch as the shape says; and the body file
    is `pr-body.md` inside the proof folder, next to the media, not a
-   temp file.
+   temp file. Then run `../unslop/SKILL.md` on the prose: the title, and
+   the text of `Summary`, `Where to look`, and `Breaking changes`. Leave
+   as they are: the `Risk` line's form, code, commands, paths, links,
+   the `Closes` line, the `Follow-ups` lines, and `## Proof`.
 
    Then read what the PR will show for a leak: the title, the body,
    and each file the body attaches. A leak is a token, a key, a
