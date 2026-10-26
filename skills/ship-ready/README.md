@@ -1,6 +1,6 @@
 # ship-ready
 
-Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges.
+Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges; [ship-full](../ship-full/) does the same run and merges.
 
 ## Use it when
 
