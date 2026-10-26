@@ -38,6 +38,13 @@ t_render_risk_line() {
   eq "one place" 1 "$(printf '%s\n' "$item" | grep -c 'keeps only the `Risk`')"
 }
 
+t_render_title_result() {
+  eq "title rule" 1 "$(grep -c 'not how it works inside' "$here/../pr-shape.md")"
+  render devin rules
+  eq exit 0 "$code"
+  eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c 'not how it works inside')"
+}
+
 t_render_cloud_risk_once() {
   render devin rules
   eq exit 0 "$code"
@@ -165,6 +172,7 @@ cases=(
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
   "cloud rules carry the Risk line once|t_render_cloud_risk_once"
+  "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
   "local rules run each slice's checks here|t_render_local_split"
   "local rules leave the Gates to the Sandbox|t_render_local_gates"
   "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"

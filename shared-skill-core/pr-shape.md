@@ -13,6 +13,10 @@ joined by `-`, no spaces, no other punctuation.
 
 The shape of a commit summary, `type(scope): summary`, naming the whole
 change, as in `feat(todos): undo delete, clear done, due badges`.
+The summary names what the change gets a user or a caller,
+not how it works inside: `perf(server): cut websocket frames by 70%
+with gzip`, not `perf(server): negotiate permessage-deflate on the
+websocket`.
 Imperative, lower case, no period, 72 characters at most. A change that
 breaks a caller, a config, or a deploy puts `!` before the colon, as in
 `feat(cli)!: rename --out to --output`, and its body has
