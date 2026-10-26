@@ -31,11 +31,14 @@ Ship-ready's items, with its step 7 left out, then `7. Merge.` and
 ## Steps
 
 Ship-ready's steps 1 to 6 run as written. Its step 7, Report, is
-step 8 here.
+step 8 here, so every `step 7` in its steps 1 to 6, as in its cloud
+route's `READY on every one, go to step 7`, is step 7 here, Merge.
 
 7. **Merge.** Each PR, bottom of the stack first. Hold `Base`, the
-   plan's `Base`, and for each PR its `REPO`, `NUMBER`, `WT`, and the
-   `SHA` its ready step checked.
+   plan's `Base`, and for each PR its `REPO`, `NUMBER`, its worktree `WT`, and the
+   `SHA` its ready step checked: the full 40-character `headRefOid`
+   from ready-pr's step 1, or from the `--wait` of its last round,
+   never the short SHA of a report line.
 
    - Its last line is not `READY <url>`, or it ends `(waiting for
      approval)`: merge neither it nor the PRs above it. Its report line
@@ -55,14 +58,16 @@ step 8 here.
      `MERGED` line for the report.
 
    After a merge, the next PR up was stacked on the merged branch. `OLD`
-   is that branch's tip, `git -C "$WT" rev-parse origin/<merged head>`.
-   Point the PR at the base: `cd "$WT" && gh pr edit <next NUMBER>
-   --base <Base>`. The method in the `MERGED` line was `squash` or
-   `rebase`: the next PR's commits hold the old ones of the PR below,
-   so in the next PR's worktree `git -C "$WT" fetch origin <Base>`,
-   `git -C "$WT" rebase --onto origin/<Base> <OLD>`, a conflict is
-   `../fix-conflicts/SKILL.md` followed whole, then `git -C "$WT" push
-   --force-with-lease`. A `merge` method needs no rebase. Then read
+   is the `SHA` just merged, the merged branch's last tip; it stays
+   known when the repo deletes that branch on merge. `NEXT` is the next
+   PR's own worktree, never the merged PR's `WT`. Point the PR at the
+   base: `cd "$NEXT" && gh pr edit <next NUMBER> --base <Base>`. The
+   method in the `MERGED` line was `squash` or `rebase`: the next PR's
+   commits hold the old ones of the PR below, so
+   `git -C "$NEXT" fetch origin <Base>`,
+   `git -C "$NEXT" rebase --onto origin/<Base> <OLD>`, a conflict is
+   `../fix-conflicts/SKILL.md` followed whole in `$NEXT`, then
+   `git -C "$NEXT" push --force-with-lease`. A `merge` method needs no rebase. Then read
    `../ready-pr/SKILL.md` and follow it whole on that PR, since its base
    changed, and merge it as above when it prints `READY`.
 
