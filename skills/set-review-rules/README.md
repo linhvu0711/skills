@@ -20,7 +20,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 - `git` and `gh` (`gh issue view` checks that an issue a rule names still exists).
 - The [grill](../grill/) skill, which asks you about each proposal.
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/review/general-rules.md`, `../../shared-skill-core/review/rule-sources.md`, and `../../shared-skill-core/review/reviewers.sh`, which names the review bots on a PR.
+- The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, `../../shared/review/rule-sources.md`, and `../../shared/review/reviewers.sh`, which names the review bots on a PR.
 
 ## Fits with
 

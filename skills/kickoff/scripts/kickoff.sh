@@ -171,7 +171,7 @@ fi
 
 # ---------- repo path ----------
 # The checkout resolver finds the main checkout; its stop line is ours.
-found="$(bash "$here/../../../shared-skill-core/checkout.sh" main "$slug")" || exit 1
+found="$(bash "$here/../../../shared/checkout.sh" main "$slug")" || exit 1
 path="${found#* MAIN=}"
 
 # ---------- label ----------

@@ -5,7 +5,7 @@ description: "Turn the current conversation into one typed, sized GitHub issue a
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-Read `../../shared-skill-core/issue-rules.md` first. It holds the gate, types, sizes,
+Read `../../shared/issue-rules.md` first. It holds the gate, types, sizes,
 labels, body template, lookup rule, repo convention, duplicate check, and
 report. This file is the order of operations.
 

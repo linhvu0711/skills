@@ -7,7 +7,7 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 One plan, one branch, one proofbox Sandbox, one proof folder. Facts come
-from reading, per `../../shared-skill-core/facts.md`. Big forks go to
+from reading, per `../../shared/facts.md`. Big forks go to
 the user; everything else you decide, write down, and go on. You never
 push and never open a PR: `/make-pr` does that with the proof folder.
 
@@ -116,12 +116,12 @@ done.
    ```
 
    - `stop: log in first: <command>`: show the command, copy it with
-     `../../shared-skill-core/copy.sh` (any other exit than 0: say
+     `../../shared/copy.sh` (any other exit than 0: say
      `Clipboard copy skipped.`), and stop. Coding has not started.
    - Any other `stop:`: show it, stop.
 
 3. **Worktree.** The branch follows the PR shape § Branch
-   (`../../shared-skill-core/pr-shape.md`): the issue's type, its
+   (`../../shared/pr-shape.md`): the issue's type, its
    number, two to four words, as in `fix/133-uninstall-reverses-setup`.
    A chat plan: the type from its title, then the words of its slug
    after `chat-`, as in `feat/export-orders-csv` for
@@ -130,7 +130,7 @@ done.
    rerun.
 
    ```bash
-   bash ../../shared-skill-core/checkout.sh <REPO> <branch> --base <BASE>
+   bash ../../shared/checkout.sh <REPO> <branch> --base <BASE>
    ```
 
    `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=`
@@ -176,7 +176,7 @@ done.
    the local machine lacks (§ Sandbox).
 
    Assemble the prompt per
-   `bash ../../shared-skill-core/handoff/render.sh local prompt`: the
+   `bash ../../shared/handoff/render.sh local prompt`: the
    head lines with `Branch`, `Worktree`, and `Proof folder` (`PROOF`),
    the issue's `Task` and `Done when` verbatim (a chat plan: its
    `## Brief` block's), the plan's blocks, and
@@ -252,7 +252,7 @@ done.
    ```
 
    - `stop: log in first: <command>`: the login expired since step 2.
-     Show the command, copy it with `../../shared-skill-core/copy.sh` (any
+     Show the command, copy it with `../../shared/copy.sh` (any
      other exit than 0: say `Clipboard copy skipped.`), and stop.
    - A line that says the setup script failed: proofbox printed its
      last 50 lines above it. Fix the script and run `up` again; after
@@ -313,7 +313,7 @@ done.
    <why>`.
 
    With a `PERF` block, after the Gates, measure per
-   `../../shared-skill-core/benchmark.md`. Add a detached worktree of
+   `../../shared/benchmark.md`. Add a detached worktree of
    `BASE` in a temp folder, as step 7 does. Run the block's `Command` in
    turns, `box.sh run "$PROOF" --from <that folder> -- <Command>` then
    `box.sh run "$PROOF" -- <Command>`, as many times each as the `Pass
@@ -321,7 +321,7 @@ done.
    · <metric>: <base median> → <head median> <unit>, median of <n> in
    turns, spread <low> to <high> (sandbox)`. A base median outside the
    `Before` spread adds ` (issue Baseline: <Before>)` before
-   `(sandbox)`, per `../../shared-skill-core/pr-shape.md` § Proof. A
+   `(sandbox)`, per `../../shared/pr-shape.md` § Proof. A
    head that misses the `Pass rule` is a red Gate: a follow-up, as
    above. Remove the temp worktree.
 
@@ -330,14 +330,14 @@ done.
    three, each 9a start the app, 9b walker and video check, 9c sort.
 
 10. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
-   `../../shared-skill-core/pr-shape.md` § Proof, one row per Done-when
+   `../../shared/pr-shape.md` § Proof, one row per Done-when
    line from the plan's Proof table, the test case by name, and for a
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
    `PROOF`. A row proved by a command carries the command, the short
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
-   `../../shared-skill-core/pr-shape.md` § Proof. A `not run` line from
+   `../../shared/pr-shape.md` § Proof. A `not run` line from
    `checks.txt` goes in as its command, `not run: <why>`, and the words
    `CI must prove it`.
 

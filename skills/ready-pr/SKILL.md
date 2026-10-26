@@ -14,7 +14,7 @@ something. So every check counts the same, with no list of bot names.
 When a push fixes a thread, Devin replies `✅ Resolved` and closes it.
 People's comments count the same way, without a status.
 Short lookups are yours; the judging is `/validate-pr-review`'s, read
-and followed. Facts per `../../shared-skill-core/facts.md`. Never merge.
+and followed. Facts per `../../shared/facts.md`. Never merge.
 
 `scripts/` holds two: `ready.sh`, the readiness module, and
 `restack.sh`; each prints its usage with no arguments.
@@ -47,7 +47,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
    main checkout and makes or reuses the worktree:
 
    ```bash
-   bash ../../shared-skill-core/checkout.sh <REPO> <HEAD>
+   bash ../../shared/checkout.sh <REPO> <HEAD>
    ```
 
    `stop:` on stderr: show it, stop. `WT` is its `WORKTREE=`. Done when
@@ -90,12 +90,12 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      `--body-file <file>` or `-F body=@<file>`.
    - **Stop points.** A row under `## Unclear`: one question to the
      user per row, in the format of
-     `../../shared-skill-core/grilling.md`, wait. A `fix here`
+     `../../shared/grilling.md`, wait. A `fix here`
      whose change touches a seam, a Done-when line, a schema, an API,
      or a `Decided` line of the plan: ask before the fix, not after.
    - **Follow-ups.** Each issue `/capture` files gets its line under
      `## Follow-ups` in the PR body, by
-     `../../shared-skill-core/pr-shape.md`: read the body with
+     `../../shared/pr-shape.md`: read the body with
      `gh pr view <NUMBER> --json body -q .body`, add the line, and
      `gh pr edit <NUMBER> --body-file <file>`.
    - **Seen before.** A finding with the same path and the same claim
@@ -158,7 +158,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
      3. Still red, already rerun once, or a check from outside Actions:
         one question to the user that names the check and the log line
         with the cause, in the format of
-        `../../shared-skill-core/grilling.md`. Wait.
+        `../../shared/grilling.md`. Wait.
    - `thread(s) wait for the author`: step 5, with the thread lines.
    - anything else: say it, stop.
 

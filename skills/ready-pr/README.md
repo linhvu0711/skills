@@ -35,7 +35,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 - `gh` (signed in), `git`, and `jq`.
 - Optional: a review bot on the repo that posts a check, such as [Devin Review](https://devin.ai), [CodeRabbit](https://coderabbit.ai), or [Cursor Bugbot](https://cursor.com/bugbot). See above.
 - The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/checkout.sh` (the checkout resolver), `../../shared-skill-core/grilling.md` (question format and how to pick), and `../../shared-skill-core/pr-shape.md`.
+- The shared core files `../../shared/facts.md`, `../../shared/checkout.sh` (the checkout resolver), `../../shared/grilling.md` (question format and how to pick), and `../../shared/pr-shape.md`.
 - For a PR with no local checkout: a main checkout the checkout resolver can find, from the repo map at `~/.config/kickoff/repos.tsv`, the current folder, or a clone under `~/development`.
 
 ## Fits with

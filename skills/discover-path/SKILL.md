@@ -112,7 +112,7 @@ work already decided. The map comes first.
    each closed-or-fog line correctly.
 
 6. **Report.** Map URL on its own line, and on the clipboard through
-   `../../shared-skill-core/copy.sh`; on any other exit than 0, say
+   `../../shared/copy.sh`; on any other exit than 0, say
    `Clipboard copy skipped.` One line per ticket: name, type, blocked by. Then `Free now: <names>. Run /discover-path <map-url> to work
    one.` Stop. Charting resolves nothing.
 
@@ -140,7 +140,7 @@ work already decided. The map comes first.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library
      do X". Iterate; the user picks and says done. What was proven becomes
-     `Known` lines per `../../shared-skill-core/issue-rules.md` § Known.
+     `Known` lines per `../../shared/issue-rules.md` § Known.
    - **task**: do it where the agent can; otherwise hand the user a
      checklist and wait. Record what was done and the facts later tickets
      need: where a credential lives, never its value; new URLs; counts.
@@ -167,7 +167,7 @@ work already decided. The map comes first.
    free: <names>. Run /discover-path <map-url> again.` and stop.
 
    No open ticket and no fog: walk the readiness gate in
-   `../../shared-skill-core/issue-rules.md` § Readiness gate over the whole
+   `../../shared/issue-rules.md` § Readiness gate over the whole
    Decisions so far list, unhappy paths included. Each gap becomes one
    ticket, created now, then report as above. No gap: print `Map clear.`,
    the Decisions so far list in full, and `Run /to-epic <map-url> in this

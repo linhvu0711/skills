@@ -10,7 +10,7 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 
 The answer comes from the record, never from what the code looks like it
 might be for. Each reason carries one of the four evidence labels of
-`../../shared-skill-core/facts.md` (Seen, Inferred, Guess, Unknown), and
+`../../shared/facts.md` (Seen, Inferred, Guess, Unknown), and
 a Guess or an Unknown names what was searched. You only read: nothing is
 written to the repo or to GitHub.
 
@@ -66,16 +66,16 @@ written to the repo or to GitHub.
    are the file name without its extension and the symbol.
 
    ```bash
-   python3 ../../shared-skill-core/sessions/claude/find_sessions.py "<words>" --json --limit 0 --include-subdirs --project-dir <top> --project-dir <wt>
-   python3 ../../shared-skill-core/sessions/codex/find_session.py "<words>" --json --limit 0 --include-subdirs --cwd <top> --cwd <wt>
+   python3 ../../shared/sessions/claude/find_sessions.py "<words>" --json --limit 0 --include-subdirs --project-dir <top> --project-dir <wt>
+   python3 ../../shared/sessions/codex/find_session.py "<words>" --json --limit 0 --include-subdirs --cwd <top> --cwd <wt>
    ```
 
    Drop a session whose `is_current` is true, or whose `first_prompt`
    starts with `/why` or `$why`, then keep the first 3 of each tool, in
    the finder's order. Render each one kept, Claude Code with
-   `python3 ../../shared-skill-core/sessions/claude/extract_session.py <id> --summary > <out>`
+   `python3 ../../shared/sessions/claude/extract_session.py <id> --summary > <out>`
    and Codex with
-   `python3 ../../shared-skill-core/sessions/codex/extract_session.py <id> --summary > <out>`.
+   `python3 ../../shared/sessions/codex/extract_session.py <id> --summary > <out>`.
    `<out>` is `<scratchpad>/why-<id8>.md` in Claude Code and
    `/tmp/why/<id8>.md` in Codex (`mkdir -p` the folder first). Run
    `grep -n -i` on each `<out>` for the words and read the lines around

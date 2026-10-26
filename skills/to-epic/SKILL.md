@@ -5,7 +5,7 @@ description: "Cut a large piece of work into a phased GitHub epic: one parent, n
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-Read `../../shared-skill-core/issue-rules.md` first. Every
+Read `../../shared/issue-rules.md` first. Every
 sub-issue obeys it. This file adds the cutting rules and the epic flow.
 
 ## Steps

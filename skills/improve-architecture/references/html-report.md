@@ -14,7 +14,7 @@ Page rules that shape the file:
 Serve the page with the shared serve script, which prints its URL:
 
 ```sh
-URL=$(../../shared-skill-core/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<owner>-<repo>.html")
+URL=$(../../shared/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<owner>-<repo>.html")
 ```
 
 The script exits with an error (no free port, or the server does not give back the file): chat gets its error line and the `.html` path, and the run stops.

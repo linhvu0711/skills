@@ -7,12 +7,12 @@ disable-model-invocation: true
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 The prompt skeleton and the rules block live in
-`../../shared-skill-core/handoff/` as templates, shared with `/build-and-prove`.
+`../../shared/handoff/` as templates, shared with `/build-and-prove`.
 Read the prompt rules first, rendered for the executor:
-`bash ../../shared-skill-core/handoff/render.sh <executor> prompt`
+`bash ../../shared/handoff/render.sh <executor> prompt`
 (the prompt skeleton, where each block comes from, and the follow-up
 shape). The rules block is
-`bash ../../shared-skill-core/handoff/render.sh <executor> rules`,
+`bash ../../shared/handoff/render.sh <executor> rules`,
 pasted verbatim into every first prompt. Never paste the raw templates:
 their marker lines and `{{words}}` are for the renderer. An edit to a
 rule goes into the template, so every executor gets it. This file is
@@ -59,7 +59,7 @@ set's, the first ticket URL. Say the pick in one line, as
 1. **Source.** A plan the user said `ok` to in this chat: read its
    `.md` file, the path `/plan-up` gave in its summary
    (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
-   `../../shared-skill-core/plan-page.md`). No plan: say
+   `../../shared/plan-page.md`). No plan: say
    `Run /plan-up first.` and stop. A `ready-to-build` issue or a run
    is no exception. No URL: the issue is the plan's, from its
    `# Plan: #<n>` title and its `Repo:` line. A chat plan, with no
@@ -69,7 +69,7 @@ set's, the first ticket URL. Say the pick in one line, as
    § Arguments. Then `route <issue-url>` with no executor, even when one
    is named: `follow …` means the issue already has a session, of any
    executor, and a second one would build it twice. Show its link and
-   ask one question, per `../../shared-skill-core/grilling.md`: `A` send
+   ask one question, per `../../shared/grilling.md`: `A` send
    this plan to it as a follow-up (§ Follow-up, from step 2), the pick;
    `B` start a new session on the executor picked above. Wait.
 
@@ -80,7 +80,7 @@ set's, the first ticket URL. Say the pick in one line, as
    convention's `size` map,
    `python3 ../to-issue/scripts/conventions.py get owner/repo`.
    On `MISS`, match the label by eye the way
-   `../../shared-skill-core/issue-rules.md` § Repo convention
+   `../../shared/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
    carries the letter per layer. Then the executor's own facts:
    § Cursor.

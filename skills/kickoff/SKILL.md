@@ -73,7 +73,7 @@ What the script decides, so you can answer questions about it:
   count; a target with none left stops.
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,
-  `../../shared-skill-core/checkout.sh main <owner/repo>`, whose header
+  `../../shared/checkout.sh main <owner/repo>`, whose header
   says where it looks. A find is written to the map. None or several: it
   stops and says so.
 - Tree: left as is, on any branch, with edits or not. `/plan-up` reads
@@ -112,7 +112,7 @@ script, do these steps.
    once per issue, one after the other.
 4. **Sizes.** For each ticket with no size label (`gh issue view <n>
    --json labels,title,body`), read its title and body and size it by
-   `../../shared-skill-core/size.md`. Pass `--size <n>=<size>`. Skip a
+   `../../shared/size.md`. Pass `--size <n>=<size>`. Skip a
    ticket that has a size label.
 5. **Flags.** A model, an effort, or a command in the user's words
    becomes `--model`, `--effort`, or `--command` (see Flags). A word

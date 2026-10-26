@@ -1,6 +1,6 @@
 # test-lib.sh: the helpers every test case shares, the one fake gh, and the
 # fake curl. test.sh sources this file first, then each skills/*/tests/*.sh
-# and shared-skill-core/tests/*.sh, so the cases there call these helpers by
+# and shared/tests/*.sh, so the cases there call these helpers by
 # name.
 #
 # Every leak string below is joined from two halves at runtime, so this file

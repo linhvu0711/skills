@@ -22,7 +22,7 @@ point is speed and low noise. File it and get out.
 
 - **Seed or bug, nothing else.** The nine real types (`feat`, `fix`,
   `docs`, `refactor`, `perf`, `test`, `chore`, `spike`, `task`, per
-  `../../shared-skill-core/issue-rules.md` § Types), `improve`, and every
+  `../../shared/issue-rules.md` § Types), `improve`, and every
   other word mean "decided". A seed and a bug are not decided.
 - **The kind comes from the words.** It is a bug when the text says
   something behaves wrong today: `bug:`, "broken", "wrong", "crashes",
@@ -36,10 +36,10 @@ point is speed and low noise. File it and get out.
   `Open:` line.
 - **No digging.** Use only what is already in the conversation: no code
   reads, no searches. The mechanical steps in
-  `../../shared-skill-core/issue-rules.md` § Written for a stranger (the
+  `../../shared/issue-rules.md` § Written for a stranger (the
   commit lookup, the GitHub check, the upload) are not digging; run them.
 - **Written for a stranger.** The reader has neither this chat nor this
-  machine. Follow `../../shared-skill-core/issue-rules.md` § Written for a
+  machine. Follow `../../shared/issue-rules.md` § Written for a
   stranger: nothing local, no session words, code by permalink, evidence in
   the issue, environment when it matters, proven apart from guessed.
 - **One question at most:** "Which repo?", when it cannot be determined.
@@ -148,7 +148,7 @@ gh issue list --state open --search "<keywords>" --limit 10 --json number,title,
 
 A result that is clearly the same thing: show it to the user and stop.
 Otherwise run the closed search of
-`../../shared-skill-core/issue-rules.md` § Duplicates and seeds, on the
+`../../shared/issue-rules.md` § Duplicates and seeds, on the
 same keywords. A clear closed match does not stop it: it goes in the
 body's Context as one `Related: #<n> (closed)` line.
 
@@ -254,7 +254,7 @@ once:
 
   Colors: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a
   heat ramp. These names and colors are owned by
-  `../../shared-skill-core/issue-rules.md` § Labels and
+  `../../shared/issue-rules.md` § Labels and
   § Repo convention; change them there first.
 
 - The missing label is anything else (the repo renamed or deleted it): the
@@ -267,7 +267,7 @@ If the retry also fails, show the error and stop.
 Copy the URL to the clipboard, then say one line:
 
 ```bash
-printf "%s" "<url>" | bash ../../shared-skill-core/copy.sh
+printf "%s" "<url>" | bash ../../shared/copy.sh
 ```
 
 > Captured: <url> (on your clipboard)

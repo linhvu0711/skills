@@ -8,7 +8,7 @@ Paths in this skill are relative to its folder, the one that holds this `SKILL.m
 
 You review one pull request. The checks are fixed: **Logic**, **Scope**,
 **Standards**, as written in
-`../../shared-skill-core/review/general-rules.md`. The repo can add
+`../../shared/review/general-rules.md`. The repo can add
 rules of its own, in `REVIEW.md` or wherever it keeps them. You run
 each axis in its own subagent, merge what comes back, and hand the
 report to the user. Posting the review to GitHub is the user's call and
@@ -16,7 +16,7 @@ a separate command.
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first. Short lookups
+Read `../../shared/facts.md` first. Short lookups
 (`git`, `gh pr view`, one `ls`) are yours.
 
 The axis agents are `general-purpose` agents, not Explore. Explore only
@@ -68,7 +68,7 @@ the other, and keep the same return shape.
 3. **Rules.** Build the rule text for each axis.
 
    The general block is always
-   `../../shared-skill-core/review/general-rules.md`, read now. Split
+   `../../shared/review/general-rules.md`, read now. Split
    it into its three `##` sections. That is the general text per axis.
 
    Then find the repo rules.
@@ -81,7 +81,7 @@ the other, and keep the same return shape.
      "REVIEW.md general block is older than the shared rules". Stop
      looking; the file already folded the rest in.
    - No marked `REVIEW.md`: one Explore agent searches the repo. Its
-     brief is `../../shared-skill-core/review/rule-sources.md`
+     brief is `../../shared/review/rule-sources.md`
      pasted in full, the repo root, the read-only line from § Facts,
      and this return shape: one line per
      hit, `<path:line> | <bin> | <the rule, verbatim>`. Every review
@@ -195,7 +195,7 @@ keeps its heading and one line: "Nothing found."
 
 - **Axis**: one of the three independent checks, Logic, Scope, Standards.
 - **General block**: the fixed rule text, the same in every repo. Owned
-  by `../../shared-skill-core/review/general-rules.md`.
+  by `../../shared/review/general-rules.md`.
 - **Repo rule**: a line the repo adds below the end marker in
   `REVIEW.md`, or, with no marked file, any rule line found in step 3.
 - **Task**: what the PR is supposed to do. The linked issue and its

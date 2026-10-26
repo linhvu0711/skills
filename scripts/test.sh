@@ -2,7 +2,7 @@
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
 # adopt.sh, and the handoff render.sh. It sources test-lib.sh, the helpers, the
 # one fake gh, and the fake curl that every case shares, runs its own cases,
-# then sources each skills/*/tests/*.sh and shared-skill-core/tests/*.sh in
+# then sources each skills/*/tests/*.sh and shared/tests/*.sh in
 # turn and runs that file's cases.
 #
 #   test.sh
@@ -188,10 +188,10 @@ t_flags_missing_own_path() {
 }
 
 t_passes_skill_and_core_paths() {
-  repo; mkdir -p skills/a skills/b shared-skill-core
-  printf 'hi\n' > skills/b/SKILL.md; printf 'hi\n' > shared-skill-core/x.md
-  printf 'read `../b/SKILL.md:3` and ../../shared-skill-core/x.md.\n' > skills/a/SKILL.md
-  run bash scripts/check.sh skills shared-skill-core
+  repo; mkdir -p skills/a skills/b shared
+  printf 'hi\n' > skills/b/SKILL.md; printf 'hi\n' > shared/x.md
+  printf 'read `../b/SKILL.md:3` and ../../shared/x.md.\n' > skills/a/SKILL.md
+  run bash scripts/check.sh skills shared
   eq exit 0 "$code"
   eq stdout "check: clean" "$out"
 }
@@ -204,11 +204,11 @@ t_flags_missing_skill_path() {
 }
 
 t_reads_core_path_from_own_folder() {
-  repo; mkdir -p shared-skill-core/handoff; printf 'hi\n' > shared-skill-core/size.md
-  printf '<!-- include ../size.md -->\nsee `../gone.md`\n' > shared-skill-core/handoff/rules.md
-  run bash scripts/check.sh shared-skill-core
+  repo; mkdir -p shared/handoff; printf 'hi\n' > shared/size.md
+  printf '<!-- include ../size.md -->\nsee `../gone.md`\n' > shared/handoff/rules.md
+  run bash scripts/check.sh shared
   eq exit 1 "$code"
-  eq "stderr line 1" "shared-skill-core/handoff/rules.md:2: missing path: ../gone.md" "$(printf '%s\n' "$err" | sed -n 1p)"
+  eq "stderr line 1" "shared/handoff/rules.md:2: missing path: ../gone.md" "$(printf '%s\n' "$err" | sed -n 1p)"
   eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
 }
 
@@ -292,11 +292,11 @@ t_flags_copy_without_license() {
 }
 
 t_flags_core_row_without_license() {
-  repo; mkdir shared-skill-core; printf 'hi\n' > shared-skill-core/x.md
-  notices shared-skill-core/x.md "heavy adaptation"; git add -A; git commit -qm files
+  repo; mkdir shared; printf 'hi\n' > shared/x.md
+  notices shared/x.md "heavy adaptation"; git add -A; git commit -qm files
   run bash scripts/check.sh
   eq exit 1 "$code"
-  eq "stderr line 1" "THIRD_PARTY_NOTICES.md:5: missing license: shared-skill-core/LICENSE-acme" "$(printf '%s\n' "$err" | sed -n 1p)"
+  eq "stderr line 1" "THIRD_PARTY_NOTICES.md:5: missing license: shared/LICENSE-acme" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
 t_passes_copy_with_license() {
@@ -468,15 +468,15 @@ t_marked_change_runs_header_check() {
 # core: a shared core with two top-level files, and a handoff/ folder whose
 # rules.md includes ../size.md.
 core() {
-  mkdir -p shared-skill-core/handoff
-  printf 'hi\n' > shared-skill-core/x.md; printf 'hi\n' > shared-skill-core/size.md
-  printf 'hi\n' > shared-skill-core/handoff/render.sh
-  printf '<!-- include ../size.md -->\n' > shared-skill-core/handoff/rules.md
+  mkdir -p shared/handoff
+  printf 'hi\n' > shared/x.md; printf 'hi\n' > shared/size.md
+  printf 'hi\n' > shared/handoff/render.sh
+  printf '<!-- include ../size.md -->\n' > shared/handoff/rules.md
 }
 
 t_readme_hook_asks_named_core() {
-  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; git add -A; git commit -qm skill
-  printf 'more\n' >> shared-skill-core/x.md; git add -A
+  hooked; core; skill demo 'read `../../shared/x.md`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared/x.md; git add -A
   run git commit -m test
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "$(readme_msg skills/demo)" "$err"
@@ -484,8 +484,8 @@ t_readme_hook_asks_named_core() {
 }
 
 t_readme_hook_asks_core_folder() {
-  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
-  printf 'more\n' >> shared-skill-core/handoff/rules.md; git add -A
+  hooked; core; skill demo 'run `../../shared/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared/handoff/rules.md; git add -A
   run git commit -m test
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "$(readme_msg skills/demo)" "$err"
@@ -493,8 +493,8 @@ t_readme_hook_asks_core_folder() {
 }
 
 t_readme_hook_asks_included_core() {
-  hooked; core; skill demo 'run `../../shared-skill-core/handoff/render.sh`'; git add -A; git commit -qm skill
-  printf 'more\n' >> shared-skill-core/size.md; git add -A
+  hooked; core; skill demo 'run `../../shared/handoff/render.sh`'; git add -A; git commit -qm skill
+  printf 'more\n' >> shared/size.md; git add -A
   run git commit -m test
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "$(readme_msg skills/demo)" "$err"
@@ -502,9 +502,9 @@ t_readme_hook_asks_included_core() {
 }
 
 t_readme_hook_skips_unread_core() {
-  hooked; core; skill demo 'read `../../shared-skill-core/x.md`'; skill other 'read `../../shared-skill-core/size.md`'
+  hooked; core; skill demo 'read `../../shared/x.md`'; skill other 'read `../../shared/size.md`'
   git add -A; git commit -qm skills
-  printf 'more\n' >> shared-skill-core/x.md; printf 'more\n' >> skills/demo/README.md; git add -A
+  printf 'more\n' >> shared/x.md; printf 'more\n' >> skills/demo/README.md; git add -A
   run git commit -m test
   eq exit 0 "$code"
   eq commits 3 "$(git rev-list --count HEAD)"
@@ -512,7 +512,7 @@ t_readme_hook_skips_unread_core() {
 
 t_render_names_box() {
   T="$(mktemp -d)"
-  run bash "$here/../shared-skill-core/handoff/render.sh" local rules
+  run bash "$here/../shared/handoff/render.sh" local rules
   eq exit 0 "$code"
   eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
   eq "lines with the box.sh path" 2 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
@@ -524,7 +524,7 @@ t_render_names_handoff() {
   T="$(mktemp -d)"
   local ex
   for ex in devin cursor; do
-    run bash "$here/../shared-skill-core/handoff/render.sh" "$ex" prompt
+    run bash "$here/../shared/handoff/render.sh" "$ex" prompt
     eq "$ex exit" 0 "$code"
     eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
     eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
@@ -635,7 +635,7 @@ run_cases() {
 pass=0; fail=0
 log="$(mktemp)"
 run_cases
-for f in "$here"/../skills/*/tests/*.sh "$here"/../shared-skill-core/tests/*.sh; do
+for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases
 done
 printf '%d passed, %d failed\n' "$pass" "$fail"

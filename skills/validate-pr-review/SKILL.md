@@ -15,7 +15,7 @@ posted until the user says go.
 
 ## Facts
 
-Read `../../shared-skill-core/facts.md` first. Short lookups
+Read `../../shared/facts.md` first. Short lookups
 (`gh pr view`, one `rg` count) are yours.
 
 One judge agent per file group answers the three questions. That

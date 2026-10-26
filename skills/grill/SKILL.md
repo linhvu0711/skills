@@ -5,7 +5,7 @@ description: A relentless interview to sharpen a plan or design, which also sett
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-Read `../../shared-skill-core/grilling.md`, `references/domain-modeling.md`, and `../../shared-skill-core/facts.md` first, and follow all three at once:
+Read `../../shared/grilling.md`, `references/domain-modeling.md`, and `../../shared/facts.md` first, and follow all three at once:
 
 - `grilling.md` is the interview: design tree, frontier, one question per message, the branches always in the tree, and the done rule.
 - `domain-modeling.md` is the glossary and ADR discipline, applied the whole time: challenge terms, sharpen fuzzy language, keep each settled term and ADR in a list, offer an ADR only when its three conditions hold. No doc file changes before § Close out.
@@ -41,7 +41,7 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
 
 **No line**, the default:
 
-- Work follows, code to build: invoke the to-issue skill with the Skill tool, or to-epic when the work is over one ticket. The seed issue, when there is one, is the origin: it becomes the ticket or the parent, per `../../shared-skill-core/issue-rules.md` § Origin seed, and is never closed. Every doc entry goes under `## Docs to write`, word for word, per the same file § Docs to write; one that is true already rides on the first code ticket. No docs PR.
+- Work follows, code to build: invoke the to-issue skill with the Skill tool, or to-epic when the work is over one ticket. The seed issue, when there is one, is the origin: it becomes the ticket or the parent, per `../../shared/issue-rules.md` § Origin seed, and is never closed. Every doc entry goes under `## Docs to write`, word for word, per the same file § Docs to write; one that is true already rides on the first code ticket. No docs PR.
 - No work follows (the answer was "we will not build X", or a term for code that exists): the docs are true now, so they ship now. Write them, then:
   1. Check the tree. `git status --short` on the files you wrote. Nothing changed: say so and stop. No PR.
   2. Invoke the make-pr skill with the Skill tool, with its four caller settings:

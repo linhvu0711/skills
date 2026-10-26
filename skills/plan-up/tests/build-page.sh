@@ -261,9 +261,9 @@ t_build_script_text() {
 
 t_build_no_bend() {
   T="$(mktemp -d)"
-  run grep -ci bend "$here/../assets/shell.html" "$here/../../../shared-skill-core/plan-page.md"
+  run grep -ci bend "$here/../assets/shell.html" "$here/../../../shared/plan-page.md"
   eq stdout "$here/../assets/shell.html:0
-$here/../../../shared-skill-core/plan-page.md:0" "$out"
+$here/../../../shared/plan-page.md:0" "$out"
 }
 
 t_build_earlier_seam() {

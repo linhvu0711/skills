@@ -36,8 +36,8 @@ It only reads: no change to the repo, no comment on GitHub.
 - `git`.
 - `gh`, signed in, for the PR, its reviews, and the issue of each commit: one call per commit. Without it, the answer comes from git, the docs, and the sessions, and says so.
 - `python3` (standard library only).
-- The shared finders and extractors in [`sessions/`](../../shared-skill-core/sessions/), for past sessions.
-- The evidence labels in [`facts.md`](../../shared-skill-core/facts.md).
+- The shared finders and extractors in [`sessions/`](../../shared/sessions/), for past sessions.
+- The evidence labels in [`facts.md`](../../shared/facts.md).
 
 ## Fits with
 

@@ -56,7 +56,7 @@ set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-checkout="$here/../../../shared-skill-core/checkout.sh"
+checkout="$here/../../../shared/checkout.sh"
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d

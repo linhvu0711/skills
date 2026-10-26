@@ -35,7 +35,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - [to-issue](../to-issue/) and [to-epic](../to-epic/), to file the work with its doc text.
 - [make-pr](../make-pr/), for the docs PR when no work follows.
 - [unslop](../unslop/), run on the prose before the commit.
-- From the shared core: [grilling.md](../../shared-skill-core/grilling.md) and [facts.md](../../shared-skill-core/facts.md).
+- From the shared core: [grilling.md](../../shared/grilling.md) and [facts.md](../../shared/facts.md).
 
 ## Fits with
 

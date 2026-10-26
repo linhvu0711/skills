@@ -61,7 +61,7 @@ Measure with a profiler or timers, not log lines. Three numbers before anything 
 baseline, the target. The metric and the baseline are yours to measure. The
 target is the user's; ask once with a default.
 
-The baseline is measured per `../../shared-skill-core/benchmark.md`,
+The baseline is measured per `../../shared/benchmark.md`,
 and passes every check in it that holds for one side before it is a
 baseline. `Alternate` and `Both sides tuned` come in when Confirm
 compares the number with the hot spot stubbed. A check it fails

@@ -7,7 +7,7 @@ judgment is made here.
 ## Vocabulary
 
 - **Seam**: where a module's interface lives, per
-  `../../shared-skill-core/codebase-design.md`. A plan's seams are external
+  `../../shared/codebase-design.md`. A plan's seams are external
   ones: the public place a caller and a test both cross, a function, a
   route, a command, a screen. Tests live at seams, never inside.
 - **Slice**: one change and the tests that prove it. One seam, one
@@ -321,7 +321,7 @@ The shape above proves new behavior works, as a `feat` needs. Three
 types need other proof: a `fix` proves the old bug is gone, a `refactor`
 proves nothing changed, and a `perf` proves a number moved. The type is
 the leading word of the issue's title, per
-`../../shared-skill-core/issue-rules.md` § Types. A repo that writes
+`../../shared/issue-rules.md` § Types. A repo that writes
 another word for a type keeps it in the `words` map of `python3
 ../to-issue/scripts/conventions.py get <owner/repo>`, as `bug` for
 `fix`; that word is read as the type it stands for. A `fix`, `refactor`,
@@ -377,7 +377,7 @@ The structure changes and the behavior does not.
 
 ### perf
 
-Read `../../shared-skill-core/benchmark.md` first: it says when a speed
+Read `../../shared/benchmark.md` first: it says when a speed
 number can be trusted.
 
 - The `Perf` block sits after `Facts`. Its `Metric`, `Command`, and

@@ -20,7 +20,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - Sub-agents: Explore agents to read the code, and for the design-it-twice step an `interface-designer` agent in Claude Code (its definition is not in this repo) or Codex's normal sub-agent.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the chosen candidate.
-- From the shared core: [facts.md](../../shared-skill-core/facts.md), [codebase-design.md](../../shared-skill-core/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared-skill-core/serve.sh) to serve the report.
+- From the shared core: [facts.md](../../shared/facts.md), [codebase-design.md](../../shared/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared/serve.sh) to serve the report.
 
 ## Fits with
 

@@ -18,7 +18,7 @@ The report also says how many sessions were read, and names any that were not re
 
 - `python3` (standard library only), `git`, and `gh` for the repo name and the issues.
 - Claude Code and Codex session logs under `~/.claude/projects/` and `~/.codex/sessions/`. It reads both; headless `codex exec` runs are left out.
-- From the shared core: the session scripts in [`sessions/`](../../shared-skill-core/sessions/).
+- From the shared core: the session scripts in [`sessions/`](../../shared/sessions/).
 - Sub-agents: Explore agents in Claude Code, `explorer` agents in Codex, one per session.
 - Claude Code's Artifact tool and its `artifact-design` skill, for the two pages. In Codex the pages come as lists in chat.
 - [to-issue](../to-issue/) and [capture](../capture/), for the cards you pick.

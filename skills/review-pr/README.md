@@ -22,7 +22,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 - `git` and `gh`, signed in.
 - An agent that can start subagents. In Codex, which has none, it runs the three checks one after the other.
-- The shared core files `../../shared-skill-core/facts.md`, `../../shared-skill-core/review/general-rules.md`, and `../../shared-skill-core/review/rule-sources.md`.
+- The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/review/rule-sources.md`.
 
 ## Fits with
 

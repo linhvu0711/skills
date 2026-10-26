@@ -22,8 +22,8 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `gh`, signed in. Screenshots need `--attach` on `gh issue create` (see `gh issue create --help`); without it the issue is still filed, with a sentence in place of each screenshot.
 - `python3`, for `scripts/conventions.py`, which stores each repo's title style in `~/.config/capture/conventions.json` and its priority labels in `~/.config/gh-issues/priority-labels.json`.
-- A clipboard tool, optional, for the URL, through [copy.sh](../../shared-skill-core/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
-- From the shared core: [issue-rules.md](../../shared-skill-core/issue-rules.md), which owns the label names and colors and the rules for writing for a stranger.
+- A clipboard tool, optional, for the URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
+- From the shared core: [issue-rules.md](../../shared/issue-rules.md), which owns the label names and colors and the rules for writing for a stranger.
 
 ## Fits with
 
