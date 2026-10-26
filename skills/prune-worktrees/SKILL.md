@@ -1,6 +1,6 @@
 ---
 name: prune-worktrees
-description: "Remove the git worktrees that are safe to prune (clean, PR merged at its last commit) with their branches, and list every other worktree with the reason it stays. Use when the user types /prune-worktrees in Claude Code or $prune-worktrees in Codex, or says 'prune worktrees', 'clean up worktrees', 'remove merged worktrees'. /ship's last line names it after a merge."
+description: "Remove the git worktrees that are safe to prune (clean, PR merged at its last commit) with their branches, and list every other worktree with the reason it stays. Use when the user types /prune-worktrees in Claude Code or $prune-worktrees in Codex, or says 'prune worktrees', 'clean up worktrees', 'remove merged worktrees'. /ship-ready's last line names it after a merge."
 disable-model-invocation: true
 ---
 

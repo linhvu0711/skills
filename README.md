@@ -35,18 +35,18 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  ticket([issue or epic]) --> ship
+  ticket([issue or epic]) --> shipready
   ticket --> kickoff
   ticket --> planup[plan-up]
   kickoff -->|new pane| planup
-  kickoff -->|new pane| ship
-  subgraph ship [ship: one run]
+  kickoff -->|new pane| shipready
+  subgraph shipready [ship-ready: one run]
     direction LR
     sp[plan-up] --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
   end
   planup --> bp[build-and-prove] --> makepr[make-pr] --> readypr[ready-pr]
   planup --> ho[handoff]
-  ship --> done([PR ready: you merge])
+  shipready --> done([PR ready: you merge])
   ho --> done
   readypr --> done
   readypr -.->|judges each comment| vpr[validate-pr-review]
@@ -55,8 +55,8 @@ flowchart LR
 
 Solid line: next step. Dotted line: a skill it calls during its run.
 
-- [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, then ready it. Use it when you do not need to watch each step. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
-- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it, or ship, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
+- [ship-ready](skills/ship-ready/) does the whole path in one run: plan, build and prove, open the PR, then ready it. Use it when you do not need to watch each step. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
+- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff](skills/kickoff/) to start it, or ship-ready, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
@@ -83,8 +83,8 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 | Skill | What it does |
 |---|---|
-| [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or an epic. |
-| [ship](skills/ship/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
+| [kickoff](skills/kickoff/) | Opens a new herdr pane and starts `/ship-ready` or `/plan-up` there on an issue, a run of tickets, or an epic. |
+| [ship-ready](skills/ship-ready/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
@@ -127,14 +127,14 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff](skills/kickoff/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
+- `jq`, for the skills that call an API: [ship-ready](skills/ship-ready/), [kickoff](skills/kickoff/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff](skills/kickoff/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
-- proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route.
-- Devin: [handoff](skills/handoff/), [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
+- proofbox: [build-and-prove](skills/build-and-prove/), and [ship-ready](skills/ship-ready/) on its local route.
+- Devin: [handoff](skills/handoff/), [ship-ready](skills/ship-ready/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).

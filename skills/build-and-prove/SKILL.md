@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it with proofbox: Coding runs on the local machine, then one proofbox Sandbox runs the Gates and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it with proofbox: Coding runs on the local machine, then one proofbox Sandbox runs the Gates and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship-ready runs it by default."
 disable-model-invocation: true
 ---
 
@@ -63,7 +63,7 @@ one.
 
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: layer `n` of
-  a run's plan, its branch made from `<branch>`. `/ship` uses this form.
+  a run's plan, its branch made from `<branch>`. `/ship-ready` uses this form.
 - `/build-and-prove <note>`: an answer or follow-up for the pane this
   chat started (§ Follow-up).
 - No plan named and none in this chat: say `Run /plan-up first.` and
@@ -73,8 +73,8 @@ one.
 
 Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
 in Codex. It holds one item per step of § Steps, its number and bold
-title word for word, as in `5. Coding.` Run by `/ship`, open no list of
-your own: ship's list already holds these steps under its step 4, so
+title word for word, as in `5. Coding.` Run by `/ship-ready`, open no list of
+your own: ship-ready's list already holds these steps under its step 4, so
 mark those items.
 
 Mark each item in progress as it starts and done as it ends. A step the
@@ -90,9 +90,9 @@ done.
    - no file at the path: `No plan at <path>.`
    - no `# Plan:` heading, or no `Repo:` line under `## Facts`: `<path>
      is not a /plan-up plan.`
-   - a `## Stack` block and no `--layer`: `A run: /ship builds it
+   - a `## Stack` block and no `--layer`: `A run: /ship-ready builds it
      layer by layer, or name --layer <n>.`
-   - `Platform: windows`: `proofbox has no Windows. Use Devin: /ship
+   - `Platform: windows`: `proofbox has no Windows. Use Devin: /ship-ready
      <issue-url> devin?` and wait for the answer. A chat plan (no
      `#<n>` in its `# Plan:` line) has no issue for Devin: `proofbox has
      no Windows, and the cloud needs an issue. Run /to-issue first.`

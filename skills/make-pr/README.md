@@ -4,7 +4,7 @@ Opens a pull request for the work in your checkout, or updates the one already o
 
 ## Use it when
 
-You made a change by hand in a chat and want it up for review: "make a PR", "open a PR", or `/make-pr` (`$make-pr` in Codex). The agent also picks it up on its own from those words. For work that starts from an issue and should go all the way to ready-to-merge, use [ship](../ship/).
+You made a change by hand in a chat and want it up for review: "make a PR", "open a PR", or `/make-pr` (`$make-pr` in Codex). The agent also picks it up on its own from those words. For work that starts from an issue and should go all the way to ready-to-merge, use [ship-ready](../ship-ready/).
 
 ## What you get
 
@@ -32,6 +32,6 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Fits with
 
 - Hands off to [ready-pr](../ready-pr/), which takes the open PR to ready-to-merge.
-- Called by [grill](../grill/) for its docs PR at the close-out, and by [ship](../ship/) after [build-and-prove](../build-and-prove/), with its proof folder.
+- Called by [grill](../grill/) for its docs PR at the close-out, and by [ship-ready](../ship-ready/) after [build-and-prove](../build-and-prove/), with its proof folder.
 - Named by [set-coding-standards](../set-coding-standards/) and [audit-coding-standards](../audit-coding-standards/) as the next step.
 - Shares the PR shape with [handoff](../handoff/), whose cloud builders open their own PRs.

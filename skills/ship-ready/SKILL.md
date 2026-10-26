@@ -1,6 +1,6 @@
 ---
-name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run. /plan-up first, same arguments. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
+name: ship-ready
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to ready-to-merge PRs in one run, and never merge them. /plan-up first, same arguments. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. Then, by default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone. /ship-full does the same run and merges."
 disable-model-invocation: true
 ---
 
@@ -52,17 +52,17 @@ unchanged. The word `devin` or `cursor`, first or last, names a cloud
 executor; take it off before the rest goes to plan-up. It decides only
 where the build runs (step 2).
 
-- `/ship <issue-url>`: one ticket, one PR.
-- `/ship <epic-url> #12 #14`: a run of the named tickets under that
+- `/ship-ready <issue-url>`: one ticket, one PR.
+- `/ship-ready <epic-url> #12 #14`: a run of the named tickets under that
   epic, a stack of PRs.
-- `/ship <issue-url> #14 #15`: a set of plain tickets, the first URL
+- `/ship-ready <issue-url> #14 #15`: a set of plain tickets, the first URL
   first, a stack of PRs.
-- `/ship <epic-url>`: the whole epic as one run.
-- `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open
+- `/ship-ready <epic-url>`: the whole epic as one run.
+- `/ship-ready <issue-url> on <pr-url>`: one ticket as a new layer on an open
   stack.
-- `/ship <any of the above> devin` or `… cursor`: the same, built in the
+- `/ship-ready <any of the above> devin` or `… cursor`: the same, built in the
   cloud.
-- `/ship`, no URL, words after it or none: what this chat holds picks
+- `/ship-ready`, no URL, words after it or none: what this chat holds picks
   the start (§ No URL): a follow-up for the build this chat started, the
   plan this chat made, or a chat plan of the work this chat agreed on.
 
@@ -187,7 +187,7 @@ where the build runs (step 2).
 
 ## No URL
 
-`/ship` with no URL, words after it or none. The first case that holds
+`/ship-ready` with no URL, words after it or none. The first case that holds
 picks the start; `devin` or `cursor` is taken off first, as in § Forms.
 
 1. **A build this chat started.** The words are a follow-up. A local
@@ -208,7 +208,7 @@ picks the start; `devin` or `cursor` is taken off first, as in § Forms.
 
 ## Examples
 
-**User:** `/ship https://github.com/acme/shop/issues/57` on Fable inside
+**User:** `/ship-ready https://github.com/acme/shop/issues/57` on Fable inside
 herdr; #57 is a `[fix]`, size S, `ready-to-build`, no screen.
 
 Plan-up runs its short path, summary printed, no page, no wait.
@@ -219,34 +219,34 @@ through `box.sh run`. `BUILT fix/57-export-date-iso`, `Walks: none (no
 UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
 ready-pr: `READY https://github.com/acme/shop/pull/61`. Report.
 
-**User:** `/ship https://github.com/acme/shop/issues/42` on Sonnet; the
+**User:** `/ship-ready https://github.com/acme/shop/issues/42` on Sonnet; the
 plan has three UI walks and two videos.
 
 `Route: local (3 walks)`. build-and-prove builds in this session, the
 walker films two videos, round 2 passes. make-pr attaches the
 screenshots and videos. ready-pr readies PR 44. Report.
 
-**User:** `/ship https://github.com/acme/shop/issues/70 #71 #73`.
+**User:** `/ship-ready https://github.com/acme/shop/issues/70 #71 #73`.
 
 `Route: local (stack of 2)`. Layer 1: build-and-prove `--layer 1 --base
 main`, make-pr opens PR 72 on `main`. Layer 2: `--layer 2 --base
 feat/71-team-entity`, make-pr opens PR 74 on that branch. ready-pr on
 PR 72, then PR 74. Two report blocks.
 
-**User:** `/ship https://github.com/acme/shop/issues/42 devin`.
+**User:** `/ship-ready https://github.com/acme/shop/issues/42 devin`.
 
 `Route: cloud (devin, named)`. Handoff § First prompt whole with Devin,
 Monitor on the watch. Later `finished` with PR 44; finish check passes;
 Ready step says `READY`. Report with `session: <url>`.
 
-**User:** `/ship https://github.com/acme/shop/issues/88`; the plan says
+**User:** `/ship-ready https://github.com/acme/shop/issues/88`; the plan says
 `Platform: windows`.
 
 `proofbox has no Windows. Build it on Devin?` A yes, B stop. The user
 says A: `Route: cloud (devin, asked)`, as above.
 
 **User:** `/plan-up https://github.com/acme/shop/issues/42`, then, once
-the page is open, `/ship`.
+the page is open, `/ship-ready`.
 
 No URL, no build yet, and the plan of #42 is in this chat: § No URL
 case 2. `Plan: ~/.agents/artifacts/plan/plan-acme-shop-42.md`, the base
@@ -254,7 +254,7 @@ copy is removed, step 1 is skipped. `Route: local (3 walks)`, then on
 as for any ticket.
 
 **User:** after a long chat that settled a CSV export for orders, with
-no issue: `/ship the CSV export`.
+no issue: `/ship-ready the CSV export`.
 
 No build, no plan: § No URL case 3. Plan-up's chat form prints
 `Brief: [feat] Export orders as CSV · size/M` with its Done-when lines,
@@ -263,18 +263,18 @@ the gate passes, the plan is
 wait. `Route: local (2 walks)`. Branch `feat/export-orders-csv`; the PR
 has no `Closes` line. Report.
 
-**User:** `/ship devin` after the same chat.
+**User:** `/ship-ready devin` after the same chat.
 
 Case 3 again, then Route: `A chat plan has no issue, so it cannot
 build in the cloud. Run /to-issue first.` Stop.
 
-**User:** `/ship https://github.com/acme/shop/issues/61` where the issue
+**User:** `/ship-ready https://github.com/acme/shop/issues/61` where the issue
 has no Done-when list.
 
 Plan-up's gate fails: the question that closes it, `/grill` named.
 Stop. Nothing is built.
 
-**User:** `/ship https://github.com/acme/shop/issues/90`; after the
+**User:** `/ship-ready https://github.com/acme/shop/issues/90`; after the
 first wait on PR 91, `reviewers.sh` prints nothing.
 
 No review bot. Review-pr reviews PR 91 and

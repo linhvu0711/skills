@@ -46,7 +46,7 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 
 - Reads the plan from [plan-up](../plan-up/).
 - Sorts review questions the way [validate-pr-review](../validate-pr-review/) does, and files `fix later` findings with [capture](../capture/).
-- Called by [ship](../ship/) when the command names `devin` or `cursor`, or a Windows plan goes to Devin.
+- Called by [ship-ready](../ship-ready/) when the command names `devin` or `cursor`, or a Windows plan goes to Devin.
 - Shares its prompt and rules templates with [build-and-prove](../build-and-prove/), which renders them for the local builder.
 - Its module, `scripts/handoff.sh`, keeps one ledger of sessions for both executors; a repo that requires verified commit signatures goes to Devin.
 

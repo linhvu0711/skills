@@ -1,6 +1,6 @@
 # kickoff
 
-Opens a new herdr pane next to the one you are in and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or a whole epic.
+Opens a new herdr pane next to the one you are in and starts `/ship-ready` or `/plan-up` there on an issue, a run of tickets, or a whole epic.
 
 ## Use it when
 
@@ -21,8 +21,8 @@ A script finds the repo on disk, picks the model, effort, and command from the t
 
 | Tickets | Model | Effort | Command |
 |---|---|---|---|
-| every one `ready-to-build` | sonnet | high | `/ship` |
-| all XS or S | opus | medium | `/ship` |
+| every one `ready-to-build` | sonnet | high | `/ship-ready` |
+| all XS or S | opus | medium | `/ship-ready` |
 | any M | opus | medium | `/plan-up` |
 | any L, XL, or no size | opus | high | `/plan-up` |
 
@@ -44,13 +44,13 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
-- The [ship](../ship/) and [plan-up](../plan-up/) skills in the new pane.
+- The [ship-ready](../ship-ready/) and [plan-up](../plan-up/) skills in the new pane.
 
 ## Fits with
 
-- Starts [ship](../ship/) or [plan-up](../plan-up/) in the new pane.
+- Starts [ship-ready](../ship-ready/) or [plan-up](../plan-up/) in the new pane.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
+- It finds the repo through the shared checkout resolver, `../../shared-skill-core/checkout.sh`, as [ready-pr](../ready-pr/) and [ship-ready](../ship-ready/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
 
 ## Tests
 

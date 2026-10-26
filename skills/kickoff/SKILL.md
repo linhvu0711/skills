@@ -1,6 +1,6 @@
 ---
 name: kickoff
-description: "Open a new herdr pane beside this one and run /ship or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
+description: "Open a new herdr pane beside this one and run /ship-ready or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
 
@@ -26,7 +26,7 @@ it on unchanged:
   knows.
 - `<issue-url> on <pr-url>`: a new layer on an open stack.
 
-Exit 0: print the script's one report line and stop. `/ship` or
+Exit 0: print the script's one report line and stop. `/ship-ready` or
 `/plan-up` now talks to the user in the new pane. Do not watch it, read
 its plan, or run `/handoff` from here.
 
@@ -60,8 +60,8 @@ What the script decides, so you can answer questions about it:
 
   | Tickets | Model | Effort | Command |
   |---|---|---|---|
-  | every one `ready-to-build` | `sonnet` | `high` | `/ship` |
-  | all XS or S | `opus` | `medium` | `/ship` |
+  | every one `ready-to-build` | `sonnet` | `high` | `/ship-ready` |
+  | all XS or S | `opus` | `medium` | `/ship-ready` |
   | any M | `opus` | `medium` | `/plan-up` |
   | any L, XL, or no size | `opus` | `high` | `/plan-up` |
 
