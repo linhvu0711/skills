@@ -977,6 +977,24 @@ t_fs_board_journey() {
     "$(fs_board '.issues[0].journey | map(.stage // .step)') $(fs_board '.issues[0].journey[2] | {thread_url, status}')"
 }
 
+t_fs_board_fixture_shape() {
+  # Given: a run of #42, size/S, whose thread t42 runs, checked
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  fs_go check acme/app
+  # When
+  local fixture; fixture="$(jq -c '.issues[0] | keys' "$here/fixtures/board/board.json")"
+  # Then
+  eq keys "$fixture" "$(fs_board '.issues[0] | keys')"
+}
+
+t_fs_page_no_mockup_data() {
+  # Given: the board page
+  # When
+  local hits; hits="$(grep -c -e StatePanel -e env-demo -e acme/shop -e thr_i "$here/../assets/board.html" || true)"
+  # Then
+  eq hits 0 "$hits"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -1058,4 +1076,6 @@ cases=(
   "a failed check records why|t_fs_failed_check_why"
   "a failed check keeps the last board|t_fs_failed_check_keeps_board"
   "the journey lists each stage and its thread|t_fs_board_journey"
+  "the walk fixture has the board's shape|t_fs_board_fixture_shape"
+  "the page ships no mockup data|t_fs_page_no_mockup_data"
 )

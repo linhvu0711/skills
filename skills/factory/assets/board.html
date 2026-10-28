@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:,">
 <title>factory</title>
 <style>
@@ -17,14 +18,16 @@
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  :root[data-theme="dark"] {
-    --bg: #0b0b0d; --col: #141417; --card: #1c1c20; --ink: #f4f4f5; --muted: #a1a1aa; --faint: #71717a; --line: #2a2a30;
-    --you: #fb923c; --you-soft: #2a1a0e;
-    --agent: #60a5fa; --agent-soft: #0f1b2e;
-    --done: #4ade80; --done-soft: #0f2418;
-    --warn: #fbbf24; --warn-soft: #2a2008;
-    --bad: #f87171; --bad-soft: #2c1414;
-    --shadow: none; --lift: 0 6px 18px rgba(0,0,0,.4);
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0b0d; --col: #141417; --card: #1c1c20; --ink: #f4f4f5; --muted: #a1a1aa; --faint: #71717a; --line: #2a2a30;
+      --you: #fb923c; --you-soft: #2a1a0e;
+      --agent: #60a5fa; --agent-soft: #0f1b2e;
+      --done: #4ade80; --done-soft: #0f2418;
+      --warn: #fbbf24; --warn-soft: #2a2008;
+      --bad: #f87171; --bad-soft: #2c1414;
+      --shadow: none; --lift: 0 6px 18px rgba(0,0,0,.4);
+    }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
@@ -170,30 +173,193 @@
 </style>
 </head>
 <body>
+<div class="top">
+  <div class="brand"><span class="logo">factory</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
+  <span class="pill" id="pill"></span>
+  <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext"></span></div>
+  <div class="health"><span class="dot" id="hdot"></span><span id="htext"></span></div>
+  <div class="spacer"></div>
+  <span class="health" id="upd"></span>
+  <button class="needbtn" id="needbtn" aria-pressed="false"></button>
+</div>
+<div class="banner" id="banner"></div>
 <main class="board" id="board"></main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle">
+  <button class="x" id="x" aria-label="Close">×</button>
+  <div class="dhead" id="dhead"></div>
+  <div class="dbody" id="dbody"></div>
+</aside>
+
 <script>
 (function () {
+  // The page only reads: board.json, which each good check writes, and
+  // state.json, the run's status and timer. Every change goes through the
+  // factory thread.
   var COLS = [
     ['shape', 'Shape', 'Deciding what to build'],
     ['build', 'Build', 'A thread builds it, or you do the task'],
     ['review', 'Review', 'A PR is open'],
     ['done', 'Done', 'Closed'],
   ]
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';' }) }
-  function render(B) {
-    document.getElementById('board').innerHTML = COLS.map(function (c) {
-      var items = B.issues.filter(function (x) { return x.column === c[0] })
-      var body = items.length ? items.map(function (x) {
-        return '<div class="card"><div class="meta"><span class="num">#' + x.number + '</span></div><div class="title">' + esc(x.title) + '</div></div>'
-      }).join('') : '<div class="nothing">Nothing here</div>'
-      return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + items.length + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
+  var EVERY = 5000
+  var B = null, S = null, good = null, stale = false, focus = false, openN = null
+
+  var ICON_THREAD = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+  var ICON_PR = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v7"/><path d="M18 15.5V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg>'
+
+  // Titles and reasons come from GitHub and T3, so every text is escaped.
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';' }) }
+  function $(id) { return document.getElementById(id) }
+  function hhmm(iso) { var d = new Date(iso); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
+  function ago(iso) {
+    var m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000))
+    return m < 60 ? m + ' m' : Math.floor(m / 60) + ' h'
+  }
+  // http links open in a new tab; t3code:// links hand off to the T3 app and leave this page in place
+  function a(href, text) { return '<a href="' + esc(href) + '"' + (/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '') + ' onclick="event.stopPropagation()">' + text + '</a>' }
+
+  function links(x) {
+    var l = []
+    if (x.thread) l.push('<a class="ib" href="' + esc(x.thread.url) + '" title="Open the thread in T3" aria-label="Open the thread for #' + x.number + ' in T3" onclick="event.stopPropagation()">' + ICON_THREAD + '</a>')
+    if (x.pr) l.push('<a class="ib" href="' + esc(x.pr.url) + '" target="_blank" rel="noopener" title="Open PR #' + x.pr.number + ' on GitHub" aria-label="Open PR #' + x.pr.number + ' on GitHub" onclick="event.stopPropagation()">' + ICON_PR + '<span>#' + x.pr.number + '</span></a>')
+    return l.length ? '<span class="ibs">' + l.join('') + '</span>' : ''
+  }
+  function ownerHtml(x, full) {
+    var L = links(x), what = esc(x.action)
+    if (x.mark === 'you') return '<div class="owner you"><span class="who">You</span><span class="what">' + what + '</span></div>' + (L && !full ? '<div class="links">' + L + '</div>' : '')
+    if (x.mark === 'agent') return '<div class="owner agent"><span class="dot agent"></span><span class="what"><span class="mono">' + what + '</span></span><span class="when">' + L + (x.since ? ago(x.since) : '') + '</span></div>'
+    if (x.mark === 'blocked') return '<div class="owner blocked"><span>○</span><span class="what">' + what + '</span></div>'
+    return '<div class="owner done"><span>✓</span><span class="what">' + what + '</span><span class="when">' + L + '</span></div>'
+  }
+  function chips(x) {
+    var kind = x.chip === 'bug' ? 'bug' : x.chip === 'seed' ? 'seed' : ''
+    return '<span class="chip ' + kind + '">' + esc(x.chip) + '</span>' +
+      (x.ship_full ? '<span class="chip full" title="merges by itself">ship-full</span>' : '') +
+      (x.made ? '<span class="chip made" title="joined by itself">made by run</span>' : '') +
+      (x.removed ? '<span class="chip removed">removed</span>' : '')
+  }
+  function num(x) { return '<a class="num" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open #' + x.number + ' on GitHub" onclick="event.stopPropagation()">#' + x.number + '</a>' }
+  function card(x) {
+    return '<div class="card ' + x.mark + '" tabindex="0" role="button" data-n="' + x.number + '" aria-label="#' + x.number + ' ' + esc(x.title) + '">' +
+      '<div class="meta">' + num(x) + chips(x) + '</div>' +
+      '<div class="title">' + esc(x.title) + '</div>' + ownerHtml(x) + '</div>'
+  }
+
+  function top() {
+    var loading = !B
+    var counted = loading ? [] : B.issues.filter(function (x) { return !x.removed })
+    var doneN = counted.filter(function (x) { return x.column === 'done' }).length
+    var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
+    var st = S ? S.status : ''
+    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'factory · ' + S.name }
+    var pill = $('pill')
+    pill.className = 'pill ' + st
+    pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
+    $('fill').style.width = (loading || !counted.length ? 0 : Math.round(100 * doneN / counted.length)) + '%'
+    $('ptext').textContent = loading ? 'loading…' : doneN + ' / ' + counted.length + ' closed'
+
+    var t = S ? S.timer : null, hd = $('hdot'), ht = $('htext')
+    if (!t) { hd.className = 'dot'; ht.textContent = '' }
+    else if (t.fails >= 3) { hd.className = 'dot bad'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
+    else if (t.fails > 0) { hd.className = 'dot warn'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
+    else if (st === 'stopped' || st === 'done') { hd.className = 'dot ok'; ht.textContent = 'checks stopped' }
+    else if (t.checked_at) {
+      hd.className = 'dot ok'
+      ht.textContent = 'checked ' + hhmm(t.checked_at) + ' · next ' + hhmm(new Date(new Date(t.checked_at).getTime() + t.every * 60000))
+    } else { hd.className = 'dot'; ht.textContent = 'first check soon' }
+
+    var nb = $('needbtn')
+    if (youN) { nb.disabled = false; nb.innerHTML = '<b>' + youN + '</b> need you' }
+    else { nb.disabled = true; nb.innerHTML = 'Nothing needs you'; focus = false }
+    nb.setAttribute('aria-pressed', String(focus))
+    $('board').classList.toggle('focus', focus)
+
+    var b = $('banner'), bh = '', bc = ''
+    if (stale) { bc = 'bad'; bh = '<b>Cannot read the page data.</b><span>The page server or the run folder is gone. Showing the last good data from ' + (good ? hhmm(good) : 'never') + '. Run <code>/factory resume</code> in a thread.</span>' }
+    else if (t && t.fails >= 3) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the factory thread.</span>' }
+    else if (t && t.fails > 0) { bc = 'warn'; bh = '<b>Check failing.</b><span>' + esc(t.why) + '. Nothing new starts until a check passes.</span>' }
+    else if (st === 'paused') { bc = 'info'; bh = '<b>Paused.</b><span>Running threads keep going; nothing new starts. Say <code>resume</code> in the factory thread.</span>' }
+    else if (st === 'stopped') { bc = 'info'; bh = '<b>Stopped.</b><span>No more checks. The board shows the last state. Say <code>/factory resume</code> to go on.</span>' }
+    else if (st === 'done') { bc = 'done'; bh = '<b>Done.</b><span>Every issue is closed. The summary is in the factory thread.</span>' }
+    b.className = 'banner' + (bh ? ' on ' + bc : ''); b.innerHTML = bh
+  }
+
+  function render() {
+    document.body.classList.toggle('stale', stale)
+    top()
+    var loading = !B
+    $('board').innerHTML = COLS.map(function (c) {
+      var items = loading ? [] : B.issues.filter(function (x) { return x.column === c[0] })
+      var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
+      return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
     }).join('')
+    if (openN != null) openDrawer(openN, true)
   }
+
+  // ---------- drawer ----------
+  function openDrawer(n, quiet) {
+    var x = B && B.issues.filter(function (i) { return i.number === n })[0]
+    if (!x) return closeDrawer()
+    openN = n
+    $('dhead').innerHTML = '<div class="meta">' + num(x) + chips(x) + '</div><h3 id="dtitle">' + esc(x.title) + '</h3>'
+    var f = []
+    f.push(['Stage', esc(x.stage)])
+    if (x.skill) f.push(['Skill', '/' + esc(x.skill)])
+    if (x.model) f.push(['Model', esc(x.model) + (x.effort ? ' · ' + esc(x.effort) : '')])
+    if (x.thread) f.push(['Thread', a(x.thread.url, esc(x.thread.id)) + (x.thread.status ? ' · ' + esc(x.thread.status) : '')])
+    if (x.pr) f.push(['PR', a(x.pr.url, '#' + x.pr.number)])
+    if (x.blocked_by && x.blocked_by.length) f.push(['Blocked by', x.blocked_by.map(function (b) { return '<span class="ref">#' + b + '</span>' }).join(' ')])
+    var facts = '<dl class="facts">' + f.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>' }).join('') + '</dl>'
+    var last = x.journey.length - 1
+    var steps = x.journey.map(function (s, i) {
+      var cls = i === last && x.mark !== 'done' ? 'now' + (x.mark === 'agent' ? ' agent' : '') : 'past'
+      var head = s.step === 'joined' ? 'Joined the set' : '/' + esc(s.command || '') + ' at ' + esc(s.stage)
+      var sub = s.step === 'joined' ? '' : (s.thread_url ? a(s.thread_url, 'thread') + ' · ' : '') + esc(s.status || '')
+      return '<li class="' + cls + '"><span class="t">' + (s.at ? hhmm(s.at) : '') + '</span><div class="step">' + head + '</div><div class="sub">' + sub + '</div></li>'
+    }).join('')
+    $('dbody').innerHTML = ownerHtml(x, true) + facts + '<h4>Journey</h4><ol class="journey">' + steps + '</ol>'
+    document.body.classList.add('open')
+    if (!quiet) $('x').focus()
+  }
+  function closeDrawer() { openN = null; document.body.classList.remove('open') }
+
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
+    if (e.target.id === 'scrim' || e.target.id === 'x') return closeDrawer()
+    if (e.target.closest('#needbtn')) { focus = !focus; top() }
+  })
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('open')) return closeDrawer()
+    var c = e.target.closest && e.target.closest('.card')
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(+c.getAttribute('data-n')) }
+  })
+
+  // ---------- data ----------
+  function get(name) {
+    return fetch(name, { cache: 'no-store' }).then(function (r) {
+      if (r.status === 404) return null
+      if (!r.ok) throw new Error(name + ': ' + r.status)
+      return r.json()
+    })
+  }
+  // A 404 for board.json before any good read means the run has not checked
+  // yet, so the columns keep their skeletons.
   function read() {
-    fetch('board.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null }).then(function (B) { if (B) render(B) }).catch(function () {})
+    Promise.all([get('board.json'), get('state.json')]).then(function (r) {
+      if (r[1]) S = r[1]
+      if (r[0]) { B = r[0]; good = Date.now() }
+      stale = false
+      render()
+    }).catch(function () { stale = !!B; render() })
   }
+  setInterval(function () {
+    $('upd').textContent = good ? 'updated ' + Math.round((Date.now() - good) / 1000) + ' s ago' : ''
+  }, 1000)
+  render()
   read()
-  setInterval(read, 5000)
+  setInterval(read, EVERY)
 })()
 </script>
 </body>
