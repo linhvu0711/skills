@@ -995,6 +995,16 @@ t_fs_page_no_mockup_data() {
   eq hits 0 "$hits"
 }
 
+t_fs_resume_copies_page() {
+  # Given: a stopped run of #42 whose board page is old
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app stop
+  printf 'old\n' > "$(fs_run)/board.html"
+  # When
+  fs_go resume acme/app --thread f2 --env e2
+  # Then
+  eq page "same e2" "$(cmp -s "$(fs_run)/board.html" "$here/../assets/board.html" && echo same) $(fs_state -r .env)"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -1078,4 +1088,5 @@ cases=(
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
   "the page ships no mockup data|t_fs_page_no_mockup_data"
+  "resume copies the board page again|t_fs_resume_copies_page"
 )

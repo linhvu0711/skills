@@ -31,6 +31,8 @@ The factory proposes a skill for each unlabeled issue, in one list in its thread
 
 An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`. Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
+A board page shows the run while it goes: four columns (Shape, Build, Review, Done), an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. The factory thread posts its link at the start and on `/factory resume`. It reads only; you steer the run in the factory thread.
+
 The factory never retries, messages, or answers a thread it started. You handle every thread. A thread that fails, or ends with no new stage, waits for you to say `restart #n` (ADR 0013).
 
 Say these in the factory thread:
@@ -44,12 +46,13 @@ Say these in the factory thread:
 
 A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the factory stops its timer, posts one summary line per issue (its stages, its PR, its threads), and runs [prune-worktrees](../prune-worktrees/). It never closes an epic.
 
-The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `FACTORY_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and the answers to its proposals. One run per repo is live at a time; `/factory` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `FACTORY_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and the answers to its proposals. Next to it sit `board.json`, the page data each check writes, and `board.html`, the page. One run per repo is live at a time; `/factory` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 
 - A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads, the pin, and the scheduled task.
 - `gh` (signed in), `git`, and `jq`.
+- `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).
 - The [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-full](../ship-full/), [ready-pr](../ready-pr/), and [prune-worktrees](../prune-worktrees/) skills, installed for Claude Code.
 
@@ -61,4 +64,4 @@ The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, out
 
 ## Tests
 
-The cases for [factory.sh](scripts/factory.sh), the route for each stage, blockers, one thread per stage, `restart`, the proposals and answers, a failed check, and the done rule, are in [tests/factory.sh](tests/factory.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [factory.sh](scripts/factory.sh), the route for each stage, blockers, one thread per stage, `restart`, the proposals and answers, a failed check, the done rule, and the board data (each card's column, chip, mark, and action), are in [tests/factory.sh](tests/factory.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

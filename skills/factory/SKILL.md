@@ -36,10 +36,12 @@ comment, no label, no close, no merge.
    `threadId`, `title: factory: <name>`. Then `t3_thread_list` with
    `titleContains` that title, and hold the `threadId` of the thread
    with that exact title: no environment variable names this thread.
+   Then `t3_environment_read`, and hold its `environmentId`: the board's
+   thread links need it, and no `t3` command prints it.
 3. **Run.**
 
    ```bash
-   scripts/factory.sh start <owner/repo> --name "<name>" --thread <threadId> <n>...
+   scripts/factory.sh start <owner/repo> --name "<name>" --thread <threadId> --env <environmentId> <n>...
    ```
 
    Its stops: `not inside T3 Code`, `a live run in <owner/repo>: <link>`
@@ -51,8 +53,16 @@ comment, no label, no close, no merge.
    `bindToCurrentThread: true`, `title: factory: <name>`. Hold its
    `scheduledTaskId`, and
    `scripts/factory.sh timer <owner/repo> --task <scheduledTaskId>`.
-5. **Show and start.** Run § Check at once. Its issue lines are the
-   resolved set.
+5. **Board, show, and start.** Serve the board from the run folder,
+   `run` in step 3's JSON line:
+
+   ```bash
+   ../../shared/serve.sh <run> board.html
+   ```
+
+   Post `Board: <the URL it prints>`. A stop from it: post its line;
+   the run goes on without the board. Then run § Check at once. Its
+   issue lines are the resolved set.
 
 ## Check
 
@@ -169,14 +179,16 @@ the answers then run § Check.
 
 `/factory resume`, in any thread of the repo's project.
 
-1. Rename this thread to `factory: resume` and hold its `threadId`,
-   as § Start step 2.
-2. `scripts/factory.sh resume <owner/repo> --thread <threadId>`. It
-   prints the run's `name`, `old_task`, and `every`. Rename this thread
-   to `factory: <name>`.
+1. Rename this thread to `factory: resume` and hold its `threadId`
+   and the `environmentId`, as § Start step 2.
+2. `scripts/factory.sh resume <owner/repo> --thread <threadId> --env <environmentId>`.
+   It prints the run's `run`, `name`, `old_task`, and `every`, and puts
+   the newest board page in the run folder. Rename this thread to
+   `factory: <name>`.
 3. `old_task` set: `delete_scheduled_task` on it, so the run has one
    timer. Then pin and timer as § Start step 4, with
-   `everyMs: <every * 60000>`, and § Check.
+   `everyMs: <every * 60000>`, then serve and post the board as § Start
+   step 5, and § Check.
 
 ## Done
 
