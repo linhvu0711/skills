@@ -262,6 +262,54 @@ t_fs_failed_launch_not_again() {
   eq record '{"status":"failed","why":"no reply"}' "$(fs_state '.threads[0] | {status, why}')"
 }
 
+t_fs_epic_brings_subs() {
+  # Given: a run of epic #70 with open #71 (size/S) and closed #72
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'; fs_start 70
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[71]' "$out"
+  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+  has stdout '"starts":[{"number":71' "$out"
+  eq set '[70,71]' "$(fs_state .set)"
+}
+
+t_fs_followup_joins() {
+  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Summary\n\nx\n\n## Follow-ups\n\n#50: retry the export\n"}'
+  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[50]' "$out"
+  has stdout '"message":"/grill https://github.com/acme/app/issues/50"' "$out"
+}
+
+t_fs_add_to_set() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 0 "$code"
+  eq set '[42,43]' "$(fs_state .set)"
+}
+
+t_fs_removed_never_rejoins() {
+  # Given: a run of epic #70 with #71 joined, then removed
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'; fs_start 70
+  fs_go check acme/app
+  fs_go change acme/app remove 71
+  eq "remove exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[]' "$out"
+  eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -279,4 +327,8 @@ cases=(
   "a bug turned ticket starts ship-ready|t_fs_bug_turned_ticket"
   "restart starts a fresh thread|t_fs_restart_fresh_thread"
   "a failed launch is not started again|t_fs_failed_launch_not_again"
+  "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
+  "a follow-up in a PR body joins|t_fs_followup_joins"
+  "add puts an issue in the set|t_fs_add_to_set"
+  "a removed issue never rejoins|t_fs_removed_never_rejoins"
 )

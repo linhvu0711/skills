@@ -5,7 +5,7 @@
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
-#        factory.sh change <owner/repo> restart <n>
+#        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -72,7 +72,7 @@ read_issues() {
       -F o="$owner" -F r="$repo" 2>"$errf")"; then
     return 1
   fi
-  jq -c '.data.repository | with_entries(.key |= ltrimstr("i"))' <<<"$out"
+  jq -c --args '.data.repository as $r | [$ARGS.positional[] | {key: ., value: $r["i" + .]}] | from_entries' "$@" <<<"$out"
 }
 errf="$(mktemp)"; trap 'rm -f "$errf"' EXIT
 
@@ -110,6 +110,21 @@ skill() {
   esac
 }
 
+# joins: a jq program on the issues just read, with the state as $S: the
+# numbers they bring that are neither in the set nor removed. A follow-up is
+# a `#<n>:` line under `## Follow-ups` in the PR body, as pr-shape.md writes
+# it; /capture puts no other link on the issue.
+# shellcheck disable=SC2016 # the $ names are jq variables
+joins='
+  def followups: split("\n") | reduce .[] as $l ({in: false, out: []};
+    if ($l | test("^## ")) then .in = ($l | test("^## Follow-ups\\s*$"))
+    elif .in and ($l | test("^\\s*(?:[-*]\\s+)?#[0-9]+:")) then .out += [$l | capture("#(?<n>[0-9]+):").n | tonumber]
+    else . end) | .out[];
+  [ .[] | (.subIssues.nodes[] | select(.state == "OPEN") | .number),
+          (.closedByPullRequestsReferences.nodes[] | .body // "" | followups) ]
+  | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)
+  | map(select(. as $x | ($S.set | index([$x]) | not) and ($S.removed | index([$x]) | not)))'
+
 # ---------- start ----------
 cmd_start() {
   local name="" link="" nums=() a
@@ -140,9 +155,19 @@ cmd_start() {
 cmd_check() {
   in_t3
   newest_run
-  local issues t3list statuses
-  # shellcheck disable=SC2046 # one word per number
-  issues="$(read_issues $(jq -r '.set[]' <<<"$S"))" || die "check failed: $(tail -1 "$errf")"
+  # The set first, then each round of issues it brings: the open sub-issues
+  # of an issue in it, and the follow-ups a PR that closes one lists.
+  local issues="{}" got todo joined="[]" new t3list statuses
+  todo="$(jq -c .set <<<"$S")"
+  while [ "$todo" != "[]" ]; do
+    # shellcheck disable=SC2046 # one word per number
+    got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || die "check failed: $(tail -1 "$errf")"
+    issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
+    new="$(jq -c --argjson S "$S" "$joins" <<<"$got")"
+    S="$(jq -c --argjson new "$new" '.set += $new' <<<"$S")"
+    joined="$(jq -c --argjson new "$new" '. + $new' <<<"$joined")"
+    todo="$new"
+  done
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "check failed: $(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
@@ -172,7 +197,8 @@ cmd_check() {
   S="$(jq -c --argjson c "$claims" '.threads += $c | .timer.fails = 0' <<<"$S")"
   save
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
-    '{run: $run, status: $S.status, starts: $starts, issues: $rows, joined: [], done: false}'
+    --argjson joined "$joined" \
+    '{run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: false}'
 }
 
 # ---------- started ----------
@@ -197,11 +223,24 @@ cmd_started() {
 }
 
 # ---------- change ----------
+# change add <n>... and remove <n>...: the set. A removed issue keeps its
+# thread records and never joins again by itself.
 # change restart <n>: drop #n's newest thread record, so the next check
 # starts a fresh thread at #n's stage.
 cmd_change() {
   newest_run
-  case "${1:-}" in
+  local what="${1:-}" nums a
+  case "$what" in
+    add|remove)
+      shift; [ $# -gt 0 ] || die "usage: factory.sh change <owner/repo> $what <n>..."
+      for a in "$@"; do [[ "$a" =~ ^#?[0-9]+$ ]] || die "unexpected argument: $a"; done
+      nums="$(printf '%s\n' "$@" | tr -d '#' | jq -cs .)"
+      if [ "$what" = add ]; then
+        S="$(jq -c --argjson a "$nums" '.set += [$a[] as $x | select(.set | index([$x]) | not) | $x] | .removed -= $a' <<<"$S")"
+      else
+        S="$(jq -c --argjson a "$nums" '.set -= $a | .removed += [$a[] as $x | select(.removed | index([$x]) | not) | $x]' <<<"$S")"
+      fi
+      ;;
     restart)
       [[ "${2:-}" =~ ^#?([0-9]+)$ ]] || die "usage: factory.sh change <owner/repo> restart <n>"
       local n="${BASH_REMATCH[1]}"
@@ -209,7 +248,7 @@ cmd_change() {
         || die "#$n has no thread to restart"
       S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
-    *) die "usage: factory.sh change <owner/repo> restart <n>" ;;
+    *) die "usage: factory.sh change <owner/repo> add|remove|restart <n>..." ;;
   esac
   save
 }
