@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # decide.sh: work out what kickoff starts, for kickoff-herdr and kickoff-t3.
 #
-# Usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up]
+# Usage: decide.sh [--label L] [--model M] [--effort E]
+#                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -10,7 +11,8 @@
 #
 # The model, effort, and command come from the tickets' size and
 # ready-to-build labels unless a flag names them; --size gives a ticket with
-# no size label the size the agent guessed.
+# no size label the size the agent guessed. triage, grill, and ready-pr come
+# only from --command, and each has its own model and effort row.
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, model, model_from, effort, effort_from, reason, base, path,
@@ -34,7 +36,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship-ready|ship-full|plan-up) ;; *) die "--command must be ship-ready, ship-full, or plan-up, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship-ready|ship-full|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
@@ -43,7 +45,7 @@ while [ $# -gt 0 ]; do
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -151,6 +153,10 @@ else
   else model=opus; effort=high; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
+case "$set_command" in
+  triage|grill) model=opus; effort=high; reason="command $set_command" ;;
+  ready-pr) model=opus; effort=medium; reason="command ready-pr" ;;
+esac
 if [ "$counted" -gt 1 ]; then
   reason="$reason of $counted tickets"
   if [ "$guessed" -gt 0 ]; then reason="$reason, $guessed guessed"; fi

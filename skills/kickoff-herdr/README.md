@@ -13,7 +13,7 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 - `/kickoff-herdr 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-herdr on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
+More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
 
 ## What you get
 

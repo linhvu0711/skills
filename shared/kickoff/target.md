@@ -39,6 +39,9 @@ Flags you may add:
   when the user names the command: "plan only" is `plan-up`, "ship it"
   is `ship-ready`, "ship and merge" or "full ship" is `ship-full`. The
   table never picks `ship-full`: a merge needs the user's words.
+- `--command triage`, `--command grill`, or `--command ready-pr` when
+  the user names that skill: "triage it" is `triage`, "grill it" is
+  `grill`, "ready the PR" is `ready-pr`. The table never picks these.
 
 A value the user does not name comes from the table below. The report
 line marks each value `(default)` or `(set)`.
@@ -61,6 +64,16 @@ So you can answer questions about it:
   only a target whose every ticket is `ready-to-build` takes the sonnet
   row. A whole epic counts its open tickets. `manual` tickets do not
   count; a target with none left stops.
+
+  A named `triage`, `grill`, or `ready-pr` picks its own row instead:
+
+  | Command | Model | Effort |
+  |---|---|---|
+  | `/triage` | `opus` | `high` |
+  | `/grill` | `opus` | `high` |
+  | `/ready-pr` | `opus` | `medium` |
+
+  `--model` and `--effort` still win over every row.
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,
   `../checkout.sh main <owner/repo>`, whose header says where it looks.

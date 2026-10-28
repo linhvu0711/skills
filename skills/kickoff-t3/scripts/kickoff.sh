@@ -2,7 +2,8 @@
 # kickoff.sh: get /ship-ready, /ship-full, or /plan-up ready to start in a new
 # T3 Code thread.
 #
-# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up]
+# Usage: kickoff.sh [--label L] [--model M] [--effort E]
+#                   [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # The target and the flags are the shared decide script's, which picks the
