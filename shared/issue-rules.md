@@ -211,10 +211,12 @@ on the user's token.
   Any other exit: create with no flag, and add `Not assigned: <login>
   cannot be assigned in <owner>/<repo>.` to the report.
 - **Never twice.** A create that fails after the check: do not create
-  again. Look for the issue, `gh issue list --author @me --state open
-  --search "<title> in:title" --json number,title,url`, and report the
-  one whose title matches exactly, with `Not assigned: <gh's error
-  line>.` None matches: report the error and stop.
+  again. Look for the issue in the repo's newest issues, which are
+  read live, not from the search index that lags behind a new issue:
+  `gh api "repos/<owner>/<repo>/issues?creator=<login>&sort=created&direction=desc&per_page=10"
+  --jq '.[] | select(.pull_request == null) | "\(.html_url)\t\(.title)"'`. Report the one whose title
+  matches exactly, with `Not assigned: <gh's error line>.` None
+  matches: report the error and stop.
 - **discover-path's tickets.** Its child tickets are created with no
   assignee, since an assignee there means a run claimed the ticket. Its
   map follows this rule.
