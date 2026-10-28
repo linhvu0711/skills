@@ -1,0 +1,4 @@
+interface:
+  display_name: "Factory"
+  short_description: "Run a set of issues to closed from one pinned T3 Code thread"
+  default_prompt: "$factory"

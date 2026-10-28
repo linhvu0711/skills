@@ -13,7 +13,7 @@
 # A new worktree goes to
 # ${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>/<branch>,
 # with every `/` in the branch written as `-`. Shared by /ship-ready, /ready-pr,
-# /kickoff-herdr, /kickoff-t3, restack.sh, and prune-worktrees.sh.
+# /kickoff-herdr, /kickoff-t3, restack.sh, prune-worktrees.sh, and factory.sh.
 #
 # - A worktree of the repo is on the branch, clean, in this shape or the
 #   older <root>/<repo>/<branch>: reused.

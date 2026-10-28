@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# decide.sh: work out what kickoff starts, for kickoff-herdr and kickoff-t3.
+# decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the factory's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
 #                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
@@ -23,6 +23,8 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=labels.sh
+. "$here/labels.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
@@ -85,18 +87,6 @@ elif [ "$sub_count" -gt 0 ]; then form="epic"
 else form="issue"; fi
 
 # ---------- model, effort, command ----------
-# size_of <label>: XS, S, M, L, or XL when the label names a size, matched
-# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
-size_of() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
-    xs|xsmall|extrasmall) echo XS ;;
-    s|small) echo S ;;
-    m|med|medium) echo M ;;
-    l|large) echo L ;;
-    xl|xlarge|extralarge) echo XL ;;
-  esac
-}
-
 # guess_of <n>: the size a --size flag gave ticket n, else nothing.
 guess_of() {
   local s

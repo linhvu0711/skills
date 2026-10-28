@@ -1,0 +1,595 @@
+# factory.sh: the cases for this skill's factory.sh, the check script and the
+# one writer of a run's state file, seen through the fake gh and a fake t3.
+# The repo's test.sh sources this file after test-lib.sh and runs its cases.
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+# The factory script.
+F="$here/../scripts/factory.sh"
+
+# fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
+# one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
+# `thread list` prints $T/t3-threads.json, or fails with the text of
+# $T/t3.fail when that file exists. Issues go in with fs_issue.
+fs_setup() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  fake_gh
+  printf '{"defaultBranchRef":{"name":"main"}}\n' > "$FAKE_GH/repo-view.json"
+  git init -q -b main "$T/dev/app"
+  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
+  cat > "$T/bin/t3" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1 $2" in
+  "thread list") if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi; cat "$FAKE_T3_DIR/t3-threads.json" ;;
+  *) printf 'fake t3: no route for %s\n' "$*" >&2; exit 2 ;;
+esac
+EOF
+  chmod +x "$T/bin/t3"
+  echo '[]' > "$T/t3-threads.json"
+  mkdir -p "$T/issues"
+  export FAKE_T3_DIR="$T"
+}
+
+# fs_issue <n> <state> <labels> [blocked-by] [prs] [subs] [title]: issue #n
+# in the GraphQL answer. <labels> is a JSON list of names; the rest are JSON
+# lists of nodes, empty when left out. The title is "Export orders" unless
+# given. decide.sh's `issue view` gets the same issue.
+fs_issue() {
+  local title="${7:-Export orders}"
+  jq -cn --argjson n "$1" --arg s "$2" --argjson l "$3" --argjson b "${4:-[]}" \
+    --argjson p "${5:-[]}" --argjson u "${6:-[]}" --arg t "$title" \
+    '{number: $n, title: $t, state: $s, createdAt: "2026-10-01T00:00:00Z",
+      labels: {nodes: [$l[] | {name: .}]}, subIssues: {nodes: $u},
+      blockedBy: {nodes: $b}, closedByPullRequestsReferences: {nodes: $p}}' > "$T/issues/$1.json"
+  jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$T/issues"/*.json > "$FAKE_GH/graphql.json"
+  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$T/issues/$1.json" > "$FAKE_GH/issue-view.json"
+}
+
+# fs_go <args...>: factory.sh from T, inside T3 Code, with the search root,
+# the repo map, and the factory home inside T.
+fs_go() {
+  cd "$T"
+  run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" \
+    FACTORY_HOME="$T/factory" bash "$F" "$@"
+}
+
+# fs_start <n>...: a run of these issues, named after the first.
+fs_start() {
+  fs_go start acme/app --name "#$1" --thread f1 "$@"
+  eq "start exit" 0 "$code"
+}
+
+# fs_state [jq flags] <jq>: the jq filter on the newest run's state file.
+fs_state() { jq -c "$@" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
+
+t_fs_start_writes_run() {
+  # Given: #42 "Export orders", open, size/L
+  fs_setup; fs_issue 42 OPEN '["size/L"]'
+  # When
+  fs_go start acme/app --name "#42" --thread f1 42
+  # Then
+  eq exit 0 "$code"
+  eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
+  eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
+}
+
+t_fs_ticket_starts_ship_ready() {
+  # Given: a run of #42, open, size/L, no blocker, no PR
+  fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42","thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
+}
+
+t_fs_second_check_starts_nothing() {
+  # Given: a run of #42, size/L, checked once
+  fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
+  fs_go check acme/app
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  eq threads '[{"number":42,"stage":"ticket","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+}
+
+t_fs_recorded_thread_not_again() {
+  # Given: #42's ticket thread t42 started and running
+  fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
+  fs_go check acme/app
+  fs_go started acme/app 42 ticket t42 "[i42 Export orders](t3-thread://v1/t42)"
+  eq "started exit" 0 "$code"
+  echo '[{"threadId":"t42","status":"running"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"thread":"t42","thread_status":"running"' "$out"
+}
+
+# fs_at <iso>: the run's start time, set by hand so a PR's date is before or
+# after it.
+fs_at() {
+  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  jq --arg at "$1" '.started_at = $at' "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+# fs_record <n> <stage> <thread>: a started thread record, as `started` writes.
+fs_record() {
+  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  jq --argjson n "$1" --arg s "$2" --arg id "$3" \
+    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}]' \
+    "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+# fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
+# the same graphql.json as the issues.
+fs_prs() {
+  jq --argjson p "[$(IFS=,; printf '%s' "$*")]" '.data.repository.issue = {closedByPullRequestsReferences: {nodes: $p}}' \
+    "$FAKE_GH/graphql.json" > "$FAKE_GH/graphql.new" && mv "$FAKE_GH/graphql.new" "$FAKE_GH/graphql.json"
+}
+
+t_fs_seed_starts_grill() {
+  # Given: a run of #42, open, labelled seed
+  fs_setup; fs_issue 42 OPEN '["seed"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"grill","command_from":"set","model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_bug_starts_triage() {
+  # Given: a run of #42, open, labelled bug
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"triage"' "$out"
+  has stdout '"message":"/triage https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_old_pr_starts_ready_pr() {
+  # Given: a run from 2026-10-28T12:00:00Z; #42 size/S with open PR 43 from the day before
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_prs "$pr"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"ready-pr"' "$out"
+  has stdout '"message":"/ready-pr https://github.com/acme/app/pull/43"' "$out"
+  has stdout '"stage":"pr"' "$out"
+}
+
+t_fs_new_pr_starts_nothing() {
+  # Given: a run from 2026-10-28T12:00:00Z; #42's ticket thread t42 opened PR 43 at 13:00
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"ticket"' "$out"
+}
+
+t_fs_manual_never_starts() {
+  # Given: a run of #42, open, labelled manual
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"task","free":true,"blocked_by":[],"skill":null' "$out"
+}
+
+t_fs_unlabeled_waits() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"unlabeled"' "$out"
+}
+
+t_fs_closed_seed_done() {
+  # Given: a run of #42 and #43; #42 is closed and still labelled seed
+  fs_setup; fs_issue 42 CLOSED '["seed"]'; fs_issue 43 OPEN '["p1"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"number":42,"title":"Export orders","stage":"done"' "$out"
+}
+
+t_fs_open_blocker_holds() {
+  # Given: a run of #42, size/S, blocked by open #41 and closed #40
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":41,"state":"OPEN"},{"number":40,"state":"CLOSED"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"free":false,"blocked_by":[41]' "$out"
+}
+
+t_fs_closed_blockers_free() {
+  # Given: a run of #42, size/S, blocked by closed #41
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":41,"state":"CLOSED"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"free":true,"blocked_by":[]' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_bug_turned_ticket() {
+  # Given: #42's triage thread t1 ran; triage turned the bug into a size/S ticket
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t1
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"stage":"ticket"' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  eq threads 2 "$(fs_state '.threads | length')"
+}
+
+t_fs_restart_fresh_thread() {
+  # Given: #42's ticket thread t42 started; #42 is still size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app restart 42
+  eq "restart exit" 0 "$code"
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[{"number":42' "$out"
+  eq threads '[{"number":42,"status":"pending"}]' "$(fs_state '[.threads[] | {number, status}]')"
+}
+
+t_fs_failed_launch_not_again() {
+  # Given: #42 was claimed, and its launch failed with "no reply"
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app
+  fs_go started acme/app 42 ticket --failed "no reply"
+  eq "started exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"thread":null,"thread_status":null,"claim":"failed","why":"no reply"' "$out"
+}
+
+t_fs_epic_brings_subs() {
+  # Given: a run of epic #70 with open #71 (size/S) and closed #72
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'; fs_start 70
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[71]' "$out"
+  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+  has stdout '"starts":[{"number":71' "$out"
+  eq set '[70,71]' "$(fs_state .set)"
+}
+
+t_fs_followup_joins() {
+  # Given: a run of #42, since closed by merged PR 43, whose Follow-ups name #50, an open seed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Summary\n\nx\n\n## Follow-ups\n\n#50: retry the export\n"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[50]' "$out"
+  has stdout '"message":"/grill https://github.com/acme/app/issues/50"' "$out"
+}
+
+t_fs_add_to_set() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 0 "$code"
+  eq set '[42,43]' "$(fs_state .set)"
+}
+
+t_fs_removed_never_rejoins() {
+  # Given: a run of epic #70 with #71 joined, then removed
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'; fs_start 70
+  fs_go check acme/app
+  fs_go change acme/app remove 71
+  eq "remove exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"joined":[]' "$out"
+  eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
+}
+
+t_fs_ship_full_one() {
+  # Given: a run of #42, size/S, set to ship-full
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go change acme/app ship full 42
+  eq "ship exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"ship-full"' "$out"
+  has stdout '"message":"/ship-full https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_ship_full_all() {
+  # Given: a run of #42 and #43; #42's ticket thread t42 started
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app ship full all
+  # Then
+  eq exit 0 "$code"
+  eq ship '{"default":"full","42":"ready"}' "$(fs_state .ship)"
+}
+
+t_fs_ship_full_started() {
+  # Given: #42's ticket thread t42 started
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app ship full 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
+t_fs_override_one_wins() {
+  # Given: sonnet at low effort for all, xhigh for #42; #42 size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go change acme/app use all --model sonnet --effort low
+  eq "use all exit" 0 "$code"
+  fs_go change acme/app use 42 --effort xhigh
+  eq "use 42 exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"model":"sonnet","model_from":"set","effort":"xhigh","effort_from":"set"' "$out"
+}
+
+t_fs_gh_fail_starts_nothing() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
+  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
+}
+
+t_fs_t3_fail_starts_nothing() {
+  # Given: a run of #42, size/S; T3 does not answer
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'connect ECONNREFUSED\n' > "$T/t3.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: connect ECONNREFUSED" "$err"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_third_failure_asks() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app; fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq stderr "stop: check failed 3 times in a row: HTTP 401: Bad credentials. You must act, then say check now." "$err"
+  eq fails 3 "$(fs_state .timer.fails)"
+}
+
+t_fs_check_writes_nothing() {
+  # Given: a run of #42 (size/S) and #43 (with an open PR from before the run)
+  local pr='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  fs_setup; fs_issue 43 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 42 OPEN '["size/S"]'; fs_prs "$pr"; fs_start 42 43
+  fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  eq writes "" "$(cat "$FAKE_GH"/*.args | grep -vE '^(api graphql|issue view|repo view)' || true)"
+}
+
+t_fs_two_prs_waits() {
+  # Given: #42 has two open PRs from before the run
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-27T10:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
+}
+
+t_fs_all_closed_done() {
+  # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+  has stdout '"number":42,"title":"Export orders","stages":["bug","ticket"]' "$out"
+  has stdout '"url":"https://github.com/acme/app/pull/43","state":"MERGED"' "$out"
+  eq status done "$(fs_state -r .status)"
+}
+
+t_fs_epic_done() {
+  # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 CLOSED '["size/S"]'; fs_issue 72 CLOSED '["size/S"]'; fs_start 70 71 72
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+}
+
+t_fs_manual_keeps_open() {
+  # Given: #42 closed; #43 an open manual task
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":false' "$out"
+}
+
+t_fs_unmerged_pr_keeps_open() {
+  # Given: a run of #42, since closed by hand while PR 43 that closes it is still open
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":false' "$out"
+}
+
+t_fs_timer_five_min() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --task s1
+  # Then
+  eq exit 0 "$code"
+  eq timer '{"task":"s1","every":5,"fails":0}' "$(fs_state .timer)"
+}
+
+t_fs_interval_min_one() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --every 0
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check every takes 1 minute or more" "$err"
+  eq every 5 "$(fs_state .timer.every)"
+}
+
+t_fs_paused_starts_nothing() {
+  # Given: a run of #42, size/S, paused
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go timer acme/app pause
+  eq "pause exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"status":"paused","starts":[]' "$out"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_stop_keeps_state() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app stop
+  # Then
+  eq exit 0 "$code"
+  eq status stopped "$(fs_state -r .status)"
+}
+
+t_fs_live_run_stops_start() {
+  # Given: a running run of #42 from the factory thread f1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go start acme/app --name "#43" --thread x 43
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
+  eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
+}
+
+t_fs_resume_newest() {
+  # Given: a stopped run of #42 whose timer was task s1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go timer acme/app --task s1; fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --thread f2
+  # Then
+  eq exit 0 "$code"
+  has stdout '"name":"#42","old_task":"s1","every":5' "$out"
+  eq state '{"status":"running","link":"[factory: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
+}
+
+t_fs_no_open_issue_stops() {
+  # Given: #42 is closed
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --thread x 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no open issue" "$err"
+  eq runs 0 "$(ls -1 "$T/factory/acme-app" 2>/dev/null | wc -l | tr -d ' ')"
+}
+
+t_fs_outside_t3_stops() {
+  # Given: #42 open, and no T3 Code
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  cd "$T"
+  run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
+    bash "$F" start acme/app --name "#42" --thread x 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: not inside T3 Code" "$err"
+}
+
+cases=(
+  "start writes the run and its set|t_fs_start_writes_run"
+  "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
+  "a second check starts nothing|t_fs_second_check_starts_nothing"
+  "a recorded thread is not started again|t_fs_recorded_thread_not_again"
+  "a seed starts grill|t_fs_seed_starts_grill"
+  "a bug starts triage|t_fs_bug_starts_triage"
+  "a PR from before the run starts ready-pr|t_fs_old_pr_starts_ready_pr"
+  "a PR the run opened starts nothing new|t_fs_new_pr_starts_nothing"
+  "a manual task never starts|t_fs_manual_never_starts"
+  "an unlabeled issue waits|t_fs_unlabeled_waits"
+  "a closed seed is done|t_fs_closed_seed_done"
+  "an open blocker holds the issue|t_fs_open_blocker_holds"
+  "closed blockers free the issue|t_fs_closed_blockers_free"
+  "a bug turned ticket starts ship-ready|t_fs_bug_turned_ticket"
+  "restart starts a fresh thread|t_fs_restart_fresh_thread"
+  "a failed launch is not started again|t_fs_failed_launch_not_again"
+  "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
+  "a follow-up in a PR body joins|t_fs_followup_joins"
+  "add puts an issue in the set|t_fs_add_to_set"
+  "a removed issue never rejoins|t_fs_removed_never_rejoins"
+  "ship-full for one issue|t_fs_ship_full_one"
+  "ship-full for all leaves started issues|t_fs_ship_full_all"
+  "ship-full for a started issue stops|t_fs_ship_full_started"
+  "an override for one issue wins over all|t_fs_override_one_wins"
+  "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
+  "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
+  "the third failure in a row asks the user to act|t_fs_third_failure_asks"
+  "the check writes nothing to GitHub|t_fs_check_writes_nothing"
+  "two open PRs make the issue wait|t_fs_two_prs_waits"
+  "all closed ends the run with a summary|t_fs_all_closed_done"
+  "an epic with closed sub-issues is done|t_fs_epic_done"
+  "an open manual task keeps the run open|t_fs_manual_keeps_open"
+  "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
+  "start sets a 5 minute timer|t_fs_timer_five_min"
+  "the interval takes 1 minute or more|t_fs_interval_min_one"
+  "a paused run starts nothing|t_fs_paused_starts_nothing"
+  "stop keeps the state file|t_fs_stop_keeps_state"
+  "a live run stops a second start|t_fs_live_run_stops_start"
+  "resume takes the newest run that is not done|t_fs_resume_newest"
+  "a set with no open issue stops|t_fs_no_open_issue_stops"
+  "outside T3 Code stops|t_fs_outside_t3_stops"
+)
