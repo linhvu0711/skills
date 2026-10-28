@@ -310,6 +310,51 @@ t_fs_removed_never_rejoins() {
   eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
 }
 
+t_fs_ship_full_one() {
+  # Given: a run of #42, size/S, set to ship-full
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go change acme/app ship full 42
+  eq "ship exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"ship-full"' "$out"
+  has stdout '"message":"/ship-full https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_ship_full_all() {
+  # Given: a run of #42 and #43; #42's ticket thread t42 started
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app ship full all
+  # Then
+  eq exit 0 "$code"
+  eq ship '{"default":"full","42":"ready"}' "$(fs_state .ship)"
+}
+
+t_fs_ship_full_started() {
+  # Given: #42's ticket thread t42 started
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app ship full 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
+t_fs_override_one_wins() {
+  # Given: sonnet at low effort for all, xhigh for #42; #42 size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go change acme/app use all --model sonnet --effort low
+  eq "use all exit" 0 "$code"
+  fs_go change acme/app use 42 --effort xhigh
+  eq "use 42 exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"model":"sonnet","model_from":"set","effort":"xhigh","effort_from":"set"' "$out"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -331,4 +376,8 @@ cases=(
   "a follow-up in a PR body joins|t_fs_followup_joins"
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"
+  "ship-full for one issue|t_fs_ship_full_one"
+  "ship-full for all leaves started issues|t_fs_ship_full_all"
+  "ship-full for a started issue stops|t_fs_ship_full_started"
+  "an override for one issue wins over all|t_fs_override_one_wins"
 )

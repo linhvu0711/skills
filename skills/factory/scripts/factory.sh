@@ -6,6 +6,7 @@
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
+#                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -100,12 +101,13 @@ stage() {
   else echo unlabeled; fi
 }
 
-# skill <stage>: the command a thread at that stage starts with, or nothing.
+# skill <stage> <ship mode>: the command a thread at that stage starts
+# with, or nothing. A ticket ships by the mode, `ready` or `full`.
 skill() {
   case "$1" in
     seed) echo grill ;;
     bug) echo triage ;;
-    ticket) echo ship-ready ;;
+    ticket) echo "ship-$2" ;;
     pr) echo ready-pr ;;
   esac
 }
@@ -171,16 +173,22 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "check failed: $(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec line starts="[]" rows="[]" claims="[]"
+  local n j st sk free blocked rec line flags model effort starts="[]" rows="[]" claims="[]"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
-    st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; sk="$(skill "$st")"
+    st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
+    sk="$(skill "$st" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
     if [ -n "$sk" ] && [ "$free" = true ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
-      line="$(bash "$core/kickoff/decide.sh" --command "$sk" "https://github.com/$slug/issues/$n" 2>"$errf")" \
+      flags=()
+      model="$(jq -r --arg n "$n" '.use[$n].model // .use.all.model // empty' <<<"$S")"
+      effort="$(jq -r --arg n "$n" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
+      [ -z "$model" ] || flags+=(--model "$model")
+      [ -z "$effort" ] || flags+=(--effort "$effort")
+      line="$(bash "$core/kickoff/decide.sh" --command "$sk" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$n" 2>"$errf")" \
         || die "check failed: $(tail -1 "$errf")"
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
         '. + [$l + {stage: $st, message: "/\($l.command) \($l.args)", thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
@@ -227,6 +235,11 @@ cmd_started() {
 # thread records and never joins again by itself.
 # change restart <n>: drop #n's newest thread record, so the next check
 # starts a fresh thread at #n's stage.
+# change ship full|ready <n>|all: how a ticket ships. It reaches only issues
+# whose ticket thread has not started: for `all`, each started one keeps the
+# old default as its own.
+# change use <n>|all: the model and effort a thread gets, for one issue or
+# for all; one issue's value wins, field by field.
 cmd_change() {
   newest_run
   local what="${1:-}" nums a
@@ -248,7 +261,37 @@ cmd_change() {
         || die "#$n has no thread to restart"
       S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
-    *) die "usage: factory.sh change <owner/repo> add|remove|restart <n>..." ;;
+    ship)
+      [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
+        || die "usage: factory.sh change <owner/repo> ship full|ready <n>|all"
+      local mode="$2" who="${3#\#}"
+      if [ "$who" = all ]; then
+        S="$(jq -c --arg m "$mode" '
+          .ship.default as $d
+          | reduce (.threads[] | select(.stage == "ticket") | .number | tostring) as $n (.; .ship[$n] //= $d)
+          | .ship.default = $m' <<<"$S")"
+      else
+        [ "$(jq --argjson n "$who" '[.threads[] | select(.number == $n and .stage == "ticket")] | length' <<<"$S")" -eq 0 ] \
+          || die "#$who has started; its mode stays ship-$(jq -r --arg n "$who" '.ship[$n] // .ship.default' <<<"$S")"
+        S="$(jq -c --arg n "$who" --arg m "$mode" '.ship[$n] = $m' <<<"$S")"
+      fi
+      ;;
+    use)
+      [[ "${2:-}" =~ ^(all|#?[0-9]+)$ ]] || die "usage: factory.sh change <owner/repo> use <n>|all [--model M] [--effort E]"
+      local key="${2#\#}" pick="{}"
+      shift 2
+      while [ $# -gt 0 ]; do
+        case "$1" in
+          --model) [ -n "${2:-}" ] || die "--model needs a name"; pick="$(jq -c --arg v "$2" '.model = $v' <<<"$pick")"; shift 2 ;;
+          --effort)
+            case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
+            pick="$(jq -c --arg v "$2" '.effort = $v' <<<"$pick")"; shift 2 ;;
+          *) die "unexpected argument: $1" ;;
+        esac
+      done
+      S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
+      ;;
+    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use ..." ;;
   esac
   save
 }
