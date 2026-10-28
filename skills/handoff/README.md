@@ -26,7 +26,7 @@ The build rules make the agent ask two things of each test before it commits: wo
 
 The PR shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk, recorded at real speed and checked for length before it is attached.
 
-Then it watches. When the agent asks something, this chat answers from the plan and the repo, and only brings you the big decisions. Cursor has no "waiting for you" state, so a run that ends with a question is treated as one. When the agent finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed.
+Then it watches. When the agent asks something, this chat answers from the plan and the repo, and only brings you the big decisions. Cursor has no "waiting for you" state, so a run that ends with a question is treated as one. When the agent finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed, each assigned to you.
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 

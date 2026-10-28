@@ -49,7 +49,8 @@ point is speed and low noise. File it and get out.
   label only when the user gave a priority. Only ever create `seed`,
   `bug`, or a `p<N>` when the repo lacks it. A repo's own `seed`, `bug`,
   or `p1`, any case, is used as it is. Never any other label.
-- **No assignee, no milestone, no project board.**
+- **Assignee: the user**, per `../../shared/issue-rules.md` § Assignee.
+  No milestone, no project board.
 - **Never edit or close existing issues.**
 
 ## Steps
@@ -223,7 +224,7 @@ in Context.
 f=$(mktemp) && cat > "$f" <<'EOF'
 <body>
 EOF
-gh issue create --title "<title>" --body-file "$f" --label "<seed_label or bug_label>" --label "<priority_label>"
+gh issue create --title "<title>" --body-file "$f" --assignee @me --label "<seed_label or bug_label>" --label "<priority_label>"
 # When the user gave no priority, drop the second --label and create with
 # the kind's label alone.
 ```

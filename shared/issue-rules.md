@@ -191,6 +191,36 @@ Steps.
 | p2, medium, normal | p2 |
 | p3, low, someday, nice to have | p3 |
 
+## Assignee
+
+Every new issue these skills create is assigned to the user who runs
+them: `--assignee @me` on `gh issue create`. `@me` is the login `gh` is
+signed in as, the user's own, also on a cloud executor, whose `gh` runs
+on the user's token.
+
+- **Someone else.** The user names another person in the request
+  (`assign it to @bob`): `--assignee <login>` instead.
+- **None.** The user says no assignee: no flag.
+- **Rewritten in place.** An issue rewritten in place (§ Origin bug,
+  § Origin seed) keeps the assignees it has.
+- **Check first.** On github.com, `gh` creates the issue, then assigns
+  it in a second call. A refused assign leaves the issue made, with no
+  URL printed. So before the first create of a run, check the login:
+  `gh api repos/<owner>/<repo>/assignees/<login> --silent`, where
+  `<login>` for `@me` is `gh api user -q .login`. Exit 0: use the flag.
+  Any other exit: create with no flag, and add `Not assigned: <login>
+  cannot be assigned in <owner>/<repo>.` to the report.
+- **Never twice.** A create that fails after the check: do not create
+  again. Look for the issue in the repo's newest issues, which are
+  read live, not from the search index that lags behind a new issue:
+  `gh api "repos/<owner>/<repo>/issues?creator=<login>&sort=created&direction=desc&per_page=10"
+  --jq '.[] | select(.pull_request == null) | "\(.html_url)\t\(.title)"'`. Report the one whose title
+  matches exactly, with `Not assigned: <gh's error line>.` None
+  matches: report the error and stop.
+- **discover-path's tickets.** Its child tickets are created with no
+  assignee, since an assignee there means a run claimed the ticket. Its
+  map follows this rule.
+
 ## Body
 
 Write it to a temp file, pass it with `--body-file`. Four sections, in this
