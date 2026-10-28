@@ -16,7 +16,8 @@
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, model, model_from, effort, effort_from, reason, base, path,
-# and label. Exit 1: something stopped us; the reason is the last line on
+# and label. Under --command ready-pr, args is the URL of the one open PR
+# that closes the issue. Exit 1: something stopped us; the reason is the last line on
 # stderr. It launches nothing, so the caller's launch starts only after every
 # check here passed.
 set -euo pipefail
@@ -167,6 +168,21 @@ model_from=default; effort_from=default; command_from=default
 if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
 if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
 if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
+
+# ---------- ready-pr ----------
+# /ready-pr takes the open PR that closes the issue. GitHub lists merged PRs
+# here even with includeClosedPrs: false, so only OPEN ones count.
+if [ "$command" = ready-pr ]; then
+  # shellcheck disable=SC2016 # the $ names are GraphQL variables
+  q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
+  prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
+    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
+    || die "gh could not read the PRs of #$number"
+  pr_count="$(grep -c . <<<"$prs" || true)"
+  [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
+  [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
+  prep_args="$prs"
+fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then

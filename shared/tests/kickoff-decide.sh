@@ -100,6 +100,48 @@ t_kd_overrides_command_row() {
   has stdout '"command":"triage","command_from":"set","model":"sonnet","model_from":"set","effort":"low","effort_from":"set"' "$out"
 }
 
+# kd_prs <node>...: the GraphQL answer for #42's closing PRs, one
+# `{"url":…,"state":…}` node per argument.
+kd_prs() {
+  printf '{"data":{"repository":{"issue":{"closedByPullRequestsReferences":{"nodes":[%s]}}}}}\n' \
+    "$(IFS=,; printf '%s' "$*")" > "$FAKE_GH/graphql.json"
+}
+
+t_kd_ready_pr_row() {
+  # Given: #42 size/L, one merged and one open PR close it
+  kd_setup '[{"name":"size/L"}]'; kd_clone "$T/dev/app"
+  kd_prs '{"url":"https://github.com/acme/app/pull/40","state":"MERGED"}' '{"url":"https://github.com/acme/app/pull/43","state":"OPEN"}'
+  # When
+  kd_run --command ready-pr https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kd_line ready-pr medium "command ready-pr" https://github.com/acme/app/pull/43)" "$out"
+}
+
+t_kd_ready_pr_no_pr() {
+  # Given: #42 size/S, only a merged PR closes it
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  kd_prs '{"url":"https://github.com/acme/app/pull/40","state":"MERGED"}'
+  # When
+  kd_run --command ready-pr https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no open PR" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_ready_pr_two_prs() {
+  # Given: #42 size/S, two open PRs close it
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  kd_prs '{"url":"https://github.com/acme/app/pull/43","state":"OPEN"}' '{"url":"https://github.com/acme/app/pull/44","state":"OPEN"}'
+  # When
+  kd_run --command ready-pr https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44" "$err"
+  eq stdout "" "$out"
+}
+
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
   "decide stops before any launch|t_kd_stops_no_checkout"
@@ -107,4 +149,7 @@ cases=(
   "grill takes the opus high row|t_kd_grill_row"
   "a bad command names the six values|t_kd_bad_command"
   "model and effort win over a command row|t_kd_overrides_command_row"
+  "ready-pr takes the opus medium row and the open PR|t_kd_ready_pr_row"
+  "ready-pr with no open PR stops|t_kd_ready_pr_no_pr"
+  "ready-pr with two open PRs stops|t_kd_ready_pr_two_prs"
 )

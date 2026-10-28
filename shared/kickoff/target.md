@@ -73,7 +73,10 @@ So you can answer questions about it:
   | `/grill` | `opus` | `high` |
   | `/ready-pr` | `opus` | `medium` |
 
-  `--model` and `--effort` still win over every row.
+  `--model` and `--effort` still win over every row. With `ready-pr`,
+  the thread gets the URL of the open PR that closes the issue in place
+  of the issue URL. An issue with no open PR, or with two or more,
+  stops.
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,
   `../checkout.sh main <owner/repo>`, whose header says where it looks.
