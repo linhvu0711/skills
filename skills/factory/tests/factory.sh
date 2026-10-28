@@ -124,11 +124,13 @@ fs_at() {
   jq --arg at "$1" '.started_at = $at' "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
-# fs_record <n> <stage> <thread>: a started thread record, as `started` writes.
+# fs_record <n> <stage> <thread> [command] [at]: a started thread record, as
+# `started` writes, with the command and claim time a check gives it.
 fs_record() {
   local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
-  jq --argjson n "$1" --arg s "$2" --arg id "$3" \
-    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}]' \
+  jq --argjson n "$1" --arg s "$2" --arg id "$3" --arg cmd "${4:-}" --arg at "${5:-}" \
+    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}
+      + (if $cmd == "" then {} else {command: $cmd} end) + (if $at == "" then {} else {at: $at} end)]' \
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
@@ -755,7 +757,160 @@ t_fs_board_chips() {
   # When
   fs_go check acme/app
   # Then
-  eq chips '["bug","seed","task","unlabeled","fix · S","feat · M","ticket · L"]' "$(fs_board '[.issues[] | .chip]')"
+  eq chips '["bug","seed","task","unlabeled","fix · S","feat · M","ticket · L"]' "$(fs_board '[.issues | sort_by(.number)[] | .chip]')"
+}
+
+# fs_thread <id> <status>: T3 lists one thread, made at 12:10.
+fs_thread() { printf '[{"threadId":"%s","status":"%s","createdAt":"2026-10-28T12:10:00Z"}]\n' "$1" "$2" > "$T/t3-threads.json"; }
+
+# fs_card <n>: the column, mark, and action of #n's card.
+fs_card() { fs_board --argjson n "$1" '.issues[] | select(.number == $n) | {column, mark, action}'; }
+
+t_fs_board_waiting_yours() {
+  # Given: #42's ticket thread t42 waits on the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 waiting
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Answer the thread"}' "$(fs_card 42)"
+}
+
+t_fs_board_failed_yours() {
+  # Given: #42's ticket thread t42 failed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 failed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Thread failed: open it, or say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_interrupted_yours() {
+  # Given: #42's ticket thread t42 was interrupted
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 interrupted
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Thread interrupted: open it, or say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_no_change_yours() {
+  # Given: #42 is still a bug, and its bug thread t42 completed
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t42; fs_thread t42 completed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"No change: say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_launch_failed_yours() {
+  # Given: #42 was claimed, and its launch failed with "no reply"
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app; fs_go started acme/app 42 ticket --failed "no reply"
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Launch failed: say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_task_yours() {
+  # Given: #42, a manual task with no blocker
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Do the task, then close it"}' "$(fs_card 42)"
+}
+
+# fs_merge_ready: a run from 12:00 of #42, whose ticket thread t42 completed
+# after it opened PR 50 at 13:00.
+fs_merge_ready() {
+  local pr='{"number":50,"url":"https://github.com/acme/app/pull/50","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42; fs_thread t42 completed
+}
+
+t_fs_board_merge_yours() {
+  # Given: #42's PR 50 is open and its thread completed
+  fs_merge_ready
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"review","mark":"you","action":"Merge PR #50"}' "$(fs_card 42)"
+}
+
+t_fs_board_unlabeled_yours() {
+  # Given: #42, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Give it a label"}' "$(fs_card 42)"
+}
+
+t_fs_board_running_agent() {
+  # Given: #42's ship-ready thread t42 runs since 12:10
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"mark":"agent","action":"/ship-ready","since":"2026-10-28T12:10:00Z"}' "$(fs_board '.issues[0] | {mark, action, since}')"
+}
+
+t_fs_board_claimed_starting() {
+  # Given: #42, size/S, no thread yet
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"agent","action":"starting /ship-ready"}' "$(fs_card 42)"
+}
+
+t_fs_board_blocked() {
+  # Given: #42 is blocked by open #7 and #8
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":7,"state":"OPEN"},{"number":8,"state":"OPEN"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"blocked","action":"blocked by #7 #8"}' "$(fs_card 42)"
+}
+
+t_fs_board_paused_holds() {
+  # Given: #42, size/S, in a paused run
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"blocked","action":"paused: starts on resume"}' "$(fs_card 42)"
+}
+
+t_fs_board_done() {
+  # Given: #42 closed, and #43 still open so the run goes on
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"done","mark":"done","action":"closed"}' "$(fs_card 42)"
+}
+
+t_fs_board_links() {
+  # Given: #42's PR 50 is open and its thread t42 completed, in a run with env e1
+  fs_merge_ready
+  # When
+  fs_go check acme/app
+  # Then
+  eq links '{"url":"https://github.com/acme/app/issues/42","thread":"t3code://threads/e1/t42","pr":{"number":50,"url":"https://github.com/acme/app/pull/50"}}' \
+    "$(fs_board '.issues[0] | {url, thread: .thread.url, pr}')"
+}
+
+t_fs_board_order() {
+  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a free task
+  # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["manual"]'; fs_issue 43 OPEN '["size/S"]'
+  fs_start 42 43 44
+  # When
+  fs_go check acme/app
+  # Then
+  eq order '[44,43,42]' "$(fs_board '[.issues[] | .number]')"
 }
 
 cases=(
@@ -818,4 +973,19 @@ cases=(
   "start copies the board page into the run|t_fs_start_copies_page"
   "start without an env id stops|t_fs_start_needs_env"
   "the board chip is the kind and the size|t_fs_board_chips"
+  "a waiting thread is yours|t_fs_board_waiting_yours"
+  "a failed thread is yours|t_fs_board_failed_yours"
+  "an interrupted thread is yours|t_fs_board_interrupted_yours"
+  "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
+  "a failed launch is yours|t_fs_board_launch_failed_yours"
+  "a free task is yours|t_fs_board_task_yours"
+  "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
+  "an unlabeled issue is yours|t_fs_board_unlabeled_yours"
+  "a running thread is the agent's|t_fs_board_running_agent"
+  "a claimed thread is starting|t_fs_board_claimed_starting"
+  "an open blocker holds the card|t_fs_board_blocked"
+  "a paused run holds a free ticket|t_fs_board_paused_holds"
+  "a closed issue is done|t_fs_board_done"
+  "the board links the thread and the PR|t_fs_board_links"
+  "the board orders you, agent, blocked|t_fs_board_order"
 )

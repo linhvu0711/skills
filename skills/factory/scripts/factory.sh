@@ -179,25 +179,57 @@ thread_link() { printf '[factory: %s](t3-thread://v1/%s)' "$1" "$2"; }
 
 # ---------- board ----------
 # board: a jq program on null, with the state as $S and the check's rows as
-# $rows, and what only the board needs as $cards, keyed by number: the
-# board page's data. An epic is no card: its sub-issues are.
+# $rows, what only the board needs as $cards, keyed by number, and T3's
+# threads as $ts, keyed by id: the board page's data. An epic is no card: its sub-issues are.
 # shellcheck disable=SC2016 # the $ names are jq variables
 board='
   def column: if .stage == "done" then "done"
     elif any(.prs[]; .state == "OPEN") then "review"
     elif (.stage == "ticket" or .stage == "task" or .stage == "pr") then "build"
     else "shape" end;
+  def you($a): {mark: "you", action: $a};
+  def agent($a): {mark: "agent", action: $a};
+  def held($a): {mark: "blocked", action: $a};
+  # The first rule that holds names who has the ball and the one action.
+  def owner($rec; $t):
+    (.prs | map(select(.state == "OPEN")) | first) as $pr
+    | if .stage == "done" then {mark: "done", action: "closed"}
+      elif .blocked_by != [] then held("blocked by " + (.blocked_by | map("#\(.)") | join(" ")))
+      elif $rec.status == "failed" then you("Launch failed: say restart #\(.number)")
+      elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)")
+      elif $t.status == "waiting" then you("Answer the thread")
+      elif $t.status == "failed" then you("Thread failed: open it, or say restart #\(.number)")
+      elif $t.status == "interrupted" then you("Thread interrupted: open it, or say restart #\(.number)")
+      elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
+      elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
+      elif $t.status == "running" then agent("/\($rec.command // .skill)") + {since: $t.createdAt}
+      elif .wait then held("waits: \(.wait)")
+      elif .stage == "task" then you("Do the task, then close it")
+      elif .stage == "unlabeled" then you("Give it a label")
+      elif $S.status == "paused" then held("paused: starts on resume")
+      else held("starts at the next check") end;
+  def rank($xs): . as $x | $xs | index([$x]);
   {repo: $S.repo, name: $S.name,
-   issues: [$rows[] | select(.stage != "epic")
-     | {number, title, url: "https://github.com/\($S.repo)/issues/\(.number)", column: column, chip: $cards[.number | tostring].chip}]}'
+   issues: [$rows | to_entries[] | .key as $i | .value | select(.stage != "epic")
+     | .number as $n
+     | ([$S.threads[] | select(.number == $n)] | last) as $rec
+     | (if $rec.thread then $ts[$rec.thread] // {} else {} end) as $t
+     | {number, title, url: "https://github.com/\($S.repo)/issues/\(.number)", column: column,
+        chip: $cards[$n | tostring].chip, since: null}
+       + owner($rec; $t)
+       + {thread: (if $rec.thread then {id: $rec.thread, url: "t3code://threads/\($S.env)/\($rec.thread)", status: $t.status} else null end),
+          pr: (.prs | map(select(.state == "OPEN")) | first | if . then {number, url} else null end),
+          blocked_by, order: $i}]
+   | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
+   | map(del(.order))}'
 
-# write_board <rows> <cards>: board.json in the run folder, under a temp name, then
+# write_board <rows> <cards> <threads>: board.json in the run folder, under a temp name, then
 # renamed into place, as save writes the state. Only a good check calls it,
 # so a failed one leaves the last good board.
 write_board() {
   local tmp
   tmp="$(mktemp "$run/.board.XXXXXX")"
-  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" "$board" > "$tmp"
+  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" --argjson ts "$3" "$board" > "$tmp"
   mv "$tmp" "$run/board.json"
 }
 
@@ -269,7 +301,7 @@ cmd_check() {
     todo="$new"
   done
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
-  statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
+  statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
   local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]" cards="{}"
   for n in $(jq -r '.set[]' <<<"$S"); do
@@ -305,14 +337,16 @@ cmd_check() {
     if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
         '. + [$l + {stage: $st, message: "/\($l.command) \($l.args)", thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
-      claims="$(jq -c --argjson n "$n" --arg st "$st" '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null}]' <<<"$claims")"
+      claims="$(jq -c --argjson n "$n" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null,
+               at: $at, command: $l.command, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
     cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
     rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
       --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
-             thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread] else null end),
+             thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread].status else null end),
              claim: $rec.status, why: $rec.why,
              prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
              proposal: $prop.route, answer: $prop.answer}
@@ -330,7 +364,7 @@ cmd_check() {
   S="$(jq -c --argjson c "$claims" --argjson done "$done" \
     '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
   save
-  write_board "$rows" "$cards"
+  write_board "$rows" "$cards" "$statuses"
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
     {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
