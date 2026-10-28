@@ -737,7 +737,7 @@ t_fs_start_copies_page() {
   # When
   fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
-  eq page "1 e1" "$(grep -c "<meta name=\"factory-run\" content=\"$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+  eq page "1 e1" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
 }
 
 t_fs_start_needs_env() {
@@ -1002,7 +1002,7 @@ t_fs_resume_copies_page() {
   # When
   fs_go resume acme/app --thread f2 --env e2
   # Then
-  eq page "1 e2" "$(grep -c "<meta name=\"factory-run\" content=\"$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+  eq page "1 e2" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
 }
 
 t_fs_two_runs_two_pages() {
