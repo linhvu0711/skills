@@ -81,15 +81,29 @@ size_label() {
   done < <(jq -r '.labels.nodes[].name' <<<"$1")
 }
 
-# stage <issue json>: where the issue is.
+# stage <issue json> <run start>: where the issue is. Closed comes first,
+# since a closed seed keeps its label. A PR counts only when it was open
+# before the run: a PR the run's own thread opened is that thread's work.
 stage() {
-  if [ -n "$(size_label "$1")" ]; then echo ticket; else echo unlabeled; fi
+  local labels
+  labels="$(jq -r '.labels.nodes[].name | ascii_downcase' <<<"$1")"
+  if [ "$(jq -r .state <<<"$1")" = CLOSED ]; then echo done
+  elif grep -qx manual <<<"$labels"; then echo task
+  elif [ "$(jq '.subIssues.nodes | length' <<<"$1")" -gt 0 ]; then echo epic
+  elif [ "$(jq --arg t "$2" '[.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN" and .createdAt < $t)] | length' <<<"$1")" -gt 0 ]; then echo pr
+  elif grep -qx bug <<<"$labels"; then echo bug
+  elif grep -qx seed <<<"$labels"; then echo seed
+  elif [ -n "$(size_label "$1")" ]; then echo ticket
+  else echo unlabeled; fi
 }
 
 # skill <stage>: the command a thread at that stage starts with, or nothing.
 skill() {
   case "$1" in
+    seed) echo grill ;;
+    bug) echo triage ;;
     ticket) echo ship-ready ;;
+    pr) echo ready-pr ;;
   esac
 }
 
@@ -132,7 +146,7 @@ cmd_check() {
   local n j st sk free blocked rec line starts="[]" rows="[]" claims="[]"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
-    st="$(stage "$j")"; sk="$(skill "$st")"
+    st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; sk="$(skill "$st")"
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"

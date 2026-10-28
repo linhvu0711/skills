@@ -111,9 +111,111 @@ t_fs_recorded_thread_not_again() {
   has stdout '"thread":"t42","thread_status":"running"' "$out"
 }
 
+# fs_at <iso>: the run's start time, set by hand so a PR's date is before or
+# after it.
+fs_at() {
+  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  jq --arg at "$1" '.started_at = $at' "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+# fs_record <n> <stage> <thread>: a started thread record, as `started` writes.
+fs_record() {
+  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  jq --argjson n "$1" --arg s "$2" --arg id "$3" \
+    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}]' \
+    "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+# fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
+# the same graphql.json as the issues.
+fs_prs() {
+  jq --argjson p "[$(IFS=,; printf '%s' "$*")]" '.data.repository.issue = {closedByPullRequestsReferences: {nodes: $p}}' \
+    "$FAKE_GH/graphql.json" > "$FAKE_GH/graphql.new" && mv "$FAKE_GH/graphql.new" "$FAKE_GH/graphql.json"
+}
+
+t_fs_seed_starts_grill() {
+  # Given: a run of #42, open, labelled seed
+  fs_setup; fs_issue 42 OPEN '["seed"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"grill","command_from":"set","model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_bug_starts_triage() {
+  # Given: a run of #42, open, labelled bug
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"triage"' "$out"
+  has stdout '"message":"/triage https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_old_pr_starts_ready_pr() {
+  # Given: a run from 2026-10-28T12:00:00Z; #42 size/S with open PR 43 from the day before
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_prs "$pr"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"command":"ready-pr"' "$out"
+  has stdout '"message":"/ready-pr https://github.com/acme/app/pull/43"' "$out"
+  has stdout '"stage":"pr"' "$out"
+}
+
+t_fs_new_pr_starts_nothing() {
+  # Given: a run from 2026-10-28T12:00:00Z; #42's ticket thread t42 opened PR 43 at 13:00
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"ticket"' "$out"
+}
+
+t_fs_manual_never_starts() {
+  # Given: a run of #42, open, labelled manual
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"task","free":true,"blocked_by":[],"skill":null' "$out"
+}
+
+t_fs_unlabeled_waits() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"unlabeled"' "$out"
+}
+
+t_fs_closed_seed_done() {
+  # Given: a run of #42 and #43; #42 is closed and still labelled seed
+  fs_setup; fs_issue 42 CLOSED '["seed"]'; fs_issue 43 OPEN '["p1"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"number":42,"title":"Export orders","stage":"done"' "$out"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
   "a second check starts nothing|t_fs_second_check_starts_nothing"
   "a recorded thread is not started again|t_fs_recorded_thread_not_again"
+  "a seed starts grill|t_fs_seed_starts_grill"
+  "a bug starts triage|t_fs_bug_starts_triage"
+  "a PR from before the run starts ready-pr|t_fs_old_pr_starts_ready_pr"
+  "a PR the run opened starts nothing new|t_fs_new_pr_starts_nothing"
+  "a manual task never starts|t_fs_manual_never_starts"
+  "an unlabeled issue waits|t_fs_unlabeled_waits"
+  "a closed seed is done|t_fs_closed_seed_done"
 )
