@@ -24,8 +24,10 @@ Each issue gets a thread with the skill that fits where it is:
 | PR open | an open PR that closes it, opened before the run | `/ready-pr <pr-url>` |
 | task | a `manual` label | none: it is yours |
 | epic | sub-issues | none: its open sub-issues join the set |
-| unlabeled | none of the above | none: it waits |
+| unlabeled | none of the above | the one you answer to the factory's proposal, or none |
 | done | closed | none |
+
+The factory proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the reason, and a quote from the issue. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/factory resume` keeps them. An XL issue ships like any ticket.
 
 An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`. Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
@@ -38,10 +40,11 @@ Say these in the factory thread:
 - `add #16`, `remove #14`, `restart #12`.
 - `ship-full #12` or `ship-full all`, and `ship-ready` the same way. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`.
+- `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
 A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the factory stops its timer, posts one summary line per issue (its stages, its PR, its threads), and runs [prune-worktrees](../prune-worktrees/). It never closes an epic.
 
-The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `FACTORY_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, and the timer. One run per repo is live at a time; `/factory` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `FACTORY_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and the answers to its proposals. One run per repo is live at a time; `/factory` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 

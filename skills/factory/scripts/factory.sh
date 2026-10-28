@@ -8,6 +8,7 @@
 #        factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
+#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
 #        factory.sh resume <owner/repo> --thread <thread-id>
 #
@@ -120,6 +121,17 @@ skill() {
   esac
 }
 
+# answer_stage <answer>: the stage whose skill an answered unlabeled issue
+# starts with, or nothing for an answer that starts no thread.
+answer_stage() {
+  case "$1" in
+    grill) echo seed ;;
+    triage) echo bug ;;
+    ship) echo ticket ;;
+    ready-pr) echo pr ;;
+  esac
+}
+
 # joins: a jq program on the issues just read, with the state as $S: the
 # numbers they bring that are neither in the set nor removed. A follow-up is
 # a `#<n>:` line under `## Follow-ups` in the PR body, as pr-shape.md writes
@@ -210,7 +222,13 @@ cmd_check() {
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
-    sk="$(skill "$st" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
+    sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
+    # The stage stays unlabeled; the user's answer only picks the skill.
+    if [ "$st" = unlabeled ]; then
+      sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")" "$sk")"
+    else
+      sk="$(skill "$st" "$sk")"
+    fi
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
@@ -309,6 +327,9 @@ cmd_proposed() {
 # change ship full|ready <n>|all: how a ticket ships. It reaches only issues
 # whose ticket thread has not started: for `all`, each started one keeps the
 # old default as its own.
+# change answer <n>|all <word>: the user's answer to a proposal. `yes` takes
+# the proposed route; `all` takes only `yes` or `skip`, and fills only the
+# proposals with no answer yet, so a per-issue answer given first stays.
 # change use <n>|all: the model and effort a thread gets, for one issue or
 # for all; one issue's value wins, field by field.
 cmd_change() {
@@ -362,7 +383,27 @@ cmd_change() {
       done
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
-    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use ..." ;;
+    answer)
+      local ausage="usage: factory.sh change <owner/repo> answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close"
+      [ $# -eq 3 ] && [[ "$2" =~ ^(all|#?[0-9]+)$ ]] && [[ "$3" =~ ^(yes|skip|grill|triage|ship|ready-pr|task|close)$ ]] || die "$ausage"
+      local who="${2#\#}" word="$3"
+      if [ "$who" = all ]; then
+        case "$word" in yes|skip) ;; *) die "$ausage" ;; esac
+        S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
+          if .answer != null then .
+          elif $w == "skip" then .answer = "skip"
+          elif .route != null and .route != "unsure" then .answer = .route
+          else . end))' <<<"$S")"
+      else
+        [ "$(jq --argjson n "$who" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$who is not in the set"
+        if [ "$word" = yes ]; then
+          word="$(jq -r --arg n "$who" '(.proposals // {})[$n].route // "unsure"' <<<"$S")"
+          [ "$word" != unsure ] || die "#$who has no proposal to say yes to; name a skill"
+        fi
+        S="$(jq -c --arg n "$who" --arg w "$word" '.proposals[$n] = {route: ((.proposals // {})[$n].route), answer: $w}' <<<"$S")"
+      fi
+      ;;
+    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac
   save
 }
