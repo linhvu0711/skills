@@ -326,7 +326,8 @@ cmd_proposed() {
 # starts a fresh thread at #n's stage.
 # change ship full|ready <n>|all: how a ticket ships. It reaches only issues
 # whose ticket thread has not started: for `all`, each started one keeps the
-# old default as its own.
+# old default as its own. An unlabeled issue answered `ship` started its
+# ticket thread at stage unlabeled.
 # change answer <n>|all <word>: the user's answer to a proposal. `yes` takes
 # the proposed route; `all` takes only `yes` or `skip`, and fills only the
 # proposals with no answer yet, so a per-issue answer given first stays.
@@ -357,13 +358,15 @@ cmd_change() {
       [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
         || die "usage: factory.sh change <owner/repo> ship full|ready <n>|all"
       local mode="$2" who="${3#\#}"
+      # shellcheck disable=SC2016 # the $ names are jq variables
+      local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'
       if [ "$who" = all ]; then
         S="$(jq -c --arg m "$mode" '
-          .ship.default as $d
-          | reduce (.threads[] | select(.stage == "ticket") | .number | tostring) as $n (.; .ship[$n] //= $d)
+          . as $S | .ship.default as $d
+          | reduce (.threads[] | select('"$shipped"') | .number | tostring) as $n (.; .ship[$n] //= $d)
           | .ship.default = $m' <<<"$S")"
       else
-        [ "$(jq --argjson n "$who" '[.threads[] | select(.number == $n and .stage == "ticket")] | length' <<<"$S")" -eq 0 ] \
+        [ "$(jq --argjson n "$who" '. as $S | [.threads[] | select(.number == $n and '"$shipped"')] | length' <<<"$S")" -eq 0 ] \
           || die "#$who has started; its mode stays ship-$(jq -r --arg n "$who" '.ship[$n] // .ship.default' <<<"$S")"
         S="$(jq -c --arg n "$who" --arg m "$mode" '.ship[$n] = $m' <<<"$S")"
       fi

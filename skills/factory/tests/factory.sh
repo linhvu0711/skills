@@ -691,6 +691,16 @@ t_fs_label_wins_answer() {
   has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
 }
 
+t_fs_ship_full_started_answer() {
+  # Given: unlabeled #42 answered ship; its thread t42 started
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship; fs_record 42 unlabeled t42
+  # When
+  fs_go change acme/app ship full 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -745,4 +755,5 @@ cases=(
   "a close answer starts nothing and writes nothing|t_fs_close_answer"
   "answers survive stop and resume|t_fs_answers_survive_resume"
   "a label wins over an answer|t_fs_label_wins_answer"
+  "ship-full for a started ship answer stops|t_fs_ship_full_started_answer"
 )
