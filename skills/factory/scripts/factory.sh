@@ -154,26 +154,38 @@ cmd_start() {
 }
 
 # ---------- check ----------
+# fail_check <line>: a check that read too little to start anything. Only the
+# failure count of the state as it was is written; after 3 in a row the user
+# must act.
+fail_check() {
+  local fails
+  S="$(jq -c '.timer.fails += 1' <<<"$S0")"; save
+  fails="$(jq .timer.fails <<<"$S")"
+  if [ "$fails" -ge 3 ]; then die "check failed $fails times in a row: $1. You must act, then say check now."; fi
+  die "check failed: $1"
+}
+
 cmd_check() {
   in_t3
   newest_run
+  S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
   # of an issue in it, and the follow-ups a PR that closes one lists.
   local issues="{}" got todo joined="[]" new t3list statuses
   todo="$(jq -c .set <<<"$S")"
   while [ "$todo" != "[]" ]; do
     # shellcheck disable=SC2046 # one word per number
-    got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || die "check failed: $(tail -1 "$errf")"
+    got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || fail_check "$(tail -1 "$errf")"
     issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
     new="$(jq -c --argjson S "$S" "$joins" <<<"$got")"
     S="$(jq -c --argjson new "$new" '.set += $new' <<<"$S")"
     joined="$(jq -c --argjson new "$new" '. + $new' <<<"$joined")"
     todo="$new"
   done
-  t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "check failed: $(tail -1 "$errf")"
+  t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec line flags model effort starts="[]" rows="[]" claims="[]"
+  local n j st sk free blocked rec line wait flags model effort starts="[]" rows="[]" claims="[]"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
@@ -181,6 +193,7 @@ cmd_check() {
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
+    line=""; wait=""
     if [ -n "$sk" ] && [ "$free" = true ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       flags=()
@@ -188,18 +201,25 @@ cmd_check() {
       effort="$(jq -r --arg n "$n" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
       [ -z "$model" ] || flags+=(--model "$model")
       [ -z "$effort" ] || flags+=(--effort "$effort")
-      line="$(bash "$core/kickoff/decide.sh" --command "$sk" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$n" 2>"$errf")" \
-        || die "check failed: $(tail -1 "$errf")"
+      # A gh failure in decide.sh fails the check; any other stop is this
+      # issue's alone, and it waits.
+      if ! line="$(bash "$core/kickoff/decide.sh" --command "$sk" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$n" 2>"$errf")"; then
+        wait="$(tail -1 "$errf" | sed 's/^stop: //')"
+        case "$wait" in "gh could not"*) fail_check "$wait" ;; esac
+      fi
+    fi
+    if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
         '. + [$l + {stage: $st, message: "/\($l.command) \($l.args)", thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
       claims="$(jq -c --argjson n "$n" --arg st "$st" '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null}]' <<<"$claims")"
     fi
     rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
-      --argjson rec "$rec" --argjson ts "$statuses" \
+      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" \
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread] else null end),
-             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}]}]' <<<"$rows")"
+             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}]}
+           + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
   done
 
   S="$(jq -c --argjson c "$claims" '.threads += $c | .timer.fails = 0' <<<"$S")"

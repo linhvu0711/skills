@@ -355,6 +355,66 @@ t_fs_override_one_wins() {
   has stdout '"model":"sonnet","model_from":"set","effort":"xhigh","effort_from":"set"' "$out"
 }
 
+t_fs_gh_fail_starts_nothing() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
+  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
+}
+
+t_fs_t3_fail_starts_nothing() {
+  # Given: a run of #42, size/S; T3 does not answer
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'connect ECONNREFUSED\n' > "$T/t3.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: connect ECONNREFUSED" "$err"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_third_failure_asks() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app; fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq stderr "stop: check failed 3 times in a row: HTTP 401: Bad credentials. You must act, then say check now." "$err"
+  eq fails 3 "$(fs_state .timer.fails)"
+}
+
+t_fs_check_writes_nothing() {
+  # Given: a run of #42 (size/S) and #43 (with an open PR from before the run)
+  local pr='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  fs_setup; fs_issue 43 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 42 OPEN '["size/S"]'; fs_prs "$pr"; fs_start 42 43
+  fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  eq writes "" "$(cat "$FAKE_GH"/*.args | grep -vE '^(api graphql|issue view|repo view)' || true)"
+}
+
+t_fs_two_prs_waits() {
+  # Given: #42 has two open PRs from before the run
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-27T10:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -380,4 +440,9 @@ cases=(
   "ship-full for all leaves started issues|t_fs_ship_full_all"
   "ship-full for a started issue stops|t_fs_ship_full_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
+  "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
+  "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
+  "the third failure in a row asks the user to act|t_fs_third_failure_asks"
+  "the check writes nothing to GitHub|t_fs_check_writes_nothing"
+  "two open PRs make the issue wait|t_fs_two_prs_waits"
 )
