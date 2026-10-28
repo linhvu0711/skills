@@ -155,7 +155,8 @@ the answers then run § Check.
   <word>` per part, the per-issue parts first, so `all` fills only the
   rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`,
   `ready-pr`, `task`, and `close`; `ship-ready` or `ship-full` is
-  `ship`, and `ship-full` also runs `change <owner/repo> ship full <n>`.
+  `ship`, and each also runs `change <owner/repo> ship ready|full <n>`,
+  so the issue ships the way the user said, whatever the run's default.
   A new answer reaches an issue whose thread started only after
   `restart #n`.
 - `ship-full #n`, `ship-full all`, `ship-ready #n`, `ship-ready all`:
