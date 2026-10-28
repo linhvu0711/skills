@@ -203,9 +203,18 @@ on the user's token.
 - **None.** The user says no assignee: no flag.
 - **Rewritten in place.** An issue rewritten in place (§ Origin bug,
   § Origin seed) keeps the assignees it has.
-- **Refused.** `gh` refuses the assignee, since the login cannot be
-  assigned in that repo: create the issue again without the flag, and
-  add `Not assigned: <gh's error line>.` to the report.
+- **Check first.** On github.com, `gh` creates the issue, then assigns
+  it in a second call. A refused assign leaves the issue made, with no
+  URL printed. So before the first create of a run, check the login:
+  `gh api repos/<owner>/<repo>/assignees/<login> --silent`, where
+  `<login>` for `@me` is `gh api user -q .login`. Exit 0: use the flag.
+  Any other exit: create with no flag, and add `Not assigned: <login>
+  cannot be assigned in <owner>/<repo>.` to the report.
+- **Never twice.** A create that fails after the check: do not create
+  again. Look for the issue, `gh issue list --author @me --state open
+  --search "<title> in:title" --json number,title,url`, and report the
+  one whose title matches exactly, with `Not assigned: <gh's error
+  line>.` None matches: report the error and stop.
 - **discover-path's tickets.** Its child tickets are created with no
   assignee, since an assignee there means a run claimed the ticket. Its
   map follows this rule.

@@ -60,8 +60,8 @@ report. This file is the order of operations.
    `ready-to-build` goes on every ticket that has Steps, and on no other.
    A `task` is the exception: its only label is `manual`, no size label.
 
-   A missing label from the rules file: create it, retry once. A refused
-   assignee: per the rules file § Assignee. Any other failure: show the
+   A missing label from the rules file: create it, retry once. An assignee
+   failure: per the rules file § Assignee, Check first and Never twice. Any other failure: show the
    error, stop.
 
 7. **Report.** One line: the URL, also put on the clipboard, then the size
