@@ -935,6 +935,26 @@ t_fs_removed_starts_nothing() {
   eq started '[42]' "$(fs_state '[.threads[] | .number]')"
 }
 
+t_fs_removed_read_fails() {
+  # Given: a run of #42 and #44, #44 removed, and the read of the removed fails
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/graphql.3.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq "exit and cards" '0 [42] 0' "$code $(fs_board -c '[.issues[].number]') $(fs_state .timer.fails)"
+}
+
+t_fs_removed_deleted() {
+  # Given: a run of #42 and #44, #44 removed, then deleted
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  rm "$T/issues/44.json"; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq "exit and cards" '0 [42]' "$code $(fs_board -c '[.issues[].number]')"
+}
+
 t_fs_check_records_time() {
   # Given: a run of #42, size/S
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1095,6 +1115,8 @@ cases=(
   "the board orders you, agent, blocked|t_fs_board_order"
   "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
   "a removed issue starts nothing|t_fs_removed_starts_nothing"
+  "a failed read of removed issues fails no check|t_fs_removed_read_fails"
+  "a deleted removed issue has no card|t_fs_removed_deleted"
   "a good check records its time|t_fs_check_records_time"
   "a failed check records why|t_fs_failed_check_why"
   "a failed check keeps the last board|t_fs_failed_check_keeps_board"

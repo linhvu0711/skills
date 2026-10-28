@@ -308,11 +308,12 @@ cmd_check() {
     joined="$(jq -c --argjson new "$new" '. + $new' <<<"$joined")"
     todo="$new"
   done
-  # The removed issues too, for the board alone: they never start or join.
+  # The removed issues too, for the board alone: they never start or join,
+  # so a failed read, or one deleted since, only leaves their cards out.
   if [ "$(jq '.removed | length' <<<"$S")" -gt 0 ]; then
     # shellcheck disable=SC2046 # one word per number
-    got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || fail_check "$(tail -1 "$errf")"
-    issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
+    got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || got="{}"
+    issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null)))' <<<"$issues")"
   fi
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
@@ -321,6 +322,7 @@ cmd_check() {
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
+    [ "$gone" = false ] || [ "$j" != null ] || continue
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
     sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
     # The stage stays unlabeled; the user's answer only picks the skill.
