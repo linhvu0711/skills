@@ -205,7 +205,7 @@
     ['done', 'Done', 'Closed'],
   ]
   var EVERY = 5000
-  var B = null, S = null, good = null, stale = false, focus = false, openN = null
+  var B = null, S = null, good = null, stale = false, focus = false, openN = null, seen = ''
 
   var ICON_THREAD = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
   // Drawn, not typed: a font without ✓ or ○ shows an empty box.
@@ -355,18 +355,24 @@
     return fetch(name, { cache: 'no-store' }).then(function (r) {
       if (r.status === 404) return null
       if (!r.ok) throw new Error(name + ': ' + r.status)
-      return r.json()
+      return r.text()
     })
   }
   // A 404 for board.json before any good read means the run has not checked
   // yet, so the columns keep their skeletons.
   function read() {
+    // Drawn again only when the data changed, so a keyboard user keeps the
+    // button they are on.
     Promise.all([get('board.json'), get('state.json')]).then(function (r) {
-      if (r[1]) S = r[1]
-      if (r[0]) { B = r[0]; good = Date.now() }
+      if (r[0]) good = Date.now()
+      var now = r[0] + '\n' + r[1]
+      if (now === seen && !stale) return
+      seen = now
+      if (r[1]) S = JSON.parse(r[1])
+      if (r[0]) B = JSON.parse(r[0])
       stale = false
       render()
-    }).catch(function () { stale = !!B; render() })
+    }).catch(function () { if (B && !stale) { stale = true; render() } })
   }
   setInterval(function () {
     $('upd').textContent = good ? 'updated ' + Math.round((Date.now() - good) / 1000) + ' s ago' : ''
