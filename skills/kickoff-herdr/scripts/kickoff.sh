@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # kickoff.sh: open a herdr pane and run /ship-ready, /ship-full, or /plan-up there.
 #
-# Usage: kickoff.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up]
+# Usage: kickoff.sh [--label L] [--model M] [--effort E]
+#                   [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and

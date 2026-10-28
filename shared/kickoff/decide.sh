@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # decide.sh: work out what kickoff starts, for kickoff-herdr and kickoff-t3.
 #
-# Usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up]
+# Usage: decide.sh [--label L] [--model M] [--effort E]
+#                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -10,11 +11,13 @@
 #
 # The model, effort, and command come from the tickets' size and
 # ready-to-build labels unless a flag names them; --size gives a ticket with
-# no size label the size the agent guessed.
+# no size label the size the agent guessed. triage, grill, and ready-pr come
+# only from --command, and each has its own model and effort row.
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, model, model_from, effort, effort_from, reason, base, path,
-# and label. Exit 1: something stopped us; the reason is the last line on
+# and label. Under --command ready-pr, args is the URL of the one open PR
+# that closes the issue. Exit 1: something stopped us; the reason is the last line on
 # stderr. It launches nothing, so the caller's launch starts only after every
 # check here passed.
 set -euo pipefail
@@ -34,7 +37,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship-ready|ship-full|plan-up) ;; *) die "--command must be ship-ready, ship-full, or plan-up, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship-ready|ship-full|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
@@ -43,7 +46,7 @@ while [ $# -gt 0 ]; do
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -151,6 +154,10 @@ else
   else model=opus; effort=high; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
+case "$set_command" in
+  triage|grill) model=opus; effort=high; reason="command $set_command" ;;
+  ready-pr) model=opus; effort=medium; reason="command ready-pr" ;;
+esac
 if [ "$counted" -gt 1 ]; then
   reason="$reason of $counted tickets"
   if [ "$guessed" -gt 0 ]; then reason="$reason, $guessed guessed"; fi
@@ -161,6 +168,21 @@ model_from=default; effort_from=default; command_from=default
 if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
 if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
 if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
+
+# ---------- ready-pr ----------
+# /ready-pr takes the open PR that closes the issue. GitHub lists merged PRs
+# here even with includeClosedPrs: false, so only OPEN ones count.
+if [ "$command" = ready-pr ]; then
+  # shellcheck disable=SC2016 # the $ names are GraphQL variables
+  q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
+  prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
+    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
+    || die "gh could not read the PRs of #$number"
+  pr_count="$(grep -c . <<<"$prs" || true)"
+  [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
+  [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
+  prep_args="$prs"
+fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then

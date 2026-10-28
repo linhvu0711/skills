@@ -25,39 +25,21 @@ the table, and how to turn the user's words into a target.
    keys: `number`, `title`, `command`, `command_from`, `model`,
    `model_from`, `effort`, `effort_from`, `reason`, `base`, `path`,
    `thread_title`, `message`, `runtime_mode`, `project`.
-3. **Model.** T3 keeps an alias as given and does not map it to a model,
-   so you map it. A full model name, such as `claude-opus-5-5`, passes
-   as is. An alias (`opus`, `sonnet`, `haiku`): call
-   `orchestrator_capabilities` with `search` set to the alias, and take
-   the first model of the `claudeAgent` provider whose id starts with
-   `claude-<alias>-`. None: say `stop: T3 has no <alias> model` and
-   stop.
-4. **Project.** Call `t3_project_list`, and page with `nextCursor`
-   until a project's `workspaceRoot` equals `path`. Hold its `id`. None:
-   say `stop: no T3 project for <path>` and stop.
-5. **Thread.** One `t3_thread_launch`:
-   - `projectId`: the id from step 4
-   - `title`: `thread_title`
-   - `message`: `message`
-   - `modelSelection`: `{instanceId: "claudeAgent", model: <the id from step 3>, options: {effort: <effort>}}`
-   - `runtimeMode`: `runtime_mode`
-   - no `workspaceStrategy`: the command makes its own worktree.
-
-   An error or no reply: call `t3_thread_list` on that project before
-   you try again, so you do not start the thread twice. Its title is
-   there: it started.
-6. **Report.** Print one line and stop:
+3. **Launch.** Follow `../../shared/kickoff/launch-t3.md` with the
+   line from step 2. Its stop lines are yours. Hold the model id it
+   picked and the thread's `link`.
+4. **Report.** Print one line and stop:
 
    ```
    #<number> <title> → <link> · /<command> (<command_from>) · model <model id> (<model_from>) · effort <effort> (<effort_from>) · <reason> · base <base> · project <project>
    ```
 
-   `<link>` is the thread's `link` from step 5, as it is. The command
+   `<link>` is the thread's `link` from step 3, as it is. The command
    now talks to the user in the new thread. Do not watch it, read its
    plan, or run `/handoff` from here.
 
 One thread for all the issues, unless the user asks for one each. One
-each: steps 2 to 6 once per issue, one after the other.
+each: steps 2 to 4 once per issue, one after the other.
 
 ## Examples
 

@@ -13,7 +13,7 @@ You work in T3 Code and want planning or a whole ship-ready or ship-full run to 
 - `/kickoff-t3 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-t3 on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
+More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
 
 ## What you get
 
@@ -47,6 +47,7 @@ Your tree stays as it is: any branch, edits or not.
 
 - Starts [ship-ready](../ship-ready/), [ship-full](../ship-full/), or [plan-up](../plan-up/) in the new thread. It starts ship-full only when you ask for the merge.
 - [kickoff-herdr](../kickoff-herdr/) does the same in a herdr pane. Both run the shared decide script, `../../shared/kickoff/decide.sh`, and read `../../shared/kickoff/target.md`.
+- Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 
 ## Tests
