@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # factory.sh: the factory's check, and the one writer of a run's state file.
 #
-# Usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> <n>...
+# Usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>...
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
@@ -10,11 +10,13 @@
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
-#        factory.sh resume <owner/repo> --thread <thread-id>
+#        factory.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
-# do not hold. Every command works on the repo's newest run.
+# do not hold. Every command works on the repo's newest run. A good check
+# also writes board.json there, the board page's data, and start and resume
+# copy the page in as board.html, so one folder serves both.
 #
 # check reads every issue of the set from GitHub and the threads from T3,
 # puts each issue in its stage, and prints the threads to start. Each start
@@ -67,6 +69,15 @@ save() {
   tmp="$(mktemp "$run/.state.XXXXXX")"
   jq . <<<"$S" > "$tmp"
   mv "$tmp" "$run/state.json"
+}
+
+# copy_page: the board page into the run folder, the same way, so a resume
+# brings a newer page to an old run.
+copy_page() {
+  local tmp
+  tmp="$(mktemp "$run/.board.XXXXXX")"
+  cp "$here/../assets/board.html" "$tmp"
+  mv "$tmp" "$run/board.html"
 }
 
 # ---------- GitHub ----------
@@ -151,17 +162,42 @@ joins='
 # thread's link once the thread has the title `factory: <name>`.
 thread_link() { printf '[factory: %s](t3-thread://v1/%s)' "$1" "$2"; }
 
+# ---------- board ----------
+# board: a jq program on null, with the state as $S and the check's rows as
+# $rows: the board page's data. An epic is no card: its sub-issues are.
+# shellcheck disable=SC2016 # the $ names are jq variables
+board='
+  def column: if .stage == "done" then "done"
+    elif any(.prs[]; .state == "OPEN") then "review"
+    elif (.stage == "ticket" or .stage == "task" or .stage == "pr") then "build"
+    else "shape" end;
+  {repo: $S.repo, name: $S.name,
+   issues: [$rows[] | select(.stage != "epic")
+     | {number, title, url: "https://github.com/\($S.repo)/issues/\(.number)", column: column}]}'
+
+# write_board <rows>: board.json in the run folder, under a temp name, then
+# renamed into place, as save writes the state. Only a good check calls it,
+# so a failed one leaves the last good board.
+write_board() {
+  local tmp
+  tmp="$(mktemp "$run/.board.XXXXXX")"
+  jq -n --argjson S "$S" --argjson rows "$1" "$board" > "$tmp"
+  mv "$tmp" "$run/board.json"
+}
+
 # ---------- start ----------
 cmd_start() {
-  local name="" thread="" nums=() a
+  local name="" thread="" env="" nums=() a
   while [ $# -gt 0 ]; do
     case "$1" in
       --name) name="${2:-}"; shift 2 ;;
       --thread) thread="${2:-}"; shift 2 ;;
+      --env) env="${2:-}"; shift 2 ;;
       *) [[ "$1" =~ ^#?([0-9]+)$ ]] || die "unexpected argument: $1"; nums+=("${BASH_REMATCH[1]}"); shift ;;
     esac
   done
-  [ -n "$name" ] && [ -n "$thread" ] && [ "${#nums[@]}" -gt 0 ] || die "usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> <n>..."
+  [ -n "$name" ] && [ -n "$thread" ] && [ -n "$env" ] && [ "${#nums[@]}" -gt 0 ] \
+    || die "usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..."
   in_t3
   local d st found path got
   for d in "$runs"/*/; do
@@ -176,12 +212,13 @@ cmd_start() {
   path="${found#* MAIN=}"
   run="$runs/$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$runs"; mkdir "$run" || die "a run of $slug started this second; try again"
-  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
+  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
-    '{repo: $repo, name: $name, link: $link, path: $path, started_at: $at, status: "running",
+    '{repo: $repo, name: $name, env: $env, link: $link, path: $path, started_at: $at, status: "running",
       set: $set, removed: [], ship: {default: "ready"}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
+  copy_page
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
 }
 
@@ -276,6 +313,7 @@ cmd_check() {
   S="$(jq -c --argjson c "$claims" --argjson done "$done" \
     '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
   save
+  write_board "$rows"
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
     {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
@@ -433,12 +471,13 @@ cmd_timer() {
 }
 
 # ---------- resume ----------
-# resume --thread <id>: the newest run of the repo that is not done goes on
+# resume --thread <id> --env <id>: the newest run of the repo that is not done goes on
 # from that thread. Prints the run's name, which the thread takes as its
 # title, and the old timer's task, which the agent deletes before it starts
 # a new one, so a run has one timer.
 cmd_resume() {
-  [ "${1:-}" = --thread ] && [ -n "${2:-}" ] || die "usage: factory.sh resume <owner/repo> --thread <thread-id>"
+  [ "${1:-}" = --thread ] && [ -n "${2:-}" ] && [ "${3:-}" = --env ] && [ -n "${4:-}" ] \
+    || die "usage: factory.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
   in_t3
   local d
   run=""
@@ -447,8 +486,10 @@ cmd_resume() {
   done < <(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
   [ -n "$run" ] || die "no run to resume in $slug"
   S="$(cat "$run/state.json")"
-  S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" '.link = $l | .status = "running" | .timer.fails = 0' <<<"$S")"
+  S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" --arg env "$4" \
+    '.link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"
   save
+  copy_page
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: $S.timer.task, every: $S.timer.every}'
 }
 

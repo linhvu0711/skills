@@ -57,18 +57,24 @@ fs_go() {
 
 # fs_start <n>...: a run of these issues, named after the first.
 fs_start() {
-  fs_go start acme/app --name "#$1" --thread f1 "$@"
+  fs_go start acme/app --name "#$1" --thread f1 --env e1 "$@"
   eq "start exit" 0 "$code"
 }
 
 # fs_state [jq flags] <jq>: the jq filter on the newest run's state file.
 fs_state() { jq -c "$@" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
 
+# fs_run: the newest run's folder, with no slash at the end.
+fs_run() { ls -1d "$T"/factory/acme-app/*/ | sort | tail -1 | sed 's#/$##'; }
+
+# fs_board [jq flags] <jq>: the jq filter on the newest run's board.json.
+fs_board() { jq -c "$@" "$(fs_run)/board.json"; }
+
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
   # When
-  fs_go start acme/app --name "#42" --thread f1 42
+  fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
   eq exit 0 "$code"
   eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
@@ -508,7 +514,7 @@ t_fs_live_run_stops_start() {
   # Given: a running run of #42 from the factory thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
   # When
-  fs_go start acme/app --name "#43" --thread x 43
+  fs_go start acme/app --name "#43" --thread x --env e1 43
   # Then
   eq exit 1 "$code"
   eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
@@ -520,7 +526,7 @@ t_fs_resume_newest() {
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
   fs_go timer acme/app --task s1; fs_go timer acme/app stop
   # When
-  fs_go resume acme/app --thread f2
+  fs_go resume acme/app --thread f2 --env e1
   # Then
   eq exit 0 "$code"
   has stdout '"name":"#42","old_task":"s1","every":5' "$out"
@@ -531,7 +537,7 @@ t_fs_no_open_issue_stops() {
   # Given: #42 is closed
   fs_setup; fs_issue 42 CLOSED '["size/S"]'
   # When
-  fs_go start acme/app --name "#42" --thread x 42
+  fs_go start acme/app --name "#42" --thread x --env e1 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has no open issue" "$err"
@@ -544,7 +550,7 @@ t_fs_outside_t3_stops() {
   # When
   cd "$T"
   run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
-    bash "$F" start acme/app --name "#42" --thread x 42
+    bash "$F" start acme/app --name "#42" --thread x --env e1 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: not inside T3 Code" "$err"
@@ -671,7 +677,7 @@ t_fs_close_answer() {
 t_fs_answers_survive_resume() {
   # Given: #42 proposed task and answered yes; the run stopped and resumed
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2
+  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
   # When
   fs_go check acme/app
   # Then
@@ -699,6 +705,46 @@ t_fs_ship_full_started_answer() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
+t_fs_board_columns() {
+  # Given: a run from 12:00 of a seed, a ticket, a ticket with a PR made at 13:00, a task, a closed ticket, a bug, and an unlabeled issue
+  local pr='{"number":50,"url":"https://github.com/acme/app/pull/50","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 41 OPEN '["seed"]'; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]' '[]' "[$pr]"
+  fs_issue 44 OPEN '["manual"]'; fs_issue 45 CLOSED '["size/S"]'; fs_issue 46 OPEN '["bug"]'; fs_issue 47 OPEN '["p1"]'
+  fs_start 41 42 43 44 45 46 47; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq columns '{"41":"shape","42":"build","43":"review","44":"build","45":"done","46":"shape","47":"shape"}' \
+    "$(fs_board '[.issues[] | {key: (.number|tostring), value: .column}] | sort_by(.key) | from_entries')"
+}
+
+t_fs_board_one_file() {
+  # Given: a run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq files "$(printf 'board.html\nboard.json\nstate.json')" "$(ls -A "$(fs_run)")"
+}
+
+t_fs_start_copies_page() {
+  # Given: #42 open, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --thread f1 --env e1 42
+  # Then
+  eq page "same e1" "$(cmp -s "$(fs_run)/board.html" "$here/../assets/board.html" && echo same) $(fs_state -r .env)"
+}
+
+t_fs_start_needs_env() {
+  # Given: #42 open, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --thread f1 42
+  # Then
+  eq stderr "stop: usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
 }
 
 cases=(
@@ -756,4 +802,8 @@ cases=(
   "answers survive stop and resume|t_fs_answers_survive_resume"
   "a label wins over an answer|t_fs_label_wins_answer"
   "ship-full for a started ship answer stops|t_fs_ship_full_started_answer"
+  "the board puts each issue in its column|t_fs_board_columns"
+  "a second check leaves one board file|t_fs_board_one_file"
+  "start copies the board page into the run|t_fs_start_copies_page"
+  "start without an env id stops|t_fs_start_needs_env"
 )
