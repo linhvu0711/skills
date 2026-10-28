@@ -935,6 +935,48 @@ t_fs_removed_starts_nothing() {
   eq started '[42]' "$(fs_state '[.threads[] | .number]')"
 }
 
+t_fs_check_records_time() {
+  # Given: a run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq health '{"time":true,"why":null}' "$(fs_state '{time: (.timer.checked_at | test("^2[0-9]{3}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$")), why: .timer.why}')"
+}
+
+t_fs_failed_check_why() {
+  # Given: a run of #42; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq timer '{"fails":1,"why":"HTTP 401: Bad credentials"}' "$(fs_state '{fails: .timer.fails, why: .timer.why}')"
+}
+
+t_fs_failed_check_keeps_board() {
+  # Given: a run of #42 checked once, then gh logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app; cp "$(fs_run)/board.json" "$T/board.before"
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq board same "$(cmp -s "$T/board.before" "$(fs_run)/board.json" && echo same)"
+}
+
+t_fs_board_journey() {
+  # Given: #42 went from bug (t1, completed, 12:10) to ticket (t2, running, 12:40)
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_record 42 bug t1 triage 2026-10-28T12:10:00Z; fs_record 42 ticket t2 ship-ready 2026-10-28T12:40:00Z
+  printf '[{"threadId":"t1","status":"completed","createdAt":"2026-10-28T12:10:00Z"},{"threadId":"t2","status":"running","createdAt":"2026-10-28T12:40:00Z"}]\n' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq journey '["joined","bug","ticket"] {"thread_url":"t3code://threads/e1/t2","status":"running"}' \
+    "$(fs_board '.issues[0].journey | map(.stage // .step)') $(fs_board '.issues[0].journey[2] | {thread_url, status}')"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -1012,4 +1054,8 @@ cases=(
   "the board orders you, agent, blocked|t_fs_board_order"
   "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
   "a removed issue starts nothing|t_fs_removed_starts_nothing"
+  "a good check records its time|t_fs_check_records_time"
+  "a failed check records why|t_fs_failed_check_why"
+  "a failed check keeps the last board|t_fs_failed_check_keeps_board"
+  "the journey lists each stage and its thread|t_fs_board_journey"
 )

@@ -209,7 +209,7 @@ board='
       elif $S.status == "paused" then held("paused: starts on resume")
       else held("starts at the next check") end;
   def rank($xs): . as $x | $xs | index([$x]);
-  {repo: $S.repo, name: $S.name,
+  {repo: $S.repo, name: $S.name, checked_at: $S.timer.checked_at,
    issues: [$rows | to_entries[] | .key as $i | .value | select(.stage != "epic")
      | .number as $n
      | ([$S.threads[] | select(.number == $n)] | last) as $rec
@@ -219,7 +219,11 @@ board='
        + owner($rec; $t)
        + {thread: (if $rec.thread then {id: $rec.thread, url: "t3code://threads/\($S.env)/\($rec.thread)", status: $t.status} else null end),
           pr: (.prs | map(select(.state == "OPEN")) | first | if . then {number, url} else null end),
-          blocked_by, order: $i,
+          blocked_by, order: $i, stage, skill, model: $rec.model, effort: $rec.effort,
+          journey: ([{at: $S.started_at, step: "joined"}]
+            + [$S.threads[] | select(.number == $n)
+               | {at, stage, command, status: ((if .thread then $ts[.thread].status else null end) // .status),
+                  thread_url: (if .thread then "t3code://threads/\($S.env)/\(.thread)" else null end)}]),
           removed: ($S.removed | index([$n]) != null), made: ($S.made // [] | index([$n]) != null),
           ship_full: (.stage == "ticket" and ($S.ship[$n | tostring] // $S.ship.default) == "full")}]
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
@@ -278,7 +282,7 @@ cmd_start() {
 # must act.
 fail_check() {
   local fails
-  S="$(jq -c '.timer.fails += 1' <<<"$S0")"; save
+  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S0")"; save
   fails="$(jq .timer.fails <<<"$S")"
   if [ "$fails" -ge 3 ]; then die "check failed $fails times in a row: $1. You must act, then say check now."; fi
   die "check failed: $1"
@@ -374,7 +378,9 @@ cmd_check() {
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
 
   S="$(jq -c --argjson c "$claims" --argjson done "$done" \
-    '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
+    --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '.threads += $c | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
+     | if $done then .status = "done" else . end' <<<"$S")"
   save
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
