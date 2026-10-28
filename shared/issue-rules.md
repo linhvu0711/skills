@@ -191,6 +191,25 @@ Steps.
 | p2, medium, normal | p2 |
 | p3, low, someday, nice to have | p3 |
 
+## Assignee
+
+Every new issue these skills create is assigned to the user who runs
+them: `--assignee @me` on `gh issue create`. `@me` is the login `gh` is
+signed in as, the user's own, also on a cloud executor, whose `gh` runs
+on the user's token.
+
+- **Someone else.** The user names another person in the request
+  (`assign it to @bob`): `--assignee <login>` instead.
+- **None.** The user says no assignee: no flag.
+- **Rewritten in place.** An issue rewritten in place (§ Origin bug,
+  § Origin seed) keeps the assignees it has.
+- **Refused.** `gh` refuses the assignee, since the login cannot be
+  assigned in that repo: create the issue again without the flag, and
+  add `Not assigned: <gh's error line>.` to the report.
+- **discover-path's tickets.** Its child tickets are created with no
+  assignee, since an assignee there means a run claimed the ticket. Its
+  map follows this rule.
+
 ## Body
 
 Write it to a temp file, pass it with `--body-file`. Four sections, in this

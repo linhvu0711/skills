@@ -50,16 +50,19 @@ report. This file is the order of operations.
    Nothing new is created, and nothing is closed. Otherwise:
 
    ```bash
-   gh issue create --repo owner/repo --title "<title>" --body-file "$f" \
+   gh issue create --repo owner/repo --title "<title>" --body-file "$f" --assignee @me \
      --label "<size label>" [--label "<ready-to-build label>"] [--label "<priority label>"] \
      [--type <Name>]
    ```
 
+   `--assignee @me` per the rules file § Assignee: the user, unless
+   the user named someone else or said no assignee.
    `ready-to-build` goes on every ticket that has Steps, and on no other.
    A `task` is the exception: its only label is `manual`, no size label.
 
-   A missing label from the rules file: create it, retry once. Any other
-   failure: show the error, stop.
+   A missing label from the rules file: create it, retry once. A refused
+   assignee: per the rules file § Assignee. Any other failure: show the
+   error, stop.
 
 7. **Report.** One line: the URL, also put on the clipboard, then the size
    and the type.
