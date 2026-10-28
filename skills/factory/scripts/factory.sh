@@ -72,11 +72,13 @@ save() {
 }
 
 # copy_page: the board page into the run folder, the same way, so a resume
-# brings a newer page to an old run.
+# brings a newer page to an old run. The page names its run: serve.sh reuses
+# a server that gives back the same bytes, so two runs' pages must differ.
 copy_page() {
   local tmp
   tmp="$(mktemp "$run/.board.XXXXXX")"
-  cp "$here/../assets/board.html" "$tmp"
+  sed "s#<meta name=\"factory-run\" content=\"\">#<meta name=\"factory-run\" content=\"$(basename "$run")\">#" \
+    "$here/../assets/board.html" > "$tmp"
   mv "$tmp" "$run/board.html"
 }
 

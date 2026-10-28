@@ -737,7 +737,7 @@ t_fs_start_copies_page() {
   # When
   fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
-  eq page "same e1" "$(cmp -s "$(fs_run)/board.html" "$here/../assets/board.html" && echo same) $(fs_state -r .env)"
+  eq page "1 e1" "$(grep -c "<meta name=\"factory-run\" content=\"$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
 }
 
 t_fs_start_needs_env() {
@@ -1002,7 +1002,20 @@ t_fs_resume_copies_page() {
   # When
   fs_go resume acme/app --thread f2 --env e2
   # Then
-  eq page "same e2" "$(cmp -s "$(fs_run)/board.html" "$here/../assets/board.html" && echo same) $(fs_state -r .env)"
+  eq page "1 e2" "$(grep -c "<meta name=\"factory-run\" content=\"$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+}
+
+t_fs_two_runs_two_pages() {
+  # Given: a run of #42, stopped, then a second run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app stop
+  # (both start in one second here, so the first run's folder moves back a
+  # year, and a resume names that folder in its page)
+  local first="$T/factory/acme-app/20200101T000000Z"; mv "$(fs_run)" "$first"
+  fs_go resume acme/app --thread f1 --env e1; fs_go timer acme/app stop; fs_start 42
+  # When
+  local diff=same; cmp -s "$first/board.html" "$(fs_run)/board.html" || diff=differ
+  # Then
+  eq pages differ "$diff"
 }
 
 cases=(
@@ -1089,4 +1102,5 @@ cases=(
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
+  "two runs get two different pages|t_fs_two_runs_two_pages"
 )
