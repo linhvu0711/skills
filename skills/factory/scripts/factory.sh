@@ -222,11 +222,23 @@ cmd_check() {
            + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
   done
 
-  S="$(jq -c --argjson c "$claims" '.threads += $c | .timer.fails = 0' <<<"$S")"
+  # Done: every issue closed, an epic once its sub-issues are, and no PR
+  # that closes one still open. The factory never closes an epic itself.
+  local done
+  done="$(jq --argjson rows "$rows" --argjson is "$issues" '
+    $rows != [] and all($rows[];
+      (.stage == "done" or (.stage == "epic" and all($is[.number | tostring].subIssues.nodes[]; .state == "CLOSED")))
+      and all(.prs[]; .state != "OPEN"))' <<<"null")"
+
+  S="$(jq -c --argjson c "$claims" --argjson done "$done" \
+    '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
   save
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
-    --argjson joined "$joined" \
-    '{run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: false}'
+    --argjson joined "$joined" --argjson done "$done" '
+    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done}
+    + if $done then {summary: [$rows[] | .number as $n | {number, title,
+        stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
+        prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}]} else {} end'
 }
 
 # ---------- started ----------

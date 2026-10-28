@@ -61,8 +61,8 @@ fs_start() {
   eq "start exit" 0 "$code"
 }
 
-# fs_state <jq>: the jq filter on the newest run's state file.
-fs_state() { jq -c "$1" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
+# fs_state [jq flags] <jq>: the jq filter on the newest run's state file.
+fs_state() { jq -c "$@" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
 
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
@@ -415,6 +415,49 @@ t_fs_two_prs_waits() {
   has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
 }
 
+t_fs_all_closed_done() {
+  # Given: #42 went from bug (t1) to ticket (t2) and is closed by merged PR 43
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+  has stdout '"number":42,"title":"Export orders","stages":["bug","ticket"]' "$out"
+  has stdout '"url":"https://github.com/acme/app/pull/43","state":"MERGED"' "$out"
+  eq status done "$(fs_state -r .status)"
+}
+
+t_fs_epic_done() {
+  # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 CLOSED '["size/S"]'; fs_issue 72 CLOSED '["size/S"]'; fs_start 70 71 72
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+}
+
+t_fs_manual_keeps_open() {
+  # Given: #42 closed; #43 an open manual task
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":false' "$out"
+}
+
+t_fs_unmerged_pr_keeps_open() {
+  # Given: #42 closed by hand while PR 43 that closes it is still open
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":false' "$out"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -445,4 +488,8 @@ cases=(
   "the third failure in a row asks the user to act|t_fs_third_failure_asks"
   "the check writes nothing to GitHub|t_fs_check_writes_nothing"
   "two open PRs make the issue wait|t_fs_two_prs_waits"
+  "all closed ends the run with a summary|t_fs_all_closed_done"
+  "an epic with closed sub-issues is done|t_fs_epic_done"
+  "an open manual task keeps the run open|t_fs_manual_keeps_open"
+  "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
 )
