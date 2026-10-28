@@ -5,6 +5,7 @@
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
+#        factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
@@ -18,13 +19,15 @@
 # puts each issue in its stage, and prints the threads to start. Each start
 # is claimed in the state file before it is printed, so a second check never
 # starts it again. It launches nothing: the agent starts each thread with
-# T3's tools and records it with `started`.
+# T3's tools and records it with `started`. It also lists the unlabeled
+# issues with no proposal yet; the agent proposes a route for each and
+# records it with `proposed`.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
 # Exit 0: one JSON line on stdout for start, check, timer, and resume;
-# nothing for started and change.
+# nothing for started, proposed, and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -34,7 +37,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: factory.sh start|check|started|change|timer|resume <owner/repo> ..."
+usage="usage: factory.sh start|check|started|proposed|change|timer|resume <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -164,7 +167,7 @@ cmd_start() {
   S="$(jq -n --arg repo "$slug" --arg name "$name" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, link: $link, path: $path, started_at: $at, status: "running",
-      set: $set, removed: [], ship: {default: "ready"}, use: {},
+      set: $set, removed: [], ship: {default: "ready"}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
@@ -203,7 +206,7 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec line wait flags model effort starts="[]" rows="[]" claims="[]"
+  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
@@ -211,6 +214,8 @@ cmd_check() {
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
+    # A run started before proposals existed has no key; it reads as none.
+    prop="$(jq -c --arg n "$n" '(.proposals // {})[$n]' <<<"$S")"
     line=""; wait=""
     if [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
@@ -232,12 +237,13 @@ cmd_check() {
       claims="$(jq -c --argjson n "$n" --arg st "$st" '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null}]' <<<"$claims")"
     fi
     rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
-      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" \
+      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread] else null end),
              claim: $rec.status, why: $rec.why,
-             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}]}
+             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
+             proposal: $prop.route, answer: $prop.answer}
            + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
   done
 
@@ -254,7 +260,8 @@ cmd_check() {
   save
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
-    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done}
+    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
+     propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}]} else {} end'
@@ -278,6 +285,19 @@ cmd_started() {
   S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
     | .threads[$i] += $u' <<<"$S")"
+  save
+}
+
+# ---------- proposed ----------
+# proposed <n> <route>: the route the agent proposed for unlabeled #n, kept
+# with any answer the user already gave. `unsure` is a proposal with no route.
+cmd_proposed() {
+  [ $# -eq 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] \
+    || die "usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure"
+  newest_run
+  local n="${1#\#}"
+  [ "$(jq --argjson n "$n" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$n is not in the set"
+  S="$(jq -c --arg n "$n" --arg r "$2" '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)}' <<<"$S")"
   save
 }
 
@@ -392,6 +412,7 @@ case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
   started) cmd_started "$@" ;;
+  proposed) cmd_proposed "$@" ;;
   change) cmd_change "$@" ;;
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;

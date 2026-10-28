@@ -550,6 +550,56 @@ t_fs_outside_t3_stops() {
   eq stderr "stop: not inside T3 Code" "$err"
 }
 
+t_fs_unlabeled_listed() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"proposal":null,"answer":null' "$out"
+  has stdout '"propose":[42]' "$out"
+  has stdout '"starts":[]' "$out"
+}
+
+t_fs_added_unlabeled_listed() {
+  # Given: a run of #42 (size/S); #43, open, no label, added
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '[]'; fs_start 42; fs_go change acme/app add 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"propose":[43]' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_proposed_route_word() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When: a word that is no route, then unsure twice
+  fs_go proposed acme/app 42 to-epic
+  eq "to-epic exit" 1 "$code"
+  eq stderr "stop: usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure" "$err"
+  fs_go proposed acme/app 42 unsure
+  eq "first exit" 0 "$code"
+  fs_go proposed acme/app 42 unsure
+  eq "second exit" 0 "$code"
+  eq proposals '{"42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
+  fs_go check acme/app
+  # Then
+  has stdout '"propose":[]' "$out"
+  has stdout '"proposal":"unsure"' "$out"
+}
+
+t_fs_proposed_outside_set() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 99 grill
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #99 is not in the set" "$err"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -592,4 +642,8 @@ cases=(
   "resume takes the newest run that is not done|t_fs_resume_newest"
   "a set with no open issue stops|t_fs_no_open_issue_stops"
   "outside T3 Code stops|t_fs_outside_t3_stops"
+  "an unlabeled issue is listed to propose|t_fs_unlabeled_listed"
+  "an added unlabeled issue is listed to propose|t_fs_added_unlabeled_listed"
+  "proposed takes only a route word|t_fs_proposed_route_word"
+  "proposed for an issue outside the set stops|t_fs_proposed_outside_set"
 )
