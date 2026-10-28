@@ -276,9 +276,10 @@ t_fs_epic_brings_subs() {
 }
 
 t_fs_followup_joins() {
-  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed
+  # Given: a run of #42, since closed by merged PR 43, whose Follow-ups name #50, an open seed
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Summary\n\nx\n\n## Follow-ups\n\n#50: retry the export\n"}'
-  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"; fs_start 42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"
   # When
   fs_go check acme/app
   # Then
@@ -416,9 +417,10 @@ t_fs_two_prs_waits() {
 }
 
 t_fs_all_closed_done() {
-  # Given: #42 went from bug (t1) to ticket (t2) and is closed by merged PR 43
+  # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
   # When
   fs_go check acme/app
   # Then
@@ -449,13 +451,103 @@ t_fs_manual_keeps_open() {
 }
 
 t_fs_unmerged_pr_keeps_open() {
-  # Given: #42 closed by hand while PR 43 that closes it is still open
+  # Given: a run of #42, since closed by hand while PR 43 that closes it is still open
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; fs_start 42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
   # When
   fs_go check acme/app
   # Then
   has stdout '"done":false' "$out"
+}
+
+t_fs_timer_five_min() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --task s1
+  # Then
+  eq exit 0 "$code"
+  eq timer '{"task":"s1","every":5,"fails":0}' "$(fs_state .timer)"
+}
+
+t_fs_interval_min_one() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --every 0
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check every takes 1 minute or more" "$err"
+  eq every 5 "$(fs_state .timer.every)"
+}
+
+t_fs_paused_starts_nothing() {
+  # Given: a run of #42, size/S, paused
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go timer acme/app pause
+  eq "pause exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"status":"paused","starts":[]' "$out"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_stop_keeps_state() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app stop
+  # Then
+  eq exit 0 "$code"
+  eq status stopped "$(fs_state -r .status)"
+}
+
+t_fs_live_run_stops_start() {
+  # Given: a running run of #42 from the factory thread f1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go start acme/app --name "#43" --link x 43
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
+  eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
+}
+
+t_fs_resume_newest() {
+  # Given: a stopped run of #42 whose timer was task s1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go timer acme/app --task s1; fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --link "[factory: #42](t3-thread://v1/f2)"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"old_task":"s1","every":5' "$out"
+  eq state '{"status":"running","link":"[factory: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
+}
+
+t_fs_no_open_issue_stops() {
+  # Given: #42 is closed
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --link x 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no open issue" "$err"
+  eq runs 0 "$(ls -1 "$T/factory/acme-app" 2>/dev/null | wc -l | tr -d ' ')"
+}
+
+t_fs_outside_t3_stops() {
+  # Given: #42 open, and no T3 Code
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  cd "$T"
+  run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
+    bash "$F" start acme/app --name "#42" --link x 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: not inside T3 Code" "$err"
 }
 
 cases=(
@@ -492,4 +584,12 @@ cases=(
   "an epic with closed sub-issues is done|t_fs_epic_done"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
+  "start sets a 5 minute timer|t_fs_timer_five_min"
+  "the interval takes 1 minute or more|t_fs_interval_min_one"
+  "a paused run starts nothing|t_fs_paused_starts_nothing"
+  "stop keeps the state file|t_fs_stop_keeps_state"
+  "a live run stops a second start|t_fs_live_run_stops_start"
+  "resume takes the newest run that is not done|t_fs_resume_newest"
+  "a set with no open issue stops|t_fs_no_open_issue_stops"
+  "outside T3 Code stops|t_fs_outside_t3_stops"
 )

@@ -7,6 +7,8 @@
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
+#        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
+#        factory.sh resume <owner/repo> --link <thread link>
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -18,8 +20,11 @@
 # starts it again. It launches nothing: the agent starts each thread with
 # T3's tools and records it with `started`.
 #
-# Exit 0: one JSON line on stdout for start and check, nothing for started
-# and change.
+# A live run is running or paused; a repo has at most one. A stopped run goes
+# on with resume; a done run is over.
+#
+# Exit 0: one JSON line on stdout for start, check, timer, and resume;
+# nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -29,7 +34,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: factory.sh start|check|started|change <owner/repo> ..."
+usage="usage: factory.sh start|check|started|change|timer|resume <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -139,7 +144,15 @@ cmd_start() {
   done
   [ -n "$name" ] && [ -n "$link" ] && [ "${#nums[@]}" -gt 0 ] || die "usage: factory.sh start <owner/repo> --name <words> --link <thread link> <n>..."
   in_t3
-  local found path
+  local d st found path got
+  for d in "$runs"/*/; do
+    [ -f "$d/state.json" ] || continue
+    st="$(jq -r .status "$d/state.json")"
+    case "$st" in running|paused) die "a live run in $slug: $(jq -r .link "$d/state.json")" ;; esac
+  done
+  got="$(read_issues "${nums[@]}")" || die "gh could not read the set: $(tail -1 "$errf")"
+  [ "$(jq '[.[] | select(.state == "OPEN" or any(.subIssues.nodes[]; .state == "OPEN"))] | length' <<<"$got")" -gt 0 ] \
+    || die "$name has no open issue"
   found="$(bash "$core/checkout.sh" main "$slug")" || exit 1
   path="${found#* MAIN=}"
   run="$runs/$(date -u +%Y%m%dT%H%M%SZ)"
@@ -168,6 +181,7 @@ fail_check() {
 cmd_check() {
   in_t3
   newest_run
+  [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /factory resume"
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
   # of an issue in it, and the follow-ups a PR that closes one lists.
@@ -194,7 +208,7 @@ cmd_check() {
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
     line=""; wait=""
-    if [ -n "$sk" ] && [ "$free" = true ] \
+    if [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       flags=()
       model="$(jq -r --arg n "$n" '.use[$n].model // .use.all.model // empty' <<<"$S")"
@@ -328,10 +342,51 @@ cmd_change() {
   save
 }
 
+# ---------- timer ----------
+# timer --task <id> | --every <min> | pause | resume | stop: the T3 scheduled
+# task that runs the checks, and the run's status. Prints the timer and
+# status as one JSON line.
+cmd_timer() {
+  newest_run
+  case "${1:-}" in
+    --task) [ -n "${2:-}" ] || die "--task needs an id"; S="$(jq -c --arg t "$2" '.timer.task = $t' <<<"$S")" ;;
+    --every)
+      [[ "${2:-}" =~ ^[0-9]+$ ]] && [ "$2" -ge 1 ] || die "check every takes 1 minute or more"
+      S="$(jq -c --argjson e "$2" '.timer.every = $e' <<<"$S")" ;;
+    pause|resume|stop)
+      case "$(jq -r .status <<<"$S")" in done) die "the run in $slug is done" ;; esac
+      case "$1" in pause) st=paused ;; resume) st=running ;; stop) st=stopped ;; esac
+      S="$(jq -c --arg s "$st" '.status = $s' <<<"$S")" ;;
+    *) die "usage: factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop" ;;
+  esac
+  save
+  jq -c '{status, task: .timer.task, every: .timer.every}' <<<"$S"
+}
+
+# ---------- resume ----------
+# resume --link <link>: the newest run of the repo that is not done goes on
+# from the thread that says so. Prints the old timer's task, which the agent
+# deletes before it starts a new one, so a run has one timer.
+cmd_resume() {
+  [ "${1:-}" = --link ] && [ -n "${2:-}" ] || die "usage: factory.sh resume <owner/repo> --link <thread link>"
+  in_t3
+  local d
+  run=""
+  while IFS= read -r d; do
+    [ "$(jq -r .status "$d/state.json")" = done ] || { run="$d"; break; }
+  done < <(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
+  [ -n "$run" ] || die "no run to resume in $slug"
+  S="$(jq -c --arg l "$2" '.link = $l | .status = "running" | .timer.fails = 0' "$run/state.json")"
+  save
+  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, old_task: $S.timer.task, every: $S.timer.every}'
+}
+
 case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
   started) cmd_started "$@" ;;
   change) cmd_change "$@" ;;
+  timer) cmd_timer "$@" ;;
+  resume) cmd_resume "$@" ;;
   *) die "$usage" ;;
 esac
