@@ -82,8 +82,9 @@ Then post one line per issue of `issues`, set order:
 
 `<what happens>` is the started thread's link and `/<skill>`, the
 issue's `wait`, `blocked by #a #b`, its thread's link and
-`thread_status`, `waits: no label` for `unlabeled`, `yours` for `task`,
-or `done`. Lead with `Joined: #a #b` when `joined` is not empty, and
+`thread_status`, `launch failed: <why>; say restart #<number>` when
+`claim` is `failed`, `waits: no label` for `unlabeled`, `yours` for
+`task`, or `done`. Lead with `Joined: #a #b` when `joined` is not empty, and
 with `Paused.` when `status` is `paused`. `"done": true`: § Done.
 
 ## Commands

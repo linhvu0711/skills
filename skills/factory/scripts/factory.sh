@@ -236,6 +236,7 @@ cmd_check() {
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread] else null end),
+             claim: $rec.status, why: $rec.why,
              prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}]}
            + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
   done

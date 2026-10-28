@@ -259,7 +259,7 @@ t_fs_failed_launch_not_again() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  eq record '{"status":"failed","why":"no reply"}' "$(fs_state '.threads[0] | {status, why}')"
+  has stdout '"thread":null,"thread_status":null,"claim":"failed","why":"no reply"' "$out"
 }
 
 t_fs_epic_brings_subs() {
