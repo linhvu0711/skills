@@ -219,7 +219,9 @@ board='
        + owner($rec; $t)
        + {thread: (if $rec.thread then {id: $rec.thread, url: "t3code://threads/\($S.env)/\($rec.thread)", status: $t.status} else null end),
           pr: (.prs | map(select(.state == "OPEN")) | first | if . then {number, url} else null end),
-          blocked_by, order: $i}]
+          blocked_by, order: $i,
+          removed: ($S.removed | index([$n]) != null), made: ($S.made // [] | index([$n]) != null),
+          ship_full: (.stage == "ticket" and ($S.ship[$n | tostring] // $S.ship.default) == "full")}]
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
    | map(del(.order))}'
 
@@ -263,7 +265,7 @@ cmd_start() {
   S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, env: $env, link: $link, path: $path, started_at: $at, status: "running",
-      set: $set, removed: [], ship: {default: "ready"}, use: {}, proposals: {},
+      set: $set, removed: [], made: [], ship: {default: "ready"}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
   copy_page
@@ -296,15 +298,22 @@ cmd_check() {
     got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || fail_check "$(tail -1 "$errf")"
     issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
     new="$(jq -c --argjson S "$S" "$joins" <<<"$got")"
-    S="$(jq -c --argjson new "$new" '.set += $new' <<<"$S")"
+    S="$(jq -c --argjson new "$new" '.set += $new | .made = (.made // []) + $new' <<<"$S")"
     joined="$(jq -c --argjson new "$new" '. + $new' <<<"$joined")"
     todo="$new"
   done
+  # The removed issues too, for the board alone: they never start or join.
+  if [ "$(jq '.removed | length' <<<"$S")" -gt 0 ]; then
+    # shellcheck disable=SC2046 # one word per number
+    got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || fail_check "$(tail -1 "$errf")"
+    issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
+  fi
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]" cards="{}"
-  for n in $(jq -r '.set[]' <<<"$S"); do
+  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
+  for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
+    gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
     sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
@@ -320,7 +329,8 @@ cmd_check() {
     # A run started before proposals existed has no key; it reads as none.
     prop="$(jq -c --arg n "$n" '(.proposals // {})[$n]' <<<"$S")"
     line=""; wait=""
-    if [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
+    [ "$gone" = false ] || wait="removed from the set"
+    if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       flags=()
       model="$(jq -r --arg n "$n" '.use[$n].model // .use.all.model // empty' <<<"$S")"
@@ -342,15 +352,17 @@ cmd_check() {
                at: $at, command: $l.command, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
     cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
-    rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
+    row="$(jq -cn --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
       --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
-      '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
+      '{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread].status else null end),
              claim: $rec.status, why: $rec.why,
              prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
              proposal: $prop.route, answer: $prop.answer}
-           + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
+           + (if $wait == "" then {} else {wait: $wait} end)')"
+    if [ "$gone" = true ]; then gone_rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$gone_rows")"
+    else rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"; fi
   done
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
@@ -364,7 +376,7 @@ cmd_check() {
   S="$(jq -c --argjson c "$claims" --argjson done "$done" \
     '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
   save
-  write_board "$rows" "$cards" "$statuses"
+  write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
     {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,

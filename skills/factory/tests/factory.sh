@@ -913,6 +913,28 @@ t_fs_board_order() {
   eq order '[44,43,42]' "$(fs_board '[.issues[] | .number]')"
 }
 
+t_fs_board_extra_chips() {
+  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed; #44 removed; #45 set to ship-full
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n\n#50: retry the export\n"}'
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 45 OPEN '["size/S"]'; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"; fs_start 42 44 45
+  fs_go change acme/app remove 44; fs_go change acme/app ship full 45
+  # When
+  fs_go check acme/app
+  # Then
+  eq chips '[{"number":44,"removed":true,"made":false,"ship_full":false},{"number":45,"removed":false,"made":false,"ship_full":true},{"number":50,"removed":false,"made":true,"ship_full":false}]' \
+    "$(fs_board '[.issues[] | select(.removed or .made or .ship_full) | {number, removed, made, ship_full}] | sort_by(.number)')"
+}
+
+t_fs_removed_starts_nothing() {
+  # Given: a run of #42 and #44, both size/S, then #44 removed
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  # When
+  fs_go check acme/app
+  # Then
+  eq started '[42]' "$(fs_state '[.threads[] | .number]')"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -988,4 +1010,6 @@ cases=(
   "a closed issue is done|t_fs_board_done"
   "the board links the thread and the PR|t_fs_board_links"
   "the board orders you, agent, blocked|t_fs_board_order"
+  "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
+  "a removed issue starts nothing|t_fs_removed_starts_nothing"
 )
