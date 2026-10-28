@@ -206,8 +206,12 @@ board='
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
       elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
       elif $t.status == "running" then agent("/\($rec.command // .skill)") + {since: $t.createdAt}
-      elif .stage == "task" then you("Do the task, then close it")
-      elif .stage == "unlabeled" then you("Give it a label")
+      elif .stage == "task" or (.stage == "unlabeled" and .answer == "task") then you("Do the task, then close it")
+      elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
+      elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
+          ship: ": /ship-ready", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
+      elif .stage == "unlabeled" and .answer == "close" then you("Close it")
+      elif .stage == "unlabeled" and .answer == "skip" then held("skipped")
       elif $S.status == "paused" then held("paused: starts on resume")
       else held("starts at the next check") end;
   def rank($xs): . as $x | $xs | index([$x]);

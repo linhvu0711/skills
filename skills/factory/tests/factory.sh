@@ -838,6 +838,44 @@ t_fs_board_merge_yours() {
   eq card '{"column":"review","mark":"you","action":"Merge PR #50"}' "$(fs_card 42)"
 }
 
+t_fs_board_unlabeled_proposing() {
+  # Given: #42, labelled only p1, no proposal yet
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"agent","action":"proposing a route"}' "$(fs_card 42)"
+}
+
+t_fs_board_proposal_yours() {
+  # Given: unlabeled #42, proposed grill, no answer
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Answer the proposal: /grill"}' "$(fs_card 42)"
+}
+
+t_fs_board_unsure_yours() {
+  # Given: unlabeled #42, proposed unsure
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Answer the proposal"}' "$(fs_card 42)"
+}
+
+t_fs_board_answers() {
+  # Given: unlabeled #42 answered skip, #43 answered close, #44 answered task
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '["p1"]'; fs_issue 44 OPEN '["p1"]'; fs_start 42 43 44
+  fs_go change acme/app answer 42 skip; fs_go change acme/app answer 43 close; fs_go change acme/app answer 44 task
+  # When
+  fs_go check acme/app
+  # Then
+  eq cards '[{"mark":"you","action":"Close it"},{"mark":"you","action":"Do the task, then close it"},{"mark":"blocked","action":"skipped"}]' \
+    "$(fs_board -c '[.issues[] | {mark, action}]')"
+}
+
 t_fs_board_wait_before_merge() {
   # Given: #42's PR 50 is open and its thread completed, then #42 removed
   fs_merge_ready; fs_go change acme/app remove 42
@@ -847,13 +885,24 @@ t_fs_board_wait_before_merge() {
   eq card '{"column":"review","mark":"blocked","action":"waits: removed from the set"}' "$(fs_card 42)"
 }
 
-t_fs_board_unlabeled_yours() {
-  # Given: #42, labelled only p1
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+t_fs_removed_read_fails() {
+  # Given: a run of #42 and #44, #44 removed, and the read of the removed fails
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/graphql.3.fail"
   # When
   fs_go check acme/app
   # Then
-  eq card '{"column":"shape","mark":"you","action":"Give it a label"}' "$(fs_card 42)"
+  eq "exit and cards" '0 [42] 0' "$code $(fs_board -c '[.issues[].number]') $(fs_state .timer.fails)"
+}
+
+t_fs_removed_deleted() {
+  # Given: a run of #42 and #44, #44 removed, then deleted
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  rm "$T/issues/44.json"; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq "exit and cards" '0 [42]' "$code $(fs_board -c '[.issues[].number]')"
 }
 
 t_fs_board_running_agent() {
@@ -942,26 +991,6 @@ t_fs_removed_starts_nothing() {
   fs_go check acme/app
   # Then
   eq started '[42]' "$(fs_state '[.threads[] | .number]')"
-}
-
-t_fs_removed_read_fails() {
-  # Given: a run of #42 and #44, #44 removed, and the read of the removed fails
-  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
-  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/graphql.3.fail"
-  # When
-  fs_go check acme/app
-  # Then
-  eq "exit and cards" '0 [42] 0' "$code $(fs_board -c '[.issues[].number]') $(fs_state .timer.fails)"
-}
-
-t_fs_removed_deleted() {
-  # Given: a run of #42 and #44, #44 removed, then deleted
-  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
-  rm "$T/issues/44.json"; fs_issue 42 OPEN '["size/S"]'
-  # When
-  fs_go check acme/app
-  # Then
-  eq "exit and cards" '0 [42]' "$code $(fs_board -c '[.issues[].number]')"
 }
 
 t_fs_check_records_time() {
@@ -1114,8 +1143,13 @@ cases=(
   "a failed launch is yours|t_fs_board_launch_failed_yours"
   "a free task is yours|t_fs_board_task_yours"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
+  "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
+  "a proposal with no answer is yours|t_fs_board_proposal_yours"
+  "an unsure proposal is yours|t_fs_board_unsure_yours"
+  "a skip, close, or task answer shows on the card|t_fs_board_answers"
   "a wait shows before an open PR|t_fs_board_wait_before_merge"
-  "an unlabeled issue is yours|t_fs_board_unlabeled_yours"
+  "a failed read of removed issues fails no check|t_fs_removed_read_fails"
+  "a deleted removed issue has no card|t_fs_removed_deleted"
   "a running thread is the agent's|t_fs_board_running_agent"
   "a claimed thread is starting|t_fs_board_claimed_starting"
   "an open blocker holds the card|t_fs_board_blocked"
@@ -1125,8 +1159,6 @@ cases=(
   "the board orders you, agent, blocked|t_fs_board_order"
   "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
   "a removed issue starts nothing|t_fs_removed_starts_nothing"
-  "a failed read of removed issues fails no check|t_fs_removed_read_fails"
-  "a deleted removed issue has no card|t_fs_removed_deleted"
   "a good check records its time|t_fs_check_records_time"
   "a failed check records why|t_fs_failed_check_why"
   "a failed check keeps the last board|t_fs_failed_check_keeps_board"
