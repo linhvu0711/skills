@@ -58,7 +58,7 @@ A delete slice, a plan's first, deletes code that no caller uses: its tests exis
 
 - Builds the plan [plan-up](../plan-up/) writes, with the rules [handoff](../handoff/) renders for a local builder.
 - Called by [ship-ready](../ship-ready/) and [ship-full](../ship-full/), which then run [make-pr](../make-pr/) with the proof folder and [ready-pr](../ready-pr/).
-- Uses [kickoff](../kickoff/)'s `equalize_columns.py` to even out pane widths.
+- Uses [kickoff-herdr](../kickoff-herdr/)'s `equalize_columns.py` to even out pane widths.
 - Why Coding runs on the local machine and the Gates in the Sandbox, and why the walker never reads code: ADRs 0011 and 0010 in this repo.
 
 ## Credits

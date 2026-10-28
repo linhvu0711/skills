@@ -1,5 +1,5 @@
 ---
-name: kickoff
+name: kickoff-herdr
 description: "Open a new herdr pane beside this one and run /ship-ready, /ship-full, or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
@@ -89,9 +89,9 @@ What the script decides, so you can answer questions about it:
 ## Resolving the target from the session
 
 The user seldom pastes a URL. They name issues by number or in words,
-most often ones this session made or talked about: `/kickoff 12`,
-`/kickoff 12 and 14`, `/kickoff all of P1 in this epic`, `/kickoff on
-this`, or just `/kickoff` right after `/to-issue`. Before you run the
+most often ones this session made or talked about: `/kickoff-herdr 12`,
+`/kickoff-herdr 12 and 14`, `/kickoff-herdr all of P1 in this epic`, `/kickoff-herdr on
+this`, or just `/kickoff-herdr` right after `/to-issue`. Before you run the
 script, do these steps.
 
 1. **Repo.** Take it from the session: the issues made or linked here,
@@ -118,54 +118,54 @@ script, do these steps.
    becomes `--model`, `--effort`, or `--command` (see Flags). A word
    the flags do not take: ask.
 
-The word `on` is overloaded: `/kickoff on this` can mean "target this
+The word `on` is overloaded: `/kickoff-herdr on this` can mean "target this
 issue" or the `on <pr-url>` stack form. When that is unclear, ask before
 running.
 
 ## Examples
 
-**User:** `/kickoff https://github.com/acme/shop/issues/42`
+**User:** `/kickoff-herdr https://github.com/acme/shop/issues/42`
 
 Run the script. It prints
 `#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
 Say that line. Stop.
 
-**User:** `/kickoff 42` with edits in the tree, on a feature branch,
+**User:** `/kickoff-herdr 42` with edits in the tree, on a feature branch,
 in a session about acme/shop
 
 Run `kickoff.sh https://github.com/acme/shop/issues/42`. The edits and
 the branch stay as they are. Say the line. Stop.
 
-**User:** `/kickoff 42 with opus xhigh`
+**User:** `/kickoff-herdr 42 with opus xhigh`
 
 Run `kickoff.sh --model opus --effort xhigh
 https://github.com/acme/shop/issues/42`. The command still comes from
 the table.
 
-**User:** `what would /kickoff do for issue 70?`
+**User:** `what would /kickoff-herdr do for issue 70?`
 
 Do not run the script. Read #70's labels and answer from the table:
 the model, effort, and command it would pick, and why.
 
-**User:** makes an issue with `/to-issue`, then `/kickoff on this pls`
+**User:** makes an issue with `/to-issue`, then `/kickoff-herdr on this pls`
 
 One fresh issue in the session, so the target is clear. Run the script on
 that issue's URL. Say the line. Stop.
 
-**User:** `/kickoff 34 35 36 33` right after filing those four with
+**User:** `/kickoff-herdr 34 35 36 33` right after filing those four with
 `/to-issue`, no epic among them; #35 has no size label
 
 A set, in one pane. Read #35 and size it, say S. Run
 `kickoff.sh --size 35=S https://github.com/acme/shop/issues/34 '#35' '#36' '#33'`.
 One pane, one command, four layers in that order.
 
-**User:** `/kickoff P1 of this epic, one pane each`, in a session about
+**User:** `/kickoff-herdr P1 of this epic, one pane each`, in a session about
 epic #70, whose `### Phase 1` lists #71 and #72, both open
 
 Run the script twice: `kickoff.sh https://github.com/acme/shop/issues/71`,
 then `kickoff.sh https://github.com/acme/shop/issues/72`. Say both lines.
 
-**User:** `/kickoff on this` with no issue or PR anywhere in the session
+**User:** `/kickoff-herdr on this` with no issue or PR anywhere in the session
 
 Nothing to resolve. Do not run the script. Tell the user you found no
 target in the session and ask for the link.

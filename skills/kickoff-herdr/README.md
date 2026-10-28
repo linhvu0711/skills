@@ -1,4 +1,4 @@
-# kickoff
+# kickoff-herdr
 
 Opens a new herdr pane next to the one you are in and starts `/ship-ready`, `/ship-full`, or `/plan-up` there on an issue, a run of tickets, or a whole epic.
 
@@ -6,12 +6,12 @@ Opens a new herdr pane next to the one you are in and starts `/ship-ready`, `/sh
 
 You work in herdr (a terminal workspace for AI coding agents) and want planning or a whole ship-ready or ship-full run to start in its own pane while you keep going in this one. Name the issues the way you would to a person:
 
-- `/kickoff 42`: one ticket.
-- `/kickoff 12 and 14`: two tickets in one pane, as a stack.
-- `/kickoff all of P1 in this epic`: the open tickets of that phase.
-- `/kickoff the whole epic`: every open ticket in it.
-- `/kickoff 42 on PR 80`: one ticket as a new layer on an open stack.
-- `/kickoff on this`, right after making an issue: it finds the issue in the chat.
+- `/kickoff-herdr 42`: one ticket.
+- `/kickoff-herdr 12 and 14`: two tickets in one pane, as a stack.
+- `/kickoff-herdr all of P1 in this epic`: the open tickets of that phase.
+- `/kickoff-herdr the whole epic`: every open ticket in it.
+- `/kickoff-herdr 42 on PR 80`: one ticket as a new layer on an open stack.
+- `/kickoff-herdr on this`, right after making an issue: it finds the issue in the chat.
 
 More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or the command ("ship it" for ship-ready, "ship and merge" for ship-full, or "plan only") in your words to change the defaults below. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
 
@@ -43,7 +43,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - herdr, and this chat running inside a herdr pane (`HERDR_ENV=1`).
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
-- A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
+- A main checkout the shared checkout resolver can find: the map `~/.config/kickoff-herdr/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
 - The [ship-ready](../ship-ready/), [ship-full](../ship-full/), and [plan-up](../plan-up/) skills in the new pane.
 
 ## Fits with

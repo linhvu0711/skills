@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # pane.sh: open a herdr pane in a worktree, start Claude Code there, and
-# hand it the prompt file. Placement and retry logic follow kickoff.sh.
+# hand it the prompt file. Placement and retry logic follow kickoff-herdr's kickoff.sh.
 #
 #   pane.sh <worktree> <label> <prompt-file> [--model M] [--effort E] [--mode P] [--dry-run]
 #
@@ -84,7 +84,7 @@ fi
 
 if [ -n "$target_tab" ]; then
   new_pane="$(herdr pane split --pane "$split_pane" --direction right --ratio 0.5 --cwd "$wt" --no-focus | jq -r .result.pane.pane_id)"
-  python3 "$here/../../kickoff/scripts/equalize_columns.py" "$new_pane" >/dev/null
+  python3 "$here/../../kickoff-herdr/scripts/equalize_columns.py" "$new_pane" >/dev/null
   placed="split in $target_tab"
 else
   created="$(herdr tab create --workspace "$ws" --cwd "$wt" --label "$label" --no-focus)"

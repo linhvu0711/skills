@@ -32,7 +32,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Turns a `[bug]` or a `seed` from [capture](../capture/), any bug or seed issue the chat names, or a one-ticket map that [discover-path](../discover-path/) cleared, into the ticket in place: same number, new title and body. Nothing new is opened and nothing is closed.
 - Puts doc text that a [grill](../grill/) agreed on (a glossary entry, an ADR) under `## Docs to write`, so it lands in the PR that ships the code.
 - Sends XL work to [to-epic](../to-epic/).
-- Its tickets go to [plan-up](../plan-up/), [ship-ready](../ship-ready/), and [kickoff](../kickoff/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
+- Its tickets go to [plan-up](../plan-up/), [ship-ready](../ship-ready/), and [kickoff-herdr](../kickoff-herdr/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
 
 ## Credits
 
