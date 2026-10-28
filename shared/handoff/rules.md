@@ -475,12 +475,13 @@ Expected: one sentence, what should happen instead.
 ## Status
 Bug only. Not triaged, not planned. Becomes a `fix` ticket when the behaviour after the fix is written.
 EOF
-gh issue create --title "[bug] <short noun phrase, under 70 chars>" --body-file "$f" --label bug
+gh issue create --title "[bug] <short noun phrase, under 70 chars>" --body-file "$f" --assignee @me --label bug
 ```
 
 The label `bug` missing in the repo: create it once,
 `gh label create bug --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."`,
-and retry. No priority label, no assignee, no plan, no root cause, no
+and retry. It is assigned to the user, `@me`, since your `gh` runs as
+the user. No priority label, no plan, no root cause, no
 approach in the body. One issue per finding; two findings with the
 same cause share one issue. Search
 `gh issue list --state open --search "<two words>"` first and reuse an
