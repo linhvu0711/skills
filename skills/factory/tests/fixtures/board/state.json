@@ -1,0 +1,43 @@
+{
+  "repo": "linhvu0711/demo",
+  "name": "epic #70 Order export",
+  "env": "e1",
+  "link": "[factory: epic #70 Order export](t3-thread://v1/f1)",
+  "path": "/tmp/demo",
+  "started_at": "2026-10-28T09:12:00Z",
+  "status": "running",
+  "set": [
+    70,
+    74,
+    76,
+    75,
+    79,
+    71,
+    81,
+    77,
+    73,
+    78,
+    72,
+    82,
+    69
+  ],
+  "removed": [
+    80
+  ],
+  "made": [
+    79
+  ],
+  "ship": {
+    "default": "ready",
+    "77": "full"
+  },
+  "use": {},
+  "threads": [],
+  "timer": {
+    "task": "s1",
+    "every": 5,
+    "fails": 0,
+    "why": null,
+    "checked_at": "2026-10-28T11:14:00Z"
+  }
+}

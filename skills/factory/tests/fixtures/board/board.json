@@ -1,0 +1,462 @@
+{
+  "repo": "linhvu0711/demo",
+  "name": "epic #70 Order export",
+  "checked_at": "2026-10-28T11:14:00Z",
+  "issues": [
+    {
+      "number": 74,
+      "title": "Order search is slow on big stores",
+      "url": "https://github.com/linhvu0711/demo/issues/74",
+      "column": "shape",
+      "chip": "unlabeled",
+      "since": null,
+      "mark": "you",
+      "action": "Answer the proposal: /grill",
+      "thread": null,
+      "pr": null,
+      "blocked_by": [],
+      "stage": "unlabeled",
+      "skill": null,
+      "model": null,
+      "effort": null,
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 76,
+      "title": "Scheduled exports",
+      "url": "https://github.com/linhvu0711/demo/issues/76",
+      "column": "shape",
+      "chip": "seed",
+      "since": null,
+      "mark": "you",
+      "action": "Answer the thread",
+      "thread": {
+        "id": "thr_76",
+        "url": "t3code://threads/e1/thr_76",
+        "status": "waiting"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "seed",
+      "skill": "grill",
+      "model": "opus",
+      "effort": "high",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "seed",
+          "command": "grill",
+          "status": "waiting",
+          "thread_url": "t3code://threads/e1/thr_76"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 75,
+      "title": "Exported totals off by one cent",
+      "url": "https://github.com/linhvu0711/demo/issues/75",
+      "column": "shape",
+      "chip": "bug",
+      "since": null,
+      "mark": "you",
+      "action": "No change: say restart #75",
+      "thread": {
+        "id": "thr_75",
+        "url": "t3code://threads/e1/thr_75",
+        "status": "completed"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "bug",
+      "skill": "triage",
+      "model": "opus",
+      "effort": "high",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "bug",
+          "command": "triage",
+          "status": "completed",
+          "thread_url": "t3code://threads/e1/thr_75"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 79,
+      "title": "Export dates are in UTC, not store time",
+      "url": "https://github.com/linhvu0711/demo/issues/79",
+      "column": "shape",
+      "chip": "bug",
+      "since": "2026-10-28T11:07:00Z",
+      "mark": "agent",
+      "action": "/triage",
+      "thread": {
+        "id": "thr_79",
+        "url": "t3code://threads/e1/thr_79",
+        "status": "running"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "bug",
+      "skill": "triage",
+      "model": "opus",
+      "effort": "high",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T11:07:00Z",
+          "stage": "bug",
+          "command": "triage",
+          "status": "running",
+          "thread_url": "t3code://threads/e1/thr_79"
+        }
+      ],
+      "removed": false,
+      "made": true,
+      "ship_full": false
+    },
+    {
+      "number": 71,
+      "title": "Create the S3 bucket for exports",
+      "url": "https://github.com/linhvu0711/demo/issues/71",
+      "column": "build",
+      "chip": "task",
+      "since": null,
+      "mark": "you",
+      "action": "Do the task, then close it",
+      "thread": null,
+      "pr": null,
+      "blocked_by": [],
+      "stage": "task",
+      "skill": null,
+      "model": null,
+      "effort": null,
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 81,
+      "title": "Export file name uses the store slug",
+      "url": "https://github.com/linhvu0711/demo/issues/81",
+      "column": "build",
+      "chip": "fix · S",
+      "since": null,
+      "mark": "you",
+      "action": "Thread failed: open it, or say restart #81",
+      "thread": {
+        "id": "thr_81",
+        "url": "t3code://threads/e1/thr_81",
+        "status": "failed"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": "opus",
+      "effort": "medium",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "ticket",
+          "command": "ship-ready",
+          "status": "failed",
+          "thread_url": "t3code://threads/e1/thr_81"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 77,
+      "title": "Refund rows in the CSV",
+      "url": "https://github.com/linhvu0711/demo/issues/77",
+      "column": "build",
+      "chip": "fix · S",
+      "since": "2026-10-28T10:50:00Z",
+      "mark": "agent",
+      "action": "/ship-full",
+      "thread": {
+        "id": "thr_77",
+        "url": "t3code://threads/e1/thr_77",
+        "status": "running"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "ticket",
+      "skill": "ship-full",
+      "model": "opus",
+      "effort": "medium",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "bug",
+          "command": "triage",
+          "status": "completed",
+          "thread_url": "t3code://threads/e1/thr_77a"
+        },
+        {
+          "at": "2026-10-28T10:50:00Z",
+          "stage": "ticket",
+          "command": "ship-full",
+          "status": "running",
+          "thread_url": "t3code://threads/e1/thr_77"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": true
+    },
+    {
+      "number": 80,
+      "title": "Export progress bar",
+      "url": "https://github.com/linhvu0711/demo/issues/80",
+      "column": "build",
+      "chip": "feat · XS",
+      "since": "2026-10-28T11:04:00Z",
+      "mark": "agent",
+      "action": "/ship-ready",
+      "thread": {
+        "id": "thr_80",
+        "url": "t3code://threads/e1/thr_80",
+        "status": "running"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": "sonnet",
+      "effort": "high",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "ticket",
+          "command": "ship-ready",
+          "status": "running",
+          "thread_url": "t3code://threads/e1/thr_80"
+        }
+      ],
+      "removed": true,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 73,
+      "title": "Upload exports to S3",
+      "url": "https://github.com/linhvu0711/demo/issues/73",
+      "column": "build",
+      "chip": "feat · M",
+      "since": null,
+      "mark": "blocked",
+      "action": "blocked by #71 #72",
+      "thread": null,
+      "pr": null,
+      "blocked_by": [
+        71,
+        72
+      ],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": null,
+      "effort": null,
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 78,
+      "title": "Email a link when an export is ready",
+      "url": "https://github.com/linhvu0711/demo/issues/78",
+      "column": "build",
+      "chip": "feat · L",
+      "since": null,
+      "mark": "blocked",
+      "action": "blocked by #73",
+      "thread": null,
+      "pr": null,
+      "blocked_by": [
+        73
+      ],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": null,
+      "effort": null,
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 72,
+      "title": "Export button on the Orders page",
+      "url": "https://github.com/linhvu0711/demo/issues/72",
+      "column": "review",
+      "chip": "feat · S",
+      "since": null,
+      "mark": "you",
+      "action": "Merge PR #88",
+      "thread": {
+        "id": "thr_72",
+        "url": "t3code://threads/e1/thr_72",
+        "status": "completed"
+      },
+      "pr": {
+        "number": 88,
+        "url": "https://github.com/linhvu0711/demo/pull/88"
+      },
+      "blocked_by": [],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": "opus",
+      "effort": "medium",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "ticket",
+          "command": "ship-ready",
+          "status": "completed",
+          "thread_url": "t3code://threads/e1/thr_72"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 82,
+      "title": "Retry a failed export",
+      "url": "https://github.com/linhvu0711/demo/issues/82",
+      "column": "review",
+      "chip": "feat · S",
+      "since": "2026-10-28T11:00:00Z",
+      "mark": "agent",
+      "action": "/ship-ready",
+      "thread": {
+        "id": "thr_82",
+        "url": "t3code://threads/e1/thr_82",
+        "status": "running"
+      },
+      "pr": {
+        "number": 90,
+        "url": "https://github.com/linhvu0711/demo/pull/90"
+      },
+      "blocked_by": [],
+      "stage": "ticket",
+      "skill": "ship-ready",
+      "model": "opus",
+      "effort": "medium",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "ticket",
+          "command": "ship-ready",
+          "status": "running",
+          "thread_url": "t3code://threads/e1/thr_82"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    },
+    {
+      "number": 69,
+      "title": "Export orders as CSV",
+      "url": "https://github.com/linhvu0711/demo/issues/69",
+      "column": "done",
+      "chip": "feat · S",
+      "since": null,
+      "mark": "done",
+      "action": "closed",
+      "thread": {
+        "id": "thr_69",
+        "url": "t3code://threads/e1/thr_69",
+        "status": "completed"
+      },
+      "pr": null,
+      "blocked_by": [],
+      "stage": "done",
+      "skill": null,
+      "model": "opus",
+      "effort": "medium",
+      "journey": [
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "step": "joined"
+        },
+        {
+          "at": "2026-10-28T09:12:00Z",
+          "stage": "ticket",
+          "command": "ship-full",
+          "status": "completed",
+          "thread_url": "t3code://threads/e1/thr_69"
+        }
+      ],
+      "removed": false,
+      "made": false,
+      "ship_full": false
+    }
+  ]
+}

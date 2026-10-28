@@ -215,3 +215,7 @@ _Avoid_: status, state, phase
 **Check**:
 One pass of the factory's script. It reads the state file, GitHub, and T3, and prints what to start. A timer runs it every few minutes. A failed Check starts nothing.
 _Avoid_: tick, poll, cycle
+
+**Board**:
+The local page that shows one Run: each issue of the Set as a card in a column by Stage, and who has the ball. It only reads.
+_Avoid_: dashboard, kanban

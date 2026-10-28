@@ -57,18 +57,24 @@ fs_go() {
 
 # fs_start <n>...: a run of these issues, named after the first.
 fs_start() {
-  fs_go start acme/app --name "#$1" --thread f1 "$@"
+  fs_go start acme/app --name "#$1" --thread f1 --env e1 "$@"
   eq "start exit" 0 "$code"
 }
 
 # fs_state [jq flags] <jq>: the jq filter on the newest run's state file.
 fs_state() { jq -c "$@" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
 
+# fs_run: the newest run's folder, with no slash at the end.
+fs_run() { ls -1d "$T"/factory/acme-app/*/ | sort | tail -1 | sed 's#/$##'; }
+
+# fs_board [jq flags] <jq>: the jq filter on the newest run's board.json.
+fs_board() { jq -c "$@" "$(fs_run)/board.json"; }
+
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
   # When
-  fs_go start acme/app --name "#42" --thread f1 42
+  fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
   eq exit 0 "$code"
   eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
@@ -118,11 +124,13 @@ fs_at() {
   jq --arg at "$1" '.started_at = $at' "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
-# fs_record <n> <stage> <thread>: a started thread record, as `started` writes.
+# fs_record <n> <stage> <thread> [command] [at]: a started thread record, as
+# `started` writes, with the command and claim time a check gives it.
 fs_record() {
   local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
-  jq --argjson n "$1" --arg s "$2" --arg id "$3" \
-    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}]' \
+  jq --argjson n "$1" --arg s "$2" --arg id "$3" --arg cmd "${4:-}" --arg at "${5:-}" \
+    '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}
+      + (if $cmd == "" then {} else {command: $cmd} end) + (if $at == "" then {} else {at: $at} end)]' \
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
@@ -508,7 +516,7 @@ t_fs_live_run_stops_start() {
   # Given: a running run of #42 from the factory thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
   # When
-  fs_go start acme/app --name "#43" --thread x 43
+  fs_go start acme/app --name "#43" --thread x --env e1 43
   # Then
   eq exit 1 "$code"
   eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
@@ -520,7 +528,7 @@ t_fs_resume_newest() {
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
   fs_go timer acme/app --task s1; fs_go timer acme/app stop
   # When
-  fs_go resume acme/app --thread f2
+  fs_go resume acme/app --thread f2 --env e1
   # Then
   eq exit 0 "$code"
   has stdout '"name":"#42","old_task":"s1","every":5' "$out"
@@ -531,7 +539,7 @@ t_fs_no_open_issue_stops() {
   # Given: #42 is closed
   fs_setup; fs_issue 42 CLOSED '["size/S"]'
   # When
-  fs_go start acme/app --name "#42" --thread x 42
+  fs_go start acme/app --name "#42" --thread x --env e1 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has no open issue" "$err"
@@ -544,7 +552,7 @@ t_fs_outside_t3_stops() {
   # When
   cd "$T"
   run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
-    bash "$F" start acme/app --name "#42" --thread x 42
+    bash "$F" start acme/app --name "#42" --thread x --env e1 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: not inside T3 Code" "$err"
@@ -671,7 +679,7 @@ t_fs_close_answer() {
 t_fs_answers_survive_resume() {
   # Given: #42 proposed task and answered yes; the run stopped and resumed
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2
+  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
   # When
   fs_go check acme/app
   # Then
@@ -699,6 +707,373 @@ t_fs_ship_full_started_answer() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
+t_fs_board_columns() {
+  # Given: a run from 12:00 of a seed, a ticket, a ticket with a PR made at 13:00, a task, a closed ticket, a bug, and an unlabeled issue
+  local pr='{"number":50,"url":"https://github.com/acme/app/pull/50","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 41 OPEN '["seed"]'; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]' '[]' "[$pr]"
+  fs_issue 44 OPEN '["manual"]'; fs_issue 45 CLOSED '["size/S"]'; fs_issue 46 OPEN '["bug"]'; fs_issue 47 OPEN '["p1"]'
+  fs_start 41 42 43 44 45 46 47; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq columns '{"41":"shape","42":"build","43":"review","44":"build","45":"done","46":"shape","47":"shape"}' \
+    "$(fs_board '[.issues[] | {key: (.number|tostring), value: .column}] | sort_by(.key) | from_entries')"
+}
+
+t_fs_board_one_file() {
+  # Given: a run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq files "$(printf 'board.html\nboard.json\nstate.json')" "$(ls -A "$(fs_run)")"
+}
+
+t_fs_start_copies_page() {
+  # Given: #42 open, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --thread f1 --env e1 42
+  # Then
+  eq page "1 e1" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+}
+
+t_fs_start_needs_env() {
+  # Given: #42 open, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go start acme/app --name "#42" --thread f1 42
+  # Then
+  eq stderr "stop: usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
+}
+
+t_fs_board_chips() {
+  # Given: a bug, a seed, a manual task, an unlabeled issue, and three tickets titled "[fix] ...", "feat: ...", and with no type
+  fs_setup; fs_issue 41 OPEN '["bug"]'; fs_issue 42 OPEN '["seed"]'; fs_issue 43 OPEN '["manual"]'; fs_issue 44 OPEN '["p1"]'
+  fs_issue 45 OPEN '["size/S"]' '[]' '[]' '[]' "[fix] Refund rows"; fs_issue 46 OPEN '["size/M"]' '[]' '[]' '[]' "feat: retry an export"
+  fs_issue 47 OPEN '["size/L"]' '[]' '[]' '[]' "Email a link"; fs_start 41 42 43 44 45 46 47
+  # When
+  fs_go check acme/app
+  # Then
+  eq chips '["bug","seed","task","unlabeled","fix · S","feat · M","ticket · L"]' "$(fs_board '[.issues | sort_by(.number)[] | .chip]')"
+}
+
+# fs_thread <id> <status>: T3 lists one thread, made at 12:10.
+fs_thread() { printf '[{"threadId":"%s","status":"%s","createdAt":"2026-10-28T12:10:00Z"}]\n' "$1" "$2" > "$T/t3-threads.json"; }
+
+# fs_card <n>: the column, mark, and action of #n's card.
+fs_card() { fs_board --argjson n "$1" '.issues[] | select(.number == $n) | {column, mark, action}'; }
+
+t_fs_board_waiting_yours() {
+  # Given: #42's ticket thread t42 waits on the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 waiting
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Answer the thread"}' "$(fs_card 42)"
+}
+
+t_fs_board_failed_yours() {
+  # Given: #42's ticket thread t42 failed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 failed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Thread failed: open it, or say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_interrupted_yours() {
+  # Given: #42's ticket thread t42 was interrupted
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 interrupted
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Thread interrupted: open it, or say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_no_change_yours() {
+  # Given: #42 is still a bug, and its bug thread t42 completed
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t42; fs_thread t42 completed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"No change: say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_launch_failed_yours() {
+  # Given: #42 was claimed, and its launch failed with "no reply"
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app; fs_go started acme/app 42 ticket --failed "no reply"
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Launch failed: say restart #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_task_yours() {
+  # Given: #42, a manual task with no blocker
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Do the task, then close it"}' "$(fs_card 42)"
+}
+
+# fs_merge_ready: a run from 12:00 of #42, whose ticket thread t42 completed
+# after it opened PR 50 at 13:00.
+fs_merge_ready() {
+  local pr='{"number":50,"url":"https://github.com/acme/app/pull/50","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42; fs_thread t42 completed
+}
+
+t_fs_board_merge_yours() {
+  # Given: #42's PR 50 is open and its thread completed
+  fs_merge_ready
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"review","mark":"you","action":"Merge PR #50"}' "$(fs_card 42)"
+}
+
+t_fs_board_unlabeled_proposing() {
+  # Given: #42, labelled only p1, no proposal yet
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"agent","action":"proposing a route"}' "$(fs_card 42)"
+}
+
+t_fs_board_proposal_yours() {
+  # Given: unlabeled #42, proposed grill, no answer
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Answer the proposal: /grill"}' "$(fs_card 42)"
+}
+
+t_fs_board_unsure_yours() {
+  # Given: unlabeled #42, proposed unsure
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Answer the proposal"}' "$(fs_card 42)"
+}
+
+t_fs_board_answers() {
+  # Given: unlabeled #42 answered skip, #43 answered close, #44 answered task
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '["p1"]'; fs_issue 44 OPEN '["p1"]'; fs_start 42 43 44
+  fs_go change acme/app answer 42 skip; fs_go change acme/app answer 43 close; fs_go change acme/app answer 44 task
+  # When
+  fs_go check acme/app
+  # Then
+  eq cards '[{"mark":"you","action":"Close it"},{"mark":"you","action":"Do the task, then close it"},{"mark":"blocked","action":"skipped"}]' \
+    "$(fs_board -c '[.issues[] | {mark, action}]')"
+}
+
+t_fs_board_wait_before_merge() {
+  # Given: #42's PR 50 is open and its thread completed, then #42 removed
+  fs_merge_ready; fs_go change acme/app remove 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"review","mark":"blocked","action":"waits: removed from the set"}' "$(fs_card 42)"
+}
+
+t_fs_removed_read_fails() {
+  # Given: a run of #42 and #44, #44 removed, and the read of the removed fails
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/graphql.3.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq "exit and cards" '0 [42] 0' "$code $(fs_board -c '[.issues[].number]') $(fs_state .timer.fails)"
+}
+
+t_fs_removed_deleted() {
+  # Given: a run of #42 and #44, #44 removed, then deleted
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  rm "$T/issues/44.json"; fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq "exit and cards" '0 [42]' "$code $(fs_board -c '[.issues[].number]')"
+}
+
+t_fs_board_running_agent() {
+  # Given: #42's ship-ready thread t42 runs since 12:10
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"mark":"agent","action":"/ship-ready","since":"2026-10-28T12:10:00Z"}' "$(fs_board '.issues[0] | {mark, action, since}')"
+}
+
+t_fs_board_claimed_starting() {
+  # Given: #42, size/S, no thread yet
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"agent","action":"starting /ship-ready"}' "$(fs_card 42)"
+}
+
+t_fs_board_blocked() {
+  # Given: #42 is blocked by open #7 and #8
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":7,"state":"OPEN"},{"number":8,"state":"OPEN"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"blocked","action":"blocked by #7 #8"}' "$(fs_card 42)"
+}
+
+t_fs_board_paused_holds() {
+  # Given: #42, size/S, in a paused run
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"blocked","action":"paused: starts on resume"}' "$(fs_card 42)"
+}
+
+t_fs_board_done() {
+  # Given: #42 closed, and #43 still open so the run goes on
+  fs_setup; fs_issue 42 CLOSED '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"done","mark":"done","action":"closed"}' "$(fs_card 42)"
+}
+
+t_fs_board_links() {
+  # Given: #42's PR 50 is open and its thread t42 completed, in a run with env e1
+  fs_merge_ready
+  # When
+  fs_go check acme/app
+  # Then
+  eq links '{"url":"https://github.com/acme/app/issues/42","thread":"t3code://threads/e1/t42","pr":{"number":50,"url":"https://github.com/acme/app/pull/50"}}' \
+    "$(fs_board '.issues[0] | {url, thread: .thread.url, pr}')"
+}
+
+t_fs_board_order() {
+  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a free task
+  # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["manual"]'; fs_issue 43 OPEN '["size/S"]'
+  fs_start 42 43 44
+  # When
+  fs_go check acme/app
+  # Then
+  eq order '[44,43,42]' "$(fs_board '[.issues[] | .number]')"
+}
+
+t_fs_board_extra_chips() {
+  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed; #44 removed; #45 set to ship-full
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n\n#50: retry the export\n"}'
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 45 OPEN '["size/S"]'; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"; fs_start 42 44 45
+  fs_go change acme/app remove 44; fs_go change acme/app ship full 45
+  # When
+  fs_go check acme/app
+  # Then
+  eq chips '[{"number":44,"removed":true,"made":false,"ship_full":false},{"number":45,"removed":false,"made":false,"ship_full":true},{"number":50,"removed":false,"made":true,"ship_full":false}]' \
+    "$(fs_board '[.issues[] | select(.removed or .made or .ship_full) | {number, removed, made, ship_full}] | sort_by(.number)')"
+}
+
+t_fs_removed_starts_nothing() {
+  # Given: a run of #42 and #44, both size/S, then #44 removed
+  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["size/S"]'; fs_start 42 44; fs_go change acme/app remove 44
+  # When
+  fs_go check acme/app
+  # Then
+  eq started '[42]' "$(fs_state '[.threads[] | .number]')"
+}
+
+t_fs_check_records_time() {
+  # Given: a run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq health '{"time":true,"why":null}' "$(fs_state '{time: (.timer.checked_at | test("^2[0-9]{3}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$")), why: .timer.why}')"
+}
+
+t_fs_failed_check_why() {
+  # Given: a run of #42; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq timer '{"fails":1,"why":"HTTP 401: Bad credentials"}' "$(fs_state '{fails: .timer.fails, why: .timer.why}')"
+}
+
+t_fs_failed_check_keeps_board() {
+  # Given: a run of #42 checked once, then gh logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app; cp "$(fs_run)/board.json" "$T/board.before"
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq board same "$(cmp -s "$T/board.before" "$(fs_run)/board.json" && echo same)"
+}
+
+t_fs_board_journey() {
+  # Given: #42 went from bug (t1, completed, 12:10) to ticket (t2, running, 12:40)
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_record 42 bug t1 triage 2026-10-28T12:10:00Z; fs_record 42 ticket t2 ship-ready 2026-10-28T12:40:00Z
+  printf '[{"threadId":"t1","status":"completed","createdAt":"2026-10-28T12:10:00Z"},{"threadId":"t2","status":"running","createdAt":"2026-10-28T12:40:00Z"}]\n' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq journey '["joined","bug","ticket"] {"thread_url":"t3code://threads/e1/t2","status":"running"}' \
+    "$(fs_board '.issues[0].journey | map(.stage // .step)') $(fs_board '.issues[0].journey[2] | {thread_url, status}')"
+}
+
+t_fs_board_fixture_shape() {
+  # Given: a run of #42, size/S, whose thread t42 runs, checked
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  fs_go check acme/app
+  # When
+  local fixture; fixture="$(jq -c '.issues[0] | keys' "$here/fixtures/board/board.json")"
+  # Then
+  eq keys "$fixture" "$(fs_board '.issues[0] | keys')"
+}
+
+t_fs_page_no_mockup_data() {
+  # Given: the board page
+  # When
+  local hits; hits="$(grep -c -e StatePanel -e env-demo -e acme/shop -e thr_i "$here/../assets/board.html" || true)"
+  # Then
+  eq hits 0 "$hits"
+}
+
+t_fs_resume_copies_page() {
+  # Given: a stopped run of #42 whose board page is old
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app stop
+  printf 'old\n' > "$(fs_run)/board.html"
+  # When
+  fs_go resume acme/app --thread f2 --env e2
+  # Then
+  eq page "1 e2" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+}
+
+t_fs_two_runs_two_pages() {
+  # Given: a run of #42, stopped, then a second run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app stop
+  # (both start in one second here, so the first run's folder moves back a
+  # year, and a resume names that folder in its page)
+  local first="$T/factory/acme-app/20200101T000000Z"; mv "$(fs_run)" "$first"
+  fs_go resume acme/app --thread f1 --env e1; fs_go timer acme/app stop; fs_start 42
+  # When
+  local diff=same; cmp -s "$first/board.html" "$(fs_run)/board.html" || diff=differ
+  # Then
+  eq pages differ "$diff"
 }
 
 cases=(
@@ -756,4 +1131,40 @@ cases=(
   "answers survive stop and resume|t_fs_answers_survive_resume"
   "a label wins over an answer|t_fs_label_wins_answer"
   "ship-full for a started ship answer stops|t_fs_ship_full_started_answer"
+  "the board puts each issue in its column|t_fs_board_columns"
+  "a second check leaves one board file|t_fs_board_one_file"
+  "start copies the board page into the run|t_fs_start_copies_page"
+  "start without an env id stops|t_fs_start_needs_env"
+  "the board chip is the kind and the size|t_fs_board_chips"
+  "a waiting thread is yours|t_fs_board_waiting_yours"
+  "a failed thread is yours|t_fs_board_failed_yours"
+  "an interrupted thread is yours|t_fs_board_interrupted_yours"
+  "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
+  "a failed launch is yours|t_fs_board_launch_failed_yours"
+  "a free task is yours|t_fs_board_task_yours"
+  "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
+  "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
+  "a proposal with no answer is yours|t_fs_board_proposal_yours"
+  "an unsure proposal is yours|t_fs_board_unsure_yours"
+  "a skip, close, or task answer shows on the card|t_fs_board_answers"
+  "a wait shows before an open PR|t_fs_board_wait_before_merge"
+  "a failed read of removed issues fails no check|t_fs_removed_read_fails"
+  "a deleted removed issue has no card|t_fs_removed_deleted"
+  "a running thread is the agent's|t_fs_board_running_agent"
+  "a claimed thread is starting|t_fs_board_claimed_starting"
+  "an open blocker holds the card|t_fs_board_blocked"
+  "a paused run holds a free ticket|t_fs_board_paused_holds"
+  "a closed issue is done|t_fs_board_done"
+  "the board links the thread and the PR|t_fs_board_links"
+  "the board orders you, agent, blocked|t_fs_board_order"
+  "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
+  "a removed issue starts nothing|t_fs_removed_starts_nothing"
+  "a good check records its time|t_fs_check_records_time"
+  "a failed check records why|t_fs_failed_check_why"
+  "a failed check keeps the last board|t_fs_failed_check_keeps_board"
+  "the journey lists each stage and its thread|t_fs_board_journey"
+  "the walk fixture has the board's shape|t_fs_board_fixture_shape"
+  "the page ships no mockup data|t_fs_page_no_mockup_data"
+  "resume copies the board page again|t_fs_resume_copies_page"
+  "two runs get two different pages|t_fs_two_runs_two_pages"
 )

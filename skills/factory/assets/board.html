@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="factory-run" content="">
+<link rel="icon" href="data:,">
+<title>factory</title>
+<style>
+  :root {
+    --bg: #f4f4f5; --col: #ebebee; --card: #ffffff; --ink: #18181b; --muted: #71717a; --faint: #a1a1aa; --line: #e4e4e7;
+    --you: #ea580c; --you-soft: #fff1e6;
+    --agent: #2563eb; --agent-soft: #eaf1ff;
+    --done: #16a34a; --done-soft: #e8f7ee;
+    --warn: #d97706; --warn-soft: #fff7e6;
+    --bad: #dc2626; --bad-soft: #fdecec;
+    --shadow: 0 1px 2px rgba(0,0,0,.06); --lift: 0 6px 18px rgba(0,0,0,.08);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0b0d; --col: #141417; --card: #1c1c20; --ink: #f4f4f5; --muted: #a1a1aa; --faint: #71717a; --line: #2a2a30;
+      --you: #fb923c; --you-soft: #2a1a0e;
+      --agent: #60a5fa; --agent-soft: #0f1b2e;
+      --done: #4ade80; --done-soft: #0f2418;
+      --warn: #fbbf24; --warn-soft: #2a2008;
+      --bad: #f87171; --bad-soft: #2c1414;
+      --shadow: none; --lift: 0 6px 18px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--sans); font-variant-numeric: tabular-nums; display: flex; flex-direction: column; }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+  .mono { font-family: var(--mono); }
+
+  /* ---------- top bar ---------- */
+  .top { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--card); flex-wrap: wrap; }
+  .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .brand .logo { font-weight: 700; letter-spacing: -.01em; }
+  .brand .run { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand .repo { color: var(--muted); font-size: 12.5px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--col); color: var(--muted); white-space: nowrap; }
+  .pill.running { background: var(--agent-soft); color: var(--agent); }
+  .pill.paused { background: var(--warn-soft); color: var(--warn); }
+  .pill.done { background: var(--done-soft); color: var(--done); }
+  .progress { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .progress .track { width: 120px; height: 6px; border-radius: 3px; background: var(--col); overflow: hidden; }
+  .progress .fill { height: 100%; background: var(--done); border-radius: 3px; transition: width .3s; }
+  .health { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+  .dot.ok { background: var(--done); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+  .dot.agent { background: var(--agent); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .spacer { flex: 1; }
+  .needbtn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--you); background: var(--you-soft); color: var(--you); font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+  .needbtn b { background: var(--you); color: var(--card); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+  .needbtn[aria-pressed="true"] { background: var(--you); color: var(--card); }
+  .needbtn[aria-pressed="true"] b { background: var(--card); color: var(--you); }
+  .needbtn:disabled { border-color: var(--line); background: transparent; color: var(--muted); cursor: default; }
+  .needbtn:focus-visible, .card:focus-visible, .x:focus-visible { outline: 2px solid var(--agent); outline-offset: 2px; }
+
+  /* ---------- banner ---------- */
+  .banner { display: none; gap: 10px; align-items: baseline; padding: 9px 20px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+  .banner.on { display: flex; }
+  .banner b { white-space: nowrap; }
+  .banner.bad { background: var(--bad-soft); color: var(--bad); }
+  .banner.warn { background: var(--warn-soft); color: var(--warn); }
+  .banner.info { background: var(--agent-soft); color: var(--agent); }
+  .banner.done { background: var(--done-soft); color: var(--done); }
+  .banner code { font-family: var(--mono); font-size: 12.5px; }
+
+  /* ---------- board ---------- */
+  .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; align-items: start; }
+  .stale .board { opacity: .5; pointer-events: none; }
+  .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 160px; }
+  .colhead { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px 2px; }
+  .colhead h2 { margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  .colhead .count { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .colhint { color: var(--muted); font-size: 12px; padding: 0 4px 10px; }
+  .cards { display: flex; flex-direction: column; gap: 8px; }
+  .nothing { border: 1px dashed var(--faint); border-radius: 8px; color: var(--muted); font-size: 12.5px; text-align: center; padding: 18px 8px; opacity: .8; }
+
+  .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 12px 10px 14px; cursor: pointer; transition: box-shadow .15s, transform .15s, opacity .2s; }
+  .card:hover { box-shadow: var(--lift); transform: translateY(-1px); }
+  .card::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 4px; border-radius: 8px 0 0 8px; background: transparent; }
+  .card.you::before { background: var(--you); }
+  .card.agent::before { background: var(--agent); }
+  .card.blocked { background: transparent; border: 1px dashed var(--faint); box-shadow: none; }
+  .card.blocked .title { color: var(--muted); }
+  .card.done { padding-top: 8px; padding-bottom: 8px; }
+  .card.done .title { color: var(--muted); }
+  .focus .card:not(.you) { opacity: .22; }
+  .meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; flex-wrap: wrap; }
+  .num { font-family: var(--mono); }
+  a.num { color: var(--muted); text-decoration: none; }
+  a.num:hover { color: var(--agent); text-decoration: underline; }
+  .chip { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 4px; background: var(--col); color: var(--muted); line-height: 18px; }
+  .chip.bug { color: var(--bad); background: var(--bad-soft); }
+  .chip.seed { color: var(--agent); background: var(--agent-soft); }
+  .chip.full { color: var(--warn); background: var(--warn-soft); }
+  .chip.removed { color: var(--bad); background: transparent; border: 1px solid currentColor; line-height: 16px; }
+  .chip.made { background: transparent; border: 1px dashed var(--faint); line-height: 16px; }
+  .title { font-weight: 600; font-size: 13.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .owner { display: flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12.5px; }
+  .owner .who { font-weight: 700; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  .owner .what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .owner .when { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .owner.you { color: var(--you); background: var(--you-soft); margin: 8px -4px -2px -6px; padding: 5px 8px; border-radius: 6px; }
+  .owner.agent { color: var(--agent); }
+  .owner.agent .what { color: var(--ink); }
+  .owner.blocked { color: var(--muted); }
+  .owner.done { color: var(--done); margin-top: 4px; }
+  .owner.done .what { color: var(--muted); }
+  .owner a { text-decoration: underline; text-underline-offset: 2px; }
+  .links { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .ibs { display: inline-flex; gap: 4px; margin-right: 6px; vertical-align: middle; }
+  .ib { display: inline-flex; align-items: center; gap: 3px; height: 22px; min-width: 22px; padding: 0 5px; justify-content: center; border-radius: 5px; border: 1px solid var(--line); background: var(--card); color: var(--muted) !important; text-decoration: none !important; font-size: 11.5px; font-family: var(--mono); }
+  .ib:hover { color: var(--agent) !important; border-color: var(--agent); }
+  .ib:focus-visible { outline: 2px solid var(--agent); outline-offset: 1px; }
+  .links .ibs { margin-right: 0; }
+  .owner .when { display: inline-flex; align-items: center; }
+  .links a { text-decoration: underline; text-underline-offset: 2px; }
+  .owner.done .what a { color: var(--muted); }
+  .ref { font-family: var(--mono); font-size: 11.5px; padding: 0 4px; border-radius: 4px; background: var(--col); color: var(--ink); }
+
+  .skel { height: 84px; border-radius: 8px; background: linear-gradient(90deg, var(--card) 0%, var(--col) 50%, var(--card) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; opacity: .8; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ---------- drawer ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100%; background: var(--card); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.12); transform: translateX(100%); transition: transform .22s ease; z-index: 21; display: flex; flex-direction: column; }
+  .open .scrim { opacity: 1; pointer-events: auto; }
+  .open .drawer { transform: none; }
+  .dhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+  .dhead .meta { margin-bottom: 6px; }
+  .dhead h3 { margin: 0; font-size: 17px; line-height: 1.3; padding-right: 30px; }
+  .x { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 18px; color: var(--muted); }
+  .x:hover { background: var(--col); color: var(--ink); }
+  .dbody { padding: 14px 18px 24px; overflow-y: auto; }
+  .dbody .owner { margin: 0 0 14px; padding: 8px 10px; border-radius: 8px; font-size: 13.5px; }
+  .dbody .owner.agent { background: var(--agent-soft); }
+  .dbody .owner.blocked { background: var(--col); }
+  .dbody .owner.done { background: var(--done-soft); }
+  .dbody .owner .what { white-space: normal; }
+  .facts { display: grid; grid-template-columns: 96px 1fr; gap: 6px 10px; font-size: 13px; margin: 0 0 18px; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; }
+  .facts a { color: var(--agent); }
+  h4 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .journey { list-style: none; margin: 0; padding: 0; }
+  .journey li { position: relative; padding: 0 0 14px 22px; font-size: 13px; }
+  .journey li::before { content: ""; position: absolute; left: 5px; top: 14px; bottom: -2px; width: 2px; background: var(--line); }
+  .journey li:last-child::before { display: none; }
+  .journey li::after { content: ""; position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--faint); background: var(--card); box-sizing: border-box; }
+  .journey li.now::after { border-color: var(--you); background: var(--you); }
+  .journey li.now.agent::after { border-color: var(--agent); background: var(--agent); }
+  .journey li.past::after { border-color: var(--done); background: var(--done); }
+  .journey .step { font-weight: 600; }
+  .journey .sub { color: var(--muted); font-size: 12.5px; }
+  .journey .sub a { color: var(--agent); }
+  .journey .t { font-family: var(--mono); font-size: 11.5px; color: var(--faint); float: right; }
+
+  @media (max-width: 760px) {
+    .top { gap: 10px 14px; padding: 10px 14px; }
+    .progress .track { width: 80px; }
+    .board { grid-template-columns: repeat(4, 84vw); scroll-snap-type: x mandatory; padding: 12px 14px 20px; }
+    .col { scroll-snap-align: start; }
+    .banner { flex-direction: column; gap: 2px; padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><span class="logo">factory</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
+  <span class="pill" id="pill"></span>
+  <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext"></span></div>
+  <div class="health"><span class="dot" id="hdot"></span><span id="htext"></span></div>
+  <div class="spacer"></div>
+  <span class="health" id="upd"></span>
+  <button class="needbtn" id="needbtn" aria-pressed="false"></button>
+</div>
+<div class="banner" id="banner"></div>
+<main class="board" id="board"></main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle">
+  <button class="x" id="x" aria-label="Close">×</button>
+  <div class="dhead" id="dhead"></div>
+  <div class="dbody" id="dbody"></div>
+</aside>
+
+<script>
+(function () {
+  // The page only reads: board.json, which each good check writes, and
+  // state.json, the run's status and timer. Every change goes through the
+  // factory thread.
+  var COLS = [
+    ['shape', 'Shape', 'Deciding what to build'],
+    ['build', 'Build', 'A thread builds it, or you do the task'],
+    ['review', 'Review', 'A PR is open'],
+    ['done', 'Done', 'Closed'],
+  ]
+  var EVERY = 5000
+  var B = null, S = null, good = null, stale = false, focus = false, openN = null, seen = ''
+
+  var ICON_THREAD = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+  // Drawn, not typed: a font without ✓ or ○ shows an empty box.
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+  var ICON_WAIT = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>'
+  var ICON_PR = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v7"/><path d="M18 15.5V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg>'
+
+  // Titles and reasons come from GitHub and T3, so every text is escaped.
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';' }) }
+  function $(id) { return document.getElementById(id) }
+  function hhmm(iso) { var d = new Date(iso); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
+  function ago(iso) {
+    var m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000))
+    return m < 60 ? m + ' m' : Math.floor(m / 60) + ' h'
+  }
+  // http links open in a new tab; t3code:// links hand off to the T3 app and leave this page in place
+  function a(href, text) { return '<a href="' + esc(href) + '"' + (/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '') + ' onclick="event.stopPropagation()">' + text + '</a>' }
+
+  function links(x) {
+    var l = []
+    if (x.thread) l.push('<a class="ib" href="' + esc(x.thread.url) + '" title="Open the thread in T3" aria-label="Open the thread for #' + x.number + ' in T3" onclick="event.stopPropagation()">' + ICON_THREAD + '</a>')
+    if (x.pr) l.push('<a class="ib" href="' + esc(x.pr.url) + '" target="_blank" rel="noopener" title="Open PR #' + x.pr.number + ' on GitHub" aria-label="Open PR #' + x.pr.number + ' on GitHub" onclick="event.stopPropagation()">' + ICON_PR + '<span>#' + x.pr.number + '</span></a>')
+    return l.length ? '<span class="ibs">' + l.join('') + '</span>' : ''
+  }
+  function ownerHtml(x, full) {
+    var L = links(x), what = esc(x.action)
+    if (x.mark === 'you') return '<div class="owner you"><span class="who">You</span><span class="what">' + what + '</span></div>' + (L && !full ? '<div class="links">' + L + '</div>' : '')
+    if (x.mark === 'agent') return '<div class="owner agent"><span class="dot agent"></span><span class="what"><span class="mono">' + what + '</span></span><span class="when">' + L + (x.since ? ago(x.since) : '') + '</span></div>'
+    if (x.mark === 'blocked') return '<div class="owner blocked">' + ICON_WAIT + '<span class="what">' + what + '</span></div>'
+    return '<div class="owner done">' + ICON_CHECK + '<span class="what">' + what + '</span><span class="when">' + L + '</span></div>'
+  }
+  function chips(x) {
+    var kind = x.chip === 'bug' ? 'bug' : x.chip === 'seed' ? 'seed' : ''
+    return '<span class="chip ' + kind + '">' + esc(x.chip) + '</span>' +
+      (x.ship_full ? '<span class="chip full" title="merges by itself">ship-full</span>' : '') +
+      (x.made ? '<span class="chip made" title="joined by itself">made by run</span>' : '') +
+      (x.removed ? '<span class="chip removed">removed</span>' : '')
+  }
+  function num(x) { return '<a class="num" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open #' + x.number + ' on GitHub" onclick="event.stopPropagation()">#' + x.number + '</a>' }
+  function card(x) {
+    return '<div class="card ' + x.mark + '" tabindex="0" role="button" data-n="' + x.number + '" aria-label="#' + x.number + ' ' + esc(x.title) + '">' +
+      '<div class="meta">' + num(x) + chips(x) + '</div>' +
+      '<div class="title">' + esc(x.title) + '</div>' + ownerHtml(x) + '</div>'
+  }
+
+  function top() {
+    var loading = !B
+    var counted = loading ? [] : B.issues.filter(function (x) { return !x.removed })
+    var doneN = counted.filter(function (x) { return x.column === 'done' }).length
+    var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
+    var st = S ? S.status : ''
+    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'factory · ' + S.name }
+    var pill = $('pill')
+    pill.className = 'pill ' + st
+    pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
+    $('fill').style.width = (loading || !counted.length ? 0 : Math.round(100 * doneN / counted.length)) + '%'
+    $('ptext').textContent = loading ? 'loading…' : doneN + ' / ' + counted.length + ' closed'
+
+    var t = S ? S.timer : null, hd = $('hdot'), ht = $('htext')
+    if (!t) { hd.className = 'dot'; ht.textContent = '' }
+    else if (t.fails >= 3) { hd.className = 'dot bad'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
+    else if (t.fails > 0) { hd.className = 'dot warn'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
+    else if (st === 'stopped' || st === 'done') { hd.className = 'dot ok'; ht.textContent = 'checks stopped' }
+    else if (t.checked_at) {
+      hd.className = 'dot ok'
+      ht.textContent = 'checked ' + hhmm(t.checked_at) + ' · next ' + hhmm(new Date(new Date(t.checked_at).getTime() + t.every * 60000))
+    } else { hd.className = 'dot'; ht.textContent = 'first check soon' }
+
+    var nb = $('needbtn')
+    if (youN) { nb.disabled = false; nb.innerHTML = '<b>' + youN + '</b> need you' }
+    else { nb.disabled = true; nb.innerHTML = 'Nothing needs you'; focus = false }
+    nb.setAttribute('aria-pressed', String(focus))
+    $('board').classList.toggle('focus', focus)
+
+    var b = $('banner'), bh = '', bc = ''
+    if (stale) { bc = 'bad'; bh = '<b>Cannot read the page data.</b><span>The page server or the run folder is gone. Showing the last good data from ' + (good ? hhmm(good) : 'never') + '. Run <code>/factory resume</code> in a thread.</span>' }
+    else if (t && t.fails >= 3) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the factory thread.</span>' }
+    else if (t && t.fails > 0) { bc = 'warn'; bh = '<b>Check failing.</b><span>' + esc(t.why) + '. Nothing new starts until a check passes.</span>' }
+    else if (st === 'paused') { bc = 'info'; bh = '<b>Paused.</b><span>Running threads keep going; nothing new starts. Say <code>resume</code> in the factory thread.</span>' }
+    else if (st === 'stopped') { bc = 'info'; bh = '<b>Stopped.</b><span>No more checks. The board shows the last state. Say <code>/factory resume</code> to go on.</span>' }
+    else if (st === 'done') { bc = 'done'; bh = '<b>Done.</b><span>Every issue is closed. The summary is in the factory thread.</span>' }
+    b.className = 'banner' + (bh ? ' on ' + bc : ''); b.innerHTML = bh
+  }
+
+  // The board is drawn again on each read, so a focused card would lose its
+  // focus every 5 s; it gets it back by its number.
+  function render() {
+    var had = document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')
+    var hadN = had ? had.getAttribute('data-n') : null
+    document.body.classList.toggle('stale', stale)
+    top()
+    var loading = !B
+    $('board').innerHTML = COLS.map(function (c) {
+      var items = loading ? [] : B.issues.filter(function (x) { return x.column === c[0] })
+      var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
+      return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
+    }).join('')
+    if (hadN) { var c = document.querySelector('.card[data-n="' + hadN + '"]'); if (c) c.focus() }
+    if (openN != null) openDrawer(openN, true)
+  }
+
+  // ---------- drawer ----------
+  function openDrawer(n, quiet) {
+    var x = B && B.issues.filter(function (i) { return i.number === n })[0]
+    if (!x) return closeDrawer()
+    openN = n
+    $('dhead').innerHTML = '<div class="meta">' + num(x) + chips(x) + '</div><h3 id="dtitle">' + esc(x.title) + '</h3>'
+    var f = []
+    f.push(['Stage', esc(x.stage)])
+    if (x.skill) f.push(['Skill', '/' + esc(x.skill)])
+    if (x.model) f.push(['Model', esc(x.model) + (x.effort ? ' · ' + esc(x.effort) : '')])
+    if (x.thread) f.push(['Thread', a(x.thread.url, esc(x.thread.id)) + (x.thread.status ? ' · ' + esc(x.thread.status) : '')])
+    if (x.pr) f.push(['PR', a(x.pr.url, '#' + x.pr.number)])
+    if (x.blocked_by && x.blocked_by.length) f.push(['Blocked by', x.blocked_by.map(function (b) { return '<span class="ref">#' + b + '</span>' }).join(' ')])
+    var facts = '<dl class="facts">' + f.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>' }).join('') + '</dl>'
+    var last = x.journey.length - 1
+    var steps = x.journey.map(function (s, i) {
+      var cls = i === last && x.mark !== 'done' ? 'now' + (x.mark === 'agent' ? ' agent' : '') : 'past'
+      var head = s.step === 'joined' ? 'Joined the set' : '/' + esc(s.command || '') + ' at ' + esc(s.stage)
+      var sub = s.step === 'joined' ? '' : (s.thread_url ? a(s.thread_url, 'thread') + ' · ' : '') + esc(s.status || '')
+      return '<li class="' + cls + '"><span class="t">' + (s.at ? hhmm(s.at) : '') + '</span><div class="step">' + head + '</div><div class="sub">' + sub + '</div></li>'
+    }).join('')
+    $('dbody').innerHTML = ownerHtml(x, true) + facts + '<h4>Journey</h4><ol class="journey">' + steps + '</ol>'
+    document.body.classList.add('open')
+    if (!quiet) $('x').focus()
+  }
+  function closeDrawer() {
+    var n = openN
+    openN = null; document.body.classList.remove('open')
+    var c = n != null && document.querySelector('.card[data-n="' + n + '"]')
+    if (c) c.focus()
+  }
+
+  document.addEventListener('click', function (e) {
+    // A link on a card opens its own page, not the panel.
+    var c = !e.target.closest('a') && e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
+    if (e.target.id === 'scrim' || e.target.id === 'x') return closeDrawer()
+    if (e.target.closest('#needbtn')) { focus = !focus; top() }
+  })
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('open')) return closeDrawer()
+    var c = e.target.classList && e.target.classList.contains('card') && e.target
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(+c.getAttribute('data-n')) }
+  })
+
+  // ---------- data ----------
+  function get(name) {
+    return fetch(name, { cache: 'no-store' }).then(function (r) {
+      if (r.status === 404) return null
+      if (!r.ok) throw new Error(name + ': ' + r.status)
+      return r.text()
+    })
+  }
+  // A 404 for board.json before any good read means the run has not checked
+  // yet, so the columns keep their skeletons.
+  function read() {
+    // Drawn again only when the data changed, so a keyboard user keeps the
+    // button they are on.
+    Promise.all([get('board.json'), get('state.json')]).then(function (r) {
+      if (r[0]) good = Date.now()
+      var now = r[0] + '\n' + r[1]
+      if (now === seen && !stale) return
+      seen = now
+      if (r[1]) S = JSON.parse(r[1])
+      if (r[0]) B = JSON.parse(r[0])
+      stale = false
+      render()
+    }).catch(function () { if (B && !stale) { stale = true; render() } })
+  }
+  setInterval(function () {
+    $('upd').textContent = good ? 'updated ' + Math.round((Date.now() - good) / 1000) + ' s ago' : ''
+  }, 1000)
+  render()
+  read()
+  setInterval(read, EVERY)
+})()
+</script>
+</body>
+</html>
