@@ -54,8 +54,9 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    remember it. It becomes the parent, per the rules file § Origin seed. A
    closed match goes on the parent's Related line.
 
-7. **Create, in phase order.** Each call is one `gh issue create`. Numbers
-   from earlier calls feed later ones.
+7. **Create, in phase order.** Each call is one `gh issue create
+   --assignee @me`, the parent and every sub-issue alike, per the rules
+   file § Assignee. Numbers from earlier calls feed later ones.
 
    1. Parent: title with `epic` in the type slot, priority
       label if named, body per the parent template with the phase list
