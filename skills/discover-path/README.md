@@ -8,7 +8,7 @@ The idea is big and foggy, and you can't cut it into tickets yet because too muc
 
 ## What you get
 
-The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. Nothing reaches GitHub until you approve. After that you get a map issue labelled `discovery/map` (a seed issue you started from becomes the map, same number) and one child ticket per question, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
+The first run charts the map. It grills you on where the effort should end and what stands in the way, then proposes the tickets in chat. Nothing reaches GitHub until you approve. After that you get a map issue labelled `discovery/map` and assigned to you (a seed issue you started from becomes the map, same number) and one child ticket per question, unassigned until a run claims it, typed `grill`, `research`, `experiment`, or `task`, with blocked-by edges between them.
 
 Each later run takes the next free ticket, settles it with you, posts the answer, closes the ticket, and updates the map. Glossary entries and ADRs the grills agree on wait on the map, under `## Docs to write`, not in your doc files, and no docs PR opens while you work:
 

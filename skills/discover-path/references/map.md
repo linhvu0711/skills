@@ -168,7 +168,7 @@ target.
 f=$(mktemp) && cat > "$f" <<'B'
 <map body>
 B
-gh issue create --title "$(t discovery "<effort>")" --body-file "$f" --label "discovery/map"
+gh issue create --title "$(t discovery "<effort>")" --body-file "$f" --assignee @me --label "discovery/map"
 ```
 
 With an origin seed, the seed becomes the map instead: same `$f`, the old
@@ -185,6 +185,9 @@ gh issue edit <seed> --title "$(t discovery "<effort>")" --body-file "$f" \
 gh issue create --title "$(t grill "<question>?")" --body-file "$f" \
   --label "discovery/grill" --parent <P> [--blocked-by <n1>,<n2>]
 ```
+
+No `--assignee`: an assignee on a ticket is a claim (`issue-rules.md`
+§ Assignee).
 
 **List the children**
 
