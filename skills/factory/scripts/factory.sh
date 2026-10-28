@@ -5,8 +5,10 @@
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
+#        factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
+#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
 #        factory.sh resume <owner/repo> --thread <thread-id>
 #
@@ -18,13 +20,15 @@
 # puts each issue in its stage, and prints the threads to start. Each start
 # is claimed in the state file before it is printed, so a second check never
 # starts it again. It launches nothing: the agent starts each thread with
-# T3's tools and records it with `started`.
+# T3's tools and records it with `started`. It also lists the unlabeled
+# issues with no proposal yet; the agent proposes a route for each and
+# records it with `proposed`.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
 # Exit 0: one JSON line on stdout for start, check, timer, and resume;
-# nothing for started and change.
+# nothing for started, proposed, and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -34,7 +38,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: factory.sh start|check|started|change|timer|resume <owner/repo> ..."
+usage="usage: factory.sh start|check|started|proposed|change|timer|resume <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -117,6 +121,17 @@ skill() {
   esac
 }
 
+# answer_stage <answer>: the stage whose skill an answered unlabeled issue
+# starts with, or nothing for an answer that starts no thread.
+answer_stage() {
+  case "$1" in
+    grill) echo seed ;;
+    triage) echo bug ;;
+    ship) echo ticket ;;
+    ready-pr) echo pr ;;
+  esac
+}
+
 # joins: a jq program on the issues just read, with the state as $S: the
 # numbers they bring that are neither in the set nor removed. A follow-up is
 # a `#<n>:` line under `## Follow-ups` in the PR body, as pr-shape.md writes
@@ -164,7 +179,7 @@ cmd_start() {
   S="$(jq -n --arg repo "$slug" --arg name "$name" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, link: $link, path: $path, started_at: $at, status: "running",
-      set: $set, removed: [], ship: {default: "ready"}, use: {},
+      set: $set, removed: [], ship: {default: "ready"}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
@@ -203,14 +218,22 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec line wait flags model effort starts="[]" rows="[]" claims="[]"
+  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
-    sk="$(skill "$st" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
+    sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
+    # The stage stays unlabeled; the user's answer only picks the skill.
+    if [ "$st" = unlabeled ]; then
+      sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")" "$sk")"
+    else
+      sk="$(skill "$st" "$sk")"
+    fi
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
+    # A run started before proposals existed has no key; it reads as none.
+    prop="$(jq -c --arg n "$n" '(.proposals // {})[$n]' <<<"$S")"
     line=""; wait=""
     if [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
@@ -232,12 +255,13 @@ cmd_check() {
       claims="$(jq -c --argjson n "$n" --arg st "$st" '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null}]' <<<"$claims")"
     fi
     rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
-      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" \
+      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread] else null end),
              claim: $rec.status, why: $rec.why,
-             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}]}
+             prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
+             proposal: $prop.route, answer: $prop.answer}
            + (if $wait == "" then {} else {wait: $wait} end)]' <<<"$rows")"
   done
 
@@ -254,7 +278,8 @@ cmd_check() {
   save
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
-    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done}
+    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
+     propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}]} else {} end'
@@ -281,6 +306,19 @@ cmd_started() {
   save
 }
 
+# ---------- proposed ----------
+# proposed <n> <route>: the route the agent proposed for unlabeled #n, kept
+# with any answer the user already gave. `unsure` is a proposal with no route.
+cmd_proposed() {
+  [ $# -eq 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] \
+    || die "usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure"
+  newest_run
+  local n="${1#\#}"
+  [ "$(jq --argjson n "$n" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$n is not in the set"
+  S="$(jq -c --arg n "$n" --arg r "$2" '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)}' <<<"$S")"
+  save
+}
+
 # ---------- change ----------
 # change add <n>... and remove <n>...: the set. A removed issue keeps its
 # thread records and never joins again by itself.
@@ -288,7 +326,11 @@ cmd_started() {
 # starts a fresh thread at #n's stage.
 # change ship full|ready <n>|all: how a ticket ships. It reaches only issues
 # whose ticket thread has not started: for `all`, each started one keeps the
-# old default as its own.
+# old default as its own. An unlabeled issue answered `ship` started its
+# ticket thread at stage unlabeled.
+# change answer <n>|all <word>: the user's answer to a proposal. `yes` takes
+# the proposed route; `all` takes only `yes` or `skip`, and fills only the
+# proposals with no answer yet, so a per-issue answer given first stays.
 # change use <n>|all: the model and effort a thread gets, for one issue or
 # for all; one issue's value wins, field by field.
 cmd_change() {
@@ -316,13 +358,15 @@ cmd_change() {
       [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
         || die "usage: factory.sh change <owner/repo> ship full|ready <n>|all"
       local mode="$2" who="${3#\#}"
+      # shellcheck disable=SC2016 # the $ names are jq variables
+      local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'
       if [ "$who" = all ]; then
         S="$(jq -c --arg m "$mode" '
-          .ship.default as $d
-          | reduce (.threads[] | select(.stage == "ticket") | .number | tostring) as $n (.; .ship[$n] //= $d)
+          . as $S | .ship.default as $d
+          | reduce (.threads[] | select('"$shipped"') | .number | tostring) as $n (.; .ship[$n] //= $d)
           | .ship.default = $m' <<<"$S")"
       else
-        [ "$(jq --argjson n "$who" '[.threads[] | select(.number == $n and .stage == "ticket")] | length' <<<"$S")" -eq 0 ] \
+        [ "$(jq --argjson n "$who" '. as $S | [.threads[] | select(.number == $n and '"$shipped"')] | length' <<<"$S")" -eq 0 ] \
           || die "#$who has started; its mode stays ship-$(jq -r --arg n "$who" '.ship[$n] // .ship.default' <<<"$S")"
         S="$(jq -c --arg n "$who" --arg m "$mode" '.ship[$n] = $m' <<<"$S")"
       fi
@@ -342,7 +386,27 @@ cmd_change() {
       done
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
-    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use ..." ;;
+    answer)
+      local ausage="usage: factory.sh change <owner/repo> answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close"
+      [ $# -eq 3 ] && [[ "$2" =~ ^(all|#?[0-9]+)$ ]] && [[ "$3" =~ ^(yes|skip|grill|triage|ship|ready-pr|task|close)$ ]] || die "$ausage"
+      local who="${2#\#}" word="$3"
+      if [ "$who" = all ]; then
+        case "$word" in yes|skip) ;; *) die "$ausage" ;; esac
+        S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
+          if .answer != null then .
+          elif $w == "skip" then .answer = "skip"
+          elif .route != null and .route != "unsure" then .answer = .route
+          else . end))' <<<"$S")"
+      else
+        [ "$(jq --argjson n "$who" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$who is not in the set"
+        if [ "$word" = yes ]; then
+          word="$(jq -r --arg n "$who" '(.proposals // {})[$n].route // "unsure"' <<<"$S")"
+          [ "$word" != unsure ] || die "#$who has no proposal to say yes to; name a skill"
+        fi
+        S="$(jq -c --arg n "$who" --arg w "$word" '.proposals[$n] = {route: ((.proposals // {})[$n].route), answer: $w}' <<<"$S")"
+      fi
+      ;;
+    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac
   save
 }
@@ -392,6 +456,7 @@ case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
   started) cmd_started "$@" ;;
+  proposed) cmd_proposed "$@" ;;
   change) cmd_change "$@" ;;
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;

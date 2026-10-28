@@ -550,6 +550,157 @@ t_fs_outside_t3_stops() {
   eq stderr "stop: not inside T3 Code" "$err"
 }
 
+t_fs_unlabeled_listed() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"proposal":null,"answer":null' "$out"
+  has stdout '"propose":[42]' "$out"
+  has stdout '"starts":[]' "$out"
+}
+
+t_fs_added_unlabeled_listed() {
+  # Given: a run of #42 (size/S); #43, open, no label, added
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '[]'; fs_start 42; fs_go change acme/app add 43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"propose":[43]' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_proposed_route_word() {
+  # Given: a run of #42, open, labelled only p1
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When: a word that is no route, then unsure twice
+  fs_go proposed acme/app 42 to-epic
+  eq "to-epic exit" 1 "$code"
+  eq stderr "stop: usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure" "$err"
+  fs_go proposed acme/app 42 unsure
+  eq "first exit" 0 "$code"
+  fs_go proposed acme/app 42 unsure
+  eq "second exit" 0 "$code"
+  eq proposals '{"42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
+  fs_go check acme/app
+  # Then
+  has stdout '"propose":[]' "$out"
+  has stdout '"proposal":"unsure"' "$out"
+}
+
+t_fs_proposed_outside_set() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 99 grill
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #99 is not in the set" "$err"
+}
+
+t_fs_grill_answer_starts() {
+  # Given: unlabeled #42, proposed grill, answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  eq "answer exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"stage":"unlabeled"' "$out"
+  eq threads '[{"number":42,"stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+}
+
+t_fs_ship_answer_starts() {
+  # Given: unlabeled #42, answered ship with no proposal
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  eq "answer exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_all_yes() {
+  # Given: #42 proposed grill, #43 proposed triage and answered close, #44 unsure
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_start 42 43 44
+  fs_go proposed acme/app 42 grill; fs_go proposed acme/app 43 triage; fs_go proposed acme/app 44 unsure
+  fs_go change acme/app answer 43 close
+  # When
+  fs_go change acme/app answer all yes
+  # Then
+  eq exit 0 "$code"
+  eq answers '{"42":"grill","43":"close","44":null}' "$(fs_state '.proposals | map_values(.answer)')"
+}
+
+t_fs_yes_on_unsure() {
+  # Given: #42 proposed unsure
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no proposal to say yes to; name a skill" "$err"
+}
+
+t_fs_answered_waits_blocker() {
+  # Given: unlabeled #42, blocked by open #41, answered grill
+  fs_setup; fs_issue 42 OPEN '["p1"]' '[{"number":41,"state":"OPEN"}]'; fs_start 42; fs_go change acme/app answer 42 grill
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"blocked_by":[41]' "$out"
+  has stdout '"answer":"grill"' "$out"
+}
+
+t_fs_close_answer() {
+  # Given: unlabeled #42, proposed close, answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 close; fs_go change acme/app answer 42 yes
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"propose":[]' "$out"
+  has stdout '"answer":"close"' "$out"
+  has stdout '"done":false' "$out"
+  eq writes "" "$(cat "$FAKE_GH"/*.args | grep -vE '^(api graphql|issue view|repo view)' || true)"
+}
+
+t_fs_answers_survive_resume() {
+  # Given: #42 proposed task and answered yes; the run stopped and resumed
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
+  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"propose":[]' "$out"
+  has stdout '"answer":"task"' "$out"
+  has stdout '"starts":[]' "$out"
+}
+
+t_fs_label_wins_answer() {
+  # Given: #42 answered grill, its grill thread t1 ran and gave it size/S
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 grill; fs_record 42 unlabeled t1
+  fs_issue 42 OPEN '["size/S"]'
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"stage":"ticket"' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_ship_full_started_answer() {
+  # Given: unlabeled #42 answered ship; its thread t42 started
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship; fs_record 42 unlabeled t42
+  # When
+  fs_go change acme/app ship full 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -592,4 +743,17 @@ cases=(
   "resume takes the newest run that is not done|t_fs_resume_newest"
   "a set with no open issue stops|t_fs_no_open_issue_stops"
   "outside T3 Code stops|t_fs_outside_t3_stops"
+  "an unlabeled issue is listed to propose|t_fs_unlabeled_listed"
+  "an added unlabeled issue is listed to propose|t_fs_added_unlabeled_listed"
+  "proposed takes only a route word|t_fs_proposed_route_word"
+  "proposed for an issue outside the set stops|t_fs_proposed_outside_set"
+  "a grill answer starts grill|t_fs_grill_answer_starts"
+  "a ship answer starts ship-ready|t_fs_ship_answer_starts"
+  "all yes takes every sure proposal|t_fs_all_yes"
+  "yes on an unsure proposal stops|t_fs_yes_on_unsure"
+  "an answered issue waits for its blocker|t_fs_answered_waits_blocker"
+  "a close answer starts nothing and writes nothing|t_fs_close_answer"
+  "answers survive stop and resume|t_fs_answers_survive_resume"
+  "a label wins over an answer|t_fs_label_wins_answer"
+  "ship-full for a started ship answer stops|t_fs_ship_full_started_answer"
 )

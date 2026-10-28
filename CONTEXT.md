@@ -209,7 +209,7 @@ The issues a Run must close. It is fixed at the start, from a list, an epic, or 
 _Avoid_: queue, backlog, scope
 
 **Stage**:
-Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, epic, or done. A Stage picks the skill a new thread starts with. One thread for each issue at each Stage.
+Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, epic, or done. A Stage picks the skill a new thread starts with; at unlabeled, the user's answer to the factory's proposal picks it. One thread for each issue at each Stage.
 _Avoid_: status, state, phase
 
 **Check**:
