@@ -206,6 +206,26 @@ t_fs_closed_seed_done() {
   has stdout '"number":42,"title":"Export orders","stage":"done"' "$out"
 }
 
+t_fs_open_blocker_holds() {
+  # Given: a run of #42, size/S, blocked by open #41 and closed #40
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":41,"state":"OPEN"},{"number":40,"state":"CLOSED"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"free":false,"blocked_by":[41]' "$out"
+}
+
+t_fs_closed_blockers_free() {
+  # Given: a run of #42, size/S, blocked by closed #41
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":41,"state":"CLOSED"}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"free":true,"blocked_by":[]' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -218,4 +238,6 @@ cases=(
   "a manual task never starts|t_fs_manual_never_starts"
   "an unlabeled issue waits|t_fs_unlabeled_waits"
   "a closed seed is done|t_fs_closed_seed_done"
+  "an open blocker holds the issue|t_fs_open_blocker_holds"
+  "closed blockers free the issue|t_fs_closed_blockers_free"
 )
