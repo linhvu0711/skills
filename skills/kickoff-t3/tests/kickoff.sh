@@ -35,13 +35,23 @@ EOF
   export FAKE_T3_DIR="$T" FAKE_T3_MODE="$1"
 }
 
-# kt_go [outside]: kickoff on issue #42 of acme/app from T, with the search
-# root and the repo map inside T; inside T3 Code unless `outside` is given.
+# kt_go [outside|off-path]: kickoff on issue #42 of acme/app from T, with the
+# search root and the repo map inside T; inside T3 Code unless `outside` is
+# given. `off-path` moves the fake t3 out of PATH and drops every PATH folder
+# that holds a t3, so only T3CODE_CLI_PATH names it and the real T3 app is
+# never reached.
 kt_go() {
-  local t3="T3CODE_CLI_PATH=$T/bin/t3"
+  local t3="T3CODE_CLI_PATH=$T/bin/t3" path="$PATH" dir
   [ "${1:-}" != outside ] || t3="KT_OUTSIDE=1"
+  if [ "${1:-}" = off-path ]; then
+    mkdir -p "$T/t3home"; mv "$T/bin/t3" "$T/t3home/t3"; t3="T3CODE_CLI_PATH=$T/t3home/t3"
+    path=""
+    while IFS= read -r dir; do
+      [ -x "$dir/t3" ] || path="${path:+$path:}$dir"
+    done < <(tr ':' '\n' <<<"$PATH")
+  fi
   cd "$T"
-  run env -u T3CODE_CLI_PATH "$t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" bash "$K" https://github.com/acme/app/issues/42
+  run env -u T3CODE_CLI_PATH PATH="$path" "$t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" bash "$K" https://github.com/acme/app/issues/42
 }
 
 # kt_line <project>: the launch line kickoff prints for #42 when the project
@@ -58,6 +68,17 @@ t_kt_launch_line() {
   # Then
   eq exit 0 "$code"
   eq stdout "$(kt_line found)" "$out"
+}
+
+t_kt_t3_off_path() {
+  # Given: #42 size/L, not a T3 project yet, and no t3 on PATH; only
+  # T3CODE_CLI_PATH names the t3 command
+  kt_setup missing
+  # When
+  kt_go off-path
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kt_line added)" "$out"
 }
 
 t_kt_adds_project_once() {
@@ -99,5 +120,6 @@ cases=(
   "the launch line holds the row|t_kt_launch_line"
   "a repo with no project is added once|t_kt_adds_project_once"
   "outside T3 it stops|t_kt_outside_t3"
+  "it runs the t3 that T3CODE_CLI_PATH names|t_kt_t3_off_path"
   "a project add that fails stops|t_kt_project_add_fails"
 )

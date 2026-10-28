@@ -22,7 +22,10 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # ---------- T3 ----------
-[ -n "${T3CODE_CLI_PATH:-}" ] && command -v t3 >/dev/null || die "not inside T3 Code"
+# T3 Code sets T3CODE_CLI_PATH to its own t3 command in every chat, so that
+# is the t3 to run, whether or not one is on PATH.
+t3="${T3CODE_CLI_PATH:-}"
+[ -n "$t3" ] && [ -x "$t3" ] || die "not inside T3 Code"
 
 # ---------- decide ----------
 # The shared decide script reads the target and flags; its stop line is ours.
@@ -32,10 +35,10 @@ path="$(jq -r .path <<<"$decided")"
 # ---------- project ----------
 # `t3 thread list --project` fails for a folder that is no T3 project, so it
 # checks before the add, and a second run adds nothing.
-is_project() { t3 thread list --project "$path" --json >/dev/null 2>&1; }
+is_project() { "$t3" thread list --project "$path" --json >/dev/null 2>&1; }
 project=found
 if ! is_project; then
-  err="$(t3 project add "$path" 2>&1 >/dev/null)" || die "could not add $path as a T3 project: $(tail -1 <<<"$err")"
+  err="$("$t3" project add "$path" 2>&1 >/dev/null)" || die "could not add $path as a T3 project: $(tail -1 <<<"$err")"
   is_project || die "could not add $path as a T3 project: t3 still finds no project there"
   project=added
 fi

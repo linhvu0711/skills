@@ -38,7 +38,7 @@ Your tree stays as it is: any branch, edits or not.
 
 ## Needs
 
-- A T3 Code chat, with the `t3` command on `PATH`.
+- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`.
 - `gh` (signed in), `git`, and `jq`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
 - The [ship-ready](../ship-ready/), [ship-full](../ship-full/), and [plan-up](../plan-up/) skills, installed for Claude Code.
