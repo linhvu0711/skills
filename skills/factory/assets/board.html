@@ -340,13 +340,14 @@
   }
 
   document.addEventListener('click', function (e) {
-    var c = e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
+    // A link on a card opens its own page, not the panel.
+    var c = !e.target.closest('a') && e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
     if (e.target.id === 'scrim' || e.target.id === 'x') return closeDrawer()
     if (e.target.closest('#needbtn')) { focus = !focus; top() }
   })
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && document.body.classList.contains('open')) return closeDrawer()
-    var c = e.target.closest && e.target.closest('.card')
+    var c = e.target.classList && e.target.classList.contains('card') && e.target
     if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(+c.getAttribute('data-n')) }
   })
 
