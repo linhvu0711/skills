@@ -226,6 +226,42 @@ t_fs_closed_blockers_free() {
   has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
 }
 
+t_fs_bug_turned_ticket() {
+  # Given: #42's triage thread t1 ran; triage turned the bug into a size/S ticket
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t1
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"stage":"ticket"' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  eq threads 2 "$(fs_state '.threads | length')"
+}
+
+t_fs_restart_fresh_thread() {
+  # Given: #42's ticket thread t42 started; #42 is still size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
+  # When
+  fs_go change acme/app restart 42
+  eq "restart exit" 0 "$code"
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[{"number":42' "$out"
+  eq threads '[{"number":42,"status":"pending"}]' "$(fs_state '[.threads[] | {number, status}]')"
+}
+
+t_fs_failed_launch_not_again() {
+  # Given: #42 was claimed, and its launch failed with "no reply"
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go check acme/app
+  fs_go started acme/app 42 ticket --failed "no reply"
+  eq "started exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  eq record '{"status":"failed","why":"no reply"}' "$(fs_state '.threads[0] | {status, why}')"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -240,4 +276,7 @@ cases=(
   "a closed seed is done|t_fs_closed_seed_done"
   "an open blocker holds the issue|t_fs_open_blocker_holds"
   "closed blockers free the issue|t_fs_closed_blockers_free"
+  "a bug turned ticket starts ship-ready|t_fs_bug_turned_ticket"
+  "restart starts a fresh thread|t_fs_restart_fresh_thread"
+  "a failed launch is not started again|t_fs_failed_launch_not_again"
 )

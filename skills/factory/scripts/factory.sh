@@ -4,6 +4,8 @@
 # Usage: factory.sh start <owner/repo> --name <words> --link <thread link> <n>...
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
+#        factory.sh started <owner/repo> <n> <stage> --failed <why>
+#        factory.sh change <owner/repo> restart <n>
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -15,7 +17,8 @@
 # starts it again. It launches nothing: the agent starts each thread with
 # T3's tools and records it with `started`.
 #
-# Exit 0: one JSON line on stdout for start and check, nothing for started.
+# Exit 0: one JSON line on stdout for start and check, nothing for started
+# and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -25,7 +28,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: factory.sh start|check|started <owner/repo> ..."
+usage="usage: factory.sh start|check|started|change <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -173,15 +176,41 @@ cmd_check() {
 }
 
 # ---------- started ----------
+# started <n> <stage> <thread-id> <link>, or <n> <stage> --failed <why>: the
+# claim of that stage becomes the thread the agent launched, or a failed
+# launch. A failed one is never started again; `restart` clears it.
 cmd_started() {
-  [ $# -eq 4 ] || die "usage: factory.sh started <owner/repo> <n> <stage> <thread-id> <link>"
+  [ $# -eq 4 ] || die "usage: factory.sh started <owner/repo> <n> <stage> <thread-id> <link> | --failed <why>"
   newest_run
-  local n="$1" st="$2"
+  local n="$1" st="$2" upd
   [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s and .status == "pending")] | length' <<<"$S")" -gt 0 ] \
     || die "#$n has no pending thread at stage $st"
-  S="$(jq -c --argjson n "$n" --arg s "$st" --arg id "$3" --arg link "$4" '
+  if [ "$3" = --failed ]; then
+    upd="$(jq -cn --arg why "$4" '{status: "failed", why: $why}')"
+  else
+    upd="$(jq -cn --arg id "$3" --arg link "$4" '{thread: $id, link: $link, status: "started"}')"
+  fi
+  S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
-    | .threads[$i] += {thread: $id, link: $link, status: "started"}' <<<"$S")"
+    | .threads[$i] += $u' <<<"$S")"
+  save
+}
+
+# ---------- change ----------
+# change restart <n>: drop #n's newest thread record, so the next check
+# starts a fresh thread at #n's stage.
+cmd_change() {
+  newest_run
+  case "${1:-}" in
+    restart)
+      [[ "${2:-}" =~ ^#?([0-9]+)$ ]] || die "usage: factory.sh change <owner/repo> restart <n>"
+      local n="${BASH_REMATCH[1]}"
+      [ "$(jq --argjson n "$n" '[.threads[] | select(.number == $n)] | length' <<<"$S")" -gt 0 ] \
+        || die "#$n has no thread to restart"
+      S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
+      ;;
+    *) die "usage: factory.sh change <owner/repo> restart <n>" ;;
+  esac
   save
 }
 
@@ -189,5 +218,6 @@ case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
   started) cmd_started "$@" ;;
+  change) cmd_change "$@" ;;
   *) die "$usage" ;;
 esac
