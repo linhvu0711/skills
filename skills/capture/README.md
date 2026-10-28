@@ -29,7 +29,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [to-issue](../to-issue/), which rewrite the `[bug]` into the ticket in place.
 - Called by [ready-pr](../ready-pr/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff](../handoff/) to file a bug.
-- Named by [kickoff](../kickoff/), [set-coding-standards](../set-coding-standards/), and [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the priority labels through its `scripts/conventions.py`.
+- Named by [kickoff-herdr](../kickoff-herdr/), [set-coding-standards](../set-coding-standards/), and [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the priority labels through its `scripts/conventions.py`.
 
 ## Credits
 

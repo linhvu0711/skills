@@ -47,7 +47,7 @@ A PR it did not merge ends `NOT MERGED <url>: <why>`.
 
 - Follows [ship-ready](../ship-ready/) whole and adds only the merge.
 - Runs [ready-pr](../ready-pr/) again on each PR of a stack after the one below it merges, and [prune-worktrees](../prune-worktrees/) at the end.
-- [kickoff](../kickoff/) starts it in a new pane when you say "ship and merge".
+- [kickoff-herdr](../kickoff-herdr/) starts it in a new pane when you say "ship and merge".
 
 ## Credits
 

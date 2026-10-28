@@ -52,7 +52,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - Calls [plan-up](../plan-up/), then [build-and-prove](../build-and-prove/) and [make-pr](../make-pr/), or [handoff](../handoff/) when you name the cloud, then [review-pr](../review-pr/) when the repo has no review tool, then [ready-pr](../ready-pr/).
 - A failed readiness gate sends you to [grill](../grill/) first.
 - After the merge, [prune-worktrees](../prune-worktrees/) removes the worktree and its branch.
-- [kickoff](../kickoff/) starts it in a new pane; else you run it.
+- [kickoff-herdr](../kickoff-herdr/) starts it in a new pane; else you run it.
 
 ## Credits
 
