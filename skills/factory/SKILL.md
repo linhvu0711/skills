@@ -83,14 +83,57 @@ Then post one line per issue of `issues`, set order:
 `<what happens>` is the started thread's link and `/<skill>`, the
 issue's `wait`, `blocked by #a #b`, its thread's link and
 `thread_status`, `launch failed: <why>; say restart #<number>` when
-`claim` is `failed`, `waits: no label` for `unlabeled`, `yours` for
-`task`, or `done`. Lead with `Joined: #a #b` when `joined` is not empty, and
-with `Paused.` when `status` is `paused`. `"done": true`: § Done.
+`claim` is `failed`, `yours` for `task`, or `done`. An `unlabeled`
+issue goes by its `answer`: none, `waits: your answer`, plus
+` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
+`task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
+The `ship` skill reads `/ship-ready`, or `/ship-full` when the user said
+so for that issue or for all. Lead with `Joined: #a #b` when `joined` is
+not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
+§ Done. `propose` not empty: § Propose, after these lines.
+
+## Propose
+
+The issues in `propose` are unlabeled and have no proposal yet. For each,
+in order:
+
+1. **Read.** `gh issue view <n> --json number,title,body,labels,comments`.
+   It fails: the route is `unsure`, and the line is
+   `#<n> · not sure: could not read #<n>: <gh's last stderr line>`.
+2. **Route.** The first case that holds:
+   1. A person must do it outside the repo, per
+      `../../shared/issue-rules.md` § Task body: `task`.
+   2. Something is broken or slow today, by the bug words in
+      `../capture/SKILL.md` § Hard rules: `triage`.
+   3. It passes `## Readiness gate` in `../../shared/issue-rules.md`,
+      at any size by `../../shared/size.md`, XL too: `ship`.
+   4. It has sub-issues: the check makes it an epic first, so it never
+      comes here.
+   5. Its row's `prs` holds an open PR, or its text links one:
+      `ready-pr`.
+   6. It is done, a duplicate, or out of date: `close`, with the proof:
+      the PR, the issue, or the line that shows it.
+   7. An idea that is not decided yet: `grill`.
+   8. No case holds for sure: `unsure`, with the two best guesses and a
+      reason for each.
+3. **Record.** `scripts/factory.sh proposed <owner/repo> <n> <route>`.
+
+Then post one list:
+
+```
+Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
+#<n> <title> · <what> · <reason> · "<quote>"
+#<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · "<quote>"
+```
+
+`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`.
+`<quote>` is at most 12 words from the issue that back the reason.
 
 ## Commands
 
 A live run takes these, said in this thread. Each runs one
-`factory.sh` call, posts one line, and changes nothing else.
+`factory.sh` call, posts one line, and changes nothing else; `add` and
+the answers then run § Check.
 
 - `check now`: § Check.
 - `check every <n> min`: `timer <owner/repo> --every <n>`, then
@@ -102,9 +145,19 @@ A live run takes these, said in this thread. Each runs one
   id and `enabled: true`, then § Check.
 - `stop`: `timer <owner/repo> stop`, then `delete_scheduled_task` on
   the task id. The state file stays for `/factory resume`.
-- `add #n ...`, `remove #n ...`: `change <owner/repo> add|remove <n>...`.
-  A removed issue's thread runs on.
+- `add #n ...`: `change <owner/repo> add <n>...`, then § Check, so a
+  new unlabeled issue gets its proposal.
+- `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
+  issue's thread runs on.
 - `restart #n`: `change <owner/repo> restart <n>`, then § Check.
+- Answers to § Propose: `all yes`, `all skip`, `#n yes`, `#n <skill>`,
+  `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
+  <word>` per part, the per-issue parts first, so `all` fills only the
+  rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`,
+  `ready-pr`, `task`, and `close`; `ship-ready` or `ship-full` is
+  `ship`, and `ship-full` also runs `change <owner/repo> ship full <n>`.
+  A new answer reaches an issue whose thread started only after
+  `restart #n`.
 - `ship-full #n`, `ship-full all`, `ship-ready #n`, `ship-ready all`:
   `change <owner/repo> ship full|ready <n>|all`. Only issues whose
   ticket thread has not started take it.

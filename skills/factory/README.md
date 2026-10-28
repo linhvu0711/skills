@@ -61,4 +61,4 @@ The run lives in `~/.agents/factory/<owner>-<repo>/<start time>/state.json`, out
 
 ## Tests
 
-The cases for [factory.sh](scripts/factory.sh), the route for each stage, blockers, one thread per stage, `restart`, a failed check, and the done rule, are in [tests/factory.sh](tests/factory.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [factory.sh](scripts/factory.sh), the route for each stage, blockers, one thread per stage, `restart`, the proposals and answers, a failed check, and the done rule, are in [tests/factory.sh](tests/factory.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
