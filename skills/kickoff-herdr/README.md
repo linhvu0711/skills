@@ -17,7 +17,7 @@ More than one issue goes in one pane, unless you say "one pane each". Name a mod
 
 ## What you get
 
-A script finds the repo on disk, picks the model, effort, and command from the tickets' labels, opens the pane without taking focus, starts Claude Code there, and types the command into it:
+A shared script finds the repo on disk and picks the model, effort, and command from the tickets' labels. This skill opens the pane without taking focus, starts Claude Code there, and types the command into it:
 
 | Tickets | Model | Effort | Command |
 |---|---|---|---|
@@ -50,8 +50,9 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - Starts [ship-ready](../ship-ready/), [ship-full](../ship-full/), or [plan-up](../plan-up/) in the new pane. It starts ship-full only when you ask for the merge.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
+- It runs the shared decide script, `../../shared/kickoff/decide.sh`, and reads its target rules in `../../shared/kickoff/target.md`.
 - It finds the repo through the shared checkout resolver, `../../shared/checkout.sh`, as [ready-pr](../ready-pr/) and [ship-ready](../ship-ready/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
 
 ## Tests
 
-The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup and the model, effort, command, and name it picks, are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `herdr` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup and the model, effort, command, and name it picks, are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `herdr` of its own. The cases for the shared decide script are in `../../shared/tests/kickoff-decide.sh`. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
