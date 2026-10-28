@@ -208,6 +208,9 @@
   var B = null, S = null, good = null, stale = false, focus = false, openN = null
 
   var ICON_THREAD = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+  // Drawn, not typed: a font without ✓ or ○ shows an empty box.
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+  var ICON_WAIT = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>'
   var ICON_PR = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v7"/><path d="M18 15.5V9a3 3 0 0 0-3-3h-4"/><path d="M13 3.5 10.5 6 13 8.5"/></svg>'
 
   // Titles and reasons come from GitHub and T3, so every text is escaped.
@@ -231,8 +234,8 @@
     var L = links(x), what = esc(x.action)
     if (x.mark === 'you') return '<div class="owner you"><span class="who">You</span><span class="what">' + what + '</span></div>' + (L && !full ? '<div class="links">' + L + '</div>' : '')
     if (x.mark === 'agent') return '<div class="owner agent"><span class="dot agent"></span><span class="what"><span class="mono">' + what + '</span></span><span class="when">' + L + (x.since ? ago(x.since) : '') + '</span></div>'
-    if (x.mark === 'blocked') return '<div class="owner blocked"><span>○</span><span class="what">' + what + '</span></div>'
-    return '<div class="owner done"><span>✓</span><span class="what">' + what + '</span><span class="when">' + L + '</span></div>'
+    if (x.mark === 'blocked') return '<div class="owner blocked">' + ICON_WAIT + '<span class="what">' + what + '</span></div>'
+    return '<div class="owner done">' + ICON_CHECK + '<span class="what">' + what + '</span><span class="when">' + L + '</span></div>'
   }
   function chips(x) {
     var kind = x.chip === 'bug' ? 'bug' : x.chip === 'seed' ? 'seed' : ''
@@ -287,7 +290,11 @@
     b.className = 'banner' + (bh ? ' on ' + bc : ''); b.innerHTML = bh
   }
 
+  // The board is drawn again on each read, so a focused card would lose its
+  // focus every 5 s; it gets it back by its number.
   function render() {
+    var had = document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')
+    var hadN = had ? had.getAttribute('data-n') : null
     document.body.classList.toggle('stale', stale)
     top()
     var loading = !B
@@ -296,6 +303,7 @@
       var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
       return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
     }).join('')
+    if (hadN) { var c = document.querySelector('.card[data-n="' + hadN + '"]'); if (c) c.focus() }
     if (openN != null) openDrawer(openN, true)
   }
 
@@ -324,7 +332,12 @@
     document.body.classList.add('open')
     if (!quiet) $('x').focus()
   }
-  function closeDrawer() { openN = null; document.body.classList.remove('open') }
+  function closeDrawer() {
+    var n = openN
+    openN = null; document.body.classList.remove('open')
+    var c = n != null && document.querySelector('.card[data-n="' + n + '"]')
+    if (c) c.focus()
+  }
 
   document.addEventListener('click', function (e) {
     var c = e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
