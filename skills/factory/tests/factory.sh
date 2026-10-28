@@ -747,6 +747,17 @@ t_fs_start_needs_env() {
   eq stderr "stop: usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
 }
 
+t_fs_board_chips() {
+  # Given: a bug, a seed, a manual task, an unlabeled issue, and three tickets titled "[fix] ...", "feat: ...", and with no type
+  fs_setup; fs_issue 41 OPEN '["bug"]'; fs_issue 42 OPEN '["seed"]'; fs_issue 43 OPEN '["manual"]'; fs_issue 44 OPEN '["p1"]'
+  fs_issue 45 OPEN '["size/S"]' '[]' '[]' '[]' "[fix] Refund rows"; fs_issue 46 OPEN '["size/M"]' '[]' '[]' '[]' "feat: retry an export"
+  fs_issue 47 OPEN '["size/L"]' '[]' '[]' '[]' "Email a link"; fs_start 41 42 43 44 45 46 47
+  # When
+  fs_go check acme/app
+  # Then
+  eq chips '["bug","seed","task","unlabeled","fix · S","feat · M","ticket · L"]' "$(fs_board '[.issues[] | .chip]')"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
@@ -806,4 +817,5 @@ cases=(
   "a second check leaves one board file|t_fs_board_one_file"
   "start copies the board page into the run|t_fs_start_copies_page"
   "start without an env id stops|t_fs_start_needs_env"
+  "the board chip is the kind and the size|t_fs_board_chips"
 )

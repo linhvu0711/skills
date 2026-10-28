@@ -105,6 +105,21 @@ size_label() {
   done < <(jq -r '.labels.nodes[].name' <<<"$1")
 }
 
+# chip <issue json>: the card's chip, the kind and the size, by the labels
+# in the order stage reads them. A ticket's type is its title's leading
+# word, `[fix] x` or `fix(scope): x`, as issue-rules.md § Title writes it.
+chip() {
+  local labels size type
+  labels="$(jq -r '.labels.nodes[].name | ascii_downcase' <<<"$1")"
+  if grep -qx manual <<<"$labels"; then echo task
+  elif grep -qx bug <<<"$labels"; then echo bug
+  elif grep -qx seed <<<"$labels"; then echo seed
+  elif size="$(size_label "$1")" && [ -n "$size" ]; then
+    type="$(jq -r '.title | (capture("^\\[(?<t>[A-Za-z]+)\\]") // capture("^(?<t>[A-Za-z]+)(\\([^)]*\\))?!?:") // {t: "ticket"}).t | ascii_downcase' <<<"$1")"
+    echo "$type · $size"
+  else echo unlabeled; fi
+}
+
 # stage <issue json> <run start>: where the issue is. Closed comes first,
 # since a closed seed keeps its label. A PR counts only when it was open
 # before the run: a PR the run's own thread opened is that thread's work.
@@ -164,7 +179,8 @@ thread_link() { printf '[factory: %s](t3-thread://v1/%s)' "$1" "$2"; }
 
 # ---------- board ----------
 # board: a jq program on null, with the state as $S and the check's rows as
-# $rows: the board page's data. An epic is no card: its sub-issues are.
+# $rows, and what only the board needs as $cards, keyed by number: the
+# board page's data. An epic is no card: its sub-issues are.
 # shellcheck disable=SC2016 # the $ names are jq variables
 board='
   def column: if .stage == "done" then "done"
@@ -173,15 +189,15 @@ board='
     else "shape" end;
   {repo: $S.repo, name: $S.name,
    issues: [$rows[] | select(.stage != "epic")
-     | {number, title, url: "https://github.com/\($S.repo)/issues/\(.number)", column: column}]}'
+     | {number, title, url: "https://github.com/\($S.repo)/issues/\(.number)", column: column, chip: $cards[.number | tostring].chip}]}'
 
-# write_board <rows>: board.json in the run folder, under a temp name, then
+# write_board <rows> <cards>: board.json in the run folder, under a temp name, then
 # renamed into place, as save writes the state. Only a good check calls it,
 # so a failed one leaves the last good board.
 write_board() {
   local tmp
   tmp="$(mktemp "$run/.board.XXXXXX")"
-  jq -n --argjson S "$S" --argjson rows "$1" "$board" > "$tmp"
+  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" "$board" > "$tmp"
   mv "$tmp" "$run/board.json"
 }
 
@@ -255,7 +271,7 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: .status}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]"
+  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]" cards="{}"
   for n in $(jq -r '.set[]' <<<"$S"); do
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
@@ -291,6 +307,7 @@ cmd_check() {
         '. + [$l + {stage: $st, message: "/\($l.command) \($l.args)", thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
       claims="$(jq -c --argjson n "$n" --arg st "$st" '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null}]' <<<"$claims")"
     fi
+    cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
     rows="$(jq -c --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
       --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
       '. + [{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
@@ -313,7 +330,7 @@ cmd_check() {
   S="$(jq -c --argjson c "$claims" --argjson done "$done" \
     '.threads += $c | .timer.fails = 0 | if $done then .status = "done" else . end' <<<"$S")"
   save
-  write_board "$rows"
+  write_board "$rows" "$cards"
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" '
     {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
