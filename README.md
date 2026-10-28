@@ -38,10 +38,14 @@ flowchart LR
   ticket([issue or epic]) --> shipready
   ticket --> shipfull[ship-full]
   ticket --> kickoffherdr[kickoff-herdr]
+  ticket --> kickofft3[kickoff-t3]
   ticket --> planup[plan-up]
   kickoffherdr -->|new pane| planup
   kickoffherdr -->|new pane| shipready
   kickoffherdr -->|new pane| shipfull
+  kickofft3 -->|new thread| planup
+  kickofft3 -->|new thread| shipready
+  kickofft3 -->|new thread| shipfull
   subgraph shipready [ship-ready: one run]
     direction LR
     sp[plan-up] --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
@@ -89,6 +93,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | Skill | What it does |
 |---|---|
 | [kickoff-herdr](skills/kickoff-herdr/) | Opens a new herdr pane and starts `/ship-ready` or `/plan-up` there on an issue, a run of tickets, or an epic. |
+| [kickoff-t3](skills/kickoff-t3/) | Starts `/ship-ready`, `/ship-full`, or `/plan-up` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [ship-ready](skills/ship-ready/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
 | [ship-full](skills/ship-full/) | The same run as ship-ready, then it merges each ready PR and removes the merged worktrees. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
@@ -133,12 +138,13 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship-ready](skills/ship-ready/), [ship-full](skills/ship-full/), [kickoff-herdr](skills/kickoff-herdr/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
+- `jq`, for the skills that call an API: [ship-ready](skills/ship-ready/), [ship-full](skills/ship-full/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
+- T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship-ready](skills/ship-ready/) and [ship-full](skills/ship-full/) on their local route.
 - Devin: [handoff](skills/handoff/), [ship-ready](skills/ship-ready/) and [ship-full](skills/ship-full/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
