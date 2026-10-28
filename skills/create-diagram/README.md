@@ -21,7 +21,7 @@ Ask about a planned change and the page gets a switch between the current code, 
 
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
 - A way to serve a folder on `127.0.0.1`, such as `python3 -m http.server`.
-- Optional: Playwright MCP in Claude Code (or the Codex in-app browser) so the agent can check the page itself; the `impeccable` skill to match your design system.
+- Optional: playwright-cli in Claude Code, run by `npx @playwright/cli` (or the Codex in-app browser), so the agent can check the page itself in a hidden browser. Ask to watch and it opens a window. Also the `impeccable` skill to match your design system.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.
 
 ## Fits with
