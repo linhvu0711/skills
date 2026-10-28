@@ -193,3 +193,25 @@ _Avoid_: feedback, nag
 **Repeated manual work**:
 The same steps the user did by hand, or spelled out one by one, in two or more sessions. Its fix is a new skill that runs those steps.
 _Avoid_: chore, toil
+
+## Factory
+
+**Factory**:
+The skill, and its pinned T3 thread, that starts one thread for each issue in a Set when the issue has no open blocker and reaches a new Stage. It never builds, merges, or writes in the threads it starts. The user handles each thread.
+_Avoid_: orchestrator, autopilot, scheduler
+
+**Run**:
+One factory pass over one Set, from `/factory` until every issue in the Set is closed or the user stops it. One live Run for each repo.
+_Avoid_: session, job, batch
+
+**Set**:
+The issues a Run must close. It is fixed at the start, from a list, an epic, or a rule such as "assigned to me". The user adds or removes issues. Issues the Run makes (sub-issues, follow-ups) join by themselves.
+_Avoid_: queue, backlog, scope
+
+**Stage**:
+Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, epic, or done. A Stage picks the skill a new thread starts with. One thread for each issue at each Stage.
+_Avoid_: status, state, phase
+
+**Check**:
+One pass of the factory's script. It reads the state file, GitHub, and T3, and prints what to start. A timer runs it every few minutes. A failed Check starts nothing.
+_Avoid_: tick, poll, cycle

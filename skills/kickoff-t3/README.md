@@ -47,7 +47,7 @@ Your tree stays as it is: any branch, edits or not.
 
 - Starts [ship-ready](../ship-ready/), [ship-full](../ship-full/), or [plan-up](../plan-up/) in the new thread. It starts ship-full only when you ask for the merge.
 - [kickoff-herdr](../kickoff-herdr/) does the same in a herdr pane. Both run the shared decide script, `../../shared/kickoff/decide.sh`, and read `../../shared/kickoff/target.md`.
-- Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way.
+- Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way: [factory](../factory/) does.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 
 ## Tests

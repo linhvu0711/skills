@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # factory.sh: the factory's check, and the one writer of a run's state file.
 #
-# Usage: factory.sh start <owner/repo> --name <words> --link <thread link> <n>...
+# Usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> <n>...
 #        factory.sh check <owner/repo>
 #        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        factory.sh started <owner/repo> <n> <stage> --failed <why>
 #        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
-#        factory.sh resume <owner/repo> --link <thread link>
+#        factory.sh resume <owner/repo> --thread <thread-id>
 #
 # A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -132,17 +132,21 @@ joins='
   | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)
   | map(select(. as $x | ($S.set | index([$x]) | not) and ($S.removed | index([$x]) | not)))'
 
+# thread_link <name> <thread-id>: the factory thread's link, as T3 writes a
+# thread's link once the thread has the title `factory: <name>`.
+thread_link() { printf '[factory: %s](t3-thread://v1/%s)' "$1" "$2"; }
+
 # ---------- start ----------
 cmd_start() {
-  local name="" link="" nums=() a
+  local name="" thread="" nums=() a
   while [ $# -gt 0 ]; do
     case "$1" in
       --name) name="${2:-}"; shift 2 ;;
-      --link) link="${2:-}"; shift 2 ;;
+      --thread) thread="${2:-}"; shift 2 ;;
       *) [[ "$1" =~ ^#?([0-9]+)$ ]] || die "unexpected argument: $1"; nums+=("${BASH_REMATCH[1]}"); shift ;;
     esac
   done
-  [ -n "$name" ] && [ -n "$link" ] && [ "${#nums[@]}" -gt 0 ] || die "usage: factory.sh start <owner/repo> --name <words> --link <thread link> <n>..."
+  [ -n "$name" ] && [ -n "$thread" ] && [ "${#nums[@]}" -gt 0 ] || die "usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> <n>..."
   in_t3
   local d st found path got
   for d in "$runs"/*/; do
@@ -157,7 +161,7 @@ cmd_start() {
   path="${found#* MAIN=}"
   run="$runs/$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$runs"; mkdir "$run" || die "a run of $slug started this second; try again"
-  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg link "$link" --arg path "$path" \
+  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, link: $link, path: $path, started_at: $at, status: "running",
       set: $set, removed: [], ship: {default: "ready"}, use: {},
@@ -364,11 +368,12 @@ cmd_timer() {
 }
 
 # ---------- resume ----------
-# resume --link <link>: the newest run of the repo that is not done goes on
-# from the thread that says so. Prints the old timer's task, which the agent
-# deletes before it starts a new one, so a run has one timer.
+# resume --thread <id>: the newest run of the repo that is not done goes on
+# from that thread. Prints the run's name, which the thread takes as its
+# title, and the old timer's task, which the agent deletes before it starts
+# a new one, so a run has one timer.
 cmd_resume() {
-  [ "${1:-}" = --link ] && [ -n "${2:-}" ] || die "usage: factory.sh resume <owner/repo> --link <thread link>"
+  [ "${1:-}" = --thread ] && [ -n "${2:-}" ] || die "usage: factory.sh resume <owner/repo> --thread <thread-id>"
   in_t3
   local d
   run=""
@@ -376,9 +381,10 @@ cmd_resume() {
     [ "$(jq -r .status "$d/state.json")" = done ] || { run="$d"; break; }
   done < <(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
   [ -n "$run" ] || die "no run to resume in $slug"
-  S="$(jq -c --arg l "$2" '.link = $l | .status = "running" | .timer.fails = 0' "$run/state.json")"
+  S="$(cat "$run/state.json")"
+  S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" '.link = $l | .status = "running" | .timer.fails = 0' <<<"$S")"
   save
-  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, old_task: $S.timer.task, every: $S.timer.every}'
+  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: $S.timer.task, every: $S.timer.every}'
 }
 
 case "$cmd" in

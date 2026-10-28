@@ -57,7 +57,7 @@ fs_go() {
 
 # fs_start <n>...: a run of these issues, named after the first.
 fs_start() {
-  fs_go start acme/app --name "#$1" --link "[factory: #$1](t3-thread://v1/f1)" "$@"
+  fs_go start acme/app --name "#$1" --thread f1 "$@"
   eq "start exit" 0 "$code"
 }
 
@@ -68,7 +68,7 @@ t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
   # When
-  fs_go start acme/app --name "#42" --link "[factory: #42](t3-thread://v1/f1)" 42
+  fs_go start acme/app --name "#42" --thread f1 42
   # Then
   eq exit 0 "$code"
   eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
@@ -508,7 +508,7 @@ t_fs_live_run_stops_start() {
   # Given: a running run of #42 from the factory thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
   # When
-  fs_go start acme/app --name "#43" --link x 43
+  fs_go start acme/app --name "#43" --thread x 43
   # Then
   eq exit 1 "$code"
   eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
@@ -520,10 +520,10 @@ t_fs_resume_newest() {
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
   fs_go timer acme/app --task s1; fs_go timer acme/app stop
   # When
-  fs_go resume acme/app --link "[factory: #42](t3-thread://v1/f2)"
+  fs_go resume acme/app --thread f2
   # Then
   eq exit 0 "$code"
-  has stdout '"old_task":"s1","every":5' "$out"
+  has stdout '"name":"#42","old_task":"s1","every":5' "$out"
   eq state '{"status":"running","link":"[factory: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
 }
 
@@ -531,7 +531,7 @@ t_fs_no_open_issue_stops() {
   # Given: #42 is closed
   fs_setup; fs_issue 42 CLOSED '["size/S"]'
   # When
-  fs_go start acme/app --name "#42" --link x 42
+  fs_go start acme/app --name "#42" --thread x 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has no open issue" "$err"
@@ -544,7 +544,7 @@ t_fs_outside_t3_stops() {
   # When
   cd "$T"
   run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
-    bash "$F" start acme/app --name "#42" --link x 42
+    bash "$F" start acme/app --name "#42" --thread x 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: not inside T3 Code" "$err"

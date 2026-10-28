@@ -1,0 +1,3 @@
+# The factory only starts threads
+
+The factory starts one T3 thread for each issue at each Stage and does nothing more with it. It does not retry, fix, message, or answer that thread. The user handles every thread. Most skills ask the user questions along the way. A factory that drove those threads would answer for the user or stall on the questions, and it would act in threads the user is working in. We designed retries after a crash, and re-readying a PR that broke after another PR merged, then dropped both for this reason. A thread that ends with no Stage change stays as it is until the user says `restart #n` in the factory thread.
