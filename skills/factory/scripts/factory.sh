@@ -202,10 +202,10 @@ board='
       elif $t.status == "waiting" then you("Answer the thread")
       elif $t.status == "failed" then you("Thread failed: open it, or say restart #\(.number)")
       elif $t.status == "interrupted" then you("Thread interrupted: open it, or say restart #\(.number)")
+      elif .wait then held("waits: \(.wait)")
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
       elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
       elif $t.status == "running" then agent("/\($rec.command // .skill)") + {since: $t.createdAt}
-      elif .wait then held("waits: \(.wait)")
       elif .stage == "task" then you("Do the task, then close it")
       elif .stage == "unlabeled" then you("Give it a label")
       elif $S.status == "paused" then held("paused: starts on resume")

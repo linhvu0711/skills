@@ -838,6 +838,15 @@ t_fs_board_merge_yours() {
   eq card '{"column":"review","mark":"you","action":"Merge PR #50"}' "$(fs_card 42)"
 }
 
+t_fs_board_wait_before_merge() {
+  # Given: #42's PR 50 is open and its thread completed, then #42 removed
+  fs_merge_ready; fs_go change acme/app remove 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"review","mark":"blocked","action":"waits: removed from the set"}' "$(fs_card 42)"
+}
+
 t_fs_board_unlabeled_yours() {
   # Given: #42, labelled only p1
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -1105,6 +1114,7 @@ cases=(
   "a failed launch is yours|t_fs_board_launch_failed_yours"
   "a free task is yours|t_fs_board_task_yours"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
+  "a wait shows before an open PR|t_fs_board_wait_before_merge"
   "an unlabeled issue is yours|t_fs_board_unlabeled_yours"
   "a running thread is the agent's|t_fs_board_running_agent"
   "a claimed thread is starting|t_fs_board_claimed_starting"
