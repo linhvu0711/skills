@@ -10,7 +10,7 @@ You want to read and approve the plan before any code is written, and still have
 - `/ship-after-review <epic-url> #12 #14`, `/ship-after-review <issue-url> #14 #15`, `/ship-after-review <epic-url>`: a stack of PRs, one plan page for the whole stack.
 - `/ship-after-review <issue-url> on <pr-url>`: a new layer on an open stack.
 - Any of the above with `devin` or `cursor` at the end: built in the cloud after your `ok`.
-- `/ship-after-review` with no URL: the plan or the work this chat holds, as for ship-ready. A plan from `/plan-up` that has no `ok` yet shows its page again and waits.
+- `/ship-after-review` with no URL: the plan or the work this chat holds, as for ship-ready. A plan from `/plan-up` that has no `ok` yet shows its page again and waits. Words with a plan you already approved are an edit: the page shows again and waits for a new `ok`.
 
 Use [ship-ready](../ship-ready/) when you trust the plan without a look, and [ship-full](../ship-full/) when you also want the merge done. It only runs when you call it.
 

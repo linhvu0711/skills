@@ -63,7 +63,7 @@ one.
 
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: layer `n` of
-  a run's plan, its branch made from `<branch>`. `/ship-ready` and `/ship-full` use this form.
+  a run's plan, its branch made from `<branch>`. `/ship-ready`, `/ship-after-review`, and `/ship-full` use this form.
 - `/build-and-prove <note>`: an answer or follow-up for the pane this
   chat started (§ Follow-up).
 - No plan named and none in this chat: say `Run /plan-up first.` and
@@ -73,7 +73,7 @@ one.
 
 Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
 in Codex. It holds one item per step of § Steps, its number and bold
-title word for word, as in `5. Coding.` Run by `/ship-ready` or `/ship-full`, open no list of
+title word for word, as in `5. Coding.` Run by `/ship-ready`, `/ship-after-review`, or `/ship-full`, open no list of
 your own: ship-ready's list already holds these steps under its step 4, so
 mark those items.
 

@@ -39,8 +39,10 @@ Ship-ready's § No URL, with its case 2 changed:
 
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
    with no build yet. Hold its `.md`, the path its summary names.
-   - It got `ok` already, as `/plan-up` alone ends: say `Plan: <path>`
-     and go on to step 2.
+   - It got `ok` already, as `/plan-up` alone ends: say `Plan: <path>`.
+     No words with it: go on to step 2. Words with it are an edit: make
+     it as step 1 does, show the summary with the page URL, and wait
+     for `ok` again.
    - It has no ok yet: run `../../shared/serve.sh` again for its page,
      print its summary with the URL and the `Say ok` line, and wait as
      step 1 does. Its base copy stays until `ok` or `stop`. Words with
