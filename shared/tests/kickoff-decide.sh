@@ -102,8 +102,18 @@ t_kd_bad_command() {
   kd_run --command deploy https://github.com/acme/app/issues/42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship-ready, ship-full, ship-after-review, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
   eq stdout "" "$out"
+}
+
+t_kd_ship_after_review_row() {
+  # Given: #42 size/L, one checkout of acme/app
+  kd_setup '[{"name":"size/L"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command ship-after-review https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  has stdout '"command":"ship-after-review","command_from":"set","model":"opus","model_from":"default","effort":"high"' "$out"
 }
 
 t_kd_overrides_command_row() {
@@ -164,7 +174,8 @@ cases=(
   "decide stops before any launch|t_kd_stops_no_checkout"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
-  "a bad command names the six values|t_kd_bad_command"
+  "a bad command names the seven values|t_kd_bad_command"
+  "ship-after-review takes the size row|t_kd_ship_after_review_row"
   "model and effort win over a command row|t_kd_overrides_command_row"
   "ready-pr takes the opus medium row and the open PR|t_kd_ready_pr_row"
   "ready-pr with no open PR stops|t_kd_ready_pr_no_pr"

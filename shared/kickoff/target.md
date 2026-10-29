@@ -39,6 +39,9 @@ Flags you may add:
   when the user names the command: "plan only" is `plan-up`, "ship it"
   is `ship-ready`, "ship and merge" or "full ship" is `ship-full`. The
   table never picks `ship-full`: a merge needs the user's words.
+- `--command ship-after-review` when the user names it: "ship after I
+  read the plan" is `ship-after-review`. The table never picks it; the
+  orchestrator names it for a ticket that is not ready-to-build, XS, or S.
 - `--command triage`, `--command grill`, or `--command ready-pr` when
   the user names that skill: "triage it" is `triage`, "grill it" is
   `grill`, "ready the PR" is `ready-pr`. The table never picks these.

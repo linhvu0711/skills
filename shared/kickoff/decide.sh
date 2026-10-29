@@ -2,7 +2,7 @@
 # decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the orchestrator's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
-#                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
+#                  [--command ship-ready|ship-full|ship-after-review|plan-up|triage|grill|ready-pr]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -39,7 +39,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship-ready|ship-full|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship-ready|ship-full|ship-after-review|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship-ready, ship-full, ship-after-review, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
@@ -48,7 +48,7 @@ while [ $# -gt 0 ]; do
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|ship-after-review|plan-up|triage|grill|ready-pr] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
