@@ -95,7 +95,7 @@ issue's `wait`, `blocked by #a #b`, its thread's link and
 `thread_status`, `launch failed: <why>; say restart #<number>` when
 `claim` is `failed`, `yours` for `task`, or `done`. An `unlabeled`
 issue goes by its `answer`: none, `waits: your answer`, plus
-` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
+` (proposed /<proposal_skill>)` when `proposal_skill` is not null; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
 The `ship` skill reads `/ship-ready` for an issue that is
 `ready-to-build`, XS, or S, by its size label or its proposal's size, and
@@ -137,8 +137,9 @@ in order:
    takes no size.
 4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <n> <route>`,
    plus `--size <size>` when step 3 gave one. It prints one JSON line:
-   the `model` and `effort` the thread would get, from the same table
-   the launch reads, or both `null` with a `why`.
+   the `command` the thread would start, by the run's ship mode for a
+   `ship`, and the `model` and `effort` it would get, from the same
+   table the launch reads, or both `null` with a `why`.
 
 Then post one list:
 
@@ -148,7 +149,8 @@ Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
 #<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size facts> · "<quote>"
 ```
 
-`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`.
+`<what>` is `/<command>` from step 4's line, `yours` for `task`, or
+`close it` for `close`.
 `<size facts>` is step 3's facts line; no size, leave it out.
 `<model> <effort>` is from step 4's line, as `opus medium`; `null`:
 `no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most

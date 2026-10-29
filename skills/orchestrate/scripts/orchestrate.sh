@@ -238,7 +238,7 @@ board='
       elif .stage == "task" or (.stage == "unlabeled" and .answer == "task") then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
-          ship: ": /ship-ready", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
+          ship: ": /\(.proposal_skill)", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
       elif .stage == "unlabeled" and .answer == "close" then you("Close it")
       elif .stage == "unlabeled" and .answer == "skip" then held("skipped")
       elif $S.status == "paused" then held("paused: starts on resume")
@@ -351,7 +351,7 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
+  local n j st sk psk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
@@ -369,6 +369,8 @@ cmd_check() {
     rec="$(jq -c --argjson n "$n" '[.threads[] | select(.number == $n)] | last' <<<"$S")"
     # A run started before proposals existed has no key; it reads as none.
     prop="$(jq -c --arg n "$n" '(.proposals // {})[$n]' <<<"$S")"
+    # The skill a ship proposal would start, by the same mode its launch reads.
+    psk="$(skill "$(answer_stage "$(jq -r '.route // empty' <<<"$prop")")" "$(ship_mode "$n" "$j")")"
     line=""; wait=""
     [ "$gone" = false ] || wait="removed from the set"
     if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
@@ -389,13 +391,13 @@ cmd_check() {
     fi
     cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
     row="$(jq -cn --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
-      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
+      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" --arg psk "$psk" \
       '{number: $j.number, title: $j.title, stage: $st, free: $free, blocked_by: $b,
              skill: (if $sk == "" then null else $sk end),
              thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread].status else null end),
              claim: $rec.status, why: $rec.why,
              prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
-             proposal: $prop.route, answer: $prop.answer}
+             proposal: $prop.route, answer: $prop.answer, proposal_skill: (if $psk == "" then null else $psk end)}
            + (if $wait == "" then {} else {wait: $wait} end)')"
     if [ "$gone" = true ]; then gone_rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$gone_rows")"
     else rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"; fi
@@ -476,8 +478,9 @@ cmd_proposed() {
   if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
   fi
-  jq -cn --argjson n "$n" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \
-    '{number: $n, route: $r, size: (if $z == "" then null else $z end), model: $l.model, effort: $l.effort}
+  jq -cn --argjson n "$n" --arg r "$route" --arg z "$size" --arg sk "$sk" --argjson l "$line" --arg why "$why" \
+    '{number: $n, route: $r, size: (if $z == "" then null else $z end), command: (if $sk == "" then null else $sk end),
+      model: $l.model, effort: $l.effort}
      + (if $why == "" then {} else {why: $why} end)'
 }
 

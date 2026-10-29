@@ -638,7 +638,7 @@ t_fs_proposed_prints_row() {
   fs_go proposed acme/app 42 ship --size M
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
+  eq stdout '{"number":42,"route":"ship","size":"M","command":"ship-after-review","model":"opus","effort":"high"}' "$out"
   eq proposals '{"42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
 }
 
@@ -650,7 +650,7 @@ t_fs_proposed_use_wins() {
   fs_go proposed acme/app 42 grill
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
+  eq stdout '{"number":42,"route":"grill","size":null,"command":"grill","model":"opus","effort":"max"}' "$out"
 }
 
 t_fs_proposed_ship_needs_size() {
@@ -681,7 +681,7 @@ t_fs_proposed_no_model() {
   fs_go proposed acme/app 42 close
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"close","size":null,"model":null,"effort":null}' "$out"
+  eq stdout '{"number":42,"route":"close","size":null,"command":null,"model":null,"effort":null}' "$out"
 }
 
 t_fs_proposed_decide_stop() {
@@ -692,7 +692,7 @@ t_fs_proposed_decide_stop() {
   fs_go proposed acme/app 42 ready-pr
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
+  eq stdout '{"number":42,"route":"ready-pr","size":null,"command":"ready-pr","model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
   eq route '"ready-pr"' "$(fs_state '.proposals["42"].route')"
 }
 
@@ -993,6 +993,15 @@ t_fs_board_proposal_yours() {
   fs_go check acme/app
   # Then
   eq card '{"column":"shape","mark":"you","action":"Answer the proposal: /grill"}' "$(fs_card 42)"
+}
+
+t_fs_board_ship_proposal_yours() {
+  # Given: unlabeled #42, proposed ship at size M, no answer
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 ship --size M
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"shape","mark":"you","action":"Answer the proposal: /ship-after-review"}' "$(fs_card 42)"
 }
 
 t_fs_board_unsure_yours() {
@@ -1297,6 +1306,7 @@ cases=(
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
   "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
   "a proposal with no answer is yours|t_fs_board_proposal_yours"
+  "a ship proposal names the skill it would start|t_fs_board_ship_proposal_yours"
   "an unsure proposal is yours|t_fs_board_unsure_yours"
   "a skip, close, or task answer shows on the card|t_fs_board_answers"
   "a wait shows before an open PR|t_fs_board_wait_before_merge"
