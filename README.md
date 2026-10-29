@@ -37,6 +37,7 @@ flowchart LR
 flowchart LR
   ticket([issue or epic]) --> shipready
   ticket --> shipfull[ship-full]
+  ticket --> shipafter[ship-after-review]
   ticket --> kickoffherdr[kickoff-herdr]
   ticket --> kickofft3[kickoff-t3]
   ticket --> orchestrate[orchestrate]
@@ -57,6 +58,7 @@ flowchart LR
   planup --> ho[handoff]
   shipready --> done([PR ready: you merge])
   shipfull -.->|its run, then merge| shipready
+  shipafter -.->|plan review, then its run| shipready
   shipfull --> merged([PR merged])
   ho --> done
   readypr --> done
@@ -67,6 +69,7 @@ flowchart LR
 Solid line: next step. Dotted line: a skill it calls during its run.
 
 - [ship-ready](skills/ship-ready/) does the whole path in one run: plan, build and prove, open the PR, then ready it. Use it when you do not need to watch each step. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
+- [ship-after-review](skills/ship-after-review/) does the same run, but opens the plan as a page first and builds only after you say `ok`. Use it when you want to read the plan before any code is written.
 - [ship-full](skills/ship-full/) does the same run, then merges each PR once it is ready, bottom of a stack first, and removes the merged worktrees. Use it when you do not need to look at the PR before it merges.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship-ready, or ready-pr) until all are closed.
 - To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff-herdr](skills/kickoff-herdr/) to start it, or ship-ready, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
@@ -100,6 +103,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [kickoff-t3](skills/kickoff-t3/) | Starts `/ship-ready`, `/ship-full`, or `/plan-up` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [ship-ready](skills/ship-ready/) | Takes an issue from plan to a pull request that is ready to merge, in one run. It never merges. |
+| [ship-after-review](skills/ship-after-review/) | The same run as ship-ready, with a stop for you to review the plan page first. It never merges. |
 | [ship-full](skills/ship-full/) | The same run as ship-ready, then it merges each ready PR and removes the merged worktrees. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
@@ -143,15 +147,15 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship-ready](skills/ship-ready/), [ship-full](skills/ship-full/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
+- `jq`, for the skills that call an API: [ship-ready](skills/ship-ready/), [ship-after-review](skills/ship-after-review/), [ship-full](skills/ship-full/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
-- proofbox: [build-and-prove](skills/build-and-prove/), and [ship-ready](skills/ship-ready/) and [ship-full](skills/ship-full/) on their local route.
-- Devin: [handoff](skills/handoff/), [ship-ready](skills/ship-ready/) and [ship-full](skills/ship-full/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
+- proofbox: [build-and-prove](skills/build-and-prove/), and [ship-ready](skills/ship-ready/), [ship-after-review](skills/ship-after-review/), and [ship-full](skills/ship-full/) on their local route.
+- Devin: [handoff](skills/handoff/), [ship-ready](skills/ship-ready/), [ship-after-review](skills/ship-after-review/), and [ship-full](skills/ship-full/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).

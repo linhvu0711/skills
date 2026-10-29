@@ -69,7 +69,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Takes tickets from [to-issue](../to-issue/) and runs from [to-epic](../to-epic/).
 - Sends a failed gate to [grill](../grill/) or [triage](../triage/).
 - Its plan goes to [build-and-prove](../build-and-prove/), which builds it on your machine with proofbox, or to [handoff](../handoff/), which sends it to Devin or Cursor. [ship-ready](../ship-ready/) picks one.
-- [ship-ready](../ship-ready/) and [ship-full](../ship-full/) run it as their first step, and [kickoff-herdr](../kickoff-herdr/) runs it, or either of them, in a new pane.
+- [ship-ready](../ship-ready/) and [ship-full](../ship-full/) run it as their first step with no wait, [ship-after-review](../ship-after-review/) with its page and wait, and [kickoff-herdr](../kickoff-herdr/) runs it, or ship-ready or ship-full, in a new pane.
 
 ## Tests
 

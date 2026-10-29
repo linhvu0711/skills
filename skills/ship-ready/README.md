@@ -1,6 +1,6 @@
 # ship-ready
 
-Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges; [ship-full](../ship-full/) does the same run and merges.
+Takes an issue, a plan you already made, or work you agreed on in the chat, to a pull request that is ready to merge, in one run: plan it, build it, make it ready. It never merges; [ship-full](../ship-full/) does the same run and merges, and [ship-after-review](../ship-after-review/) does it with a stop for you to review the plan first.
 
 ## Use it when
 
@@ -21,7 +21,7 @@ It only runs when you call it.
 
 ## What you get
 
-First the plan, from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. No page opens in your browser: the chat gets a short summary with the file's path, and the run goes on. To read and approve the plan as a page first, run [plan-up](../plan-up/) alone. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; a step it skips stays in the list with the reason. It never merges, never force-pushes a branch it did not make, and never closes a PR; the three rules sit together at the top of the skill. Then the route:
+First the plan, from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. No page opens in your browser: the chat gets a short summary with the file's path, and the run goes on. To read and approve the plan as a page first, run [ship-after-review](../ship-after-review/) instead. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; a step it skips stays in the list with the reason. It never merges, never force-pushes a branch it did not make, and never closes a PR; the three rules sit together at the top of the skill. Then the route:
 
 - **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the walks. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. After the PR's first checks are done, it looks on that PR for a review bot from a short list in `../../shared/review/reviewers.tsv` (Devin Review, CodeRabbit, Cursor Bugbot, Greptile, Macroscope). With none there, [review-pr](../review-pr/) reviews the PR first, and its findings are judged and fixed like a bot's, with nothing posted. A bot not on the list gets a local review too: one review too many, never one too few. Each push of fixes gets a new review; after three rounds that push, one last review fixes nothing and stops the run if it still finds something. Review fixes run their tests on your machine and leave the full suite and the build to the PR's CI when a workflow runs those commands; each one no workflow runs, or all of them in a repo with no CI, runs in a Sandbox. A stack goes layer by layer, bottom first. On a `perf` plan, a review fix to the code the perf command runs measures base and head again in a Sandbox, and the PR's `before → after` row is written again.
 - **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
@@ -53,6 +53,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - A failed readiness gate sends you to [grill](../grill/) first.
 - After the merge, [prune-worktrees](../prune-worktrees/) removes the worktree and its branch.
 - [kickoff-herdr](../kickoff-herdr/) starts it in a new pane; else you run it.
+- [ship-after-review](../ship-after-review/) runs it whole, with a plan review before the build.
 
 ## Credits
 
