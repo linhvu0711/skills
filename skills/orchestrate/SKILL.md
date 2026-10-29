@@ -1,29 +1,29 @@
 ---
-name: factory
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship-ready, /ship-full, or /ready-pr. The user handles each thread. Also takes /factory check, /factory resume, and the commands of a live run."
+name: orchestrate
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship-ready, /ship-full, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
-This thread is the factory. A script, `scripts/factory.sh`, owns the
+This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the
 run's state file and decides what to start; you start each thread with
-T3's tools, keep the timer, and report. Every `factory.sh` call takes
+T3's tools, keep the timer, and report. Every `orchestrate.sh` call takes
 the repo as `<owner/repo>`, from `gh repo view --json nameWithOwner`
 in this thread's folder. Exit 1 from it: the last stderr line starts
 with `stop:`; show it as is, and that command ends there.
 
 ## Never
 
-The factory only starts threads (ADR 0013). Each thread it starts is
-the user's from its first turn: leave it to them. So the factory starts
+The orchestrator only starts threads (ADR 0013). Each thread it starts is
+the user's from its first turn: leave it to them. So the orchestrator starts
 a thread once, and a thread that failed or ended with no new stage
 waits for the user's `restart #n`. It writes nothing to GitHub: no
 comment, no label, no close, no merge.
 
 ## Start
 
-`/factory <set>`, in a T3 Code thread.
+`/orchestrate <set>`, in a T3 Code thread.
 
 1. **Set.** Turn the user's words into issue numbers in this repo,
    once, per `../../shared/kickoff/target.md` § Resolving the target
@@ -33,7 +33,7 @@ comment, no label, no close, no merge.
    set in a few words: `#12 #14`, `epic #70 Order export`,
    `assigned to me`.
 2. **Thread.** `t3_thread_update` with `action: rename`, no
-   `threadId`, `title: factory: <name>`. Then `t3_thread_list` with
+   `threadId`, `title: orchestrate: <name>`. Then `t3_thread_list` with
    `titleContains` that title, and hold the `threadId` of the thread
    with that exact title: no environment variable names this thread.
    Then `t3_environment_read`, and hold its `environmentId`: the board's
@@ -41,18 +41,18 @@ comment, no label, no close, no merge.
 3. **Run.**
 
    ```bash
-   scripts/factory.sh start <owner/repo> --name "<name>" --thread <threadId> --env <environmentId> <n>...
+   scripts/orchestrate.sh start <owner/repo> --name "<name>" --thread <threadId> --env <environmentId> <n>...
    ```
 
    Its stops: `not inside T3 Code`, `a live run in <owner/repo>: <link>`
-   (show the link: that thread is the factory), `<name> has no open
+   (show the link: that thread is the orchestrator), `<name> has no open
    issue`, and the checkout resolver's.
 4. **Pin and timer.** `t3_thread_organize` with `action: pin`, no
-   `threadId`. Then `schedule_task` with `prompt: /factory check`,
+   `threadId`. Then `schedule_task` with `prompt: /orchestrate check`,
    `schedule: {type: interval, everyMs: 300000}`,
-   `bindToCurrentThread: true`, `title: factory: <name>`. Hold its
+   `bindToCurrentThread: true`, `title: orchestrate: <name>`. Hold its
    `scheduledTaskId`, and
-   `scripts/factory.sh timer <owner/repo> --task <scheduledTaskId>`.
+   `scripts/orchestrate.sh timer <owner/repo> --task <scheduledTaskId>`.
 5. **Board, show, and start.** Serve the board from the run folder,
    `run` in step 3's JSON line:
 
@@ -66,10 +66,10 @@ comment, no label, no close, no merge.
 
 ## Check
 
-`/factory check` (the timer's prompt), and `check now`.
+`/orchestrate check` (the timer's prompt), and `check now`.
 
 ```bash
-scripts/factory.sh check <owner/repo>
+scripts/orchestrate.sh check <owner/repo>
 ```
 
 Exit 1: post the `stop:` line in this thread as it is. One that says
@@ -81,8 +81,8 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 
 1. Follow `../../shared/kickoff/launch-t3.md` with the item as its
    line. Its stop lines end this item only.
-2. Started: `scripts/factory.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
-   Not started: `scripts/factory.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
+2. Started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
+   Not started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
 
 Then post one line per issue of `issues`, set order:
 
@@ -126,7 +126,7 @@ in order:
    7. An idea that is not decided yet: `grill`.
    8. No case holds for sure: `unsure`, with the two best guesses and a
       reason for each.
-3. **Record.** `scripts/factory.sh proposed <owner/repo> <n> <route>`.
+3. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <n> <route>`.
 
 Then post one list:
 
@@ -142,7 +142,7 @@ Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
 ## Commands
 
 A live run takes these, said in this thread. Each runs one
-`factory.sh` call, posts one line, and changes nothing else; `add` and
+`orchestrate.sh` call, posts one line, and changes nothing else; `add` and
 the answers then run § Check.
 
 - `check now`: § Check.
@@ -154,7 +154,7 @@ the answers then run § Check.
 - `resume`: `timer <owner/repo> resume`, `schedule_task` with the task
   id and `enabled: true`, then § Check.
 - `stop`: `timer <owner/repo> stop`, then `delete_scheduled_task` on
-  the task id. The state file stays for `/factory resume`.
+  the task id. The state file stays for `/orchestrate resume`.
 - `add #n ...`: `change <owner/repo> add <n>...`, then § Check, so a
   new unlabeled issue gets its proposal.
 - `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
@@ -177,14 +177,14 @@ the answers then run § Check.
 
 ## Resume
 
-`/factory resume`, in any thread of the repo's project.
+`/orchestrate resume`, in any thread of the repo's project.
 
-1. Rename this thread to `factory: resume` and hold its `threadId`
+1. Rename this thread to `orchestrate: resume` and hold its `threadId`
    and the `environmentId`, as § Start step 2.
-2. `scripts/factory.sh resume <owner/repo> --thread <threadId> --env <environmentId>`.
+2. `scripts/orchestrate.sh resume <owner/repo> --thread <threadId> --env <environmentId>`.
    It prints the run's `run`, `name`, `old_task`, and `every`, and puts
    the newest board page in the run folder. Rename this thread to
-   `factory: <name>`.
+   `orchestrate: <name>`.
 3. `old_task` set: `delete_scheduled_task` on it, so the run has one
    timer. Then pin and timer as § Start step 4, with
    `everyMs: <every * 60000>`, then serve and post the board as § Start

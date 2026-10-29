@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# factory.sh: the factory's check, and the one writer of a run's state file.
+# orchestrate.sh: the orchestrator's check, and the one writer of a run's state file.
 #
-# Usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>...
-#        factory.sh check <owner/repo>
-#        factory.sh started <owner/repo> <n> <stage> <thread-id> <link>
-#        factory.sh started <owner/repo> <n> <stage> --failed <why>
-#        factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
-#        factory.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
+# Usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>...
+#        orchestrate.sh check <owner/repo>
+#        orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link>
+#        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
+#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
+#        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
-#        factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
-#        factory.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
+#        orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
+#        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #
-# A run lives in ${FACTORY_HOME:-~/.agents/factory}/<owner>-<repo>/<run-id>/,
+# A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
 # do not hold. Every command works on the repo's newest run. A good check
 # also writes board.json there, the board page's data, and start and resume
@@ -40,12 +40,12 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: factory.sh start|check|started|proposed|change|timer|resume <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|proposed|change|timer|resume <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
 owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"
-runs="${FACTORY_HOME:-$HOME/.agents/factory}/$owner-$repo"
+runs="${ORCHESTRATE_HOME:-$HOME/.agents/orchestrate}/$owner-$repo"
 
 # in_t3: T3 Code sets T3CODE_CLI_PATH to its own t3 command in every chat.
 in_t3() {
@@ -58,7 +58,7 @@ in_t3() {
 newest_run() {
   local d
   d="$(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
-  [ -n "$d" ] || die "no run in $slug; say /factory <set>"
+  [ -n "$d" ] || die "no run in $slug; say /orchestrate <set>"
   run="$d"; S="$(cat "$run/state.json")"
 }
 
@@ -77,7 +77,7 @@ save() {
 copy_page() {
   local tmp
   tmp="$(mktemp "$run/.board.XXXXXX")"
-  sed "s#<meta name=\"factory-run\" content=\"\">#<meta name=\"factory-run\" content=\"$slug/$(basename "$run")\">#" \
+  sed "s#<meta name=\"orchestrate-run\" content=\"\">#<meta name=\"orchestrate-run\" content=\"$slug/$(basename "$run")\">#" \
     "$here/../assets/board.html" > "$tmp"
   mv "$tmp" "$run/board.html"
 }
@@ -175,9 +175,9 @@ joins='
   | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)
   | map(select(. as $x | ($S.set | index([$x]) | not) and ($S.removed | index([$x]) | not)))'
 
-# thread_link <name> <thread-id>: the factory thread's link, as T3 writes a
-# thread's link once the thread has the title `factory: <name>`.
-thread_link() { printf '[factory: %s](t3-thread://v1/%s)' "$1" "$2"; }
+# thread_link <name> <thread-id>: the orchestrator thread's link, as T3 writes a
+# thread's link once the thread has the title `orchestrate: <name>`.
+thread_link() { printf '[orchestrate: %s](t3-thread://v1/%s)' "$1" "$2"; }
 
 # ---------- board ----------
 # board: a jq program on null, with the state as $S and the check's rows as
@@ -257,7 +257,7 @@ cmd_start() {
     esac
   done
   [ -n "$name" ] && [ -n "$thread" ] && [ -n "$env" ] && [ "${#nums[@]}" -gt 0 ] \
-    || die "usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..."
+    || die "usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..."
   in_t3
   local d st found path got
   for d in "$runs"/*/; do
@@ -297,7 +297,7 @@ fail_check() {
 cmd_check() {
   in_t3
   newest_run
-  [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /factory resume"
+  [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
   # of an issue in it, and the follow-ups a PR that closes one lists.
@@ -378,7 +378,7 @@ cmd_check() {
   done
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
-  # that closes one still open. The factory never closes an epic itself.
+  # that closes one still open. The orchestrator never closes an epic itself.
   local done
   done="$(jq --argjson rows "$rows" --argjson is "$issues" '
     $rows != [] and all($rows[];
@@ -405,7 +405,7 @@ cmd_check() {
 # claim of that stage becomes the thread the agent launched, or a failed
 # launch. A failed one is never started again; `restart` clears it.
 cmd_started() {
-  [ $# -eq 4 ] || die "usage: factory.sh started <owner/repo> <n> <stage> <thread-id> <link> | --failed <why>"
+  [ $# -eq 4 ] || die "usage: orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link> | --failed <why>"
   newest_run
   local n="$1" st="$2" upd
   [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s and .status == "pending")] | length' <<<"$S")" -gt 0 ] \
@@ -426,7 +426,7 @@ cmd_started() {
 # with any answer the user already gave. `unsure` is a proposal with no route.
 cmd_proposed() {
   [ $# -eq 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] \
-    || die "usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure"
+    || die "usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure"
   newest_run
   local n="${1#\#}"
   [ "$(jq --argjson n "$n" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$n is not in the set"
@@ -453,7 +453,7 @@ cmd_change() {
   local what="${1:-}" nums a
   case "$what" in
     add|remove)
-      shift; [ $# -gt 0 ] || die "usage: factory.sh change <owner/repo> $what <n>..."
+      shift; [ $# -gt 0 ] || die "usage: orchestrate.sh change <owner/repo> $what <n>..."
       for a in "$@"; do [[ "$a" =~ ^#?[0-9]+$ ]] || die "unexpected argument: $a"; done
       nums="$(printf '%s\n' "$@" | tr -d '#' | jq -cs .)"
       if [ "$what" = add ]; then
@@ -463,7 +463,7 @@ cmd_change() {
       fi
       ;;
     restart)
-      [[ "${2:-}" =~ ^#?([0-9]+)$ ]] || die "usage: factory.sh change <owner/repo> restart <n>"
+      [[ "${2:-}" =~ ^#?([0-9]+)$ ]] || die "usage: orchestrate.sh change <owner/repo> restart <n>"
       local n="${BASH_REMATCH[1]}"
       [ "$(jq --argjson n "$n" '[.threads[] | select(.number == $n)] | length' <<<"$S")" -gt 0 ] \
         || die "#$n has no thread to restart"
@@ -471,7 +471,7 @@ cmd_change() {
       ;;
     ship)
       [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
-        || die "usage: factory.sh change <owner/repo> ship full|ready <n>|all"
+        || die "usage: orchestrate.sh change <owner/repo> ship full|ready <n>|all"
       local mode="$2" who="${3#\#}"
       # shellcheck disable=SC2016 # the $ names are jq variables
       local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'
@@ -487,7 +487,7 @@ cmd_change() {
       fi
       ;;
     use)
-      [[ "${2:-}" =~ ^(all|#?[0-9]+)$ ]] || die "usage: factory.sh change <owner/repo> use <n>|all [--model M] [--effort E]"
+      [[ "${2:-}" =~ ^(all|#?[0-9]+)$ ]] || die "usage: orchestrate.sh change <owner/repo> use <n>|all [--model M] [--effort E]"
       local key="${2#\#}" pick="{}"
       shift 2
       while [ $# -gt 0 ]; do
@@ -502,7 +502,7 @@ cmd_change() {
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
     answer)
-      local ausage="usage: factory.sh change <owner/repo> answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close"
+      local ausage="usage: orchestrate.sh change <owner/repo> answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close"
       [ $# -eq 3 ] && [[ "$2" =~ ^(all|#?[0-9]+)$ ]] && [[ "$3" =~ ^(yes|skip|grill|triage|ship|ready-pr|task|close)$ ]] || die "$ausage"
       local who="${2#\#}" word="$3"
       if [ "$who" = all ]; then
@@ -521,7 +521,7 @@ cmd_change() {
         S="$(jq -c --arg n "$who" --arg w "$word" '.proposals[$n] = {route: ((.proposals // {})[$n].route), answer: $w}' <<<"$S")"
       fi
       ;;
-    *) die "usage: factory.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
+    *) die "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac
   save
 }
@@ -541,7 +541,7 @@ cmd_timer() {
       case "$(jq -r .status <<<"$S")" in done) die "the run in $slug is done" ;; esac
       case "$1" in pause) st=paused ;; resume) st=running ;; stop) st=stopped ;; esac
       S="$(jq -c --arg s "$st" '.status = $s' <<<"$S")" ;;
-    *) die "usage: factory.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop" ;;
+    *) die "usage: orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop" ;;
   esac
   save
   jq -c '{status, task: .timer.task, every: .timer.every}' <<<"$S"
@@ -554,7 +554,7 @@ cmd_timer() {
 # a new one, so a run has one timer.
 cmd_resume() {
   [ "${1:-}" = --thread ] && [ -n "${2:-}" ] && [ "${3:-}" = --env ] && [ -n "${4:-}" ] \
-    || die "usage: factory.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
+    || die "usage: orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
   in_t3
   local d
   run=""

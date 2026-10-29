@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="factory-run" content="">
+<meta name="orchestrate-run" content="">
 <link rel="icon" href="data:,">
-<title>factory</title>
+<title>orchestrate</title>
 <style>
   :root {
     --bg: #f4f4f5; --col: #ebebee; --card: #ffffff; --ink: #18181b; --muted: #71717a; --faint: #a1a1aa; --line: #e4e4e7;
@@ -175,7 +175,7 @@
 </head>
 <body>
 <div class="top">
-  <div class="brand"><span class="logo">factory</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
+  <div class="brand"><span class="logo">orchestrate</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
   <span class="pill" id="pill"></span>
   <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext"></span></div>
   <div class="health"><span class="dot" id="hdot"></span><span id="htext"></span></div>
@@ -197,7 +197,7 @@
 (function () {
   // The page only reads: board.json, which each good check writes, and
   // state.json, the run's status and timer. Every change goes through the
-  // factory thread.
+  // orchestrator thread.
   var COLS = [
     ['shape', 'Shape', 'Deciding what to build'],
     ['build', 'Build', 'A thread builds it, or you do the task'],
@@ -257,7 +257,7 @@
     var doneN = counted.filter(function (x) { return x.column === 'done' }).length
     var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
     var st = S ? S.status : ''
-    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'factory · ' + S.name }
+    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'orchestrate · ' + S.name }
     var pill = $('pill')
     pill.className = 'pill ' + st
     pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
@@ -281,12 +281,12 @@
     $('board').classList.toggle('focus', focus)
 
     var b = $('banner'), bh = '', bc = ''
-    if (stale) { bc = 'bad'; bh = '<b>Cannot read the page data.</b><span>The page server or the run folder is gone. Showing the last good data from ' + (good ? hhmm(good) : 'never') + '. Run <code>/factory resume</code> in a thread.</span>' }
-    else if (t && t.fails >= 3) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the factory thread.</span>' }
+    if (stale) { bc = 'bad'; bh = '<b>Cannot read the page data.</b><span>The page server or the run folder is gone. Showing the last good data from ' + (good ? hhmm(good) : 'never') + '. Run <code>/orchestrate resume</code> in a thread.</span>' }
+    else if (t && t.fails >= 3) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the orchestrator thread.</span>' }
     else if (t && t.fails > 0) { bc = 'warn'; bh = '<b>Check failing.</b><span>' + esc(t.why) + '. Nothing new starts until a check passes.</span>' }
-    else if (st === 'paused') { bc = 'info'; bh = '<b>Paused.</b><span>Running threads keep going; nothing new starts. Say <code>resume</code> in the factory thread.</span>' }
-    else if (st === 'stopped') { bc = 'info'; bh = '<b>Stopped.</b><span>No more checks. The board shows the last state. Say <code>/factory resume</code> to go on.</span>' }
-    else if (st === 'done') { bc = 'done'; bh = '<b>Done.</b><span>Every issue is closed. The summary is in the factory thread.</span>' }
+    else if (st === 'paused') { bc = 'info'; bh = '<b>Paused.</b><span>Running threads keep going; nothing new starts. Say <code>resume</code> in the orchestrator thread.</span>' }
+    else if (st === 'stopped') { bc = 'info'; bh = '<b>Stopped.</b><span>No more checks. The board shows the last state. Say <code>/orchestrate resume</code> to go on.</span>' }
+    else if (st === 'done') { bc = 'done'; bh = '<b>Done.</b><span>Every issue is closed. The summary is in the orchestrator thread.</span>' }
     b.className = 'banner' + (bh ? ' on ' + bc : ''); b.innerHTML = bh
   }
 

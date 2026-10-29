@@ -2,7 +2,7 @@
   "repo": "linhvu0711/demo",
   "name": "epic #70 Order export",
   "env": "e1",
-  "link": "[factory: epic #70 Order export](t3-thread://v1/f1)",
+  "link": "[orchestrate: epic #70 Order export](t3-thread://v1/f1)",
   "path": "/tmp/demo",
   "started_at": "2026-10-28T09:12:00Z",
   "status": "running",

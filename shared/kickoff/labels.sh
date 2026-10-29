@@ -1,4 +1,4 @@
-# labels.sh: the size rule shared by decide.sh and the factory's check.
+# labels.sh: the size rule shared by decide.sh and the orchestrator's check.
 # Source it; it defines functions and runs nothing.
 #
 # size_of <label>: XS, S, M, L, or XL when the label names a size, matched
