@@ -1,0 +1,3 @@
+# The agent picks the ship mode, with no fixed risk rules
+
+With no option, /ship picks the ship mode from the plan by the agent's own judgment. We considered fixed rules (a one-way door, a schema, API, auth, secrets, or a new dependency forces review), alone or under the agent's judgment, and chose judgment alone: fixed rules miss risks no rule names and add a list to keep. Three things guard it instead: plan-up's big forks still stop for the user in every ship mode, the agent takes the safer ship mode when unsure, and it checks the real change again before a merge and can only move to a safer ship mode.

@@ -194,6 +194,12 @@ _Avoid_: feedback, nag
 The same steps the user did by hand, or spelled out one by one, in two or more sessions. Its fix is a new skill that runs those steps.
 _Avoid_: chore, toil
 
+## Ship
+
+**Ship mode**:
+How far one /ship run takes a ticket: `review` stops after the plan for the user's ok, `ready` stops at a ready-to-merge PR, `merge` merges it. The user forces it with an option; with none, the agent picks it from the plan.
+_Avoid_: lane, path, mode (alone), auto
+
 ## Orchestrator
 
 **Orchestrator**:
