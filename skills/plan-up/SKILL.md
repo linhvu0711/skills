@@ -313,7 +313,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary
    again. `ok`: remove the base copy (step 1), say
-   `Ready for /handoff.` (a chat plan: `Ready for /ship-ready or /ship-full.`, since the
+   `Ready for /handoff.` (a chat plan: `Ready for /ship.`, since the
    cloud needs an issue), and stop.
 
 ## Examples

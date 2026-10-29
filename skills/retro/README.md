@@ -25,7 +25,7 @@ The report also says how many sessions were read, and names any that were not re
 
 ## Fits with
 
-- Use it after a build worth learning from, such as one run with [ship-ready](../ship-ready/).
+- Use it after a build worth learning from, such as one run with [ship](../ship/).
 - Fixes it proposes often land through [set-review-rules](../set-review-rules/) or [audit-coding-standards](../audit-coding-standards/), and through [write-for-agents](../write-for-agents/) for any skill or steering text.
 - [find-cc-session](../find-cc-session/) and [find-co-session](../find-co-session/) find one session; retro reads many with the same scripts.
 
