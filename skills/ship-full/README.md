@@ -12,7 +12,7 @@ You have a ready issue and want it all the way to merged, with no stop for you a
 - Any of the above with `devin` or `cursor` at the end: built in the cloud, then merged.
 - `/ship-full` with no URL: the plan or the work this chat holds, as for ship-ready.
 
-Typing `/ship-full` is your go-ahead to merge. Use [ship-ready](../ship-ready/) when you want to merge yourself. It only runs when you call it.
+Typing `/ship-full` is your go-ahead to merge. Use [ship-ready](../ship-ready/) when you want to merge yourself, or [ship-after-review](../ship-after-review/) when you also want to review the plan before the build. It only runs when you call it.
 
 ## What you get
 
@@ -46,6 +46,7 @@ A PR it did not merge ends `NOT MERGED <url>: <why>`.
 ## Fits with
 
 - Follows [ship-ready](../ship-ready/) whole and adds only the merge.
+- [ship-after-review](../ship-after-review/) is the same run with a plan review and no merge.
 - Runs [ready-pr](../ready-pr/) again on each PR of a stack after the one below it merges, and [prune-worktrees](../prune-worktrees/) at the end.
 - [kickoff-herdr](../kickoff-herdr/) starts it in a new pane when you say "ship and merge".
 
