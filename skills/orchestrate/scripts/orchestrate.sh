@@ -5,7 +5,7 @@
 #        orchestrate.sh check <owner/repo>
 #        orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
-#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure
+#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
@@ -23,14 +23,14 @@
 # is claimed in the state file before it is printed, so a second check never
 # starts it again. It launches nothing: the agent starts each thread with
 # T3's tools and records it with `started`. It also lists the unlabeled
-# issues with no proposal yet; the agent proposes a route for each and
-# records it with `proposed`.
+# issues with no proposal yet; the agent proposes a route and a size for
+# each and records them with `proposed`.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
-# Exit 0: one JSON line on stdout for start, check, timer, and resume;
-# nothing for started, proposed, and change.
+# Exit 0: one JSON line on stdout for start, check, proposed, timer, and
+# resume; nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -158,6 +158,21 @@ answer_stage() {
     ship) echo ticket ;;
     ready-pr) echo pr ;;
   esac
+}
+
+# decide_for <n> <skill> <stage>: decide.sh's line for #n's thread, with the
+# run's model and effort picks, so a proposal and its launch read the same
+# row. Only an unlabeled issue sends its proposal's size: once a size label
+# is on the issue, the label picks the row. Its stop line is left in errf.
+decide_for() {
+  local flags=() model effort size=""
+  model="$(jq -r --arg n "$1" '.use[$n].model // .use.all.model // empty' <<<"$S")"
+  effort="$(jq -r --arg n "$1" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
+  [ "$3" != unlabeled ] || size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
+  [ -z "$model" ] || flags+=(--model "$model")
+  [ -z "$effort" ] || flags+=(--effort "$effort")
+  [ -z "$size" ] || flags+=(--size "$1=$size")
+  bash "$core/kickoff/decide.sh" --command "$2" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$1" 2>"$errf"
 }
 
 # joins: a jq program on the issues just read, with the state as $S: the
@@ -322,7 +337,7 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait flags model effort starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
+  local n j st sk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
@@ -344,14 +359,9 @@ cmd_check() {
     [ "$gone" = false ] || wait="removed from the set"
     if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
-      flags=()
-      model="$(jq -r --arg n "$n" '.use[$n].model // .use.all.model // empty' <<<"$S")"
-      effort="$(jq -r --arg n "$n" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
-      [ -z "$model" ] || flags+=(--model "$model")
-      [ -z "$effort" ] || flags+=(--effort "$effort")
       # A gh failure in decide.sh fails the check; any other stop is this
       # issue's alone, and it waits.
-      if ! line="$(bash "$core/kickoff/decide.sh" --command "$sk" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$n" 2>"$errf")"; then
+      if ! line="$(decide_for "$n" "$sk" "$st")"; then
         wait="$(tail -1 "$errf" | sed 's/^stop: //')"
         case "$wait" in "gh could not"*) fail_check "$wait" ;; esac
       fi
@@ -422,16 +432,38 @@ cmd_started() {
 }
 
 # ---------- proposed ----------
-# proposed <n> <route>: the route the agent proposed for unlabeled #n, kept
-# with any answer the user already gave. `unsure` is a proposal with no route.
+# proposed <n> <route> [--size S]: the route the agent proposed for unlabeled
+# #n, and the size it read from the code, kept with any answer the user
+# already gave. `unsure` is a proposal with no route. A ship needs the size;
+# a task and a close take none, since neither builds code. Prints the model
+# and effort the thread would get; a decide stop keeps the proposal and
+# prints its reason as `why`.
 cmd_proposed() {
-  [ $# -eq 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] \
-    || die "usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure"
+  local pusage="usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]"
+  [ $# -ge 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] || die "$pusage"
+  local n="${1#\#}" route="$2" size="" sk line why=""
+  shift 2
+  if [ $# -gt 0 ]; then
+    [ $# -eq 2 ] && [ "$1" = --size ] && [[ "$2" =~ ^([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "$pusage"
+    size="$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"
+  fi
+  case "$route" in
+    ship) [ -n "$size" ] || die "a ship proposal needs --size XS|S|M|L|XL" ;;
+    task|close) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
+  esac
   newest_run
-  local n="${1#\#}"
   [ "$(jq --argjson n "$n" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$n is not in the set"
-  S="$(jq -c --arg n "$n" --arg r "$2" '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)}' <<<"$S")"
+  S="$(jq -c --arg n "$n" --arg r "$route" --arg z "$size" \
+    '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
+  sk="$(skill "$(answer_stage "$route")" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
+  line="null"
+  if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
+    line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
+  fi
+  jq -cn --argjson n "$n" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \
+    '{number: $n, route: $r, size: (if $z == "" then null else $z end), model: $l.model, effort: $l.effort}
+     + (if $why == "" then {} else {why: $why} end)'
 }
 
 # ---------- change ----------
@@ -518,7 +550,7 @@ cmd_change() {
           word="$(jq -r --arg n "$who" '(.proposals // {})[$n].route // "unsure"' <<<"$S")"
           [ "$word" != unsure ] || die "#$who has no proposal to say yes to; name a skill"
         fi
-        S="$(jq -c --arg n "$who" --arg w "$word" '.proposals[$n] = {route: ((.proposals // {})[$n].route), answer: $w}' <<<"$S")"
+        S="$(jq -c --arg n "$who" --arg w "$word" '.proposals[$n] = ((.proposals // {})[$n] // {}) + {route: ((.proposals // {})[$n].route), answer: $w}' <<<"$S")"
       fi
       ;;
     *) die "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;

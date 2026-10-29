@@ -97,7 +97,7 @@ guess_of() {
 
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
-# ticket is ready-to-build takes the sonnet row. A guessed size wins over a
+# ticket is ready-to-build takes the ready-to-build row, /ship-ready at any size. A guessed size wins over a
 # label, and each guess is counted for the report.
 all_ready=1; top=0; top_size=""; guessed=0
 add_ticket() {
@@ -137,11 +137,11 @@ for s in ${sizes[@]+"${sizes[@]}"}; do
   case " ${list[*]} " in *" ${s%%=*} "*) ;; *) die "--size names #${s%%=*}, which is not in this target" ;; esac
 done
 
-if [ "$all_ready" -eq 1 ]; then model=sonnet; effort=high; command=ship-ready; reason="ready-to-build"
+if [ "$all_ready" -eq 1 ]; then model=opus; effort=medium; command=ship-ready; reason="ready-to-build"
 else
   if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship-ready
-  elif [ "$top" -eq 3 ]; then model=opus; effort=medium; command=plan-up
-  else model=opus; effort=high; command=plan-up; fi
+  elif [ "$top" -le 4 ]; then model=opus; effort=high; command=plan-up
+  else model=opus; effort=xhigh; command=plan-up; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
 case "$set_command" in

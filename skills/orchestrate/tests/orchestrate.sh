@@ -586,7 +586,7 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
@@ -596,6 +596,102 @@ t_fs_proposed_route_word() {
   # Then
   has stdout '"propose":[]' "$out"
   has stdout '"proposal":"unsure"' "$out"
+}
+
+t_fs_proposed_prints_row() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"number":42,"route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
+  eq proposals '{"42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
+}
+
+t_fs_proposed_use_wins() {
+  # Given: a run of unlabeled #42, max effort for all
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  fs_go change acme/app use all --effort max
+  # When
+  fs_go proposed acme/app 42 grill
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"number":42,"route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
+}
+
+t_fs_proposed_ship_needs_size() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 ship
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a ship proposal needs --size XS|S|M|L|XL" "$err"
+  eq proposals '{}' "$(fs_state .proposals)"
+}
+
+t_fs_proposed_task_no_size() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 task --size S
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a task proposal takes no --size" "$err"
+}
+
+t_fs_proposed_no_model() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 close
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"number":42,"route":"close","size":null,"model":null,"effort":null}' "$out"
+}
+
+t_fs_proposed_decide_stop() {
+  # Given: a run of unlabeled #42, no PR closes it
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  printf '{"data":{"repository":{"issue":{"closedByPullRequestsReferences":{"nodes":[]}}}}}\n' > "$FAKE_GH/graphql.json"
+  # When
+  fs_go proposed acme/app 42 ready-pr
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"number":42,"route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
+  eq route '"ready-pr"' "$(fs_state '.proposals["42"].route')"
+}
+
+t_fs_answer_keeps_size() {
+  # Given: #42 proposed ship at size S
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 ship --size S
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 0 "$code"
+  eq proposals '{"42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
+}
+
+t_fs_ship_proposal_size_launches() {
+  # Given: unlabeled #42, proposed ship at size S, answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 ship --size S; fs_go change acme/app answer 42 yes
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
+}
+
+t_fs_label_wins_proposal_size() {
+  # Given: #42 proposed unsure at size S, then labelled size/L
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure --size S
+  fs_issue 42 OPEN '["size/L"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"size L"' "$out"
 }
 
 t_fs_proposed_outside_set() {
@@ -1122,6 +1218,15 @@ cases=(
   "an added unlabeled issue is listed to propose|t_fs_added_unlabeled_listed"
   "proposed takes only a route word|t_fs_proposed_route_word"
   "proposed for an issue outside the set stops|t_fs_proposed_outside_set"
+  "proposed prints the model and effort|t_fs_proposed_prints_row"
+  "proposed takes the use pick|t_fs_proposed_use_wins"
+  "a ship proposal needs a size|t_fs_proposed_ship_needs_size"
+  "a task proposal takes no size|t_fs_proposed_task_no_size"
+  "a close proposal has no model|t_fs_proposed_no_model"
+  "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
+  "an answer keeps the size|t_fs_answer_keeps_size"
+  "a ship proposal launches with its size|t_fs_ship_proposal_size_launches"
+  "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
   "a ship answer starts ship-ready|t_fs_ship_answer_starts"
   "all yes takes every sure proposal|t_fs_all_yes"

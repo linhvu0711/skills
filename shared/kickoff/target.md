@@ -55,14 +55,14 @@ So you can answer questions about it:
 
   | Tickets | Model | Effort | Command |
   |---|---|---|---|
-  | every one `ready-to-build` | `sonnet` | `high` | `/ship-ready` |
+  | every one `ready-to-build` | `opus` | `medium` | `/ship-ready` |
   | all XS or S | `opus` | `medium` | `/ship-ready` |
-  | any M | `opus` | `medium` | `/plan-up` |
-  | any L, XL, or no size | `opus` | `high` | `/plan-up` |
+  | any M or L | `opus` | `high` | `/plan-up` |
+  | any XL, or no size | `opus` | `xhigh` | `/plan-up` |
 
   In a run, a set, or a whole epic the biggest ticket picks the row;
-  only a target whose every ticket is `ready-to-build` takes the sonnet
-  row. A whole epic counts its open tickets. `manual` tickets do not
+  only a target whose every ticket is `ready-to-build` takes the
+  `ready-to-build` row. A whole epic counts its open tickets. `manual` tickets do not
   count; a target with none left stops.
 
   A named `triage`, `grill`, or `ready-pr` picks its own row instead:

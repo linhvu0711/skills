@@ -27,9 +27,19 @@ Each issue gets a thread with the skill that fits where it is:
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
 | done | closed | none |
 
-The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the reason, and a quote from the issue. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
+The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
 
-An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`. Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
+An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`:
+
+| Issue | Model | Effort |
+|---|---|---|
+| `ready-to-build`, XS, or S | opus | medium |
+| M or L | opus | high |
+| XL, or no size | opus | xhigh |
+| `/triage` or `/grill` | opus | high |
+| `/ready-pr` | opus | medium |
+
+ Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
 A board page shows the run while it goes: four columns (Shape, Build, Review, Done), each one scrolling on its own, an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. Its tab shows a small board icon and the repo's name: a repo has one live run, so the name is enough. The orchestrator thread posts its link at the start and on `/orchestrate resume`. It reads only; you steer the run in the orchestrator thread.
 
@@ -41,12 +51,12 @@ Say these in the orchestrator thread:
 - `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Stop ends the timer and keeps the run, so `/orchestrate resume` in any thread picks it up again.
 - `add #16`, `remove #14`, `restart #12`.
 - `ship-full #12` or `ship-full all`, and `ship-ready` the same way. A change reaches only issues whose ticket thread has not started.
-- `#12 with sonnet xhigh`, or `all with opus high`.
+- `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
 A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the orchestrator stops its timer, posts one summary line per issue (its stages, its PR, its threads), and runs [prune-worktrees](../prune-worktrees/). It never closes an epic.
 
-The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and the answers to its proposals. Next to it sit `board.json`, the page data each check writes, and `board.html`, the page. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and its proposals: each route, size, and answer. Next to it sit `board.json`, the page data each check writes, and `board.html`, the page. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 

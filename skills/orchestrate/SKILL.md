@@ -126,18 +126,31 @@ in order:
    7. An idea that is not decided yet: `grill`.
    8. No case holds for sure: `unsure`, with the two best guesses and a
       reason for each.
-3. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <n> <route>`.
+3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the
+   work from the code, never from the title. Find the code the issue
+   touches, with an Explore agent per `../../shared/facts.md` when it
+   is more than a few files, and pick the row of `../../shared/size.md`
+   whose every fact holds. Hold the size and its facts line, as
+   `size.md` writes it: `S: one path, about 4 files`. Any other route
+   takes no size.
+4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <n> <route>`,
+   plus `--size <size>` when step 3 gave one. It prints one JSON line:
+   the `model` and `effort` the thread would get, from the same table
+   the launch reads, or both `null` with a `why`.
 
 Then post one list:
 
 ```
 Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
-#<n> <title> · <what> · <reason> · "<quote>"
-#<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · "<quote>"
+#<n> <title> · <what> · <size facts> · <model> <effort> · <reason> · "<quote>"
+#<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size facts> · "<quote>"
 ```
 
 `<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`.
-`<quote>` is at most 12 words from the issue that back the reason.
+`<size facts>` is step 3's facts line; no size, leave it out.
+`<model> <effort>` is from step 4's line, as `opus medium`; `null`:
+`no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most
+12 words from the issue that back the reason.
 
 ## Commands
 
@@ -174,6 +187,7 @@ the answers then run § Check.
   ticket thread has not started take it.
 - `#n with <model> <effort>`, `all with <model> <effort>`, either part
   alone: `change <owner/repo> use <n>|all --model <model> --effort <effort>`.
+  It wins over the model and effort a proposal named.
 
 ## Resume
 

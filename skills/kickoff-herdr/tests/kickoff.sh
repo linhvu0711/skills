@@ -91,11 +91,11 @@ t_ko_writes_map() {
   eq map "$(printf 'acme/app\t%s' "$T/dev/app")" "$(cat "$T/map.tsv")"
 }
 
-t_ko_ready_sonnet_ship() {
+t_ko_ready_opus_ship() {
   ko_herdr; ko_issue '[{"name":"ready-to-build"},{"name":"size/XS"}]'
   ko_go https://github.com/acme/app/issues/42
   eq exit 0 "$code"
-  has start "$(ko_start sonnet high)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42 /ship-ready https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
 }
 
@@ -109,7 +109,7 @@ t_ko_small_opus_ship() {
 t_ko_medium_opus_plan() {
   ko_herdr; ko_issue '[{"name":"Size: Medium"}]'
   ko_go https://github.com/acme/app/issues/42
-  has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus high)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
 }
 
@@ -121,10 +121,10 @@ t_ko_large_opus_high_plan() {
   eq stdout "#42 Export orders → w1/w1:t2/w1:p2 · /plan-up (default) · model opus (default) · effort high (default) · size L · base main · new tab w1:t2" "$out"
 }
 
-t_ko_no_size_opus_high_plan() {
+t_ko_no_size_opus_xhigh_plan() {
   ko_herdr; ko_issue '[]'
   ko_go https://github.com/acme/app/issues/42
-  has start "$(ko_start opus high)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus xhigh)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
   has report " · no size · " "$out"
 }
@@ -140,7 +140,7 @@ t_ko_set_biggest() {
   ko_view 1 42 '[{"name":"size/S"}]'
   ko_view 2 43 '[{"name":"size/M"}]'
   ko_go https://github.com/acme/app/issues/42 '#43'
-  has start "$(ko_start opus medium i42-43)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus high i42-43)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i42-43 /plan-up https://github.com/acme/app/issues/42 #43" "$(cat "$T/herdr.log")"
   has report " · size M of 2 tickets · " "$out"
 }
@@ -151,7 +151,7 @@ t_ko_run_all_ready() {
   ko_view 2 71 '[{"name":"ready-to-build"},{"name":"size/XS"}]'
   ko_view 3 73 '[{"name":"ready-to-build"},{"name":"size/S"}]'
   ko_go https://github.com/acme/app/issues/70 '#71' '#73'
-  has start "$(ko_start sonnet high i71-73)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus medium i71-73)" "$(cat "$T/herdr.log")"
   has prompt "agent prompt i71-73 /ship-ready https://github.com/acme/app/issues/70 #71 #73" "$(cat "$T/herdr.log")"
 }
 
@@ -234,7 +234,7 @@ t_ko_on_name() {
   printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
   ko_go https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80
   has rename "pane rename w1:p2 i42-on-80" "$(cat "$T/herdr.log")"
-  has start "$(ko_start opus medium i42-on-80)" "$(cat "$T/herdr.log")"
+  has start "$(ko_start opus high i42-on-80)" "$(cat "$T/herdr.log")"
 }
 
 t_ko_no_dry_run() {
@@ -248,13 +248,13 @@ cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
   "kickoff writes the one checkout it finds to the map|t_ko_writes_map"
-  "ready-to-build goes to sonnet high /ship-ready|t_ko_ready_sonnet_ship"
+  "ready-to-build goes to opus medium /ship-ready|t_ko_ready_opus_ship"
   "size S goes to opus medium /ship-ready|t_ko_small_opus_ship"
-  "size M goes to opus medium /plan-up|t_ko_medium_opus_plan"
+  "size M goes to opus high /plan-up|t_ko_medium_opus_plan"
   "size L goes to opus high /plan-up|t_ko_large_opus_high_plan"
-  "no size goes to opus high /plan-up|t_ko_no_size_opus_high_plan"
+  "no size goes to opus xhigh /plan-up|t_ko_no_size_opus_xhigh_plan"
   "a set takes its biggest ticket|t_ko_set_biggest"
-  "a run all ready-to-build goes to sonnet|t_ko_run_all_ready"
+  "a run all ready-to-build goes to opus medium|t_ko_run_all_ready"
   "an epic counts open tickets, not manual|t_ko_epic_open_not_manual"
   "an epic with no open ticket stops|t_ko_epic_none_open"
   "a guessed size counts|t_ko_guessed_size"

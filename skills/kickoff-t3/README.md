@@ -21,10 +21,10 @@ A shared script finds the repo on disk and picks the model, effort, and command 
 
 | Tickets | Model | Effort | Command |
 |---|---|---|---|
-| every one `ready-to-build` | sonnet | high | `/ship-ready` |
+| every one `ready-to-build` | opus | medium | `/ship-ready` |
 | all XS or S | opus | medium | `/ship-ready` |
-| any M | opus | medium | `/plan-up` |
-| any L, XL, or no size | opus | high | `/plan-up` |
+| any M or L | opus | high | `/plan-up` |
+| any XL, or no size | opus | xhigh | `/plan-up` |
 
 This skill's script then makes the repo a T3 project if it is not one yet. The agent starts the thread with T3's own tool, because `t3 thread start` cannot set the effort or the permission mode. The thread runs in `auto` mode, on the newest T3 model of that name.
 
