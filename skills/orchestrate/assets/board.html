@@ -297,18 +297,22 @@
   }
 
   // The board is drawn again on each read, so a focused card would lose its
-  // focus every 5 s; it gets it back by its number.
+  // focus every 5 s; it gets it back by its number. Each column scrolls on
+  // its own, so it gets its scroll back by its key the same way.
   function render() {
     var had = document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')
     var hadN = had ? had.getAttribute('data-n') : null
+    var scrolled = {}
+    document.querySelectorAll('.col').forEach(function (s) { scrolled[s.getAttribute('data-col')] = s.querySelector('.cards').scrollTop })
     document.body.classList.toggle('stale', stale)
     top()
     var loading = !B
     $('board').innerHTML = COLS.map(function (c) {
       var items = loading ? [] : B.issues.filter(function (x) { return x.column === c[0] })
       var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
-      return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
+      return '<section class="col" data-col="' + c[0] + '" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
     }).join('')
+    document.querySelectorAll('.col').forEach(function (s) { s.querySelector('.cards').scrollTop = scrolled[s.getAttribute('data-col')] || 0 })
     if (hadN) { var c = document.querySelector('.card[data-n="' + hadN + '"]'); if (c) c.focus() }
     if (openN != null) openDrawer(openN, true)
   }
