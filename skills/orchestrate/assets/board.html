@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="orchestrate-run" content="">
 <link rel="icon" href="data:,">
-<title>orchestrate</title>
+<title>board</title>
 <style>
   :root {
     --bg: #f4f4f5; --col: #ebebee; --card: #ffffff; --ink: #18181b; --muted: #71717a; --faint: #a1a1aa; --line: #e4e4e7;
@@ -40,7 +40,6 @@
   /* ---------- top bar ---------- */
   .top { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--card); flex-wrap: wrap; }
   .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-  .brand .logo { font-weight: 700; letter-spacing: -.01em; }
   .brand .run { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand .repo { color: var(--muted); font-size: 12.5px; }
   .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--col); color: var(--muted); white-space: nowrap; }
@@ -175,7 +174,7 @@
 </head>
 <body>
 <div class="top">
-  <div class="brand"><span class="logo">orchestrate</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
+  <div class="brand"><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
   <span class="pill" id="pill"></span>
   <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext"></span></div>
   <div class="health"><span class="dot" id="hdot"></span><span id="htext"></span></div>
@@ -257,7 +256,7 @@
     var doneN = counted.filter(function (x) { return x.column === 'done' }).length
     var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
     var st = S ? S.status : ''
-    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'orchestrate · ' + S.name }
+    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = S.repo.split('/').pop() }
     var pill = $('pill')
     pill.className = 'pill ' + st
     pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
