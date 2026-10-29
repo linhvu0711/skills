@@ -38,7 +38,7 @@ t_kd_json_line() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"plan-up\",\"command_from\":\"default\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\"}" "$out"
+  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"message\":\"/ship https://github.com/acme/app/issues/42\"}" "$out"
 }
 
 t_kd_size_rows() {
@@ -53,7 +53,7 @@ t_kd_size_rows() {
     got="$got$(jq -r '"\(.model) \(.effort) \(.command)"' <<<"$out");"
   done
   # Then
-  want="opus medium ship-ready;opus medium ship-ready;opus high plan-up;opus high plan-up;opus xhigh plan-up;opus xhigh plan-up;"
+  want="opus medium ship;opus medium ship;opus high ship;opus high ship;opus xhigh ship;opus xhigh ship;"
   eq rows "$want" "$got"
 }
 
@@ -71,8 +71,8 @@ t_kd_stops_no_checkout() {
 # kd_line <command> <effort> <reason> [<args>]: the JSON line decide prints
 # for #42 under --command <command>, on model opus.
 kd_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42"}' \
-    "${4:-https://github.com/acme/app/issues/42}" "$1" "$2" "$3" "$T/dev/app"
+  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","message":"/%s %s"}' \
+    "${4:-https://github.com/acme/app/issues/42}" "$1" "$2" "$3" "$T/dev/app" "$1" "${4:-https://github.com/acme/app/issues/42}"
 }
 
 t_kd_triage_row() {
@@ -102,7 +102,7 @@ t_kd_bad_command() {
   kd_run --command deploy https://github.com/acme/app/issues/42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
   eq stdout "" "$out"
 }
 
@@ -113,7 +113,7 @@ t_kd_overrides_command_row() {
   kd_run --command triage --model sonnet --effort low https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"triage","command_from":"set","model":"sonnet","model_from":"set","effort":"low","effort_from":"set"' "$out"
+  has stdout '"command":"triage","command_from":"set","mode":"","model":"sonnet","model_from":"set","effort":"low","effort_from":"set"' "$out"
 }
 
 # kd_prs <node>...: the GraphQL answer for #42's closing PRs, one
@@ -158,13 +158,58 @@ t_kd_ready_pr_two_prs() {
   eq stdout "" "$out"
 }
 
+t_kd_mode_in_message() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command ship --mode merge https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq mode+message 'merge /ship --merge https://github.com/acme/app/issues/42' "$(jq -r '"\(.mode) \(.message)"' <<<"$out")"
+}
+
+t_kd_no_mode_message() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq mode+message '|/ship https://github.com/acme/app/issues/42' "$(jq -r '"\(.mode)|\(.message)"' <<<"$out")"
+}
+
+t_kd_mode_needs_ship() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command grill --mode merge https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --mode goes only with --command ship" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_bad_mode() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --mode full https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --mode must be review, ready, or merge, got: full" "$err"
+}
+
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
   "each size takes its row|t_kd_size_rows"
   "decide stops before any launch|t_kd_stops_no_checkout"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
-  "a bad command names the six values|t_kd_bad_command"
+  "a bad command names the five values|t_kd_bad_command"
+  "mode merge goes in the message|t_kd_mode_in_message"
+  "no mode, no option in the message|t_kd_no_mode_message"
+  "mode needs ship|t_kd_mode_needs_ship"
+  "a bad mode names the three values|t_kd_bad_mode"
   "model and effort win over a command row|t_kd_overrides_command_row"
   "ready-pr takes the opus medium row and the open PR|t_kd_ready_pr_row"
   "ready-pr with no open PR stops|t_kd_ready_pr_no_pr"

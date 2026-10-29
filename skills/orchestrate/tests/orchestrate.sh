@@ -81,15 +81,16 @@ t_fs_start_writes_run() {
   eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
 }
 
-t_fs_ticket_starts_ship_ready() {
+t_fs_ticket_starts_ship() {
   # Given: a run of #42, open, size/L, no blocker, no PR
   fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42","thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
+  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
 }
 
 t_fs_second_check_starts_nothing() {
@@ -134,6 +135,13 @@ fs_record() {
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
+# fs_set_state <jq program>: change the newest run's state, as a run from an
+# older orchestrate.sh left it.
+fs_set_state() {
+  local f; f="$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"
+  jq "$1" "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
 # fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
 # the same graphql.json as the issues.
 fs_prs() {
@@ -147,7 +155,7 @@ t_fs_seed_starts_grill() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"grill","command_from":"set","model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"command":"grill","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
   has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
 }
 
@@ -231,7 +239,7 @@ t_fs_closed_blockers_free() {
   fs_go check acme/app
   # Then
   has stdout '"free":true,"blocked_by":[]' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
 }
 
 t_fs_bug_turned_ticket() {
@@ -241,7 +249,7 @@ t_fs_bug_turned_ticket() {
   fs_go check acme/app
   # Then
   has stdout '"stage":"ticket"' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
   eq threads 2 "$(fs_state '.threads | length')"
 }
 
@@ -319,36 +327,47 @@ t_fs_removed_never_rejoins() {
   eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
 }
 
-t_fs_ship_full_one() {
-  # Given: a run of #42, size/S, set to ship-full
+t_fs_ship_merge_one() {
+  # Given: a run of #42, size/S, set to ship merge
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_go change acme/app ship full 42
+  fs_go change acme/app ship merge 42
   eq "ship exit" 0 "$code"
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"ship-full"' "$out"
-  has stdout '"message":"/ship-full https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"command":"ship","command_from":"set","mode":"merge"' "$out"
+  has stdout '"message":"/ship --merge https://github.com/acme/app/issues/42"' "$out"
 }
 
-t_fs_ship_full_all() {
-  # Given: a run of #42 and #43; #42's ticket thread t42 started
+t_fs_old_run_full_merges() {
+  # Given: a run started before /ship, its state .ship {"default":"ready","43":"full"}
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43
+  fs_set_state '.ship = {"default":"ready","43":"full"}'
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship --ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship --merge https://github.com/acme/app/issues/43"' "$out"
+}
+
+t_fs_ship_merge_all() {
+  # Given: a run of #42 and #43; #42's ticket thread t42 started with no mode
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43; fs_record 42 ticket t42
   # When
-  fs_go change acme/app ship full all
+  fs_go change acme/app ship merge all
   # Then
   eq exit 0 "$code"
-  eq ship '{"default":"full","42":"ready"}' "$(fs_state .ship)"
+  eq ship '{"42":"","default":"merge"}' "$(fs_state .ship)"
 }
 
-t_fs_ship_full_started() {
-  # Given: #42's ticket thread t42 started
+t_fs_ship_started() {
+  # Given: #42's ticket thread t42 started with no mode
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
   # When
-  fs_go change acme/app ship full 42
+  fs_go change acme/app ship merge 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+  eq stderr "stop: #42 has started; it ships with /ship" "$err"
 }
 
 t_fs_override_one_wins() {
@@ -577,7 +596,7 @@ t_fs_added_unlabeled_listed() {
   fs_go check acme/app
   # Then
   has stdout '"propose":[43]' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
 }
 
 t_fs_proposed_route_word() {
@@ -680,7 +699,7 @@ t_fs_ship_proposal_size_launches() {
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
+  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
 }
 
 t_fs_label_wins_proposal_size() {
@@ -723,7 +742,7 @@ t_fs_ship_answer_starts() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
 }
 
 t_fs_all_yes() {
@@ -792,17 +811,18 @@ t_fs_label_wins_answer() {
   fs_go check acme/app
   # Then
   has stdout '"stage":"ticket"' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
 }
 
-t_fs_ship_full_started_answer() {
-  # Given: unlabeled #42 answered ship; its thread t42 started
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship; fs_record 42 unlabeled t42
+t_fs_ship_started_answer() {
+  # Given: unlabeled #42 answered ship and set to ready; its thread t42 started
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  fs_go change acme/app ship ready 42; fs_record 42 unlabeled t42
   # When
-  fs_go change acme/app ship full 42
+  fs_go change acme/app ship merge 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+  eq stderr "stop: #42 has started; it ships with /ship --ready" "$err"
 }
 
 t_fs_board_columns() {
@@ -1002,12 +1022,12 @@ t_fs_removed_deleted() {
 }
 
 t_fs_board_running_agent() {
-  # Given: #42's ship-ready thread t42 runs since 12:10
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  # Given: #42's ship thread t42 runs since 12:10
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship; fs_thread t42 running
   # When
   fs_go check acme/app
   # Then
-  eq card '{"mark":"agent","action":"/ship-ready","since":"2026-10-28T12:10:00Z"}' "$(fs_board '.issues[0] | {mark, action, since}')"
+  eq card '{"mark":"agent","action":"/ship","since":"2026-10-28T12:10:00Z"}' "$(fs_board '.issues[0] | {mark, action, since}')"
 }
 
 t_fs_board_claimed_starting() {
@@ -1016,7 +1036,7 @@ t_fs_board_claimed_starting() {
   # When
   fs_go check acme/app
   # Then
-  eq card '{"column":"build","mark":"agent","action":"starting /ship-ready"}' "$(fs_card 42)"
+  eq card '{"column":"build","mark":"agent","action":"starting /ship"}' "$(fs_card 42)"
 }
 
 t_fs_board_blocked() {
@@ -1068,16 +1088,16 @@ t_fs_board_order() {
 }
 
 t_fs_board_extra_chips() {
-  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed; #44 removed; #45 set to ship-full
+  # Given: #42 closed by merged PR 43, whose Follow-ups name #50, an open seed; #44 removed; #45 set to ship merge
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n\n#50: retry the export\n"}'
   fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 45 OPEN '["size/S"]'; fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
   fs_issue 50 OPEN '["seed"]' '[]' '[]' '[]' "Retry the export"; fs_start 42 44 45
-  fs_go change acme/app remove 44; fs_go change acme/app ship full 45
+  fs_go change acme/app remove 44; fs_go change acme/app ship merge 45
   # When
   fs_go check acme/app
   # Then
-  eq chips '[{"number":44,"removed":true,"made":false,"ship_full":false},{"number":45,"removed":false,"made":false,"ship_full":true},{"number":50,"removed":false,"made":true,"ship_full":false}]' \
-    "$(fs_board '[.issues[] | select(.removed or .made or .ship_full) | {number, removed, made, ship_full}] | sort_by(.number)')"
+  eq chips '[{"number":44,"removed":true,"made":false,"ship_mode":""},{"number":45,"removed":false,"made":false,"ship_mode":"merge"},{"number":50,"removed":false,"made":true,"ship_mode":""}]' \
+    "$(fs_board '[.issues[] | select(.removed or .made or .ship_mode != "") | {number, removed, made, ship_mode}] | sort_by(.number)')"
 }
 
 t_fs_removed_starts_nothing() {
@@ -1122,7 +1142,7 @@ t_fs_failed_check_keeps_board() {
 t_fs_board_journey() {
   # Given: #42 went from bug (t1, completed, 12:10) to ticket (t2, running, 12:40)
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_record 42 bug t1 triage 2026-10-28T12:10:00Z; fs_record 42 ticket t2 ship-ready 2026-10-28T12:40:00Z
+  fs_record 42 bug t1 triage 2026-10-28T12:10:00Z; fs_record 42 ticket t2 ship 2026-10-28T12:40:00Z
   printf '[{"threadId":"t1","status":"completed","createdAt":"2026-10-28T12:10:00Z"},{"threadId":"t2","status":"running","createdAt":"2026-10-28T12:40:00Z"}]\n' > "$T/t3-threads.json"
   # When
   fs_go check acme/app
@@ -1133,7 +1153,7 @@ t_fs_board_journey() {
 
 t_fs_board_fixture_shape() {
   # Given: a run of #42, size/S, whose thread t42 runs, checked
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready; fs_thread t42 running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship; fs_thread t42 running
   fs_go check acme/app
   # When
   local fixture; fixture="$(jq -c '.issues[0] | keys' "$here/fixtures/board/board.json")"
@@ -1174,7 +1194,7 @@ t_fs_two_runs_two_pages() {
 
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
-  "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
+  "a free ticket starts ship|t_fs_ticket_starts_ship"
   "a second check starts nothing|t_fs_second_check_starts_nothing"
   "a recorded thread is not started again|t_fs_recorded_thread_not_again"
   "a seed starts grill|t_fs_seed_starts_grill"
@@ -1186,16 +1206,17 @@ cases=(
   "a closed seed is done|t_fs_closed_seed_done"
   "an open blocker holds the issue|t_fs_open_blocker_holds"
   "closed blockers free the issue|t_fs_closed_blockers_free"
-  "a bug turned ticket starts ship-ready|t_fs_bug_turned_ticket"
+  "a bug turned ticket starts ship|t_fs_bug_turned_ticket"
   "restart starts a fresh thread|t_fs_restart_fresh_thread"
   "a failed launch is not started again|t_fs_failed_launch_not_again"
   "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
   "a follow-up in a PR body joins|t_fs_followup_joins"
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"
-  "ship-full for one issue|t_fs_ship_full_one"
-  "ship-full for all leaves started issues|t_fs_ship_full_all"
-  "ship-full for a started issue stops|t_fs_ship_full_started"
+  "ship merge for one issue|t_fs_ship_merge_one"
+  "an old run's full starts ship merge|t_fs_old_run_full_merges"
+  "ship merge for all leaves started issues|t_fs_ship_merge_all"
+  "a started issue keeps its ship mode|t_fs_ship_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
   "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
   "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
@@ -1228,14 +1249,14 @@ cases=(
   "a ship proposal launches with its size|t_fs_ship_proposal_size_launches"
   "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
-  "a ship answer starts ship-ready|t_fs_ship_answer_starts"
+  "a ship answer starts ship|t_fs_ship_answer_starts"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"
   "a close answer starts nothing and writes nothing|t_fs_close_answer"
   "answers survive stop and resume|t_fs_answers_survive_resume"
   "a label wins over an answer|t_fs_label_wins_answer"
-  "ship-full for a started ship answer stops|t_fs_ship_full_started_answer"
+  "a started ship answer keeps its ship mode|t_fs_ship_started_answer"
   "the board puts each issue in its column|t_fs_board_columns"
   "a second check leaves one board file|t_fs_board_one_file"
   "start copies the board page into the run|t_fs_start_copies_page"
@@ -1262,7 +1283,7 @@ cases=(
   "a closed issue is done|t_fs_board_done"
   "the board links the thread and the PR|t_fs_board_links"
   "the board orders you, agent, blocked|t_fs_board_order"
-  "the board marks removed, made by run, and ship-full|t_fs_board_extra_chips"
+  "the board marks removed, made by run, and a set ship mode|t_fs_board_extra_chips"
   "a removed issue starts nothing|t_fs_removed_starts_nothing"
   "a good check records its time|t_fs_check_records_time"
   "a failed check records why|t_fs_failed_check_why"

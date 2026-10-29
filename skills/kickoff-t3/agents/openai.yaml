@@ -1,4 +1,4 @@
 interface:
   display_name: "Kickoff T3"
-  short_description: "Start /ship-ready, /ship-full, or /plan-up in a new T3 Code thread"
+  short_description: "Start /ship or /plan-up in a new T3 Code thread"
   default_prompt: "$kickoff-t3"

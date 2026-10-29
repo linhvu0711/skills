@@ -7,7 +7,7 @@
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
 #        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
-#                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
+#                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
@@ -138,16 +138,23 @@ stage() {
   else echo unlabeled; fi
 }
 
-# skill <stage> <ship mode>: the command a thread at that stage starts
-# with, or nothing. A ticket ships by the mode, `ready` or `full`.
+# skill <stage>: the command a thread at that stage starts with, or
+# nothing. A ticket starts /ship; ship_mode says how far it goes.
 skill() {
   case "$1" in
     seed) echo grill ;;
     bug) echo triage ;;
-    ticket) echo "ship-$2" ;;
+    ticket) echo ship ;;
     pr) echo ready-pr ;;
   esac
 }
+
+# The ship mode the user set for issue $n, or "" when the /ship thread picks
+# it. A run started before /ship holds `full` or `ready`; `full` reads as
+# merge, so a live run never starts a skill that is gone.
+# shellcheck disable=SC2016 # the $ names are jq variables
+ship_mode_jq='def ship_mode($n): (.ship[$n] // .ship.default // "") | if . == "full" then "merge" else . end;'
+ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 
 # answer_stage <answer>: the stage whose skill an answered unlabeled issue
 # starts with, or nothing for an answer that starts no thread.
@@ -161,17 +168,22 @@ answer_stage() {
 }
 
 # decide_for <n> <skill> <stage>: decide.sh's line for #n's thread, with the
+# ship mode the user set for a /ship thread and
 # run's model and effort picks, so a proposal and its launch read the same
 # row. Only an unlabeled issue sends its proposal's size: once a size label
 # is on the issue, the label picks the row. Its stop line is left in errf.
 decide_for() {
-  local flags=() model effort size=""
+  local flags=() model effort size="" mode
   model="$(jq -r --arg n "$1" '.use[$n].model // .use.all.model // empty' <<<"$S")"
   effort="$(jq -r --arg n "$1" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
   [ "$3" != unlabeled ] || size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
   [ -z "$model" ] || flags+=(--model "$model")
   [ -z "$effort" ] || flags+=(--effort "$effort")
   [ -z "$size" ] || flags+=(--size "$1=$size")
+  if [ "$2" = ship ]; then
+    mode="$(ship_mode "$1")"
+    [ -z "$mode" ] || flags+=(--mode "$mode")
+  fi
   bash "$core/kickoff/decide.sh" --command "$2" ${flags[@]+"${flags[@]}"} "https://github.com/$slug/issues/$1" 2>"$errf"
 }
 
@@ -213,18 +225,18 @@ board='
     | if .stage == "done" then {mark: "done", action: "closed"}
       elif .blocked_by != [] then held("blocked by " + (.blocked_by | map("#\(.)") | join(" ")))
       elif $rec.status == "failed" then you("Launch failed: say restart #\(.number)")
-      elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)")
+      elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)")
       elif $t.status == "waiting" then you("Answer the thread")
       elif $t.status == "failed" then you("Thread failed: open it, or say restart #\(.number)")
       elif $t.status == "interrupted" then you("Thread interrupted: open it, or say restart #\(.number)")
       elif .wait then held("waits: \(.wait)")
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
       elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
-      elif $t.status == "running" then agent("/\($rec.command // .skill)") + {since: $t.createdAt}
+      elif $t.status == "running" then agent("/\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)") + {since: $t.createdAt}
       elif .stage == "task" or (.stage == "unlabeled" and .answer == "task") then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
-          ship: ": /ship-ready", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
+          ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
       elif .stage == "unlabeled" and .answer == "close" then you("Close it")
       elif .stage == "unlabeled" and .answer == "skip" then held("skipped")
       elif $S.status == "paused" then held("paused: starts on resume")
@@ -246,7 +258,7 @@ board='
                | {at, stage, command, status: ((if .thread then $ts[.thread].status else null end) // .status),
                   thread_url: (if .thread then "t3code://threads/\($S.env)/\(.thread)" else null end)}]),
           removed: ($S.removed | index([$n]) != null), made: ($S.made // [] | index([$n]) != null),
-          ship_full: (.stage == "ticket" and ($S.ship[$n | tostring] // $S.ship.default) == "full")}]
+          ship_mode: (if .stage == "ticket" then ($S | ship_mode($n | tostring)) else "" end)}]
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
    | map(del(.order))}'
 
@@ -256,7 +268,7 @@ board='
 write_board() {
   local tmp
   tmp="$(mktemp "$run/.board.XXXXXX")"
-  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" --argjson ts "$3" "$board" > "$tmp"
+  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" --argjson ts "$3" "$ship_mode_jq$board" > "$tmp"
   mv "$tmp" "$run/board.json"
 }
 
@@ -290,7 +302,7 @@ cmd_start() {
   S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, env: $env, link: $link, path: $path, started_at: $at, status: "running",
-      set: $set, removed: [], made: [], ship: {default: "ready"}, use: {}, proposals: {},
+      set: $set, removed: [], made: [], ship: {}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
   copy_page
@@ -343,12 +355,11 @@ cmd_check() {
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
-    sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
     # The stage stays unlabeled; the user's answer only picks the skill.
     if [ "$st" = unlabeled ]; then
-      sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")" "$sk")"
+      sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")")"
     else
-      sk="$(skill "$st" "$sk")"
+      sk="$(skill "$st")"
     fi
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | .number]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
@@ -368,10 +379,10 @@ cmd_check() {
     fi
     if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
-        '. + [$l + {stage: $st, message: "/\($l.command) \($l.args)", thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
+        '. + [$l + {stage: $st, thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
       claims="$(jq -c --argjson n "$n" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null,
-               at: $at, command: $l.command, model: $l.model, effort: $l.effort}]' <<<"$claims")"
+               at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
     cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
     row="$(jq -cn --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
@@ -456,7 +467,7 @@ cmd_proposed() {
   S="$(jq -c --arg n "$n" --arg r "$route" --arg z "$size" \
     '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
-  sk="$(skill "$(answer_stage "$route")" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
+  sk="$(skill "$(answer_stage "$route")")"
   line="null"
   if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
@@ -471,9 +482,10 @@ cmd_proposed() {
 # thread records and never joins again by itself.
 # change restart <n>: drop #n's newest thread record, so the next check
 # starts a fresh thread at #n's stage.
-# change ship full|ready <n>|all: how a ticket ships. It reaches only issues
-# whose ticket thread has not started: for `all`, each started one keeps the
-# old default as its own. An unlabeled issue answered `ship` started its
+# change ship review|ready|merge <n>|all: the ship mode a ticket's /ship
+# thread starts with; with none set, the thread picks it. It reaches only
+# issues whose ticket thread has not started: for `all`, each started one
+# keeps the old default as its own, "" when the thread picked. An unlabeled issue answered `ship` started its
 # ticket thread at stage unlabeled.
 # change answer <n>|all <word>: the user's answer to a proposal. `yes` takes
 # the proposed route; `all` takes only `yes` or `skip`, and fills only the
@@ -502,19 +514,19 @@ cmd_change() {
       S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
     ship)
-      [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
-        || die "usage: orchestrate.sh change <owner/repo> ship full|ready <n>|all"
+      [[ "${2:-}" =~ ^(review|ready|merge)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
+        || die "usage: orchestrate.sh change <owner/repo> ship review|ready|merge <n>|all"
       local mode="$2" who="${3#\#}"
       # shellcheck disable=SC2016 # the $ names are jq variables
       local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'
       if [ "$who" = all ]; then
         S="$(jq -c --arg m "$mode" '
-          . as $S | .ship.default as $d
+          . as $S | (.ship.default // "") as $d
           | reduce (.threads[] | select('"$shipped"') | .number | tostring) as $n (.; .ship[$n] //= $d)
           | .ship.default = $m' <<<"$S")"
       else
         [ "$(jq --argjson n "$who" '. as $S | [.threads[] | select(.number == $n and '"$shipped"')] | length' <<<"$S")" -eq 0 ] \
-          || die "#$who has started; its mode stays ship-$(jq -r --arg n "$who" '.ship[$n] // .ship.default' <<<"$S")"
+          || die "#$who has started; it ships with /ship$(m="$(ship_mode "$who")"; [ -z "$m" ] || printf ' --%s' "$m")"
         S="$(jq -c --arg n "$who" --arg m "$mode" '.ship[$n] = $m' <<<"$S")"
       fi
       ;;

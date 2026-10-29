@@ -107,7 +107,7 @@
   .chip { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 4px; background: var(--col); color: var(--muted); line-height: 18px; }
   .chip.bug { color: var(--bad); background: var(--bad-soft); }
   .chip.seed { color: var(--agent); background: var(--agent-soft); }
-  .chip.full { color: var(--warn); background: var(--warn-soft); }
+  .chip.merge { color: var(--warn); background: var(--warn-soft); }
   .chip.removed { color: var(--bad); background: transparent; border: 1px solid currentColor; line-height: 16px; }
   .chip.made { background: transparent; border: 1px dashed var(--faint); line-height: 16px; }
   .title { font-weight: 600; font-size: 13.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -246,7 +246,7 @@
   function chips(x) {
     var kind = x.chip === 'bug' ? 'bug' : x.chip === 'seed' ? 'seed' : ''
     return '<span class="chip ' + kind + '">' + esc(x.chip) + '</span>' +
-      (x.ship_full ? '<span class="chip full" title="merges by itself">ship-full</span>' : '') +
+      (x.ship_mode ? '<span class="chip ' + (x.ship_mode === 'merge' ? 'merge' : '') + '" title="ship mode you set">--' + esc(x.ship_mode) + '</span>' : '') +
       (x.made ? '<span class="chip made" title="joined by itself">made by run</span>' : '') +
       (x.removed ? '<span class="chip removed">removed</span>' : '')
   }

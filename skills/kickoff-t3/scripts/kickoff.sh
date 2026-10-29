@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# kickoff.sh: get /ship-ready, /ship-full, or /plan-up ready to start in a new
-# T3 Code thread.
+# kickoff.sh: get /ship or /plan-up ready to start in a new T3 Code thread.
 #
 # Usage: kickoff.sh [--label L] [--model M] [--effort E]
-#                   [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
+#                   [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # The target and the flags are the shared decide script's, which picks the
@@ -12,8 +11,9 @@
 # starts the thread with T3's t3_thread_launch tool: `t3 thread start` takes
 # no effort and no runtime mode, and a script cannot call T3's tools.
 #
-# Exit 0: one JSON line on stdout, the decide line plus message, thread_title,
-# runtime_mode, and project (`found` or `added`).
+# Exit 0: one JSON line on stdout, the decide line (its message is the
+# thread's first prompt) plus thread_title, runtime_mode, and project
+# (`found` or `added`).
 # Exit 1: something stopped us; the reason is the last line on stderr, and
 # stdout is empty. A project this run added stays added.
 set -euo pipefail
@@ -45,5 +45,5 @@ if ! is_project; then
 fi
 
 jq -c --arg project "$project" \
-  '. + {message: "/\(.command) \(.args)", thread_title: "\(.label) \(.title)", runtime_mode: "auto", project: $project}' \
+  '. + {thread_title: "\(.label) \(.title)", runtime_mode: "auto", project: $project}' \
   <<<"$decided"

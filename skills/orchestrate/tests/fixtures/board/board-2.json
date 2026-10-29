@@ -27,7 +27,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 76,
@@ -64,7 +64,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 75,
@@ -101,7 +101,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 79,
@@ -138,7 +138,7 @@
       ],
       "removed": false,
       "made": true,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 71,
@@ -164,7 +164,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 81,
@@ -183,7 +183,7 @@
       "pr": null,
       "blocked_by": [],
       "stage": "ticket",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": "opus",
       "effort": "medium",
       "journey": [
@@ -194,14 +194,14 @@
         {
           "at": "2026-10-28T09:12:00Z",
           "stage": "ticket",
-          "command": "ship-ready",
+          "command": "ship",
           "status": "failed",
           "thread_url": "t3code://threads/e1/thr_81"
         }
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 77,
@@ -211,7 +211,7 @@
       "chip": "fix · S",
       "since": "2026-10-28T10:50:00Z",
       "mark": "agent",
-      "action": "/ship-full",
+      "action": "/ship --merge",
       "thread": {
         "id": "thr_77",
         "url": "t3code://threads/e1/thr_77",
@@ -220,7 +220,7 @@
       "pr": null,
       "blocked_by": [],
       "stage": "ticket",
-      "skill": "ship-full",
+      "skill": "ship",
       "model": "opus",
       "effort": "medium",
       "journey": [
@@ -238,14 +238,14 @@
         {
           "at": "2026-10-28T10:50:00Z",
           "stage": "ticket",
-          "command": "ship-full",
+          "command": "ship",
           "status": "running",
           "thread_url": "t3code://threads/e1/thr_77"
         }
       ],
       "removed": false,
       "made": false,
-      "ship_full": true
+      "ship_mode": "merge"
     },
     {
       "number": 80,
@@ -255,7 +255,7 @@
       "chip": "feat · XS",
       "since": "2026-10-28T11:04:00Z",
       "mark": "agent",
-      "action": "/ship-ready",
+      "action": "/ship --ready",
       "thread": {
         "id": "thr_80",
         "url": "t3code://threads/e1/thr_80",
@@ -264,7 +264,7 @@
       "pr": null,
       "blocked_by": [],
       "stage": "ticket",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": "sonnet",
       "effort": "high",
       "journey": [
@@ -275,14 +275,14 @@
         {
           "at": "2026-10-28T09:12:00Z",
           "stage": "ticket",
-          "command": "ship-ready",
+          "command": "ship",
           "status": "running",
           "thread_url": "t3code://threads/e1/thr_80"
         }
       ],
       "removed": true,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 73,
@@ -300,7 +300,7 @@
         72
       ],
       "stage": "ticket",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": null,
       "effort": null,
       "journey": [
@@ -311,7 +311,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 78,
@@ -328,7 +328,7 @@
         73
       ],
       "stage": "ticket",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": null,
       "effort": null,
       "journey": [
@@ -339,7 +339,7 @@
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 72,
@@ -361,7 +361,7 @@
       },
       "blocked_by": [],
       "stage": "ticket",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": "opus",
       "effort": "medium",
       "journey": [
@@ -372,14 +372,14 @@
         {
           "at": "2026-10-28T09:12:00Z",
           "stage": "ticket",
-          "command": "ship-ready",
+          "command": "ship",
           "status": "completed",
           "thread_url": "t3code://threads/e1/thr_72"
         }
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 82,
@@ -394,7 +394,7 @@
       "pr": null,
       "blocked_by": [],
       "stage": "done",
-      "skill": "ship-ready",
+      "skill": "ship",
       "model": "opus",
       "effort": "medium",
       "journey": [
@@ -405,14 +405,14 @@
         {
           "at": "2026-10-28T09:12:00Z",
           "stage": "ticket",
-          "command": "ship-ready",
+          "command": "ship",
           "status": "running",
           "thread_url": "t3code://threads/e1/thr_82"
         }
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     },
     {
       "number": 69,
@@ -442,14 +442,14 @@
         {
           "at": "2026-10-28T09:12:00Z",
           "stage": "ticket",
-          "command": "ship-full",
+          "command": "ship",
           "status": "completed",
           "thread_url": "t3code://threads/e1/thr_69"
         }
       ],
       "removed": false,
       "made": false,
-      "ship_full": false
+      "ship_mode": ""
     }
   ]
 }

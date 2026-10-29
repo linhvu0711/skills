@@ -20,7 +20,7 @@ Each issue gets a thread with the skill that fits where it is:
 |---|---|---|
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
-| ticket | a size label | `/ship-ready`, or `/ship-full` when you say so |
+| ticket | a size label | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr <pr-url>` |
 | task | a `manual` label | none: it is yours |
 | epic | sub-issues | none: its open sub-issues join the set |
@@ -39,7 +39,7 @@ An issue starts only when every issue that blocks it is closed. The model and ef
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
 
- Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
+ Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
 A board page shows the run while it goes: four columns (Shape, Build, Review, Done), each one scrolling on its own, an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. Its tab shows a small board icon and the repo's name: a repo has one live run, so the name is enough. The orchestrator thread posts its link at the start and on `/orchestrate resume`. It reads only; you steer the run in the orchestrator thread.
 
@@ -50,7 +50,7 @@ Say these in the orchestrator thread:
 - `check now`, `check every 10 min` (1 minute at least; the start is 5).
 - `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Stop ends the timer and keeps the run, so `/orchestrate resume` in any thread picks it up again.
 - `add #16`, `remove #14`, `restart #12`.
-- `ship-full #12` or `ship-full all`, and `ship-ready` the same way. A change reaches only issues whose ticket thread has not started.
+- `ship merge #12` or `ship merge all`, and `ship review` and `ship ready` the same way, to set the ship mode: `review` waits for your ok on the plan, `ready` stops at a ready PR, `merge` merges it. With none set, each `/ship` thread picks its own. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
@@ -64,12 +64,12 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 - `gh` (signed in), `git`, and `jq`.
 - `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).
-- The [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-full](../ship-full/), [ready-pr](../ready-pr/), and [prune-worktrees](../prune-worktrees/) skills, installed for Claude Code.
+- The [grill](../grill/), [triage](../triage/), [ship](../ship/), [ready-pr](../ready-pr/), and [prune-worktrees](../prune-worktrees/) skills, installed for Claude Code.
 
 ## Fits with
 
 - Starts each thread the way [kickoff-t3](../kickoff-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/kickoff/launch-t3.md`, start the thread.
-- Its threads run [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-full](../ship-full/), and [ready-pr](../ready-pr/). Only a ship-full thread merges, and only when you asked for ship-full.
+- Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
 - [capture](../capture/) makes the seeds and bugs it starts from; [to-epic](../to-epic/) makes the epics.
 
 ## Tests
