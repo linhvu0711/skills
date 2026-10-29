@@ -50,7 +50,7 @@ Say these in the orchestrator thread:
 - `check now`, `check every 10 min` (1 minute at least; the start is 5).
 - `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Stop ends the timer and keeps the run, so `/orchestrate resume` in any thread picks it up again.
 - `add #16`, `remove #14`, `restart #12`.
-- `ship-full #12` or `ship-full all`, and `ship-ready` the same way. A change reaches only issues whose ticket thread has not started.
+- `ship-full #12` or `ship-full all`, and `ship-ready` and `ship-after-review` the same way. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
@@ -64,12 +64,12 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 - `gh` (signed in), `git`, and `jq`.
 - `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).
-- The [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-full](../ship-full/), [ready-pr](../ready-pr/), and [prune-worktrees](../prune-worktrees/) skills, installed for Claude Code.
+- The [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-after-review](../ship-after-review/), [ship-full](../ship-full/), [ready-pr](../ready-pr/), and [prune-worktrees](../prune-worktrees/) skills, installed for Claude Code.
 
 ## Fits with
 
 - Starts each thread the way [kickoff-t3](../kickoff-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/kickoff/launch-t3.md`, start the thread.
-- Its threads run [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-full](../ship-full/), and [ready-pr](../ready-pr/). Only a ship-full thread merges, and only when you asked for ship-full.
+- Its threads run [grill](../grill/), [triage](../triage/), [ship-ready](../ship-ready/), [ship-after-review](../ship-after-review/), [ship-full](../ship-full/), and [ready-pr](../ready-pr/). Only a ship-full thread merges, and only when you asked for ship-full.
 - [capture](../capture/) makes the seeds and bugs it starts from; [to-epic](../to-epic/) makes the epics.
 
 ## Tests

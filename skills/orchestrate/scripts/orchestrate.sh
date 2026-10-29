@@ -7,7 +7,7 @@
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
 #        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
-#                          | ship full|ready <n>|all | use <n>|all [--model M] [--effort E]
+#                          | ship full|ready|after-review <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
@@ -486,7 +486,7 @@ cmd_proposed() {
 # thread records and never joins again by itself.
 # change restart <n>: drop #n's newest thread record, so the next check
 # starts a fresh thread at #n's stage.
-# change ship full|ready <n>|all: how a ticket ships. It reaches only issues
+# change ship full|ready|after-review <n>|all: how a ticket ships. It reaches only issues
 # whose ticket thread has not started: for `all`, each started one keeps the
 # old default as its own. An unlabeled issue answered `ship` started its
 # ticket thread at stage unlabeled.
@@ -517,8 +517,8 @@ cmd_change() {
       S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
     ship)
-      [[ "${2:-}" =~ ^(full|ready)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
-        || die "usage: orchestrate.sh change <owner/repo> ship full|ready <n>|all"
+      [[ "${2:-}" =~ ^(full|ready|after-review)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
+        || die "usage: orchestrate.sh change <owner/repo> ship full|ready|after-review <n>|all"
       local mode="$2" who="${3#\#}"
       # shellcheck disable=SC2016 # the $ names are jq variables
       local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'

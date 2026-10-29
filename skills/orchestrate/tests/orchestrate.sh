@@ -362,6 +362,28 @@ t_fs_ship_full_started() {
   eq stderr "stop: #42 has started; it ships with /ship-ready" "$err"
 }
 
+t_fs_ship_ready_one_wins() {
+  # Given: a run of #42, size/M, set to ship-ready
+  fs_setup; fs_issue 42 OPEN '["size/M"]'; fs_start 42
+  fs_go change acme/app ship ready 42
+  eq "ship exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+}
+
+t_fs_ship_after_review_all() {
+  # Given: a run of #42, size/S, set to ship-after-review for all
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go change acme/app ship after-review all
+  eq "ship exit" 0 "$code"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship-after-review https://github.com/acme/app/issues/42"' "$out"
+}
+
 t_fs_override_one_wins() {
   # Given: sonnet at low effort for all, xhigh for #42; #42 size/S
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1218,6 +1240,8 @@ cases=(
   "ship-full for one issue|t_fs_ship_full_one"
   "ship-full for all leaves started issues|t_fs_ship_full_all"
   "ship-full for a started issue stops|t_fs_ship_full_started"
+  "ship-ready for one M issue wins|t_fs_ship_ready_one_wins"
+  "ship-after-review for all|t_fs_ship_after_review_all"
   "an override for one issue wins over all|t_fs_override_one_wins"
   "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
   "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"

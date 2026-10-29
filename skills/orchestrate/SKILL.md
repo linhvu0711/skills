@@ -179,13 +179,15 @@ the answers then run § Check.
   `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
   <word>` per part, the per-issue parts first, so `all` fills only the
   rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`,
-  `ready-pr`, `task`, and `close`; `ship-ready` or `ship-full` is
-  `ship`, and each also runs `change <owner/repo> ship ready|full <n>`,
+  `ready-pr`, `task`, and `close`; `ship-ready`, `ship-after-review`,
+  or `ship-full` is `ship`, and each also runs
+  `change <owner/repo> ship ready|after-review|full <n>`,
   so the issue ships the way the user said, whatever the run's default.
   A new answer reaches an issue whose thread started only after
   `restart #n`.
-- `ship-full #n`, `ship-full all`, `ship-ready #n`, `ship-ready all`:
-  `change <owner/repo> ship full|ready <n>|all`. Only issues whose
+- `ship-full #n`, `ship-full all`, `ship-ready #n`, `ship-ready all`,
+  `ship-after-review #n`, `ship-after-review all`:
+  `change <owner/repo> ship full|ready|after-review <n>|all`. Only issues whose
   ticket thread has not started take it.
 - `#n with <model> <effort>`, `all with <model> <effort>`, either part
   alone: `change <owner/repo> use <n>|all --model <model> --effort <effort>`.
