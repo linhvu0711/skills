@@ -2,21 +2,24 @@
 # decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the orchestrator's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
-#                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
+#                  [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
 # the numbers are a run under it. When it has none, it is the first ticket of a
 # set: plain issues with no shared parent, planned together in the order given.
 #
-# The model, effort, and command come from the tickets' size and
-# ready-to-build labels unless a flag names them; --size gives a ticket with
-# no size label the size the agent guessed. triage, grill, and ready-pr come
-# only from --command, and each has its own model and effort row.
+# The model and effort come from the tickets' size and ready-to-build labels
+# unless a flag names them; --size gives a ticket with no size label the size
+# the agent guessed. The command is ship unless --command names another.
+# plan-up, triage, grill, and ready-pr come only from --command, and triage,
+# grill, and ready-pr each have their own model and effort row. --mode sets
+# /ship's ship mode; with none, the /ship thread picks it.
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
-# command_from, model, model_from, effort, effort_from, reason, base, path,
-# and label. Under --command ready-pr, args is the URL of the one open PR
+# command_from, mode, model, model_from, effort, effort_from, reason, base,
+# path, label, and message: the thread's first prompt, as
+# `/ship --merge <url>`, which every launcher sends as it is. Under --command ready-pr, args is the URL of the one open PR
 # that closes the issue. Exit 1: something stopped us; the reason is the last line on
 # stderr. It launches nothing, so the caller's launch starts only after every
 # check here passed.
@@ -30,7 +33,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # ---------- args ----------
 label=""; args=(); sizes=()
-set_model=""; set_effort=""; set_command=""
+set_model=""; set_effort=""; set_command=""; mode=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --label) label="$2"; shift 2 ;;
@@ -39,8 +42,11 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship-ready|ship-full|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship-ready, ship-full, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
+    --mode)
+      case "${2:-}" in review|ready|merge) ;; *) die "--mode must be review, ready, or merge, got: ${2:-nothing}" ;; esac
+      mode="$2"; shift 2 ;;
     --size)
       [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
@@ -48,7 +54,8 @@ while [ $# -gt 0 ]; do
     *) args+=("$1"); shift ;;
   esac
 done
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -97,7 +104,7 @@ guess_of() {
 
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
-# ticket is ready-to-build takes the ready-to-build row, /ship-ready at any size. A guessed size wins over a
+# ticket is ready-to-build takes the ready-to-build row at any size. A guessed size wins over a
 # label, and each guess is counted for the report.
 all_ready=1; top=0; top_size=""; guessed=0
 add_ticket() {
@@ -137,11 +144,12 @@ for s in ${sizes[@]+"${sizes[@]}"}; do
   case " ${list[*]} " in *" ${s%%=*} "*) ;; *) die "--size names #${s%%=*}, which is not in this target" ;; esac
 done
 
-if [ "$all_ready" -eq 1 ]; then model=opus; effort=medium; command=ship-ready; reason="ready-to-build"
+command=ship
+if [ "$all_ready" -eq 1 ]; then model=opus; effort=medium; reason="ready-to-build"
 else
-  if [ "$top" -le 2 ]; then model=opus; effort=medium; command=ship-ready
-  elif [ "$top" -le 4 ]; then model=opus; effort=high; command=plan-up
-  else model=opus; effort=xhigh; command=plan-up; fi
+  if [ "$top" -le 2 ]; then model=opus; effort=medium
+  elif [ "$top" -le 4 ]; then model=opus; effort=high
+  else model=opus; effort=xhigh; fi
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
 case "$set_command" in
@@ -158,6 +166,8 @@ model_from=default; effort_from=default; command_from=default
 if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
 if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
 if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
+# A ship mode the user named sets the command's form, so it reads as set.
+if [ -n "$mode" ]; then command_from=set; fi
 
 # ---------- ready-pr ----------
 # /ready-pr takes the open PR that closes the issue. GitHub lists merged PRs
@@ -210,10 +220,11 @@ label="$(printf '%s' "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c
 [ -n "$label" ] || label="prep-$number"
 
 jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg args "$prep_args" \
-  --arg command "$command" --arg command_from "$command_from" \
+  --arg command "$command" --arg command_from "$command_from" --arg mode "$mode" \
   --arg model "$model" --arg model_from "$model_from" \
   --arg effort "$effort" --arg effort_from "$effort_from" \
   --arg reason "$reason" --arg base "$base" --arg path "$path" --arg label "$label" \
   '{number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
-    model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
-    reason: $reason, base: $base, path: $path, label: $label}'
+    mode: $mode, model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
+    reason: $reason, base: $base, path: $path, label: $label,
+    message: "/\($command)\(if $mode == "" then "" else " --\($mode)" end) \($args)"}'

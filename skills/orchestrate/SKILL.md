@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship-ready, /ship-full, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
@@ -97,8 +97,9 @@ issue's `wait`, `blocked by #a #b`, its thread's link and
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
-The `ship` skill reads `/ship-ready`, or `/ship-full` when the user said
-so for that issue or for all. Lead with `Joined: #a #b` when `joined` is
+The `ship` skill reads `/ship`, plus `--review`, `--ready`, or `--merge`
+when the user set that ship mode for the issue or for all; with none,
+the `/ship` thread picks the ship mode from its own plan. Lead with `Joined: #a #b` when `joined` is
 not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
 § Done. `propose` not empty: § Propose, after these lines.
 
@@ -177,14 +178,16 @@ the answers then run § Check.
   `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
   <word>` per part, the per-issue parts first, so `all` fills only the
   rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`,
-  `ready-pr`, `task`, and `close`; `ship-ready` or `ship-full` is
-  `ship`, and each also runs `change <owner/repo> ship ready|full <n>`,
-  so the issue ships the way the user said, whatever the run's default.
+  `ready-pr`, `task`, and `close`; `ship`, `ship review`, `ship ready`,
+  or `ship merge` is `ship`, and a ship mode also runs `change
+  <owner/repo> ship review|ready|merge <n>`, so the issue ships the way
+  the user said, whatever the run's default.
   A new answer reaches an issue whose thread started only after
   `restart #n`.
-- `ship-full #n`, `ship-full all`, `ship-ready #n`, `ship-ready all`:
-  `change <owner/repo> ship full|ready <n>|all`. Only issues whose
-  ticket thread has not started take it.
+- `ship review #n`, `ship ready #n`, `ship merge #n`, or the same with
+  `all` (also `ship --merge #n`): `change <owner/repo> ship
+  review|ready|merge <n>|all`. Only issues whose ticket thread has not
+  started take it. With no ship mode set, the `/ship` thread picks it.
 - `#n with <model> <effort>`, `all with <model> <effort>`, either part
   alone: `change <owner/repo> use <n>|all --model <model> --effort <effort>`.
   It wins over the model and effort a proposal named.
@@ -217,4 +220,4 @@ A check printed `"done": true`.
 
 3. From the run's `path` (the main checkout), run
    `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
-   lines as they are, as ship-full does after its merges.
+   lines as they are, as `/ship` does after its merges.

@@ -1,6 +1,6 @@
 ---
 name: kickoff-herdr
-description: "Open a new herdr pane beside this one and run /ship-ready, /ship-full, or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
+description: "Open a new herdr pane beside this one and run /ship or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
 
@@ -41,7 +41,7 @@ questions about it:
 **User:** `/kickoff-herdr https://github.com/acme/shop/issues/42`
 
 Run the script. It prints
-`#42 Export orders as CSV → w4/w4:t1/w4:p9M · /plan-up (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
+`#42 Export orders as CSV → w4/w4:t1/w4:p9M · /ship (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1`.
 Say that line. Stop.
 
 **User:** `/kickoff-herdr 42` with edits in the tree, on a feature branch,

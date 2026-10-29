@@ -21,7 +21,7 @@ slug.
 - `plan-<slug>.md`: the plan, verbatim per `plan.md`.
 - `plan-<slug>.html`: what `../skills/plan-up/scripts/build-page.py` writes from the `.md`.
 
-The folder holds `plan-<slug>.md`, `plan-<slug>.html`, and `/ship-ready`'s
+The folder holds `plan-<slug>.md`, `plan-<slug>.html`, and `/ship`'s
 `prompt-<slug>.md`. The `.md` keeps
 its `Repo: owner/repo` line in Facts: `../skills/plan-up/scripts/prune.sh` reads it to
 know when the plan's issues are closed and its files can go. A chat

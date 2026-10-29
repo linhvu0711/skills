@@ -35,10 +35,13 @@ Flags you may add:
   `sonnet`, `haiku`) or a full model name.
 - `--effort <level>` when the user names an effort: `low`, `medium`,
   `high`, `xhigh`, or `max`.
-- `--command ship-ready`, `--command ship-full`, or `--command plan-up`
-  when the user names the command: "plan only" is `plan-up`, "ship it"
-  is `ship-ready`, "ship and merge" or "full ship" is `ship-full`. The
-  table never picks `ship-full`: a merge needs the user's words.
+- `--command plan-up` when the user says "plan only". With no
+  `--command`, the thread runs `/ship`.
+- `--mode review`, `--mode ready`, or `--mode merge` when the user names
+  how far `/ship` goes: "review the plan first" is `review`, "ship it"
+  or "stop at a ready PR" is `ready`, "ship and merge" or "full ship" is
+  `merge`. With no `--mode`, the `/ship` thread picks the ship mode from
+  its own plan. `--mode` goes only with `/ship`.
 - `--command triage`, `--command grill`, or `--command ready-pr` when
   the user names that skill: "triage it" is `triage`, "grill it" is
   `grill`, "ready the PR" is `ready-pr`. The table never picks these.
@@ -50,15 +53,16 @@ line marks each value `(default)` or `(set)`.
 
 So you can answer questions about it:
 
-- Model, effort, and command, from the size and `ready-to-build`
-  labels. Sizes match loosely (`size/S`, `Size: Medium`):
+- Model and effort, from the size and `ready-to-build` labels. The
+  command is `/ship` on every row, with no ship mode. Sizes match
+  loosely (`size/S`, `Size: Medium`):
 
   | Tickets | Model | Effort | Command |
   |---|---|---|---|
-  | every one `ready-to-build` | `opus` | `medium` | `/ship-ready` |
-  | all XS or S | `opus` | `medium` | `/ship-ready` |
-  | any M or L | `opus` | `high` | `/plan-up` |
-  | any XL, or no size | `opus` | `xhigh` | `/plan-up` |
+  | every one `ready-to-build` | `opus` | `medium` | `/ship` |
+  | all XS or S | `opus` | `medium` | `/ship` |
+  | any M or L | `opus` | `high` | `/ship` |
+  | any XL, or no size | `opus` | `xhigh` | `/ship` |
 
   In a run, a set, or a whole epic the biggest ticket picks the row;
   only a target whose every ticket is `ready-to-build` takes the

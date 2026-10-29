@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# kickoff.sh: open a herdr pane and run /ship-ready, /ship-full, or /plan-up there.
+# kickoff.sh: open a herdr pane and run /ship or /plan-up there.
 #
 # Usage: kickoff.sh [--label L] [--model M] [--effort E]
-#                   [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
+#                   [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
 # the numbers are a run under it. When it has none, it is the first ticket of a
 # set: plain issues with no shared parent, planned together in the order given.
 #
-# The model, effort, and command come from the tickets' size and
-# ready-to-build labels unless a flag names them; --size gives a ticket with
-# no size label the size the agent guessed.
+# The model and effort come from the tickets' size and ready-to-build labels
+# unless a flag names them; --size gives a ticket with no size label the size
+# the agent guessed. The command is /ship unless --command names another;
+# --mode sets its ship mode, else the /ship thread picks it.
 #
 # Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Nothing is half done: no pane exists until every check passed.
-# The tree is left as is: /ship-ready, /ship-full, and /plan-up read their own copy of the base.
+# The tree is left as is: /ship and /plan-up read their own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,7 +30,9 @@ say() { printf '%s\n' "$*" >&2; }
 decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit 1
 field() { jq -r ".$1" <<<"$decided"; }
 number="$(field number)"; title="$(field title)"; prep_args="$(field args)"
-command="$(field command)"; command_from="$(field command_from)"
+command_from="$(field command_from)"; message="$(field message)"
+# The command as the thread runs it, with its ship mode: /ship --merge.
+command="${message% "$prep_args"}"
 model="$(field model)"; model_from="$(field model_from)"
 effort="$(field effort)"; effort_from="$(field effort_from)"
 reason="$(field reason)"; base="$(field base)"; path="$(field path)"; label="$(field label)"
@@ -95,7 +98,7 @@ for _ in $(seq 1 20); do
 done
 [ "$started" -eq 1 ] || die "claude did not come up in $new_pane; the pane is left as is"
 
-herdr agent prompt "$label" "/$command $prep_args" >/dev/null
+herdr agent prompt "$label" "$message" >/dev/null
 status="idle"
 for _ in $(seq 1 30); do
   status="$(herdr agent get "$label" | jq -r .result.agent.agent_status)"
@@ -104,8 +107,8 @@ for _ in $(seq 1 30); do
 done
 if [ "$status" != "working" ]; then
   herdr agent read "$label" --source visible --lines 40 >&2 || true
-  die "/$command did not start in $new_pane (status $status); the pane is left as is"
+  die "$command did not start in $new_pane (status $status); the pane is left as is"
 fi
 
-printf '#%s %s → %s/%s/%s · /%s (%s) · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
+printf '#%s %s → %s/%s/%s · %s (%s) · model %s (%s) · effort %s (%s) · %s · %s · %s\n' \
   "$number" "$title" "$ws" "$target_tab" "$new_pane" "$command" "$command_from" "$model" "$model_from" "$effort" "$effort_from" "$reason" "base $base" "$placed"

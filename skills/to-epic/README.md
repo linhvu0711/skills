@@ -38,7 +38,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Fits with
 
 - Fed by [discover-path](../discover-path/) and [grill](../grill/). [to-issue](../to-issue/) sends XL work here, and this skill sends a one-ticket job back.
-- Its phases are run as a stack of PRs by [plan-up](../plan-up/) and [ship-ready](../ship-ready/), one ticket per layer.
+- Its phases are run as a stack of PRs by [plan-up](../plan-up/) and [ship](../ship/), one ticket per layer.
 
 ## Credits
 

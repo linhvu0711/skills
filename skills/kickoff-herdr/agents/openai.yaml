@@ -1,4 +1,4 @@
 interface:
   display_name: "Kickoff herdr"
-  short_description: "Open a herdr pane and run /ship-ready, /ship-full, or /plan-up there"
+  short_description: "Open a herdr pane and run /ship or /plan-up there"
   default_prompt: "$kickoff-herdr"
