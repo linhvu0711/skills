@@ -18,6 +18,7 @@
     --shadow: 0 1px 2px rgba(0,0,0,.06); --lift: 0 6px 18px rgba(0,0,0,.08);
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --thumb: color-mix(in srgb, var(--faint) 40%, transparent);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -73,14 +74,20 @@
   .banner code { font-family: var(--mono); font-size: 12.5px; }
 
   /* ---------- board ---------- */
-  .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; align-items: start; }
+  .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; min-height: 0; }
   .stale .board { opacity: .5; pointer-events: none; }
-  .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 160px; }
+  .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 0; display: flex; flex-direction: column; }
   .colhead { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px 2px; }
   .colhead h2 { margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
   .colhead .count { font-size: 12px; color: var(--muted); font-weight: 600; }
   .colhint { color: var(--muted); font-size: 12px; padding: 0 4px 10px; }
-  .cards { display: flex; flex-direction: column; gap: 8px; }
+  /* Each column scrolls on its own; the padding keeps a card's lift and focus ring in view. */
+  .cards { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--thumb) transparent; padding: 4px; margin: -4px; }
+  /* A soft thumb with no track, darker while the pointer is on the column. */
+  .cards:hover { --thumb: var(--faint); }
+  .cards::-webkit-scrollbar { width: 6px; }
+  .cards::-webkit-scrollbar-track { background: transparent; }
+  .cards::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 3px; }
   .nothing { border: 1px dashed var(--faint); border-radius: 8px; color: var(--muted); font-size: 12.5px; text-align: center; padding: 18px 8px; opacity: .8; }
 
   .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 12px 10px 14px; cursor: pointer; transition: box-shadow .15s, transform .15s, opacity .2s; }
