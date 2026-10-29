@@ -469,11 +469,17 @@ cmd_proposed() {
   esac
   newest_run
   [ "$(jq --argjson n "$n" '.set | index([$n]) != null' <<<"$S")" = true ] || die "#$n is not in the set"
+  # A ship reads the issue's labels, so its command is the one the launch
+  # picks: ready-to-build ships ready at any size.
+  local issue='{"labels":{"nodes":[]}}'
+  if [ "$route" = ship ]; then
+    issue="$(read_issues "$n")" || die "gh could not read #$n: $(tail -1 "$errf")"
+    issue="$(jq -c --arg n "$n" '.[$n]' <<<"$issue")"
+  fi
   S="$(jq -c --arg n "$n" --arg r "$route" --arg z "$size" \
     '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
-  # It reads no issue, so only the proposal's size picks an `auto` mode.
-  sk="$(skill "$(answer_stage "$route")" "$(ship_mode "$n" '{"labels":{"nodes":[]}}')")"
+  sk="$(skill "$(answer_stage "$route")" "$(ship_mode "$n" "$issue")")"
   line="null"
   if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"

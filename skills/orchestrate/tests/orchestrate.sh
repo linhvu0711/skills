@@ -631,6 +631,16 @@ t_fs_proposed_route_word() {
   has stdout '"proposal":"unsure"' "$out"
 }
 
+t_fs_proposed_ready_to_build() {
+  # Given: a run of #42, labelled ready-to-build and no size
+  fs_setup; fs_issue 42 OPEN '["ready-to-build"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  has stdout '"command":"ship-ready"' "$out"
+}
+
 t_fs_proposed_prints_row() {
   # Given: a run of unlabeled #42
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -1274,6 +1284,7 @@ cases=(
   "proposed takes only a route word|t_fs_proposed_route_word"
   "proposed for an issue outside the set stops|t_fs_proposed_outside_set"
   "proposed prints the model and effort|t_fs_proposed_prints_row"
+  "a ready-to-build ship proposal names ship-ready|t_fs_proposed_ready_to_build"
   "proposed takes the use pick|t_fs_proposed_use_wins"
   "a ship proposal needs a size|t_fs_proposed_ship_needs_size"
   "a task proposal takes no size|t_fs_proposed_task_no_size"
