@@ -21,10 +21,10 @@ A shared script finds the repo on disk and picks the model, effort, and command 
 
 | Tickets | Model | Effort | Command |
 |---|---|---|---|
-| every one `ready-to-build` | sonnet | high | `/ship-ready` |
+| every one `ready-to-build` | opus | medium | `/ship-ready` |
 | all XS or S | opus | medium | `/ship-ready` |
-| any M | opus | medium | `/plan-up` |
-| any L, XL, or no size | opus | high | `/plan-up` |
+| any M or L | opus | high | `/plan-up` |
+| any XL, or no size | opus | xhigh | `/plan-up` |
 
 In a group of tickets, the biggest one picks the row. `manual` tickets do not count. A ticket with no size label gets a size from its text, guessed by the agent, and the line says `guessed`.
 

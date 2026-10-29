@@ -41,6 +41,22 @@ t_kd_json_line() {
   eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"plan-up\",\"command_from\":\"default\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\"}" "$out"
 }
 
+t_kd_size_rows() {
+  # Given: #42 with each label set in turn, one checkout of acme/app
+  local labels want got=""
+  for labels in '[{"name":"ready-to-build"},{"name":"size/XS"}]' '[{"name":"size/S"}]' '[{"name":"size/M"}]' \
+      '[{"name":"size/L"}]' '[{"name":"size/XL"}]' '[]'; do
+    kd_setup "$labels"; kd_clone "$T/dev/app"
+    # When
+    kd_run https://github.com/acme/app/issues/42
+    eq "exit for $labels" 0 "$code"
+    got="$got$(jq -r '"\(.model) \(.effort) \(.command)"' <<<"$out");"
+  done
+  # Then
+  want="opus medium ship-ready;opus medium ship-ready;opus high plan-up;opus high plan-up;opus xhigh plan-up;opus xhigh plan-up;"
+  eq rows "$want" "$got"
+}
+
 t_kd_stops_no_checkout() {
   # Given: #42 size/S, no checkout under $T/dev
   kd_setup '[{"name":"size/S"}]'; mkdir -p "$T/dev"
@@ -144,6 +160,7 @@ t_kd_ready_pr_two_prs() {
 
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
+  "each size takes its row|t_kd_size_rows"
   "decide stops before any launch|t_kd_stops_no_checkout"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
