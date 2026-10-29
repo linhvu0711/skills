@@ -166,6 +166,8 @@ model_from=default; effort_from=default; command_from=default
 if [ -n "$set_model" ]; then model="$set_model"; model_from=set; fi
 if [ -n "$set_effort" ]; then effort="$set_effort"; effort_from=set; fi
 if [ -n "$set_command" ]; then command="$set_command"; command_from=set; fi
+# A ship mode the user named sets the command's form, so it reads as set.
+if [ -n "$mode" ]; then command_from=set; fi
 
 # ---------- ready-pr ----------
 # /ready-pr takes the open PR that closes the issue. GitHub lists merged PRs

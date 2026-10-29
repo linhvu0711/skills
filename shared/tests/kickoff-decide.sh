@@ -166,6 +166,7 @@ t_kd_mode_in_message() {
   # Then
   eq exit 0 "$code"
   eq mode+message 'merge /ship --merge https://github.com/acme/app/issues/42' "$(jq -r '"\(.mode) \(.message)"' <<<"$out")"
+  eq command_from set "$(jq -r .command_from <<<"$out")"
 }
 
 t_kd_no_mode_message() {

@@ -211,7 +211,7 @@ t_ko_mode_merge() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --mode merge https://github.com/acme/app/issues/42
   has prompt "agent prompt i42 /ship --merge https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
-  has report " · /ship --merge (default) · " "$out"
+  has report " · /ship --merge (set) · " "$out"
 }
 
 t_ko_bad_command() {
