@@ -1,11 +1,11 @@
-# factory.sh: the cases for this skill's factory.sh, the check script and the
+# orchestrate.sh: the cases for this skill's orchestrate.sh, the check script and the
 # one writer of a run's state file, seen through the fake gh and a fake t3.
 # The repo's test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The factory script.
-F="$here/../scripts/factory.sh"
+# The orchestrator script.
+F="$here/../scripts/orchestrate.sh"
 
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
 # one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
@@ -47,12 +47,12 @@ fs_issue() {
   jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$T/issues/$1.json" > "$FAKE_GH/issue-view.json"
 }
 
-# fs_go <args...>: factory.sh from T, inside T3 Code, with the search root,
-# the repo map, and the factory home inside T.
+# fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
+# the repo map, and the orchestrator home inside T.
 fs_go() {
   cd "$T"
   run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" \
-    FACTORY_HOME="$T/factory" bash "$F" "$@"
+    ORCHESTRATE_HOME="$T/orchestrate" bash "$F" "$@"
 }
 
 # fs_start <n>...: a run of these issues, named after the first.
@@ -62,10 +62,10 @@ fs_start() {
 }
 
 # fs_state [jq flags] <jq>: the jq filter on the newest run's state file.
-fs_state() { jq -c "$@" "$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"; }
+fs_state() { jq -c "$@" "$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"; }
 
 # fs_run: the newest run's folder, with no slash at the end.
-fs_run() { ls -1d "$T"/factory/acme-app/*/ | sort | tail -1 | sed 's#/$##'; }
+fs_run() { ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's#/$##'; }
 
 # fs_board [jq flags] <jq>: the jq filter on the newest run's board.json.
 fs_board() { jq -c "$@" "$(fs_run)/board.json"; }
@@ -77,7 +77,7 @@ t_fs_start_writes_run() {
   fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
   eq exit 0 "$code"
-  eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
+  eq runs 1 "$(ls -1 "$T/orchestrate/acme-app" | wc -l | tr -d ' ')"
   eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
 }
 
@@ -120,14 +120,14 @@ t_fs_recorded_thread_not_again() {
 # fs_at <iso>: the run's start time, set by hand so a PR's date is before or
 # after it.
 fs_at() {
-  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  local f; f="$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"
   jq --arg at "$1" '.started_at = $at' "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
 # fs_record <n> <stage> <thread> [command] [at]: a started thread record, as
 # `started` writes, with the command and claim time a check gives it.
 fs_record() {
-  local f; f="$(ls -1d "$T"/factory/acme-app/*/ | sort | tail -1)state.json"
+  local f; f="$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"
   jq --argjson n "$1" --arg s "$2" --arg id "$3" --arg cmd "${4:-}" --arg at "${5:-}" \
     '.threads += [{number: $n, stage: $s, thread: $id, link: "[i\($n)](t3-thread://v1/\($id))", status: "started", why: null}
       + (if $cmd == "" then {} else {command: $cmd} end) + (if $at == "" then {} else {at: $at} end)]' \
@@ -513,14 +513,14 @@ t_fs_stop_keeps_state() {
 }
 
 t_fs_live_run_stops_start() {
-  # Given: a running run of #42 from the factory thread f1
+  # Given: a running run of #42 from the orchestrator thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42
   # When
   fs_go start acme/app --name "#43" --thread x --env e1 43
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: a live run in acme/app: [factory: #42](t3-thread://v1/f1)" "$err"
-  eq runs 1 "$(ls -1 "$T/factory/acme-app" | wc -l | tr -d ' ')"
+  eq stderr "stop: a live run in acme/app: [orchestrate: #42](t3-thread://v1/f1)" "$err"
+  eq runs 1 "$(ls -1 "$T/orchestrate/acme-app" | wc -l | tr -d ' ')"
 }
 
 t_fs_resume_newest() {
@@ -532,7 +532,7 @@ t_fs_resume_newest() {
   # Then
   eq exit 0 "$code"
   has stdout '"name":"#42","old_task":"s1","every":5' "$out"
-  eq state '{"status":"running","link":"[factory: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
+  eq state '{"status":"running","link":"[orchestrate: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
 }
 
 t_fs_no_open_issue_stops() {
@@ -543,7 +543,7 @@ t_fs_no_open_issue_stops() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: #42 has no open issue" "$err"
-  eq runs 0 "$(ls -1 "$T/factory/acme-app" 2>/dev/null | wc -l | tr -d ' ')"
+  eq runs 0 "$(ls -1 "$T/orchestrate/acme-app" 2>/dev/null | wc -l | tr -d ' ')"
 }
 
 t_fs_outside_t3_stops() {
@@ -551,7 +551,7 @@ t_fs_outside_t3_stops() {
   fs_setup; fs_issue 42 OPEN '["size/S"]'
   # When
   cd "$T"
-  run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" FACTORY_HOME="$T/factory" \
+  run env -u T3CODE_CLI_PATH KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" ORCHESTRATE_HOME="$T/orchestrate" \
     bash "$F" start acme/app --name "#42" --thread x --env e1 42
   # Then
   eq exit 1 "$code"
@@ -586,7 +586,7 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 1 "$code"
-  eq stderr "stop: usage: factory.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
@@ -737,7 +737,7 @@ t_fs_start_copies_page() {
   # When
   fs_go start acme/app --name "#42" --thread f1 --env e1 42
   # Then
-  eq page "1 e1" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+  eq page "1 e1" "$(grep -c "<meta name=\"orchestrate-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
 }
 
 t_fs_start_needs_env() {
@@ -746,7 +746,7 @@ t_fs_start_needs_env() {
   # When
   fs_go start acme/app --name "#42" --thread f1 42
   # Then
-  eq stderr "stop: usage: factory.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
+  eq stderr "stop: usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
 }
 
 t_fs_board_chips() {
@@ -1060,7 +1060,7 @@ t_fs_resume_copies_page() {
   # When
   fs_go resume acme/app --thread f2 --env e2
   # Then
-  eq page "1 e2" "$(grep -c "<meta name=\"factory-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
+  eq page "1 e2" "$(grep -c "<meta name=\"orchestrate-run\" content=\"acme/app/$(basename "$(fs_run)")\">" "$(fs_run)/board.html") $(fs_state -r .env)"
 }
 
 t_fs_two_runs_two_pages() {
@@ -1068,7 +1068,7 @@ t_fs_two_runs_two_pages() {
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app stop
   # (both start in one second here, so the first run's folder moves back a
   # year, and a resume names that folder in its page)
-  local first="$T/factory/acme-app/20200101T000000Z"; mv "$(fs_run)" "$first"
+  local first="$T/orchestrate/acme-app/20200101T000000Z"; mv "$(fs_run)" "$first"
   fs_go resume acme/app --thread f1 --env e1; fs_go timer acme/app stop; fs_start 42
   # When
   local diff=same; cmp -s "$first/board.html" "$(fs_run)/board.html" || diff=differ

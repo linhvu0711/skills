@@ -1,4 +1,4 @@
 interface:
-  display_name: "Factory"
+  display_name: "Orchestrate"
   short_description: "Run a set of issues to closed from one pinned T3 Code thread"
-  default_prompt: "$factory"
+  default_prompt: "$orchestrate"
