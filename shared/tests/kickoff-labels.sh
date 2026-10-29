@@ -1,5 +1,5 @@
 # kickoff-labels.sh: the cases for the shared core's kickoff/labels.sh, the
-# size rule that decide.sh and the factory's check both read. The repo's
+# size rule that decide.sh and the orchestrator's check both read. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

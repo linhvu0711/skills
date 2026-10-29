@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the factory's check.
+# decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the orchestrator's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
 #                  [--command ship-ready|ship-full|plan-up|triage|grill|ready-pr]
