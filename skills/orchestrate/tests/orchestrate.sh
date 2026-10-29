@@ -81,15 +81,26 @@ t_fs_start_writes_run() {
   eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
 }
 
-t_fs_ticket_starts_ship_ready() {
+t_fs_ticket_starts_ship_after_review() {
   # Given: a run of #42, open, size/L, no blocker, no PR
   fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42","thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
+  has stdout '"command":"ship-after-review","command_from":"set","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
+  has stdout '"message":"/ship-after-review https://github.com/acme/app/issues/42","thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
+}
+
+t_fs_small_or_ready_ships_ready() {
+  # Given: a run of #42 size/S and #43 ready-to-build at size/M
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["ready-to-build","size/M"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/43"' "$out"
 }
 
 t_fs_second_check_starts_nothing() {
@@ -338,17 +349,17 @@ t_fs_ship_full_all() {
   fs_go change acme/app ship full all
   # Then
   eq exit 0 "$code"
-  eq ship '{"default":"full","42":"ready"}' "$(fs_state .ship)"
+  eq ship '{"default":"full","42":"auto"}' "$(fs_state .ship)"
 }
 
 t_fs_ship_full_started() {
-  # Given: #42's ticket thread t42 started
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42
+  # Given: #42's ticket thread t42 started with ship-ready
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42 ship-ready
   # When
   fs_go change acme/app ship full 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+  eq stderr "stop: #42 has started; it ships with /ship-ready" "$err"
 }
 
 t_fs_override_one_wins() {
@@ -683,6 +694,16 @@ t_fs_ship_proposal_size_launches() {
   has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
 }
 
+t_fs_ship_proposal_m_after_review() {
+  # Given: unlabeled #42, proposed ship at size M, answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 ship --size M; fs_go change acme/app answer 42 yes
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/ship-after-review https://github.com/acme/app/issues/42"' "$out"
+}
+
 t_fs_label_wins_proposal_size() {
   # Given: #42 proposed unsure at size S, then labelled size/L
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure --size S
@@ -716,14 +737,14 @@ t_fs_grill_answer_starts() {
   eq threads '[{"number":42,"stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
 }
 
-t_fs_ship_answer_starts() {
+t_fs_ship_answer_no_size() {
   # Given: unlabeled #42, answered ship with no proposal
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
   eq "answer exit" 0 "$code"
   # When
   fs_go check acme/app
   # Then
-  has stdout '"message":"/ship-ready https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship-after-review https://github.com/acme/app/issues/42"' "$out"
 }
 
 t_fs_all_yes() {
@@ -796,13 +817,13 @@ t_fs_label_wins_answer() {
 }
 
 t_fs_ship_full_started_answer() {
-  # Given: unlabeled #42 answered ship; its thread t42 started
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship; fs_record 42 unlabeled t42
+  # Given: unlabeled #42 answered ship; its ship-after-review thread t42 started
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship; fs_record 42 unlabeled t42 ship-after-review
   # When
   fs_go change acme/app ship full 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: #42 has started; its mode stays ship-ready" "$err"
+  eq stderr "stop: #42 has started; it ships with /ship-after-review" "$err"
 }
 
 t_fs_board_columns() {
@@ -1174,7 +1195,8 @@ t_fs_two_runs_two_pages() {
 
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
-  "a free ticket starts ship-ready|t_fs_ticket_starts_ship_ready"
+  "a free ticket starts ship-after-review|t_fs_ticket_starts_ship_after_review"
+  "a small or ready ticket starts ship-ready|t_fs_small_or_ready_ships_ready"
   "a second check starts nothing|t_fs_second_check_starts_nothing"
   "a recorded thread is not started again|t_fs_recorded_thread_not_again"
   "a seed starts grill|t_fs_seed_starts_grill"
@@ -1226,9 +1248,10 @@ cases=(
   "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
   "an answer keeps the size|t_fs_answer_keeps_size"
   "a ship proposal launches with its size|t_fs_ship_proposal_size_launches"
+  "a ship proposal of size M launches ship-after-review|t_fs_ship_proposal_m_after_review"
   "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
-  "a ship answer starts ship-ready|t_fs_ship_answer_starts"
+  "a ship answer with no size starts ship-after-review|t_fs_ship_answer_no_size"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"

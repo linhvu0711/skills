@@ -20,14 +20,14 @@ Each issue gets a thread with the skill that fits where it is:
 |---|---|---|
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
-| ticket | a size label | `/ship-ready`, or `/ship-full` when you say so |
+| ticket | a size label | `/ship-ready` when it is `ready-to-build`, XS, or S, else `/ship-after-review`; the mode you name wins |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr <pr-url>` |
 | task | a `manual` label | none: it is yours |
 | epic | sub-issues | none: its open sub-issues join the set |
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
 | done | closed | none |
 
-The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
+The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model and the ship skill, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
 
 An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`:
 
@@ -39,7 +39,7 @@ An issue starts only when every issue that blocks it is closed. The model and ef
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
 
- Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
+ Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check ships it, by the ticket row above. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
 A board page shows the run while it goes: four columns (Shape, Build, Review, Done), each one scrolling on its own, an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. Its tab shows a small board icon and the repo's name: a repo has one live run, so the name is enough. The orchestrator thread posts its link at the start and on `/orchestrate resume`. It reads only; you steer the run in the orchestrator thread.
 

@@ -138,8 +138,22 @@ stage() {
   else echo unlabeled; fi
 }
 
+# ship_mode <n> <issue json>: how #n ships, `ready`, `full`, or
+# `after-review`. The user's pick for #n, else the run's default. The default
+# `auto` ships ready a ready-to-build, XS, or S issue, by its size label, else
+# by its proposal's size, and every other one after review.
+ship_mode() {
+  local m size
+  m="$(jq -r --arg n "$1" '.ship[$n] // .ship.default' <<<"$S")"
+  [ "$m" = auto ] || { echo "$m"; return; }
+  if jq -e '[.labels.nodes[].name | ascii_downcase] | index("ready-to-build")' <<<"$2" >/dev/null; then echo ready; return; fi
+  size="$(size_label "$2")"
+  [ -n "$size" ] || size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
+  case "$size" in XS|S) echo ready ;; *) echo after-review ;; esac
+}
+
 # skill <stage> <ship mode>: the command a thread at that stage starts
-# with, or nothing. A ticket ships by the mode, `ready` or `full`.
+# with, or nothing. A ticket ships by the mode.
 skill() {
   case "$1" in
     seed) echo grill ;;
@@ -290,7 +304,7 @@ cmd_start() {
   S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, env: $env, link: $link, path: $path, started_at: $at, status: "running",
-      set: $set, removed: [], made: [], ship: {default: "ready"}, use: {}, proposals: {},
+      set: $set, removed: [], made: [], ship: {default: "auto"}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
   copy_page
@@ -343,7 +357,7 @@ cmd_check() {
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
-    sk="$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")"
+    sk="$(ship_mode "$n" "$j")"
     # The stage stays unlabeled; the user's answer only picks the skill.
     if [ "$st" = unlabeled ]; then
       sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")" "$sk")"
@@ -456,7 +470,8 @@ cmd_proposed() {
   S="$(jq -c --arg n "$n" --arg r "$route" --arg z "$size" \
     '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
-  sk="$(skill "$(answer_stage "$route")" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
+  # It reads no issue, so only the proposal's size picks an `auto` mode.
+  sk="$(skill "$(answer_stage "$route")" "$(ship_mode "$n" '{"labels":{"nodes":[]}}')")"
   line="null"
   if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
@@ -514,7 +529,9 @@ cmd_change() {
           | .ship.default = $m' <<<"$S")"
       else
         [ "$(jq --argjson n "$who" '. as $S | [.threads[] | select(.number == $n and '"$shipped"')] | length' <<<"$S")" -eq 0 ] \
-          || die "#$who has started; its mode stays ship-$(jq -r --arg n "$who" '.ship[$n] // .ship.default' <<<"$S")"
+          || die "#$who has started; it ships with /$(jq -r --argjson n "$who" '. as $S
+               | [.threads[] | select(.number == $n and '"$shipped"')] | last
+               | .command // "ship-\($S.ship[$n | tostring] // $S.ship.default)"' <<<"$S")"
         S="$(jq -c --arg n "$who" --arg m "$mode" '.ship[$n] = $m' <<<"$S")"
       fi
       ;;

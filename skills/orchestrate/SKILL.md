@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship-ready, /ship-full, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship-ready, /ship-after-review, /ship-full, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
@@ -97,8 +97,10 @@ issue's `wait`, `blocked by #a #b`, its thread's link and
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
-The `ship` skill reads `/ship-ready`, or `/ship-full` when the user said
-so for that issue or for all. Lead with `Joined: #a #b` when `joined` is
+The `ship` skill reads `/ship-ready` for an issue that is
+`ready-to-build`, XS, or S, by its size label or its proposal's size, and
+`/ship-after-review` for every other one, unless the user named a mode
+for that issue or for all. Lead with `Joined: #a #b` when `joined` is
 not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
 § Done. `propose` not empty: § Propose, after these lines.
 
