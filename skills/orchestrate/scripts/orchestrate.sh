@@ -160,14 +160,15 @@ answer_stage() {
   esac
 }
 
-# decide_for <n> <skill>: decide.sh's line for #n's thread, with the run's
-# model and effort picks and the size its proposal holds, so a proposal and
-# its launch read the same row. Its stop line is left in errf.
+# decide_for <n> <skill> <stage>: decide.sh's line for #n's thread, with the
+# run's model and effort picks, so a proposal and its launch read the same
+# row. Only an unlabeled issue sends its proposal's size: once a size label
+# is on the issue, the label picks the row. Its stop line is left in errf.
 decide_for() {
-  local flags=() model effort size
+  local flags=() model effort size=""
   model="$(jq -r --arg n "$1" '.use[$n].model // .use.all.model // empty' <<<"$S")"
   effort="$(jq -r --arg n "$1" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
-  size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
+  [ "$3" != unlabeled ] || size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
   [ -z "$model" ] || flags+=(--model "$model")
   [ -z "$effort" ] || flags+=(--effort "$effort")
   [ -z "$size" ] || flags+=(--size "$1=$size")
@@ -360,7 +361,7 @@ cmd_check() {
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       # A gh failure in decide.sh fails the check; any other stop is this
       # issue's alone, and it waits.
-      if ! line="$(decide_for "$n" "$sk")"; then
+      if ! line="$(decide_for "$n" "$sk" "$st")"; then
         wait="$(tail -1 "$errf" | sed 's/^stop: //')"
         case "$wait" in "gh could not"*) fail_check "$wait" ;; esac
       fi
@@ -457,7 +458,7 @@ cmd_proposed() {
   save
   sk="$(skill "$(answer_stage "$route")" "$(jq -r --arg n "$n" '.ship[$n] // .ship.default' <<<"$S")")"
   line="null"
-  if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk")"; then
+  if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
   fi
   jq -cn --argjson n "$n" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \

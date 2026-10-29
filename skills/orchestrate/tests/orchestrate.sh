@@ -683,6 +683,17 @@ t_fs_ship_proposal_size_launches() {
   has stdout '"command":"ship-ready","command_from":"set","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
 }
 
+t_fs_label_wins_proposal_size() {
+  # Given: #42 proposed unsure at size S, then labelled size/L
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 unsure --size S
+  fs_issue 42 OPEN '["size/L"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"size L"' "$out"
+}
+
 t_fs_proposed_outside_set() {
   # Given: a run of #42
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -1215,6 +1226,7 @@ cases=(
   "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
   "an answer keeps the size|t_fs_answer_keeps_size"
   "a ship proposal launches with its size|t_fs_ship_proposal_size_launches"
+  "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
   "a ship answer starts ship-ready|t_fs_ship_answer_starts"
   "all yes takes every sure proposal|t_fs_all_yes"
