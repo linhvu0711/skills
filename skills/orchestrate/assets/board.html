@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="orchestrate-run" content="">
-<link rel="icon" href="data:,">
-<title>orchestrate</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3.5' fill='%2318181b'/><rect x='2.5' y='3' width='3' height='4' rx='.8' fill='%23fb923c'/><rect x='2.5' y='8' width='3' height='3' rx='.8' fill='%23fb923c'/><rect x='6.5' y='3' width='3' height='6' rx='.8' fill='%2360a5fa'/><rect x='10.5' y='3' width='3' height='3' rx='.8' fill='%234ade80'/><rect x='10.5' y='7' width='3' height='4' rx='.8' fill='%234ade80'/></svg>">
+<title>board</title>
 <style>
   :root {
     --bg: #f4f4f5; --col: #ebebee; --card: #ffffff; --ink: #18181b; --muted: #71717a; --faint: #a1a1aa; --line: #e4e4e7;
@@ -18,6 +18,7 @@
     --shadow: 0 1px 2px rgba(0,0,0,.06); --lift: 0 6px 18px rgba(0,0,0,.08);
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --thumb: color-mix(in srgb, var(--faint) 40%, transparent);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -40,7 +41,6 @@
   /* ---------- top bar ---------- */
   .top { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--card); flex-wrap: wrap; }
   .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-  .brand .logo { font-weight: 700; letter-spacing: -.01em; }
   .brand .run { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand .repo { color: var(--muted); font-size: 12.5px; }
   .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--col); color: var(--muted); white-space: nowrap; }
@@ -74,14 +74,20 @@
   .banner code { font-family: var(--mono); font-size: 12.5px; }
 
   /* ---------- board ---------- */
-  .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; align-items: start; }
+  .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; min-height: 0; }
   .stale .board { opacity: .5; pointer-events: none; }
-  .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 160px; }
+  .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 0; display: flex; flex-direction: column; }
   .colhead { display: flex; align-items: baseline; gap: 8px; padding: 2px 4px 2px; }
   .colhead h2 { margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
   .colhead .count { font-size: 12px; color: var(--muted); font-weight: 600; }
   .colhint { color: var(--muted); font-size: 12px; padding: 0 4px 10px; }
-  .cards { display: flex; flex-direction: column; gap: 8px; }
+  /* Each column scrolls on its own; the padding keeps a card's lift and focus ring in view. */
+  .cards { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--thumb) transparent; padding: 4px; margin: -4px; }
+  /* A soft thumb with no track, darker while the pointer is on the column. */
+  .cards:hover { --thumb: var(--faint); }
+  .cards::-webkit-scrollbar { width: 6px; }
+  .cards::-webkit-scrollbar-track { background: transparent; }
+  .cards::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 3px; }
   .nothing { border: 1px dashed var(--faint); border-radius: 8px; color: var(--muted); font-size: 12.5px; text-align: center; padding: 18px 8px; opacity: .8; }
 
   .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 12px 10px 14px; cursor: pointer; transition: box-shadow .15s, transform .15s, opacity .2s; }
@@ -175,7 +181,7 @@
 </head>
 <body>
 <div class="top">
-  <div class="brand"><span class="logo">orchestrate</span><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
+  <div class="brand"><span class="run" id="run"></span><span class="repo mono" id="repo"></span></div>
   <span class="pill" id="pill"></span>
   <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext"></span></div>
   <div class="health"><span class="dot" id="hdot"></span><span id="htext"></span></div>
@@ -257,7 +263,7 @@
     var doneN = counted.filter(function (x) { return x.column === 'done' }).length
     var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
     var st = S ? S.status : ''
-    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = 'orchestrate · ' + S.name }
+    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = S.repo.split('/').pop() }
     var pill = $('pill')
     pill.className = 'pill ' + st
     pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
@@ -291,18 +297,22 @@
   }
 
   // The board is drawn again on each read, so a focused card would lose its
-  // focus every 5 s; it gets it back by its number.
+  // focus every 5 s; it gets it back by its number. Each column scrolls on
+  // its own, so it gets its scroll back by its key the same way.
   function render() {
     var had = document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')
     var hadN = had ? had.getAttribute('data-n') : null
+    var scrolled = {}
+    document.querySelectorAll('.col').forEach(function (s) { scrolled[s.getAttribute('data-col')] = s.querySelector('.cards').scrollTop })
     document.body.classList.toggle('stale', stale)
     top()
     var loading = !B
     $('board').innerHTML = COLS.map(function (c) {
       var items = loading ? [] : B.issues.filter(function (x) { return x.column === c[0] })
       var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
-      return '<section class="col" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
+      return '<section class="col" data-col="' + c[0] + '" aria-label="' + c[1] + '"><div class="colhead"><h2>' + c[1] + '</h2><span class="count">' + (loading ? '' : items.length) + '</span></div><div class="colhint">' + c[2] + '</div><div class="cards">' + body + '</div></section>'
     }).join('')
+    document.querySelectorAll('.col').forEach(function (s) { s.querySelector('.cards').scrollTop = scrolled[s.getAttribute('data-col')] || 0 })
     if (hadN) { var c = document.querySelector('.card[data-n="' + hadN + '"]'); if (c) c.focus() }
     if (openN != null) openDrawer(openN, true)
   }

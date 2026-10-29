@@ -31,7 +31,7 @@ The orchestrator proposes a skill for each unlabeled issue, in one list in its t
 
 An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`. Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship-ready` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
-A board page shows the run while it goes: four columns (Shape, Build, Review, Done), an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. The orchestrator thread posts its link at the start and on `/orchestrate resume`. It reads only; you steer the run in the orchestrator thread.
+A board page shows the run while it goes: four columns (Shape, Build, Review, Done), each one scrolling on its own, an orange YOU strip on each card that waits for you with what to do, a blue dot on each running thread, and buttons to its thread and PR. Its tab shows a small board icon and the repo's name: a repo has one live run, so the name is enough. The orchestrator thread posts its link at the start and on `/orchestrate resume`. It reads only; you steer the run in the orchestrator thread.
 
 The orchestrator never retries, messages, or answers a thread it started. You handle every thread. A thread that fails, or ends with no new stage, waits for you to say `restart #n` (ADR 0013).
 
