@@ -20,7 +20,9 @@ a. **Start the app.** You start it; the walker never does.
    `box.sh down`, then stop with the log's last line.
 
 b. **Walker.** In Claude Code, the `walker` agent
-   (`agents/walker.md`, linked into `~/.claude/agents/`); in Codex,
+   (`agents/walker.md`, linked into `~/.claude/agents/`), started with
+   `model: sonnet` and `effort: high` on the Agent call, so no default
+   model or effort changes them; in Codex,
    no sub-agent, so you read `agents/walker.md` and follow it
    yourself, reading no code while you walk. Its brief, whole:
    - the mode, `before` or `after`, and the round;
