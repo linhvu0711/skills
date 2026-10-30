@@ -84,7 +84,17 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 2. Started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
    Not started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
 
-Then post one line per issue of `issues`, set order:
+Then post, by what ran the check:
+
+- The timer's prompt, `/orchestrate check`, and the line's `changed`
+  is `false`: post nothing at all, not even a line that says nothing
+  changed. The turn ends there.
+- The timer's prompt, and `changed` is `true`: post the lines below
+  only for the issues whose `changed` is `true`.
+- Any other way in (start, resume, `check now`, `add`, `restart`, the
+  answers): post the lines below for every issue.
+
+One line per issue, set order:
 
 ```
 #<number> <title> · <stage> · <what happens>

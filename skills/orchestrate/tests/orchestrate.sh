@@ -521,6 +521,50 @@ t_fs_paused_starts_nothing() {
   eq threads '[]' "$(fs_state .threads)"
 }
 
+t_fs_first_check_all_changed() {
+  # Given: a run of #42, a manual task, never checked
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq check '{"changed":true,"issues":[{"number":42,"changed":true}]}' "$(jq -c '{changed, issues: [.issues[] | {number, changed}]}' <<<"$out")"
+}
+
+t_fs_second_check_quiet() {
+  # Given: a run of #42, a manual task, checked once
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_go check acme/app
+  # When
+  fs_go check acme/app
+  # Then
+  eq check '{"changed":false,"issues":[false]}' "$(jq -c '{changed, issues: [.issues[] | .changed]}' <<<"$out")"
+}
+
+t_fs_status_change_marks_issue() {
+  # Given: #42's ticket thread t42 running and checked, #43 a manual task;
+  # then t42 waits for the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 ticket t42
+  echo '[{"threadId":"t42","status":"running"}]' > "$T/t3-threads.json"
+  fs_go check acme/app
+  echo '[{"threadId":"t42","status":"waiting"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq check '{"changed":true,"issues":[{"number":42,"changed":true},{"number":43,"changed":false}]}' \
+    "$(jq -c '{changed, issues: [.issues[] | {number, changed}]}' <<<"$out")"
+}
+
+t_fs_start_marks_changed() {
+  # Given: a run of #42, size/S, checked while paused, then resumed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_go timer acme/app pause; fs_go check acme/app; fs_go timer acme/app resume
+  # When
+  fs_go check acme/app
+  # Then
+  eq check '{"changed":true,"starts":1,"issues":[true]}' "$(jq -c '{changed, starts: (.starts | length), issues: [.issues[] | .changed]}' <<<"$out")"
+}
+
 t_fs_stop_keeps_state() {
   # Given: a run of #42
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1230,6 +1274,10 @@ cases=(
   "start sets a 5 minute timer|t_fs_timer_five_min"
   "the interval takes 1 minute or more|t_fs_interval_min_one"
   "a paused run starts nothing|t_fs_paused_starts_nothing"
+  "a first check marks every issue changed|t_fs_first_check_all_changed"
+  "a second check with nothing new is quiet|t_fs_second_check_quiet"
+  "a thread that changes status marks only its issue|t_fs_status_change_marks_issue"
+  "a start marks its issue changed|t_fs_start_marks_changed"
   "stop keeps the state file|t_fs_stop_keeps_state"
   "a live run stops a second start|t_fs_live_run_stops_start"
   "resume takes the newest run that is not done|t_fs_resume_newest"

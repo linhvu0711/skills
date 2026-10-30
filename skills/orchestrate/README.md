@@ -45,6 +45,8 @@ A board page shows the run while it goes: four columns (Shape, Build, Review, Do
 
 The orchestrator never retries, messages, or answers a thread it started. You handle every thread. A thread that fails, or ends with no new stage, waits for you to say `restart #n` (ADR 0013).
 
+The timer stays quiet unless something moved. A timer check posts a line only for an issue that changed since the last check: a new stage, a thread started or with a new status, a new blocker or PR, a proposal. When nothing changed, it posts nothing. A check that fails still posts why. `check now` posts every issue.
+
 Say these in the orchestrator thread:
 
 - `check now`, `check every 10 min` (1 minute at least; the start is 5).
@@ -74,4 +76,4 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Tests
 
-The cases for [orchestrate.sh](scripts/orchestrate.sh), the route for each stage, blockers, one thread per stage, `restart`, the proposals and answers, a failed check, the done rule, and the board data (each card's column, chip, mark, and action), are in [tests/orchestrate.sh](tests/orchestrate.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [orchestrate.sh](scripts/orchestrate.sh), the route for each stage, the quiet timer check, blockers, one thread per stage, `restart`, the proposals and answers, a failed check, the done rule, and the board data (each card's column, chip, mark, and action), are in [tests/orchestrate.sh](tests/orchestrate.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
