@@ -102,7 +102,8 @@ nothing.
    Skip steps 6, 7, 10, and 11. Do steps 8 and 9, then § Blocked.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
-   § Confirm.
+   § Confirm. The cause is the line where the mistake is made, not where
+   the symptom shows.
 
 7. **Same mistake.** The confirmed cause is one place the mistake was
    made. Search for the same mistake elsewhere, per `method.md` § Same
@@ -192,6 +193,14 @@ list>. Close out: text. Then continue at step 11.` The grill owns the
 interview and the doc text; step 11 files the ticket with it. You wait
 for `Grill done.`
 
+## Paid or slow checks
+
+A check can cost money or time: a rented Sandbox, a long loop, a cloud
+run. Say the cost in one line, as `Renting a Linux Sandbox, about 30
+min.`, and run it. Do not ask whether to run it, and never offer to
+file a ticket for later in place of the check. Give a rented Sandbox
+enough life for the whole job, so it does not end in the middle of one.
+
 ## Secrets
 
 Logs, env dumps, and configs carry secrets. Redact before they enter the
@@ -224,6 +233,19 @@ Where does it work: CI is green, a teammate is fine. Category `Local env`.
 Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code
 issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket
 only if the setup docs never mention the variable; else nothing to file.
+
+**User:** `/triage downloads through the helper sometimes never end`
+
+Gate passes. The helper's logs show the download gets almost every byte,
+then stops. A Sandbox is needed for a loop: `Renting a Linux Sandbox,
+about 30 min.` The loop runs the same download through the helper and
+through plain `ssh`: the helper path hangs 25 of 45 times, plain `ssh`
+0 of 45. So the cause is in the helper process. That is a place, not a
+cause. Log lines at each step of the helper's path, in a throwaway
+worktree, and the loop again: the log line after the child's exit
+event never comes. More log lines between the last one that came and
+the first that did not, down to one line. Confirm it both ways. Report,
+`fix` ticket.
 
 **User:** `/triage #42`
 
