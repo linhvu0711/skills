@@ -90,7 +90,7 @@ t_fs_ticket_starts_ship() {
   eq exit 0 "$code"
   has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
   has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
-  has stdout '"thread_title":"i42 Export orders","runtime_mode":"auto"' "$out"
+  has stdout '"thread_title":"#42 Export orders","runtime_mode":"auto"' "$out"
 }
 
 t_fs_second_check_starts_nothing() {
@@ -108,7 +108,7 @@ t_fs_recorded_thread_not_again() {
   # Given: #42's ticket thread t42 started and running
   fs_setup; fs_issue 42 OPEN '["size/L"]'; fs_start 42
   fs_go check acme/app
-  fs_go started acme/app 42 ticket t42 "[i42 Export orders](t3-thread://v1/t42)"
+  fs_go started acme/app 42 ticket t42 "[#42 Export orders](t3-thread://v1/t42)"
   eq "started exit" 0 "$code"
   echo '[{"threadId":"t42","status":"running"}]' > "$T/t3-threads.json"
   # When

@@ -390,7 +390,7 @@ cmd_check() {
     fi
     if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
-        '. + [$l + {stage: $st, thread_title: "\($l.label) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
+        '. + [$l + {stage: $st, thread_title: "\($l.heading) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
       claims="$(jq -c --argjson n "$n" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"

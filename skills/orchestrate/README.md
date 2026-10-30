@@ -14,7 +14,7 @@ The thread you type it in becomes the orchestrator. It pins itself, takes the ti
 
 ## What you get
 
-Each issue gets a thread with the skill that fits where it is:
+Each issue gets a thread, titled with its number and title as `#42 Export orders`, with the skill that fits where it is:
 
 | Stage | How the orchestrator sees it | Thread |
 |---|---|---|
