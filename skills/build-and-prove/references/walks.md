@@ -19,6 +19,9 @@ a. **Start the app.** You start it; the walker never does.
    the builder's: a follow-up (step 9c). Still down after that:
    `box.sh down`, then stop with the log's last line.
 
+   A walk's `Setup` that sets the clock is how the app opens for that
+   walk; the run never waits for the real clock to reach a time.
+
 b. **Walker.** In Claude Code, the `walker` agent
    (`agents/walker.md`, linked into `~/.claude/agents/`), started with
    `model: sonnet` and `effort: high` on the Agent call, so no default

@@ -588,7 +588,11 @@ rule to copy: a big fork, ask.
 
 **UI walks.** Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
-fixture the repo has. `Must not` is the negative check. In a web or
+fixture the repo has. A walk whose `See` depends on the date or the time of
+day sets the clock in `Setup`, to a named time, with the hook the
+repo's tests use (a fake timer, a seed date, Playwright's
+`clock.install`), so the walk shows the same at any hour and never
+waits for the real clock. No such hook in the repo: a big fork, ask. `Must not` is the negative check. In a web or
 desktop walk it is often what the screenshot cannot show (a console
 error, a failed request). In a terminal walk it is text the screen
 shows or must not show, as in `no line starting Error:`, never `stderr`
