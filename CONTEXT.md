@@ -203,7 +203,7 @@ _Avoid_: lane, path, mode (alone), auto
 ## Orchestrator
 
 **Orchestrator**:
-The skill, and its pinned T3 thread, that starts one thread for each issue in a Set when the issue has no open blocker and reaches a new Stage. It never builds, merges, or writes in the threads it starts. The user handles each thread.
+The skill, and its pinned T3 thread, that starts one thread for each issue in a Set when the issue has no open blocker and reaches a new Stage. It never builds or merges, and writes in the threads it starts only to send `/ready-pr` to a thread whose PR has conflicts. The user handles each thread.
 _Avoid_: factory, autopilot, scheduler
 
 **Run**:
