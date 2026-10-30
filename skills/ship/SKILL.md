@@ -207,8 +207,9 @@ unchanged. Two words come off first and never reach plan-up:
    names its command. Three cases start a Sandbox, with the
    build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
    and end with `box.sh down`:
-   - A fix that changes code a UI walk's screen shows: that walk runs
-     again, as build-and-prove step 9 runs it, that walk only.
+   - A fix or a rebase that changes code a UI walk's screen shows:
+     the videos `../build-and-prove/references/walks.md` 9c names are
+     filmed again, as build-and-prove step 9 films them, those only.
    - A Gate that CI does not cover: before each push of fixes, it runs
      there, as build-and-prove step 8 runs it. A repo with no CI covers
      no Gate, so all of them run.

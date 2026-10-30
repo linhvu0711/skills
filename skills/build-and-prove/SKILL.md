@@ -334,7 +334,7 @@ done.
    line from the plan's Proof table, the test case by name, and for a
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
-   `PROOF`. A row proved by a command carries the command, the short
+   `PROOF`, each video's line with its commit from `videos.txt`. A row proved by a command carries the command, the short
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from
@@ -370,8 +370,8 @@ each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
 number done, and the prompt starts at the next one. A count at or past
 the number of slices means every slice is in, since fix rounds commit
 only after the last slice: no builder, go to step 6. Before shots in
-`PROOF` are kept. Every walk runs again from the start, since a video
-must show the final code.
+`PROOF` are kept. The videos in `PROOF` are kept too, and step 9
+films again only those `references/walks.md` 9c names.
 
 ## Follow-up
 

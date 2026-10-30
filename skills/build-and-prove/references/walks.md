@@ -19,6 +19,9 @@ a. **Start the app.** You start it; the walker never does.
    the builder's: a follow-up (step 9c). Still down after that:
    `box.sh down`, then stop with the log's last line.
 
+   A walk's `Setup` that sets the clock is how the app opens for that
+   walk; the run never waits for the real clock to reach a time.
+
 b. **Walker.** In Claude Code, the `walker` agent
    (`agents/walker.md`, linked into `~/.claude/agents/`), started with
    `model: sonnet` and `effort: high` on the Agent call, so no default
@@ -29,8 +32,17 @@ b. **Walker.** In Claude Code, the `walker` agent
    - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
      screen size (1440x900 on linux, 1280x800 on macos);
    - how to open the app: the `Open` line, as a command it runs with
-     `proofbox exec`;
-   - the plan's `UI walks` and `Videos` blocks, verbatim;
+     `proofbox exec`. A browser opens on a new, empty profile for each
+     video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
+     that Playwright launches, which starts empty. So no history from
+     the Sandbox image shows in the address bar;
+   - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
+     after, a later round or a rerun gets only the videos 9c films
+     again and their walks, so the walker never overwrites a kept
+     video. Mode before gets the walks step 7 names. A round run again
+     after `GONE`, in either mode, gets the same videos or walks as the
+     round it repeats, so a shot the dead round left unchecked is taken
+     again;
    - the folder to write in, `PROOF`.
 
    It does not get the code, the slices, or the diff. It returns
@@ -50,11 +62,24 @@ b. **Walker.** In Claude Code, the `walker` agent
 
    **Video check.** After mode, when the walker did not end with
    `GONE`, before the sort: for each video under the plan's `Videos`,
-   the `video-<n>.mp4` this round filmed, take two frames a second
-   into a temp folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
-   -vf fps=2 <tmp>/f-%03d.png`, and Read them in order. The caption
-   at the top names the step (`step <k>: …`); a `» <N> s later` label
-   marks a cut. Each step's action must show: typed letters
+   the `video-<n>.mp4` this round filmed, find its cuts on a
+   strip sheet, then look only at the frames next to each cut. In a temp
+   folder outside `PROOF`, take two frames a second, then tile the
+   bottom sixth of each, where proofbox draws the `» <N> s later`
+   label, 80 to a sheet:
+
+   ```bash
+   ffmpeg -v error -i "$PROOF/video-<n>.mp4" -vf fps=2 <tmp>/f-%03d.png
+   ffmpeg -v error -i <tmp>/f-%03d.png -vf "crop=iw:ih/6:0:ih*5/6,scale=480:-1,tile=4x20" <tmp>/s-%02d.png
+   ```
+
+   Read every sheet. Tiles run left to right, then top to bottom, so
+   tile `t` of sheet `s` is frame `f-<80*(s-1)+t>`. A run of tiles
+   that show a `» <N> s later` label is one cut. For each cut, Read
+   two full frames: the last one before its first label tile, and the
+   first one after its last label tile. A video whose sheets show no
+   label has no cut and hides nothing; Read no frame of it. The caption
+   at the top of a frame names the step (`step <k>: …`). Each step's action must show: typed letters
    appearing, the pointer reaching what it clicks, the screen
    changing after a key. A step whose action falls in a cut, as when
    the frame before a `» <N> s later` label shows none or part of the
@@ -66,7 +91,9 @@ b. **Walker.** In Claude Code, the `walker` agent
    `walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
    hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
    step 1 (typing)`, and lower the passed count in its `WALKS` line.
-   Remove the temp folder.
+   Remove the temp folder. Then, for each video this round filmed,
+   write its line in `$PROOF/videos.txt`, in place of an older one:
+   `video-<n>.mp4 · <short SHA>`, the head the app ran.
 
 c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
    under it, idle or at its max life. No walk failed; run the round
@@ -108,6 +135,15 @@ c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
      Wait.
 
    Say `Walks round <r>: <p> passed, <f> failed`. Then the next round
-   from 9a; every walk again, from the start. After round three with
-   a failed walk: `box.sh down`, then stop with the failing videos'
-   paths, one per line.
+   from 9a, which films only the videos that need it. A video is
+   filmed again, whole, when one of its walks failed, or when
+   `git -C "$WT" diff --name-only <its SHA> HEAD`, with its SHA from
+   its line in `videos.txt`, names a file that a walk of it shows:
+   a file a slice behind the walk's Proof rows changes, or a file you
+   read and find on that walk's screen. Not sure, or the video has no
+   line in the list: film it again. The walker's brief holds only
+   those videos and their walks (9b); every other video keeps its
+   `video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
+   rerun (SKILL.md § Rerun) sorts the videos in `PROOF` the same way.
+   After round three with a failed walk: `box.sh down`, then stop with
+   the failing videos' paths, one per line.
