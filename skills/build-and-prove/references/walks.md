@@ -36,9 +36,11 @@ b. **Walker.** In Claude Code, the `walker` agent
      video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
      that Playwright launches, which starts empty. So no history from
      the Sandbox image shows in the address bar;
-   - the plan's `UI walks` and `Videos` blocks, verbatim; in a later
-     round or a rerun, only the videos 9c films again and their walks,
-     so the walker never overwrites a kept video;
+   - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
+     after, a later round or a rerun gets only the videos 9c films
+     again and their walks, so the walker never overwrites a kept
+     video; a round run again after `GONE` gets the same videos as the
+     round it repeats. Mode before gets the walks step 7 names;
    - the folder to write in, `PROOF`.
 
    It does not get the code, the slices, or the diff. It returns
