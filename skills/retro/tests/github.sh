@@ -27,13 +27,44 @@ t_gh_list_skips_touched_pr() {
 t_gh_list_run_issues() {
   # Given: issue 42 is closed by PR 45; no transcript names either
   gh_dir
-  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":45,"url":"https://github.com/acme/app/pull/45","title":"Export CSV","headRefName":"feat/42-export"}]}' > "$FAKE_GH/issue-view.json"
+  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":45,"url":"https://github.com/acme/app/pull/45"}]}' > "$FAKE_GH/issue-view.json"
+  printf '%s' '{"number":45,"url":"https://github.com/acme/app/pull/45","title":"Export CSV","headRefName":"feat/42-export"}' > "$FAKE_GH/pr-view.json"
   # When
   run python3 "$G" list acme/app --transcripts "$D" --issues 42
   # Then
   eq exit 0 "$code"
   eq read_prs "45" "$(nums read_prs)"
   eq read_issues "" "$(nums read_issues)"
+}
+
+t_gh_list_run_branch_touches() {
+  # Given: issue 42 is closed by PR 45 on branch feat/42-export, which a transcript names
+  gh_dir
+  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":45,"url":"https://github.com/acme/app/pull/45"}]}' > "$FAKE_GH/issue-view.json"
+  printf '%s' '{"number":45,"url":"https://github.com/acme/app/pull/45","title":"Export CSV","headRefName":"feat/42-export"}' > "$FAKE_GH/pr-view.json"
+  printf 'git push -u origin feat/42-export\n' > "$D/1-main.md"
+  # When
+  run python3 "$G" list acme/app --transcripts "$D" --issues 42
+  # Then
+  has touched '{"kind": "pr", "number": 45, "by": "1-main.md"}' "$out"
+}
+
+t_gh_pr_bundle_log_unreadable() {
+  # Given: PR 44 with a failed check whose run log gh cannot read
+  gh_dir
+  cat > "$FAKE_GH/graphql.json" <<'JSON'
+{"data":{"repository":{"pullRequest":{"number":44,"title":"B","url":"https://github.com/acme/app/pull/44","body":"adds b","headRefName":"feat/b",
+ "closingIssuesReferences":{"nodes":[]},"reviews":{"nodes":[{"author":{"login":"ann"},"state":"COMMENTED","body":"please add a test"}]},
+ "comments":{"nodes":[]},"reviewThreads":{"nodes":[]},
+ "commits":{"nodes":[{"commit":{"statusCheckRollup":{"contexts":{"nodes":[{"__typename":"CheckRun","name":"test","conclusion":"FAILURE","detailsUrl":"https://github.com/acme/app/actions/runs/9/job/1"}]}}}}]}}}}}
+JSON
+  printf 'HTTP 410: logs expired\n' > "$FAKE_GH/run-view.fail"
+  # When
+  run python3 "$G" pr acme/app 44
+  # Then
+  eq exit 0 "$code"
+  has review "please add a test" "$out"
+  has log "log not readable: HTTP 410: logs expired" "$out"
 }
 
 t_gh_list_stops_on_gh_failure() {
@@ -73,4 +104,6 @@ cases=(
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
   "gh failure stops with a stop line|t_gh_list_stops_on_gh_failure"
   "pr bundle holds reviews, threads, and the failed log|t_gh_pr_bundle"
+  "list finds a run's PR touched by its branch|t_gh_list_run_branch_touches"
+  "pr bundle keeps going when a failed log cannot be read|t_gh_pr_bundle_log_unreadable"
 )

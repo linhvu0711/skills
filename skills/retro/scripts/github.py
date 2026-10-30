@@ -47,13 +47,20 @@ query($owner: String!, $name: String!, $n: Int!) {
 """
 
 
-def gh(what, *args):
+def gh_try(*args):
+    """(True, stdout), or (False, gh's last error line)."""
     done = subprocess.run(["gh", *args], capture_output=True, text=True)
     if done.returncode != 0:
-        last = (done.stderr.strip().splitlines() or [f"exit {done.returncode}"])[-1]
-        print(f"stop: gh could not {what}: {last}", file=sys.stderr)
+        return False, (done.stderr.strip().splitlines() or [f"exit {done.returncode}"])[-1]
+    return True, done.stdout
+
+
+def gh(what, *args):
+    ok, out = gh_try(*args)
+    if not ok:
+        print(f"stop: gh could not {what}: {out}", file=sys.stderr)
         raise SystemExit(1)
-    return done.stdout
+    return out
 
 
 def gh_json(what, *args):
@@ -92,8 +99,11 @@ def cmd_list(args):
         for n in args.issues:
             i = gh_json(f"read issue #{n} of {repo}", "issue", "view", str(n), "--repo", repo,
                         "--json", "number,url,title,closedByPullRequestsReferences")
-            for pr in i.pop("closedByPullRequestsReferences", []) or []:
-                prs[pr["number"]] = pr
+            # A closing reference carries no title or head branch, and the touched rule needs the branch.
+            for ref in i.pop("closedByPullRequestsReferences", []) or []:
+                if ref["number"] not in prs:
+                    prs[ref["number"]] = gh_json(f"read PR #{ref['number']} of {repo}", "pr", "view", str(ref["number"]),
+                                                 "--repo", repo, "--json", "number,url,title,headRefName")
             issues.append(i)
         closed = set(args.issues)
         prs = list(prs.values())
@@ -168,8 +178,11 @@ def cmd_pr(args):
             out.append(f"no log here: {url or 'no link'}")
         elif rid not in seen:
             seen.add(rid)
-            log = gh(f"read the failed log of run {rid}", "run", "view", rid, "--repo", args.repo, "--log-failed")
-            out += ["```", *log.rstrip("\n").splitlines()[-LOG_TAIL:], "```"]
+            ok, log = gh_try("run", "view", rid, "--repo", args.repo, "--log-failed")
+            if ok:
+                out += ["```", *log.rstrip("\n").splitlines()[-LOG_TAIL:], "```"]
+            else:
+                out.append(f"log not readable: {log}")
         else:
             out.append(f"same run as above: {rid}")
     if not failed:
