@@ -457,6 +457,17 @@ t_fs_all_closed_done() {
   eq status done "$(fs_state -r .status)"
 }
 
+t_fs_done_starts_retro() {
+  # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  # When
+  fs_go check acme/app
+  # Then
+  has retro '"thread_title":"retro: #42","message":"/retro run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'","runtime_mode":"auto"' "$out"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -1269,6 +1280,7 @@ cases=(
   "two open PRs make the issue wait|t_fs_two_prs_waits"
   "all closed ends the run with a summary|t_fs_all_closed_done"
   "an epic with closed sub-issues is done|t_fs_epic_done"
+  "a done run prints the retro thread line|t_fs_done_starts_retro"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
