@@ -274,6 +274,40 @@ t_fs_conflict_paused() {
   eq state 0 "$(fs_state '.conflicts // [] | length')"
 }
 
+t_fs_conflict_shared_pr() {
+  # Given: PR 43 conflicts and closes both #42 and #44; threads t42 and t44 are completed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"aaa111"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 44 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.conflicts[] | {number, pr}]' <<<"$out")"
+}
+
+t_fs_conflict_one_per_thread() {
+  # Given: #42 has PRs 43 and 45, both conflicting, and thread t42 is completed
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"aaa111"}'
+  local b='{"number":45,"url":"https://github.com/acme/app/pull/45","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"ccc333"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42 ship
+  echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[43]' "$(jq -c '[.conflicts[] | .pr]' <<<"$out")"
+}
+
+t_fs_conflict_new_stage() {
+  # Given: #42's triage thread t42 is completed, #42 is now size/S, and its PR 43 conflicts
+  fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 bug t42 triage
+  echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '{"starts":1,"conflicts":[]}' "$(jq -c '{starts: (.starts | length), conflicts}' <<<"$out")"
+}
+
 t_fs_manual_never_starts() {
   # Given: a run of #42, open, labelled manual
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
@@ -1429,4 +1463,7 @@ cases=(
   "a thread that is not finished gets no conflict|t_fs_conflict_busy_thread"
   "a PR with no conflict is not listed|t_fs_conflict_none"
   "a paused run lists no conflict|t_fs_conflict_paused"
+  "one PR of two issues is sent once|t_fs_conflict_shared_pr"
+  "a thread gets one conflict per check|t_fs_conflict_one_per_thread"
+  "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
 )

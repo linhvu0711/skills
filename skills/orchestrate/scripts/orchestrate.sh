@@ -391,16 +391,19 @@ cmd_check() {
     fi
     # A conflict goes back to the thread that works on the issue, and only
     # once that thread finished its turn: a running thread is mid-turn, and a
-    # waiting one waits on the user (ADR 0013, ADR 0015).
-    if [ "$gone" = false ] && [ "$(jq -r .status <<<"$S")" = running ] \
+    # waiting one waits on the user (ADR 0013, ADR 0015). An issue that starts
+    # a thread now leaves the conflict to it. One PR per thread per check, and
+    # one thread per PR, so no two turns rebase one branch at once.
+    if [ "$gone" = false ] && [ -z "$line" ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq -r '.status // ""' <<<"$rec")" = started ] \
        && [ "$(jq -r --argjson ts "$statuses" 'if .thread then $ts[.thread].status // "" else "" end' <<<"$rec")" = completed ]; then
-      conf="$(jq -c --argjson S "$S" --argjson rec "$rec" '
+      conf="$(jq -c --argjson S "$S" --argjson rec "$rec" --argjson sends "$sends" '
         [.closedByPullRequestsReferences.nodes[]
          | select(.state == "OPEN" and .mergeable == "CONFLICTING")
          | . as $p | select(($S.conflicts // []) | any(.pr == $p.number and .head == $p.headRefOid) | not)
+         | select($sends | any(.pr == $p.number) | not)
          | {number: $rec.number, pr: .number, url, head: .headRefOid, thread: $rec.thread, link: $rec.link,
-            message: "/ready-pr \(.url)"}]' <<<"$j")"
+            message: "/ready-pr \(.url)"}][:1]' <<<"$j")"
       sends="$(jq -c --argjson c "$conf" '. + $c' <<<"$sends")"
       sent="$(jq -c --argjson c "$conf" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [$c[] | {number, pr, head, thread, at: $at}]' <<<"$sent")"
