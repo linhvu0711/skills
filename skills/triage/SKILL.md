@@ -93,10 +93,13 @@ nothing.
    `method.md`: in time, in the data path, or across environments. Cut until
    one line, one value, or one setting flips the symptom.
 
-5. **Stuck.** Halving cannot cut further: write at most two hypotheses,
-   each with the one check that kills it. Run the checks. A must-know row
-   still empty after you looked and asked once, or no loop per `method.md`:
-   stop looking. Skip steps 6 and 7, go to step 8, and the exit is a `spike`.
+5. **Stuck.** Halving cannot cut further: write a hypothesis with the one
+   check that kills it, per `method.md` § Hypotheses, and run the check.
+   Killed: go back to step 4 with what it taught you. Keep going while
+   each check cuts the space. Stop only when the next check needs a thing
+   only the user has: a log, the steps they took, access you lack. Ask for
+   it, one thing per message, and wait. Still none: the exit is Blocked.
+   Skip steps 6, 7, 10, and 11. Do steps 8 and 9, then § Blocked.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
    § Confirm.
@@ -115,12 +118,12 @@ nothing.
    Expected: <one line>
    Actual: <one line>
    Repro: <command or numbered steps>
-   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; spike: Not found, <the open question>)
+   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; blocked: Not found yet. Need: <the one thing from the user>)
    Baseline: <the number, as benchmark.md § Write it down says>   (perf only)
    Target: <number and unit>                     (perf only, the user's)
    Category: <from categories.md>
    Evidence: <the probe, and what it showed>
-   Also at: <file:line, one per place>, or none found, <the search used>   (spike: no line)
+   Also at: <file:line, one per place>, or none found, <the search used>   (blocked: no line)
    ```
 
    When the category is local env, show the fix command in a code block and
@@ -151,7 +154,6 @@ nothing.
       Carry the settled decisions after a grill, and its doc entries
       under `## Docs to write`, per
       `../../shared/issue-rules.md` § Docs to write.
-    - Cause not found: a `spike` ticket on the open question.
     - Nothing to file: say why in one line and stop. The bug issue from
       step 1, if any, stays as it is. The grill handed back doc entries:
       they are true now, so write them and open the docs PR per
@@ -161,6 +163,13 @@ nothing.
     ticket, per `../../shared/issue-rules.md` § Origin bug. No
     new issue, nothing closed. The to-issue gate fails: show its gaps and
     stop. The report stays in chat.
+
+## Blocked
+
+File nothing. Started from a bug issue: add the report to it as one
+comment, `gh issue comment <number-or-url> --body-file <file>`, so the
+next triage starts from what you found. The issue stays a bug. Then say
+in chat the one thing you need from the user, and stop.
 
 ## When grill fits
 
