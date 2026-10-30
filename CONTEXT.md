@@ -174,12 +174,12 @@ _Avoid_: repo finder, repo lookup
 
 ## Retro
 
-**Struggle list**:
-What one reader agent writes for one session: each moment the agent went wrong, with a quote and where it is in the session.
-_Avoid_: summary, notes
+**Evidence list**:
+What one reader agent writes for one session or one PR: moments of trouble, repeated corrections, manual steps, and ways of working worth sharing, each with a quote and where it is.
+_Avoid_: struggle list, summary, notes
 
 **Pattern**:
-Two or more moments, from two or more sessions, that one fix would stop. Moments that only look alike are not a pattern.
+Two or more moments, from two or more sessions or PRs, that one fix would stop. Moments that only look alike are not a pattern.
 _Avoid_: trend, theme
 
 **One-time problem**:
@@ -187,12 +187,28 @@ A serious moment from one session that is part of no pattern. The retro report l
 _Avoid_: outlier
 
 **Repeated correction**:
-The same thing the user told the agent in two or more sessions. Its first fix is to delete the old code or the old way the agent keeps copying; then a check, a skill fix, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
+The same thing a user or reviewer told the agent in two or more sessions or PRs. Its first fix is to delete the old code or the old way the agent keeps copying; then a check, a skill fix, and a steering line in `CLAUDE.md` or `AGENTS.md` last.
 _Avoid_: feedback, nag
 
 **Repeated manual work**:
 The same steps the user did by hand, or spelled out one by one, in two or more sessions. Its fix is a new skill that runs those steps.
 _Avoid_: chore, toil
+
+**Worth sharing**:
+A way of working that went well in two or more sessions or PRs, which a shared file would give the whole team.
+_Avoid_: best practice, win
+
+**Setup map**:
+For one repo, the file that does each job for its agents (steering, review rules, coding standards, skills, checks and CI, docs), or none.
+_Avoid_: config list
+
+**Touched PR**:
+A PR that a session in scope names by number or URL. Retro does not read it.
+_Avoid_: covered PR
+
+**Session adapter**:
+The scripts in `shared/sessions/<harness>/` that probe, find, and extract one harness's sessions.
+_Avoid_: translator, parser
 
 ## Ship
 

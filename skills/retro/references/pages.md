@@ -1,19 +1,28 @@
 # Pages
 
-Retro shows two pages: the session list before reading, and the report after. Each is one HTML file, published with the Artifact tool. Load the `artifact-design` skill before writing either. Write each to the scratch folder (`retro-sessions.html`, `retro-report.html`) and publish it with icon `list` or `report`. A second run in the same chat republishes to the same path.
+Retro shows one page: the report, after reading. It is one HTML file the agent writes, served on this machine, so it opens the same way in every harness.
 
-Each page ends in a Copy bar: the user ticks boxes, the bar shows the line, the user pastes the line in chat. The line is the only way a choice comes back.
+The page ends in a Copy bar: the user ticks cards, the bar shows the line, the user pastes the line in chat. The line is the only way a choice comes back.
 
-## Artifact rules
+## Writing and showing it
 
-- The host wraps the file in the document skeleton. Write no `<!doctype>`, `<html>`, `<head>`, or `<body>`. Put `<title>` and `<style>` at the top.
+- Folder: `$HOME/.agents/artifacts/retro/<owner>-<repo>-<YYYYMMDD-HHMM>/`, made for this run and holding only the page, since the server shares the whole folder. Transcripts and bundles stay in the scratch folders. File: `report.html`.
+- A full document: `<!doctype html>`, `<html>`, `<head>` with `<title>`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, and `<style>`, then `<body>`.
 - Tailwind loads from its play CDN (`<script src="https://cdn.tailwindcss.com"></script>`). It and the Copy bar script below are the only scripts.
-- Define the light palette on `:root`, redefine it under `@media (prefers-color-scheme: dark)` guarded as `:root:not([data-theme="light"])`, and again under `:root[data-theme="dark"]`. Give `body` a token background.
-- The layout works at phone width: 16px side gutter, no horizontal page scroll; a wide table scrolls inside its own box. The Copy bar adds `env(safe-area-inset-bottom, 0px)` to its bottom padding, and the page leaves room under its last row for the bar.
+- Define the light palette on `:root`, and the dark one under `@media (prefers-color-scheme: dark)`. Give `body` a token background.
+- The layout works at phone width: 16px side gutter, no horizontal page scroll; a wide table scrolls inside its own box. The Copy bar adds `env(safe-area-inset-bottom, 0px)` to its bottom padding, and the page leaves room under its last card for the bar.
+- Serve and open it:
+
+  ```bash
+  URL=$(../../shared/serve.sh <folder> report.html)
+  open "$URL"
+  ```
+
+  `xdg-open` in place of `open` on Linux. `serve.sh` prints the URL; a `stop:` line from it, or neither `open` nor `xdg-open` on this machine: show the report in chat instead, as a numbered list of the cards with the same parts, and the user answers with the same line. Give the URL in chat either way.
 
 ## Copy bar
 
-A bar fixed to the bottom of the page: a read-only text box with the line, and a `Copy` button. The text box is always shown, so a user whose clipboard is blocked can select the line by hand. Every checkbox carries `data-n` with its row or card number. Set `MODE` to `"drop"` on the session list and `"pick"` on the report.
+A bar fixed to the bottom of the page: a read-only text box with the line, and a `Copy` button. The text box is always shown, so a user whose clipboard is blocked can select the line by hand. Every checkbox carries `data-n` with its card number.
 
 ```html
 <div class="copybar fixed inset-x-0 bottom-0 flex gap-2 p-3 border-t">
@@ -21,15 +30,11 @@ A bar fixed to the bottom of the page: a read-only text box with the line, and a
   <button id="copy" class="px-3 rounded border">Copy</button>
 </div>
 <script>
-  const MODE = "drop";
   const boxes = [...document.querySelectorAll("input[data-n]")];
   const line = document.getElementById("line");
   function update() {
-    const off = boxes.filter(b => !b.checked).map(b => b.dataset.n);
     const on = boxes.filter(b => b.checked).map(b => b.dataset.n);
-    line.value = MODE === "drop"
-      ? (off.length ? "go, drop " + off.join(" ") : "go")
-      : (on.length ? "issue " + on.join(" ") : "issue none");
+    line.value = on.length ? "issue " + on.join(" ") : "issue none";
   }
   boxes.forEach(b => b.addEventListener("change", update));
   document.getElementById("copy").addEventListener("click", () => {
@@ -41,24 +46,17 @@ A bar fixed to the bottom of the page: a read-only text box with the line, and a
 </script>
 ```
 
-## Session list
-
-- **Header**: the `<title>` and heading `Retro sessions`, then one line of scope (this project and its roots, or all projects; the window; the topic), then the totals: sessions, total size in MB, readers (one per session), and what was left out with the count (headless Codex runs from the finder's `skipped_exec`, this retro's own session, topic misses).
-- **Rows**: one per session, newest first, numbered from 1. Each row: a checkbox, ticked; `#`; date; tool badge (`Claude` or `Codex`); title, or the first prompt cut to 80 characters; size; helper logs count. All projects: one group per project, its folder as the heading with the session count, rows numbered on across groups.
-- `MODE = "drop"`.
-
 ## Report
 
-- **Header**: the `<title>` and heading `Retro report`, the scope line from the session list, and `Read N of M`. Under it, each session not read and each read in part, by number and title, with the reason.
+- **Header**: the `<title>` and heading `Retro report`, one line of scope (this project and its roots, or all projects, or the orchestrate run; the window; the topic; the sources), and the read line of SKILL.md § Read line: what was read, each item not read or read in part with the reason, each touched PR, and each scan line.
 - **Patterns**: one card per pattern, most costly first, numbered from 1. Each card:
   - Title: the fix, short ("Add a check for unpushed worktrees").
-  - Badges: the kind of finding, and strength: `Strong` (three or more sessions, or a costly moment), `Worth exploring` (two sessions), `Speculative` (the fix guess is the reader's, not seen in the repo).
-  - Sessions: the numbers and dates of the sessions it came from.
-  - Quotes: one blockquote per moment or manual-steps line, each with its session number and `Where`.
-  - Fix: one sentence; a check also names the mistake it would have failed on, by session number and `Where`. Where: the file it changes and the skill that owns it, as SKILL.md § Kinds of finding names.
+  - Badges: the kind of finding, and strength: `Strong` (three or more items, or a costly moment), `Worth exploring` (two items), `Speculative` (the fix guess is the reader's, not seen in the repo).
+  - Items: the session numbers and dates, and the PR numbers, it came from.
+  - Quotes: one blockquote per moment, manual-steps line, or worth-sharing line, each with its item and `Where`.
+  - Fix: one sentence; a check also names the mistake it would have failed on, by item and `Where`. Where: the file from the setup map, or `none: add one with /<skill>`, and the skill that owns it, as SKILL.md § Kinds of finding names.
   - A checkbox, not ticked. A tip (SKILL.md § Kinds of finding, Repeated manual work) has none, so it can never be picked to file.
 - **One-time problems**: smaller cards after the patterns, numbered on from the last pattern, same parts, badge `One-time`.
 - **Top pick**: one larger card at the end: the card number, its title, why it goes first in one sentence, and an anchor link to it.
-- `MODE = "pick"`.
 
 Style: plain, editorial, generous white space. One accent color; amber for `Worth exploring`, slate for `Speculative`. Quotes in a monospace font. No other interaction than the checkboxes and the Copy bar.
