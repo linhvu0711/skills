@@ -3,7 +3,7 @@
 
 Codex stores every session as a rollout at
     ~/.codex/sessions/YYYY/MM/DD/rollout-<stamp>-<id>.jsonl
-whose first line is a ``session_meta`` record carrying the session id, cwd,
+(older ones compressed as .jsonl.zst) whose first line is a ``session_meta`` record carrying the session id, cwd,
 and start time. The user's own prompts and the assistant's replies follow as
 ``response_item`` records.
 
@@ -20,7 +20,8 @@ once; later runs only parse files that are new or still growing. The cwd of
 every rollout is read from line 1, so rollouts of other projects cost one
 line each, never a full parse.
 
-Read-only: never modifies any .jsonl.
+Read-only: never modifies any rollout. A compressed rollout this machine
+cannot read (no Python 3.14+, no zstd) is listed under "unreadable".
 
 Usage:
     find_session.py "rewrite the landing page hero"       # score + rank
@@ -38,12 +39,18 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import importlib.util
 import json
 import os
 import re
 import sys
 import time
 from pathlib import Path
+
+# Loaded by path: `python3 -I` leaves this folder off sys.path.
+_spec = importlib.util.spec_from_file_location("rollout_io", Path(__file__).with_name("rollout_io.py"))
+rollout_io = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(rollout_io)
 
 SESSIONS_ROOT = Path.home() / ".codex" / "sessions"
 INDEX_PATHS = (
@@ -97,7 +104,7 @@ def is_blob(text: str) -> bool:
 def read_meta(path: Path) -> dict | None:
     """Line 1 only: id, cwd, timestamp. Cheap enough to run over every rollout."""
     try:
-        with path.open("rb") as h:
+        with rollout_io.open_rollout(path) as h:
             first = h.readline()
         o = json.loads(first)
     except (OSError, ValueError):
@@ -125,7 +132,7 @@ def parse_content(path: Path) -> dict:
     prompts, plen = [], 0
     body, blen = [], 0
     try:
-        with path.open("r", encoding="utf-8", errors="replace") as h:
+        with rollout_io.open_rollout(path) as h:
             for line in h:
                 try:
                     o = json.loads(line)
@@ -218,7 +225,7 @@ def rollout_paths(root: Path, day: dt.date | None, days: int | None):
         if not d.is_dir():
             continue
         for name in os.listdir(d):
-            if name.startswith("rollout-") and name.endswith(".jsonl"):
+            if rollout_io.is_rollout_name(name):
                 yield d / name
 
 
@@ -271,7 +278,12 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
         ent = files.get(key)
         fresh = ent and ent["size"] == st.st_size and ent["mtime"] == st.st_mtime
         if not fresh:
-            meta = read_meta(p)
+            try:
+                meta = read_meta(p)
+            except rollout_io.NoZstd as e:
+                if skipped is not None:
+                    skipped.setdefault("unreadable", []).append({"path": key, "why": str(e)})
+                continue
             if not meta:
                 continue
             ent = {"size": st.st_size, "mtime": st.st_mtime, **meta}
@@ -494,6 +506,7 @@ def main() -> int:
         print(json.dumps({
             "cwd": target, "query": args.query,
             "total_sessions": len(sessions), "matched": len(ranked), "skipped_exec": skipped.get("exec", 0),
+            "unreadable": skipped.get("unreadable", []),
             "sessions": [{k: s.get(k) for k in keys} | {"age": humanize_age(s["modified"])} for s in shown],
         }, indent=2, ensure_ascii=False))
         return 0

@@ -145,8 +145,44 @@ t_cof_window_skips_older_days() {
   eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"
 }
 
+# has_zstd: true when this machine can write and read a .jsonl.zst rollout.
+has_zstd() { command -v zstd >/dev/null 2>&1 || python3 -c 'import compression.zstd' 2>/dev/null; }
+
+# co_zst <id>: compress rollout <id> in today's folder to .jsonl.zst.
+co_zst() {
+  local f="$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-$1.jsonl"
+  if command -v zstd >/dev/null 2>&1; then zstd -q --rm "$f"
+  else python3 -c 'import os,sys; from compression import zstd; d=open(sys.argv[1],"rb").read(); open(sys.argv[1]+".zst","wb").write(zstd.compress(d)); os.remove(sys.argv[1])' "$f"; fi
+}
+
+t_cof_lists_zst_session() {
+  has_zstd || { echo "skip: no zstd here" >&2; return 0; }
+  # Given: one compressed rollout of /p/app
+  cof_home; co_rollout z1 /p/app "fix the export"; co_zst z1
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq ids "z1" "$(ids)"
+}
+
+t_cof_zst_unreadable() {
+  python3 -c 'import compression.zstd' 2>/dev/null && { echo "skip: this python reads zstd itself" >&2; return 0; }
+  command -v zstd >/dev/null 2>&1 || { echo "skip: no zstd to write the fixture" >&2; return 0; }
+  # Given: one compressed rollout, and no zstd on PATH
+  cof_home; co_rollout z1 /p/app "fix the export"; co_zst z1
+  mkdir -p "$T/nozstd"; ln -sf "$(command -v python3)" "$T/nozstd/python3"
+  # When
+  code=0; PATH="$T/nozstd" python3 "$F" --cwd /p/app --all --json >"$T/out" 2>"$T/err" || code=$?; out="$(cat "$T/out")"
+  # Then
+  eq exit 0 "$code"
+  has why '"why": "needs Python 3.14+ or zstd"' "$out"
+}
+
 cases=(
   "finder lists a project session|t_cof_lists_project_session"
+  "finder lists a compressed rollout|t_cof_lists_zst_session"
+  "finder lists a compressed rollout it cannot read as unreadable|t_cof_zst_unreadable"
   "finder reads no day folder before the window|t_cof_window_skips_older_days"
   "finder lists a helper's own helpers|t_cof_nested_helpers"
   "finder finds a helper filed under the next day|t_cof_helper_next_day"
