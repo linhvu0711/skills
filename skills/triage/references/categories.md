@@ -12,7 +12,7 @@ exit. Name the category in the report.
 | Data | Works with fixtures, not with real data. | The bad row, the missing migration, the state that should not exist. | Data fix by the user, plus a `fix` issue for the check that let it in. |
 | Dependency | Started failing after an upgrade, no code change. | Bisect versions. The changelog. | `chore` issue to pin or upgrade, or `fix` for a workaround. |
 | External service | Started failing, nothing changed on our side. | Status page, our logs, their changelog. | Cannot fix. `fix` or `feat` issue for the unhappy path we never handled. |
-| Flaky | Fails sometimes. | Raise the repro rate first. Races, timing, order. | `fix` when the cause is found, else `spike`. |
+| Flaky | Fails sometimes. | Raise the repro rate first. Races, timing, order. | `fix` issue. |
 | Not a bug | The code does what it was told. | The spec, the test, the ADR. | `docs` issue, or nothing. Say why. |
 
 When two categories fit, take the cheaper one to test first. Local env is

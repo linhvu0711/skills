@@ -93,13 +93,18 @@ nothing.
    `method.md`: in time, in the data path, or across environments. Cut until
    one line, one value, or one setting flips the symptom.
 
-5. **Stuck.** Halving cannot cut further: write at most two hypotheses,
-   each with the one check that kills it. Run the checks. A must-know row
-   still empty after you looked and asked once, or no loop per `method.md`:
-   stop looking. Skip steps 6 and 7, go to step 8, and the exit is a `spike`.
+5. **Stuck.** Halving cannot cut further: write a hypothesis with the one
+   check that kills it, per `method.md` § Hypotheses, and run the check.
+   Killed: go back to step 4 with what it taught you. Keep going while
+   each check cuts the space. Stop only when the next check needs a thing
+   only the user has: a log, the steps they took, access you lack. The
+   exit is then Blocked. Skip steps 6, 7, 10, and 11. Do steps 8 and 9,
+   then § Blocked, so the repo is clean and the findings are saved before
+   you ask.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
-   § Confirm.
+   § Confirm. The cause is the line where the mistake is made, not where
+   the symptom shows.
 
 7. **Same mistake.** The confirmed cause is one place the mistake was
    made. Search for the same mistake elsewhere, per `method.md` § Same
@@ -115,12 +120,12 @@ nothing.
    Expected: <one line>
    Actual: <one line>
    Repro: <command or numbered steps>
-   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; spike: Not found, <the open question>)
+   Cause: <file:line, one sentence why>          (perf: Hot spot: <where>, <n> of <total> ms; blocked: Not found yet. Need: <the one thing from the user>)
    Baseline: <the number, as benchmark.md § Write it down says>   (perf only)
    Target: <number and unit>                     (perf only, the user's)
    Category: <from categories.md>
    Evidence: <the probe, and what it showed>
-   Also at: <file:line, one per place>, or none found, <the search used>   (spike: no line)
+   Also at: <file:line, one per place>, or none found, <the search used>   (blocked: no line)
    ```
 
    When the category is local env, show the fix command in a code block and
@@ -151,7 +156,6 @@ nothing.
       Carry the settled decisions after a grill, and its doc entries
       under `## Docs to write`, per
       `../../shared/issue-rules.md` § Docs to write.
-    - Cause not found: a `spike` ticket on the open question.
     - Nothing to file: say why in one line and stop. The bug issue from
       step 1, if any, stays as it is. The grill handed back doc entries:
       they are true now, so write them and open the docs PR per
@@ -161,6 +165,14 @@ nothing.
     ticket, per `../../shared/issue-rules.md` § Origin bug. No
     new issue, nothing closed. The to-issue gate fails: show its gaps and
     stop. The report stays in chat.
+
+## Blocked
+
+File nothing. Started from a bug issue: add the report to it as one
+comment, `gh issue comment <number-or-url> --body-file <file>`, so the
+next triage starts from what you found. The issue stays a bug. Then ask
+the user for the one thing you need, and stop. The user gives it: start
+again at step 4, from the report.
 
 ## When grill fits
 
@@ -182,6 +194,14 @@ tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
 list>. Close out: text. Then continue at step 11.` The grill owns the
 interview and the doc text; step 11 files the ticket with it. You wait
 for `Grill done.`
+
+## Paid or slow checks
+
+A check can cost money or time: a rented Sandbox, a long loop, a cloud
+run. Say the cost in one line, as `Renting a Linux Sandbox, about 30
+min.`, and run it. Do not ask whether to run it, and never offer to
+file a ticket for later in place of the check. Give a rented Sandbox
+enough life for the whole job, so it does not end in the middle of one.
 
 ## Secrets
 
@@ -215,6 +235,19 @@ Where does it work: CI is green, a teammate is fine. Category `Local env`.
 Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code
 issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket
 only if the setup docs never mention the variable; else nothing to file.
+
+**User:** `/triage downloads through the helper sometimes never end`
+
+Gate passes. The helper's logs show the download gets almost every byte,
+then stops. A Sandbox is needed for a loop: `Renting a Linux Sandbox,
+about 30 min.` The loop runs the same download through the helper and
+through plain `ssh`: the helper path hangs 25 of 45 times, plain `ssh`
+0 of 45. So the cause is in the helper process. That is a place, not a
+cause. Log lines at each step of the helper's path, in a throwaway
+worktree, and the loop again: the log line after the child's exit
+event never comes. More log lines between the last one that came and
+the first that did not, down to one line. Confirm it both ways. Report,
+`fix` ticket.
 
 **User:** `/triage #42`
 

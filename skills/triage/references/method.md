@@ -23,8 +23,9 @@ A bug that fails sometimes: raise the rate first. Loop it, load it, shrink
 the timing window. Do not halve on a loop that passes half the time.
 
 No loop can be built without something only the user has (a log, a
-screenshot, a HAR, the steps they took): ask for it, one thing per message.
-Still no loop: stop looking, exit as a `spike` (`SKILL.md` step 5).
+screenshot, a HAR, the steps they took): the exit is Blocked
+(`SKILL.md` step 5). Clean up and save the findings first, then ask for
+it, one thing per message.
 
 ### Shrink
 
@@ -49,11 +50,18 @@ the space in half each step. Three axes:
 Probe one variable per step. A debugger or a REPL before log lines. Log
 lines carry a unique prefix so cleanup is one grep.
 
+A bug inside a running process, such as a daemon, a server, or a child
+process it starts, often has no debugger to attach. Put log lines at each
+step of the path in a throwaway worktree, run the process from there, and
+run the loop. The step whose log line never comes is where to cut next.
+
 ### Hypotheses, last
 
-Only when halving cannot cut further. At most two. Each one states the
-cause and the one check that would kill it. Run the checks. A hypothesis
-without a killing check is a guess; do not write it.
+Only when halving cannot cut further. Each one states the cause and the
+one check that would kill it. Run the check. A hypothesis without a
+killing check is a guess; do not write it. A killed hypothesis is a
+result: it tells you where the cause is not. Take what it taught you back
+to halving.
 
 ## Perf
 
@@ -87,6 +95,11 @@ The cause is confirmed when one change flips the symptom both ways: change
 the one thing, symptom gone; change it back, symptom returns. For perf, the
 number moves when the hot spot is stubbed. A cause that has not flipped the
 symptom is still a hypothesis. Say so.
+
+The cause is the line where the mistake is made, not the line where the
+symptom shows. A place, such as "the hang is somewhere in the Keeper", is
+not a cause. The symptom shows at a line that calls a helper, and the
+helper has the mistake: the cause is the line in the helper.
 
 ## Same mistake
 
