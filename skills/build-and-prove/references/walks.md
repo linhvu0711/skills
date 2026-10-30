@@ -36,7 +36,9 @@ b. **Walker.** In Claude Code, the `walker` agent
      video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
      that Playwright launches, which starts empty. So no history from
      the Sandbox image shows in the address bar;
-   - the plan's `UI walks` and `Videos` blocks, verbatim;
+   - the plan's `UI walks` and `Videos` blocks, verbatim; in a later
+     round or a rerun, only the videos 9c films again and their walks,
+     so the walker never overwrites a kept video;
    - the folder to write in, `PROOF`.
 
    It does not get the code, the slices, or the diff. It returns
@@ -136,7 +138,7 @@ c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
    a file a slice behind the walk's Proof rows changes, or a file you
    read and find on that walk's screen. Not sure, or the video has no
    line in the list: film it again. The walker's brief holds only
-   those videos and their walks; every other video keeps its
+   those videos and their walks (9b); every other video keeps its
    `video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
    rerun (SKILL.md § Rerun) sorts the videos in `PROOF` the same way.
    After round three with a failed walk: `box.sh down`, then stop with
