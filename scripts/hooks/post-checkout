@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# post-checkout: link a new or renamed skill into the local skills folders. Installed by
+# `git config core.hooksPath scripts/hooks`. It never fails the git command.
+bash "$(git rev-parse --show-toplevel)/scripts/link.sh" || true
