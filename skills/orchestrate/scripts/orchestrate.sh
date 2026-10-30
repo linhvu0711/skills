@@ -354,7 +354,13 @@ cmd_check() {
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
   local n j st sk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
-  local conf sends="[]" sent="[]"
+  local conf sends="[]" sent="[]" owners
+  # owners: each PR's owner, the first issue in set order that it closes. A
+  # shared PR's conflict goes only to its owner's thread, so no two threads
+  # rebase one branch, even when the owner's thread is busy or just starting.
+  owners="$(jq -c --argjson set "$(jq -c .set <<<"$S")" \
+    '. as $is | [$set[] | $is[tostring] // empty | .number as $i
+      | .closedByPullRequestsReferences.nodes[] | {key: (.number | tostring), value: $i}] | reverse | from_entries' <<<"$issues")"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
@@ -392,16 +398,15 @@ cmd_check() {
     # A conflict goes back to the thread that works on the issue, and only
     # once that thread finished its turn: a running thread is mid-turn, and a
     # waiting one waits on the user (ADR 0013, ADR 0015). An issue that starts
-    # a thread now leaves the conflict to it. One PR per thread per check, and
-    # one thread per PR, so no two turns rebase one branch at once.
+    # a thread now leaves the conflict to it. One PR per thread per check.
     if [ "$gone" = false ] && [ -z "$line" ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq -r '.status // ""' <<<"$rec")" = started ] \
        && [ "$(jq -r --argjson ts "$statuses" 'if .thread then $ts[.thread].status // "" else "" end' <<<"$rec")" = completed ]; then
-      conf="$(jq -c --argjson S "$S" --argjson rec "$rec" --argjson sends "$sends" '
+      conf="$(jq -c --argjson S "$S" --argjson rec "$rec" --argjson owners "$owners" '
         [.closedByPullRequestsReferences.nodes[]
          | select(.state == "OPEN" and .mergeable == "CONFLICTING")
          | . as $p | select(($S.conflicts // []) | any(.pr == $p.number and .head == $p.headRefOid) | not)
-         | select($sends | any(.pr == $p.number) | not)
+         | select($owners[$p.number | tostring] == $rec.number)
          | {number: $rec.number, pr: .number, url, head: .headRefOid, thread: $rec.thread, link: $rec.link,
             message: "/ready-pr \(.url)"}][:1]' <<<"$j")"
       sends="$(jq -c --argjson c "$conf" '. + $c' <<<"$sends")"

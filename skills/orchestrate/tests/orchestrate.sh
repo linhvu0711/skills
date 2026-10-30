@@ -286,6 +286,18 @@ t_fs_conflict_shared_pr() {
   eq line '[{"number":42,"pr":43}]' "$(jq -c '[.conflicts[] | {number, pr}]' <<<"$out")"
 }
 
+t_fs_conflict_shared_owner() {
+  # Given: PR 43 conflicts and closes #42 and #44; #42's thread t42 runs, #44's thread t44 is completed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"bbb222"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 44 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+}
+
 t_fs_conflict_one_per_thread() {
   # Given: #42 has PRs 43 and 45, both conflicting, and thread t42 is completed
   local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"aaa111"}'
@@ -1464,6 +1476,7 @@ cases=(
   "a PR with no conflict is not listed|t_fs_conflict_none"
   "a paused run lists no conflict|t_fs_conflict_paused"
   "one PR of two issues is sent once|t_fs_conflict_shared_pr"
+  "a shared PR goes only to its first issue's thread|t_fs_conflict_shared_owner"
   "a thread gets one conflict per check|t_fs_conflict_one_per_thread"
   "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
 )
