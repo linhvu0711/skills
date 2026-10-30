@@ -50,11 +50,24 @@ b. **Walker.** In Claude Code, the `walker` agent
 
    **Video check.** After mode, when the walker did not end with
    `GONE`, before the sort: for each video under the plan's `Videos`,
-   the `video-<n>.mp4` this round filmed, take two frames a second
-   into a temp folder outside `PROOF`, `ffmpeg -v error -i "$PROOF/video-<n>.mp4"
-   -vf fps=2 <tmp>/f-%03d.png`, and Read them in order. The caption
-   at the top names the step (`step <k>: …`); a `» <N> s later` label
-   marks a cut. Each step's action must show: typed letters
+   the `video-<n>.mp4` this round filmed, find its cuts on a
+   strip sheet, then look only at the frames next to each cut. In a temp
+   folder outside `PROOF`, take two frames a second, then tile the
+   bottom sixth of each, where proofbox draws the `» <N> s later`
+   label, 80 to a sheet:
+
+   ```bash
+   ffmpeg -v error -i "$PROOF/video-<n>.mp4" -vf fps=2 <tmp>/f-%03d.png
+   ffmpeg -v error -i <tmp>/f-%03d.png -vf "crop=iw:ih/6:0:ih*5/6,scale=480:-1,tile=4x20" <tmp>/s-%02d.png
+   ```
+
+   Read every sheet. Tiles run left to right, then top to bottom, so
+   tile `t` of sheet `s` is frame `f-<80*(s-1)+t>`. A run of tiles
+   that show a `» <N> s later` label is one cut. For each cut, Read
+   two full frames: the last one before its first label tile, and the
+   first one after its last label tile. A video whose sheets show no
+   label has no cut and hides nothing; Read no frame of it. The caption
+   at the top of a frame names the step (`step <k>: …`). Each step's action must show: typed letters
    appearing, the pointer reaching what it clicks, the screen
    changing after a key. A step whose action falls in a cut, as when
    the frame before a `» <N> s later` label shows none or part of the
