@@ -24,7 +24,8 @@
 # starts it again. It launches nothing: the agent starts each thread with
 # T3's tools and records it with `started`. It also lists the unlabeled
 # issues with no proposal yet; the agent proposes a route and a size for
-# each and records them with `proposed`.
+# each and records them with `proposed`. Each issue row, and the line, say
+# `changed` against what the last good check saw, so the timer can stay quiet.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
@@ -406,16 +407,24 @@ cmd_check() {
       (.stage == "done" or (.stage == "epic" and all($is[.number | tostring].subIssues.nodes[]; .state == "CLOSED")))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
 
-  S="$(jq -c --argjson c "$claims" --argjson done "$done" \
+  # seen: the rows and status of this check, so the next one can tell the
+  # timer whether anything moved. A run from before it has none: all changed.
+  S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     '.threads += $c | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
-     | if $done then .status = "done" else . end' <<<"$S")"
+     | if $done then .status = "done" else . end
+     | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
+  # A start counts as a change even on a row that did not move, as after a
+  # resume: the post must link the new thread.
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
-    --argjson joined "$joined" --argjson done "$done" '
-    {run: $run, status: $S.status, starts: $starts, issues: $rows, joined: $joined, done: $done,
-     propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
+    --argjson joined "$joined" --argjson done "$done" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
+    ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
+      or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
+    | {run: $run, status: $S.status, starts: $starts, issues: $marked, joined: $joined, done: $done,
+       propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
+    | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}]} else {} end'
