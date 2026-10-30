@@ -39,8 +39,10 @@ b. **Walker.** In Claude Code, the `walker` agent
    - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
      after, a later round or a rerun gets only the videos 9c films
      again and their walks, so the walker never overwrites a kept
-     video; a round run again after `GONE` gets the same videos as the
-     round it repeats. Mode before gets the walks step 7 names;
+     video. Mode before gets the walks step 7 names. A round run again
+     after `GONE`, in either mode, gets the same videos or walks as the
+     round it repeats, so a shot the dead round left unchecked is taken
+     again;
    - the folder to write in, `PROOF`.
 
    It does not get the code, the slices, or the diff. It returns
