@@ -32,7 +32,10 @@ b. **Walker.** In Claude Code, the `walker` agent
    - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
      screen size (1440x900 on linux, 1280x800 on macos);
    - how to open the app: the `Open` line, as a command it runs with
-     `proofbox exec`;
+     `proofbox exec`. A browser opens on a new, empty profile for each
+     video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
+     that Playwright launches, which starts empty. So no history from
+     the Sandbox image shows in the address bar;
    - the plan's `UI walks` and `Videos` blocks, verbatim;
    - the folder to write in, `PROOF`.
 
