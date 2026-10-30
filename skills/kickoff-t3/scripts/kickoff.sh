@@ -45,5 +45,5 @@ if ! is_project; then
 fi
 
 jq -c --arg project "$project" \
-  '. + {thread_title: "\(.label) \(.title)", runtime_mode: "auto", project: $project}' \
+  '. + {thread_title: "\(.heading) \(.title)", runtime_mode: "auto", project: $project}' \
   <<<"$decided"

@@ -18,7 +18,7 @@
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, mode, model, model_from, effort, effort_from, reason, base,
-# path, label, and message: the thread's first prompt, as
+# path, label, heading, and message: the thread's first prompt, as
 # `/ship --merge <url>`, which every launcher sends as it is. Under --command ready-pr, args is the URL of the one open PR
 # that closes the issue. Exit 1: something stopped us; the reason is the last line on
 # stderr. It launches nothing, so the caller's launch starts only after every
@@ -196,15 +196,26 @@ fi
 found="$(bash "$here/../checkout.sh" main "$slug")" || exit 1
 path="${found#* MAIN=}"
 
-# ---------- label ----------
-# The issue numbers: i42, i42-43, i42-on-80, and i70 for a whole epic. Too
-# long: the whole numbers that fit in 27 characters, then -more.
+# ---------- label and heading ----------
+# The label names a herdr pane and agent, and herdr takes only
+# [a-z][a-z0-9_-]{0,31} there: i42, i42-43, i42-on-80, and i70 for a whole
+# epic. Too long: the whole numbers that fit in 27 characters, then -more.
+# The heading starts a T3 thread title, which takes any text: #42, #42 #43,
+# #42 on #80, and #70. Too long: the numbers that fit in 27 characters, then
+# +<the rest>. A label the user named is the heading as given.
+heading="$label"
 if [ -z "$label" ]; then
   case "$form" in
     run) nums=("${tickets[@]}") ;;
     set) nums=("$number" "${tickets[@]}") ;;
     *) nums=("$number") ;;
   esac
+  heading="#${nums[0]}"; k=1
+  while [ "$k" -lt "${#nums[@]}" ] && [ $(( ${#heading} + ${#nums[$k]} + 2 )) -le 27 ]; do
+    heading="$heading #${nums[$k]}"; k=$((k+1))
+  done
+  if [ "$k" -lt "${#nums[@]}" ]; then heading="$heading +$(( ${#nums[@]} - k ))"; fi
+  if [ "$form" = on ]; then heading="$heading on #$pr_number"; fi
   label="i$(IFS=-; printf '%s' "${nums[*]}")"
   if [ "${#label}" -gt 32 ]; then
     label="i${nums[0]}"
@@ -223,8 +234,8 @@ jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg 
   --arg command "$command" --arg command_from "$command_from" --arg mode "$mode" \
   --arg model "$model" --arg model_from "$model_from" \
   --arg effort "$effort" --arg effort_from "$effort_from" \
-  --arg reason "$reason" --arg base "$base" --arg path "$path" --arg label "$label" \
+  --arg reason "$reason" --arg base "$base" --arg path "$path" --arg label "$label" --arg heading "$heading" \
   '{number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
     mode: $mode, model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
-    reason: $reason, base: $base, path: $path, label: $label,
+    reason: $reason, base: $base, path: $path, label: $label, heading: $heading,
     message: "/\($command)\(if $mode == "" then "" else " --\($mode)" end) \($args)"}'

@@ -31,7 +31,7 @@ This skill's script then makes the repo a T3 project if it is not one yet. The a
 The chat gets one line and stops:
 
 ```
-#42 Export orders as CSV → i42 Export orders as CSV · /ship (default) · model claude-opus-5-5 (default) · effort medium (default) · size M · base main · project found
+#42 Export orders as CSV → #42 Export orders as CSV · /ship (default) · model claude-opus-5-5 (default) · effort medium (default) · size M · base main · project found
 ```
 
 Your tree stays as it is: any branch, edits or not.

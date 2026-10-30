@@ -50,7 +50,7 @@ The script prints the line with `command` `ship`, `mode` empty, `model` `opus`,
 `effort` `medium`, `project` `found`. `opus` maps to
 `claude-opus-5-5`. The project with that `workspaceRoot` is found. One
 `t3_thread_launch`. Say
-`#42 Export orders as CSV → [i42 Export orders as CSV](t3-thread://v1/…) · /ship (default) · model claude-opus-5-5 (default) · effort medium (default) · size M · base main · project found`.
+`#42 Export orders as CSV → [#42 Export orders as CSV](t3-thread://v1/…) · /ship (default) · model claude-opus-5-5 (default) · effort medium (default) · size M · base main · project found`.
 Stop.
 
 **User:** `/kickoff-t3 42 with sonnet xhigh`, in a session about

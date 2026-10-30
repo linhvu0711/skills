@@ -57,7 +57,7 @@ kt_go() {
 # kt_line <project>: the launch line kickoff prints for #42 when the project
 # was found or added.
 kt_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"https://github.com/acme/app/issues/42","command":"ship","command_from":"default","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"size L","base":"main","path":"%s","label":"i42","message":"/ship https://github.com/acme/app/issues/42","thread_title":"i42 Export orders","runtime_mode":"auto","project":"%s"}' "$T/dev/app" "$1"
+  printf '{"number":42,"title":"Export orders","form":"issue","args":"https://github.com/acme/app/issues/42","command":"ship","command_from":"default","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"size L","base":"main","path":"%s","label":"i42","heading":"#42","message":"/ship https://github.com/acme/app/issues/42","thread_title":"#42 Export orders","runtime_mode":"auto","project":"%s"}' "$T/dev/app" "$1"
 }
 
 t_kt_launch_line() {
