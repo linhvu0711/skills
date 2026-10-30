@@ -22,7 +22,7 @@ t_coa_find_in_window() {
   run python3 "$A" find --root /p/app --since "$(date +%F)"
   # Then
   eq exit 0 "$code"
-  eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(f"{r["harness"]} {r["id"]} {r["title"]}" for r in json.load(sys.stdin)))')"
+  eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
 }
 
 cases=(

@@ -25,7 +25,7 @@ t_cca_find_in_window() {
   run python3 "$A" find --root /p/app --since "$(days_ago 0)"
   # Then
   eq exit 0 "$code"
-  eq row "claude s1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(f"{r["harness"]} {r["id"]} {r["title"]}" for r in json.load(sys.stdin)))')"
+  eq row "claude s1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
 }
 
 t_cca_probe_counts_window() {

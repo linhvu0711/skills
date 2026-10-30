@@ -24,19 +24,17 @@ import json
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
 from typing import Callable
 
 
-@dataclass
 class Harness:
-    name: str
-    finder: str
-    extractor: str
-    # finder flags for (roots or None for every project, days or None for all time)
-    flags: Callable[[list | None, int | None], list]
-    # the finder row's title
-    title: Callable[[dict], str]
+    """One harness: its name, its finder and extractor scripts, the finder
+    flags for (roots, or None for every project; days, or None for all time),
+    and the finder row's title."""
+
+    def __init__(self, name: str, finder: str, extractor: str,
+                 flags: Callable[[list | None, int | None], list], title: Callable[[dict], str]):
+        self.name, self.finder, self.extractor, self.flags, self.title = name, finder, extractor, flags, title
 
 
 def _day(value: str) -> dt.date:
