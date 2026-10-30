@@ -22,7 +22,7 @@ Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
 Session started: https://app.devin.ai/sessions/… · devin · linux
 ```
 
-The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`. A fix's first test must also fail before the change, on its assertion and for the bug's reason, not on a missing name. When the same red stays after two fixes, the agent writes down the cause it believes and tests that belief before a third fix; a belief it cannot test comes to you as a question. Two surprises of the same kind make it stop and ask, since the plan's design may be wrong. Its code comments say why, never what the line does, and it checks data at the edge where it comes in, not again inside the code. A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
+The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`. A test never checks which of the repo's own functions the code called, how often, or in what order, and the repo's own database runs for real on its test database, not as a mock. The rules show a good test next to two bad ones. A fix's first test must also fail before the change, on its assertion and for the bug's reason, not on a missing name. When the same red stays after two fixes, the agent writes down the cause it believes and tests that belief before a third fix; a belief it cannot test comes to you as a question. Two surprises of the same kind make it stop and ask, since the plan's design may be wrong. Its code comments say why, never what the line does, and it checks data at the edge where it comes in, not again inside the code. A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
 
 The PR shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk, recorded at real speed and checked for length before it is attached.
 
@@ -51,6 +51,8 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 - Its module, `scripts/handoff.sh`, keeps one ledger of sessions for both executors; a repo that requires verified commit signatures goes to Devin.
 
 ## Credits
+
+The rules on call checks, the test database, and the bad tests next to the good one take ideas from `tdd/tests.md` and `tdd/mocking.md` in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). No text was copied.
 
 The `undefined` test question and the root-cause rules (a tested belief before a third fix, a stop on two surprises of one kind, data checked at its edge) take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
 

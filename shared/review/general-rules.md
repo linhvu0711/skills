@@ -37,7 +37,10 @@ Does the change work, and does it break anything? Seven checks on every PR:
    value): it proves nothing. Ask too whether each test keeps passing
    when only the inside of the code changes and its behavior stays the
    same. A test that breaks then checks how the code works, not what it
-   does: that is a finding.
+   does: that is a finding. So is a test that checks which of the repo's
+   own functions the code called, how many times, or in what order
+   (`toHaveBeenCalledWith` on a module the repo owns), and a test that
+   mocks a part the repo owns.
 7. **Fix at the cause**: a new guard, null check, or catch whose only job
    is to hide a failure, with no cause named, is a finding. So is a new
    API or path added while the old one stays with only internal callers

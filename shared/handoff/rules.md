@@ -196,6 +196,12 @@ what the line says, is a surprise (see below).
   body that says so.
 - Mock only at the borders the slice names under `Given`: an outside
   API, the clock, randomness. Everything the repo owns runs for real.
+  A database the repo owns runs for real too, on the repo's
+  test database; mock it only when the repo has none and `Given` names
+  it.
+- Never check which of the repo's own functions the code called,
+  how many times, or in what order, as with `toHaveBeenCalledWith` on a
+  module the repo owns. Check what comes back through the seam.
 - The case name is the one in the Proof table. One `Then` per test.
 - Existing tests named under `Gates` stay as they are and stay green.
   A change that breaks one of them is a surprise; see below.
@@ -217,6 +223,24 @@ test("exports one order as CSV", async () => {
   const csv = await exportOrders(store);
   // Then
   expect(csv).toBe("id,total\n1,15.00\n");
+});
+```
+
+Two bad tests for the same slice:
+
+```ts
+// Bad: checks how, not what. A rewrite that gives the same CSV breaks it.
+test("exportOrders calls formatRow once", async () => {
+  const formatRow = vi.spyOn(format, "formatRow");
+  await exportOrders(createStore([{ id: 1, total: 15 }]));
+  expect(formatRow).toHaveBeenCalledTimes(1);
+});
+
+// Bad: the expected value is worked out the way the code works it out,
+// so a wrong format passes too. Put the literal from `Then` back.
+test("exports one order as CSV", async () => {
+  const csv = await exportOrders(createStore([{ id: 1, total: 15 }]));
+  expect(csv).toBe(`id,total\n1,${(15).toFixed(2)}\n`);
 });
 ```
 
