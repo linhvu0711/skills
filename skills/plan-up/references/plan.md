@@ -500,8 +500,11 @@ plain case, and `Decided` says so in one clause. A new dependency is
 never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
 answered before the `Change` names it.
 Unhappy paths are tests like any other, usually in the same slice as the
-happy path of their seam. Mocks only at borders, named in `Given`. A
-border the repo already mocks: copy that mock. A border the repo has never mocked: decide the
+happy path of their seam. A case name says what the code does, as in
+`exports one order as CSV`, never how it does it, as in `calls
+formatRow once`. Mocks only at borders, named in `Given`. A database the
+repo owns is no border when the repo has a test database: the test runs
+on it. A border the repo already mocks: copy that mock. A border the repo has never mocked: decide the
 shape here, one function per outside call and the client passed in, and
 write it in `Change`. `Change` follows the rules under `Standards`. A
 rule the copied `file:line` breaks, or one no line shows, is quoted in
