@@ -23,8 +23,9 @@ A bug that fails sometimes: raise the rate first. Loop it, load it, shrink
 the timing window. Do not halve on a loop that passes half the time.
 
 No loop can be built without something only the user has (a log, a
-screenshot, a HAR, the steps they took): ask for it, one thing per message.
-Still no loop: stop, the exit is Blocked (`SKILL.md` step 5).
+screenshot, a HAR, the steps they took): the exit is Blocked
+(`SKILL.md` step 5). Clean up and save the findings first, then ask for
+it, one thing per message.
 
 ### Shrink
 

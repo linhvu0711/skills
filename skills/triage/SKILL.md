@@ -97,9 +97,10 @@ nothing.
    check that kills it, per `method.md` § Hypotheses, and run the check.
    Killed: go back to step 4 with what it taught you. Keep going while
    each check cuts the space. Stop only when the next check needs a thing
-   only the user has: a log, the steps they took, access you lack. Ask for
-   it, one thing per message, and wait. Still none: the exit is Blocked.
-   Skip steps 6, 7, 10, and 11. Do steps 8 and 9, then § Blocked.
+   only the user has: a log, the steps they took, access you lack. The
+   exit is then Blocked. Skip steps 6, 7, 10, and 11. Do steps 8 and 9,
+   then § Blocked, so the repo is clean and the findings are saved before
+   you ask.
 
 6. **Confirm.** One probe flips the symptom both ways, per `method.md`
    § Confirm. The cause is the line where the mistake is made, not where
@@ -169,8 +170,9 @@ nothing.
 
 File nothing. Started from a bug issue: add the report to it as one
 comment, `gh issue comment <number-or-url> --body-file <file>`, so the
-next triage starts from what you found. The issue stays a bug. Then say
-in chat the one thing you need from the user, and stop.
+next triage starts from what you found. The issue stays a bug. Then ask
+the user for the one thing you need, and stop. The user gives it: start
+again at step 4, from the report.
 
 ## When grill fits
 
