@@ -334,7 +334,7 @@ done.
    line from the plan's Proof table, the test case by name, and for a
    plan with walks the `Screenshot` and `Video` columns and the
    Screenshots and Videos parts, each image and video as `./<file>` in
-   `PROOF`. A row proved by a command carries the command, the short
+   `PROOF`, each video's line with its commit from `videos.txt`. A row proved by a command carries the command, the short
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from

@@ -152,7 +152,9 @@ say; with nothing to say, the heading goes too.
 
      The videos go after the table, under `### Videos`, in plan order, one
      block each: one line in plain words, `Video n:` then what it shows,
-     then an empty line, then `![video-n](./video-n.mp4)` alone on its own
+     ending ` (filmed on <short SHA>)` when the video's line in the proof
+     folder's `videos.txt` names a commit other than the head the body is
+     written for, then an empty line, then `![video-n](./video-n.mp4)` alone on its own
      line with an empty line after it. That image form is what `--attach`
      rewrites to the upload URL; it is not what GitHub plays. GitHub shows
      a player only when the bare `https://github.com/user-attachments/…`
