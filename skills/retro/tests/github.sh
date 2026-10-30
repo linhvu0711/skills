@@ -100,15 +100,25 @@ JSON
 }
 
 t_gh_list_run_pr_unreadable() {
-  # Given: issue 42 is closed by a PR in another repo that gh cannot read
+  # Given: issue 42 is closed by PR 7, which gh cannot read
   gh_dir
-  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":7,"url":"https://github.com/acme/private/pull/7"}]}' > "$FAKE_GH/issue-view.json"
-  printf 'GraphQL: Could not resolve to a Repository\n' > "$FAKE_GH/pr-view.fail"
+  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":7,"url":"https://github.com/acme/app/pull/7"}]}' > "$FAKE_GH/issue-view.json"
+  printf 'GraphQL: Could not resolve to a PullRequest\n' > "$FAKE_GH/pr-view.fail"
   # When
   run python3 "$G" list acme/app --transcripts "$D" --issues 42
   # Then
   eq exit 0 "$code"
-  has skipped '"skipped": [{"url": "https://github.com/acme/private/pull/7", "why": "GraphQL: Could not resolve to a Repository"}]' "$out"
+  has skipped '"skipped": [{"url": "https://github.com/acme/app/pull/7", "why": "GraphQL: Could not resolve to a PullRequest"}]' "$out"
+}
+
+t_gh_list_run_pr_other_repo() {
+  # Given: issue 42 is closed by PR 7 of another repo
+  gh_dir
+  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":7,"url":"https://github.com/acme/lib/pull/7"}]}' > "$FAKE_GH/issue-view.json"
+  # When
+  run python3 "$G" list acme/app --transcripts "$D" --issues 42
+  # Then
+  has skipped '"skipped": [{"url": "https://github.com/acme/lib/pull/7", "why": "in another repo"}]' "$out"
 }
 
 cases=(
@@ -119,4 +129,5 @@ cases=(
   "list finds a run's PR touched by its branch|t_gh_list_run_branch_touches"
   "pr bundle keeps going when a failed log cannot be read|t_gh_pr_bundle_log_unreadable"
   "list skips a run's PR gh cannot read|t_gh_list_run_pr_unreadable"
+  "list skips a run's PR from another repo|t_gh_list_run_pr_other_repo"
 )

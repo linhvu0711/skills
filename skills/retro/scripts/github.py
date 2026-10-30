@@ -102,9 +102,12 @@ def cmd_list(args):
             i = gh_json(f"read issue #{n} of {repo}", "issue", "view", str(n), "--repo", repo,
                         "--json", "number,url,title,closedByPullRequestsReferences")
             # A closing reference carries no title or head branch, and the touched rule needs the branch.
-            # It can live in another repo, so it is read by its own URL.
+            # A closer in another repo is that repo's work, not this one's.
             for ref in i.pop("closedByPullRequestsReferences", []) or []:
                 if ref["url"] in prs or any(s["url"] == ref["url"] for s in skipped):
+                    continue
+                if not ref["url"].startswith(f"https://github.com/{repo}/pull/"):
+                    skipped.append({"url": ref["url"], "why": "in another repo"})
                     continue
                 ok, out = gh_try("pr", "view", ref["url"], "--json", "number,url,title,headRefName")
                 if ok:
