@@ -53,7 +53,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 scripts/github.py list <owner/repo> --transcripts <scratch> --since D [--until D]
    ```
 
-   A window-less scope (named IDs, the current session) uses the days its sessions span. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues`, into a second folder:
+   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues`, into a second folder:
 
    ```bash
    python3 scripts/github.py pr <owner/repo> <n> > <github>/pr-<n>.md

@@ -12,7 +12,8 @@ only untouched PRs). A PR is touched when a transcript holds its
     github.py issues <owner/repo> <n>...
 
 `list` prints {"read_prs": [...], "read_issues": [...], "touched": [{"kind",
-"number", "by"}]}. `pr` and `issues` print one markdown bundle for a reader.
+"number", "by"}], "skipped": [{"url", "why"}]}, a skipped PR being one gh
+could not read. `pr` and `issues` print one markdown bundle for a reader.
 A gh call that fails stops with `stop: gh could not <what>: <gh's last line>`
 on stderr and exit 1.
 """
@@ -94,16 +95,22 @@ def pr_patterns(pr):
 def cmd_list(args):
     repo = args.repo
     texts = transcripts(args.transcripts)
+    skipped = []
     if args.issues:
         issues, prs = [], {}
         for n in args.issues:
             i = gh_json(f"read issue #{n} of {repo}", "issue", "view", str(n), "--repo", repo,
                         "--json", "number,url,title,closedByPullRequestsReferences")
             # A closing reference carries no title or head branch, and the touched rule needs the branch.
+            # It can live in another repo, so it is read by its own URL.
             for ref in i.pop("closedByPullRequestsReferences", []) or []:
-                if ref["number"] not in prs:
-                    prs[ref["number"]] = gh_json(f"read PR #{ref['number']} of {repo}", "pr", "view", str(ref["number"]),
-                                                 "--repo", repo, "--json", "number,url,title,headRefName")
+                if ref["url"] in prs or any(s["url"] == ref["url"] for s in skipped):
+                    continue
+                ok, out = gh_try("pr", "view", ref["url"], "--json", "number,url,title,headRefName")
+                if ok:
+                    prs[ref["url"]] = json.loads(out)
+                else:
+                    skipped.append({"url": ref["url"], "why": out})
             issues.append(i)
         closed = set(args.issues)
         prs = list(prs.values())
@@ -130,7 +137,7 @@ def cmd_list(args):
             touched.append({"kind": "issue", "number": i["number"], "by": by})
         else:
             read_issues.append({k: i.get(k) for k in ("number", "url", "title")})
-    print(json.dumps({"read_prs": read_prs, "read_issues": read_issues, "touched": touched}))
+    print(json.dumps({"read_prs": read_prs, "read_issues": read_issues, "touched": touched, "skipped": skipped}))
 
 
 def who(node):

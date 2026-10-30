@@ -99,6 +99,18 @@ JSON
   has log "E   assert 1 == 2" "$out"
 }
 
+t_gh_list_run_pr_unreadable() {
+  # Given: issue 42 is closed by a PR in another repo that gh cannot read
+  gh_dir
+  printf '%s' '{"number":42,"url":"https://github.com/acme/app/issues/42","title":"Export","closedByPullRequestsReferences":[{"number":7,"url":"https://github.com/acme/private/pull/7"}]}' > "$FAKE_GH/issue-view.json"
+  printf 'GraphQL: Could not resolve to a Repository\n' > "$FAKE_GH/pr-view.fail"
+  # When
+  run python3 "$G" list acme/app --transcripts "$D" --issues 42
+  # Then
+  eq exit 0 "$code"
+  has skipped '"skipped": [{"url": "https://github.com/acme/private/pull/7", "why": "GraphQL: Could not resolve to a Repository"}]' "$out"
+}
+
 cases=(
   "list skips a PR a transcript names|t_gh_list_skips_touched_pr"
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
@@ -106,4 +118,5 @@ cases=(
   "pr bundle holds reviews, threads, and the failed log|t_gh_pr_bundle"
   "list finds a run's PR touched by its branch|t_gh_list_run_branch_touches"
   "pr bundle keeps going when a failed log cannot be read|t_gh_pr_bundle_log_unreadable"
+  "list skips a run's PR gh cannot read|t_gh_list_run_pr_unreadable"
 )
