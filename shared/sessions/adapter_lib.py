@@ -91,9 +91,16 @@ def _find(h: Harness, args) -> list[dict]:
         rows.append({"harness": h.name, "id": s.get("id"), "modified": modified.isoformat(),
                      "cwd": s.get("cwd"), "title": h.title(s), "size": s.get("size"),
                      "path": s.get("path"), "subagents": s.get("subagents") or []})
+    # An unreadable session's id and project are inside it; its file name holds
+    # the id, and the finder already kept it to the window's start.
     for u in out.get("unreadable", []):
-        rows.append({"harness": h.name, "id": None, "modified": None, "cwd": None, "title": None,
-                     "size": None, "path": u["path"], "subagents": [], "unreadable": u["why"]})
+        modified = dt.date.fromtimestamp(float(u["modified"]))
+        if args.until and modified > args.until:
+            continue
+        if ids and not any(i in os.path.basename(u["path"]) for i in ids):
+            continue
+        rows.append({"harness": h.name, "id": None, "modified": modified.isoformat(), "cwd": None, "title": None,
+                     "size": None, "path": u["path"], "subagents": [], "unreadable": f"{u['why']}, project unknown"})
     return rows
 
 

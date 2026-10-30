@@ -281,8 +281,9 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
             try:
                 meta = read_meta(p)
             except rollout_io.NoZstd as e:
-                if skipped is not None:
-                    skipped.setdefault("unreadable", []).append({"path": key, "why": str(e)})
+                # Its cwd is inside the file, so only the window can filter it.
+                if skipped is not None and (not in_window or in_window(key, st)):
+                    skipped.setdefault("unreadable", []).append({"path": key, "modified": st.st_mtime, "why": str(e)})
                 continue
             if not meta:
                 continue
