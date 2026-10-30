@@ -26,6 +26,9 @@
 # issues with no proposal yet; the agent proposes a route and a size for
 # each and records them with `proposed`. Each issue row, and the line, say
 # `changed` against what the last good check saw, so the timer can stay quiet.
+# It also lists each open PR with conflicts whose thread finished its turn,
+# once per head, claimed in the state file like a start; the agent sends that
+# thread `/ready-pr <pr-url>`.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
@@ -84,7 +87,7 @@ copy_page() {
 }
 
 # ---------- GitHub ----------
-fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state}} blockedBy(first:50){nodes{number state}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body}}'
+fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state}} blockedBy(first:50){nodes{number state}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body mergeable headRefOid}}'
 
 # read_issues <n>...: one GraphQL call for all of them, printed as one
 # object keyed by number. A failed call leaves gh's stderr in errf.
@@ -351,6 +354,13 @@ cmd_check() {
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
   local n j st sk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
+  local conf sends="[]" sent="[]" owners
+  # owners: each PR's owner, the first issue in set order that it closes. A
+  # shared PR's conflict goes only to its owner's thread, so no two threads
+  # rebase one branch, even when the owner's thread is busy or just starting.
+  owners="$(jq -c --argjson set "$(jq -c .set <<<"$S")" \
+    '. as $is | [$set[] | $is[tostring] // empty | .number as $i
+      | .closedByPullRequestsReferences.nodes[] | {key: (.number | tostring), value: $i}] | reverse | from_entries' <<<"$issues")"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
@@ -385,6 +395,24 @@ cmd_check() {
         '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
+    # A conflict goes back to the thread that works on the issue, and only
+    # once that thread finished its turn: a running thread is mid-turn, and a
+    # waiting one waits on the user (ADR 0013, ADR 0015). An issue that starts
+    # a thread now leaves the conflict to it. One PR per thread per check.
+    if [ "$gone" = false ] && [ -z "$line" ] && [ "$(jq -r .status <<<"$S")" = running ] \
+       && [ "$(jq -r '.status // ""' <<<"$rec")" = started ] \
+       && [ "$(jq -r --argjson ts "$statuses" 'if .thread then $ts[.thread].status // "" else "" end' <<<"$rec")" = completed ]; then
+      conf="$(jq -c --argjson S "$S" --argjson rec "$rec" --argjson owners "$owners" '
+        [.closedByPullRequestsReferences.nodes[]
+         | select(.state == "OPEN" and .mergeable == "CONFLICTING")
+         | . as $p | select(($S.conflicts // []) | any(.pr == $p.number and .head == $p.headRefOid) | not)
+         | select($owners[$p.number | tostring] == $rec.number)
+         | {number: $rec.number, pr: .number, url, head: .headRefOid, thread: $rec.thread, link: $rec.link,
+            message: "/ready-pr \(.url)"}][:1]' <<<"$j")"
+      sends="$(jq -c --argjson c "$conf" '. + $c' <<<"$sends")"
+      sent="$(jq -c --argjson c "$conf" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '. + [$c[] | {number, pr, head, thread, at: $at}]' <<<"$sent")"
+    fi
     cards="$(jq -c --arg n "$n" --arg chip "$(chip "$j")" '.[$n] = {chip: $chip}' <<<"$cards")"
     row="$(jq -cn --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
       --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
@@ -409,20 +437,21 @@ cmd_check() {
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
-  S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" \
+  S="$(jq -c --argjson c "$claims" --argjson sent "$sent" --argjson done "$done" --argjson rows "$rows" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '.threads += $c | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
+    '.threads += $c | .conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
      | if $done then .status = "done" else . end
      | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
-  # A start counts as a change even on a row that did not move, as after a
-  # resume: the post must link the new thread.
-  jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
+  # A start or a conflict sent counts as a change even on a row that did not
+  # move, as after a resume: the post must link the thread.
+  jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson sends "$sends" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
     ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
+      or ($sends | any(.number == $r.number))
       or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
-    | {run: $run, status: $S.status, starts: $starts, issues: $marked, joined: $joined, done: $done,
+    | {run: $run, status: $S.status, starts: $starts, conflicts: $sends, issues: $marked, joined: $joined, done: $done,
        propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
     | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,

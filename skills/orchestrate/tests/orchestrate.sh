@@ -192,6 +192,134 @@ t_fs_new_pr_starts_nothing() {
   has stdout '"stage":"ticket"' "$out"
 }
 
+# fs_conflict <n> <pr> <mergeable> <head>: issue #n, size/S, with open PR
+# <pr> opened after the run start of fs_at 2026-10-28T12:00:00Z, so its
+# stage stays ticket.
+fs_conflict() {
+  local pr
+  pr="$(jq -cn --argjson p "$2" --arg m "$3" --arg h "$4" \
+    '{number: $p, url: "https://github.com/acme/app/pull/\($p)", state: "OPEN", createdAt: "2026-10-28T13:00:00Z", body: "", mergeable: $m, headRefOid: $h}')"
+  fs_issue "$1" OPEN '["size/S"]' '[]' "[$pr]"
+}
+
+# fs_conflict_run: #42 with PR 43 CONFLICTING at aaa111, and #42's ticket
+# thread t42 finished its turn.
+fs_conflict_run() {
+  fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42 ship
+  echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
+}
+
+t_fs_conflict_listed() {
+  # Given: #42's PR 43 conflicts at aaa111, and thread t42 is completed
+  fs_conflict_run
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  eq line '{"conflicts":[{"number":42,"pr":43,"url":"https://github.com/acme/app/pull/43","head":"aaa111","thread":"t42","link":"[i42](t3-thread://v1/t42)","message":"/ready-pr https://github.com/acme/app/pull/43"}],"changed":[true]}' \
+    "$(jq -c '{conflicts, changed: [.issues[] | .changed]}' <<<"$out")"
+  eq state '[{"number":42,"pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {number, pr, head, thread}]')"
+}
+
+t_fs_conflict_once_per_head() {
+  # Given: the conflict of PR 43 at aaa111 listed by one check
+  fs_conflict_run; fs_go check acme/app
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '{"conflicts":[],"changed":false}' "$(jq -c '{conflicts, changed}' <<<"$out")"
+  eq state 1 "$(fs_state '.conflicts | length')"
+}
+
+t_fs_conflict_new_head() {
+  # Given: the conflict at aaa111 listed, then PR 43 conflicts again at bbb222
+  fs_conflict_run; fs_go check acme/app
+  fs_conflict 42 43 CONFLICTING bbb222
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '["bbb222"]' "$(jq -c '[.conflicts[] | .head]' <<<"$out")"
+  eq state '["aaa111","bbb222"]' "$(fs_state '[.conflicts[] | .head]')"
+}
+
+t_fs_conflict_busy_thread() {
+  # Given: PRs 43 and 45 conflict; thread t42 runs and thread t44 waits on the user
+  fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_conflict 44 45 CONFLICTING ccc333; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"waiting"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+}
+
+t_fs_conflict_none() {
+  # Given: PR 43 is MERGEABLE, PR 45 is UNKNOWN, and both threads are completed
+  fs_setup; fs_conflict 42 43 MERGEABLE aaa111; fs_conflict 44 45 UNKNOWN ccc333; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+}
+
+t_fs_conflict_paused() {
+  # Given: PR 43 conflicts and thread t42 is completed, but the run is paused
+  fs_conflict_run; fs_go timer acme/app pause
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq state 0 "$(fs_state '.conflicts // [] | length')"
+}
+
+t_fs_conflict_shared_pr() {
+  # Given: PR 43 conflicts and closes both #42 and #44; threads t42 and t44 are completed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"aaa111"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 44 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.conflicts[] | {number, pr}]' <<<"$out")"
+}
+
+t_fs_conflict_shared_owner() {
+  # Given: PR 43 conflicts and closes #42 and #44; #42's thread t42 runs, #44's thread t44 is completed
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"bbb222"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$pr]"; fs_issue 44 OPEN '["size/S"]' '[]' "[$pr]"; fs_start 42 44; fs_at 2026-10-28T12:00:00Z
+  fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
+  echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+}
+
+t_fs_conflict_one_per_thread() {
+  # Given: #42 has PRs 43 and 45, both conflicting, and thread t42 is completed
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"aaa111"}'
+  local b='{"number":45,"url":"https://github.com/acme/app/pull/45","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":"","mergeable":"CONFLICTING","headRefOid":"ccc333"}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42 ship
+  echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '[43]' "$(jq -c '[.conflicts[] | .pr]' <<<"$out")"
+}
+
+t_fs_conflict_new_stage() {
+  # Given: #42's triage thread t42 is completed, #42 is now size/S, and its PR 43 conflicts
+  fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 bug t42 triage
+  echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '{"starts":1,"conflicts":[]}' "$(jq -c '{starts: (.starts | length), conflicts}' <<<"$out")"
+}
+
 t_fs_manual_never_starts() {
   # Given: a run of #42, open, labelled manual
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
@@ -1353,4 +1481,14 @@ cases=(
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
   "two runs get two different pages|t_fs_two_runs_two_pages"
+  "a conflicting PR of a finished thread is listed|t_fs_conflict_listed"
+  "a conflict is listed once per head|t_fs_conflict_once_per_head"
+  "a new head that conflicts again is listed again|t_fs_conflict_new_head"
+  "a thread that is not finished gets no conflict|t_fs_conflict_busy_thread"
+  "a PR with no conflict is not listed|t_fs_conflict_none"
+  "a paused run lists no conflict|t_fs_conflict_paused"
+  "one PR of two issues is sent once|t_fs_conflict_shared_pr"
+  "a shared PR goes only to its first issue's thread|t_fs_conflict_shared_owner"
+  "a thread gets one conflict per check|t_fs_conflict_one_per_thread"
+  "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
 )
