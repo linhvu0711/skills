@@ -79,7 +79,9 @@ b. **Walker.** In Claude Code, the `walker` agent
    `walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
    hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
    step 1 (typing)`, and lower the passed count in its `WALKS` line.
-   Remove the temp folder.
+   Remove the temp folder. Then, for each video this round filmed,
+   write its line in `$PROOF/videos.txt`, in place of an older one:
+   `video-<n>.mp4 · <short SHA>`, the head the app ran.
 
 c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
    under it, idle or at its max life. No walk failed; run the round
@@ -121,6 +123,15 @@ c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
      Wait.
 
    Say `Walks round <r>: <p> passed, <f> failed`. Then the next round
-   from 9a; every walk again, from the start. After round three with
-   a failed walk: `box.sh down`, then stop with the failing videos'
-   paths, one per line.
+   from 9a, which films only the videos that need it. A video is
+   filmed again, whole, when one of its walks failed, or when
+   `git -C "$WT" diff --name-only <its SHA> HEAD`, with its SHA from
+   its line in `videos.txt`, names a file that a walk of it shows:
+   a file a slice behind the walk's Proof rows changes, or a file you
+   read and find on that walk's screen. Not sure, or the video has no
+   line in the list: film it again. The walker's brief holds only
+   those videos and their walks; every other video keeps its
+   `video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
+   rerun (SKILL.md § Rerun) sorts the videos in `PROOF` the same way.
+   After round three with a failed walk: `box.sh down`, then stop with
+   the failing videos' paths, one per line.
