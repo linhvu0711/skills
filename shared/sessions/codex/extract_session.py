@@ -31,6 +31,7 @@ one-liners, tool results truncated):
 """
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import re
@@ -38,6 +39,12 @@ import sys
 from datetime import datetime
 
 CODEX_DIR = os.path.expanduser("~/.codex")
+
+# Loaded by path: `python3 -I` leaves this folder off sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "rollout_io", os.path.join(os.path.dirname(os.path.abspath(__file__)), "rollout_io.py"))
+rollout_io = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(rollout_io)
 
 # Prefixes that mark injected context (AGENTS.md, environment, instructions)
 # rather than a real human turn — used only in the response_item fallback path.
@@ -58,12 +65,15 @@ def locate(session_id):
     if os.path.isfile(given):
         return [os.path.abspath(given)]
     sid = session_id.strip().strip("`'\"")
-    if sid.endswith(".jsonl"):
-        sid = sid[:-6]
+    for suffix in (".jsonl.zst", ".jsonl"):
+        if sid.endswith(suffix):
+            sid = sid[: -len(suffix)]
+            break
     # the uuid is embedded after the timestamp in the filename
     patterns = [
-        os.path.join(CODEX_DIR, "sessions", "**", f"rollout-*{sid}*.jsonl"),
-        os.path.join(CODEX_DIR, "archived_sessions", f"rollout-*{sid}*.jsonl"),
+        os.path.join(CODEX_DIR, folder, f"rollout-*{sid}*{suffix}")
+        for folder in (os.path.join("sessions", "**"), "archived_sessions")
+        for suffix in rollout_io.SUFFIXES
     ]
     hits = []
     for p in patterns:
@@ -73,7 +83,7 @@ def locate(session_id):
 
 def load(path):
     rows = []
-    with open(path, "r", encoding="utf-8") as fh:
+    with rollout_io.open_rollout(path) as fh:
         for line in fh:
             line = line.strip()
             if not line:
@@ -458,7 +468,11 @@ def main():
         sys.exit(2)
 
     path = matches[0]
-    rows = load(path)
+    try:
+        rows = load(path)
+    except rollout_io.NoZstd as e:
+        print(f"stop: {path} {e}", file=sys.stderr)
+        sys.exit(1)
 
     if args.list:
         meta = next((r.get("payload", {}) for r in rows if r.get("type") == "session_meta"), {})

@@ -231,3 +231,8 @@ A check printed `"done": true`.
 3. From the run's `path` (the main checkout), run
    `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
    lines as they are, as `/ship` does after its merges.
+4. Start the retro: follow `../../shared/kickoff/launch-t3.md` with the
+   check's `retro` line, so one thread runs `/retro run <run>` on
+   everything the run did. Post its link. A `stop:` line or an error
+   there: post `Start it yourself: /retro run <run>`, with `run` from the
+   check's line. The run is done either way.

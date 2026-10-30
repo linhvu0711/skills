@@ -56,7 +56,7 @@ Say these in the orchestrator thread:
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
-A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the orchestrator stops its timer, posts one summary line per issue (its stages, its PR, its threads), and runs [prune-worktrees](../prune-worktrees/). It never closes an epic.
+A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the orchestrator stops its timer, posts one summary line per issue (its stages, its PR, its threads), runs [prune-worktrees](../prune-worktrees/), and starts one more thread that runs [retro](../retro/) on everything the run did: its sessions and its PRs. If that thread cannot start, it posts the `/retro run` line for you to type. It never closes an epic.
 
 The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and its proposals: each route, size, and answer. Next to it sit `board.json`, the page data each check writes, and `board.html`, the page. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
 
@@ -73,6 +73,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 - Starts each thread the way [kickoff-t3](../kickoff-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/kickoff/launch-t3.md`, start the thread.
 - Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
 - [capture](../capture/) makes the seeds and bugs it starts from; [to-epic](../to-epic/) makes the epics.
+- When a run is done, it starts [retro](../retro/) on the run, which suggests changes to the repo's agent setup from what the run's sessions and PRs show.
 
 ## Tests
 

@@ -35,7 +35,7 @@ It only reads: no change to the repo, no comment on GitHub.
 
 - `git`.
 - `gh`, signed in, for the PR, its reviews, and the issue of each commit: one call per commit. Without it, the answer comes from git, the docs, and the sessions, and says so.
-- `python3` (standard library only).
+- `python3` (standard library only). Codex keeps older chats compressed (`.jsonl.zst`); reading those needs Python 3.14+ or the `zstd` command. Without either, they are listed as not read.
 - The shared finders and extractors in [`sessions/`](../../shared/sessions/), for past sessions.
 - The evidence labels in [`facts.md`](../../shared/facts.md).
 

@@ -33,7 +33,7 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 
 ## Needs
 
-- `python3` (standard library only).
+- `python3` (standard library only). Codex keeps older chats compressed (`.jsonl.zst`); reading those needs Python 3.14+ or the `zstd` command. Without either, they are listed as not read.
 - The finders and extractors in the shared core folder [`sessions/`](../../shared/sessions/).
 - The shared core file [`session-brief.md`](../../shared/session-brief.md), which holds the shape of each session's brief.
 - A sub-agent per session to write its brief: the Explore agent in Claude Code, an `explorer` agent in Codex.

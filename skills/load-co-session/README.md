@@ -24,7 +24,7 @@ Codex encrypts its reasoning on disk, so nothing here can show what Codex was th
 
 ## Needs
 
-- `python3` (standard library only).
+- `python3` (standard library only). Codex keeps older chats compressed (`.jsonl.zst`); reading those needs Python 3.14+ or the `zstd` command. Without either, they are listed as not read.
 - The script in the shared core folder [`sessions/codex/`](../../shared/sessions/codex/), which retro uses too.
 - A sub-agent to write the brief: the Explore agent in Claude Code, an `explorer` agent in Codex.
 - The shared core file [`session-brief.md`](../../shared/session-brief.md), which holds the brief's shape.

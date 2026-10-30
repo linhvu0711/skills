@@ -427,7 +427,10 @@ cmd_check() {
     | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
-        prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}]} else {} end'
+        prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}],
+        # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
+        retro: {model: ($S.use.all.model // "opus"), effort: ($S.use.all.effort // "high"), path: $S.path,
+          thread_title: "retro: \($S.name)", message: "/retro run \($run)", runtime_mode: "auto"}} else {} end'
 }
 
 # ---------- started ----------
