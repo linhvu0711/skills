@@ -38,7 +38,7 @@ t_kd_json_line() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"message\":\"/ship https://github.com/acme/app/issues/42\"}" "$out"
+  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"message\":\"/ship https://github.com/acme/app/issues/42\"}" "$out"
 }
 
 t_kd_size_rows() {
@@ -71,7 +71,7 @@ t_kd_stops_no_checkout() {
 # kd_line <command> <effort> <reason> [<args>]: the JSON line decide prints
 # for #42 under --command <command>, on model opus.
 kd_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","message":"/%s %s"}' \
+  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","heading":"#42","message":"/%s %s"}' \
     "${4:-https://github.com/acme/app/issues/42}" "$1" "$2" "$3" "$T/dev/app" "$1" "${4:-https://github.com/acme/app/issues/42}"
 }
 
@@ -200,8 +200,29 @@ t_kd_bad_mode() {
   eq stderr "stop: --mode must be review, ready, or merge, got: full" "$err"
 }
 
+t_kd_heading_forms() {
+  # Given: #42 size/S with no sub-issues, PR #80 on feat/79-teams, one
+  # checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+  # When: a set of two, a set too long for one heading, on a PR, a named label
+  kd_run https://github.com/acme/app/issues/42 '#43'
+  eq "set exit" 0 "$code"
+  eq "set" '#42 #43 i42-43' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
+  kd_run https://github.com/acme/app/issues/42 '#1001' '#1002' '#1003' '#1004' '#1005' '#1006'
+  eq "long exit" 0 "$code"
+  eq "long" '#42 #1001 #1002 #1003 #1004 +2' "$(jq -r .heading <<<"$out")"
+  kd_run https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80
+  eq "on exit" 0 "$code"
+  eq "on" '#42 on #80 i42-on-80' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
+  kd_run --label exports https://github.com/acme/app/issues/42
+  eq "named exit" 0 "$code"
+  eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
+}
+
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
+  "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
   "each size takes its row|t_kd_size_rows"
   "decide stops before any launch|t_kd_stops_no_checkout"
   "triage takes the opus high row|t_kd_triage_row"

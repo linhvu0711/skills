@@ -88,8 +88,11 @@ So you can answer questions about it:
 - Tree: left as is, on any branch, with edits or not. `/plan-up` reads
   its own fresh copy of the base, so the script never switches, pulls,
   or stops on it.
-- Label: `i` and the issue numbers, as `i42`, `i42-43`, `i42-on-80`,
-  and `i70` for a whole epic.
+- Label, for a herdr pane and agent: `i` and the issue numbers, as
+  `i42`, `i42-43`, `i42-on-80`, and `i70` for a whole epic. herdr takes
+  only `[a-z][a-z0-9_-]` in an agent name.
+- Heading, for a T3 thread title: `#` and the issue numbers, as `#42`,
+  `#42 #43`, `#42 on #80`, and `#70` for a whole epic.
 
 ## Resolving the target from the session
 
