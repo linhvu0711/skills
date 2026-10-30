@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
-# adopt.sh, and the handoff render.sh. It sources test-lib.sh, the helpers, the
+# adopt.sh, link.sh and the hooks that run it, and the handoff render.sh. It sources test-lib.sh, the helpers, the
 # one fake gh, and the fake curl that every case shares, runs its own cases,
 # then sources each skills/*/tests/*.sh and shared/tests/*.sh in
 # turn and runs that file's cases.
@@ -176,6 +176,69 @@ t_adopt_stops_on_bad_name() {
   eq stderr "stop: not a skill name: .." "$err"
   eq "ls home" demo "$(ls "$T/home")"
   eq "ls skills" "" "$(ls skills)"
+}
+
+# linked [<skill>...]: repo with skills/<skill>/SKILL.md for each, and empty
+# local skills folders at $T/agents and $T/claude.
+linked() {
+  repo; local n
+  for n in "$@"; do mkdir -p "skills/$n"; printf -- '---\nname: %s\n---\n' "$n" > "skills/$n/SKILL.md"; done
+  mkdir -p "$T/agents" "$T/claude"
+}
+link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" bash scripts/link.sh; }
+
+t_link_links_new_skill() {
+  linked demo; link_sh
+  eq exit 0 "$code"
+  eq stdout "$(printf 'linked %s\nlinked %s' "$T/agents/demo" "$T/claude/demo")" "$out"
+  eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
+  eq "claude link" "$T/agents/demo" "$(readlink "$T/claude/demo")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_follows_rename() {
+  linked old; link_sh
+  rm "$T/claude/old"; ln -s ../../.agents/skills/old "$T/claude/old"
+  mv skills/old skills/new; link_sh
+  eq exit 0 "$code"
+  has stdout "unlinked $T/agents/old" "$out"
+  has stdout "unlinked $T/claude/old" "$out"
+  has stdout "linked $T/claude/new" "$out"
+  eq "ls agents" new "$(ls "$T/agents")"
+  eq "ls claude" new "$(ls "$T/claude")"
+}
+
+t_link_leaves_other_names() {
+  linked demo gone; mkdir "$T/agents/demo"; ln -s "$T/elsewhere/gone" "$T/agents/gone"
+  link_sh
+  eq exit 0 "$code"
+  has stderr "skip: $T/agents/demo is not this repo's demo" "$err"
+  has stderr "skip: $T/agents/gone is a link to nothing, not made here" "$err"
+  [ -d "$T/agents/demo" ] && [ ! -L "$T/agents/demo" ] || eq "agents/demo" "a folder" "changed"
+  eq "gone link" "$T/elsewhere/gone" "$(readlink "$T/agents/gone")"
+  eq "ls claude" "" "$(ls "$T/claude")"
+}
+
+t_link_skips_worktree() {
+  linked demo; git add skills; git commit -qm skill
+  git worktree add -q "$T/wt" -b wt; cd "$T/wt"; link_sh
+  eq exit 0 "$code"
+  eq output "" "$out$err"
+  eq "ls agents" "" "$(ls "$T/agents")"
+}
+
+t_hooks_link_committed_skill() {
+  linked; git config core.hooksPath scripts/hooks; export SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude"
+  local main; main="$(git branch --show-current)"
+  mkdir -p skills/demo; printf -- '---\nname: demo\ndescription: d\n---\n' > skills/demo/SKILL.md
+  printf '# demo\n## Use it when\n## What you get\n## Needs\n## Fits with\n' > skills/demo/README.md
+  git add skills; git commit -qm demo
+  eq "after commit" "$R/skills/demo" "$(readlink "$T/agents/demo")"
+  git checkout -q -b side HEAD~1
+  eq "after checkout" "" "$(ls "$T/agents")"
+  git merge -q "$main"
+  eq "after merge" "$T/agents/demo" "$(readlink "$T/claude/demo")"
 }
 
 t_flags_missing_own_path() {
@@ -573,6 +636,11 @@ cases=(
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
   "stops on a missing path|t_stops_on_missing_path"
   "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
+  "link links a new skill into both folders|t_link_links_new_skill"
+  "link follows a renamed skill|t_link_follows_rename"
+  "link leaves a name something else holds|t_link_leaves_other_names"
+  "link does nothing in a worktree|t_link_skips_worktree"
+  "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
   "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
   "flags a missing path to another skill|t_flags_missing_skill_path"

@@ -133,6 +133,17 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [semantic-code-search](skills/semantic-code-search/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
 | [embed-source](skills/embed-source/) | Puts a library's full source next to your repo, at the version you install, so agents read real code. |
 
+## Install
+
+Clone the repo, then turn on its hooks once:
+
+```
+git config core.hooksPath scripts/hooks
+bash scripts/link.sh
+```
+
+`scripts/link.sh` links each skill into `~/.agents/skills` and `~/.claude/skills` (Claude Code). After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill is found with no step by hand.
+
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
