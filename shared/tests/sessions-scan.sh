@@ -21,7 +21,7 @@ t_scan_probes_adapters() {
   # When
   run python3 "$S" --root /p/app --since "$(date +%F)"
   # Then
-  eq adapters '[{"harness": "claude", "sessions": 1}, {"harness": "codex", "sessions": 1}]' "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin)["adapters"]))')"
+  eq adapters '[{"harness": "claude", "label": "Claude Code", "sessions": 1, "installed": true}, {"harness": "codex", "label": "Codex", "sessions": 1, "installed": true}]' "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin)["adapters"]))')"
 }
 
 t_scan_names_no_adapter_harness() {

@@ -34,7 +34,7 @@ t_cca_probe_counts_window() {
   # When
   run python3 "$A" probe --root /p/app --since "$(days_ago 7)"
   # Then
-  eq stdout '{"harness": "claude", "sessions": 1}' "$out"
+  eq stdout '{"harness": "claude", "label": "Claude Code", "sessions": 1, "installed": true}' "$out"
 }
 
 t_cca_rows_carry_query_fields() {

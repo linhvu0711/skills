@@ -8,7 +8,9 @@ extractor, and gets the same three subcommands as every other adapter:
     adapter.py find    --root R... | --all-projects  [--since D] [--until D] [--query Q] [--id PREFIX]...
     adapter.py extract <id or path> [--summary] [--after-compact] [--max-result-chars N]
 
-``probe`` prints {"harness", "sessions"}. ``find`` prints a JSON list of rows
+``probe`` prints {"harness", "label", "sessions", "installed"}; "installed" is
+false when the harness keeps none of its folders on this machine, and then
+``find`` prints []. ``find`` prints a JSON list of rows
 {"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
 "score", "current", "prompts", "first_prompt", "age", "active"}, plus
 "unreadable" on a row the harness could not read. Dates are local YYYY-MM-DD
@@ -34,15 +36,17 @@ from typing import Callable
 
 
 class Harness:
-    """One harness: its name, its finder and extractor scripts, the finder
-    flags for (roots, or None for every project; days, or None for all time),
-    the finder row's title, the environment variable that holds the id of the
-    session a command runs in, and the extractor flags it takes."""
+    """One harness: its name and its name for people, the folders it keeps
+    sessions in, its finder and extractor scripts, the finder flags for (roots,
+    or None for every project; days, or None for all time), the finder row's
+    title, the environment variable that holds the id of the session a command
+    runs in, and the extractor flags it takes."""
 
-    def __init__(self, name: str, finder: str, extractor: str,
+    def __init__(self, name: str, label: str, data: list, finder: str, extractor: str,
                  flags: Callable[[list | None, int | None], list], title: Callable[[dict], str],
                  current: str, extract_flags: tuple[str, ...]):
-        self.name, self.finder, self.extractor, self.flags, self.title = name, finder, extractor, flags, title
+        self.name, self.label, self.data = name, label, data
+        self.finder, self.extractor, self.flags, self.title = finder, extractor, flags, title
         self.current, self.extract_flags = current, extract_flags
 
 
@@ -129,9 +133,12 @@ def main(h: Harness) -> int:
         asked = [f for f, on in (("--summary", args.summary), ("--after-compact", args.after_compact)) if on]
         return subprocess.run([sys.executable, h.extractor, args.path, *(f for f in asked if f in h.extract_flags),
                                "--max-result-chars", str(args.max_result_chars)]).returncode
-    rows = _find(h, args)
+    # With none of its folders here the harness is not installed, and its finder is not run.
+    installed = any(os.path.isdir(d) for d in h.data)
+    rows = _find(h, args) if installed else []
     if args.cmd == "probe":
-        print(json.dumps({"harness": h.name, "sessions": sum(1 for r in rows if not r.get("unreadable"))}))
+        print(json.dumps({"harness": h.name, "label": h.label,
+                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": installed}))
     else:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
     return 0

@@ -70,10 +70,20 @@ t_coa_extract_summary() {
   eq mode "**Render mode:** summary" "$(printf '%s\n' "$out" | grep -F '**Render mode:**')"
 }
 
+t_coa_probe_not_installed() {
+  # Given: a fresh HOME with no .codex folder
+  T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"; mkdir -p "$HOME"
+  # When
+  run python3 "$A" probe --root /p/app
+  # Then
+  eq stdout '{"harness": "codex", "label": "Codex", "sessions": 0, "installed": false}' "$out"
+}
+
 cases=(
   "adapter finds a session in the window|t_coa_find_in_window"
   "adapter keeps unreadable rows to the ids asked|t_coa_unreadable_keeps_filters"
   "adapter finds a session only in the archive|t_coa_find_archived"
   "adapter rows carry the score, current flag, and prompt count|t_coa_rows_carry_query_fields"
   "adapter extract renders the summary and drops --after-compact|t_coa_extract_summary"
+  "probe says Codex is not installed|t_coa_probe_not_installed"
 )

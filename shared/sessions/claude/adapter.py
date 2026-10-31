@@ -23,6 +23,8 @@ def flags(roots, days):
 if __name__ == "__main__":
     raise SystemExit(lib.main(lib.Harness(
         name=os.path.basename(here),
+        label="Claude Code",
+        data=[os.path.expanduser("~/.claude/projects")],
         finder=os.path.join(here, "find_sessions.py"),
         extractor=os.path.join(here, "extract_session.py"),
         flags=flags,
