@@ -699,7 +699,7 @@ cmd_resume() {
   lock_run
   S="$(cat "$run/state.json")"
   S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" --arg thread "$2" --arg env "$4" \
-    '.thread = $thread | .link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"
+    '.thread = $thread | .link = $l | .env = $env | .status = "running" | .timer.fails = 0 | .timer.alerted = false' <<<"$S")"
   save
   copy_page
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: ($S.timer.task // null), every: $S.timer.every}'

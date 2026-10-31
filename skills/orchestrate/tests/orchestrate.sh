@@ -881,6 +881,16 @@ t_fs_watch_third_fail_wakes() {
   eq state '{"fails":4,"alerted":true}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
 }
 
+t_fs_resume_clears_alert() {
+  # Given: a stopped run of #42 after three failed checks that woke the thread
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_set_state '.timer.fails = 3 | .timer.alerted = true'; fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --thread f1 --env e1
+  # Then
+  eq state '{"fails":0,"alerted":false}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
 t_fs_watch_good_clears() {
   # Given: a run of #42, a manual task, after two failed checks that woke the thread
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
@@ -1800,6 +1810,7 @@ cases=(
   "stop keeps the state file|t_fs_stop_keeps_state"
   "a live run stops a second start|t_fs_live_run_stops_start"
   "resume takes the newest run that is not done|t_fs_resume_newest"
+  "resume clears the failure alert|t_fs_resume_clears_alert"
   "a set with no open issue stops|t_fs_no_open_issue_stops"
   "outside T3 Code stops|t_fs_outside_t3_stops"
   "an unlabeled issue is listed to propose|t_fs_unlabeled_listed"
