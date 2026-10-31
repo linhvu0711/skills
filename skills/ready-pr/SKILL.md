@@ -82,8 +82,9 @@ same return shapes.
      whose run (the number after `/runs/` in its URL) also has a red
      check that is not cancelled gets no helper: that failure stopped
      it. Else:
-     - A new group: start one CI helper, a `general-purpose` agent in
-       the background, with the brief below.
+     - A new group: start one CI helper, the skill agent `ci-helper` in
+       `agents/`, in the background, with the brief below. Not found:
+       `../../shared/facts.md` § Skill agents.
      - A group whose helper still runs: send it the line, by
        SendMessage.
      - A group whose helper is back: start a new helper for the late
