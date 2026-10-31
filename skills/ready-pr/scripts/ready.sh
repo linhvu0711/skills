@@ -99,10 +99,11 @@ pr_facts() {
   gh_out api "repos/$repo/branches/$base" -q '.protection.required_status_checks.contexts // []' || return 1
   prot="$out"
   # A private repo on a free plan can have no rulesets: GitHub answers 403
-  # "Upgrade to GitHub Pro" there, not [].
+  # "Upgrade to GitHub <plan> or make this repository public to enable this
+  # feature." there, not []. The plan name differs for a user and an org.
   if gh_out api "repos/$repo/rules/branches/$base" -q '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]'; then
     rules="$out"
-  elif [[ "$err" == *"Upgrade to GitHub Pro"* ]]; then
+  elif [[ "$err" == *"make this repository public to enable this feature"* ]]; then
     rules='[]'
   else
     return 1

@@ -188,6 +188,15 @@ t_ready_rules_need_pro() {
   eq "line 1" "READY $url" "$(line 1)"
 }
 
+t_ready_rules_need_team() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  required_json '[]' '[]'
+  printf '%s\n' 'gh: Upgrade to GitHub Team or make this repository public to enable this feature. (HTTP 403)' > "$FAKE_GH/rules.fail"
+  ready
+  eq exit 0 "$code"
+  eq "line 1" "READY $url" "$(line 1)"
+}
+
 t_ready_rules_fail() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
   required_json '[]' '[]'
@@ -477,6 +486,7 @@ cases=(
   "ready-pr: required checks all posted reads READY (waiting for approval)|t_ready_required_checks_posted"
   "ready-pr: a base with a slash is encoded in the required checks calls|t_ready_slash_base"
   "ready-pr: no rulesets on a free private repo reads READY|t_ready_rules_need_pro"
+  "ready-pr: no rulesets on a free organization's private repo reads READY|t_ready_rules_need_team"
   "ready-pr: a failed rules call reads BLOCKED|t_ready_rules_fail"
   "ready-pr: a draft reads BLOCKED|t_ready_draft"
   "ready-pr: zero checks reads WAITING|t_ready_zero_checks"
