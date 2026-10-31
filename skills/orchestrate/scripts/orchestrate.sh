@@ -68,7 +68,25 @@ newest_run() {
   local d
   d="$(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
   [ -n "$d" ] || die "no run in $slug; say /orchestrate <set>"
-  run="$d"; S="$(cat "$run/state.json")"
+  run="$d"; lock_run; S="$(cat "$run/state.json")"
+}
+
+# lock_run: the run's lock, held until this script exits, so the watcher
+# and the agent's commands never write state.json at once. mkdir is the
+# atomic step; the pid inside lets a later command take over the lock of a
+# process that died holding it. A holder that has not written its pid yet
+# counts as alive.
+lock_run() {
+  local i pid
+  for i in $(seq 600); do
+    if mkdir "$run/.lock" 2>/dev/null; then
+      echo $$ > "$run/.lock/pid"; locked="$run/.lock"; return
+    fi
+    pid="$(cat "$run/.lock/pid" 2>/dev/null || true)"
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$run/.lock"; continue; fi
+    sleep 0.2
+  done
+  die "the run of $slug is busy: another orchestrate.sh holds its lock"
 }
 
 # save: the whole state, under a temp name, then renamed into place, so a
@@ -106,7 +124,7 @@ read_issues() {
   fi
   jq -c --args '.data.repository as $r | [$ARGS.positional[] | {key: ., value: $r["i" + .]}] | from_entries' "$@" <<<"$out"
 }
-errf="$(mktemp)"; trap 'rm -f "$errf"' EXIT
+errf="$(mktemp)"; locked=""; trap 'rm -f "$errf"; [ -z "$locked" ] || rm -rf "$locked"' EXIT
 
 # size_label <issue json>: the issue's size, from its first size label.
 size_label() {
@@ -674,6 +692,7 @@ cmd_resume() {
     [ "$(jq -r .status "$d/state.json")" = done ] || { run="$d"; break; }
   done < <(find "$runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
   [ -n "$run" ] || die "no run to resume in $slug"
+  lock_run
   S="$(cat "$run/state.json")"
   S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" --arg env "$4" \
     '.link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"

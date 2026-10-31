@@ -765,6 +765,32 @@ t_fs_watch_paused() {
   eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
 }
 
+t_fs_lock_live_stops() {
+  # Given: a run of #42 whose lock a live process holds (this shell; the
+  # fake sleep returns at once)
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  mkdir "$(fs_run)/.lock"; echo $$ > "$(fs_run)/.lock/pid"
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: the run of acme/app is busy: another orchestrate.sh holds its lock" "$err"
+  eq set '[42]' "$(fs_state .set)"
+}
+
+t_fs_lock_dead_taken() {
+  # Given: a run of #42 whose lock a process that has ended holds
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  local dead; /bin/sleep 0 & dead=$!; wait "$dead"
+  mkdir "$(fs_run)/.lock"; echo "$dead" > "$(fs_run)/.lock/pid"
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 0 "$code"
+  eq set '[42,43]' "$(fs_state .set)"
+  eq lock no "$([ -e "$(fs_run)/.lock" ] && echo yes || echo no)"
+}
+
 t_fs_stop_keeps_state() {
   # Given: a run of #42
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1494,6 +1520,8 @@ cases=(
   "a watcher check claims nothing and records the time|t_fs_watch_claims_nothing"
   "a watcher check writes the board|t_fs_watch_board"
   "a watcher check of a paused run does nothing|t_fs_watch_paused"
+  "a command waits for a live lock, then stops|t_fs_lock_live_stops"
+  "a dead holder's lock is taken over|t_fs_lock_dead_taken"
   "stop keeps the state file|t_fs_stop_keeps_state"
   "a live run stops a second start|t_fs_live_run_stops_start"
   "resume takes the newest run that is not done|t_fs_resume_newest"
