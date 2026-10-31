@@ -1,0 +1,3 @@
+# Skills ask for helper jobs in plain words
+
+A skill asks a helper agent for a job, reader or runner, by pasting that job's rules from `shared/facts.md` into the brief. It never relies on a code word such as `SEARCH=on`, or on rules that live in one machine's agent file. The repo ships no `Explore` or `Runner` file. On the owner's machine, `~/.claude/delegation` writes those files and can switch each agent to another backend. If the repo shipped them too, two tools would write the same file and the switch would stop working. Any read-only agent can be the reader, and any agent with a shell can be the runner. `general-purpose` is the fallback for both.

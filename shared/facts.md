@@ -23,18 +23,47 @@ Every try is safe: read, search, run tests, or run a probe in a sandbox or a tem
 
 ## Brain and hands
 
-You are the brain. Explore agents retrieve, and they can synthesize over what they read when the brief asks for it (a state brief, a consolidated answer with citations); the decisions stay yours. Give each agent its full brief inline and ask for exact things: the seam, the lines that change, the nearest test, the command, the doc passage. Fan out by concern, all in one message. Agents come back with paths and line numbers, or with the source URL and the passage. Trust what comes back and build one picture; never re-verify it file by file. Two agents disagree on a fact: send one back for that single point.
+You are the brain. Readers retrieve, and they can synthesize over what they read when the brief asks for it (a state brief, a consolidated answer with citations); the decisions stay yours. Give each agent its full brief inline and ask for exact things: the seam, the lines that change, the nearest test, the command, the doc passage. Fan out by concern, all in one message. Agents come back with paths and line numbers, or with the source URL and the passage. Trust what comes back and build one picture; never re-verify it file by file. Two agents disagree on a fact: send one back for that single point.
 
 Work whose output is short (one `git log`, one `ls`, one `rg` count) is yours.
 
 One agent, one small job: a handful of files (about ten or fewer), one grep group, or one lookup. A brief that bundles several jobs, reads dozens of files, or asks for verbatim copies of many files is too big. Split it into several small agents in one message; they run side by side and each answer stays short.
 
+### Reader and runner
+
+Two helper jobs. Each brief pastes the lines of its job, word for word, above its own text, so any agent that fits can take the job. A brief that needs the web says so in plain words, as in `Use the web: the csv-stringify docs.`
+
+The **reader** fetches facts. Start `Explore`; when it is not there, `general-purpose`. Its lines:
+
+```
+You are a reader. You change nothing: no file edits, no installs, no git or gh writes. Cite the source of each fact: a path:line, a URL, or the command you ran. Use the web only when this brief asks for it. Your last message is the whole answer.
+```
+
+The **runner** runs a command and judges it. Start `Runner`; when it is not there, `general-purpose`. Its lines:
+
+```
+You are a runner. Run what this brief says, and judge the result only by its pass rule. Write and install only inside the temp folder this brief names, and change nothing else. Clean up what you started: processes, a git bisect, temp files. Answer in this shape and nothing else:
+VERDICT: pass | fail | blocked
+EVIDENCE: the lines that prove it, each with its source
+REPRO: the exact command, ready to paste
+CLEANUP: what you undid, and what you could not undo
+A field the brief asks for goes after VERDICT.
+```
+
+### Skill agents
+
+A skill that starts a helper for its own job starts its skill agent by name: the file `agents/<agent>.md` in the skill's folder, which sets the model and effort. The Agent call sets neither. When Claude Code says the agent is not found, start `general-purpose` with the agent file's body pasted above the same brief, and print this line:
+
+```
+<agent> not found, ran on general-purpose. Run scripts/link.sh to fix.
+```
+
 In Codex there are no sub-agents: use the read tools yourself, in the same order, and keep the same notes.
 
 ## Two kinds of fact
 
-- **Repo facts** live in the repo's checkout: the working directory, or the folder the skill names (plan-up reads a copy of the base). Explore agents fetch them.
-- **Outside facts** live in library docs, specs, and upstream source. Explore agents fetch these too, with `SEARCH=on` in the brief. When a decision will rest on one, `../skills/grill/references/research.md` says how to write it down.
+- **Repo facts** live in the repo's checkout: the working directory, or the folder the skill names (plan-up reads a copy of the base). Readers fetch them.
+- **Outside facts** live in library docs, specs, and upstream source. Readers fetch these too, when the brief asks for the web. When a decision will rest on one, `../skills/grill/references/research.md` says how to write it down.
 
 ## A fact that arrives late
 
