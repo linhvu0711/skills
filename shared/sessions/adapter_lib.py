@@ -6,7 +6,7 @@ extractor, and gets the same three subcommands as every other adapter:
 
     adapter.py probe   --root R... | --all-projects  [--since D] [--until D]
     adapter.py find    --root R... | --all-projects  [--since D] [--until D] [--query Q] [--id PREFIX]...
-    adapter.py extract <path> [--max-result-chars N]
+    adapter.py extract <id or path> [--summary] [--after-compact] [--max-result-chars N]
 
 ``probe`` prints {"harness", "sessions"}. ``find`` prints a JSON list of rows
 {"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
@@ -15,9 +15,11 @@ extractor, and gets the same three subcommands as every other adapter:
 and count a session by its last activity. "score" is the finder's match score
 for --query (0 with none), "current" is true for the session the command runs
 in, "prompts" counts its prompts, "age" reads as "3h ago", and "active" is its
-last activity in epoch seconds, for sorting. The finders keep their
-own flags and keys for the skills that call them direct; this hides those
-differences.
+last activity in epoch seconds, for sorting. ``extract --summary`` renders
+only the prompts and the replies; ``--after-compact`` starts at the last
+compaction summary in a harness that has one, and a harness with none renders
+the whole session. The finders keep their own flags and keys for the skills
+that call them direct; this hides those differences.
 """
 
 from __future__ import annotations
@@ -34,14 +36,14 @@ from typing import Callable
 class Harness:
     """One harness: its name, its finder and extractor scripts, the finder
     flags for (roots, or None for every project; days, or None for all time),
-    the finder row's title, and the environment variable that holds the id of
-    the session a command runs in."""
+    the finder row's title, the environment variable that holds the id of the
+    session a command runs in, and the extractor flags it takes."""
 
     def __init__(self, name: str, finder: str, extractor: str,
                  flags: Callable[[list | None, int | None], list], title: Callable[[dict], str],
-                 current: str):
+                 current: str, extract_flags: tuple[str, ...]):
         self.name, self.finder, self.extractor, self.flags, self.title = name, finder, extractor, flags, title
-        self.current = current
+        self.current, self.extract_flags = current, extract_flags
 
 
 def _day(value: str) -> dt.date:
@@ -65,7 +67,10 @@ def _parser() -> argparse.ArgumentParser:
             p.add_argument("--query", default="", help="keywords the finder scores")
             p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
     p = sub.add_parser("extract")
-    p.add_argument("path")
+    p.add_argument("path", help="a session id or the path of its file")
+    p.add_argument("--summary", action="store_true", help="only the prompts and the replies")
+    p.add_argument("--after-compact", action="store_true",
+                   help="start at the last compaction summary, where the harness has one")
     p.add_argument("--max-result-chars", type=int, default=300)
     return ap
 
@@ -120,7 +125,9 @@ def _find(h: Harness, args) -> list[dict]:
 def main(h: Harness) -> int:
     args = _parser().parse_args()
     if args.cmd == "extract":
-        return subprocess.run([sys.executable, h.extractor, args.path,
+        # A flag this harness's extractor lacks is dropped, so one call fits every harness.
+        asked = [f for f, on in (("--summary", args.summary), ("--after-compact", args.after_compact)) if on]
+        return subprocess.run([sys.executable, h.extractor, args.path, *(f for f in asked if f in h.extract_flags),
                                "--max-result-chars", str(args.max_result_chars)]).returncode
     rows = _find(h, args)
     if args.cmd == "probe":

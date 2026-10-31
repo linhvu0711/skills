@@ -28,4 +28,5 @@ if __name__ == "__main__":
         flags=flags,
         title=lambda s: s.get("title") or s.get("first_prompt") or "",
         current="CLAUDE_CODE_SESSION_ID",
+        extract_flags=("--summary", "--after-compact"),
     )))

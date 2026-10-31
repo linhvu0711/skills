@@ -29,4 +29,5 @@ if __name__ == "__main__":
         flags=flags,
         title=lambda s: s.get("first_prompt") or "",
         current="CODEX_THREAD_ID",
+        extract_flags=("--summary",),
     )))

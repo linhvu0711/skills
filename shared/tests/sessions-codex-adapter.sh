@@ -60,9 +60,20 @@ t_coa_rows_carry_query_fields() {
   eq row "c1 25 True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"], r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
 }
 
+t_coa_extract_summary() {
+  # Given: one rollout of /p/app
+  coa_rollout c1 "fix the export"
+  # When
+  run python3 "$A" extract c1 --summary --after-compact
+  # Then
+  eq exit 0 "$code"
+  eq mode "**Render mode:** summary" "$(printf '%s\n' "$out" | grep -F '**Render mode:**')"
+}
+
 cases=(
   "adapter finds a session in the window|t_coa_find_in_window"
   "adapter keeps unreadable rows to the ids asked|t_coa_unreadable_keeps_filters"
   "adapter finds a session only in the archive|t_coa_find_archived"
   "adapter rows carry the score, current flag, and prompt count|t_coa_rows_carry_query_fields"
+  "adapter extract renders the summary and drops --after-compact|t_coa_extract_summary"
 )
