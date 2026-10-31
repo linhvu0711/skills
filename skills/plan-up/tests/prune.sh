@@ -1,4 +1,4 @@
-# prune.sh: the cases for this skill's prune.sh. The repo's test.sh
+# prune.sh: the cases for this skill's prune.py. The repo's test.sh
 # sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -31,7 +31,7 @@ closed() {
   printf '[%s]\n' "$list" > "$FAKE_GH/issue-list.json"
 }
 
-prune() { run bash "$here/../scripts/prune.sh" "$@"; }
+prune() { run python3 "$here/../scripts/prune.py" "$@"; }
 
 t_prune_old_chat_plan() {
   fake_gh; export PLAN_DIR="$T/plan"; mkdir -p "$PLAN_DIR"

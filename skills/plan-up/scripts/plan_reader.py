@@ -251,6 +251,8 @@ def read(path):
         "chat": not run and bool(h1) and not h1.group(1) and h1.group(2)[:1] not in ("", "#"),
         "facts": key_values(top.get("Facts", []), FACTS),
         "stack": stack_rows(top.get("Stack", [])),
+        "stack_issues": [int(m.group(1)) for r in stack_rows(top.get("Stack", []))
+                         if len(r) > 1 and r[0].isdecimal() and (m := re.match(r"#(\d+)", r[1]))],
         "points": key_values(top.get("Stack", []), ["Points"]).get("points", ""),
         "reviews": got,
         "maps": maps(named),

@@ -23,7 +23,7 @@ slug.
 
 The folder holds `plan-<slug>.md`, `plan-<slug>.html`, and `/ship`'s
 `prompt-<slug>.md`. The `.md` keeps
-its `Repo: owner/repo` line in Facts: `../skills/plan-up/scripts/prune.sh` reads it to
+its `Repo: owner/repo` line in Facts: `../skills/plan-up/scripts/prune.py` reads it to
 know when the plan's issues are closed and its files can go. A chat
 plan's files go 30 days after its `.md` last changed.
 
