@@ -23,9 +23,10 @@
 # `/ship --merge #42`, which every launcher sends as it is. The message names
 # the target by number, or by URL when gh in the checkout sees another repo.
 # Under --command ready-pr, args is the one open PR that closes the issue.
-# Exit 1: something stopped us; the reason is the last line on
-# stderr. It launches nothing, so the caller's launch starts only after every
-# check here passed.
+# Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
+# PR, no checkout. Exit 2: gh could not read GitHub. Either way the reason is
+# the last line on stderr, and nothing launched, so the caller's launch starts
+# only after every check here passed.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,6 +34,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/labels.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+gh_die() { printf 'stop: %s\n' "$*" >&2; exit 2; }
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 # ---------- args ----------
@@ -87,7 +89,7 @@ prep_args="${args[*]}"
 
 # ---------- issue ----------
 issue_json="$(gh issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state)" \
-  || die "gh could not read $issue_url"
+  || gh_die "gh could not read $issue_url"
 title="$(jq -r .title <<<"$issue_json")"
 sub_count="$(jq '.subIssues.nodes | length' <<<"$issue_json")"
 
@@ -140,7 +142,7 @@ esac
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"
-  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || die "gh could not read #$n in $slug"; fi
+  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || gh_die "gh could not read #$n in $slug"; fi
   jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null && continue
   add_ticket "$json"; counted=$((counted+1))
 done
@@ -182,7 +184,7 @@ if [ "$command" = ready-pr ]; then
   q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
   prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
     -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
-    || die "gh could not read the PRs of #$number"
+    || gh_die "gh could not read the PRs of #$number"
   pr_count="$(grep -c . <<<"$prs" || true)"
   [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
   [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
@@ -191,9 +193,9 @@ fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
-  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || die "gh could not read $pr_url"
+  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || gh_die "gh could not read $pr_url"
 else
-  base="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name)" || die "gh could not read repo $slug"
+  base="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name)" || gh_die "gh could not read repo $slug"
 fi
 
 # ---------- repo path ----------

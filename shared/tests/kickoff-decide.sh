@@ -120,6 +120,25 @@ t_kd_bad_size() {
   eq stdout "" "$out"
 }
 
+t_kd_gh_fails_exit_2() {
+  # Given: each gh call of decide fails in turn, PR #80 on feat/79-teams
+  local route got="" target
+  for route in "issue-view|https://github.com/acme/app/issues/42" "issue-view.2|https://github.com/acme/app/issues/42 #43" \
+      "graphql|--command ready-pr https://github.com/acme/app/issues/42" \
+      "pr-view|https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80" \
+      "repo-view|https://github.com/acme/app/issues/42"; do
+    kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+    printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+    printf 'HTTP 502\n' > "$FAKE_GH/${route%%|*}.fail"
+    # When
+    read -ra target <<<"${route#*|}"
+    kd_run "${target[@]}"
+    got="$got$code|$(tail -1 <<<"$err");"
+  done
+  # Then
+  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42;2|stop: gh could not read #43 in acme/app;2|stop: gh could not read the PRs of #42;2|stop: gh could not read https://github.com/acme/app/pull/80;2|stop: gh could not read repo acme/app;" "$got"
+}
+
 t_kd_stops_no_checkout() {
   # Given: #42 size/S, no checkout under $T/dev
   kd_setup '[{"name":"size/S"}]'; mkdir -p "$T/dev"
@@ -325,6 +344,7 @@ cases=(
   "a guess for a manual ticket is ignored|t_kd_manual_guess"
   "a bad size stops|t_kd_bad_size"
   "decide stops before any launch|t_kd_stops_no_checkout"
+  "every gh failure exits 2|t_kd_gh_fails_exit_2"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
   "a bad command names the five values|t_kd_bad_command"

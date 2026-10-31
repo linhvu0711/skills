@@ -523,6 +523,18 @@ t_fs_gh_fail_starts_nothing() {
   eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
 }
 
+t_fs_decide_gh_fail_starts_nothing() {
+  # Given: a run of #42, size/S; the check's own read works, decide's issue view fails
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/issue-view.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: gh could not read https://github.com/acme/app/issues/42" "$err"
+  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
+}
+
 t_fs_t3_fail_starts_nothing() {
   # Given: a run of #42, size/S; T3 does not answer
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1402,6 +1414,7 @@ cases=(
   "a started issue keeps its ship mode|t_fs_ship_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
   "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
+  "a gh failure in decide fails the check|t_fs_decide_gh_fail_starts_nothing"
   "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
   "the third failure in a row asks the user to act|t_fs_third_failure_asks"
   "the check writes nothing to GitHub|t_fs_check_writes_nothing"

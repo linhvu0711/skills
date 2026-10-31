@@ -171,16 +171,16 @@ answer_stage() {
   esac
 }
 
-# decide_for <n> <skill> <stage>: decide.sh's line for #n's thread, with the
+# decide_for <n> <skill>: decide.sh's line for #n's thread, with the
 # ship mode the user set for a /ship thread and
 # run's model and effort picks, so a proposal and its launch read the same
-# row. Only an unlabeled issue sends its proposal's size: once a size label
-# is on the issue, the label picks the row. Its stop line is left in errf.
+# row. The proposal's size goes every time: decide.sh ignores it for a ticket
+# with a size label, so the label picks the row. Its stop line is left in errf.
 decide_for() {
   local flags=() model effort size="" mode
   model="$(jq -r --arg n "$1" '.use[$n].model // .use.all.model // empty' <<<"$S")"
   effort="$(jq -r --arg n "$1" '.use[$n].effort // .use.all.effort // empty' <<<"$S")"
-  [ "$3" != unlabeled ] || size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
+  size="$(jq -r --arg n "$1" '(.proposals // {})[$n].size // empty' <<<"$S")"
   [ -z "$model" ] || flags+=(--model "$model")
   [ -z "$effort" ] || flags+=(--effort "$effort")
   [ -z "$size" ] || flags+=(--size "$1=$size")
@@ -353,7 +353,7 @@ cmd_check() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
+  local n j st sk free blocked rec prop line wait rc starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
   local conf sends="[]" sent="[]" owners
   # owners: each PR's owner, the first issue in set order that it closes. A
   # shared PR's conflict goes only to its owner's thread, so no two threads
@@ -381,11 +381,12 @@ cmd_check() {
     [ "$gone" = false ] || wait="removed from the set"
     if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
-      # A gh failure in decide.sh fails the check; any other stop is this
-      # issue's alone, and it waits.
-      if ! line="$(decide_for "$n" "$sk" "$st")"; then
-        wait="$(tail -1 "$errf" | sed 's/^stop: //')"
-        case "$wait" in "gh could not"*) fail_check "$wait" ;; esac
+      # decide.sh exits 2 when gh failed, and that fails the check; any
+      # other stop is this issue's alone, and it waits.
+      rc=0; line="$(decide_for "$n" "$sk")" || rc=$?
+      if [ "$rc" -ne 0 ]; then
+        wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
+        [ "$rc" -ne 2 ] || fail_check "$wait"
       fi
     fi
     if [ -n "$line" ]; then
@@ -510,7 +511,7 @@ cmd_proposed() {
   save
   sk="$(skill "$(answer_stage "$route")")"
   line="null"
-  if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk" unlabeled)"; then
+  if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk")"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
   fi
   jq -cn --argjson n "$n" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \
