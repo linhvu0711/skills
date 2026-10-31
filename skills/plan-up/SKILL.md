@@ -43,7 +43,13 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
   From there it is a run.
 - `/plan-up <issue-url> on <pr-url>`: one ticket as a new layer on top of an
   open stack. Base is that PR's head branch.
-- `/plan-up`, no URL, words after it or none: a **chat plan**. The work
+- A number, `42` or `#42`, in place of any URL above: the issue or PR
+  of that number in the repo `gh` sees from the checkout you start in,
+  as in `/plan-up #70 #71 #73` or `/plan-up #42 on #80`. Before step 1,
+  turn each into its URL, `gh issue view <n> --json url -q .url` or
+  `gh pr view <n> --json url -q .url`, and go on with the URLs. gh
+  fails: say its error line and stop.
+- `/plan-up`, no URL and no number, words after it or none: a **chat plan**. The work
   this chat agreed on, with no issue: one ticket, one PR. Base is the
   default branch. The words, when given, say which part of the chat to
   plan. Step 2 § Chat plan takes the place of the issue.
