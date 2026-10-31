@@ -302,6 +302,16 @@ t_kd_heading_forms() {
   eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
 }
 
+t_kd_label_lower_case() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --label Auth https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq "label heading" "auth Auth" "$(jq -r '"\(.label) \(.heading)"' <<<"$out")"
+}
+
 t_kd_on_one_issue() {
   # Given: #42 size/S, PR #80 on feat/79-teams, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -350,6 +360,7 @@ cases=(
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
   "on takes one issue|t_kd_on_one_issue"
+  "a named label is made lower case|t_kd_label_lower_case"
   "each size takes its row|t_kd_size_rows"
   "a size label wins over a guess|t_kd_label_beats_guess"
   "a guessed size counts|t_kd_guessed_size"

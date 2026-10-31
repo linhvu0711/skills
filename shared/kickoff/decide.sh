@@ -248,7 +248,7 @@ if [ -z "$label" ]; then
   fi
   if [ "$form" = on ]; then label="${label}-on-${pr_number}"; fi
 fi
-label="$(printf '%s' "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
+label="$(lower "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
 [ -n "$label" ] || label="prep-$number"
 
 jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg args "$prep_args" \
