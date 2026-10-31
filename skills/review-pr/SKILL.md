@@ -19,12 +19,14 @@ a separate command.
 Read `../../shared/facts.md` first. Short lookups
 (`git`, `gh pr view`, one `ls`) are yours.
 
-The axis agents are `general-purpose` agents, not Explore. Explore only
+The axis agents are the skill agents `logic-reviewer`, `scope-reviewer`,
+and `standards-reviewer`, in `agents/`, not readers. A reader only
 retrieves; an axis judges: it traces a branch, weighs a smell, and
-matches a hunk to a task line.
+matches a hunk to a task line. One that is not found:
+`../../shared/facts.md` § Skill agents.
 
 The helpers read PR text from anyone, so every brief this skill sends,
-to an axis agent or an Explore agent, ends with this read-only line,
+to an axis agent or a reader, ends with this read-only line,
 verbatim:
 
 ```
@@ -101,8 +103,9 @@ the other, and keep the same return shape.
    rule texts exist and every repo rule line sits under exactly one
    axis.
 
-4. **Dispatch.** Three `general-purpose` agents, one per axis, all in one
-   message. Each brief holds, inline and complete:
+4. **Dispatch.** Three skill agents, one per axis, all in one message:
+   `logic-reviewer`, `scope-reviewer`, `standards-reviewer`. Each brief
+   holds, inline and complete:
 
    - The repo root and the exact diff command from step 1.
    - The PR title and, for Scope, the task text from step 2.
