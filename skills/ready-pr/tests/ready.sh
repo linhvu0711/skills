@@ -179,6 +179,24 @@ t_ready_slash_base() {
     "$(cat "$FAKE_GH/branch.args" "$FAKE_GH/rules.args" | awk '{print $1, $2}' | paste -sd' ' -)"
 }
 
+t_ready_rules_need_pro() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  required_json '[]' '[]'
+  printf '%s\n' '{"message":"Upgrade to GitHub Pro or make this repository public to enable this feature.","status":"403"}gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)' > "$FAKE_GH/rules.fail"
+  ready
+  eq exit 0 "$code"
+  eq "line 1" "READY $url" "$(line 1)"
+}
+
+t_ready_rules_fail() {
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  required_json '[]' '[]'
+  printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/rules.fail"
+  ready
+  eq exit 1 "$code"
+  eq "line 2" "gh failed: HTTP 502: Bad Gateway" "$(line 2)"
+}
+
 t_ready_draft() {
   fake_gh; pr_json pr-view.json DRAFT MERGEABLE "" true "[$ci_green]"
   ready
@@ -458,6 +476,8 @@ cases=(
   "ready-pr: a required check not posted while a check runs reads WAITING|t_ready_required_missing_while_pending"
   "ready-pr: required checks all posted reads READY (waiting for approval)|t_ready_required_checks_posted"
   "ready-pr: a base with a slash is encoded in the required checks calls|t_ready_slash_base"
+  "ready-pr: no rulesets on a free private repo reads READY|t_ready_rules_need_pro"
+  "ready-pr: a failed rules call reads BLOCKED|t_ready_rules_fail"
   "ready-pr: a draft reads BLOCKED|t_ready_draft"
   "ready-pr: zero checks reads WAITING|t_ready_zero_checks"
   "ready-pr: an absent rollup is zero checks|t_ready_absent_rollup"

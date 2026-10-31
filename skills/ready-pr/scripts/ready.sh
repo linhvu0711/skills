@@ -98,8 +98,15 @@ pr_facts() {
   base="$(jq -r '.baseRefName | @uri' <<<"$json")"
   gh_out api "repos/$repo/branches/$base" -q '.protection.required_status_checks.contexts // []' || return 1
   prot="$out"
-  gh_out api "repos/$repo/rules/branches/$base" -q '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]' || return 1
-  rules="$out"
+  # A private repo on a free plan can have no rulesets: GitHub answers 403
+  # "Upgrade to GitHub Pro" there, not [].
+  if gh_out api "repos/$repo/rules/branches/$base" -q '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]'; then
+    rules="$out"
+  elif [[ "$err" == *"Upgrade to GitHub Pro"* ]]; then
+    rules='[]'
+  else
+    return 1
+  fi
   facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" '
     def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
     def all: [.statusCheckRollup[]?];
