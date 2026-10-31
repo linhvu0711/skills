@@ -7,12 +7,18 @@ Keep the tree and its **frontier** in your head. The frontier is every decision 
 Format a question like so:
 
 ```
-❓ **<question title>**: <one or two sentences of context, with the `file:line` it rests on>
+❓ **<question title>**
+
+<two to four short sentences in plain words: what the problem is and why it matters, with one small example when the idea is not obvious>
 
 ✅ A. <option> — my pick: <why in a few words>
 B. <option>
 C. <option>
+
+Seen: `<file:line>`, `<file:line>`
 ```
+
+The context and the options are plain words, written for someone who has not read the code. Name each thing by what it does, and the first time an inside name must appear (a role, a rule, a skill, an issue number), say in a few words what it is. Every `file:line`, path, and code name the question rests on goes on the last line, `Seen:`, so the user can check it there. A question that rests on no code fact has no `Seen:` line.
 
 Options sit on their own lines, labelled A, B, C, D, as many as there are real ways. Two is the usual case, four is the ceiling. Your pick is always A, and line A starts with the ✅ emoji and ends with `— my pick:` and the reason, so the pick stands out at a glance. Lines B, C, D carry no emoji.
 
@@ -26,7 +32,7 @@ When a quicker fix is a real option, it goes on a lower line, labelled `(quick f
 
 Each answer reshapes the tree. Settled decisions push the frontier outward and unblock the questions that depended on them. Recompute the frontier and ask the next question. A question waits only when its answer truly depends on one still open. When it could go either way, ask it now as a conditional ("if the last answer is A, then ..."). Every branch gets asked; one more question is cheaper than a branch left silent.
 
-Keep a running list of settled decisions, so the summary at the end is one paste.
+Keep a running list of settled decisions to yourself, so the summary at the end is one paste. A message after an answer opens with the next question and ends with one line, `Got it: <the pick, in a few words>`.
 
 Finding facts is your job; the decisions are the user's. `facts.md` in this folder says how to fetch facts and how a running fetch fits into the frontier.
 
