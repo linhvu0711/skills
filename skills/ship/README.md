@@ -12,7 +12,8 @@ You have a ready issue and want the whole path done without starting each step b
 - `/ship <epic-url>`: every open ticket in the epic.
 - `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
 - Any of the above with `devin` or `cursor` at the end: built in the cloud instead.
-- `/ship` with no URL, and words after it or none. What the chat holds picks the start:
+- A number works in place of each URL: `/ship 42`, `/ship #42 #43`, `/ship #42 on #80`. It is that issue or PR in the repo you are in.
+- `/ship` with no URL and no number, and words after it or none. What the chat holds picks the start:
   - a build this chat started: the words are an answer or a follow-up for it;
   - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
   - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.

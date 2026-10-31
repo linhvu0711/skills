@@ -82,7 +82,10 @@ unchanged. Two words come off first and never reach plan-up:
   with the ship mode set.
 - `/ship <any of the above> devin` or `… cursor`: the same, built in the
   cloud. With an option: `/ship --merge devin <issue-url>`.
-- `/ship`, no URL, words after it or none: what this chat holds picks
+- A number, `42` or `#42`, in place of any URL above: that issue or PR
+  in this repo, as `../plan-up/SKILL.md` § Six forms says. `/ship #42`
+  is the `<issue-url>` form, never § No URL.
+- `/ship`, no URL and no number, words after it or none: what this chat holds picks
   the start (§ No URL): a follow-up for the build this chat started, the
   plan this chat made, or a chat plan of the work this chat agreed on.
 
@@ -321,7 +324,7 @@ unchanged. Two words come off first and never reach plan-up:
 
 ## No URL
 
-`/ship` with no URL, words after it or none. The first case that holds
+`/ship` with no URL and no number, words after it or none. The first case that holds
 picks the start; the option and `devin` or `cursor` are taken off first,
 as in § Forms.
 
