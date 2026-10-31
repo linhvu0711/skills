@@ -442,14 +442,13 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
-    ap.add_argument("--sessions-root", default=str(SESSIONS_ROOT))
     args = ap.parse_args()
 
     idx = load_index()
     if args.show:
         return show_session(args.show, idx)
 
-    root = Path(args.sessions_root).expanduser()
+    root = SESSIONS_ROOT
     if not root.is_dir():
         print(f"No Codex sessions root at {root}")
         return 1
