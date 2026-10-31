@@ -26,12 +26,13 @@ rc_claude() {
   rc_age "$f" "${3:-0}"
 }
 
-# rc_codex <id> <prompt> [<days ago>]: a Codex rollout of P in today's day
-# folder, with one user message, last changed <days ago> days back (default 0).
+# rc_codex <id> <prompt> [<days ago>] [<source>]: a Codex rollout of P in
+# today's day folder, with one user message, last changed <days ago> days back
+# (default 0), started by <source> (default `cli`; `exec` is a script's run).
 rc_codex() {
   local d f
   d="$HOME/.codex/sessions/$(date +%Y/%m/%d)"; f="$d/rollout-2026-10-01T10-00-00-$1.jsonl"; mkdir -p "$d"
-  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z","source":"cli"}}\n' "$1" "$P" > "$f"
+  printf '{"type":"session_meta","payload":{"id":"%s","cwd":"%s","timestamp":"2026-10-01T10:00:00Z","source":"%s"}}\n' "$1" "$P" "${4:-cli}" > "$f"
   printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"%s"}]}}\n' "$2" >> "$f"
   rc_age "$f" "${3:-0}"
 }
@@ -110,6 +111,18 @@ t_rc_no_codex() {
   eq last "Codex is not installed: Claude Code sessions only." "$(printf '%s\n' "$out" | sed -n '2,$p')"
 }
 
+t_rc_leaves_out_exec() {
+  # Given: a Codex session a person started, and one a script started
+  rc_home
+  rc_codex c1 "export button"
+  rc_codex x1 "export the config" 0 exec
+  # When
+  run python3 "$F" export
+  # Then
+  eq exit 0 "$code"
+  eq sessions "codex c1" "$(heads)"
+}
+
 cases=(
   "finds a topic in Claude Code and Codex sessions, newest first|t_rc_both_tools"
   "leaves out this session and earlier recall runs|t_rc_leaves_out_recall"
@@ -117,4 +130,5 @@ cases=(
   "a topic of only common words matches nothing|t_rc_common_words"
   "keeps the 10 newest and says how many it skipped|t_rc_ten_newest"
   "Codex is not installed|t_rc_no_codex"
+  "leaves out Codex runs a script started|t_rc_leaves_out_exec"
 )

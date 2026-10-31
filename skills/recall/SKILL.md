@@ -36,13 +36,15 @@ starts no work.
    on <topic>.`, and stop.
 
 3. **Render** each session's transcript for its brief writer, in summary
-   mode. `<out>` is `<scratchpad>/recall-<id8>.md` in Claude Code and
+   mode, through its tool's adapter. `<tool>` is the line's first word.
+   `<out>` is `<scratchpad>/recall-<id8>.md` in Claude Code and
    `/tmp/recall/<id8>.md` in Codex (`mkdir -p` the folder first).
 
    ```bash
-   python3 ../../shared/sessions/claude/extract_session.py <id> --summary --after-compact > <out>   # a claude line
-   python3 ../../shared/sessions/codex/extract_session.py <id> --summary > <out>                    # a codex line
+   python3 ../../shared/sessions/<tool>/adapter.py extract <id> --summary --after-compact > <out>
    ```
+
+   A tool with no compaction view renders the whole summary.
 
 4. **Brief writers.** One per session, all in one message. Build each
    prompt from `../../shared/session-brief.md` § Dispatch,
