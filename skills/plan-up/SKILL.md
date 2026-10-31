@@ -23,8 +23,9 @@ down.
 
 ## Facts
 
-Read `../../shared/facts.md` first: you are the brain,
-Explore agents retrieve, `SEARCH=on` for outside facts.
+Read `../../shared/facts.md` first: you are the brain, readers
+retrieve, and a brief that needs outside facts asks for the web in plain
+words.
 
 ## Six forms
 
@@ -218,7 +219,8 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
      who asks whom, what data moves between them, which app or package
      holds each, and the files behind each part;
    - each Open line in the issue's Context, as its own ask;
-   - the docs for each library the work leans on, `SEARCH=on`;
+   - the docs for each library the work leans on, in a reader brief
+     that asks for the web;
    - the docs that describe what each Done-when line changes: `README`,
      `docs/**`, guides, `CHANGELOG`, ADRs, API docs, `--help` text,
      `.env.example`, and the rules files above. The plan updates each

@@ -31,7 +31,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `gh`, signed in, on a repo with sub-issues and issue dependencies.
 - `python3`, for [to-issue](../to-issue/)'s `scripts/conventions.py`, which remembers each repo's title style and size labels.
-- Sub-agents for the lookup round (Explore agents in Claude Code, with web search for a task's platform docs; Codex reads the files itself).
+- Readers for the lookup round, per the reader job in `../../shared/facts.md`, with the web for a task's platform docs (Codex reads the files itself).
 - A clipboard tool, optional, for the parent URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md), which every sub-issue follows.
 
