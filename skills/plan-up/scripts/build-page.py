@@ -12,12 +12,10 @@ import re
 import sys
 from pathlib import Path
 
+import plan_reader
+from plan_reader import BLAST, CHANGES, PERF, RECORD, key_values, list_items, records, sections, stack_rows, table_rows
 
-FACTS = "Repo Base Test Typecheck Lint Build Run UI Open Screen Platform Standards".split()
-PERF = ["Metric", "Command", "Before", "Pass rule"]
-PART = re.compile(r"(Change|Approach|Blast radius|Choices|Risks|Works when|In|Out):\s*(.*)$")
-BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
-CHANGES = {"new", "changed", "removed", "same"}
+
 KINDS = {"part", "store", "outside"}
 NEEDS = {
     "single": ["Change", "Approach", "Blast radius", "Choices", "Risks", "Works when", "In", "Out"],
@@ -27,117 +25,10 @@ NEEDS = {
 # The longest text that fits a map box or a flow label in shell.html. plan.md points here.
 NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 PROVED = re.compile(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$")
-FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
-LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
-REFS = r"#\d+(?:(?:,\s*|\s+and\s+)#\d+)*"
-RECORD = {
-    "slice": re.compile(rf"Slice \d+, (?:proves ({REFS})|(deletes dead code)):\s*(.+)"),
-    "walk": re.compile(rf"Walk \d+, proves ({REFS})"),
-    "video": re.compile(r"Video \d+, (Setup of walk (\d+)), shows walks (\d+(?:,\s*\d+)*)"),
-}
-
-
-def blocks(lines):
-    got = [("head", [])]
-    for line in lines:
-        if line.startswith("## "):
-            got.append((line[3:].strip(), []))
-        else:
-            got[-1][1].append(line)
-    return got
-
-
-def sections(lines):
-    top, layers, current = {}, [], None
-    for name, body in blocks(lines):
-        if (m := LAYER.fullmatch(name)):
-            current = {}
-            layers.append((m, current))
-        elif current is None:
-            top[name] = body
-        else:
-            current[name] = body
-    return top, layers
 
 
 def text(lines):
     return " ".join(line.strip() for line in lines if line.strip())
-
-
-def key_values(lines, keys):
-    pattern = re.compile(r"(?:^|\s{2,})(" + "|".join(keys) + r"):\s*")
-    values, last, indent = {}, None, 0
-    for line in lines:
-        pairs = list(pattern.finditer(line))
-        if pairs:
-            indent = len(line) - len(line.lstrip())
-            for i, pair in enumerate(pairs):
-                last = pair.group(1).lower()
-                end = pairs[i + 1].start() if i + 1 < len(pairs) else len(line)
-                values[last] = line[pair.end():end].strip()
-        elif last and line.strip() and len(line) - len(line.lstrip()) > indent:
-            values[last] += " " + line.strip()
-    return values
-
-
-def list_items(lines):
-    got = []
-    for line in lines:
-        if line.startswith("- "):
-            got.append(line[2:].strip())
-        elif got and line[:1].isspace() and line.strip():
-            got[-1] += " " + line.strip()
-    return got
-
-
-def table_rows(lines):
-    for line in lines:
-        if line.strip().startswith("|"):
-            yield [c.strip().replace(r"\|", "|") for c in re.split(r"(?<!\\)\|", line.strip())[1:-1]]
-
-
-def stack_rows(lines):
-    return [r for r in table_rows(lines) if r and r[0] != "Layer" and not re.fullmatch(r":?-+:?", r[0])]
-
-
-def md_reviews(lines):
-    is_run = any(l == "## Stack" for l in lines)
-    reviews, proof_rows = [], [0]
-    block, rv, part, layer, last = None, None, None, 0, None
-    for line in lines:
-        if line.startswith("## "):
-            block = line[3:].strip().lower()
-            if block.startswith("layer "):
-                layer += 1
-                proof_rows.append(0)
-            rv, part, last = None, None, None
-            if block == "review":
-                kind = "single" if not is_run else ("stack" if layer == 0 else "layer")
-                rv = {"kind": kind, "layer": layer, "parts": {}}
-                reviews.append(rv)
-            continue
-        if block == "proof" and re.match(r"\|\s*\d+\s*\|", line):
-            proof_rows[layer] += 1
-        if rv is None or not line.strip():
-            continue
-        if (m := PART.match(line)):
-            part = rv["parts"].setdefault(m.group(1), {"text": [], "items": [], "keys": {}})
-            last = None
-            if m.group(2).strip():
-                part["text"].append(m.group(2).strip())
-        elif part is not None and line[:1].isspace():
-            t = line.strip()
-            if t.startswith("- "):
-                part["items"].append(t[2:].strip())
-                last = (part["items"], len(part["items"]) - 1)
-            elif (k := re.match(r"(" + "|".join(BLAST) + r"):\s*(.*)$", t)):
-                part["keys"][k.group(1)] = k.group(2).strip()
-                last = (part["keys"], k.group(1))
-            elif last:
-                last[0][last[1]] += " " + t
-            else:
-                part["text"].append(t)
-    return reviews, proof_rows
 
 
 def items(part):
@@ -171,43 +62,6 @@ def layer_review(parts):
     return {"choices": choices, "works": [re.sub(r"^#\d+\s+", "", x) for x in items(parts.get("Works when"))]}, forks
 
 
-def md_maps(lines):
-    got, cur, header, in_flows = [], None, None, False
-    for line in lines:
-        if line.startswith("## "):
-            head = line[3:].strip()
-            cur = None
-            if head.lower().startswith("change map"):
-                area = head.split("·", 1)[1].strip() if "·" in head else ""
-                cur = {"area": area, "none": False, "parts": [], "flows": []}
-                got.append(cur)
-                header, in_flows = None, False
-            continue
-        if cur is None or not line.strip():
-            continue
-        t = line.strip()
-        if t.lower().startswith("none:"):
-            cur["none"] = t
-        elif t.startswith("|"):
-            cells = next(table_rows([t]))
-            if cells and cells[0] == "Ref":
-                header = cells
-            elif header and cells and re.match(r"M\d+$", cells[0]):
-                cur["parts"].append(dict(zip(header, cells)))
-        elif t.lower().startswith("flows:"):
-            in_flows = True
-        elif in_flows and t.startswith("-"):
-            m = FLOW.match(t)
-            if not m:
-                cur["flows"].append({"bad": t})
-                continue
-            tags = [x.strip() for x in (m.group(4) or "").split(",") if x.strip()]
-            cur["flows"].append({"from": m.group(1), "to": m.group(2), "label": m.group(3),
-                                 "change": next((x for x in tags if x in CHANGES), "same"),
-                                 "layer": next((x for x in tags if re.match(r"L\d+$", x)), None)})
-    return got
-
-
 def grid(cell):
     m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*", cell or "")
     return tuple(float(x) for x in m.groups()) if m else None
@@ -232,122 +86,73 @@ def page_maps(maps):
     return got
 
 
-def proves(value):
-    return [int(x) for x in re.findall(r"#(\d+)", value)]
+def plain(records):
+    return [{k: v for k, v in r.items() if k != "n"} for r in records]
 
 
-def records(lines, kind):
-    got, current, last = [], None, None
-    for line in lines:
-        t = line.strip()
-        if kind == "slice" and (m := RECORD[kind].fullmatch(t)):
-            current = {"seam": m.group(3), "proves": proves(m.group(1) or ""), "change": [], "docs": [], "tests": []}
-            if m.group(2):
-                current["deletes"] = True
-            got.append(current)
-            last = None
-        elif kind == "walk" and (m := RECORD[kind].fullmatch(t)):
-            current = {"proves": proves(m.group(1)), "steps": []}
-            got.append(current)
-            last = None
-        elif kind == "video" and (m := RECORD[kind].fullmatch(t)):
-            current = {"title": m.group(1), "setup": "walk " + m.group(2),
-                       "walks": [int(x) for x in re.findall(r"\d+", m.group(3))], "steps": []}
-            got.append(current)
-            last = None
-        elif current is None or not t:
-            continue
-        elif kind == "slice" and (m := re.match(r'Test `([^`]+)` "(.*)"$', t)):
-            current["tests"].append({"file": m.group(1), "name": m.group(2)})
-            last = None
-        elif kind == "video" and (m := re.match(r"\d+\.\s*(.*)", t)):
-            current["steps"].append(m.group(1))
-            last = (current["steps"], len(current["steps"]) - 1)
-        elif (m := re.match(r"(Change|Docs|Given|When|Then|Red|Setup|Where|Steps|See|Must not|Before|Shows):\s*(.*)", t)):
-            key, value = m.group(1).lower().replace("must not", "mustNot"), m.group(2)
-            target = current["tests"][-1] if key in ("given", "when", "then", "red") and current.get("tests") else current
-            if key in ("change", "docs", "steps"):
-                target[key].append(value)
-                last = (target[key], len(target[key]) - 1)
-            else:
-                target[key] = value
-                last = (target, key)
-        elif last and line[:1].isspace():
-            last[0][last[1]] += " " + t
-    return got
-
-
-def page_layer(section, issue, title, parts):
-    review, forks = layer_review(parts)
-    rows = [r for r in table_rows(section.get("Proof", [])) if r and r[0].isdigit()]
+def page_layer(layer, issue):
+    review, forks = layer_review(layer["review"])
     proof = []
-    for r in rows:
+    for r in layer["proof"]:
         if len(r) != 6:
             continue
         w = re.search(r"walk (\d+)", r[3])
         proof.append({"line": r[1], "test": None if r[2] == "none" else r[2],
                       "walk": int(w.group(1)) if w else None, "video": None if r[4] == "none" else r[4], "artifact": r[5]})
     seams = []
-    for item in list_items(section.get("Seams", [])):
+    for item in layer["seams"]:
         m = re.match(r"(.*?):\s*(?:`([^`]+)`|(layer \d+, slice \d+))\s*,\s*(.*)", item)
         if m:
             seams.append({"name": m.group(1), "at": m.group(2) or m.group(3), "why": m.group(4)})
     decided = []
-    for item in list_items(section.get("Decided", [])):
+    for item in layer["decided"]:
         what, _, why = re.sub(r"^D\d+ ", "", item).partition(": ")
         decided.append({"what": what, "why": why})
-    gates = key_values(section.get("Gates", []), ["Slice done", "Task done"])
-    layer = {"issue": issue, "title": title, "summary": text(section.get("Summary", [])), "review": review,
-             "forks": forks, "seams": seams, "proof": proof, "slices": records(section.get("Slices", []), "slice"),
-             "walks": records(section.get("UI walks", []), "walk"), "videos": records(section.get("Videos", []), "video"),
-             "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
-             "decided": decided, "out": [re.sub(r"^O\d+ ", "", x) for x in list_items(section.get("Out of scope", []))]}
-    if "Perf" in section:
-        layer["perf"] = key_values(section["Perf"], PERF)
-    return layer
+    gates = layer["gates"]
+    page = {"issue": issue, "title": layer["title"], "summary": " ".join(layer["summary"]), "review": review,
+            "forks": forks, "seams": seams, "proof": proof, "slices": plain(layer["slices"]),
+            "walks": plain(layer["walks"]), "videos": plain(layer["videos"]),
+            "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
+            "decided": decided, "out": [re.sub(r"^O\d+ ", "", x) for x in layer["out"]]}
+    if layer["perf"] is not None:
+        page["perf"] = layer["perf"]
+    return page
 
 
-def page_data(lines):
-    section, layer_sections = sections(lines)
-    head = key_values(section["head"], ["Size", "Date"])
-    m = next((re.match(r"# Plan: (?:#(\d+) )?(.*)", l) for l in lines if l.startswith("# Plan: ")), None)
-    number, title = (int(m.group(1)) if m and m.group(1) else 0, m.group(2) if m else "")
-    facts = key_values(section.get("Facts", []), FACTS)
-    issue = {"size": head.get("size", "")}
+def page_data(plan):
+    number, title, facts = plan["number"] or 0, plan["title"], plan["facts"]
+    issue = {"size": plan["size"]}
     if number:
         issue = {"number": number, "url": f"https://github.com/{facts.get('repo', '')}/issues/{number}", **issue}
-    reviews, _ = md_reviews(lines)
-    parts = reviews[0]["parts"] if reviews else {}
+    parts = plan["reviews"][0]["parts"] if plan["reviews"] else {}
     proved = []
-    for item in list_items(section.get("Proved", [])):
+    for item in plan["proved"]:
         m = PROVED.fullmatch(item)
         if m:
             proved.append(dict(zip(["fact", "ran", "date", "usedBy"], m.groups())))
-    is_run = "Stack" in section
     layers = []
-    if is_run:
-        stack = {int(r[0]): r for r in stack_rows(section["Stack"]) if r[0].isdecimal()}
-        for i, (heading, body) in enumerate(layer_sections, 1):
-            row = stack.get(int(heading.group(1)), [])
-            layer_issue = {"number": int(heading.group(2)),
-                           "url": f"https://github.com/{facts.get('repo', '')}/issues/{heading.group(2)}",
+    if plan["run"]:
+        stack = {int(r[0]): r for r in plan["stack"] if r[0].isdecimal()}
+        for layer in plan["layers"]:
+            row = stack.get(layer["n"], [])
+            layer_issue = {"number": layer["issue"],
+                           "url": f"https://github.com/{facts.get('repo', '')}/issues/{layer['issue']}",
                            "size": row[3] if len(row) > 3 else ""}
-            review = next((r["parts"] for r in reviews if r["kind"] == "layer" and r["layer"] == i), {})
-            layer = page_layer(body, layer_issue, heading.group(3), review)
-            layer["review"]["change"] = text(review.get("Change", {}).get("text", []))
-            layer["targets"] = row[2] if len(row) > 2 else ""
-            layer["points"] = int(row[4]) if len(row) > 4 and row[4].isdecimal() else 0
-            layers.append(layer)
+            page = page_layer(layer, layer_issue)
+            page["review"]["change"] = text(layer["review"].get("Change", {}).get("text", []))
+            page["targets"] = row[2] if len(row) > 2 else ""
+            page["points"] = int(row[4]) if len(row) > 4 and row[4].isdecimal() else 0
+            layers.append(page)
     else:
-        layers.append(page_layer(section, dict(issue), title, parts))
+        layers.append(page_layer(plan["layers"][0], dict(issue)))
     kind = re.match(r"\[([^]]+)\]", title)
     if kind:
         issue["kind"] = kind.group(1)
-    data = {"title": title, "issue": issue, "date": head.get("date", ""), "run": is_run,
-            "review": top_review(parts), "maps": page_maps(md_maps(lines)), "facts": facts, "proved": proved, "layers": layers}
-    if is_run:
-        data["points"] = key_values(section["Stack"], ["Points"]).get("points", "")
-    no_map = next((m["none"] for m in md_maps(lines) if m["none"]), None)
+    data = {"title": title, "issue": issue, "date": plan["date"], "run": plan["run"],
+            "review": top_review(parts), "maps": page_maps(plan["maps"]), "facts": facts, "proved": proved, "layers": layers}
+    if plan["run"]:
+        data["points"] = plan["points"]
+    no_map = next((m["none"] for m in plan["maps"] if m["none"]), None)
     if no_map:
         data["noMap"] = no_map
     return data
@@ -644,9 +449,10 @@ def plan_problems(lines):
         [next((l[len("# Plan: "):] for l in section["head"] if l.startswith("# Plan: ")), "")]
     if is_run:
         yield from stack_problems(section["Stack"], layer_sections)
-    reviews, proof_rows = md_reviews(lines)
+    reviews = plan_reader.reviews(plan_reader.blocks(lines), is_run)
+    proof_rows = [len([r for r in table_rows(b.get("Proof", [])) if r and r[0].isdigit()]) for b in [section] + layers]
     yield from review_problems(reviews, proof_rows, is_run, len(layers))
-    yield from map_problems(md_maps(lines), is_run)
+    yield from map_problems(plan_reader.maps(plan_reader.blocks(lines)), is_run)
     for n, body in enumerate(layers, 1):
         yield from record_problems(body)
         heads = [l.strip() for l in body.get("Slices", []) if RECORD["slice"].fullmatch(l.strip())]
@@ -681,7 +487,7 @@ def plan_problems(lines):
         for number, walk in zip(numbers, records(body.get("UI walks", []), "walk")):
             walks.append({"layer": n, "n": number, "kind": before_kind(walk["before"]) if "before" in walk else None})
     yield from md_before_problems(walks)
-    yield from step_problems(layers, key_values(section.get("Facts", []), FACTS).get("ui") == "terminal")
+    yield from step_problems(layers, key_values(section.get("Facts", []), plan_reader.FACTS).get("ui") == "terminal")
 
 
 def main():
@@ -693,7 +499,7 @@ def main():
         print(f"not a plan-up .md: {path.name}")
         sys.exit(1)
     problems = list(plan_problems(lines))
-    data = page_data(lines)
+    data = page_data(plan_reader.read(path))
     problems.extend(f"{p}: odd number of backticks, one shows raw: {s[:80]}"
                     for p, s in strings(data) if s.count("`") % 2)
     if problems:
