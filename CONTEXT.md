@@ -239,8 +239,12 @@ Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task
 _Avoid_: status, state, phase
 
 **Check**:
-One pass of the orchestrator's script. It reads the state file, GitHub, and T3, and prints what to start. A timer runs it every few minutes. A failed Check starts nothing.
+One pass of the orchestrator's script. It reads the state file, GitHub, and T3, and prints what to start. The Watcher runs it every few minutes; the agent runs it when the Watcher wakes it or the user asks. A failed Check starts nothing.
 _Avoid_: tick, poll, cycle
+
+**Watcher**:
+The background process of a Run that runs a Check every few minutes with no chat turn. It claims nothing, sends `/ready-pr` on a conflict, and wakes the orchestrator thread only when the agent must act: a thread to start, a proposal to make, the Run done, or three failed Checks in a row.
+_Avoid_: daemon, poller, timer
 
 **Board**:
 The local page that shows one Run: each issue of the Set as a card in a column by Stage, and who has the ball. It only reads.

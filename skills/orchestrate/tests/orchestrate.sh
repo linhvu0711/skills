@@ -10,7 +10,9 @@ F="$here/../scripts/orchestrate.sh"
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
 # one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
 # `thread list` prints $T/t3-threads.json, or fails with the text of
-# $T/t3.fail when that file exists. Issues go in with fs_issue.
+# $T/t3.fail when that file exists. Its `thread send` adds its arguments as
+# one line to $T/t3-sends.log, or fails with the text of $T/t3-send.fail
+# when that file exists. Issues go in with fs_issue.
 fs_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
@@ -23,6 +25,7 @@ fs_setup() {
 set -euo pipefail
 case "$1 $2" in
   "thread list") if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi; cat "$FAKE_T3_DIR/t3-threads.json" ;;
+  "thread send") if [ -e "$FAKE_T3_DIR/t3-send.fail" ]; then cat "$FAKE_T3_DIR/t3-send.fail" >&2; exit 1; fi; echo "$*" >> "$FAKE_T3_DIR/t3-sends.log" ;;
   *) printf 'fake t3: no route for %s\n' "$*" >&2; exit 2 ;;
 esac
 EOF
@@ -213,32 +216,33 @@ t_fs_conflict_listed() {
   # Given: #42's PR 43 conflicts at aaa111, and thread t42 is completed
   fs_conflict_run
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
   eq exit 0 "$code"
-  eq line '{"conflicts":[{"number":42,"pr":43,"url":"https://github.com/acme/app/pull/43","head":"aaa111","thread":"t42","link":"[i42](t3-thread://v1/t42)","message":"/ready-pr https://github.com/acme/app/pull/43"}],"changed":[true]}' \
-    "$(jq -c '{conflicts, changed: [.issues[] | .changed]}' <<<"$out")"
+  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
   eq state '[{"number":42,"pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {number, pr, head, thread}]')"
 }
 
 t_fs_conflict_once_per_head() {
-  # Given: the conflict of PR 43 at aaa111 listed by one check
-  fs_conflict_run; fs_go check acme/app
+  # Given: the conflict of PR 43 at aaa111 sent by one watcher check
+  fs_conflict_run; fs_go watch acme/app --once
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '{"conflicts":[],"changed":false}' "$(jq -c '{conflicts, changed}' <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
   eq state 1 "$(fs_state '.conflicts | length')"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
 t_fs_conflict_new_head() {
-  # Given: the conflict at aaa111 listed, then PR 43 conflicts again at bbb222
-  fs_conflict_run; fs_go check acme/app
+  # Given: the conflict at aaa111 sent, then PR 43 conflicts again at bbb222
+  fs_conflict_run; fs_go watch acme/app --once
   fs_conflict 42 43 CONFLICTING bbb222
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '["bbb222"]' "$(jq -c '[.conflicts[] | .head]' <<<"$out")"
+  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq state '["aaa111","bbb222"]' "$(fs_state '[.conflicts[] | .head]')"
 }
 
@@ -248,9 +252,10 @@ t_fs_conflict_busy_thread() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"waiting"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_none() {
@@ -259,19 +264,21 @@ t_fs_conflict_none() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_paused() {
   # Given: PR 43 conflicts and thread t42 is completed, but the run is paused
   fs_conflict_run; fs_go timer acme/app pause
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq exit 3 "$code"
   eq state 0 "$(fs_state '.conflicts // [] | length')"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_shared_pr() {
@@ -281,9 +288,10 @@ t_fs_conflict_shared_pr() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.conflicts[] | {number, pr}]' <<<"$out")"
+  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.sent[] | {number, pr}]' <<<"$out")"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
 t_fs_conflict_shared_owner() {
@@ -293,9 +301,9 @@ t_fs_conflict_shared_owner() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
 }
 
 t_fs_conflict_one_per_thread() {
@@ -305,9 +313,9 @@ t_fs_conflict_one_per_thread() {
   fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42 ship
   echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[43]' "$(jq -c '[.conflicts[] | .pr]' <<<"$out")"
+  eq line '[43]' "$(jq -c '[.sent[] | .pr]' <<<"$out")"
 }
 
 t_fs_conflict_new_stage() {
@@ -315,9 +323,32 @@ t_fs_conflict_new_stage() {
   fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 bug t42 triage
   echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
   # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"sent":[]}' "$(jq -c '{wake, sent}' <<<"$out")"
+}
+
+t_fs_check_no_conflict() {
+  # Given: #42's PR 43 conflicts at aaa111, and thread t42 is completed
+  fs_conflict_run
+  # When
   fs_go check acme/app
   # Then
-  eq line '{"starts":1,"conflicts":[]}' "$(jq -c '{starts: (.starts | length), conflicts}' <<<"$out")"
+  eq line false "$(jq -c 'has("conflicts")' <<<"$out")"
+  eq state null "$(fs_state .conflicts)"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_conflict_send_failed() {
+  # Given: the conflict of PR 43 claimed by a watcher check whose send T3 refused
+  fs_conflict_run
+  printf 'connect ECONNREFUSED\n' > "$T/t3-send.fail"; fs_go watch acme/app --once; rm "$T/t3-send.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
+  eq state '[43]' "$(fs_state '[.conflicts[] | .pr]')"
 }
 
 t_fs_manual_never_starts() {
@@ -640,13 +671,12 @@ t_fs_unmerged_pr_keeps_open() {
 }
 
 t_fs_timer_five_min() {
-  # Given: a run of #42
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # Given: issue #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
   # When
-  fs_go timer acme/app --task s1
+  fs_start 42
   # Then
-  eq exit 0 "$code"
-  eq timer '{"task":"s1","every":5,"fails":0}' "$(fs_state .timer)"
+  eq timer '{"every":5,"fails":0}' "$(fs_state .timer)"
 }
 
 t_fs_interval_min_one() {
@@ -716,6 +746,317 @@ t_fs_start_marks_changed() {
   eq check '{"changed":true,"starts":1,"issues":[true]}' "$(jq -c '{changed, starts: (.starts | length), issues: [.issues[] | .changed]}' <<<"$out")"
 }
 
+# fs_sends: the lines the fake t3 sent, or "none" when it sent nothing.
+fs_sends() { if [ -e "$T/t3-sends.log" ]; then cat "$T/t3-sends.log"; else echo none; fi; }
+
+t_fs_watch_quiet() {
+  # Given: a run of #42, a manual task
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 0 "$code"
+  eq line '{"wake":[],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_claims_nothing() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  echo '[{"threadId":"f1","status":"running"}]' > "$T/t3-threads.json"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '{"threads":[],"seen":null,"fails":0,"timed":true}' \
+    "$(fs_state '{threads, seen, fails: .timer.fails, timed: (.timer.checked_at != null)}')"
+}
+
+t_fs_watch_board() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  echo '[{"threadId":"f1","status":"running"}]' > "$T/t3-threads.json"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq board '[{"number":42,"mark":"blocked","action":"starts at the next check"}]' "$(fs_board '[.issues[] | {number, mark, action}]')"
+}
+
+t_fs_watch_paused() {
+  # Given: a paused run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 3 "$code"
+  eq stdout "" "$out"
+  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+}
+
+# fs_orchestrator <status>: T3 lists the orchestrator thread f1 with that status.
+fs_orchestrator() { jq -cn --arg s "$1" '[{threadId: "f1", status: $s}]' > "$T/t3-threads.json"; }
+
+t_fs_watch_wakes_start() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 finished its turn
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator completed
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":true,"sent":[]}' "$out"
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_watch_running_not_woken() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator running
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_waiting_not_woken() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 waits for the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator waiting
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_wakes_propose() {
+  # Given: a run of #44, unlabeled, with no proposal yet
+  fs_setup; fs_issue 44 OPEN '[]'; fs_start 44
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["propose #44"],"woke":true,"sent":[]}' "$out"
+}
+
+t_fs_watch_wakes_done() {
+  # Given: a run of #42, closed since the start
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_issue 42 CLOSED '["size/S"]'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["done"],"woke":true,"sent":[]}' "$out"
+  eq status '"running"' "$(fs_state .status)"
+}
+
+t_fs_watch_wake_retried() {
+  # Given: a run of #42, size/S; a first watcher check whose wake T3 refused
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'connect ECONNREFUSED\n' > "$T/t3-send.fail"; fs_go watch acme/app --once; rm "$T/t3-send.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":true,"sent":[]}' "$out"
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+}
+
+t_fs_watch_fail_counts() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
+  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_third_fail_wakes() {
+  # Given: a run of #42, size/S; gh is logged out, and two watcher checks failed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  fs_go watch acme/app --once; fs_go watch acme/app --once
+  # When
+  fs_go watch acme/app --once; fs_go watch acme/app --once
+  # Then
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+  eq state '{"fails":4,"alerted":true}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
+t_fs_resume_clears_alert() {
+  # Given: a stopped run of #42 after three failed checks that woke the thread
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_set_state '.timer.fails = 3 | .timer.alerted = true'; fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --thread f1 --env e1
+  # Then
+  eq state '{"fails":0,"alerted":false}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
+t_fs_watch_good_clears() {
+  # Given: a run of #42, a manual task, after two failed checks that woke the thread
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_set_state '.timer.fails = 2 | .timer.alerted = true'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '{"fails":0,"alerted":false}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
+# fs_real_wait: the fake sleep waits 30 seconds for a wait of a minute or
+# more, as the watcher loop's, and returns at once for a shorter one.
+fs_real_wait() {
+  printf '#!/usr/bin/env bash\n[ "${1%%%%.*}" -lt 60 ] || exec /bin/sleep 30\n' > "$T/bin/sleep"
+  chmod +x "$T/bin/sleep"
+}
+
+# fs_gone <pid>: yes once the process has ended, within 3 seconds, else no.
+fs_gone() {
+  local i
+  for i in $(seq 30); do kill -0 "$1" 2>/dev/null || { echo yes; return; }; /bin/sleep 0.1; done
+  echo no
+}
+
+t_fs_watch_starts() {
+  # Given: a run of #42, a manual task; the loop's wait is real
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  # When
+  fs_go watch acme/app
+  # Then
+  local pid; pid="$(jq -r .pid <<<"$out")"
+  eq exit 0 "$code"
+  eq alive yes "$(kill -0 "$pid" 2>/dev/null && echo yes || echo no)"
+  eq state "$pid" "$(fs_state .timer.watcher.pid)"
+  fs_go timer acme/app stop
+}
+
+t_fs_watch_replaces() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local first; first="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go watch acme/app
+  # Then
+  local second; second="$(jq -r .pid <<<"$out")"
+  eq first yes "$(fs_gone "$first")"
+  eq second yes "$(kill -0 "$second" 2>/dev/null && echo yes || echo no)"
+  eq state "$second" "$(fs_state .timer.watcher.pid)"
+  fs_go timer acme/app stop
+}
+
+t_fs_pause_ends_watcher() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local pid; pid="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq gone yes "$(fs_gone "$pid")"
+  eq state null "$(fs_state .timer.watcher)"
+}
+
+t_fs_stop_ends_watcher() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local pid; pid="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go timer acme/app stop
+  # Then
+  eq gone yes "$(fs_gone "$pid")"
+  eq state null "$(fs_state .timer.watcher)"
+}
+
+t_fs_pause_spares_other() {
+  # Given: a run of #42 whose watcher pid is a process that is no watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  local other; /bin/sleep 30 & other=$!
+  fs_set_state ".timer.watcher = {token: \"x\", pid: $other}"
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq alive yes "$(kill -0 "$other" 2>/dev/null && echo yes || echo no)"
+  kill "$other"
+}
+
+t_fs_watch_old_token() {
+  # Given: a run of #42, size/S, whose watcher has the token a
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_set_state '.timer.watcher = {token: "a", pid: null}'
+  # When
+  fs_go watch acme/app --once --token b
+  # Then
+  eq exit 3 "$code"
+  eq stdout "" "$out"
+  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_loop_ends() {
+  # Given: a paused run of #42 whose watcher has the token t
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_go timer acme/app pause
+  fs_set_state '.timer.watcher = {token: "t", pid: null}'
+  # When
+  fs_go watch acme/app --loop "$(fs_run)" t
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_fs_watch_paused_stops() {
+  # Given: a paused run of #42
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go watch acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: the run in acme/app is paused; say resume" "$err"
+}
+
+t_fs_timer_no_task() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --task s1
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "$err"
+}
+
+t_fs_thread_kept() {
+  # Given: a stopped run of #42 from the orchestrator thread f1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  eq before '"f1"' "$(fs_state .thread)"
+  fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --thread f2 --env e1
+  # Then
+  eq after '"f2"' "$(fs_state .thread)"
+}
+
+t_fs_lock_live_stops() {
+  # Given: a run of #42 whose lock a live process holds (this shell; the
+  # fake sleep returns at once)
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  mkdir "$(fs_run)/.lock"; echo $$ > "$(fs_run)/.lock/pid"
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: the run of acme/app is busy: another orchestrate.sh holds its lock" "$err"
+  eq set '[42]' "$(fs_state .set)"
+}
+
+t_fs_lock_dead_taken() {
+  # Given: a run of #42 whose lock a process that has ended holds
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  local dead; /bin/sleep 0 & dead=$!; wait "$dead"
+  mkdir "$(fs_run)/.lock"; echo "$dead" > "$(fs_run)/.lock/pid"
+  # When
+  fs_go change acme/app add 43
+  # Then
+  eq exit 0 "$code"
+  eq set '[42,43]' "$(fs_state .set)"
+  eq lock no "$([ -e "$(fs_run)/.lock" ] && echo yes || echo no)"
+}
+
 t_fs_stop_keeps_state() {
   # Given: a run of #42
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -740,7 +1081,7 @@ t_fs_live_run_stops_start() {
 t_fs_resume_newest() {
   # Given: a stopped run of #42 whose timer was task s1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop
+  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop
   # When
   fs_go resume acme/app --thread f2 --env e1
   # Then
@@ -989,7 +1330,7 @@ t_fs_close_answer() {
 t_fs_answers_survive_resume() {
   # Given: #42 proposed task and answered yes; the run stopped and resumed
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
+  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
   # When
   fs_go check acme/app
   # Then
@@ -1441,9 +1782,35 @@ cases=(
   "a second check with nothing new is quiet|t_fs_second_check_quiet"
   "a thread that changes status marks only its issue|t_fs_status_change_marks_issue"
   "a start marks its issue changed|t_fs_start_marks_changed"
+  "a quiet watcher check sends nothing|t_fs_watch_quiet"
+  "a watcher check claims nothing and records the time|t_fs_watch_claims_nothing"
+  "a watcher check writes the board|t_fs_watch_board"
+  "a watcher check of a paused run does nothing|t_fs_watch_paused"
+  "a thread to start wakes the orchestrator|t_fs_watch_wakes_start"
+  "a running orchestrator is not woken|t_fs_watch_running_not_woken"
+  "a waiting orchestrator is not woken|t_fs_watch_waiting_not_woken"
+  "a proposal to make wakes the orchestrator|t_fs_watch_wakes_propose"
+  "a done run wakes the orchestrator|t_fs_watch_wakes_done"
+  "a failed wake is tried at the next watcher check|t_fs_watch_wake_retried"
+  "a failed watcher check counts it|t_fs_watch_fail_counts"
+  "the third failed watcher check wakes the orchestrator once|t_fs_watch_third_fail_wakes"
+  "a good watcher check clears the failures|t_fs_watch_good_clears"
+  "start and resume keep the orchestrator thread|t_fs_thread_kept"
+  "watch starts one watcher and records it|t_fs_watch_starts"
+  "watch again replaces the old watcher|t_fs_watch_replaces"
+  "pause ends the watcher|t_fs_pause_ends_watcher"
+  "stop ends the watcher|t_fs_stop_ends_watcher"
+  "pause leaves a process that is not a watcher alone|t_fs_pause_spares_other"
+  "a watcher check with an old token does nothing|t_fs_watch_old_token"
+  "the watcher loop ends when the run is not running|t_fs_watch_loop_ends"
+  "watch on a paused run stops|t_fs_watch_paused_stops"
+  "timer takes no task|t_fs_timer_no_task"
+  "a command waits for a live lock, then stops|t_fs_lock_live_stops"
+  "a dead holder's lock is taken over|t_fs_lock_dead_taken"
   "stop keeps the state file|t_fs_stop_keeps_state"
   "a live run stops a second start|t_fs_live_run_stops_start"
   "resume takes the newest run that is not done|t_fs_resume_newest"
+  "resume clears the failure alert|t_fs_resume_clears_alert"
   "a set with no open issue stops|t_fs_no_open_issue_stops"
   "outside T3 Code stops|t_fs_outside_t3_stops"
   "an unlabeled issue is listed to propose|t_fs_unlabeled_listed"
@@ -1505,14 +1872,16 @@ cases=(
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
   "two runs get two different pages|t_fs_two_runs_two_pages"
-  "a conflicting PR of a finished thread is listed|t_fs_conflict_listed"
-  "a conflict is listed once per head|t_fs_conflict_once_per_head"
-  "a new head that conflicts again is listed again|t_fs_conflict_new_head"
+  "a conflicting PR of a finished thread gets /ready-pr|t_fs_conflict_listed"
+  "a conflict is sent once per head|t_fs_conflict_once_per_head"
+  "a new head that conflicts again is sent again|t_fs_conflict_new_head"
   "a thread that is not finished gets no conflict|t_fs_conflict_busy_thread"
-  "a PR with no conflict is not listed|t_fs_conflict_none"
-  "a paused run lists no conflict|t_fs_conflict_paused"
+  "a PR with no conflict is not sent|t_fs_conflict_none"
+  "a paused run sends no conflict|t_fs_conflict_paused"
   "one PR of two issues is sent once|t_fs_conflict_shared_pr"
   "a shared PR goes only to its first issue's thread|t_fs_conflict_shared_owner"
   "a thread gets one conflict per check|t_fs_conflict_one_per_thread"
   "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
+  "a check sends no conflict|t_fs_check_no_conflict"
+  "a failed /ready-pr send is not sent again|t_fs_conflict_send_failed"
 )
