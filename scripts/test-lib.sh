@@ -12,9 +12,10 @@
 unset $(git rev-parse --local-env-vars)
 
 # A case's commit or checkout with the hooks on runs link.sh, which links
-# skills into these folders; keep it off the real ones.
+# skills and skill agents into these folders; keep it off the real ones.
 SKILLS_HOME="$(mktemp -d)/agents"; CLAUDE_SKILLS_HOME="${SKILLS_HOME%/agents}/claude"
-export SKILLS_HOME CLAUDE_SKILLS_HOME
+CLAUDE_AGENTS_HOME="${SKILLS_HOME%/agents}/claude-agents"
+export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME
 
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

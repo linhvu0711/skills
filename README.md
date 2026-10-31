@@ -142,7 +142,7 @@ git config core.hooksPath scripts/hooks
 bash scripts/link.sh
 ```
 
-`scripts/link.sh` links each skill into `~/.agents/skills` and `~/.claude/skills` (Claude Code). After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill is found with no step by hand.
+`scripts/link.sh` links each skill into `~/.agents/skills` and `~/.claude/skills` (Claude Code), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
 
 ## Needs
 
