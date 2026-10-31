@@ -20,7 +20,8 @@ Read `../../shared/facts.md` first. Short lookups
 
 One judge agent per file group answers the three questions. That
 means tracing callers, running a test, and running blame, so a judge is
-a `general-purpose` agent; Explore only retrieves. The verdict and the
+the skill agent `finding-judge`, in `agents/`; a reader only retrieves.
+Not found: `../../shared/facts.md` § Skill agents. The verdict and the
 reply text stay with you: the verdict is a table lookup, the reply is
 your voice.
 
@@ -240,7 +241,7 @@ full run per § From a caller.
    Done when every finding is in one pile or has its return in hand,
    and the judged pile is at most 8 groups.
 
-4. **Judge.** One `general-purpose` agent per group, all in one
+4. **Judge.** One `finding-judge` agent per group, all in one
    message. Each brief holds, inline and complete:
 
    - The repo root, the diff command from step 1, and `origin/<base>`.
