@@ -46,7 +46,8 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 # $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `issue view`
 # issue-view, `issue list` issue-list, `run view` run-view, `repo view` repo-view, `api graphql` graphql, `api user` user,
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
-# `api repos/…/status` status, `api repos/…/check-runs` check-runs, any other
+# `api repos/…/status` status, `api repos/…/check-runs` check-runs,
+# `api repos/…/actions/jobs/…` job, any other
 # `api repos/…` repo, and `pr merge` pr-merge. Each
 # route counts its calls in <route>.calls and logs their args in
 # <route>.args, one line per call (a newline inside an arg becomes a space).
@@ -82,6 +83,7 @@ case "$args" in
   " api repos/"*/branches/*) key=branch ;;
   " api repos/"*/status*) key=status ;;
   " api repos/"*/check-runs*) key=check-runs ;;
+  " api repos/"*/actions/jobs/*) key=job ;;
   " api repos/"*) key=repo ;;
   " pr merge"*) key=pr-merge ;;
   *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;

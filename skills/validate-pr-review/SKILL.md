@@ -128,6 +128,38 @@ row goes under `## Unclear` with its area and the verdict the table
 gave, and the user decides. A risky finding whose verdict is `fix here`
 goes ahead as any other.
 
+## From a caller
+
+A caller that watched the PR, as `/ready-pr` does, can hand over two
+things with the argument. Both are optional; with neither, the steps
+run as written.
+
+- **Judge returns in hand**, from § One finding early, each keyed by its
+  thread node id. Step 4 takes each one as it is, with its id changed to
+  the finding's F id, and sends no judge for that finding.
+- **CI findings**, one per cause of a red check, each a line:
+
+  ```
+  <check> | <url> | <path:line or "no line"> | <cause, one sentence> | <log line>
+  ```
+
+  Step 2 adds each one as a finding of source `ci`, and it comes with a
+  return in hand: True `yes`, Ours `ours`, Worth `blocker`, the cause
+  and the log line as the proof. A red check blocks the merge, so a `ci`
+  finding is never pushed back, put off, or dropped without asking: any
+  verdict but `fix here` puts it under `## Unclear`, as a risky finding
+  goes. It gets no reply: the push runs the check again.
+
+## One finding early
+
+A caller that watches the PR can judge one `inline` finding as soon as
+its thread appears, before the review is whole. Run step 1 once per
+round. Then send step 4's brief for that one finding alone: its id is
+the thread node id, and the judge reads the whole thread itself, by
+`gh api graphql` on that id, since the caller holds only its first 120
+characters. The return goes back to the caller, which holds it for the
+full run per § From a caller.
+
 ## Steps
 
 1. **Preflight.** `git rev-parse --show-toplevel`. No repo: say so, stop.
@@ -177,6 +209,10 @@ goes ahead as any other.
    | `review` | `reviews[].body` with claims in it | review `id`, reviewer login |
    | `top`    | `issues/N/comments`               | comment `id`, reviewer login |
    | `text`   | pasted or a file                  | nothing                    |
+   | `ci`     | a caller's CI finding, per From a caller | check name, url |
+
+   Each `inline` finding also keeps its thread node id, from the map
+   query in Reply routing, so a judge return in hand can find its row.
 
    Skip: threads already resolved, a comment that is a reply inside a
    thread you already hold (`in_reply_to_id` set), a thread whose last
@@ -198,8 +234,11 @@ goes ahead as any other.
      no line goes with the file it is about. Cap at 8 groups: past
      that, pack the smallest groups together until 8 remain.
 
-   Done when every finding is in one pile and the judged pile is at
-   most 8 groups.
+   A finding with a judge return in hand, per From a caller, goes in
+   neither pile: its answer is already there.
+
+   Done when every finding is in one pile or has its return in hand,
+   and the judged pile is at most 8 groups.
 
 4. **Judge.** One `general-purpose` agent per group, all in one
    message. Each brief holds, inline and complete:
@@ -251,10 +290,15 @@ goes ahead as any other.
    names that line. Write the reply line. Then check each finding against
    `Risky findings`: a risky one whose verdict is `push back`,
    `won't fix`, or `fix later` moves under `## Unclear`, as that
-   section says.
+   section says. A `ci` row whose verdict is not `fix here` moves there
+   too, per From a caller.
 
-   Done when every row has a verdict or sits under `## Unclear`, and
-   every row has a reply.
+   Then group the rows. Findings that one change fixes share a group,
+   `G1`, `G2`, …: the same cause, even at two places, as a red check and
+   the thread that names its cause. A finding alone is its own group.
+
+   Done when every row has a verdict or sits under `## Unclear`, every
+   row has a reply, and every row has a group.
 
 6. **Report.** Write the report in the shape under `Report shape` to
    `~/.claude/reviews/<repo>-<pr number or branch>-validation.md`
@@ -269,9 +313,8 @@ Only after the user says go, in this order. Rows under `## Unclear` are
 not part of go: each waits for the user's answer to that row.
 
 1. `fix here` rows: make each change, run the test the judge named,
-   commit with `/commit`, one commit per finding or one for the
-   set when they touch the same hunk. Push only if the user's go said
-   so.
+   commit with `/commit`, one commit per group, and each reply of the
+   group names the same commit. Push only if the user's go said so.
 2. `fix later` rows: `/capture` each one, with the finding's claim and
    `path:line` in the seed. Put the issue URL into that row's reply.
 3. Replies: route each by its source, per `Reply routing`.
@@ -332,9 +375,9 @@ by id at the end, never retried in a different place.
 
 Review by <reviewer(s)>, <n> findings
 
-| id | source | finding | true | ours | worth | verdict |
-|----|--------|---------|------|------|-------|---------|
-| F1 | inline | <path:line> <claim, few words> | yes | ours | should | fix here |
+| id | group | source | finding | true | ours | worth | verdict |
+|----|-------|--------|---------|------|------|-------|---------|
+| F1 | G1 | inline | <path:line> <claim, few words> | yes | ours | should | fix here |
 
 ## Proof
 - F1: <one sentence, the fact that settles it, with path:line or test name>
@@ -342,6 +385,7 @@ Review by <reviewer(s)>, <n> findings
 ## Replies
 - F1 (thread): <one or two sentences to the reviewer. What you will do or why not. Reads as the author, not as a bot.>
 - F4 (PR comment): <same>
+- F5 (ci): none, the push runs the check again
 
 Posting plan: <n> thread replies, one PR comment for <n> findings, <n> threads to resolve after push.
 
@@ -364,8 +408,9 @@ and `won't fix` rows with the checkable reason.
 - **Reply**: the line the author says back to the reviewer. Every
   finding gets one, whatever the verdict.
 - **Source**: where the finding came from (`inline`, `review`, `top`,
-  `text`). Decides where the reply lands and whether a thread exists
+  `text`, `ci`). Decides where the reply lands and whether a thread exists
   to resolve.
+- **Group**: the findings one change fixes. One commit per group.
 - **Risky finding**: a finding about security, privacy, login or
   permissions, money, a data migration or schema, data loss, a race, or
   a step that breaks when run twice. It may be fixed without asking,

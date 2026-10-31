@@ -2,7 +2,7 @@
 # ready.sh: the readiness module. One readiness verdict for a PR, with its reason.
 #
 #   ready.sh <owner/repo> <number> [--me <login>]
-#            [--wait <sha>] [--settle-sec 60] [--timeout-sec 1800] [--poll-sec 60]
+#            [--watch <sha>] [--settle-sec 60] [--timeout-sec 1800] [--poll-sec 60]
 #
 # Every check on the head counts the same: a CI check run, a commit status,
 # and a review bot's check (Devin Review, CodeRabbit, Cursor Bugbot, Greptile
@@ -20,15 +20,22 @@
 #
 # A review bot starts its check seconds after a push and ends it after its
 # comments, and one that finds problems ends grey (neutral), not red. So
-# --wait <sha> first sleeps --settle-sec, for the checks to start, then reads
-# the head's checks every --poll-sec until one is red, none is pending, the
-# head is no longer <sha>, or --timeout-sec passed; then the verdict. The wait
-# polls an API, so it costs no model tokens; in Claude Code run it in the
-# background, and the tool wakes the session when it ends.
+# --watch <sha> first sleeps --settle-sec, for the checks to start, then reads
+# the head's checks and threads every --poll-sec until none is pending, the
+# head is no longer <sha>, or --timeout-sec passed; then the verdict. A red
+# check does not end the watch. Each poll prints one line per red check and
+# per waiting thread it has not printed yet, in the order they come:
+#   RED <name> · workflow <workflow> · step <failed step> · <state> · <url>
+#   THREAD <thread line, as below>
+# A check is known by its URL, so a rerun's new attempt prints again; one with
+# no URL is known by its name. The failed step comes from the Actions job the
+# URL names; `-` for a check from outside Actions, an unknown workflow, or a
+# failed lookup. The watch polls an API, so it costs no model tokens; in
+# Claude Code run it under a Monitor, so each line wakes the session.
 #
 # Each reason it is not ready is `waiting` when time alone clears it (a check
 # still pending, no checks yet, GitHub still computing, a required check not
-# posted while a check is pending, a head that moved during --wait) and `blocked` when it needs work or a
+# posted while a check is pending, a head that moved during --watch) and `blocked` when it needs work or a
 # person. Prints line 1 the verdict, line 2 the reason, then one line per
 # review thread that waits for the author:
 #   <thread node id> <path>:<line> last=<login> :: <first comment, 120 chars>
@@ -42,15 +49,15 @@
 #   WAITING <url>                        2  (no blocked reason among them) red and pending
 #                                           checks are named, as in `1 check(s) red: test`
 # A gh call that fails is BLOCKED with the reason `gh failed: <its last error
-# line>`: in the wait after five fails in a row, anywhere else on the first.
+# line>`: in the watch after five fails in a row, anywhere else on the first.
 # A bad flag or argument is `stop: …` on stderr, exit 64. Never merges.
 set -euo pipefail
 
-repo=""; num=""; me=""; wait_sha=""; settle=60; timeout=1800; poll=60
+repo=""; num=""; me=""; watch_sha=""; settle=60; timeout=1800; poll=60
 while [ $# -gt 0 ]; do
   case "$1" in
     --me) me="${2:-}"; shift 2 ;;
-    --wait) wait_sha="${2:-}"; shift 2 ;;
+    --watch) watch_sha="${2:-}"; shift 2 ;;
     --timeout-sec) timeout="${2:-}"; shift 2 ;;
     --settle-sec) settle="${2:-}"; shift 2 ;;
     --poll-sec) poll="${2:-}"; shift 2 ;;
@@ -58,7 +65,7 @@ while [ $# -gt 0 ]; do
     *) if [ -z "$repo" ]; then repo="$1"; elif [ -z "$num" ]; then num="$1"; else printf 'stop: unexpected argument %s\n' "$1" >&2; exit 64; fi; shift ;;
   esac
 done
-[ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--wait <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]' >&2; exit 64; }
+[ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]' >&2; exit 64; }
 
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
@@ -79,8 +86,9 @@ gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
 # CHECKS_* counts cover every status and check run on the head, and the
 # *_NAMES list the red and the pending ones, comma separated. REQUIRED_MISSING lists,
 # comma separated, the checks that the base branch requires (branch protection
-# and rulesets) and the head does not have at all. A failed gh call sets err,
-# returns 1.
+# and rulesets) and the head does not have at all. It also sets reds, one
+# tab-separated line per red check: key, name, workflow, state, url. A failed
+# gh call sets err, returns 1.
 pr_facts() {
   local json base prot rules
   gh_out pr view "$num" --repo "$repo" --json url,state,isDraft,baseRefName,headRefOid,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup || return 1
@@ -114,6 +122,15 @@ pr_facts() {
     "REQUIRED_MISSING=" + ([.statusCheckRollup[]? | .context // .name] as $have
       | ($prot + $rules) | unique | map(select(. as $c | $have | index($c) | not)) | join(","))
   ' <<<"$json")"
+  reds="$(jq -r '
+    def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
+    def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
+    .statusCheckRollup[]? | st as $s | select(red | index($s))
+    | (.detailsUrl // .targetUrl // "" | if . == "" then "-" else . end) as $u
+    | (.context // .name) as $n
+    | [(if $u == "-" then $n else $u end), $n, (.workflowName // "" | if . == "" then "-" else . end), $s, $u]
+    | @tsv
+  ' <<<"$json")"
 }
 get() { awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/, ""); print; exit}' <<<"$facts"; }
 
@@ -141,14 +158,52 @@ open_threads() {
   ' <<<"$all")"
 }
 
-if [ -n "$wait_sha" ]; then
+# failed_step <url>: the first failed step of the Actions job the URL names,
+# or `-`.
+failed_step() {
+  local job
+  [[ "$1" =~ /actions/runs/[0-9]+/job/([0-9]+) ]] || { echo -; return; }
+  job="${BASH_REMATCH[1]}"
+  if gh_out api "repos/$repo/actions/jobs/$job" -q '[.steps[]? | select(.conclusion == "failure") | .name][0] // "-"'; then
+    printf '%s\n' "${out:--}"
+  else
+    echo -
+  fi
+}
+
+# print_reds and print_threads: each red check, or each waiting thread, not
+# printed yet, one line each; seen holds the keys printed so far.
+print_reds() {
+  local key name workflow state link
+  while IFS=$'\t' read -r key name workflow state link; do
+    [ -n "$key" ] || continue
+    grep -Fxq -- "red $key" <<<"$seen" && continue
+    seen+=$'\n'"red $key"
+    printf 'RED %s · workflow %s · step %s · %s · %s\n' "$name" "$workflow" "$(failed_step "$link")" "$state" "$link"
+  done <<<"$reds"
+}
+print_threads() {
+  local id line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    id="${line%% *}"
+    grep -Fxq -- "thread $id" <<<"$seen" && continue
+    seen+=$'\n'"thread $id"
+    printf 'THREAD %s\n' "$line"
+  done < <(tail -n +2 <<<"$threads")
+}
+
+if [ -z "$me" ]; then gh_out api user -q .login || gh_failed "$err"; me="$out"; fi
+
+if [ -n "$watch_sha" ]; then
   sleep "$settle"
-  waited=0; fails=0
+  waited=0; fails=0; seen=""
   while :; do
-    if pr_facts; then
+    # A failed thread list must not hold back the red checks already read.
+    if pr_facts && { print_reds; open_threads; }; then
       fails=0
-      [ "$(get SHA)" = "$wait_sha" ] || break
-      [ "$(get CHECKS_RED)" = "0" ] || break
+      print_threads
+      [ "$(get SHA)" = "$watch_sha" ] || break
       [ "$(get CHECKS_PENDING)" != "0" ] || break
       [ "$waited" -lt "$timeout" ] || break
     else
@@ -158,8 +213,6 @@ if [ -n "$wait_sha" ]; then
     sleep "$poll"; waited=$((waited + poll))
   done
 fi
-
-if [ -z "$me" ]; then gh_out api user -q .login || gh_failed "$err"; me="$out"; fi
 facts=""
 for _ in 1 2 3 4; do
   pr_facts || gh_failed "$err"
@@ -178,9 +231,9 @@ blocked() { why+=("$1"); has_blocked=1; }
 waiting() { why+=("$1"); has_waiting=1; }
 
 [ "$(get STATE)" = "OPEN" ] || blocked "state is $(get STATE)"
-# A push after the waited-for sha: its checks are new, so the pending ones
-# are not a timeout. The caller pulls and waits on the new head.
-[ -z "$wait_sha" ] || [ "$(get SHA)" = "$wait_sha" ] || waiting "head moved to $sha7"
+# A push after the watched sha: its checks are new, so the pending ones
+# are not a timeout. The caller pulls and watches the new head.
+[ -z "$watch_sha" ] || [ "$(get SHA)" = "$watch_sha" ] || waiting "head moved to $sha7"
 [ "$(get DRAFT)" != "true" ] || blocked "draft"
 checks=$(( $(get CHECKS_RED) + $(get CHECKS_PENDING) + $(get CHECKS_GREEN) ))
 [ "$checks" -ne 0 ] || waiting "no checks on $sha7 yet"

@@ -183,8 +183,9 @@ unchanged. Two words come off first and never reach plan-up:
 
 7. **Make ready.** First the checks on each PR, bottom of the stack
    first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me>
-   --wait <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's
-   head and `me` is `gh api user -q .login`. Then the review bots on that
+   --watch <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's
+   head and `me` is `gh api user -q .login`. Its `RED` and `THREAD` lines
+   are not read here: ready-pr's own watch reads them. Then the review bots on that
    PR: `bash ../../shared/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr:
    show it, stop. No line means no review bot: read
    `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the
@@ -224,7 +225,7 @@ unchanged. Two words come off first and never reach plan-up:
    Each PR, bottom of the stack first. Hold `Base`, the
    plan's `Base`, and for each PR its `REPO`, `NUMBER`, its worktree `WT`, and the
    `SHA` its ready step checked: the full 40-character `headRefOid`
-   from ready-pr's step 1, or from the `--wait` of its last round,
+   from ready-pr's step 1, or from the `--watch` of its last round,
    never the short SHA of a report line.
 
    - Its last line is not `READY <url>`, or it ends `(waiting for
