@@ -27,9 +27,9 @@
 # issues with no proposal yet; the agent proposes a route and a size for
 # each and records them with `proposed`. Each issue row, and the line, say
 # `changed` against what the last good check saw, so the timer can stay quiet.
-# It also lists each open PR with conflicts whose thread finished its turn,
-# once per head, claimed in the state file like a start; the agent sends that
-# thread `/ready-pr <pr-url>`.
+# It also finds each open PR with conflicts whose thread finished its turn,
+# once per head; a watcher check claims it in the state file like a start and
+# sends that thread `/ready-pr <pr-url>` itself.
 #
 # watch --once is one watcher check: it reads the run as check does, claims
 # nothing, and records only the check time, so the agent's own check still
@@ -484,21 +484,21 @@ cmd_check() {
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
-  S="$(jq -c --argjson c "$claims" --argjson sent "$sent" --argjson done "$done" --argjson rows "$rows" \
+  S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '.threads += $c | .conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
+    '.threads += $c | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
      | if $done then .status = "done" else . end
      | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
-  # A start or a conflict sent counts as a change even on a row that did not
-  # move, as after a resume: the post must link the thread.
-  jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson sends "$sends" --argjson rows "$rows" \
+  # A start counts as a change even on a row that did not move, as after a
+  # resume: the post must link the new thread. The conflicts are the
+  # watcher's to send, so the line lists none.
+  jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" --argjson propose "$propose" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
     ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
-      or ($sends | any(.number == $r.number))
       or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
-    | {run: $run, status: $S.status, starts: $starts, conflicts: $sends, issues: $marked, joined: $joined, done: $done,
+    | {run: $run, status: $S.status, starts: $starts, issues: $marked, joined: $joined, done: $done,
        propose: $propose}
     | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
@@ -725,8 +725,9 @@ wake() {
 # output. The board gets what this check read, the issues it joined too; the
 # state keeps only the time, so the agent's check still claims, joins, and
 # marks what changed. It wakes the orchestrator thread when the agent must
-# act: a thread to start, a proposal to make, or the run done. Prints what it
-# woke and sent as one JSON line.
+# act: a thread to start, a proposal to make, or the run done. It sends
+# `/ready-pr` to each thread whose PR has conflicts. Prints what it woke and
+# sent as one JSON line.
 cmd_watch() {
   [ "${1:-}" = --once ] || die "usage: orchestrate.sh watch <owner/repo> --once"
   in_t3
@@ -737,14 +738,22 @@ cmd_watch() {
   local at view reasons woke=false
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
-  S="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
+  # A conflict is claimed before it is sent, so a failed send is never tried again.
+  S="$(jq -c --arg at "$at" --argjson sent "$sent" \
+    '.conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
   save
   S="$view"
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
+  local c
+  while IFS= read -r c; do
+    "$t3" thread send "$(jq -r .thread <<<"$c")" "$(jq -r .message <<<"$c")" >/dev/null 2>"$errf" \
+      || printf 'ready-pr send failed: #%s PR #%s: %s\n' "$(jq -r .number <<<"$c")" "$(jq -r .pr <<<"$c")" "$(tail -1 "$errf")" >&2
+  done < <(jq -c '.[]' <<<"$sends")
   reasons="$(jq -cn --argjson starts "$starts" --argjson propose "$propose" --argjson done "$done" '
     [$starts[] | "start #\(.number)"] + [$propose[] | "propose #\(.)"] + (if $done then ["done"] else [] end)')"
   [ "$reasons" = "[]" ] || woke="$(wake)"
-  jq -cn --argjson w "$reasons" --argjson woke "$woke" '{wake: $w, woke: $woke, sent: []}'
+  jq -cn --argjson w "$reasons" --argjson woke "$woke" --argjson sends "$sends" \
+    '{wake: $w, woke: $woke, sent: [$sends[] | {number, pr, thread}]}'
 }
 
 case "$cmd" in

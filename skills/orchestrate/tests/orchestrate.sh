@@ -216,32 +216,33 @@ t_fs_conflict_listed() {
   # Given: #42's PR 43 conflicts at aaa111, and thread t42 is completed
   fs_conflict_run
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
   eq exit 0 "$code"
-  eq line '{"conflicts":[{"number":42,"pr":43,"url":"https://github.com/acme/app/pull/43","head":"aaa111","thread":"t42","link":"[i42](t3-thread://v1/t42)","message":"/ready-pr https://github.com/acme/app/pull/43"}],"changed":[true]}' \
-    "$(jq -c '{conflicts, changed: [.issues[] | .changed]}' <<<"$out")"
+  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
   eq state '[{"number":42,"pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {number, pr, head, thread}]')"
 }
 
 t_fs_conflict_once_per_head() {
-  # Given: the conflict of PR 43 at aaa111 listed by one check
-  fs_conflict_run; fs_go check acme/app
+  # Given: the conflict of PR 43 at aaa111 sent by one watcher check
+  fs_conflict_run; fs_go watch acme/app --once
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '{"conflicts":[],"changed":false}' "$(jq -c '{conflicts, changed}' <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
   eq state 1 "$(fs_state '.conflicts | length')"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
 t_fs_conflict_new_head() {
-  # Given: the conflict at aaa111 listed, then PR 43 conflicts again at bbb222
-  fs_conflict_run; fs_go check acme/app
+  # Given: the conflict at aaa111 sent, then PR 43 conflicts again at bbb222
+  fs_conflict_run; fs_go watch acme/app --once
   fs_conflict 42 43 CONFLICTING bbb222
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '["bbb222"]' "$(jq -c '[.conflicts[] | .head]' <<<"$out")"
+  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq state '["aaa111","bbb222"]' "$(fs_state '[.conflicts[] | .head]')"
 }
 
@@ -251,9 +252,10 @@ t_fs_conflict_busy_thread() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"waiting"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_none() {
@@ -262,19 +264,21 @@ t_fs_conflict_none() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_paused() {
   # Given: PR 43 conflicts and thread t42 is completed, but the run is paused
   fs_conflict_run; fs_go timer acme/app pause
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq exit 3 "$code"
   eq state 0 "$(fs_state '.conflicts // [] | length')"
+  eq sends none "$(fs_sends)"
 }
 
 t_fs_conflict_shared_pr() {
@@ -284,9 +288,10 @@ t_fs_conflict_shared_pr() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"completed"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.conflicts[] | {number, pr}]' <<<"$out")"
+  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.sent[] | {number, pr}]' <<<"$out")"
+  eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
 t_fs_conflict_shared_owner() {
@@ -296,9 +301,9 @@ t_fs_conflict_shared_owner() {
   fs_record 42 ticket t42 ship; fs_record 44 ticket t44 ship
   echo '[{"threadId":"t42","status":"running"},{"threadId":"t44","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[]' "$(jq -c .conflicts <<<"$out")"
+  eq line '[]' "$(jq -c .sent <<<"$out")"
 }
 
 t_fs_conflict_one_per_thread() {
@@ -308,9 +313,9 @@ t_fs_conflict_one_per_thread() {
   fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 ticket t42 ship
   echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
   # When
-  fs_go check acme/app
+  fs_go watch acme/app --once
   # Then
-  eq line '[43]' "$(jq -c '[.conflicts[] | .pr]' <<<"$out")"
+  eq line '[43]' "$(jq -c '[.sent[] | .pr]' <<<"$out")"
 }
 
 t_fs_conflict_new_stage() {
@@ -318,9 +323,32 @@ t_fs_conflict_new_stage() {
   fs_setup; fs_conflict 42 43 CONFLICTING aaa111; fs_start 42; fs_at 2026-10-28T12:00:00Z; fs_record 42 bug t42 triage
   echo '[{"threadId":"t42","status":"completed"}]' > "$T/t3-threads.json"
   # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"sent":[]}' "$(jq -c '{wake, sent}' <<<"$out")"
+}
+
+t_fs_check_no_conflict() {
+  # Given: #42's PR 43 conflicts at aaa111, and thread t42 is completed
+  fs_conflict_run
+  # When
   fs_go check acme/app
   # Then
-  eq line '{"starts":1,"conflicts":[]}' "$(jq -c '{starts: (.starts | length), conflicts}' <<<"$out")"
+  eq line false "$(jq -c 'has("conflicts")' <<<"$out")"
+  eq state null "$(fs_state .conflicts)"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_conflict_send_failed() {
+  # Given: the conflict of PR 43 claimed by a watcher check whose send T3 refused
+  fs_conflict_run
+  printf 'connect ECONNREFUSED\n' > "$T/t3-send.fail"; fs_go watch acme/app --once; rm "$T/t3-send.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '[]' "$(jq -c .sent <<<"$out")"
+  eq sends none "$(fs_sends)"
+  eq state '[43]' "$(fs_state '[.conflicts[] | .pr]')"
 }
 
 t_fs_manual_never_starts() {
@@ -1668,14 +1696,16 @@ cases=(
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
   "two runs get two different pages|t_fs_two_runs_two_pages"
-  "a conflicting PR of a finished thread is listed|t_fs_conflict_listed"
-  "a conflict is listed once per head|t_fs_conflict_once_per_head"
-  "a new head that conflicts again is listed again|t_fs_conflict_new_head"
+  "a conflicting PR of a finished thread gets /ready-pr|t_fs_conflict_listed"
+  "a conflict is sent once per head|t_fs_conflict_once_per_head"
+  "a new head that conflicts again is sent again|t_fs_conflict_new_head"
   "a thread that is not finished gets no conflict|t_fs_conflict_busy_thread"
-  "a PR with no conflict is not listed|t_fs_conflict_none"
-  "a paused run lists no conflict|t_fs_conflict_paused"
+  "a PR with no conflict is not sent|t_fs_conflict_none"
+  "a paused run sends no conflict|t_fs_conflict_paused"
   "one PR of two issues is sent once|t_fs_conflict_shared_pr"
   "a shared PR goes only to its first issue's thread|t_fs_conflict_shared_owner"
   "a thread gets one conflict per check|t_fs_conflict_one_per_thread"
   "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
+  "a check sends no conflict|t_fs_check_no_conflict"
+  "a failed /ready-pr send is not sent again|t_fs_conflict_send_failed"
 )

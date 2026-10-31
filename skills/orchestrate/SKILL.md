@@ -15,9 +15,9 @@ with `stop:`; show it as is, and that command ends there.
 
 ## Never
 
-The orchestrator starts threads, and sends a thread one message only:
-`/ready-pr <pr-url>` when that thread's PR has conflicts (ADR 0013,
-ADR 0015). Each thread it starts is
+The orchestrator starts threads, and a thread gets one message only:
+`/ready-pr <pr-url>` when that thread's PR has conflicts, which the
+script's watcher sends (ADR 0013, ADR 0015). Each thread it starts is
 the user's from its first turn: leave it to them. So the orchestrator starts
 a thread once, and a thread that failed or ended with no new stage
 waits for the user's `restart #n`. It writes nothing to GitHub: no
@@ -86,10 +86,6 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 2. Started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
    Not started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
 
-Then, for each item of `conflicts`, in order: `t3_thread_send` with its
-`thread` as the `threadId` and its `message` as the text. The script
-claimed it already, so a failed send is never tried again.
-
 Then post, by what ran the check:
 
 - The timer's prompt, `/orchestrate check`, and the line's `changed`
@@ -109,10 +105,7 @@ One line per issue, set order:
 `<what happens>` is the started thread's link and `/<skill>`, the
 issue's `wait`, `blocked by #a #b`, its thread's link and
 `thread_status`, `launch failed: <why>; say restart #<number>` when
-`claim` is `failed`, `yours` for `task`, or `done`. An issue with an
-item in `conflicts` reads `PR #<pr> has conflicts: sent /ready-pr to
-<link>`, or `PR #<pr> has conflicts: could not send /ready-pr: <why>`
-when its send failed. An `unlabeled`
+`claim` is `failed`, `yours` for `task`, or `done`. An `unlabeled`
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
