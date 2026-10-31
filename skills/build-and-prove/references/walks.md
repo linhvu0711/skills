@@ -22,12 +22,11 @@ a. **Start the app.** You start it; the walker never does.
    A walk's `Setup` that sets the clock is how the app opens for that
    walk; the run never waits for the real clock to reach a time.
 
-b. **Walker.** In Claude Code, the `walker` agent
-   (`agents/walker.md`, linked into `~/.claude/agents/`), started with
-   `model: sonnet` and `effort: high` on the Agent call, so no default
-   model or effort changes them; in Codex,
-   no sub-agent, so you read `agents/walker.md` and follow it
-   yourself, reading no code while you walk. Its brief, whole:
+b. **Walker.** In Claude Code, the skill agent `walker`
+   (`agents/walker.md`, which sets its model and effort; not found:
+   `../../shared/facts.md` § Skill agents); in Codex, no sub-agent, so
+   you read `agents/walker.md` and follow it yourself, reading no code
+   while you walk. Its brief, whole:
    - the mode, `before` or `after`, and the round;
    - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
      screen size (1440x900 on linux, 1280x800 on macos);

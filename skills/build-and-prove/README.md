@@ -49,7 +49,7 @@ A delete slice, a plan's first, deletes code that no caller uses: its tests exis
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.
-- The walker's agent file, linked once into Claude Code: `ln -s "$PWD/skills/build-and-prove/agents/walker.md" ~/.claude/agents/walker.md`, run from this repo's root. Codex has no sub-agents, so the session walks under the same rules.
+- The walker's agent file, `agents/walker.md`, which [link.sh](../../scripts/link.sh) links into Claude Code. Codex has no sub-agents, so the session walks under the same rules.
 - The shared core files `../../shared/facts.md`, `../../shared/checkout.sh`, `../../shared/copy.sh`, `../../shared/pr-shape.md`, `../../shared/benchmark.md`, pasted into the cloud rules and read in its own perf step, and the templates in `../../shared/handoff/`.
 - A clipboard tool, optional, for the login command, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - For a Claude Code pane (Fable only): herdr with this chat inside it (`HERDR_ENV=1`), the Claude Code CLI `claude`, signed in, and the helpers `herdr-wait` and `herdr-send` in `~/.claude/bin`. These two helpers are not in this repo.
