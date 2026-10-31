@@ -234,9 +234,10 @@ the answers then run § Check.
    the newest board page in the run folder. Rename this thread to
    `orchestrate: <name>`.
 3. `old_task` set: the run is from before the watcher, and has a T3
-   scheduled task; `delete_scheduled_task` on it. Then pin and watcher
-   as § Start step 4, then serve, post, and open the board, § Check, and
-   § Snooze, as § Start step 5.
+   scheduled task; `delete_scheduled_task` on it. `null`: nothing to
+   delete.
+4. Every run: pin and watcher as § Start step 4, then serve, post, and
+   open the board, § Check, and § Snooze, as § Start step 5.
 
 ## Done
 
