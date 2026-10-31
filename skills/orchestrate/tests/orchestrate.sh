@@ -1071,6 +1071,16 @@ t_fs_board_chips() {
   eq chips '["bug","seed","task","unlabeled","fix · S","feat · M","ticket · L"]' "$(fs_board '[.issues | sort_by(.number)[] | .chip]')"
 }
 
+t_fs_bug_old_pr_chip() {
+  # Given: a run from 2026-10-28T12:00:00Z; #42 labelled bug with open PR 43 from the day before
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["bug"]' '[]' "[$pr]"; fs_prs "$pr"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"stage":"pr","chip":"bug"}' "$(fs_board '.issues[] | select(.number == 42) | {stage, chip}')"
+}
+
 # fs_thread <id> <status>: T3 lists one thread, made at 12:10.
 fs_thread() { printf '[{"threadId":"%s","status":"%s","createdAt":"2026-10-28T12:10:00Z"}]\n' "$1" "$2" > "$T/t3-threads.json"; }
 
@@ -1463,6 +1473,7 @@ cases=(
   "start copies the board page into the run|t_fs_start_copies_page"
   "start without an env id stops|t_fs_start_needs_env"
   "the board chip is the kind and the size|t_fs_board_chips"
+  "a bug with an old PR is at pr with a bug chip|t_fs_bug_old_pr_chip"
   "a waiting thread is yours|t_fs_board_waiting_yours"
   "a failed thread is yours|t_fs_board_failed_yours"
   "an interrupted thread is yours|t_fs_board_interrupted_yours"
