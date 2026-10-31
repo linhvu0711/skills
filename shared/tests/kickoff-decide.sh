@@ -302,6 +302,18 @@ t_kd_heading_forms() {
   eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
 }
 
+t_kd_on_one_issue() {
+  # Given: #42 size/S, PR #80 on feat/79-teams, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+  # When
+  kd_run https://github.com/acme/app/issues/42 '#13' on https://github.com/acme/app/pull/80
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: on takes one issue" "$err"
+  eq stdout "" "$out"
+}
+
 t_kd_message_numbers() {
   # Given: #42 size/S with no sub-issues, PR #80 on feat/79-teams, one
   # checkout of acme/app whose gh sees acme/app
@@ -337,6 +349,7 @@ cases=(
   "the message names the target by number|t_kd_message_numbers"
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
+  "on takes one issue|t_kd_on_one_issue"
   "each size takes its row|t_kd_size_rows"
   "a size label wins over a guess|t_kd_label_beats_guess"
   "a guessed size counts|t_kd_guessed_size"

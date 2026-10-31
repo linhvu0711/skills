@@ -85,6 +85,7 @@ while [ $i -lt "${#args[@]}" ]; do
     die "unexpected argument: $a"
   fi
 done
+[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die "on takes one issue"
 prep_args="${args[*]}"
 
 # ---------- issue ----------
