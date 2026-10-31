@@ -11,7 +11,8 @@
 #
 # The model and effort come from the tickets' size and ready-to-build labels
 # unless a flag names them; --size gives a ticket with no size label the size
-# the agent guessed. The command is ship unless --command names another.
+# the agent guessed, and a guess for a ticket with a size label is ignored.
+# The command is ship unless --command names another.
 # plan-up, triage, grill, and ready-pr come only from --command, and triage,
 # grill, and ready-pr each have their own model and effort row. --mode sets
 # /ship's ship mode; with none, the /ship thread picks it.
@@ -22,9 +23,10 @@
 # `/ship --merge #42`, which every launcher sends as it is. The message names
 # the target by number, or by URL when gh in the checkout sees another repo.
 # Under --command ready-pr, args is the one open PR that closes the issue.
-# Exit 1: something stopped us; the reason is the last line on
-# stderr. It launches nothing, so the caller's launch starts only after every
-# check here passed.
+# Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
+# PR, no checkout. Exit 2: gh could not read GitHub. Either way the reason is
+# the last line on stderr, and nothing launched, so the caller's launch starts
+# only after every check here passed.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,6 +34,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/labels.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+gh_die() { printf 'stop: %s\n' "$*" >&2; exit 2; }
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 # ---------- args ----------
@@ -82,11 +85,12 @@ while [ $i -lt "${#args[@]}" ]; do
     die "unexpected argument: $a"
   fi
 done
+[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die "on takes one issue"
 prep_args="${args[*]}"
 
 # ---------- issue ----------
 issue_json="$(gh issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state)" \
-  || die "gh could not read $issue_url"
+  || gh_die "gh could not read $issue_url"
 title="$(jq -r .title <<<"$issue_json")"
 sub_count="$(jq '.subIssues.nodes | length' <<<"$issue_json")"
 
@@ -107,8 +111,9 @@ guess_of() {
 
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
-# ticket is ready-to-build takes the ready-to-build row at any size. A guessed size wins over a
-# label, and each guess is counted for the report.
+# ticket is ready-to-build takes the ready-to-build row at any size. A size
+# label always wins: a guess counts only for a ticket with no size label, and
+# each guess that counts is counted for the report.
 all_ready=1; top=0; top_size=""; guessed=0
 add_ticket() {
   local lab size="" ready=0 rank guess
@@ -118,7 +123,7 @@ add_ticket() {
   done < <(jq -r '.labels[].name' <<<"$1")
   [ "$ready" -eq 1 ] || all_ready=0
   guess="$(guess_of "$(jq -r .number <<<"$1")")"
-  if [ -n "$guess" ]; then size="$guess"; guessed=$((guessed+1)); fi
+  if [ -n "$guess" ] && [ -z "$size" ]; then size="$guess"; guessed=$((guessed+1)); fi
   # ready-to-build goes only on XS and S tickets, so one with no size is S.
   [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
   case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
@@ -138,7 +143,7 @@ esac
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"
-  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || die "gh could not read #$n in $slug"; fi
+  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || gh_die "gh could not read #$n in $slug"; fi
   jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null && continue
   add_ticket "$json"; counted=$((counted+1))
 done
@@ -180,7 +185,7 @@ if [ "$command" = ready-pr ]; then
   q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
   prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
     -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
-    || die "gh could not read the PRs of #$number"
+    || gh_die "gh could not read the PRs of #$number"
   pr_count="$(grep -c . <<<"$prs" || true)"
   [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
   [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
@@ -189,9 +194,9 @@ fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
-  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || die "gh could not read $pr_url"
+  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || gh_die "gh could not read $pr_url"
 else
-  base="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name)" || die "gh could not read repo $slug"
+  base="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name)" || gh_die "gh could not read repo $slug"
 fi
 
 # ---------- repo path ----------
@@ -243,7 +248,7 @@ if [ -z "$label" ]; then
   fi
   if [ "$form" = on ]; then label="${label}-on-${pr_number}"; fi
 fi
-label="$(printf '%s' "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
+label="$(lower "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
 [ -n "$label" ] || label="prep-$number"
 
 jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg args "$prep_args" \

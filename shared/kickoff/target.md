@@ -29,11 +29,14 @@ clone can, the message keeps the URLs:
 Flags you may add:
 
 - `--label <name>` when the user names the pane or thread.
-  Names match `[a-z][a-z0-9_-]{0,31}`.
+  `decide.sh` makes the name lower case. The pane name keeps only `a-z`,
+  `0-9`, `_`, and `-`, up to 32 characters. The thread heading shows the
+  name as you typed it.
 - `--size <n>=<size>`, size one of XS, S, M, L, XL, once for each
   ticket with no size label: the size you guessed from its body
   (§ Resolving the target). It counts like a label, and the report line
-  says `guessed`.
+  says `guessed`. `decide.sh` ignores a guess for a ticket that has a
+  size label. The label picks the row.
 - `--model <name>` when the user names a model: an alias (`opus`,
   `sonnet`, `haiku`) or a full model name.
 - `--effort <level>` when the user names an effort: `low`, `medium`,

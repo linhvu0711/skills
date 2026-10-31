@@ -58,6 +58,87 @@ t_kd_size_rows() {
   eq rows "$want" "$got"
 }
 
+# kd_view <call> <n> <labels-json>: the fake gh's answer to its <call>th
+# `issue view`, a plain issue #<n> "Ticket <n>" with these labels.
+kd_view() {
+  printf '{"number":%s,"title":"Ticket %s","labels":%s,"subIssues":{"nodes":[]},"state":"OPEN"}\n' "$2" "$2" "$3" > "$FAKE_GH/issue-view.$1.json"
+}
+
+# kd_row: the model, effort, and reason of decide's line in $out.
+kd_row() { jq -r '"\(.model) \(.effort) \(.reason)"' <<<"$out"; }
+
+t_kd_label_beats_guess() {
+  # Given: #42 size/L, one checkout of acme/app
+  kd_setup '[{"name":"size/L"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=S https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq row "opus high size L" "$(kd_row)"
+}
+
+t_kd_guessed_size() {
+  # Given: #42 with no size label, one checkout of acme/app
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=S https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq row "opus medium size S, guessed" "$(kd_row)"
+}
+
+t_kd_guessed_smaller() {
+  # Given: a set of #42 size/M and #43 with no size label
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_view 1 42 '[{"name":"size/M"}]'; kd_view 2 43 '[]'
+  # When
+  kd_run --size 43=S https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 0 "$code"
+  eq reason "size M of 2 tickets, 1 guessed" "$(jq -r .reason <<<"$out")"
+}
+
+t_kd_manual_guess() {
+  # Given: a set of #42 size/S and #43 manual
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_view 1 42 '[{"name":"size/S"}]'; kd_view 2 43 '[{"name":"manual"}]'
+  # When
+  kd_run --size 43=XL https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 0 "$code"
+  eq row "opus medium size S" "$(kd_row)"
+}
+
+t_kd_bad_size() {
+  # Given: #42 with no size label, one checkout of acme/app
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=huge https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_gh_fails_exit_2() {
+  # Given: each gh call of decide fails in turn, PR #80 on feat/79-teams
+  local route got="" target
+  for route in "issue-view|https://github.com/acme/app/issues/42" "issue-view.2|https://github.com/acme/app/issues/42 #43" \
+      "graphql|--command ready-pr https://github.com/acme/app/issues/42" \
+      "pr-view|https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80" \
+      "repo-view|https://github.com/acme/app/issues/42"; do
+    kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+    printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+    printf 'HTTP 502\n' > "$FAKE_GH/${route%%|*}.fail"
+    # When
+    read -ra target <<<"${route#*|}"
+    kd_run "${target[@]}"
+    got="$got$code|$(tail -1 <<<"$err");"
+  done
+  # Then
+  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42;2|stop: gh could not read #43 in acme/app;2|stop: gh could not read the PRs of #42;2|stop: gh could not read https://github.com/acme/app/pull/80;2|stop: gh could not read repo acme/app;" "$got"
+}
+
 t_kd_stops_no_checkout() {
   # Given: #42 size/S, no checkout under $T/dev
   kd_setup '[{"name":"size/S"}]'; mkdir -p "$T/dev"
@@ -221,6 +302,28 @@ t_kd_heading_forms() {
   eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
 }
 
+t_kd_label_lower_case() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --label Auth https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq "label heading" "auth Auth" "$(jq -r '"\(.label) \(.heading)"' <<<"$out")"
+}
+
+t_kd_on_one_issue() {
+  # Given: #42 size/S, PR #80 on feat/79-teams, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+  # When
+  kd_run https://github.com/acme/app/issues/42 '#13' on https://github.com/acme/app/pull/80
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: on takes one issue" "$err"
+  eq stdout "" "$out"
+}
+
 t_kd_message_numbers() {
   # Given: #42 size/S with no sub-issues, PR #80 on feat/79-teams, one
   # checkout of acme/app whose gh sees acme/app
@@ -256,8 +359,16 @@ cases=(
   "the message names the target by number|t_kd_message_numbers"
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
+  "on takes one issue|t_kd_on_one_issue"
+  "a named label is made lower case|t_kd_label_lower_case"
   "each size takes its row|t_kd_size_rows"
+  "a size label wins over a guess|t_kd_label_beats_guess"
+  "a guessed size counts|t_kd_guessed_size"
+  "a guessed smaller ticket is in the reason|t_kd_guessed_smaller"
+  "a guess for a manual ticket is ignored|t_kd_manual_guess"
+  "a bad size stops|t_kd_bad_size"
   "decide stops before any launch|t_kd_stops_no_checkout"
+  "every gh failure exits 2|t_kd_gh_fails_exit_2"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
   "a bad command names the five values|t_kd_bad_command"
