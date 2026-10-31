@@ -58,6 +58,68 @@ t_kd_size_rows() {
   eq rows "$want" "$got"
 }
 
+# kd_view <call> <n> <labels-json>: the fake gh's answer to its <call>th
+# `issue view`, a plain issue #<n> "Ticket <n>" with these labels.
+kd_view() {
+  printf '{"number":%s,"title":"Ticket %s","labels":%s,"subIssues":{"nodes":[]},"state":"OPEN"}\n' "$2" "$2" "$3" > "$FAKE_GH/issue-view.$1.json"
+}
+
+# kd_row: the model, effort, and reason of decide's line in $out.
+kd_row() { jq -r '"\(.model) \(.effort) \(.reason)"' <<<"$out"; }
+
+t_kd_label_beats_guess() {
+  # Given: #42 size/L, one checkout of acme/app
+  kd_setup '[{"name":"size/L"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=S https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq row "opus high size L" "$(kd_row)"
+}
+
+t_kd_guessed_size() {
+  # Given: #42 with no size label, one checkout of acme/app
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=S https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq row "opus medium size S, guessed" "$(kd_row)"
+}
+
+t_kd_guessed_smaller() {
+  # Given: a set of #42 size/M and #43 with no size label
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_view 1 42 '[{"name":"size/M"}]'; kd_view 2 43 '[]'
+  # When
+  kd_run --size 43=S https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 0 "$code"
+  eq reason "size M of 2 tickets, 1 guessed" "$(jq -r .reason <<<"$out")"
+}
+
+t_kd_manual_guess() {
+  # Given: a set of #42 size/S and #43 manual
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_view 1 42 '[{"name":"size/S"}]'; kd_view 2 43 '[{"name":"manual"}]'
+  # When
+  kd_run --size 43=XL https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 0 "$code"
+  eq row "opus medium size S" "$(kd_row)"
+}
+
+t_kd_bad_size() {
+  # Given: #42 with no size label, one checkout of acme/app
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --size 42=huge https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
+  eq stdout "" "$out"
+}
+
 t_kd_stops_no_checkout() {
   # Given: #42 size/S, no checkout under $T/dev
   kd_setup '[{"name":"size/S"}]'; mkdir -p "$T/dev"
@@ -257,6 +319,11 @@ cases=(
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
   "each size takes its row|t_kd_size_rows"
+  "a size label wins over a guess|t_kd_label_beats_guess"
+  "a guessed size counts|t_kd_guessed_size"
+  "a guessed smaller ticket is in the reason|t_kd_guessed_smaller"
+  "a guess for a manual ticket is ignored|t_kd_manual_guess"
+  "a bad size stops|t_kd_bad_size"
   "decide stops before any launch|t_kd_stops_no_checkout"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"

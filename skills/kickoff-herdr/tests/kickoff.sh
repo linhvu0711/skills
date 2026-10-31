@@ -175,30 +175,6 @@ t_ko_epic_none_open() {
   [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
 }
 
-t_ko_guessed_size() {
-  ko_herdr; ko_issue '[]'
-  ko_go --size 42=S https://github.com/acme/app/issues/42
-  has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
-  has report " · size S, guessed · " "$out"
-}
-
-t_ko_guessed_smaller() {
-  ko_herdr
-  ko_view 1 42 '[{"name":"size/M"}]'
-  ko_view 2 43 '[]'
-  ko_go --size 43=S https://github.com/acme/app/issues/42 '#43'
-  has report " · size M of 2 tickets, 1 guessed · " "$out"
-}
-
-t_ko_bad_size() {
-  ko_herdr; ko_issue '[]'
-  ko_go --size 42=huge https://github.com/acme/app/issues/42
-  eq exit 1 "$code"
-  eq stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
-  [ ! -e "$T/herdr.log" ] || eq "herdr calls" "" "$(cat "$T/herdr.log")"
-}
-
 t_ko_overrides() {
   ko_herdr; ko_issue '[{"name":"ready-to-build"},{"name":"size/XS"}]'
   ko_go --model haiku --effort low --command plan-up https://github.com/acme/app/issues/42
@@ -257,9 +233,6 @@ cases=(
   "a run all ready-to-build goes to opus medium|t_ko_run_all_ready"
   "an epic counts open tickets, not manual|t_ko_epic_open_not_manual"
   "an epic with no open ticket stops|t_ko_epic_none_open"
-  "a guessed size counts|t_ko_guessed_size"
-  "a guessed smaller ticket is in the report|t_ko_guessed_smaller"
-  "a bad size stops|t_ko_bad_size"
   "overrides win and the report says set|t_ko_overrides"
   "--mode merge starts /ship --merge|t_ko_mode_merge"
   "a bad command stops|t_ko_bad_command"

@@ -11,7 +11,8 @@
 #
 # The model and effort come from the tickets' size and ready-to-build labels
 # unless a flag names them; --size gives a ticket with no size label the size
-# the agent guessed. The command is ship unless --command names another.
+# the agent guessed, and a guess for a ticket with a size label is ignored.
+# The command is ship unless --command names another.
 # plan-up, triage, grill, and ready-pr come only from --command, and triage,
 # grill, and ready-pr each have their own model and effort row. --mode sets
 # /ship's ship mode; with none, the /ship thread picks it.
@@ -107,8 +108,9 @@ guess_of() {
 
 # add_ticket <issue json>: counts one ticket. The biggest ticket picks the
 # row, and a ticket with no size is the biggest. Only a target whose every
-# ticket is ready-to-build takes the ready-to-build row at any size. A guessed size wins over a
-# label, and each guess is counted for the report.
+# ticket is ready-to-build takes the ready-to-build row at any size. A size
+# label always wins: a guess counts only for a ticket with no size label, and
+# each guess that counts is counted for the report.
 all_ready=1; top=0; top_size=""; guessed=0
 add_ticket() {
   local lab size="" ready=0 rank guess
@@ -118,7 +120,7 @@ add_ticket() {
   done < <(jq -r '.labels[].name' <<<"$1")
   [ "$ready" -eq 1 ] || all_ready=0
   guess="$(guess_of "$(jq -r .number <<<"$1")")"
-  if [ -n "$guess" ]; then size="$guess"; guessed=$((guessed+1)); fi
+  if [ -n "$guess" ] && [ -z "$size" ]; then size="$guess"; guessed=$((guessed+1)); fi
   # ready-to-build goes only on XS and S tickets, so one with no size is S.
   [ -n "$size" ] || [ "$ready" -eq 0 ] || size=S
   case "$size" in XS) rank=1 ;; S) rank=2 ;; M) rank=3 ;; L) rank=4 ;; XL) rank=5 ;; *) rank=9 ;; esac
