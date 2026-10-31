@@ -16,6 +16,8 @@ Say go to apply: 3 fix here, 2 fix later, 8 replies to post.
 
 After you say go, it makes the fixes, files each `fix later` as an issue, posts the replies where each comment came from, and resolves the threads it fixed. "go, fixes only" does just that part.
 
+Findings that one change fixes share a group, such as a red check and the comment that names its cause, and each group gets one commit. A caller that watches the PR, such as [ready-pr](../ready-pr/), can also hand over the cause of each red CI check as a finding, and the judge answers it got early for a thread that came in while the checks still ran. A red check's finding is never put off without you, since it blocks the merge.
+
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
 ## Needs
