@@ -10,7 +10,7 @@ You have more issues than you want to start by hand, and you work in T3 Code. Na
 - `/orchestrate epic 70`: every open sub-issue of the epic, and any it gets later.
 - `/orchestrate assigned to me`: your open issues, read once at the start.
 
-The thread you type it in becomes the orchestrator. It pins itself, takes the title `orchestrate: <the set>`, and stays the place where you steer the run. It only runs when you call it.
+The thread you type it in becomes the orchestrator. It pins itself, takes the title `orchestrate: <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.
 
 ## What you get
 
@@ -45,24 +45,24 @@ A board page shows the run while it goes: four columns (Shape, Build, Review, Do
 
 The orchestrator never retries or answers a thread it started, and sends it one message only. When a PR gets conflicts, often after another PR of the run merged, and its thread has finished its turn, the watcher sends that thread `/ready-pr <pr-url>` by itself, with no turn in the orchestrator thread, once per PR head and one PR at a time. An issue that gets a new thread in the same check leaves the conflict to that thread. A PR that closes two issues goes only to the thread of the first one in the set. `/ready-pr` rebases, runs [fix-conflicts](../fix-conflicts/), and takes the PR back to ready. A thread that runs, waits for you, failed, or was interrupted gets nothing. You handle every thread. A thread that fails, or ends with no new stage, waits for you to say `restart #n` (ADR 0013, ADR 0015).
 
-The timer stays quiet unless something moved. A timer check posts a line only for an issue that changed since the last check: a new stage, a thread started or with a new status, a new blocker or PR, a proposal. When nothing changed, it posts nothing. A check that fails still posts why. `check now` posts every issue.
+A watcher on this Mac checks every few minutes with no chat turn. It updates the board, sends `/ready-pr` on a conflict, and wakes the orchestrator thread only when the agent must act: a thread to start, a proposal to make, a done run, or three failed checks in a row. It never wakes the thread while that thread is busy. A woken check posts a line only for an issue that changed since the last check, and `check now` posts every issue. The thread snoozes itself, so it leaves your thread list, and unsnoozes when it needs you: a proposal, a failed start, a check that failed, or the summary at the end. T3 still alerts on a turn in a snoozed thread until pingdotgg/t3code#27458 or a like fix ships. The watcher dies with the Mac: after a restart, say `/orchestrate resume`.
 
 Say these in the orchestrator thread:
 
 - `check now`, `check every 10 min` (1 minute at least; the start is 5).
-- `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Stop ends the timer and keeps the run, so `/orchestrate resume` in any thread picks it up again.
+- `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Pause and stop end the watcher. Stop keeps the run, so `/orchestrate resume` in any thread picks it up again.
 - `add #16`, `remove #14`, `restart #12`.
 - `ship merge #12` or `ship merge all`, and `ship review` and `ship ready` the same way, to set the ship mode: `review` waits for your ok on the plan, `ready` stops at a ready PR, `merge` merges it. With none set, each `/ship` thread picks its own. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 
-A check that cannot read GitHub or T3 starts nothing and says why. After three in a row it tells you to act. When every issue is closed, with no open PR left on one, the orchestrator stops its timer, posts one summary line per issue (its stages, its PR, its threads), runs [prune-worktrees](../prune-worktrees/), and starts one more thread that runs [retro](../retro/) on everything the run did: its sessions and its PRs. If that thread cannot start, it posts the `/retro run` line for you to type. It never closes an epic.
+A check that cannot read GitHub or T3 starts nothing, and the watcher writes why to `watch.log`. After three in a row, the watcher wakes the thread, and it tells you why and what to do. When every issue is closed, with no open PR left on one, the watcher ends, and the orchestrator posts one summary line per issue (its stages, its PR, its threads), runs [prune-worktrees](../prune-worktrees/), and starts one more thread that runs [retro](../retro/) on everything the run did: its sessions and its PRs. If that thread cannot start, it posts the `/retro run` line for you to type. It never closes an epic.
 
-The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the timer, and its proposals: each route, size, and answer. Next to it sit `board.json`, the page data each check writes, and `board.html`, the page. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the watcher and its interval, and its proposals: each route, size, and answer. Next to it sit `board.json`, the page data each check writes, `board.html`, the page, and `watch.log`, a line for each watcher check that failed, woke the thread, or sent `/ready-pr`. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 
-- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads, the pin, and the scheduled task.
+- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads, the pin, and the snooze. The watcher is a background process on this machine.
 - `gh` (signed in), `git`, and `jq`.
 - `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).
@@ -77,4 +77,4 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Tests
 
-The cases for [orchestrate.sh](scripts/orchestrate.sh), the route for each stage, the quiet timer check, blockers, one thread per stage, `restart`, a conflicting PR, the proposals and answers, a failed check, the done rule, and the board data (each card's column, chip, mark, and action), are in [tests/orchestrate.sh](tests/orchestrate.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [orchestrate.sh](scripts/orchestrate.sh), the route for each stage, the watcher check, the wake, the lock, the watcher's start and end, blockers, one thread per stage, `restart`, a conflicting PR, the proposals and answers, a failed check, the done rule, and the board data (each card's column, chip, mark, and action), are in [tests/orchestrate.sh](tests/orchestrate.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

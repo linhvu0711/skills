@@ -1,14 +1,16 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a timer checks every few minutes and starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
 
 This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the
-run's state file and decides what to start; you start each thread with
-T3's tools, keep the timer, and report. Every `orchestrate.sh` call takes
+run's state file, decides what to start, and runs the watcher: a
+background loop that checks every few minutes with no chat turn and sends
+this thread `/orchestrate check` only when you must act. You start each
+thread with T3's tools, snooze this thread, and report. Every `orchestrate.sh` call takes
 the repo as `<owner/repo>`, from `gh repo view --json nameWithOwner`
 in this thread's folder. Exit 1 from it: the last stderr line starts
 with `stop:`; show it as is, and that command ends there.
@@ -49,12 +51,9 @@ comment, no label, no close, no merge.
    Its stops: `not inside T3 Code`, `a live run in <owner/repo>: <link>`
    (show the link: that thread is the orchestrator), `<name> has no open
    issue`, and the checkout resolver's.
-4. **Pin and timer.** `t3_thread_organize` with `action: pin`, no
-   `threadId`. Then `schedule_task` with `prompt: /orchestrate check`,
-   `schedule: {type: interval, everyMs: 300000}`,
-   `bindToCurrentThread: true`, `title: orchestrate: <name>`. Hold its
-   `scheduledTaskId`, and
-   `scripts/orchestrate.sh timer <owner/repo> --task <scheduledTaskId>`.
+4. **Pin and watcher.** `t3_thread_organize` with `action: pin`, no
+   `threadId`. Then `scripts/orchestrate.sh watch <owner/repo>`. A stop
+   from it: post its line; the run has no checks until `resume`.
 5. **Board, show, and start.** Serve the board from the run folder,
    `run` in step 3's JSON line:
 
@@ -62,13 +61,15 @@ comment, no label, no close, no merge.
    ../../shared/serve.sh <run> board.html
    ```
 
-   Post `Board: <the URL it prints>`. A stop from it: post its line;
-   the run goes on without the board. Then run § Check at once. Its
-   issue lines are the resolved set.
+   Post `Board: <the URL it prints>`, and open that URL in the user's
+   browser: `open "<url>"` on macOS, `xdg-open "<url>"` on Linux. A stop
+   from serve.sh: post its line; the run goes on without the board. Then
+   run § Check at once. Its issue lines are the resolved set. Then
+   snooze this thread, per § Snooze.
 
 ## Check
 
-`/orchestrate check` (the timer's prompt), and `check now`.
+`/orchestrate check` (the watcher's prompt), and `check now`.
 
 ```bash
 scripts/orchestrate.sh check <owner/repo>
@@ -88,10 +89,10 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 
 Then post, by what ran the check:
 
-- The timer's prompt, `/orchestrate check`, and the line's `changed`
+- The watcher's prompt, `/orchestrate check`, and the line's `changed`
   is `false`: post nothing at all, not even a line that says nothing
-  changed. The turn ends there.
-- The timer's prompt, and `changed` is `true`: post the lines below
+  changed. Snooze, per § Snooze, and the turn ends there.
+- The watcher's prompt, and `changed` is `true`: post the lines below
   only for the issues whose `changed` is `true`.
 - Any other way in (start, resume, `check now`, `add`, `restart`, the
   answers): post the lines below for every issue.
@@ -114,6 +115,22 @@ when the user set that ship mode for the issue or for all; with none,
 the `/ship` thread picks the ship mode from its own plan. Lead with `Joined: #a #b` when `joined` is
 not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
 § Done. `propose` not empty: § Propose, after these lines.
+
+## Snooze
+
+A snoozed thread leaves the user's thread list until it wakes, so the
+user sees the board, not this thread. At the end of each
+`/orchestrate check` turn, before you post:
+
+- The turn needs the user: a `stop:` line, a `propose` that is not
+  empty, a start recorded `--failed`, or `"done": true`.
+  `t3_thread_organize` with `action: unsnooze`, no `threadId`.
+- Any other turn: `t3_thread_organize` with `action: snooze`, no
+  `threadId`, and `snoozedUntil` 24 hours from now, in UTC ISO form.
+
+§ Start and § Resume snooze the same way. The other commands leave the
+snooze as it is. T3 still alerts on a turn in a snoozed thread today;
+once it stops, the quiet turns are silent too.
 
 ## Propose
 
@@ -172,15 +189,14 @@ A live run takes these, said in this thread. Each runs one
 the answers then run § Check.
 
 - `check now`: § Check.
-- `check every <n> min`: `timer <owner/repo> --every <n>`, then
-  `schedule_task` with the held `scheduledTaskId` (`task` in the
-  timer line) and `schedule: {type: interval, everyMs: <n * 60000>}`.
-- `pause`: `timer <owner/repo> pause`, then `schedule_task` with the
-  task id and `enabled: false`. Running threads go on.
-- `resume`: `timer <owner/repo> resume`, `schedule_task` with the task
-  id and `enabled: true`, then § Check.
-- `stop`: `timer <owner/repo> stop`, then `delete_scheduled_task` on
-  the task id. The state file stays for `/orchestrate resume`.
+- `check every <n> min`: `timer <owner/repo> --every <n>`. The watcher
+  reads it before its next wait.
+- `pause`: `timer <owner/repo> pause`, which ends the watcher. Running
+  threads go on.
+- `resume`: `timer <owner/repo> resume`, `watch <owner/repo>`, then
+  § Check.
+- `stop`: `timer <owner/repo> stop`, which ends the watcher. The state
+  file stays for `/orchestrate resume`.
 - `add #n ...`: `change <owner/repo> add <n>...`, then § Check, so a
   new unlabeled issue gets its proposal.
 - `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
@@ -214,16 +230,17 @@ the answers then run § Check.
    It prints the run's `run`, `name`, `old_task`, and `every`, and puts
    the newest board page in the run folder. Rename this thread to
    `orchestrate: <name>`.
-3. `old_task` set: `delete_scheduled_task` on it, so the run has one
-   timer. Then pin and timer as § Start step 4, with
-   `everyMs: <every * 60000>`, then serve and post the board as § Start
-   step 5, and § Check.
+3. `old_task` set: the run is from before the watcher, and has a T3
+   scheduled task; `delete_scheduled_task` on it. Then pin and watcher
+   as § Start step 4, then serve, post, and open the board, § Check, and
+   § Snooze, as § Start step 5.
 
 ## Done
 
 A check printed `"done": true`.
 
-1. `delete_scheduled_task` on the timer's task.
+1. Unsnooze this thread, per § Snooze. The watcher ends by itself, since
+   the run is done.
 2. Post one summary, one line per item of `summary`:
 
    ```

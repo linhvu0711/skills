@@ -671,13 +671,12 @@ t_fs_unmerged_pr_keeps_open() {
 }
 
 t_fs_timer_five_min() {
-  # Given: a run of #42
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # Given: issue #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'
   # When
-  fs_go timer acme/app --task s1
+  fs_start 42
   # Then
-  eq exit 0 "$code"
-  eq timer '{"task":"s1","every":5,"fails":0}' "$(fs_state .timer)"
+  eq timer '{"every":5,"fails":0}' "$(fs_state .timer)"
 }
 
 t_fs_interval_min_one() {
@@ -892,6 +891,125 @@ t_fs_watch_good_clears() {
   eq state '{"fails":0,"alerted":false}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
 }
 
+# fs_real_wait: the fake sleep waits 30 seconds for a wait of a minute or
+# more, as the watcher loop's, and returns at once for a shorter one.
+fs_real_wait() {
+  printf '#!/usr/bin/env bash\n[ "${1%%%%.*}" -lt 60 ] || exec /bin/sleep 30\n' > "$T/bin/sleep"
+  chmod +x "$T/bin/sleep"
+}
+
+# fs_gone <pid>: yes once the process has ended, within 3 seconds, else no.
+fs_gone() {
+  local i
+  for i in $(seq 30); do kill -0 "$1" 2>/dev/null || { echo yes; return; }; /bin/sleep 0.1; done
+  echo no
+}
+
+t_fs_watch_starts() {
+  # Given: a run of #42, a manual task; the loop's wait is real
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  # When
+  fs_go watch acme/app
+  # Then
+  local pid; pid="$(jq -r .pid <<<"$out")"
+  eq exit 0 "$code"
+  eq alive yes "$(kill -0 "$pid" 2>/dev/null && echo yes || echo no)"
+  eq state "$pid" "$(fs_state .timer.watcher.pid)"
+  fs_go timer acme/app stop
+}
+
+t_fs_watch_replaces() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local first; first="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go watch acme/app
+  # Then
+  local second; second="$(jq -r .pid <<<"$out")"
+  eq first yes "$(fs_gone "$first")"
+  eq second yes "$(kill -0 "$second" 2>/dev/null && echo yes || echo no)"
+  eq state "$second" "$(fs_state .timer.watcher.pid)"
+  fs_go timer acme/app stop
+}
+
+t_fs_pause_ends_watcher() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local pid; pid="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq gone yes "$(fs_gone "$pid")"
+  eq state null "$(fs_state .timer.watcher)"
+}
+
+t_fs_stop_ends_watcher() {
+  # Given: a run of #42 with a watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_real_wait
+  fs_go watch acme/app; local pid; pid="$(jq -r .pid <<<"$out")"
+  # When
+  fs_go timer acme/app stop
+  # Then
+  eq gone yes "$(fs_gone "$pid")"
+  eq state null "$(fs_state .timer.watcher)"
+}
+
+t_fs_pause_spares_other() {
+  # Given: a run of #42 whose watcher pid is a process that is no watcher
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  local other; /bin/sleep 30 & other=$!
+  fs_set_state ".timer.watcher = {token: \"x\", pid: $other}"
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq alive yes "$(kill -0 "$other" 2>/dev/null && echo yes || echo no)"
+  kill "$other"
+}
+
+t_fs_watch_old_token() {
+  # Given: a run of #42, size/S, whose watcher has the token a
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_set_state '.timer.watcher = {token: "a", pid: null}'
+  # When
+  fs_go watch acme/app --once --token b
+  # Then
+  eq exit 3 "$code"
+  eq stdout "" "$out"
+  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_loop_ends() {
+  # Given: a paused run of #42 whose watcher has the token t
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_go timer acme/app pause
+  fs_set_state '.timer.watcher = {token: "t", pid: null}'
+  # When
+  fs_go watch acme/app --loop "$(fs_run)" t
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_fs_watch_paused_stops() {
+  # Given: a paused run of #42
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go watch acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: the run in acme/app is paused; say resume" "$err"
+}
+
+t_fs_timer_no_task() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go timer acme/app --task s1
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "$err"
+}
+
 t_fs_thread_kept() {
   # Given: a stopped run of #42 from the orchestrator thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -953,7 +1071,7 @@ t_fs_live_run_stops_start() {
 t_fs_resume_newest() {
   # Given: a stopped run of #42 whose timer was task s1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop
+  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop
   # When
   fs_go resume acme/app --thread f2 --env e1
   # Then
@@ -1202,7 +1320,7 @@ t_fs_close_answer() {
 t_fs_answers_survive_resume() {
   # Given: #42 proposed task and answered yes; the run stopped and resumed
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
-  fs_go timer acme/app --task s1; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
+  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
   # When
   fs_go check acme/app
   # Then
@@ -1668,6 +1786,15 @@ cases=(
   "the third failed watcher check wakes the orchestrator once|t_fs_watch_third_fail_wakes"
   "a good watcher check clears the failures|t_fs_watch_good_clears"
   "start and resume keep the orchestrator thread|t_fs_thread_kept"
+  "watch starts one watcher and records it|t_fs_watch_starts"
+  "watch again replaces the old watcher|t_fs_watch_replaces"
+  "pause ends the watcher|t_fs_pause_ends_watcher"
+  "stop ends the watcher|t_fs_stop_ends_watcher"
+  "pause leaves a process that is not a watcher alone|t_fs_pause_spares_other"
+  "a watcher check with an old token does nothing|t_fs_watch_old_token"
+  "the watcher loop ends when the run is not running|t_fs_watch_loop_ends"
+  "watch on a paused run stops|t_fs_watch_paused_stops"
+  "timer takes no task|t_fs_timer_no_task"
   "a command waits for a live lock, then stops|t_fs_lock_live_stops"
   "a dead holder's lock is taken over|t_fs_lock_dead_taken"
   "stop keeps the state file|t_fs_stop_keeps_state"

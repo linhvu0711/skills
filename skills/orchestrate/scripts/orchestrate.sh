@@ -9,9 +9,9 @@
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
-#        orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
+#        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
-#        orchestrate.sh watch <owner/repo> --once
+#        orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]
 #
 # A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -31,9 +31,12 @@
 # once per head; a watcher check claims it in the state file like a start and
 # sends that thread `/ready-pr <pr-url>` itself.
 #
-# watch --once is one watcher check: it reads the run as check does, claims
-# nothing, and records only the check time, so the agent's own check still
-# claims the starts, joins the new issues, and marks what changed.
+# watch starts the watcher, a background loop that runs one watcher check
+# every few minutes, with no chat turn, and wakes the orchestrator thread
+# only when the agent must act. watch --once is one watcher check: it reads
+# the run as check does, claims nothing, and records only the check time, so
+# the agent's own check still claims the starts, joins the new issues, and
+# marks what changed.
 #
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
@@ -341,7 +344,7 @@ cmd_start() {
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
     '{repo: $repo, name: $name, env: $env, thread: $thread, link: $link, path: $path, started_at: $at, status: "running",
       set: $set, removed: [], made: [], ship: {}, use: {}, proposals: {},
-      threads: [], timer: {task: null, every: 5, fails: 0}}')"
+      threads: [], timer: {every: 5, fails: 0}}')"
   save
   copy_page
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
@@ -659,24 +662,23 @@ cmd_change() {
 }
 
 # ---------- timer ----------
-# timer --task <id> | --every <min> | pause | resume | stop: the T3 scheduled
-# task that runs the checks, and the run's status. Prints the timer and
-# status as one JSON line.
+# timer --every <min> | pause | resume | stop: how often the watcher checks,
+# and the run's status. Pause and stop end the watcher; the watcher reads the
+# interval before each wait. Prints the status and interval as one JSON line.
 cmd_timer() {
   newest_run
   case "${1:-}" in
-    --task) [ -n "${2:-}" ] || die "--task needs an id"; S="$(jq -c --arg t "$2" '.timer.task = $t' <<<"$S")" ;;
     --every)
       [[ "${2:-}" =~ ^[0-9]+$ ]] && [ "$2" -ge 1 ] || die "check every takes 1 minute or more"
       S="$(jq -c --argjson e "$2" '.timer.every = $e' <<<"$S")" ;;
     pause|resume|stop)
       case "$(jq -r .status <<<"$S")" in done) die "the run in $slug is done" ;; esac
-      case "$1" in pause) st=paused ;; resume) st=running ;; stop) st=stopped ;; esac
+      case "$1" in pause) st=paused; stop_watcher ;; resume) st=running ;; stop) st=stopped; stop_watcher ;; esac
       S="$(jq -c --arg s "$st" '.status = $s' <<<"$S")" ;;
-    *) die "usage: orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop" ;;
+    *) die "usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" ;;
   esac
   save
-  jq -c '{status, task: .timer.task, every: .timer.every}' <<<"$S"
+  jq -c '{status, every: .timer.every}' <<<"$S"
 }
 
 # ---------- resume ----------
@@ -700,7 +702,7 @@ cmd_resume() {
     '.thread = $thread | .link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"
   save
   copy_page
-  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: $S.timer.task, every: $S.timer.every}'
+  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: ($S.timer.task // null), every: $S.timer.every}'
 }
 
 # ---------- watch ----------
@@ -731,7 +733,58 @@ wake() {
   else printf 'wake failed: %s\n' "$(tail -1 "$errf")" >&2; echo false; fi
 }
 
-# watch --once: one watcher check. A run that is not running exits 3 with no
+# stop_watcher: end the run's watcher and forget it. A pid whose command is
+# not a watcher is a reused pid and is left alone.
+stop_watcher() {
+  local pid i what=""
+  pid="$(jq -r '.timer.watcher.pid // empty' <<<"$S")"
+  [ -z "$pid" ] || what="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+  if [[ "$what" == *"orchestrate.sh watch"* ]]; then
+    kill "$pid" 2>/dev/null || true
+    for i in $(seq 50); do kill -0 "$pid" 2>/dev/null || break; sleep 0.1; done
+  fi
+  S="$(jq -c '.timer.watcher = null' <<<"$S")"
+}
+
+# watch_loop <run-dir> <token>: the watcher. It waits the run's interval,
+# read each time, then runs one watcher check, and ends when the run is not
+# running or another watcher took its place. Its log keeps only the checks
+# that woke, sent, or failed.
+watch_loop() {
+  local dir="$1" token="$2" every line rc
+  while :; do
+    every="$(jq -r --arg t "$token" 'if .status == "running" and .timer.watcher.token == $t then .timer.every else "" end' "$dir/state.json")"
+    [ -n "$every" ] || exit 0
+    sleep $((every * 60))
+    rc=0; line="$(bash "$here/orchestrate.sh" watch "$slug" --once --token "$token")" || rc=$?
+    [ "$rc" -ne 3 ] || exit 0
+    if [ "$rc" -ne 0 ]; then printf '%s exit %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$rc"
+    elif jq -e '.woke or .sent != []' <<<"$line" >/dev/null; then printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$line"; fi
+  done
+}
+
+# watch_start: a new watcher for a running run, in place of any old one,
+# detached so it outlives this shell and the chat turn. Its token is in the
+# state before it runs, so its first check finds itself the live watcher.
+watch_start() {
+  in_t3
+  newest_run
+  local st token pid
+  st="$(jq -r .status <<<"$S")"
+  [ "$st" = running ] || die "the run in $slug is $st; say resume"
+  stop_watcher
+  token="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
+  S="$(jq -c --arg t "$token" '.timer.watcher = {token: $t, pid: null}' <<<"$S")"
+  save
+  nohup bash "$here/orchestrate.sh" watch "$slug" --loop "$run" "$token" </dev/null >>"$run/watch.log" 2>&1 &
+  pid=$!
+  S="$(jq -c --argjson p "$pid" '.timer.watcher.pid = $p' <<<"$S")"
+  save
+  jq -cn --argjson p "$pid" '{pid: $p}'
+}
+
+# watch starts the watcher. watch --once is one watcher check; a run that is
+# not running, or a --token that is not the live watcher's, exits 3 with no
 # output. The board gets what this check read, the issues it joined too; the
 # state keeps only the time, so the agent's check still claims, joins, and
 # marks what changed. It wakes the orchestrator thread when the agent must
@@ -739,10 +792,17 @@ wake() {
 # `/ready-pr` to each thread whose PR has conflicts. Prints what it woke and
 # sent as one JSON line.
 cmd_watch() {
-  [ "${1:-}" = --once ] || die "usage: orchestrate.sh watch <owner/repo> --once"
+  local wusage="usage: orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]"
+  case "${1:-}" in
+    "") watch_start; return ;;
+    --loop) [ $# -eq 3 ] || die "$wusage"; watch_loop "$2" "$3" ;;
+    --once) [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --token ]; } || die "$wusage" ;;
+    *) die "$wusage" ;;
+  esac
   in_t3
   newest_run
   [ "$(jq -r .status <<<"$S")" = running ] || exit 3
+  [ $# -eq 1 ] || [ "$(jq -r '.timer.watcher.token // ""' <<<"$S")" = "$3" ] || exit 3
   on_fail=watch_fail
   observe
   local at view reasons woke=false
