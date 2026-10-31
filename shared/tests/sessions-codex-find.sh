@@ -32,6 +32,13 @@ co_move() {
   mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-$1.jsonl" "$HOME/.codex/sessions/$2/"
 }
 
+# co_archive <id>: move rollout <id> from today's folder to the archive, as
+# Codex does when a session is archived.
+co_archive() {
+  mkdir -p "$HOME/.codex/archived_sessions"
+  mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-$1.jsonl" "$HOME/.codex/archived_sessions/"
+}
+
 # old <id> <yyyy/mm/dd>: set rollout <id> in that day's folder to 30 days ago.
 old() { python3 -c 'import os,sys,time; t=time.time()-30*86400; os.utime(sys.argv[1],(t,t))' "$HOME/.codex/sessions/$2/rollout-2026-10-01T10-00-00-$1.jsonl"; }
 
@@ -78,6 +85,25 @@ t_cof_interactive_only() {
   run python3 "$F" --cwd /p/app --interactive --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
+}
+
+t_cof_archived_only() {
+  # Given: one rollout of /p/app, only in the archive
+  cof_home; co_rollout a1 /p/app "fix the export"; co_archive a1
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq ids "a1" "$(ids)"
+}
+
+t_cof_archived_by_start_day() {
+  # Given: rollout a1 of /p/app, archived as rollout-2026-10-01T10-00-00-a1.jsonl
+  cof_home; co_rollout a1 /p/app "fix the export"; co_archive a1
+  # When
+  run python3 "$F" --cwd /p/app --date 2026-10-01 --all --json
+  # Then
+  eq ids "a1" "$(ids)"
 }
 
 t_cof_helper_threads() {
@@ -192,4 +218,6 @@ cases=(
   "finder leaves out headless exec runs when asked|t_cof_interactive_only"
   "finder lists sessions under each cwd|t_cof_each_cwd"
   "finder lists every project|t_cof_every_project"
+  "finder lists a session only in the archive|t_cof_archived_only"
+  "finder keeps an archived session to its start day|t_cof_archived_by_start_day"
 )

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Codex CLI's adapter: probe, find, and extract, per ../adapter_lib.py.
 
-Reads ~/.codex/sessions/ through find_session.py and extract_session.py,
-next to this file. Headless `codex exec` runs are left out, and a resumed
+Reads ~/.codex/sessions/ and ~/.codex/archived_sessions/ through
+find_session.py and extract_session.py, next to this file. Headless `codex exec` runs are left out, and a resumed
 session counts by its last activity, not the day folder it started in.
 """
 

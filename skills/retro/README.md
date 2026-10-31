@@ -23,7 +23,7 @@ If nothing is worth changing, it says `Nothing worth changing` and stops. Either
 ## Needs
 
 - `python3` (standard library only), `git`, and `gh` for the repo name, the PRs, and the issues. Without `gh` access it reads sessions only and says so.
-- Session logs on this machine for at least one harness with an adapter in the shared core's [`sessions/`](../../shared/sessions/): today Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/`, headless `codex exec` runs left out). Older Codex chats are compressed; reading them needs Python 3.14+ or the `zstd` command.
+- Session logs on this machine for at least one harness with an adapter in the shared core's [`sessions/`](../../shared/sessions/): today Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/` and `~/.codex/archived_sessions/`, headless `codex exec` runs left out). Older Codex chats are compressed; reading them needs Python 3.14+ or the `zstd` command.
 - For `run <folder>`: T3 Code's provider logs under `~/.t3/userdata/logs/provider/`, read by [`sessions/t3/`](../../shared/sessions/t3/).
 - Sub-agents: Explore agents in Claude Code, `explorer` agents in Codex, one per session or PR.
 - A browser and `open` or `xdg-open` for the report page, served by the shared core's `serve.sh`. Without them, the report comes as a list in chat.

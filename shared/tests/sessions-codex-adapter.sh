@@ -25,6 +25,18 @@ t_coa_find_in_window() {
   eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
 }
 
+t_coa_find_archived() {
+  # Given: one rollout of /p/app, moved to the archive
+  coa_rollout c1 "fix the export"
+  mkdir -p "$HOME/.codex/archived_sessions"
+  mv "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c1.jsonl" "$HOME/.codex/archived_sessions/"
+  # When
+  run python3 "$A" find --root /p/app
+  # Then
+  eq exit 0 "$code"
+  eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
+}
+
 t_coa_unreadable_keeps_filters() {
   python3 -c 'import compression.zstd' 2>/dev/null && { echo "skip: this python reads zstd itself" >&2; return 0; }
   command -v zstd >/dev/null 2>&1 || { echo "skip: no zstd to write the fixture" >&2; return 0; }
@@ -42,4 +54,5 @@ t_coa_unreadable_keeps_filters() {
 cases=(
   "adapter finds a session in the window|t_coa_find_in_window"
   "adapter keeps unreadable rows to the ids asked|t_coa_unreadable_keeps_filters"
+  "adapter finds a session only in the archive|t_coa_find_archived"
 )

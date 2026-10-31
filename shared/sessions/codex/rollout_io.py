@@ -1,4 +1,7 @@
-"""Open a Codex rollout as text, plain or compressed.
+"""Where Codex keeps its rollouts, and how to open one, plain or compressed.
+
+Codex files a live rollout under ``~/.codex/sessions/YYYY/MM/DD/`` and moves an
+archived one, under the same name, to ``~/.codex/archived_sessions/``.
 
 Codex keeps older rollouts as ``rollout-*.jsonl.zst``. Python reads zstd
 itself from 3.14 (``compression.zstd``); an older Python reads it through the
@@ -11,9 +14,16 @@ from __future__ import annotations
 import contextlib
 import shutil
 import subprocess
+from pathlib import Path
 
 SUFFIXES = (".jsonl", ".jsonl.zst")
 NO_ZSTD = "needs Python 3.14+ or zstd"
+
+
+def data_folders() -> list[Path]:
+    """The folders Codex keeps rollouts in, read at call time so HOME counts."""
+    codex = Path.home() / ".codex"
+    return [codex / "sessions", codex / "archived_sessions"]
 
 
 class NoZstd(Exception):

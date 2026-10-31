@@ -21,7 +21,7 @@ Words like "yesterday" or "last week" narrow the search by date. When a few sess
 - `python3` (standard library only). Codex keeps older chats compressed (`.jsonl.zst`); reading those needs Python 3.14+ or the `zstd` command. Without either, they are listed as not read.
 - The script in the shared core folder [`sessions/codex/`](../../shared/sessions/codex/), which retro uses too.
 - A clipboard tool, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
-- Codex rollouts under `~/.codex/sessions/`. It runs from Claude Code or Codex.
+- Codex rollouts under `~/.codex/sessions/` or `~/.codex/archived_sessions/`. It runs from Claude Code or Codex.
 
 ## Fits with
 
