@@ -3,8 +3,11 @@
 
 Codex stores every session as a rollout at
     ~/.codex/sessions/YYYY/MM/DD/rollout-<stamp>-<id>.jsonl
-(older ones compressed as .jsonl.zst) whose first line is a ``session_meta`` record carrying the session id, cwd,
-and start time. The user's own prompts and the assistant's replies follow as
+and moves an archived one, under the same name, to
+    ~/.codex/archived_sessions/rollout-<stamp>-<id>.jsonl
+Both folders come from rollout_io.data_folders(). Each rollout (older ones
+compressed as .jsonl.zst) starts with a ``session_meta`` record carrying the
+session id, cwd, and start time. The user's own prompts and the assistant's replies follow as
 ``response_item`` records.
 
 The script lists the sessions whose cwd is the target project, scores each one
@@ -52,7 +55,6 @@ _spec = importlib.util.spec_from_file_location("rollout_io", Path(__file__).with
 rollout_io = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rollout_io)
 
-SESSIONS_ROOT = Path.home() / ".codex" / "sessions"
 INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
@@ -212,29 +214,32 @@ def save_index(idx: dict) -> None:
     print(f"warning: could not save index: {last}", file=sys.stderr)
 
 
-def rollout_paths(root: Path, day: dt.date | None, days: int | None):
-    if day:
-        dirs = [root / f"{day:%Y}" / f"{day:%m}" / f"{day:%d}"]
-    elif days:
-        today = dt.date.today()
-        dirs = [root / f"{d:%Y}" / f"{d:%m}" / f"{d:%d}"
-                for d in (today - dt.timedelta(days=i) for i in range(days))]
-    else:
-        dirs = [Path(dp) for dp, _, _ in os.walk(root)]
-    for d in dirs:
-        if not d.is_dir():
-            continue
-        for name in os.listdir(d):
-            if rollout_io.is_rollout_name(name):
-                yield d / name
+def rollout_paths(day: dt.date | None, days: int | None):
+    """Every rollout in Codex's data folders, or with a window, those that
+    started in it."""
+    first = day or (dt.date.today() - dt.timedelta(days=days - 1) if days else None)
+    last = day or (dt.date.today() if days else None)
+    for root in rollout_io.data_folders():
+        for dp, _, names in os.walk(root):
+            for name in names:
+                if not rollout_io.is_rollout_name(name):
+                    continue
+                path = Path(dp) / name
+                if first is None or first <= (start_day(path) or dt.date.min) <= last:
+                    yield path
 
 
-def folder_day(path: Path) -> dt.date | None:
-    """The start day a rollout is filed under, from its YYYY/MM/DD folder."""
+def start_day(path: Path) -> dt.date | None:
+    """The day a rollout started: its YYYY/MM/DD folder, or in the flat
+    archive the rollout-YYYY-MM-DD stamp of its name."""
     try:
         y, m, d = path.parts[-4:-1]
         return dt.date(int(y), int(m), int(d))
     except (ValueError, TypeError):
+        pass
+    try:
+        return dt.date.fromisoformat(path.name[len("rollout-"):len("rollout-YYYY-MM-DD")])
+    except ValueError:
         return None
 
 
@@ -442,21 +447,20 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
-    ap.add_argument("--sessions-root", default=str(SESSIONS_ROOT))
     args = ap.parse_args()
 
     idx = load_index()
     if args.show:
         return show_session(args.show, idx)
 
-    root = Path(args.sessions_root).expanduser()
-    if not root.is_dir():
-        print(f"No Codex sessions root at {root}")
+    folders = rollout_io.data_folders()
+    if not any(f.is_dir() for f in folders):
+        print(f"No Codex sessions under {' or '.join(str(f) for f in folders)}")
         return 1
     roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
     target = "all projects" if args.all_projects else ", ".join(roots)
     day = resolve_day(args.date)
-    started = {str(p) for p in rollout_paths(root, day, args.days)} if (day or args.days) else None
+    started = {str(p) for p in rollout_paths(day, args.days)} if (day or args.days) else None
     # A resumed rollout stays in its start-day folder, so --active-days goes by
     # the file's mtime instead of the folder.
     active = dt.date.today() - dt.timedelta(days=args.active_days - 1) if args.active_days else None
@@ -470,7 +474,7 @@ def main() -> int:
     # a resumed parent), but a helper never starts before its parent. So read
     # every folder from the earliest day a picked session started; with no
     # window, that is every folder.
-    paths = list(rollout_paths(root, None, None))
+    paths = list(rollout_paths(None, None))
     if started is not None or active is not None:
         picked = []
         for p in paths:
@@ -479,9 +483,9 @@ def main() -> int:
             except OSError:
                 continue
             if in_window(str(p), st):
-                picked.append(folder_day(p))
+                picked.append(start_day(p))
         first = min((d for d in picked if d), default=None)
-        paths = [p for p in paths if first and (folder_day(p) or first) >= first]
+        paths = [p for p in paths if first and (start_day(p) or first) >= first]
 
     skipped = {}
     sessions = collect(paths, None if args.all_projects else roots,

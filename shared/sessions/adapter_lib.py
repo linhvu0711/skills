@@ -6,14 +6,22 @@ extractor, and gets the same three subcommands as every other adapter:
 
     adapter.py probe   --root R... | --all-projects  [--since D] [--until D]
     adapter.py find    --root R... | --all-projects  [--since D] [--until D] [--query Q] [--id PREFIX]...
-    adapter.py extract <path> [--max-result-chars N]
+    adapter.py extract <id or path> [--summary] [--after-compact] [--max-result-chars N]
 
-``probe`` prints {"harness", "sessions"}. ``find`` prints a JSON list of rows
-{"harness", "id", "modified", "cwd", "title", "size", "path", "subagents"},
-plus "unreadable" on a row the harness could not read. Dates are local
-YYYY-MM-DD and count a session by its last activity. The finders keep their
-own flags and keys for the skills that call them direct; this hides those
-differences.
+``probe`` prints {"harness", "label", "sessions", "installed"}; "installed" is
+false when the harness keeps none of its folders on this machine, and then
+``find`` prints []. ``find`` prints a JSON list of rows
+{"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
+"score", "current", "prompts", "first_prompt", "age", "active"}, plus
+"unreadable" on a row the harness could not read. Dates are local YYYY-MM-DD
+and count a session by its last activity. "score" is the finder's match score
+for --query (0 with none), "current" is true for the session the command runs
+in, "prompts" counts its prompts, "age" reads as "3h ago", and "active" is its
+last activity in epoch seconds, for sorting. ``extract --summary`` renders
+only the prompts and the replies; ``--after-compact`` starts at the last
+compaction summary in a harness that has one, and a harness with none renders
+the whole session. The finders keep their own flags and keys for the skills
+that call them direct; this hides those differences.
 """
 
 from __future__ import annotations
@@ -28,13 +36,18 @@ from typing import Callable
 
 
 class Harness:
-    """One harness: its name, its finder and extractor scripts, the finder
-    flags for (roots, or None for every project; days, or None for all time),
-    and the finder row's title."""
+    """One harness: its name and its name for people, the folders it keeps
+    sessions in, its finder and extractor scripts, the finder flags for (roots,
+    or None for every project; days, or None for all time), the finder row's
+    title, the environment variable that holds the id of the session a command
+    runs in, and the extractor flags it takes."""
 
-    def __init__(self, name: str, finder: str, extractor: str,
-                 flags: Callable[[list | None, int | None], list], title: Callable[[dict], str]):
-        self.name, self.finder, self.extractor, self.flags, self.title = name, finder, extractor, flags, title
+    def __init__(self, name: str, label: str, data: list, finder: str, extractor: str,
+                 flags: Callable[[list | None, int | None], list], title: Callable[[dict], str],
+                 current: str, extract_flags: tuple[str, ...]):
+        self.name, self.label, self.data = name, label, data
+        self.finder, self.extractor, self.flags, self.title = finder, extractor, flags, title
+        self.current, self.extract_flags = current, extract_flags
 
 
 def _day(value: str) -> dt.date:
@@ -58,7 +71,10 @@ def _parser() -> argparse.ArgumentParser:
             p.add_argument("--query", default="", help="keywords the finder scores")
             p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
     p = sub.add_parser("extract")
-    p.add_argument("path")
+    p.add_argument("path", help="a session id or the path of its file")
+    p.add_argument("--summary", action="store_true", help="only the prompts and the replies")
+    p.add_argument("--after-compact", action="store_true",
+                   help="start at the last compaction summary, where the harness has one")
     p.add_argument("--max-result-chars", type=int, default=300)
     return ap
 
@@ -82,6 +98,7 @@ def _find(h: Harness, args) -> list[dict]:
     if out.get("error"):
         return []
     rows = []
+    current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):
         modified = dt.date.fromtimestamp(float(s["modified"]))
         if args.until and modified > args.until:
@@ -90,7 +107,10 @@ def _find(h: Harness, args) -> list[dict]:
             continue
         rows.append({"harness": h.name, "id": s.get("id"), "modified": modified.isoformat(),
                      "cwd": s.get("cwd"), "title": h.title(s), "size": s.get("size"),
-                     "path": s.get("path"), "subagents": s.get("subagents") or []})
+                     "path": s.get("path"), "subagents": s.get("subagents") or [],
+                     "score": s.get("score"), "current": bool(current) and s.get("id") == current,
+                     "prompts": s.get("n_prompts"), "first_prompt": s.get("first_prompt"),
+                     "age": s.get("age"), "active": float(s["modified"])})
     # An unreadable session's id and project are inside it; its file name holds
     # the id, and the finder already kept it to the window's start.
     for u in out.get("unreadable", []):
@@ -100,18 +120,25 @@ def _find(h: Harness, args) -> list[dict]:
         if ids and not any(i in os.path.basename(u["path"]) for i in ids):
             continue
         rows.append({"harness": h.name, "id": None, "modified": modified.isoformat(), "cwd": None, "title": None,
-                     "size": None, "path": u["path"], "subagents": [], "unreadable": f"{u['why']}, project unknown"})
+                     "size": None, "path": u["path"], "subagents": [], "score": None, "current": False,
+                     "prompts": None, "first_prompt": None, "age": None, "active": float(u["modified"]),
+                     "unreadable": f"{u['why']}, project unknown"})
     return rows
 
 
 def main(h: Harness) -> int:
     args = _parser().parse_args()
     if args.cmd == "extract":
-        return subprocess.run([sys.executable, h.extractor, args.path,
+        # A flag this harness's extractor lacks is dropped, so one call fits every harness.
+        asked = [f for f, on in (("--summary", args.summary), ("--after-compact", args.after_compact)) if on]
+        return subprocess.run([sys.executable, h.extractor, args.path, *(f for f in asked if f in h.extract_flags),
                                "--max-result-chars", str(args.max_result_chars)]).returncode
-    rows = _find(h, args)
+    # With none of its folders here the harness is not installed, and its finder is not run.
+    installed = any(os.path.isdir(d) for d in h.data)
+    rows = _find(h, args) if installed else []
     if args.cmd == "probe":
-        print(json.dumps({"harness": h.name, "sessions": sum(1 for r in rows if not r.get("unreadable"))}))
+        print(json.dumps({"harness": h.name, "label": h.label,
+                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": installed}))
     else:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
     return 0

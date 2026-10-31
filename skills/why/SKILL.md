@@ -63,19 +63,24 @@ written to the repo or to GitHub.
    `<wt>` is `${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>`,
    with owner and repo from `git remote get-url origin`: the build of a
    merged PR often ran in a worktree there that is gone now. `<words>`
-   are the file name without its extension and the symbol.
+   are the file name without its extension and the symbol. Ask which
+   tools hold sessions there:
 
    ```bash
-   python3 ../../shared/sessions/claude/find_sessions.py "<words>" --json --limit 0 --include-subdirs --project-dir <top> --project-dir <wt>
-   python3 ../../shared/sessions/codex/find_session.py "<words>" --json --limit 0 --include-subdirs --cwd <top> --cwd <wt>
+   python3 ../../shared/sessions/scan.py --root <top> --root <wt>
    ```
 
-   Drop a session whose `is_current` is true, or whose `first_prompt`
-   starts with `/why` or `$why`, then keep the first 3 of each tool, in
-   the finder's order. Render each one kept, Claude Code with
-   `python3 ../../shared/sessions/claude/extract_session.py <id> --summary > <out>`
-   and Codex with
-   `python3 ../../shared/sessions/codex/extract_session.py <id> --summary > <out>`.
+   Then, for each `adapters` entry with `sessions` above 0, `<tool>`
+   being its `harness`:
+
+   ```bash
+   python3 ../../shared/sessions/<tool>/adapter.py find --root <top> --root <wt> --query "<words>"
+   ```
+
+   Drop a row with `unreadable`, a row whose `current` is true, or one
+   whose `first_prompt` starts with `/why` or `$why`, then keep the first
+   3 of each tool, in the adapter's order. Render each one kept with
+   `python3 ../../shared/sessions/<tool>/adapter.py extract <path> --summary > <out>`.
    `<out>` is `<scratchpad>/why-<id8>.md` in Claude Code and
    `/tmp/why/<id8>.md` in Codex (`mkdir -p` the folder first). Run
    `grep -n -i` on each `<out>` for the words and read the lines around

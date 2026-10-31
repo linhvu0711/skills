@@ -5,6 +5,7 @@ Codex stores each session as a rollout JSONL under
   ~/.codex/sessions/YYYY/MM/DD/rollout-<timestamp>-<session-id>.jsonl
 and archived ones under
   ~/.codex/archived_sessions/rollout-<timestamp>-<session-id>.jsonl
+Both folders come from rollout_io.data_folders().
 The session ID is the trailing UUID in the filename (and in session_meta.id).
 
 Rollout entries have a top-level `type` (session_meta | turn_context | event_msg
@@ -38,7 +39,6 @@ import re
 import sys
 from datetime import datetime
 
-CODEX_DIR = os.path.expanduser("~/.codex")
 
 # Loaded by path: `python3 -I` leaves this folder off sys.path.
 _spec = importlib.util.spec_from_file_location(
@@ -71,8 +71,8 @@ def locate(session_id):
             break
     # the uuid is embedded after the timestamp in the filename
     patterns = [
-        os.path.join(CODEX_DIR, folder, f"rollout-*{sid}*{suffix}")
-        for folder in (os.path.join("sessions", "**"), "archived_sessions")
+        os.path.join(str(folder), "**", f"rollout-*{sid}*{suffix}")
+        for folder in rollout_io.data_folders()
         for suffix in rollout_io.SUFFIXES
     ]
     hits = []
@@ -456,7 +456,7 @@ def main():
 
     matches = locate(args.session_id)
     if not matches:
-        print(f"No Codex rollout found for id '{args.session_id}' under {CODEX_DIR}", file=sys.stderr)
+        print(f"No Codex rollout found for id '{args.session_id}' under {' or '.join(str(f) for f in rollout_io.data_folders())}", file=sys.stderr)
         print("Tip: pass the full UUID, or a unique prefix. Recent sessions:", file=sys.stderr)
         print("  ls -t ~/.codex/sessions/*/*/*/rollout-*.jsonl | head", file=sys.stderr)
         sys.exit(1)

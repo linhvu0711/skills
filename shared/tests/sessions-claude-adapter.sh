@@ -34,10 +34,31 @@ t_cca_probe_counts_window() {
   # When
   run python3 "$A" probe --root /p/app --since "$(days_ago 7)"
   # Then
-  eq stdout '{"harness": "claude", "sessions": 1}' "$out"
+  eq stdout '{"harness": "claude", "label": "Claude Code", "sessions": 1, "installed": true}' "$out"
+}
+
+t_cca_rows_carry_query_fields() {
+  # Given: one session of /p/app, and it is the one this command runs in
+  cca_session s1 "fix the export"; export CLAUDE_CODE_SESSION_ID=s1
+  # When
+  run python3 "$A" find --root /p/app --query export
+  # Then
+  eq row "s1 25 True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"], r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
+}
+
+t_cca_extract_summary() {
+  # Given: one session of /p/app
+  cca_session s1 "fix the export"
+  # When
+  run python3 "$A" extract "$HOME/.claude/projects/-p-app/s1.jsonl" --summary --after-compact
+  # Then
+  eq exit 0 "$code"
+  has mode "**Render mode:** summary · after last compaction" "$out"
 }
 
 cases=(
   "adapter finds a session in the window|t_cca_find_in_window"
   "probe counts the sessions in the window|t_cca_probe_counts_window"
+  "adapter rows carry the score, current flag, and prompt count|t_cca_rows_carry_query_fields"
+  "adapter extract renders the summary after the last compaction|t_cca_extract_summary"
 )
