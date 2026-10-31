@@ -28,4 +28,5 @@ if __name__ == "__main__":
         extractor=os.path.join(here, "extract_session.py"),
         flags=flags,
         title=lambda s: s.get("first_prompt") or "",
+        current="CODEX_THREAD_ID",
     )))

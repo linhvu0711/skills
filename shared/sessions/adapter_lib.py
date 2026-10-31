@@ -9,9 +9,13 @@ extractor, and gets the same three subcommands as every other adapter:
     adapter.py extract <path> [--max-result-chars N]
 
 ``probe`` prints {"harness", "sessions"}. ``find`` prints a JSON list of rows
-{"harness", "id", "modified", "cwd", "title", "size", "path", "subagents"},
-plus "unreadable" on a row the harness could not read. Dates are local
-YYYY-MM-DD and count a session by its last activity. The finders keep their
+{"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
+"score", "current", "prompts", "first_prompt", "age", "active"}, plus
+"unreadable" on a row the harness could not read. Dates are local YYYY-MM-DD
+and count a session by its last activity. "score" is the finder's match score
+for --query (0 with none), "current" is true for the session the command runs
+in, "prompts" counts its prompts, "age" reads as "3h ago", and "active" is its
+last activity in epoch seconds, for sorting. The finders keep their
 own flags and keys for the skills that call them direct; this hides those
 differences.
 """
@@ -30,11 +34,14 @@ from typing import Callable
 class Harness:
     """One harness: its name, its finder and extractor scripts, the finder
     flags for (roots, or None for every project; days, or None for all time),
-    and the finder row's title."""
+    the finder row's title, and the environment variable that holds the id of
+    the session a command runs in."""
 
     def __init__(self, name: str, finder: str, extractor: str,
-                 flags: Callable[[list | None, int | None], list], title: Callable[[dict], str]):
+                 flags: Callable[[list | None, int | None], list], title: Callable[[dict], str],
+                 current: str):
         self.name, self.finder, self.extractor, self.flags, self.title = name, finder, extractor, flags, title
+        self.current = current
 
 
 def _day(value: str) -> dt.date:
@@ -82,6 +89,7 @@ def _find(h: Harness, args) -> list[dict]:
     if out.get("error"):
         return []
     rows = []
+    current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):
         modified = dt.date.fromtimestamp(float(s["modified"]))
         if args.until and modified > args.until:
@@ -90,7 +98,10 @@ def _find(h: Harness, args) -> list[dict]:
             continue
         rows.append({"harness": h.name, "id": s.get("id"), "modified": modified.isoformat(),
                      "cwd": s.get("cwd"), "title": h.title(s), "size": s.get("size"),
-                     "path": s.get("path"), "subagents": s.get("subagents") or []})
+                     "path": s.get("path"), "subagents": s.get("subagents") or [],
+                     "score": s.get("score"), "current": bool(current) and s.get("id") == current,
+                     "prompts": s.get("n_prompts"), "first_prompt": s.get("first_prompt"),
+                     "age": s.get("age"), "active": float(s["modified"])})
     # An unreadable session's id and project are inside it; its file name holds
     # the id, and the finder already kept it to the window's start.
     for u in out.get("unreadable", []):
@@ -100,7 +111,9 @@ def _find(h: Harness, args) -> list[dict]:
         if ids and not any(i in os.path.basename(u["path"]) for i in ids):
             continue
         rows.append({"harness": h.name, "id": None, "modified": modified.isoformat(), "cwd": None, "title": None,
-                     "size": None, "path": u["path"], "subagents": [], "unreadable": f"{u['why']}, project unknown"})
+                     "size": None, "path": u["path"], "subagents": [], "score": None, "current": False,
+                     "prompts": None, "first_prompt": None, "age": None, "active": float(u["modified"]),
+                     "unreadable": f"{u['why']}, project unknown"})
     return rows
 
 

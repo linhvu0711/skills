@@ -27,4 +27,5 @@ if __name__ == "__main__":
         extractor=os.path.join(here, "extract_session.py"),
         flags=flags,
         title=lambda s: s.get("title") or s.get("first_prompt") or "",
+        current="CLAUDE_CODE_SESSION_ID",
     )))
