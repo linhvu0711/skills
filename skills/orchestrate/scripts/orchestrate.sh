@@ -11,6 +11,7 @@
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        orchestrate.sh timer <owner/repo> --task <id> | --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
+#        orchestrate.sh watch <owner/repo> --once
 #
 # A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
 # outside every checkout, and holds one state.json: only what GitHub and T3
@@ -30,6 +31,10 @@
 # once per head, claimed in the state file like a start; the agent sends that
 # thread `/ready-pr <pr-url>`.
 #
+# watch --once is one watcher check: it reads the run as check does, claims
+# nothing, and records only the check time, so the agent's own check still
+# claims the starts, joins the new issues, and marks what changed.
+#
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
@@ -44,7 +49,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: orchestrate.sh start|check|started|proposed|change|timer|resume <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|proposed|change|timer|resume|watch <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -336,18 +341,21 @@ fail_check() {
   die "check failed: $1"
 }
 
-cmd_check() {
-  in_t3
-  newest_run
-  [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
+# observe: read the run as it is now, from the state, GitHub, and T3, for
+# check and for a watcher check, so the two never read a run two ways. It
+# keeps the state as read in S0, adds the issues it joins to S, and leaves
+# issues, joined, statuses, starts, claims, sends, sent, rows, gone_rows,
+# cards, and done for its caller. A read that fails calls "$on_fail" <why>.
+observe() {
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
   # of an issue in it, and the follow-ups a PR that closes one lists.
-  local issues="{}" got todo joined="[]" new t3list statuses
+  local got todo new t3list
+  issues="{}"; joined="[]"
   todo="$(jq -c .set <<<"$S")"
   while [ "$todo" != "[]" ]; do
     # shellcheck disable=SC2046 # one word per number
-    got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || fail_check "$(tail -1 "$errf")"
+    got="$(read_issues $(jq -r '.[]' <<<"$todo"))" || "$on_fail" "$(tail -1 "$errf")"
     issues="$(jq -c --argjson g "$got" '. + $g' <<<"$issues")"
     new="$(jq -c --argjson S "$S" "$joins" <<<"$got")"
     S="$(jq -c --argjson new "$new" '.set += $new | .made = (.made // []) + $new' <<<"$S")"
@@ -361,11 +369,11 @@ cmd_check() {
     got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || got="{}"
     issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null)))' <<<"$issues")"
   fi
-  t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || fail_check "$(tail -1 "$errf")"
+  t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc starts="[]" rows="[]" claims="[]" cards="{}" gone row gone_rows="[]"
-  local conf sends="[]" sent="[]" owners
+  local n j st sk free blocked rec prop line wait rc gone row conf owners
+  starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   # owners: each PR's owner, the first issue in set order that it closes. A
   # shared PR's conflict goes only to its owner's thread, so no two threads
   # rebase one branch, even when the owner's thread is busy or just starting.
@@ -397,7 +405,7 @@ cmd_check() {
       rc=0; line="$(decide_for "$n" "$sk")" || rc=$?
       if [ "$rc" -ne 0 ]; then
         wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
-        [ "$rc" -ne 2 ] || fail_check "$wait"
+        [ "$rc" -ne 2 ] || "$on_fail" "$wait"
       fi
     fi
     if [ -n "$line" ]; then
@@ -441,11 +449,18 @@ cmd_check() {
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
   # that closes one still open. The orchestrator never closes an epic itself.
-  local done
   done="$(jq --argjson rows "$rows" --argjson is "$issues" '
     $rows != [] and all($rows[];
       (.stage == "done" or (.stage == "epic" and all($is[.number | tostring].subIssues.nodes[]; .state == "CLOSED")))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
+}
+
+cmd_check() {
+  in_t3
+  newest_run
+  [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
+  on_fail=fail_check
+  observe
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
@@ -667,6 +682,30 @@ cmd_resume() {
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: $S.timer.task, every: $S.timer.every}'
 }
 
+# ---------- watch ----------
+watch_fail() { die "check failed: $1"; }
+
+# watch --once: one watcher check. A run that is not running exits 3 with no
+# output. The board gets what this check read, the issues it joined too; the
+# state keeps only the time, so the agent's check still claims, joins, and
+# marks what changed. Prints what it woke and sent as one JSON line.
+cmd_watch() {
+  [ "${1:-}" = --once ] || die "usage: orchestrate.sh watch <owner/repo> --once"
+  in_t3
+  newest_run
+  [ "$(jq -r .status <<<"$S")" = running ] || exit 3
+  on_fail=watch_fail
+  observe
+  local at view
+  at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
+  S="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
+  save
+  S="$view"
+  write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
+  jq -cn '{wake: [], woke: false, sent: []}'
+}
+
 case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
@@ -675,5 +714,6 @@ case "$cmd" in
   change) cmd_change "$@" ;;
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;
+  watch) cmd_watch "$@" ;;
   *) die "$usage" ;;
 esac

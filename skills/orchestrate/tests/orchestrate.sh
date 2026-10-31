@@ -10,7 +10,9 @@ F="$here/../scripts/orchestrate.sh"
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
 # one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
 # `thread list` prints $T/t3-threads.json, or fails with the text of
-# $T/t3.fail when that file exists. Issues go in with fs_issue.
+# $T/t3.fail when that file exists. Its `thread send` adds its arguments as
+# one line to $T/t3-sends.log, or fails with the text of $T/t3-send.fail
+# when that file exists. Issues go in with fs_issue.
 fs_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
@@ -23,6 +25,7 @@ fs_setup() {
 set -euo pipefail
 case "$1 $2" in
   "thread list") if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi; cat "$FAKE_T3_DIR/t3-threads.json" ;;
+  "thread send") if [ -e "$FAKE_T3_DIR/t3-send.fail" ]; then cat "$FAKE_T3_DIR/t3-send.fail" >&2; exit 1; fi; echo "$*" >> "$FAKE_T3_DIR/t3-sends.log" ;;
   *) printf 'fake t3: no route for %s\n' "$*" >&2; exit 2 ;;
 esac
 EOF
@@ -714,6 +717,52 @@ t_fs_start_marks_changed() {
   fs_go check acme/app
   # Then
   eq check '{"changed":true,"starts":1,"issues":[true]}' "$(jq -c '{changed, starts: (.starts | length), issues: [.issues[] | .changed]}' <<<"$out")"
+}
+
+# fs_sends: the lines the fake t3 sent, or "none" when it sent nothing.
+fs_sends() { if [ -e "$T/t3-sends.log" ]; then cat "$T/t3-sends.log"; else echo none; fi; }
+
+t_fs_watch_quiet() {
+  # Given: a run of #42, a manual task
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 0 "$code"
+  eq line '{"wake":[],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_claims_nothing() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  echo '[{"threadId":"f1","status":"running"}]' > "$T/t3-threads.json"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '{"threads":[],"seen":null,"fails":0,"timed":true}' \
+    "$(fs_state '{threads, seen, fails: .timer.fails, timed: (.timer.checked_at != null)}')"
+}
+
+t_fs_watch_board() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  echo '[{"threadId":"f1","status":"running"}]' > "$T/t3-threads.json"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq board '[{"number":42,"mark":"blocked","action":"starts at the next check"}]' "$(fs_board '[.issues[] | {number, mark, action}]')"
+}
+
+t_fs_watch_paused() {
+  # Given: a paused run of #42, size/S
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go timer acme/app pause
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 3 "$code"
+  eq stdout "" "$out"
+  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
 }
 
 t_fs_stop_keeps_state() {
@@ -1441,6 +1490,10 @@ cases=(
   "a second check with nothing new is quiet|t_fs_second_check_quiet"
   "a thread that changes status marks only its issue|t_fs_status_change_marks_issue"
   "a start marks its issue changed|t_fs_start_marks_changed"
+  "a quiet watcher check sends nothing|t_fs_watch_quiet"
+  "a watcher check claims nothing and records the time|t_fs_watch_claims_nothing"
+  "a watcher check writes the board|t_fs_watch_board"
+  "a watcher check of a paused run does nothing|t_fs_watch_paused"
   "stop keeps the state file|t_fs_stop_keeps_state"
   "a live run stops a second start|t_fs_live_run_stops_start"
   "resume takes the newest run that is not done|t_fs_resume_newest"
