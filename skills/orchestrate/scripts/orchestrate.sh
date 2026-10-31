@@ -337,9 +337,9 @@ cmd_start() {
   path="${found#* MAIN=}"
   run="$runs/$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$runs"; mkdir "$run" || die "a run of $slug started this second; try again"
-  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
+  S="$(jq -n --arg repo "$slug" --arg name "$name" --arg env "$env" --arg thread "$thread" --arg link "$(thread_link "$name" "$thread")" --arg path "$path" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson set "$(printf '%s\n' "${nums[@]}" | jq -s 'map(tonumber) | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)')" \
-    '{repo: $repo, name: $name, env: $env, link: $link, path: $path, started_at: $at, status: "running",
+    '{repo: $repo, name: $name, env: $env, thread: $thread, link: $link, path: $path, started_at: $at, status: "running",
       set: $set, removed: [], made: [], ship: {}, use: {}, proposals: {},
       threads: [], timer: {task: null, every: 5, fails: 0}}')"
   save
@@ -363,7 +363,7 @@ fail_check() {
 # check and for a watcher check, so the two never read a run two ways. It
 # keeps the state as read in S0, adds the issues it joins to S, and leaves
 # issues, joined, statuses, starts, claims, sends, sent, rows, gone_rows,
-# cards, and done for its caller. A read that fails calls "$on_fail" <why>.
+# cards, propose, and done for its caller. A read that fails calls "$on_fail" <why>.
 observe() {
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
@@ -471,6 +471,8 @@ observe() {
     $rows != [] and all($rows[];
       (.stage == "done" or (.stage == "epic" and all($is[.number | tostring].subIssues.nodes[]; .state == "CLOSED")))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
+  # propose: the unlabeled issues with no proposal yet.
+  propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]' <<<"$S")"
 }
 
 cmd_check() {
@@ -492,12 +494,12 @@ cmd_check() {
   # A start or a conflict sent counts as a change even on a row that did not
   # move, as after a resume: the post must link the thread.
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson sends "$sends" --argjson rows "$rows" \
-    --argjson joined "$joined" --argjson done "$done" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
+    --argjson joined "$joined" --argjson done "$done" --argjson propose "$propose" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
     ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
       or ($sends | any(.number == $r.number))
       or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
     | {run: $run, status: $S.status, starts: $starts, conflicts: $sends, issues: $marked, joined: $joined, done: $done,
-       propose: [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]}
+       propose: $propose}
     | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
@@ -694,8 +696,8 @@ cmd_resume() {
   [ -n "$run" ] || die "no run to resume in $slug"
   lock_run
   S="$(cat "$run/state.json")"
-  S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" --arg env "$4" \
-    '.link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"
+  S="$(jq -c --arg l "$(thread_link "$(jq -r .name <<<"$S")" "$2")" --arg thread "$2" --arg env "$4" \
+    '.thread = $thread | .link = $l | .env = $env | .status = "running" | .timer.fails = 0' <<<"$S")"
   save
   copy_page
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: $S.timer.task, every: $S.timer.every}'
@@ -704,10 +706,27 @@ cmd_resume() {
 # ---------- watch ----------
 watch_fail() { die "check failed: $1"; }
 
+# wake: send the orchestrator thread `/orchestrate check`, unless T3 shows it
+# busy: mid-turn, or waiting on the user, where a message would land as the
+# answer to its question. Prints true when it sent. A failed send is left on
+# stderr and not recorded, so the next watcher check tries again.
+wake() {
+  local thread st
+  thread="$(jq -r '.thread // ""' <<<"$S0")"
+  st="$(jq -r --arg t "$thread" '.[$t].status // ""' <<<"${statuses:-"{}"}")"
+  case "$st" in
+    preparing|queued|starting|running|waiting) echo false; return ;;
+  esac
+  if "$t3" thread send "$thread" "/orchestrate check" >/dev/null 2>"$errf"; then echo true
+  else printf 'wake failed: %s\n' "$(tail -1 "$errf")" >&2; echo false; fi
+}
+
 # watch --once: one watcher check. A run that is not running exits 3 with no
 # output. The board gets what this check read, the issues it joined too; the
 # state keeps only the time, so the agent's check still claims, joins, and
-# marks what changed. Prints what it woke and sent as one JSON line.
+# marks what changed. It wakes the orchestrator thread when the agent must
+# act: a thread to start, a proposal to make, or the run done. Prints what it
+# woke and sent as one JSON line.
 cmd_watch() {
   [ "${1:-}" = --once ] || die "usage: orchestrate.sh watch <owner/repo> --once"
   in_t3
@@ -715,14 +734,17 @@ cmd_watch() {
   [ "$(jq -r .status <<<"$S")" = running ] || exit 3
   on_fail=watch_fail
   observe
-  local at view
+  local at view reasons woke=false
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
   S="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
   save
   S="$view"
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
-  jq -cn '{wake: [], woke: false, sent: []}'
+  reasons="$(jq -cn --argjson starts "$starts" --argjson propose "$propose" --argjson done "$done" '
+    [$starts[] | "start #\(.number)"] + [$propose[] | "propose #\(.)"] + (if $done then ["done"] else [] end)')"
+  [ "$reasons" = "[]" ] || woke="$(wake)"
+  jq -cn --argjson w "$reasons" --argjson woke "$woke" '{wake: $w, woke: $woke, sent: []}'
 }
 
 case "$cmd" in

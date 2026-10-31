@@ -765,6 +765,81 @@ t_fs_watch_paused() {
   eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
 }
 
+# fs_orchestrator <status>: T3 lists the orchestrator thread f1 with that status.
+fs_orchestrator() { jq -cn --arg s "$1" '[{threadId: "f1", status: $s}]' > "$T/t3-threads.json"; }
+
+t_fs_watch_wakes_start() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 finished its turn
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator completed
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":true,"sent":[]}' "$out"
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+  eq threads '[]' "$(fs_state .threads)"
+}
+
+t_fs_watch_running_not_woken() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 is running
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator running
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_waiting_not_woken() {
+  # Given: a run of #42, size/S; the orchestrator thread f1 waits for the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_orchestrator waiting
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":false,"sent":[]}' "$out"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_wakes_propose() {
+  # Given: a run of #44, unlabeled, with no proposal yet
+  fs_setup; fs_issue 44 OPEN '[]'; fs_start 44
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["propose #44"],"woke":true,"sent":[]}' "$out"
+}
+
+t_fs_watch_wakes_done() {
+  # Given: a run of #42, closed since the start
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_issue 42 CLOSED '["size/S"]'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["done"],"woke":true,"sent":[]}' "$out"
+  eq status '"running"' "$(fs_state .status)"
+}
+
+t_fs_watch_wake_retried() {
+  # Given: a run of #42, size/S; a first watcher check whose wake T3 refused
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'connect ECONNREFUSED\n' > "$T/t3-send.fail"; fs_go watch acme/app --once; rm "$T/t3-send.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["start #42"],"woke":true,"sent":[]}' "$out"
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+}
+
+t_fs_thread_kept() {
+  # Given: a stopped run of #42 from the orchestrator thread f1
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  eq before '"f1"' "$(fs_state .thread)"
+  fs_go timer acme/app stop
+  # When
+  fs_go resume acme/app --thread f2 --env e1
+  # Then
+  eq after '"f2"' "$(fs_state .thread)"
+}
+
 t_fs_lock_live_stops() {
   # Given: a run of #42 whose lock a live process holds (this shell; the
   # fake sleep returns at once)
@@ -1520,6 +1595,13 @@ cases=(
   "a watcher check claims nothing and records the time|t_fs_watch_claims_nothing"
   "a watcher check writes the board|t_fs_watch_board"
   "a watcher check of a paused run does nothing|t_fs_watch_paused"
+  "a thread to start wakes the orchestrator|t_fs_watch_wakes_start"
+  "a running orchestrator is not woken|t_fs_watch_running_not_woken"
+  "a waiting orchestrator is not woken|t_fs_watch_waiting_not_woken"
+  "a proposal to make wakes the orchestrator|t_fs_watch_wakes_propose"
+  "a done run wakes the orchestrator|t_fs_watch_wakes_done"
+  "a failed wake is tried at the next watcher check|t_fs_watch_wake_retried"
+  "start and resume keep the orchestrator thread|t_fs_thread_kept"
   "a command waits for a live lock, then stops|t_fs_lock_live_stops"
   "a dead holder's lock is taken over|t_fs_lock_dead_taken"
   "stop keeps the state file|t_fs_stop_keeps_state"
