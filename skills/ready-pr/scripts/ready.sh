@@ -171,16 +171,19 @@ failed_step() {
   fi
 }
 
-# print_events: each red check and waiting thread not printed yet, one line
-# each; seen holds the keys printed so far.
-print_events() {
-  local key name workflow state link id line
+# print_reds and print_threads: each red check, or each waiting thread, not
+# printed yet, one line each; seen holds the keys printed so far.
+print_reds() {
+  local key name workflow state link
   while IFS=$'\t' read -r key name workflow state link; do
     [ -n "$key" ] || continue
     grep -Fxq -- "red $key" <<<"$seen" && continue
     seen+=$'\n'"red $key"
     printf 'RED %s · workflow %s · step %s · %s · %s\n' "$name" "$workflow" "$(failed_step "$link")" "$state" "$link"
   done <<<"$reds"
+}
+print_threads() {
+  local id line
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     id="${line%% *}"
@@ -196,9 +199,10 @@ if [ -n "$watch_sha" ]; then
   sleep "$settle"
   waited=0; fails=0; seen=""
   while :; do
-    if pr_facts && open_threads; then
+    # A failed thread list must not hold back the red checks already read.
+    if pr_facts && { print_reds; open_threads; }; then
       fails=0
-      print_events
+      print_threads
       [ "$(get SHA)" = "$watch_sha" ] || break
       [ "$(get CHECKS_PENDING)" != "0" ] || break
       [ "$waited" -lt "$timeout" ] || break

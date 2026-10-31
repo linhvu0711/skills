@@ -422,6 +422,19 @@ t_ready_watch_status_no_step() {
   eq "job calls" absent "$([ -f "$FAKE_GH/job.calls" ] && echo present || echo absent)"
 }
 
+t_ready_watch_red_when_threads_fail() {
+  # Given: test is red while Devin Review runs, and the thread list fails on every poll
+  fake_gh; job_json "Run tests"
+  printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/graphql.fail"
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$(check_run test COMPLETED FAILURE "$job22" CI),$devin_pending]"
+  # When
+  ready --watch abc1234def5678 --poll-sec 1
+  # Then
+  eq "line 1" "RED test · workflow CI · step Run tests · FAILURE · $job22" "$(line 1)"
+  eq "line 2" "BLOCKED $url" "$(line 2)"
+  eq "line 3" "gh failed: HTTP 502: Bad Gateway" "$(line 3)"
+}
+
 t_ready_wait_flag_gone() {
   fake_gh
   ready --wait abc1234def5678
@@ -467,5 +480,6 @@ cases=(
   "ready-pr: --watch goes on past a red check until none is pending|t_ready_watch_past_red"
   "ready-pr: --watch prints a rerun's new red attempt again|t_ready_watch_rerun_red_again"
   "ready-pr: --watch prints a red status with no step|t_ready_watch_status_no_step"
+  "ready-pr: --watch prints a red check when the thread list fails|t_ready_watch_red_when_threads_fail"
   "ready-pr: --wait is an unknown flag|t_ready_wait_flag_gone"
 )
