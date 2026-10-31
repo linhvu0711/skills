@@ -263,8 +263,8 @@ two match: ask. Then go on with their URLs.
 
    Either holds: **big fork**. Ask the user, one question per message, in
    the question format of
-   `../../shared/grilling.md`, each option with
-   the `file:line` behind it. Wait. Big forks look like:
+   `../../shared/grilling.md`, the `file:line` behind each
+   option on the question's `Seen:` line. Wait. Big forks look like:
    a schema or stored data, a public API, auth, input a user controls,
    a secret, data that leaves the system,
    a pattern new to the repo (first queue, cache, job), a move
@@ -281,8 +281,9 @@ two match: ask. Then go on with their URLs.
    new SDK and API key. A version bump of one already there counts too.
    Ask before the plan names it. The question holds at least two
    options: the dependency, with the docs fact from round 1, or the
-   `Proved` line from its probe, that says it does the job; and the nearest thing the repo already has, with
-   its `file:line` and the line that keeps it from serving, or hand-written
+   `Proved` line from its probe, that says it does the job; and the nearest thing the repo already has, named
+   by what it does, with why it does not serve and its `file:line` on the
+   `Seen:` line, or hand-written
    code when the repo has nothing. Either can be `A`, by `grilling.md`
    § Your pick. Wait. The answer goes under `Decided`,
    marked `(user)`. A plan that adds a dependency the user did not pick

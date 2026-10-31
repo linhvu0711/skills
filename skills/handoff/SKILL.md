@@ -169,7 +169,8 @@ set's, the first ticket URL. Say the pick in one line, as
      touches other branches or PRs than the plan names). Quote the
      executor's question as it is, in a fenced block, then the session
      link, then one question to the user, two options at most, with the
-     option you would pick first and the `file:line` behind each. The
+     option you would pick first and the `file:line` behind each on the
+     question's `Seen:` line, per `../../shared/grilling.md`. The
      user answers with `/handoff <note>`. Stop.
 
    Not sure which: big.

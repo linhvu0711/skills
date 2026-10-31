@@ -29,7 +29,7 @@ Fan out per `facts.md`. The usual split is the code the plan touches, the caller
 
 Explore in rounds. Round 1 ends when every file, symbol, and doc the plan names has been fetched. Run another round only when the picture has a gap that a question to the user would fall into. A round that comes back with nothing new ends the exploring. Carry what is still open into the frontier as a question.
 
-Build the first frontier from the plan and from what you found. Every question that rests on a fact from the code cites it as `file:line`, so the user can see why you ask.
+Build the first frontier from the plan and from what you found. Every question that rests on a fact from the code cites it as `file:line` on the question's `Seen:` line, per `grilling.md`, so the user can see why you ask.
 
 ## During the interview
 

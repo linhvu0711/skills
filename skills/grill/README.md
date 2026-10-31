@@ -8,7 +8,7 @@ You have a plan with decisions still open, and you want them found and settled b
 
 ## What you get
 
-One question per message, each with its options and a recommended pick (the clean, long-term option, with any quick fix shown as a labelled fallback), until you agree the plan is understood. New terms get a glossary entry, and a decision that is hard to reverse, surprising, and the result of a real trade-off gets an ADR. No doc file changes while you talk.
+One question per message, each with its options and a recommended pick (the clean, long-term option, with any quick fix shown as a labelled fallback), until you agree the plan is understood. Each question explains the problem in plain words, with a small example when the idea is not obvious, and puts the code it rests on in a last `Seen:` line. After you answer, the next message starts with the next question and ends with a short `Got it:` line. New terms get a glossary entry, and a decision that is hard to reverse, surprising, and the result of a real trade-off gets an ADR. No doc file changes while you talk.
 
 At the end you get the settled list, and the docs go with the work. When there is code to build, it files the issue through [to-issue](../to-issue/), or the epic through [to-epic](../to-epic/), and the agreed text goes in the issue under `## Docs to write`. The PR that ships the code writes the docs, so no doc says what the code does not do yet. A seed issue you started from becomes that issue, same number; it is never closed:
 
