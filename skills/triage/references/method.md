@@ -39,7 +39,7 @@ Do not guess causes. Find the line between "works" and "broken" and cut
 the space in half each step. Three axes:
 
 - **Time.** Last good commit to now: `git bisect run <loop>`. Give it to
-  Runner with the loop script as the verdict rule and `git bisect reset` as
+  a runner with the loop script as the verdict rule and `git bisect reset` as
   the cleanup; the output is long and the judgment is small.
 - **Data path.** The value is right at the start and wrong at the end.
   Probe the middle. Then the middle of the bad half. Until one line flips it.

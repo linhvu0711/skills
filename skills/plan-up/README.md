@@ -61,7 +61,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - `gh`, signed in, and `git`.
 - `python3`, to check for claims and to build and serve the page. `curl` and `lsof` for the local server.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
-- Readers, per the reader job in `../../shared/facts.md`, with the web for library docs (Codex reads the files itself), and sub-agents that run commands for probes (general-purpose in Claude Code; Codex runs them itself).
+- Readers, per the reader job in `../../shared/facts.md`, with the web for library docs (Codex reads the files itself), and runners for probes, per the runner job in the same file (Codex runs them itself).
 - From the shared core: [facts.md](../../shared/facts.md), [grilling.md](../../shared/grilling.md) for the question format and how to pick, [codebase-design.md](../../shared/codebase-design.md) for the rules a new module or seam must pass, [issue-rules.md](../../shared/issue-rules.md) for the gate, [plan-page.md](../../shared/plan-page.md) for the page, [benchmark.md](../../shared/benchmark.md) for a perf plan, and [serve.sh](../../shared/serve.sh) to serve the page.
 
 ## Fits with

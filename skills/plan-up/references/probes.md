@@ -63,21 +63,23 @@ found.
 
 ## How
 
-Probes fan out like Explore agents: one sub-agent per probe, all in one
-message, beside any Explore round that is still open. The agent needs
-hands: general-purpose in Claude Code. In Codex, run them yourself, one
-after another.
+Probes fan out like readers: one runner per probe, all in one message,
+beside any reader round still open. Each brief pastes the runner job's
+lines from `../../shared/facts.md` § Reader and runner, and the temp
+folder they name is the probe's folder (§ Where). In Codex, run them
+yourself, one after another.
 
-Each brief, inline:
+Each brief, inline, after the runner job's lines:
 
 - the question, and the plan line it settles;
 - what to run, and the rule that reads the answer: the output, value,
   or error that means yes, and the one that means no;
 - a time box of about 15 minutes;
 - the folder, and the cleanup above;
-- what to return: the answer, the command or script, the output lines
-  that show it, and every doc it found wrong or missing on the way, in
-  the repo or upstream.
+- what to return after `VERDICT`, as fields the runner job's shape
+  carries: the answer, and every doc it found wrong or missing on the
+  way, in the repo or upstream. Its `REPRO` and `EVIDENCE` are the
+  command or script and the output lines that show it.
 
 A probe that cannot answer inside its box is not a probe. It is a big
 fork: ask whether to plan on what reading shows, or to stop for a

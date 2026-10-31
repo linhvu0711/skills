@@ -27,27 +27,28 @@ this one closely.
 | Read a long log and pull the matching lines | Write expected, actual, repro, cause |
 | Diff two envs, versions, or configs | |
 
-In Claude Code, reading goes to Explore agents and running goes to Runner
-agents. Both are cheap models behind a bridge; they carry out a brief, they
-do not think for you. In Codex there are no sub-agents: use the read tools,
+In Claude Code, reading goes to the reader job and running to the runner
+job, per `../../shared/facts.md` § Reader and runner. Both are cheap
+agents; they carry out a brief, they do not think for you. In Codex there are no sub-agents: use the read tools,
 run the loop yourself, send long output to a file and read its tail.
 
-A Runner brief holds four things, always:
+A runner brief pastes the runner job's lines, then holds four things, always:
 
 1. The working directory.
 2. The exact command, or the steps in order.
 3. The verdict rule: an exit code, a string that must or must not appear,
-   a number under a limit, or a bisect script. Runner judges by this rule
+   a number under a limit, or a bisect script. The runner judges by this rule
    and nothing else. When you cannot write the rule down, the work is not
    ready to delegate; run it yourself.
 4. What to clean up: processes to kill, `git bisect reset`, temp files.
 
-Runner answers with `VERDICT`, `EVIDENCE`, `REPRO`, `CLEANUP`, plus any extra
-field you asked for (first bad commit, a measured number). It never edits
-files and never touches git state beyond the bisect you asked for.
+The runner answers in the job's shape, `VERDICT`, `EVIDENCE`, `REPRO`,
+`CLEANUP`, plus any extra field you asked for (first bad commit, a measured
+number). It never edits the repo's files and never touches git state beyond
+the bisect you asked for.
 
 One short command with ten lines of output is yours. A loop that runs many times, a bisect, or a measurement repeated for
-a stable number goes to Runner.
+a stable number goes to a runner.
 
 ## Gate
 
