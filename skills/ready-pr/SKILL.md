@@ -201,8 +201,9 @@ same return shapes.
      A child's conflict never goes to fix-conflicts. This PR's loop goes
      on.
 
-   A round that only reruns, rebases, or answers with nothing to commit
-   pushes when it rebased, and else goes to step 3 on the same `SHA`.
+   A round with nothing to commit pushes when it rebased; else, when it
+   reran a check, step 3 on the same `SHA`; else step 6, where a red
+   check the user chose to leave red ends the run.
    After a push, `r` is `r + 1`. `r` past 6: say what keeps coming back
    and stop. Else `SHA` is the new head: step 3.
 
