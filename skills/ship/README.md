@@ -4,21 +4,20 @@ Takes an issue, a plan you already made, or work you agreed on in the chat, to a
 
 ## Use it when
 
-You have a ready issue and want the whole path done without starting each step by hand. It takes the same arguments as [plan-up](../plan-up/):
+You have a ready issue and want the whole path done without starting each step by hand. It takes the same arguments as [plan-up](../plan-up/). Name an issue or PR any way: a URL, `42`, `#42`, or words that point at one in the chat.
 
-- `/ship <issue-url>`: one ticket, one PR.
-- `/ship <epic-url> #12 #14`: those tickets from the epic, as a stack of PRs.
-- `/ship <issue-url> #14 #15`: a set of plain tickets, as a stack of PRs.
-- `/ship <epic-url>`: every open ticket in the epic.
-- `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open stack.
+- `/ship <issue>`: one ticket, one PR.
+- `/ship <epic> #12 #14`: those tickets from the epic, as a stack of PRs.
+- `/ship <issue> #14 #15`: a set of plain tickets, as a stack of PRs.
+- `/ship <epic>`: every open ticket in the epic.
+- `/ship <issue> on <pr>`: one ticket as a new layer on an open stack.
 - Any of the above with `devin` or `cursor` at the end: built in the cloud instead.
-- A number works in place of each URL: `/ship 42`, `/ship #42 #43`, `/ship #42 on #80`. It is that issue or PR in the repo you are in.
-- `/ship` with no URL and no number, and words after it or none. What the chat holds picks the start:
+- `/ship` with no issue named, and words after it or none. What the chat holds picks the start:
   - a build this chat started: the words are an answer or a follow-up for it;
   - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
   - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.
 
-Put `--review`, `--ready`, or `--merge` first to set the ship mode, as in `/ship --merge <issue-url>`. It only runs when you call it.
+Put `--review`, `--ready`, or `--merge` first to set the ship mode, as in `/ship --merge <issue>`. It only runs when you call it.
 
 ## What you get
 
@@ -49,7 +48,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 - In a stack, after a PR merges, the next one points at the base branch, is rebased when the method was squash or rebase, and is made ready again before its merge.
 - It never uses `--admin`, auto-merge, or a merge queue, and never pushes to the base branch. The repo's branch rules stay in force.
 - After the last merge, [prune-worktrees](../prune-worktrees/) removes the worktrees whose PR merged, with their branches.
-- A new layer on an open stack (`on <pr-url>`) is made ready but not merged, since the PR under it is not this run's.
+- A new layer on an open stack (`on <pr>`) is made ready but not merged, since the PR under it is not this run's.
 
 **The last message.** One `Ship mode:` line per PR, above its last line. The PR body has no ship mode:
 
