@@ -59,8 +59,10 @@ same return shapes.
    `git -C "$WT" rev-parse HEAD` is `SHA`; behind it, `git -C "$WT" pull
    --ff-only` first.
 
-3. **Watch.** Round `r` starts here, `r` from 1, with no CI group and
-   no early return held.
+3. **Watch.** Round `r` starts here, `r` from 1. A new round starts
+   with no CI group and no early return held; a return to step 3 in the
+   same round, on the same `SHA`, keeps them, and a line for a check or
+   a thread that already has its helper or its judge starts no new one.
 
    ```bash
    bash scripts/ready.sh <REPO> <NUMBER> --me <me> --watch <SHA>
