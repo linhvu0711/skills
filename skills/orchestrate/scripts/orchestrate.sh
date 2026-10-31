@@ -486,7 +486,7 @@ cmd_check() {
   # timer whether anything moved. A run from before it has none: all changed.
   S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '.threads += $c | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at
+    '.threads += $c | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at
      | if $done then .status = "done" else . end
      | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
@@ -704,7 +704,17 @@ cmd_resume() {
 }
 
 # ---------- watch ----------
-watch_fail() { die "check failed: $1"; }
+# watch_fail <line>: a watcher check that read too little. It counts the
+# failure as fail_check does; at 3 in a row it wakes the orchestrator thread,
+# once a streak, since no one reads a watcher's stop line.
+watch_fail() {
+  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S0")"
+  if [ "$(jq '.timer.fails >= 3 and .timer.alerted != true' <<<"$S")" = true ] && [ "$(wake)" = true ]; then
+    S="$(jq -c '.timer.alerted = true' <<<"$S")"
+  fi
+  save
+  die "check failed: $1"
+}
 
 # wake: send the orchestrator thread `/orchestrate check`, unless T3 shows it
 # busy: mid-turn, or waiting on the user, where a message would land as the
@@ -737,10 +747,10 @@ cmd_watch() {
   observe
   local at view reasons woke=false
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
+  view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
   # A conflict is claimed before it is sent, so a failed send is never tried again.
   S="$(jq -c --arg at "$at" --argjson sent "$sent" \
-    '.conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
+    '.conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
   save
   S="$view"
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"

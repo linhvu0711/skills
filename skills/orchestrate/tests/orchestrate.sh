@@ -857,6 +857,41 @@ t_fs_watch_wake_retried() {
   eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
 }
 
+t_fs_watch_fail_counts() {
+  # Given: a run of #42, size/S; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
+  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
+  eq sends none "$(fs_sends)"
+}
+
+t_fs_watch_third_fail_wakes() {
+  # Given: a run of #42, size/S; gh is logged out, and two watcher checks failed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  fs_go watch acme/app --once; fs_go watch acme/app --once
+  # When
+  fs_go watch acme/app --once; fs_go watch acme/app --once
+  # Then
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+  eq state '{"fails":4,"alerted":true}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
+t_fs_watch_good_clears() {
+  # Given: a run of #42, a manual task, after two failed checks that woke the thread
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_set_state '.timer.fails = 2 | .timer.alerted = true'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '{"fails":0,"alerted":false}' "$(fs_state '{fails: .timer.fails, alerted: .timer.alerted}')"
+}
+
 t_fs_thread_kept() {
   # Given: a stopped run of #42 from the orchestrator thread f1
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1629,6 +1664,9 @@ cases=(
   "a proposal to make wakes the orchestrator|t_fs_watch_wakes_propose"
   "a done run wakes the orchestrator|t_fs_watch_wakes_done"
   "a failed wake is tried at the next watcher check|t_fs_watch_wake_retried"
+  "a failed watcher check counts it|t_fs_watch_fail_counts"
+  "the third failed watcher check wakes the orchestrator once|t_fs_watch_third_fail_wakes"
+  "a good watcher check clears the failures|t_fs_watch_good_clears"
   "start and resume keep the orchestrator thread|t_fs_thread_kept"
   "a command waits for a live lock, then stops|t_fs_lock_live_stops"
   "a dead holder's lock is taken over|t_fs_lock_dead_taken"
