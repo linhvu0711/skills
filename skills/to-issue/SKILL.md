@@ -109,7 +109,8 @@ an X developer app, and named the code ticket #5 that will read the
 credentials.
 
 Type `task`. Title `task: create the X developer app for sign-in`. Label
-`manual`. Lookup with `SEARCH=on` fetches the X developer portal pages: the
+`manual`. Lookup, a reader whose brief asks for the web, fetches the X
+developer portal pages: the
 Projects page, the OAuth 2.0 settings, the callback URL field, the review
 wait. Body: What to build with Where (developer.x.com, the Perch account),
 Bring (the X login and 2FA), Lead time (about 3 days, app review), Hand back

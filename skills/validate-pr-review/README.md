@@ -23,7 +23,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in (it reads review comments with `gh api` and resolves threads with `gh api graphql`).
-- An agent that can start subagents, one judge per group of files. In Codex it runs them one after the other.
+- An agent that can start subagents: one `finding-judge` (Sonnet, high, in `agents/`, which [link.sh](../../scripts/link.sh) links into Claude Code) per group of files. In Codex it runs them one after the other.
 - The [commit](../commit/) skill for the fixes and the [capture](../capture/) skill for the `fix later` issues.
 - The shared core file `../../shared/facts.md`.
 

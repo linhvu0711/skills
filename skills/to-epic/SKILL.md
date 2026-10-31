@@ -28,7 +28,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    account, an app, a key, a bucket, DNS, billing) and every thing a person
    must do after it lands (set the variables, cut over, log in as the user
    and prove it live). Each one is a `task` ticket, and the same round
-   fetches its platform docs and lead time with `SEARCH=on`. Done when every
+   fetches its platform docs and lead time, its brief asking for the web.
+   Done when every
    ticket you are about to propose has its size facts, every task has its
    Steps and lead time, and every code ticket is pure (rules file, Types).
 

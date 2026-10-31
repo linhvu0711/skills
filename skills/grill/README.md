@@ -31,7 +31,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `gh`, signed in, for seed issues.
 - `git`.
-- Sub-agents that read code (Explore agents in Claude Code). Codex has none, so there it reads the files itself.
+- Readers for the code and for research, per the reader job in `../../shared/facts.md`. Codex has none, so there it reads the files itself.
 - [to-issue](../to-issue/) and [to-epic](../to-epic/), to file the work with its doc text.
 - [make-pr](../make-pr/), for the docs PR when no work follows.
 - [unslop](../unslop/), run on the prose before the commit.

@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in.
-- An agent that can start subagents. In Codex, which has none, it runs the three checks one after the other.
+- Subagents: the axis agents `logic-reviewer` (Opus, xhigh), `scope-reviewer`, and `standards-reviewer` (Sonnet, high), in `agents/`, which [link.sh](../../scripts/link.sh) links into Claude Code, and readers for the rule search, per the reader job in `../../shared/facts.md`. In Codex, which has none, it runs the three checks one after the other.
 - The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/review/rule-sources.md`.
 
 ## Fits with

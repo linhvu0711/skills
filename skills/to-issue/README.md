@@ -22,7 +22,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `gh`, signed in.
 - `python3`, for `scripts/conventions.py`, which remembers each repo's title style and size labels.
-- Sub-agents for the lookup round (Explore agents in Claude Code; Codex reads the files itself).
+- Readers for the lookup round, per the reader job in `../../shared/facts.md` (Codex reads the files itself).
 - A clipboard tool, optional, for the URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md) (gate, types, body template, labels) and [size.md](../../shared/size.md), the size ruler.
 

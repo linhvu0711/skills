@@ -134,7 +134,7 @@ work already decided. The map comes first.
      question, the map's Destination, and Decisions so far. Open decisions:
      the question and the terms it touches. Close out: text. Then continue
      at step 5 with the doc entries it hands back.
-   - **research**: one Explore agent, `SEARCH=on`, brief inline. The note
+   - **research**: one reader, its brief inline and asking for the web. The note
      lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
      committed with `/commit`.
    - **experiment**: `/create-mockup` for a UI question, `/create-diagram`

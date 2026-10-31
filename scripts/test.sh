@@ -183,9 +183,12 @@ t_adopt_stops_on_bad_name() {
 linked() {
   repo; local n
   for n in "$@"; do mkdir -p "skills/$n"; printf -- '---\nname: %s\n---\n' "$n" > "skills/$n/SKILL.md"; done
-  mkdir -p "$T/agents" "$T/claude"
+  mkdir -p "$T/agents" "$T/claude" "$T/cagents"
 }
-link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" bash scripts/link.sh; }
+link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" bash scripts/link.sh; }
+
+# agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md.
+agent() { mkdir -p "skills/$1/agents"; printf -- '---\nname: %s\n---\n' "$2" > "skills/$1/agents/$2.md"; }
 
 t_link_links_new_skill() {
   linked demo; link_sh
@@ -228,8 +231,45 @@ t_link_skips_worktree() {
   eq "ls agents" "" "$(ls "$T/agents")"
 }
 
+t_link_links_agent() {
+  # Given: a skill with one agent file and a Codex openai.yaml
+  linked demo; agent demo helper; printf 'interface: {}\n' > skills/demo/agents/openai.yaml
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "linked $T/cagents/helper.md" "$out"
+  eq "agent link" "$R/skills/demo/agents/helper.md" "$(readlink "$T/cagents/helper.md")"
+  eq "ls cagents" helper.md "$(ls "$T/cagents")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_unlinks_moved_agent() {
+  # Given: an agent linked once
+  linked demo; agent demo helper; link_sh
+  # When: it is renamed
+  mv skills/demo/agents/helper.md skills/demo/agents/aide.md; link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "unlinked $T/cagents/helper.md" "$out"
+  has stdout "linked $T/cagents/aide.md" "$out"
+  eq "ls cagents" aide.md "$(ls "$T/cagents")"
+}
+
+t_link_leaves_other_agent() {
+  # Given: a file of the user's own holds the agent's name
+  linked demo; agent demo helper; printf 'mine\n' > "$T/cagents/helper.md"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: $T/cagents/helper.md is not this repo's helper.md" "$err"
+  eq "own file" mine "$(cat "$T/cagents/helper.md")"
+}
+
 t_hooks_link_committed_skill() {
-  linked; git config core.hooksPath scripts/hooks; export SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude"
+  linked; git config core.hooksPath scripts/hooks; export SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents"
   local main; main="$(git branch --show-current)"
   mkdir -p skills/demo; printf -- '---\nname: demo\ndescription: d\n---\n' > skills/demo/SKILL.md
   printf '# demo\n## Use it when\n## What you get\n## Needs\n## Fits with\n' > skills/demo/README.md
@@ -451,6 +491,62 @@ header() {
   run bash scripts/check.sh
 }
 
+# agent_md <frontmatter lines>: header's repo with a good SKILL.md, and
+# skills/demo/agents/helper.md of `---`, these lines, `---`, committed; then
+# run check.sh.
+agent_md() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  mkdir -p skills/demo/agents; printf -- '---\n%s\n---\n' "$1" > skills/demo/agents/helper.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_flags_agent_no_frontmatter() {
+  # Given: an agent file with no frontmatter
+  agent_md x; printf '# helper\n' > skills/demo/agents/helper.md; git add -A; git commit -qm bare
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing frontmatter" "$err"
+}
+
+t_flags_agent_name_not_file() {
+  agent_md "$(printf 'name: other\ndescription: d\nmodel: sonnet\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: name does not match file: other" "$err"
+}
+
+t_flags_agent_empty_description() {
+  agent_md "$(printf 'name: helper\ndescription: ""\nmodel: sonnet\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: empty description" "$err"
+}
+
+t_flags_agent_no_model() {
+  agent_md "$(printf 'name: helper\ndescription: d\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing model" "$err"
+}
+
+t_flags_agent_no_effort() {
+  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing effort" "$err"
+}
+
+t_passes_agent_with_all_fields() {
+  # Given: a full agent file and a Codex openai.yaml beside it
+  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet\neffort: high')"
+  printf 'interface: {}\n' > skills/demo/agents/openai.yaml; git add -A; git commit -qm yaml
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 t_passes_block_after_blank() {
   header "$(printf 'name: demo\ndescription: |\n\n  Explains the skill.')"
   eq exit 0 "$code"
@@ -640,6 +736,9 @@ cases=(
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"
   "link does nothing in a worktree|t_link_skips_worktree"
+  "link links a skill agent and leaves openai.yaml|t_link_links_agent"
+  "link unlinks a renamed skill agent|t_link_unlinks_moved_agent"
+  "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
   "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
@@ -678,6 +777,12 @@ cases=(
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
+  "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
+  "flags an agent name that is not its file name|t_flags_agent_name_not_file"
+  "flags an agent file with an empty description|t_flags_agent_empty_description"
+  "flags an agent file with no model|t_flags_agent_no_model"
+  "flags an agent file with no effort|t_flags_agent_no_effort"
+  "passes an agent file with every field|t_passes_agent_with_all_fields"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 

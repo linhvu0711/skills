@@ -4,7 +4,7 @@ A research note is a **cache**, a dated copy of a lookup that was expensive to m
 
 ## Dispatch
 
-Send the question to an Explore agent with web search on. In Claude Code, put the token `SEARCH=on` in the agent's prompt above the brief. The brief carries the question, the claims to verify, and the instruction to cite the URL or repo path that owns each claim. The agent's answer file is the raw material for the note.
+Send the question to a reader, per `../../shared/facts.md` § Reader and runner, with a brief that asks for the web. The brief carries the question, the claims to verify, and the instruction to cite the URL or repo path that owns each claim. The agent's answer file is the raw material for the note.
 
 ## Sources
 

@@ -353,7 +353,7 @@ Every credential in Hand back carries the warning on its line. The value of
 one never appears in an issue, a comment, or a PR.
 
 Steps are always written. They come from the platform's docs, fetched in the
-one lookup round with `SEARCH=on` (see Lookup). Each step names the page,
+one lookup round, whose brief asks for the web (see Lookup). Each step names the page,
 the button or field, and the value to enter. A step with no doc source goes
 under Open as the question it leaves, never into Steps. The last step is the
 proof: the check that shows the code ticket can use the result.
@@ -481,7 +481,7 @@ this place, with file and line, so the unhappy-path lines can copy it. When
 the ticket looks XS or S, add to the brief: the exact lines that change, the
 nearest existing pattern to copy, and the test file and command that cover
 the place. Steps are written from those, and only from those. For a `task`,
-the round is one Explore agent with `SEARCH=on` against the platform's own
+the round is one reader whose brief asks for the web, against the platform's own
 docs: the page for each step, the fields and values, the review or approval
 wait, and the check that proves the result works. The round is done when
 every fact you listed came back or came back as "not found". No second round.

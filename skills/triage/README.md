@@ -32,7 +32,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `git`, for the log and for `git bisect`.
 - `gh`, signed in, to read the issue you name and to file the ticket.
-- Sub-agents: Explore agents to read and Runner agents to run repro loops and bisects, in Claude Code. In Codex it does both itself.
+- Sub-agents in Claude Code: readers and runners, per the reader and runner jobs in `../../shared/facts.md`, for repro loops and bisects. In Codex it does both itself.
 - A clipboard tool, optional, for the fix command on a local-env bug, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [benchmark.md](../../shared/benchmark.md) from the shared core: the checks a speed number must pass.
 - [grill](../grill/), when a decision is open.
