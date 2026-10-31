@@ -174,14 +174,11 @@ skill() {
 ship_mode_jq='def ship_mode($n): (.ship[$n] // .ship.default // "") | if . == "full" then "merge" else . end;'
 ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 
-# answer_stage <answer>: the stage whose skill an answered unlabeled issue
-# starts with, or nothing for an answer that starts no thread.
-answer_stage() {
+# answer_skill <word>: the skill an answer or a proposed route names, or
+# nothing for one that starts no thread.
+answer_skill() {
   case "$1" in
-    grill) echo seed ;;
-    triage) echo bug ;;
-    ship) echo ticket ;;
-    ready-pr) echo pr ;;
+    grill|triage|ship|ready-pr) echo "$1" ;;
   esac
 }
 
@@ -382,7 +379,7 @@ cmd_check() {
     st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
     # The stage stays unlabeled; the user's answer only picks the skill.
     if [ "$st" = unlabeled ]; then
-      sk="$(skill "$(answer_stage "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")")"
+      sk="$(answer_skill "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")"
     else
       sk="$(skill "$st")"
     fi
@@ -523,7 +520,7 @@ cmd_proposed() {
   S="$(jq -c --arg n "$n" --arg r "$route" --arg z "$size" \
     '.proposals[$n] = {route: $r, answer: ((.proposals // {})[$n].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
-  sk="$(skill "$(answer_stage "$route")")"
+  sk="$(answer_skill "$route")"
   line="null"
   if [ -n "$sk" ] && ! line="$(decide_for "$n" "$sk")"; then
     line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
