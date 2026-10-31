@@ -491,6 +491,62 @@ header() {
   run bash scripts/check.sh
 }
 
+# agent_md <frontmatter lines>: header's repo with a good SKILL.md, and
+# skills/demo/agents/helper.md of `---`, these lines, `---`, committed; then
+# run check.sh.
+agent_md() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  mkdir -p skills/demo/agents; printf -- '---\n%s\n---\n' "$1" > skills/demo/agents/helper.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_flags_agent_no_frontmatter() {
+  # Given: an agent file with no frontmatter
+  agent_md x; printf '# helper\n' > skills/demo/agents/helper.md; git add -A; git commit -qm bare
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing frontmatter" "$err"
+}
+
+t_flags_agent_name_not_file() {
+  agent_md "$(printf 'name: other\ndescription: d\nmodel: sonnet\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: name does not match file: other" "$err"
+}
+
+t_flags_agent_empty_description() {
+  agent_md "$(printf 'name: helper\ndescription: ""\nmodel: sonnet\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: empty description" "$err"
+}
+
+t_flags_agent_no_model() {
+  agent_md "$(printf 'name: helper\ndescription: d\neffort: high')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing model" "$err"
+}
+
+t_flags_agent_no_effort() {
+  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet')"
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: missing effort" "$err"
+}
+
+t_passes_agent_with_all_fields() {
+  # Given: a full agent file and a Codex openai.yaml beside it
+  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet\neffort: high')"
+  printf 'interface: {}\n' > skills/demo/agents/openai.yaml; git add -A; git commit -qm yaml
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 t_passes_block_after_blank() {
   header "$(printf 'name: demo\ndescription: |\n\n  Explains the skill.')"
   eq exit 0 "$code"
@@ -721,6 +777,12 @@ cases=(
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
+  "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
+  "flags an agent name that is not its file name|t_flags_agent_name_not_file"
+  "flags an agent file with an empty description|t_flags_agent_empty_description"
+  "flags an agent file with no model|t_flags_agent_no_model"
+  "flags an agent file with no effort|t_flags_agent_no_effort"
+  "passes an agent file with every field|t_passes_agent_with_all_fields"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 

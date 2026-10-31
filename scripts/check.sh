@@ -29,7 +29,10 @@
 # when`, `## What you get`, `## Needs`, and `## Fits with`, plus `## Credits`
 # when THIRD_PARTY_NOTICES.md lists it or a file inside it. Each SKILL.md needs
 # a frontmatter (a `---` first line and a closing `---` line), a `name` equal to
-# its folder, and a `description` that is not empty.
+# its folder, and a `description` that is not empty. Each skill agent,
+# `skills/<name>/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
+# file name without `.md`, a `description` that is not empty, and a `model` and
+# an `effort`.
 #
 # The README check runs only with --commit-msg: a commit that changes a file
 # under `skills/<name>/` needs `skills/<name>/README.md` in it too, unless a line
@@ -104,6 +107,42 @@ in_index() { git cat-file -e ":$1" 2>/dev/null; }
 
 # skill_dirs: each `skills/<name>` folder whose SKILL.md is in the index.
 skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }'; }
+
+# agent_files: each skill agent file, `skills/<name>/agents/<agent>.md`, in the index.
+agent_files() { git ls-files -- 'skills/*/agents/*.md' | awk -F/ 'NF == 4'; }
+
+# frontmatter_problems <want> <what> [<key>...]: the problems of the
+# frontmatter on stdin, one per line: no frontmatter, a `name` that is not <want> (the
+# <what> it should match), an empty `description`, or an empty <key>. A quoted
+# value is what the quotes hold, with `''` read as `'` and a `\`-escaped char
+# kept; an unquoted one loses its `#` comment, and `null` or `~` is empty. A
+# block scalar counts when its first line that is not blank is indented.
+frontmatter_problems() {
+  local want="$1" what="$2"; shift 2
+  awk -v want="$want" -v what="$what" -v keys="$*" -v q="'" '
+    function val(s,  c, i, ch, v) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
+      if (c == "\"" || c == q) {
+        for (i = 2; i <= length(s); i++) { ch = substr(s, i, 1)
+          if (c == q && ch == q && substr(s, i + 1, 1) == q) { v = v q; i++; continue }
+          if (c == "\"" && ch == "\\") { v = v substr(s, i, 2); i++; continue }
+          if (ch == c) return v
+          v = v ch }
+        return s }
+      sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
+      return (s == "~" || tolower(s) == "null") ? "" : s }
+    BEGIN            { nk = split(keys, k, " ") }
+    NR == 1          { if ($0 != "---") exit; next }
+    blk && /^[ \t]*$/ { next }
+    blk              { blk = 0; if ($0 ~ /^[ \t]+[^ \t]/) desc = "block" }
+    $0 == "---"      { closed = 1; exit }
+    /^name:/         { name = val($0) }
+                     { for (i = 1; i <= nk; i++) if (index($0, k[i] ":") == 1) got[i] = val($0) }
+    /^description:/  { desc = val($0); if (desc ~ /^[|>][-+]?$/) { desc = ""; blk = 1 } }
+    END { if (!closed) { print "missing frontmatter"; exit }
+          if (name != want) print "name does not match " what ": " (name == "" ? "(none)" : name)
+          if (desc == "") print "empty description"
+          for (i = 1; i <= nk; i++) if (got[i] == "") print "missing " k[i] }'
+}
 
 # refs <file> <text>: each relative path that <file> names, read from the file
 # <text>, as `<line>\t<path>\t<from>/<path>`, by the rules in the header. Prints
@@ -288,32 +327,15 @@ if [ ${#paths[@]} -eq 0 ]; then
   done < <(skill_dirs)
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
-  # `description` is not empty. A quoted value is what the quotes hold, with
-  # `''` read as `'` and a `\`-escaped char kept; an
-  # unquoted one loses its `#` comment, and `null` or `~` is empty. A block
-  # scalar counts when its first line that is not blank is indented.
+  # `description` is not empty; each skill agent, skills/<name>/agents/<agent>.md,
+  # has one whose `name` is its file name and that also sets `model` and
+  # `effort`.
   while IFS= read -r skill; do
-    while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | awk -v want="${skill#skills/}" -v q="'" '
-      function val(s,  c, i, ch, v) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
-        if (c == "\"" || c == q) {
-          for (i = 2; i <= length(s); i++) { ch = substr(s, i, 1)
-            if (c == q && ch == q && substr(s, i + 1, 1) == q) { v = v q; i++; continue }
-            if (c == "\"" && ch == "\\") { v = v substr(s, i, 2); i++; continue }
-            if (ch == c) return v
-            v = v ch }
-          return s }
-        sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
-        return (s == "~" || tolower(s) == "null") ? "" : s }
-      NR == 1          { if ($0 != "---") exit; next }
-      blk && /^[ \t]*$/ { next }
-      blk              { blk = 0; if ($0 ~ /^[ \t]+[^ \t]/) desc = "block" }
-      $0 == "---"      { closed = 1; exit }
-      /^name:/         { name = val($0) }
-      /^description:/  { desc = val($0); if (desc ~ /^[|>][-+]?$/) { desc = ""; blk = 1 } }
-      END { if (!closed) { print "missing frontmatter"; exit }
-            if (name != want) print "name does not match folder: " (name == "" ? "(none)" : name)
-            if (desc == "") print "empty description" }')
+    while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | frontmatter_problems "${skill#skills/}" folder)
   done < <(skill_dirs)
+  while IFS= read -r f; do
+    while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | frontmatter_problems "$(basename "$f" .md)" file model effort)
+  done < <(agent_files)
 fi
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"
