@@ -122,8 +122,11 @@ A snoozed thread leaves the user's thread list until it wakes, so the
 user sees the board, not this thread. At the end of each
 `/orchestrate check` turn, before you post:
 
-- The turn needs the user: a `stop:` line, a `propose` that is not
-  empty, a start recorded `--failed`, or `"done": true`.
+- The turn needs the user: a `stop:` line, an issue at `unlabeled`
+  with no `answer` (a proposal to make or one not answered yet), an
+  issue whose `claim` is `failed`, a start recorded `--failed`, or
+  `"done": true`. Each waits on words said only in this thread, so a
+  later turn with none of them new still keeps it in view.
   `t3_thread_organize` with `action: unsnooze`, no `threadId`.
 - Any other turn: `t3_thread_organize` with `action: snooze`, no
   `threadId`, and `snoozedUntil` 24 hours from now, in UTC ISO form.
