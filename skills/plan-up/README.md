@@ -75,7 +75,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
 
-The cases for [prune.sh](scripts/prune.sh) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed.
+The cases for [prune.py](scripts/prune.py) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed. It reads each plan through [plan_reader.py](scripts/plan_reader.py), the same reader [build-page.py](scripts/build-page.py) uses.
 
 The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
 

@@ -79,7 +79,7 @@ two match: ask. Then go on with their URLs.
    The copy lives until the run ends, by `ok` or by any stop. Then
    `bash scripts/base-copy.sh --remove <BASE_WT>`.
 
-   Then prune old plans: `bash scripts/prune.sh`.
+   Then prune old plans: `python3 scripts/prune.py`.
    It deletes the files of every plan whose issues are all closed. Its
    result never stops the run. Chat gets its last line only when it
    pruned something or printed a `stray` line; name the strays.
