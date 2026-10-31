@@ -8,8 +8,11 @@ how to turn the user's words into a target.
 
 ## Target forms
 
-The target takes `/plan-up`'s forms, with full URLs. The script passes
-it on unchanged:
+The target takes `/plan-up`'s forms, with full URLs, so the script
+knows the repo. The thread's message names the same target by number,
+as `/ship #42 #43` or `/ship #42 on #80`, since the thread runs in that
+repo's checkout. When gh in that checkout sees another repo, as a fork
+clone can, the message keeps the URLs:
 
 - `<issue-url>`: one ticket.
 - `<epic-url> #12 #14`: a run of the named tickets under that epic.
@@ -78,8 +81,8 @@ So you can answer questions about it:
   | `/ready-pr` | `opus` | `medium` |
 
   `--model` and `--effort` still win over every row. With `ready-pr`,
-  the thread gets the URL of the open PR that closes the issue in place
-  of the issue URL. An issue with no open PR, or with two or more,
+  the thread gets the open PR that closes the issue, as `/ready-pr #43`,
+  in place of the issue. An issue with no open PR, or with two or more,
   stops.
 - Permission mode is `auto`.
 - Repo path: found by the checkout resolver,

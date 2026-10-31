@@ -14,7 +14,7 @@ F="$here/../scripts/orchestrate.sh"
 fs_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
-  printf '{"defaultBranchRef":{"name":"main"}}\n' > "$FAKE_GH/repo-view.json"
+  printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
   git init -q -b main "$T/dev/app"
   git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
@@ -89,7 +89,7 @@ t_fs_ticket_starts_ship() {
   # Then
   eq exit 0 "$code"
   has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
   has stdout '"thread_title":"#42 Export orders","runtime_mode":"auto"' "$out"
 }
 
@@ -156,7 +156,7 @@ t_fs_seed_starts_grill() {
   fs_go check acme/app
   # Then
   has stdout '"command":"grill","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
-  has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/grill #42"' "$out"
 }
 
 t_fs_bug_starts_triage() {
@@ -166,7 +166,7 @@ t_fs_bug_starts_triage() {
   fs_go check acme/app
   # Then
   has stdout '"command":"triage"' "$out"
-  has stdout '"message":"/triage https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/triage #42"' "$out"
 }
 
 t_fs_old_pr_starts_ready_pr() {
@@ -177,7 +177,7 @@ t_fs_old_pr_starts_ready_pr() {
   fs_go check acme/app
   # Then
   has stdout '"command":"ready-pr"' "$out"
-  has stdout '"message":"/ready-pr https://github.com/acme/app/pull/43"' "$out"
+  has stdout '"message":"/ready-pr #43"' "$out"
   has stdout '"stage":"pr"' "$out"
 }
 
@@ -367,7 +367,7 @@ t_fs_closed_blockers_free() {
   fs_go check acme/app
   # Then
   has stdout '"free":true,"blocked_by":[]' "$out"
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
 }
 
 t_fs_bug_turned_ticket() {
@@ -377,7 +377,7 @@ t_fs_bug_turned_ticket() {
   fs_go check acme/app
   # Then
   has stdout '"stage":"ticket"' "$out"
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
   eq threads 2 "$(fs_state '.threads | length')"
 }
 
@@ -428,7 +428,7 @@ t_fs_followup_joins() {
   fs_go check acme/app
   # Then
   has stdout '"joined":[50]' "$out"
-  has stdout '"message":"/grill https://github.com/acme/app/issues/50"' "$out"
+  has stdout '"message":"/grill #50"' "$out"
 }
 
 t_fs_add_to_set() {
@@ -464,7 +464,7 @@ t_fs_ship_merge_one() {
   fs_go check acme/app
   # Then
   has stdout '"command":"ship","command_from":"set","mode":"merge"' "$out"
-  has stdout '"message":"/ship --merge https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship --merge #42"' "$out"
 }
 
 t_fs_old_run_full_merges() {
@@ -474,8 +474,8 @@ t_fs_old_run_full_merges() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"message":"/ship --ready https://github.com/acme/app/issues/42"' "$out"
-  has stdout '"message":"/ship --merge https://github.com/acme/app/issues/43"' "$out"
+  has stdout '"message":"/ship --ready #42"' "$out"
+  has stdout '"message":"/ship --merge #43"' "$out"
 }
 
 t_fs_ship_merge_all() {
@@ -779,7 +779,7 @@ t_fs_added_unlabeled_listed() {
   fs_go check acme/app
   # Then
   has stdout '"propose":[43]' "$out"
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
 }
 
 t_fs_proposed_route_word() {
@@ -913,7 +913,7 @@ t_fs_grill_answer_starts() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"message":"/grill https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/grill #42"' "$out"
   has stdout '"stage":"unlabeled"' "$out"
   eq threads '[{"number":42,"stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
 }
@@ -925,7 +925,7 @@ t_fs_ship_answer_starts() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
 }
 
 t_fs_all_yes() {
@@ -994,7 +994,7 @@ t_fs_label_wins_answer() {
   fs_go check acme/app
   # Then
   has stdout '"stage":"ticket"' "$out"
-  has stdout '"message":"/ship https://github.com/acme/app/issues/42"' "$out"
+  has stdout '"message":"/ship #42"' "$out"
 }
 
 t_fs_ship_started_answer() {

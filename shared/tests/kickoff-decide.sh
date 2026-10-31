@@ -9,12 +9,13 @@ D="$here/../kickoff/decide.sh"
 
 # kd_setup <labels-json>: a fresh temp folder T and the fake gh, whose
 # `issue view` is a plain issue #42 "Export orders" with these labels and
-# whose `repo view` names main as the default branch.
+# whose `repo view` names main as the default branch and acme/app as the
+# repo, so gh in the checkout sees the issue's repo.
 kd_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
   printf '{"number":42,"title":"Export orders","labels":%s,"subIssues":{"nodes":[]},"state":"OPEN"}\n' "$1" > "$FAKE_GH/issue-view.json"
-  printf '{"defaultBranchRef":{"name":"main"}}\n' > "$FAKE_GH/repo-view.json"
+  printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
 }
 
 # kd_clone <dir>: a main checkout at <dir> whose origin is acme/app on GitHub.
@@ -38,7 +39,7 @@ t_kd_json_line() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"https://github.com/acme/app/issues/42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"message\":\"/ship https://github.com/acme/app/issues/42\"}" "$out"
+  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"#42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"message\":\"/ship #42\"}" "$out"
 }
 
 t_kd_size_rows() {
@@ -72,7 +73,7 @@ t_kd_stops_no_checkout() {
 # for #42 under --command <command>, on model opus.
 kd_line() {
   printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","heading":"#42","message":"/%s %s"}' \
-    "${4:-https://github.com/acme/app/issues/42}" "$1" "$2" "$3" "$T/dev/app" "$1" "${4:-https://github.com/acme/app/issues/42}"
+    "${4:-#42}" "$1" "$2" "$3" "$T/dev/app" "$1" "${4:-#42}"
 }
 
 t_kd_triage_row() {
@@ -131,7 +132,7 @@ t_kd_ready_pr_row() {
   kd_run --command ready-pr https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "$(kd_line ready-pr medium "command ready-pr" https://github.com/acme/app/pull/43)" "$out"
+  eq stdout "$(kd_line ready-pr medium "command ready-pr" '#43')" "$out"
 }
 
 t_kd_ready_pr_no_pr() {
@@ -165,7 +166,7 @@ t_kd_mode_in_message() {
   kd_run --command ship --mode merge https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq mode+message 'merge /ship --merge https://github.com/acme/app/issues/42' "$(jq -r '"\(.mode) \(.message)"' <<<"$out")"
+  eq mode+message 'merge /ship --merge #42' "$(jq -r '"\(.mode) \(.message)"' <<<"$out")"
   eq command_from set "$(jq -r .command_from <<<"$out")"
 }
 
@@ -176,7 +177,7 @@ t_kd_no_mode_message() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq mode+message '|/ship https://github.com/acme/app/issues/42' "$(jq -r '"\(.mode)|\(.message)"' <<<"$out")"
+  eq mode+message '|/ship #42' "$(jq -r '"\(.mode)|\(.message)"' <<<"$out")"
 }
 
 t_kd_mode_needs_ship() {
@@ -220,8 +221,40 @@ t_kd_heading_forms() {
   eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
 }
 
+t_kd_message_numbers() {
+  # Given: #42 size/S with no sub-issues, PR #80 on feat/79-teams, one
+  # checkout of acme/app whose gh sees acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
+  # When: a set with #43, a set with a bare 43, a layer on PR 80
+  kd_run https://github.com/acme/app/issues/42 '#43'
+  eq "set exit" 0 "$code"
+  eq "set" '/ship #42 #43' "$(jq -r .message <<<"$out")"
+  kd_run https://github.com/acme/app/issues/42 43
+  eq "bare exit" 0 "$code"
+  eq "bare" '/ship #42 #43' "$(jq -r .message <<<"$out")"
+  kd_run https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80
+  eq "on exit" 0 "$code"
+  # Then
+  eq "on" '/ship #42 on #80' "$(jq -r .message <<<"$out")"
+}
+
+t_kd_message_keeps_urls() {
+  # Given: #42 size/S, one checkout of acme/app whose gh sees another repo,
+  # as a fork clone with an upstream remote can
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"upstream/app"}\n' > "$FAKE_GH/repo-view.json"
+  # When
+  kd_run https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 0 "$code"
+  eq message '/ship https://github.com/acme/app/issues/42 #43' "$(jq -r .message <<<"$out")"
+}
+
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
+  "the message names the target by number|t_kd_message_numbers"
+  "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
   "each size takes its row|t_kd_size_rows"
   "decide stops before any launch|t_kd_stops_no_checkout"

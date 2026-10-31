@@ -21,7 +21,7 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
 | ticket | a size label | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
-| PR open | an open PR that closes it, opened before the run | `/ready-pr <pr-url>` |
+| PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>` |
 | task | a `manual` label | none: it is yours |
 | epic | sub-issues | none: its open sub-issues join the set |
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
