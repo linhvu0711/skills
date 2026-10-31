@@ -19,8 +19,10 @@
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, mode, model, model_from, effort, effort_from, reason, base,
 # path, label, heading, and message: the thread's first prompt, as
-# `/ship --merge <url>`, which every launcher sends as it is. Under --command ready-pr, args is the URL of the one open PR
-# that closes the issue. Exit 1: something stopped us; the reason is the last line on
+# `/ship --merge #42`, which every launcher sends as it is. The message names
+# the target by number, or by URL when gh in the checkout sees another repo.
+# Under --command ready-pr, args is the one open PR that closes the issue.
+# Exit 1: something stopped us; the reason is the last line on
 # stderr. It launches nothing, so the caller's launch starts only after every
 # check here passed.
 set -euo pipefail
@@ -30,6 +32,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/labels.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 # ---------- args ----------
 label=""; args=(); sizes=()
@@ -195,6 +198,19 @@ fi
 # The checkout resolver finds the main checkout; its stop line is ours.
 found="$(bash "$here/../checkout.sh" main "$slug")" || exit 1
 path="${found#* MAIN=}"
+
+# The thread runs in that checkout, and /plan-up reads a number as an issue
+# of the repo gh sees there. A fork clone can make gh see its upstream, so
+# the URLs stay unless gh there names this repo.
+here_repo="$(cd "$path" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
+if [ "$(lower "$here_repo")" = "$(lower "$slug")" ]; then
+  if [ "$command" = ready-pr ]; then prep_args="#${prs##*/}"
+  else
+    prep_args="#$number"
+    for t in ${tickets[@]+"${tickets[@]}"}; do prep_args="$prep_args #$t"; done
+    [ -z "$pr_url" ] || prep_args="$prep_args on #$pr_number"
+  fi
+fi
 
 # ---------- label and heading ----------
 # The label names a herdr pane and agent, and herdr takes only

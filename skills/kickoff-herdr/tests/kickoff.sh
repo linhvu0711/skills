@@ -14,7 +14,7 @@ ko_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
   printf '{"number":42,"title":"Export orders","labels":[],"subIssues":{"nodes":[]},"state":"OPEN"}\n' > "$FAKE_GH/issue-view.json"
-  printf '{"defaultBranchRef":{"name":"main"}}\n' > "$FAKE_GH/repo-view.json"
+  printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
 }
 
 # ko_clone <dir>: a main checkout at <dir> whose origin is acme/app on GitHub.
@@ -96,28 +96,28 @@ t_ko_ready_opus_ship() {
   ko_go https://github.com/acme/app/issues/42
   eq exit 0 "$code"
   has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
 }
 
 t_ko_small_opus_ship() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go https://github.com/acme/app/issues/42
   has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
 }
 
 t_ko_medium_opus_plan() {
   ko_herdr; ko_issue '[{"name":"Size: Medium"}]'
   ko_go https://github.com/acme/app/issues/42
   has start "$(ko_start opus high)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
 }
 
 t_ko_large_opus_high_plan() {
   ko_herdr; ko_issue '[{"name":"size/L"}]'
   ko_go https://github.com/acme/app/issues/42
   has start "$(ko_start opus high)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
   eq stdout "#42 Export orders → w1/w1:t2/w1:p2 · /ship (default) · model opus (default) · effort high (default) · size L · base main · new tab w1:t2" "$out"
 }
 
@@ -125,7 +125,7 @@ t_ko_no_size_opus_xhigh_plan() {
   ko_herdr; ko_issue '[]'
   ko_go https://github.com/acme/app/issues/42
   has start "$(ko_start opus xhigh)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
   has report " · no size · " "$out"
 }
 
@@ -141,7 +141,7 @@ t_ko_set_biggest() {
   ko_view 2 43 '[{"name":"size/M"}]'
   ko_go https://github.com/acme/app/issues/42 '#43'
   has start "$(ko_start opus high i42-43)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42-43 /ship https://github.com/acme/app/issues/42 #43" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42-43 /ship #42 #43" "$(cat "$T/herdr.log")"
   has report " · size M of 2 tickets · " "$out"
 }
 
@@ -152,7 +152,7 @@ t_ko_run_all_ready() {
   ko_view 3 73 '[{"name":"ready-to-build"},{"name":"size/S"}]'
   ko_go https://github.com/acme/app/issues/70 '#71' '#73'
   has start "$(ko_start opus medium i71-73)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i71-73 /ship https://github.com/acme/app/issues/70 #71 #73" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i71-73 /ship #70 #71 #73" "$(cat "$T/herdr.log")"
 }
 
 t_ko_epic_open_not_manual() {
@@ -162,7 +162,7 @@ t_ko_epic_open_not_manual() {
   ko_view 3 74 '[{"name":"manual"}]'
   ko_go https://github.com/acme/app/issues/70
   has start "$(ko_start opus medium i70)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i70 /ship https://github.com/acme/app/issues/70" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i70 /ship #70" "$(cat "$T/herdr.log")"
   eq "issue view calls" 3 "$(cat "$FAKE_GH/issue-view.calls")"
 }
 
@@ -179,7 +179,7 @@ t_ko_guessed_size() {
   ko_herdr; ko_issue '[]'
   ko_go --size 42=S https://github.com/acme/app/issues/42
   has start "$(ko_start opus medium)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /ship https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
   has report " · size S, guessed · " "$out"
 }
 
@@ -203,14 +203,14 @@ t_ko_overrides() {
   ko_herdr; ko_issue '[{"name":"ready-to-build"},{"name":"size/XS"}]'
   ko_go --model haiku --effort low --command plan-up https://github.com/acme/app/issues/42
   has start "$(ko_start haiku low)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /plan-up https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /plan-up #42" "$(cat "$T/herdr.log")"
   has report " · /plan-up (set) · model haiku (set) · effort low (set) · ready-to-build · " "$out"
 }
 
 t_ko_mode_merge() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --mode merge https://github.com/acme/app/issues/42
-  has prompt "agent prompt i42 /ship --merge https://github.com/acme/app/issues/42" "$(cat "$T/herdr.log")"
+  has prompt "agent prompt i42 /ship --merge #42" "$(cat "$T/herdr.log")"
   has report " · /ship --merge (set) · " "$out"
 }
 

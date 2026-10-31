@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no URL, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
 disable-model-invocation: true
 ---
 
@@ -63,32 +63,33 @@ the first item that is not done.
 ## Forms
 
 The arguments are `/plan-up`'s, every form of them, passed to it
-unchanged. Two words come off first and never reach plan-up:
+unchanged. An issue or PR is named any way plan-up takes: a URL, a
+number, or words that point at one. Two words come off first and never reach plan-up:
 
 - `--review`, `--ready`, or `--merge`, the first word after `/ship`: it
   sets the ship mode (step 2). One at most. With none, the agent picks.
 - `devin` or `cursor`, first or last of the rest: it names a cloud
   executor. It decides only where the build runs (step 3).
 
-- `/ship <issue-url>`: one ticket, one PR.
-- `/ship <epic-url> #12 #14`: a run of the named tickets under that
+- `/ship <issue>`: one ticket, one PR.
+- `/ship <epic> #12 #14`: a run of the named tickets under that
   epic, a stack of PRs.
-- `/ship <issue-url> #14 #15`: a set of plain tickets, the first URL
+- `/ship <issue> #14 #15`: a set of plain tickets, the first one
   first, a stack of PRs.
-- `/ship <epic-url>`: the whole epic as one run.
-- `/ship <issue-url> on <pr-url>`: one ticket as a new layer on an open
+- `/ship <epic>`: the whole epic as one run.
+- `/ship <issue> on <pr>`: one ticket as a new layer on an open
   stack.
 - `/ship --merge <any of the above>`, `--ready`, or `--review`: the same,
   with the ship mode set.
 - `/ship <any of the above> devin` or `… cursor`: the same, built in the
-  cloud. With an option: `/ship --merge devin <issue-url>`.
-- `/ship`, no URL, words after it or none: what this chat holds picks
-  the start (§ No URL): a follow-up for the build this chat started, the
+  cloud. With an option: `/ship --merge devin <issue>`.
+- `/ship`, no issue named, words after it or none: what this chat holds picks
+  the start (§ No issue): a follow-up for the build this chat started, the
   plan this chat made, or a chat plan of the work this chat agreed on.
 
 ## Steps
 
-1. **Plan.** A plan this chat made (§ No URL): skip this step. Else
+1. **Plan.** A plan this chat made (§ No issue): skip this step. Else
    read `../plan-up/SKILL.md` and follow its
    steps 1 to 8 whole: base copy, issue, gate, facts, forks, plan, done
    rule, page. Its stop points are yours: a base that cannot be fetched,
@@ -232,7 +233,7 @@ unchanged. Two words come off first and never reach plan-up:
      approval)`: merge neither it nor the PRs above it. Its report line
      is `NOT MERGED <url>: <its NOT READY reason, or waits for
      approval>`; each PR above it is `NOT MERGED <url>: waits on <url>`.
-   - Its base is a PR this run did not open (the `on <pr-url>` form):
+   - Its base is a PR this run did not open (the `on <pr>` form):
      `NOT MERGED <url>: its base PR #<n> is not this run's`, and the
      same for each PR above it.
    - Else read the PR's real diff, `cd "$WT" && gh pr diff <NUMBER>`,
@@ -319,9 +320,10 @@ unchanged. Two words come off first and never reach plan-up:
 
    Ship mode `review` or `ready`: the merge is the user's.
 
-## No URL
+## No issue
 
-`/ship` with no URL, words after it or none. The first case that holds
+`/ship` with no issue named, words after it or none. You judge
+whether the words name an issue or point at work in this chat. The first case that holds
 picks the start; the option and `devin` or `cursor` are taken off first,
 as in § Forms.
 
@@ -460,7 +462,7 @@ says A: `Route: cloud (devin, asked)`, as above.
 **User:** `/plan-up https://github.com/acme/shop/issues/42`, then, once
 the page is open, `/ship`.
 
-No URL, no build yet, and the plan of #42 is in this chat: § No URL
+No issue named, no build yet, and the plan of #42 is in this chat: § No issue
 case 2. `Plan: ~/.agents/artifacts/plan/plan-acme-shop-42.md`, step 1 is
 skipped. Step 2 picks `ready`: the base copy is removed, and `Route:
 local (3 walks)`, then on as for any ticket.
@@ -468,7 +470,7 @@ local (3 walks)`, then on as for any ticket.
 **User:** after a long chat that settled a CSV export for orders, with
 no issue: `/ship the CSV export`.
 
-No build, no plan: § No URL case 3. Plan-up's chat form prints
+No build, no plan: § No issue case 3. Plan-up's chat form prints
 `Brief: [feat] Export orders as CSV · size/M` with its Done-when lines,
 the gate passes, the plan is
 `plan-acme-shop-chat-export-orders-csv.md`, and step 2 picks `ready`

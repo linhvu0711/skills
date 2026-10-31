@@ -28,6 +28,8 @@ A shared script finds the repo on disk and picks the model, effort, and command 
 
 In a group of tickets, the biggest one picks the row. `manual` tickets do not count. A ticket with no size label gets a size from its text, guessed by the agent, and the line says `guessed`.
 
+The pane gets the command with issue numbers, not URLs: `/ship #42`, `/ship #42 #43`, or `/ready-pr #43`. If `gh` in that checkout sees another repo, as a fork clone can, it gets the full URLs.
+
 The chat gets one line and stops:
 
 ```

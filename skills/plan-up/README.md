@@ -4,18 +4,18 @@ Turns a ready GitHub issue, or a run of tickets from an epic, into a plan that a
 
 ## Use it when
 
-You have a ticket that passes the readiness gate and you want it built by an agent that has no taste and can't cheaply ask you questions. Type `/plan-up` with the target (`$plan-up` in Codex):
+You have a ticket that passes the readiness gate and you want it built by an agent that has no taste and can't cheaply ask you questions. Type `/plan-up` with the target (`$plan-up` in Codex). Name an issue or PR any way: a URL, `42`, `#42`, or words that point at one in the chat, such as "the CSV issue". A bare number is in the repo you are in. If it is not clear which one you mean, it asks.
 
-- `/plan-up <issue-url>`: one ticket, one PR.
-- `/plan-up <epic-url> #12 #14`: those tickets from the epic, as a stack of PRs.
-- `/plan-up <issue-url> #14 #15`: a set of plain tickets, stacked the same way.
-- `/plan-up <epic-url>`: every open ticket in the epic.
-- `/plan-up <issue-url> on <pr-url>`: one more layer on an open stack.
-- `/plan-up` with no URL: plan the work this chat agreed on, with no issue. Words after it say which part of the chat to plan.
+- `/plan-up <issue>`: one ticket, one PR.
+- `/plan-up <epic> #12 #14`: those tickets from the epic, as a stack of PRs.
+- `/plan-up <issue> #14 #15`: a set of plain tickets, stacked the same way.
+- `/plan-up <epic>`: every open ticket in the epic.
+- `/plan-up <issue> on <pr>`: one more layer on an open stack.
+- `/plan-up` with no issue named: plan the work this chat agreed on, with no issue. Words after it say which part of the chat to plan.
 
 It reads every ticket with its comments, since a later comment can change what the ticket asks. Before it plans, it checks whether someone is already on each ticket: an open PR that closes or mentions it, an assignee who is not you, or a comment that claims the work. If it finds one, it names them and asks whether to review their PR, build anyway, or stop. When `gh` fails during the check, it says the check could not run and asks whether to go on. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
 
-With no URL, there is no issue to read. It writes a short brief from the chat instead: a title, the task, the Done-when lines, and a size, by the same rules as an issue. It prints the brief and goes on, and the brief goes through the same gate. A plan with no issue has no claims to check, no short path, and a file named `plan-<owner>-<repo>-chat-<words>.md`. The words also name its branch, so it picks words that no other plan file and no branch uses yet, adding `-2` or `-3` when it must. Its PR has no `Closes #<n>` line, and only a local build can take it, since the cloud needs an issue.
+With no issue named, there is no issue to read. It writes a short brief from the chat instead: a title, the task, the Done-when lines, and a size, by the same rules as an issue. It prints the brief and goes on, and the brief goes through the same gate. A plan with no issue has no claims to check, no short path, and a file named `plan-<owner>-<repo>-chat-<words>.md`. The words also name its branch, so it picks words that no other plan file and no branch uses yet, adding `-2` or `-3` when it must. Its PR has no `Closes #<n>` line, and only a local build can take it, since the cloud needs an issue.
 
 ## What you get
 

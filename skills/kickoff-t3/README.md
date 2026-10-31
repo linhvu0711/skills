@@ -26,6 +26,8 @@ A shared script finds the repo on disk and picks the model, effort, and command 
 | any M or L | opus | high | `/ship` |
 | any XL, or no size | opus | xhigh | `/ship` |
 
+The thread gets the command with issue numbers, not URLs: `/ship #42`, `/ship #42 #43`, or `/ready-pr #43`. If `gh` in that checkout sees another repo, as a fork clone can, it gets the full URLs.
+
 This skill's script then makes the repo a T3 project if it is not one yet. The agent starts the thread with T3's own tool, because `t3 thread start` cannot set the effort or the permission mode. The thread runs in `auto` mode, on the newest T3 model of that name.
 
 The chat gets one line and stops:

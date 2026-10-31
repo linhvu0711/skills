@@ -28,22 +28,28 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
 ## Six forms
 
-- `/plan-up <issue-url>`: one ticket, one PR. Base is the default branch.
-- `/plan-up <epic-url> #12 #14 #15`: a **run**. The epic is a graph; a run
+Name each issue or PR any way: a URL, `42`, `#42`, `issue 42`, `PR
+80`, or words that point at one in this chat, such as "the CSV issue"
+or "the one we just made". Work out which ones the user means. A bare
+number is in this repo, or in the repo of a URL next to it. Unclear, or
+two match: ask. Then go on with their URLs.
+
+- `/plan-up <issue>`: one ticket, one PR. Base is the default branch.
+- `/plan-up <epic> #12 #14 #15`: a **run**. The epic is a graph; a run
   is one path through it, landed as a stack of PRs, one ticket per
   **layer**, in the order given. The user names the tickets and owns
   what is taken; you check only the edges. Base is the default branch.
-- `/plan-up <issue-url> #14 #15`: a **set**. Plain tickets with no shared
-  parent, the first URL being the first ticket. A set is a run without a
+- `/plan-up <issue> #14 #15`: a **set**. Plain tickets with no shared
+  parent, the first one named being the first ticket. A set is a run without a
   parent: every rule below for a run applies, and the parent steps are
   skipped. The first issue having no sub-issues is what makes it a set.
-- `/plan-up <epic-url>`: the **whole epic** as one run. The tickets are
+- `/plan-up <epic>`: the **whole epic** as one run. The tickets are
   every open sub-issue, in the order the parent body lists them: phase
   by phase, and inside a phase top to bottom. Closed tickets are skipped.
   From there it is a run.
-- `/plan-up <issue-url> on <pr-url>`: one ticket as a new layer on top of an
+- `/plan-up <issue> on <pr>`: one ticket as a new layer on top of an
   open stack. Base is that PR's head branch.
-- `/plan-up`, no URL, words after it or none: a **chat plan**. The work
+- `/plan-up`, no issue named, words after it or none: a **chat plan**. The work
   this chat agreed on, with no issue: one ticket, one PR. Base is the
   default branch. The words, when given, say which part of the chat to
   plan. Step 2 § Chat plan takes the place of the issue.
@@ -90,7 +96,7 @@ Explore agents retrieve, `SEARCH=on` for outside facts.
 
    A run: read the parent and every ticket, each with its comments, by
    the command above. A set: no parent, read every ticket the same way,
-   first URL first. A bare epic URL: list the
+   first one first. A bare epic: list the
    tickets first, `gh issue view <P> --json subIssues -q '.subIssues.nodes[] | select(.state == "OPEN") | .number'`,
    and put them in the parent body's order (the `## Phases` tables, top
    to bottom). Say the list before you go on, so the user sees what the
