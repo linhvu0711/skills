@@ -111,6 +111,18 @@ size_label() {
   done < <(jq -r '.labels.nodes[].name' <<<"$1")
 }
 
+# label_kind <issue json>: the issue's kind, from its labels in one order:
+# task (manual), bug, seed, sized (a size label), or unlabeled.
+label_kind() {
+  local labels
+  labels="$(jq -r '.labels.nodes[].name | ascii_downcase' <<<"$1")"
+  if grep -qx manual <<<"$labels"; then echo task
+  elif grep -qx bug <<<"$labels"; then echo bug
+  elif grep -qx seed <<<"$labels"; then echo seed
+  elif [ -n "$(size_label "$1")" ]; then echo sized
+  else echo unlabeled; fi
+}
+
 # chip <issue json>: the card's chip, the kind and the size, by the labels
 # in the order stage reads them. A ticket's type is its title's leading
 # word, `[fix] x` or `fix(scope): x`, as issue-rules.md § Title writes it.
@@ -126,20 +138,23 @@ chip() {
   else echo unlabeled; fi
 }
 
-# stage <issue json> <run start>: where the issue is. Closed comes first,
-# since a closed seed keeps its label. A PR counts only when it was open
-# before the run: a PR the run's own thread opened is that thread's work.
+# stage <issue json> <run start>: where the issue is: closed, a task,
+# an epic, and an open PR first, then the kind. Closed comes first, since a
+# closed seed keeps its label. A PR counts only when it was open before the
+# run: a PR the run's own thread opened is that thread's work.
 stage() {
-  local labels
-  labels="$(jq -r '.labels.nodes[].name | ascii_downcase' <<<"$1")"
+  local kind
+  kind="$(label_kind "$1")"
   if [ "$(jq -r .state <<<"$1")" = CLOSED ]; then echo done
-  elif grep -qx manual <<<"$labels"; then echo task
+  elif [ "$kind" = task ]; then echo task
   elif [ "$(jq '.subIssues.nodes | length' <<<"$1")" -gt 0 ]; then echo epic
   elif [ "$(jq --arg t "$2" '[.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN" and .createdAt < $t)] | length' <<<"$1")" -gt 0 ]; then echo pr
-  elif grep -qx bug <<<"$labels"; then echo bug
-  elif grep -qx seed <<<"$labels"; then echo seed
-  elif [ -n "$(size_label "$1")" ]; then echo ticket
-  else echo unlabeled; fi
+  else
+    case "$kind" in
+      sized) echo ticket ;;
+      *) echo "$kind" ;;
+    esac
+  fi
 }
 
 # skill <stage>: the command a thread at that stage starts with, or
