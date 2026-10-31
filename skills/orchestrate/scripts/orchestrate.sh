@@ -123,19 +123,18 @@ label_kind() {
   else echo unlabeled; fi
 }
 
-# chip <issue json>: the card's chip, the kind and the size, by the labels
-# in the order stage reads them. A ticket's type is its title's leading
-# word, `[fix] x` or `fix(scope): x`, as issue-rules.md § Title writes it.
+# chip <issue json>: the card's chip, the issue's kind, and for a sized
+# issue its type and size. A ticket's type is its title's leading word,
+# `[fix] x` or `fix(scope): x`, as issue-rules.md § Title writes it.
 chip() {
-  local labels size type
-  labels="$(jq -r '.labels.nodes[].name | ascii_downcase' <<<"$1")"
-  if grep -qx manual <<<"$labels"; then echo task
-  elif grep -qx bug <<<"$labels"; then echo bug
-  elif grep -qx seed <<<"$labels"; then echo seed
-  elif size="$(size_label "$1")" && [ -n "$size" ]; then
-    type="$(jq -r '.title | (capture("^\\[(?<t>[A-Za-z]+)\\]") // capture("^(?<t>[A-Za-z]+)(\\([^)]*\\))?!?:") // {t: "ticket"}).t | ascii_downcase' <<<"$1")"
-    echo "$type · $size"
-  else echo unlabeled; fi
+  local kind type
+  kind="$(label_kind "$1")"
+  case "$kind" in
+    sized)
+      type="$(jq -r '.title | (capture("^\\[(?<t>[A-Za-z]+)\\]") // capture("^(?<t>[A-Za-z]+)(\\([^)]*\\))?!?:") // {t: "ticket"}).t | ascii_downcase' <<<"$1")"
+      echo "$type · $(size_label "$1")" ;;
+    *) echo "$kind" ;;
+  esac
 }
 
 # stage <issue json> <run start>: where the issue is: closed, a task,
