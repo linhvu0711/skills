@@ -58,7 +58,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 3. **Wait.** Round `r` starts here, `r` from 1.
 
    ```bash
-   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --wait <SHA>
+   bash scripts/ready.sh <REPO> <NUMBER> --me <me> --watch <SHA>
    ```
 
    It waits a minute for the checks to start, then until every check on
@@ -193,7 +193,7 @@ runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
 **User:** `/ready-pr 43` in the app checkout, on `feat/42-login`.
 
 The PR is open, not a fork, head `d6221e2`. Tree clean on the branch,
-so `WT` is here. `ready.sh --wait` in the background returns after four
+so `WT` is here. `ready.sh --watch` in the background returns after four
 minutes: `BLOCKED`, reason `1 review thread(s) wait for the author`, and
 one thread line, a 🟡 finding at `src/auth/login.ts:212`. Validate: one
 `fix here`, `ours`, `should`. Fix, commit, fetch, push. Round 2: the

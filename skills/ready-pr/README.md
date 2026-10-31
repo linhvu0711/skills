@@ -18,11 +18,11 @@ F1 fix here d6221e2 · F2 push back · F3 fix later https://github.com/…/issue
 READY https://github.com/acme/app/pull/43
 ```
 
-Each readiness check is one call to `ready.sh`, which gives one readiness verdict: `READY`, `WAITING` while a check or GitHub is still working, or when someone pushed during the wait (it then waits on the new head), or `BLOCKED` on a draft, a conflict, a red check, a requested change, an open thread, or a check the base branch requires that never posted. It prints the reason on the next line. `READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. The run's last line stays `READY`, or `NOT READY <url>: <what is open>` when it stops.
+In a round, `ready.sh` watches the head commit: it prints each new red check, with its workflow and the step that failed, and each new thread, as they come, in any order, until no check is still running. Then it gives the verdict. Each readiness check is one call to `ready.sh`, which gives one readiness verdict: `READY`, `WAITING` while a check or GitHub is still working, or when someone pushed during the watch (it then watches the new head), or `BLOCKED` on a draft, a conflict, a red check, a requested change, an open thread, or a check the base branch requires that never posted. It prints the reason on the next line. `READY` means only the merge is left. A PR that waits for nothing but a person's approval reads `READY <url> (waiting for approval)`. The run's last line stays `READY`, or `NOT READY <url>: <what is open>` when it stops.
 
 It keeps no list of bot names and reads no old PRs, so a new repo, a new bot, a renamed bot, and a bot set to skip a push all need nothing. A repo with no review bot still works: it judges the comments people left.
 
-If `gh` fails five times in a row while it waits for the checks (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
+If `gh` fails five times in a row while it watches the checks (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
