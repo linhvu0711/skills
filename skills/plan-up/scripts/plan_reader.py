@@ -197,6 +197,25 @@ def records(lines, kind):
     return got
 
 
+def unread(section):
+    got = []
+    for block, kind in [("Slices", "slice"), ("UI walks", "walk"), ("Videos", "video")]:
+        for line in section.get(block, []):
+            t = line.strip()
+            heading = not line[:1].isspace() or re.match(r"(Slice|Walk|Video)\b", t)
+            if t and heading and not RECORD[kind].fullmatch(t):
+                got.append((block, t))
+    return got
+
+
+def brief(lines):
+    if not lines:
+        return None
+    task = next((m.group(1) for line in lines if (m := re.fullmatch(r"Task:\s*(\S.*)", line.strip()))), "")
+    done = next((i for i, line in enumerate(lines) if line.strip() == "Done when:"), None)
+    return {"task": task, "done": list_items(lines[done + 1:]) if done is not None else []}
+
+
 def layer(section, n, issue, title, review):
     return {
         "n": n, "issue": issue, "title": title, "review": review,
@@ -210,6 +229,7 @@ def layer(section, n, issue, title, review):
         "slices": records(section.get("Slices", []), "slice"),
         "walks": records(section.get("UI walks", []), "walk"),
         "videos": records(section.get("Videos", []), "video"),
+        "unread": unread(section),
     }
 
 
@@ -227,12 +247,17 @@ def read(path):
         "size": head.get("size", ""),
         "date": head.get("date", ""),
         "run": run,
+        # A chat plan has no issue: its `# Plan:` line has a title and no `#<n>`.
+        "chat": not run and bool(h1) and not h1.group(1) and h1.group(2)[:1] not in ("", "#"),
         "facts": key_values(top.get("Facts", []), FACTS),
         "stack": stack_rows(top.get("Stack", [])),
         "points": key_values(top.get("Stack", []), ["Points"]).get("points", ""),
         "reviews": got,
         "maps": maps(named),
         "proved": list_items(top.get("Proved", [])),
+        "brief": brief(top.get("Brief", [])),
+        # A backtick span quotes code or output as it is, so only the text outside it is prose.
+        "prose": [(n, re.sub(r"`[^`]*`", "``", line)) for n, line in enumerate(lines, 1)],
     }
     if run:
         plan["layers"] = [
