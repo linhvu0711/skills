@@ -38,9 +38,12 @@ b. **Walker.** In Claude Code, the skill agent `walker`
      `--no-sandbox` is there because Chromium's own sandbox cannot
      start in a proofbox Sandbox: without it Chromium stops with `No
      usable sandbox!`;
-   - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
-     after, a later round or a rerun gets only the videos 9c films
-     again and their walks, so the walker never overwrites a kept
+   - the plan's `UI walks` and `Videos` blocks, verbatim, as text
+     pasted in the brief itself. Never a `$(cat <file>)` line or a path
+     in their place, since
+     the Agent tool runs no shell, so the walker gets that line, not the file.
+     In mode after, a later round or a rerun gets only the videos 9c
+     films again and their walks, so the walker never overwrites a kept
      video. Mode before gets the walks step 7 names. A round run again
      after `GONE`, in either mode, gets the same videos or walks as the
      round it repeats, so a shot the dead round left unchecked is taken
