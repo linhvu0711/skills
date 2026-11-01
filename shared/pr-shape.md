@@ -163,10 +163,10 @@ say; with nothing to say, the heading goes too.
      unwrap every video line, then write the body once more:
 
      ```bash
-     gh pr view <n> --json body -q .body \
+     gh pr view -R <owner>/<repo> <n> --json body -q .body \
        | sed -E 's#^!\[video-[0-9]+\]\((https://github\.com/user-attachments/assets/[^)]+)\)$#\1#' \
        > pr-body.md
-     gh pr edit <n> --body-file pr-body.md
+     gh pr edit -R <owner>/<repo> <n> --body-file pr-body.md
      ```
 
      Then open the PR and check that each video shows a player, not a
@@ -181,7 +181,7 @@ say; with nothing to say, the heading goes too.
      `pr-body.md` next to the media files. Then, from that directory:
 
      ```bash
-     gh pr edit <n> --body-file pr-body.md --attach before-1.png --attach after-1.png --attach video-1.mp4 …
+     gh pr edit -R <owner>/<repo> <n> --body-file pr-body.md --attach before-1.png --attach after-1.png --attach video-1.mp4 …
      ```
 
      One `--attach` per file the body references, up to 50 per command.
