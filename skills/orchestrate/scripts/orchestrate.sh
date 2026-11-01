@@ -244,8 +244,8 @@ joins='
   | map(select(. as $x | ($S.set | index([$x]) | not) and ($S.removed | index([$x]) | not)))'
 
 # thread_link <name> <thread-id>: the orchestrator thread's link, as T3 writes a
-# thread's link once the thread has the title `orchestrate: <name>`.
-thread_link() { printf '[orchestrate: %s](t3-thread://v1/%s)' "$1" "$2"; }
+# thread's link once the thread has the title `🧭 <name>`.
+thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 
 # ---------- board ----------
 # board: a jq program on null, with the state as $S and the check's rows as

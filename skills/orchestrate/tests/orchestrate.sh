@@ -1088,7 +1088,7 @@ t_fs_live_run_stops_start() {
   fs_go start acme/app --name "#43" --thread x --env e1 43
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: a live run in acme/app: [orchestrate: #42](t3-thread://v1/f1)" "$err"
+  eq stderr "stop: a live run in acme/app: [🧭 #42](t3-thread://v1/f1)" "$err"
   eq runs 1 "$(ls -1 "$T/orchestrate/acme-app" | wc -l | tr -d ' ')"
 }
 
@@ -1101,7 +1101,7 @@ t_fs_resume_newest() {
   # Then
   eq exit 0 "$code"
   has stdout '"name":"#42","old_task":"s1","every":5' "$out"
-  eq state '{"status":"running","link":"[orchestrate: #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
+  eq state '{"status":"running","link":"[🧭 #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
 }
 
 t_fs_no_open_issue_stops() {

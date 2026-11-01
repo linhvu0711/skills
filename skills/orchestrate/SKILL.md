@@ -37,7 +37,7 @@ comment, no label, no close, no merge.
    set in a few words: `#12 #14`, `epic #70 Order export`,
    `assigned to me`.
 2. **Thread.** `t3_thread_update` with `action: rename`, no
-   `threadId`, `title: orchestrate: <name>`. Then `t3_thread_list` with
+   `threadId`, `title: 🧭 <name>`. Then `t3_thread_list` with
    `titleContains` that title, and hold the `threadId` of the thread
    with that exact title: no environment variable names this thread.
    Then `t3_environment_read`, and hold its `environmentId`: the board's
@@ -227,12 +227,12 @@ the answers then run § Check.
 
 `/orchestrate resume`, in any thread of the repo's project.
 
-1. Rename this thread to `orchestrate: resume` and hold its `threadId`
+1. Rename this thread to `🧭 resume` and hold its `threadId`
    and the `environmentId`, as § Start step 2.
 2. `scripts/orchestrate.sh resume <owner/repo> --thread <threadId> --env <environmentId>`.
    It prints the run's `run`, `name`, `old_task`, and `every`, and puts
    the newest board page in the run folder. Rename this thread to
-   `orchestrate: <name>`.
+   `🧭 <name>`.
 3. `old_task` set: the run is from before the watcher, and has a T3
    scheduled task; `delete_scheduled_task` on it. `null`: nothing to
    delete.
