@@ -55,7 +55,12 @@ Every command takes the Sandbox id as `<id>`.
   <id> -- sh -c '<command> >/dev/null 2>&1 &'`. A web page: the browser
   opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
   Monospace -fs 12` from the brief, then click inside it before you
-  type; an unfocused window drops the keys.
+  type; an unfocused window drops the keys. The browser or window does
+  not start, or shows an error in place of the app:
+  retry the start once, with the command and flags the brief gives,
+  exactly. It fails again: stop that video, and report each of its
+  walks as `FAIL · the app did not open: "<the error text, word for
+  word>"`.
 - On macOS, a dialog asks for a password (a permission, the Keychain):
   type the Login password `runner` with `proofbox type`, as a person
   does. On Linux there is none.

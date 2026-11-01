@@ -32,9 +32,12 @@ b. **Walker.** In Claude Code, the skill agent `walker`
      screen size (1440x900 on linux, 1280x800 on macos);
    - how to open the app: the `Open` line, as a command it runs with
      `proofbox exec`. A browser opens on a new, empty profile for each
-     video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
-     that Playwright launches, which starts empty. So no history from
-     the Sandbox image shows in the address bar;
+     video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
+     or a browser that Playwright launches, which starts empty. So no
+     history from the Sandbox image shows in the address bar.
+     `--no-sandbox` is there because Chromium's own sandbox cannot
+     start in a proofbox Sandbox: without it Chromium stops with `No
+     usable sandbox!`;
    - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
      after, a later round or a rerun gets only the videos 9c films
      again and their walks, so the walker never overwrites a kept
