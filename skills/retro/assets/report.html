@@ -8,10 +8,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { color-scheme: light dark; --bg: #fafaf9; --fg: #0f172a; --card: #ffffff; --line: #e2e8f0; --muted: #64748b; --quote: #f5f5f4; --accent: #059669;
-    --strong: #059669; --amber: #d97706; --slate: #64748b; --empty: #e7e5e4; --add: #ecfdf5; --add-fg: #065f46; --del: #fef2f2; --del-fg: #991b1b; }
+    --strong: #059669; --amber: #d97706; --slate: #64748b; --one: #c4bfb9; --empty: #e7e5e4; --add: #ecfdf5; --add-fg: #065f46; --del: #fef2f2; --del-fg: #991b1b; }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0c0a09; --fg: #e7e5e4; --card: #1c1917; --line: #292524; --muted: #a8a29e; --quote: #141210; --accent: #34d399;
-      --strong: #10b981; --amber: #f59e0b; --slate: #94a3b8; --empty: #292524; --add: #052e1f; --add-fg: #a7f3d0; --del: #2d0f0f; --del-fg: #fecaca; }
+      --strong: #10b981; --amber: #f59e0b; --slate: #94a3b8; --one: #57534e; --empty: #292524; --add: #052e1f; --add-fg: #a7f3d0; --del: #2d0f0f; --del-fg: #fecaca; }
   }
   body { background: var(--bg); color: var(--fg); }
   .card { background: var(--card); border-color: var(--line); }
@@ -24,7 +24,7 @@
   .hit-strong { background: var(--strong); }
   .hit-amber { background: var(--amber); }
   .hit-slate { background: var(--slate); }
-  .hit-one { background: var(--muted); }
+  .hit-one { background: var(--one); }
   .diff-add { background: var(--add); color: var(--add-fg); overflow-wrap: anywhere; }
   .diff-del { background: var(--del); color: var(--del-fg); overflow-wrap: anywhere; }
   .ov-row { border-top: 1px solid var(--line); }
