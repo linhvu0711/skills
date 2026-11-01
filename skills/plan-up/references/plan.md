@@ -371,9 +371,14 @@ The structure changes and the behavior does not.
 - **Callers.** Every caller moves to the new form, and the last slice
   deletes the old one, in the same PR. In a run, the old form is gone
   by the last layer.
-- **Rename.** Each hit of the old name's search is a `Change` or a
-  `Docs` line, or a `Decided` line that says why it stays. `Gates`
-  holds the search command and the hits that may stay.
+- **Rename.** The search for the old name is a
+  whole-word or call pattern, as `rg -n '\bBaseState\b'` or `rg -n 'released\('`, so
+  `FakeBaseState` is no hit; it is scoped to the files it is about, by
+  path or `-g`, so a private step of the same name elsewhere is no hit;
+  and it runs once on the base copy when the plan is written. Each hit
+  of that run is a `Change` or a `Docs` line, or a `Decided` line that
+  says why it stays. `Gates` holds the search command and the base hits
+  that may stay; after the change, any other hit fails the gate.
 
 ### perf
 
@@ -430,9 +435,10 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, short enough to fit the box. `scripts/build-page.py`
-  holds the limits and names each line over one. `Change` is `new`, `changed` (the job
-  changes), `removed`, or `same`. A `same` part is on the map only when
+  job changes, short enough to fit the box. Each `Part` is at most 20 characters, each `Job` at most 30, and each flow label at most 20,
+  the same limits as `NAME_MAX`, `JOB_MAX`, and `LABEL_MAX` in
+  `scripts/build-page.py`, which names each line over one. `Change` is
+  `new`, `changed` (the job changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
   what changes in it), or `outside` (a tool, a service, a person, or an
@@ -441,7 +447,7 @@ part or flow changes.`, so the reader sees that the plan checked.
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
 - A flow names what moves or what is asked, never `imports`, in a few
-  words within the label limit in `scripts/build-page.py`. `(same)` may be left out.
+  words, at most 20 characters. `(same)` may be left out.
 - At most 12 parts. More: merge the `same` parts no changed flow needs,
   then parts of one group whose flows match. Still more: two maps, one
   per area, each block headed `## Change map · <area>`.
@@ -588,7 +594,12 @@ rule to copy: a big fork, ask.
 
 **UI walks.** Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
-fixture the repo has. A walk whose `See` depends on the date or the time of
+fixture the repo has. Each `See` item is visible at the walk's `Screen`
+size in the state its `Setup` makes: a row the seed or fixture holds, on
+the screen the steps reach, with no scroll or filter the steps do not
+take. A `See` names no value that follows the real clock, such as a date
+the sample data moves to today or a time like `2 days ago`; it names a
+value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of
 day sets the clock in `Setup`, to a named time, with the hook the
 repo's tests use (a fake timer, a seed date, Playwright's
 `clock.install`), so the walk shows the same at any hour and never
@@ -699,7 +710,8 @@ facts or forks.
   screen it copies; every open look choice is under `Decided`.
 - Every walk step names an exact label, route, key, or element, and
   does one action, a typed command alone; every walk has `Setup` and
-  `Must not`; a terminal walk's `Must not` names screen text, never
+  `Must not`; each `See` item is visible at the `Screen` size in the
+  `Setup` state and names no value that follows the real clock; a terminal walk's `Must not` names screen text, never
   `stderr` or `stdout`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on
   which line it proves.
@@ -727,7 +739,7 @@ facts or forks.
 - The Change map block is there: a map, or the `None` line when no
   part, job, or flow changes. A map has at most 12 parts, each with a
   job, a `Change`, and a free `Grid` cell outside other groups' areas;
-  names, jobs, and flow labels fit their limits; every part but an `outside`
+  names, jobs, and flow labels fit their limits of 20, 30, and 20 characters; every part but an `outside`
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.
