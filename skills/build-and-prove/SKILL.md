@@ -20,8 +20,8 @@ Coding runs on the local machine: each slice's red and green test,
 typecheck, and lint, in the worktree, with the repo's packages installed
 there. One run has one proofbox Sandbox. It starts after Coding and runs
 the Gates, the app, the before shots, and the walks (ADR 0011 in this
-repo). A slice test that needs a tool the local machine lacks starts it
-early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
+repo). A slice test that needs a tool the local machine lacks,
+or a slice's e2e spec files, start it early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
 prints its usage with no arguments.
 
 - `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
@@ -143,7 +143,8 @@ done.
      versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
      the install command its lockfile calls for, the tools the plan's
      `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
-     commands of its UI walks and videos use. It runs once
+     commands of its UI walks and videos use, and the browsers its e2e
+     tests need. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. `$HOME` is the Work folder, so the script keeps every
      tool, cache, and store outside it, in `/tmp/pb`. It puts them in
@@ -173,7 +174,8 @@ done.
    machine; install it and run again.` and stop. Coding has not started,
    and no Sandbox runs. No Sandbox runs yet: `proofbox list` shows none of this run
    until the last slice is committed, unless a slice test needed a tool
-   the local machine lacks (§ Sandbox).
+   the local machine lacks, or a slice ran its e2e spec files
+   (§ Sandbox).
 
    Assemble the prompt per
    `bash ../../shared/handoff/render.sh local prompt`: the
@@ -238,8 +240,8 @@ done.
 
    **Any other model**: you build. Read the prompt file and follow it
    whole as its builder, in `$WT`: slices in order, tests first, each
-   slice's test, typecheck, and lint on the local machine, in `$WT`, one
-   commit per slice. A slice test in the Sandbox that stops on a tool
+   slice's test, typecheck, and lint on the local machine, in `$WT`, and
+   its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
    `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
    again. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are

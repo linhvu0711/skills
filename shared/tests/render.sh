@@ -196,6 +196,21 @@ t_render_local_look_change() {
   has "look change" "It changes the look of a screen the issue does not name" "$out"
 }
 
+t_render_local_e2e() {
+  render local rules
+  eq exit 0 "$code"
+  has "e2e" "run the e2e spec files the slice changes" "$out"
+}
+
+t_render_cloud_no_e2e() {
+  local ex
+  for ex in devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    lacks "$ex e2e" "run the e2e spec files the slice changes" "$out"
+  done
+}
+
 t_render_cloud_no_look_change() {
   local ex
   for ex in devin cursor; do
@@ -233,4 +248,6 @@ cases=(
   "cloud rules leave the writing skills out|t_render_cloud_no_writing"
   "local rules stop on a look change the issue does not name|t_render_local_look_change"
   "cloud rules leave the look-change stop out|t_render_cloud_no_look_change"
+  "local rules run a slice's e2e specs in the Sandbox|t_render_local_e2e"
+  "cloud rules leave the per-slice e2e rule out|t_render_cloud_no_e2e"
 )
