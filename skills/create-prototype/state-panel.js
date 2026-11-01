@@ -1,5 +1,5 @@
-/* StatePanel - floating, draggable, collapsible control panel for mock states.
- * Inline this whole file in a <script> tag inside the mock (artifacts cannot load local scripts).
+/* StatePanel - floating, draggable, collapsible control panel for prototype states.
+ * Inline this whole file in a <script> tag inside the prototype (artifacts cannot load local scripts).
  *
  * Usage:
  *   StatePanel.init({
@@ -10,7 +10,7 @@
  *     ],
  *     onChange(state, changedId) { render(state) },   // called once at init and after every change
  *   })
- *   StatePanel.set('toast', 'success')   // the mock can drive a row (e.g. after a Save click)
+ *   StatePanel.set('toast', 'success')   // the prototype can drive a row (e.g. after a Save click)
  *   StatePanel.get()                     // { table: 'loaded', toast: 'none', theme: 'dark' }
  *
  * Every row is independent. First option is the default unless `value` is given.
@@ -18,7 +18,7 @@
  * Backtick (`) hides/shows the panel so it stays out of screenshots.
  */
 window.StatePanel = (function () {
-  var KEY = 'mockup-state-panel'
+  var KEY = 'prototype-state-panel'
   var rows = [], state = {}, defaults = {}, onChange = function () {}
   var root, body, pill, hidden = false, collapsed = false
 

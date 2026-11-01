@@ -27,12 +27,12 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - A clipboard tool, optional, to put the map URL on the clipboard, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [grill](../grill/) for the charting and every grill ticket.
 - [commit](../commit/) to commit research notes.
-- [create-mockup](../create-mockup/) and [create-diagram](../create-diagram/) for experiment tickets.
+- [create-prototype](../create-prototype/) and [create-diagram](../create-diagram/) for experiment tickets.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md). From grill: [research.md](../grill/references/research.md).
 
 ## Fits with
 
-- Calls [grill](../grill/), [commit](../commit/), [create-mockup](../create-mockup/), and [create-diagram](../create-diagram/).
+- Calls [grill](../grill/), [commit](../commit/), [create-prototype](../create-prototype/), and [create-diagram](../create-diagram/).
 - Hands a clear map to [to-epic](../to-epic/), or to [to-issue](../to-issue/) when the work fits one ticket.
 - Suggested by [grill](../grill/) when the work will not settle in one session.
 

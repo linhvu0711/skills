@@ -137,7 +137,7 @@ work already decided. The map comes first.
    - **research**: one reader, its brief inline and asking for the web. The note
      lands at `docs/research/<slug>.md` per `../grill/references/research.md`,
      committed with `/commit`.
-   - **experiment**: `/create-mockup` for a UI question, `/create-diagram`
+   - **experiment**: `/create-prototype` for a UI question, `/create-diagram`
      for a structure question, a hand test for "does this service or library
      do X". Iterate; the user picks and says done. What was proven becomes
      `Known` lines per `../../shared/issue-rules.md` § Known.
