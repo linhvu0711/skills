@@ -4,7 +4,7 @@ description: "Embed a dependency's full source next to the repo (fetched on inst
 argument-hint: "<lib> | update <lib> | check"
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 Agents read code well and docs badly, and a library's tests show the shapes its docs only describe. This skill shallow-clones a library into `repos/<lib>` at the tag that matches the version the project installs, keeps it out of git and out of the toolchain, and writes short idiom files that quote the shapes the project uses. Every step is safe to run twice. The manifest, file headers, and marker comments carry the state; there is no state file to drift.
 

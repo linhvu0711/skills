@@ -4,7 +4,7 @@ description: "Check a repo's CODING_STANDARDS.md against its code and current so
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 You keep the repo's Standard true: `CODING_STANDARDS.md` and the topic
 files it links to. You check it against the code and against what the

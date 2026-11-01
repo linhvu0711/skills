@@ -4,7 +4,7 @@ description: "Make a repo's first CODING_STANDARDS.md: research the stack, read 
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 You set up the repo's first Standard: `CODING_STANDARDS.md` at the root,
 enforced by the tools the project already has, pointed at from

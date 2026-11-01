@@ -4,7 +4,7 @@ description: "Take an open PR to ready-to-merge: watch every check and thread on
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 You own one PR until it is ready. The reviewers are the review bots on
 the repo and people. A bot posts a check on the head seconds after each

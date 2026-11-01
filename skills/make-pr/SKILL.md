@@ -3,7 +3,7 @@ name: make-pr
 description: "Open or update the pull request for the work in this checkout, in the shared PR shape: branch, commit, run the repo's checks, push, open, size label. Use for 'make a PR', 'open a PR', 'put this up for review', /make-pr in Claude Code, $make-pr in Codex, and when another skill hands over its files for a PR. Stops at the open PR; the review loop is /ready-pr."
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 Turn the work in this checkout into one pull request. Read
 `../../shared/pr-shape.md` first: it owns the branch name,

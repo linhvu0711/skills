@@ -5,7 +5,7 @@ description: "Capture a raw idea or a noticed bug as a lightweight GitHub issue 
 
 # capture
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 Write one small GitHub issue that holds a raw thing. Two kinds:
 
