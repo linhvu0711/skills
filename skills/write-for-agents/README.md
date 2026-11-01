@@ -8,7 +8,7 @@ You're creating or editing a skill, or changing an `AGENTS.md` or `CLAUDE.md`. `
 
 ## What you get
 
-No output of its own. It shapes how the agent writes: what goes in the main file and what moves to a linked file, how to word a skill's description so it fires at the right time, how to end every step on a clear done condition, and how to prune lines that change nothing. For skills, `SKILL-MECHANICS.md` adds frontmatter and the choice between a skill the agent can start and one only you can.
+No output of its own. It shapes how the agent writes: what goes in the main file and what moves to a linked file, how to word a skill's description so it fires at the right time, how to end every step on a clear done condition, and how to prune lines that change nothing. For skills, `SKILL-MECHANICS.md` adds frontmatter, the choice between a skill the agent can start and one only you can, and the line that opens a skill with relative paths.
 
 ## Needs
 
@@ -20,4 +20,4 @@ No other skill in this repo calls it. The wording passes on the skills here foll
 
 ## Credits
 
-A copy of `productivity/writing-for-agents` from [mattpocock/skills](https://github.com/mattpocock/skills), MIT license. The skill text is upstream's; this repo does not reword it.
+A copy of `productivity/writing-for-agents` from [mattpocock/skills](https://github.com/mattpocock/skills), MIT license. The skill text is upstream's, except the `## Paths` part of `SKILL-MECHANICS.md`, which is this repo's own.

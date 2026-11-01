@@ -20,3 +20,11 @@ The invocation cut of splitting (the sequence cut lives in `SKILL.md`): split of
 ## Router skills
 
 When user-invoked skills multiply past what you can remember, that piled-up cognitive load is cured by a **router skill**: one user-invoked skill that names the others and when to reach for each, so the human has one skill to remember instead of many. It can only hint, never fire them: user-invoked skills have no description, so nothing but the human can reach them.
+
+## Paths
+
+A skill that names a file by a relative path opens its body, right under the frontmatter, with this line:
+
+> Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
+
+An agent often reaches a skill through a link, such as `~/.claude/skills/<name>`. A path joined to the link folder points to nothing; the files sit in the real folder.
