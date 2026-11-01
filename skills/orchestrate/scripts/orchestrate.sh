@@ -507,9 +507,13 @@ cmd_check() {
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}],
-        # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
-        retro: {model: ($S.use.all.model // "opus"), effort: ($S.use.all.effort // "high"), path: $S.path,
-          thread_title: "retro: \($S.name)", message: "/retro run \($run)", runtime_mode: "auto"}} else {} end'
+        removed: $S.removed}
+      # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
+      # A run with issues taken out is not the whole work, so it gets no retro yet.
+      + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // "opus"),
+          effort: ($S.use.all.effort // "high"), path: $S.path,
+          thread_title: "retro: \($S.name)", message: "/retro run \($run)", runtime_mode: "auto"}} else {} end)
+      else {} end'
 }
 
 # ---------- started ----------
