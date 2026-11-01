@@ -589,7 +589,12 @@ rule to copy: a big fork, ask.
 
 **UI walks.** Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
-fixture the repo has. A walk whose `See` depends on the date or the time of
+fixture the repo has. Each `See` item is visible at the walk's `Screen`
+size in the state its `Setup` makes: a row the seed or fixture holds, on
+the screen the steps reach, with no scroll or filter the steps do not
+take. A `See` names no value that follows the real clock, such as a date
+the sample data moves to today or a time like `2 days ago`; it names a
+value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of
 day sets the clock in `Setup`, to a named time, with the hook the
 repo's tests use (a fake timer, a seed date, Playwright's
 `clock.install`), so the walk shows the same at any hour and never
@@ -700,7 +705,8 @@ facts or forks.
   screen it copies; every open look choice is under `Decided`.
 - Every walk step names an exact label, route, key, or element, and
   does one action, a typed command alone; every walk has `Setup` and
-  `Must not`; a terminal walk's `Must not` names screen text, never
+  `Must not`; each `See` item is visible at the `Screen` size in the
+  `Setup` state and names no value that follows the real clock; a terminal walk's `Must not` names screen text, never
   `stderr` or `stdout`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on
   which line it proves.
