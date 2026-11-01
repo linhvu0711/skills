@@ -85,8 +85,11 @@ done.
 
 ## Steps
 
-1. **Plan.** Read the plan `.md` whole. Stop with one line on each of
-   these:
+1. **Plan.** Read the plan `.md` whole: step 5 pastes its blocks into
+   the builder's prompt. A run: read the blocks above the first
+   `## Layer` heading, then this layer's, from `## Layer <n>` to the
+   next `## Layer`; no other layer is held. Stop with one line on each
+   of these:
    - no file at the path: `No plan at <path>.`
    - no `# Plan:` heading, or no `Repo:` line under `## Facts`: `<path>
      is not a /plan-up plan.`
@@ -267,8 +270,8 @@ done.
 
 7. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
    line names steps, and only for a walk with no `before-<walk>.png` in
-   `PROOF` yet. Read `references/walks.md` first: steps 9a to 9c, which
-   this step uses, are there. The Sandbox must hold the base, since Coding has
+   `PROOF` yet. Read `references/walks.md` whole first: this step uses
+   its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
    committed: add a detached worktree of `BASE` in a temp
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
@@ -329,7 +332,8 @@ done.
    above. Remove the temp worktree.
 
 9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
-   to step 10. Else read `references/walks.md` and follow it: rounds, at most
+   to step 10. Else read `references/walks.md` whole and follow it,
+   since each round runs all three of its sections: rounds, at most
    three, each 9a start the app, 9b walker and video check, 9c sort.
 
 10. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
@@ -367,7 +371,7 @@ done.
     `PROOF`, with its mode and round in front; each `not checked:` part
     of a walk's line, once per walk; and each `Decided` line this run
     added in the `W<w> ... changed after round <r>` shape
-    (`references/walks.md` 9c). None of them: no notes block, and the
+    (`references/walks.md` § 9c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.
 
     `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
@@ -386,7 +390,7 @@ number done, and the prompt starts at the next one. A count at or past
 the number of slices means every slice is in, since fix rounds commit
 only after the last slice: no builder, go to step 6. Before shots in
 `PROOF` are kept. The videos in `PROOF` are kept too, and step 9
-films again only those `references/walks.md` 9c names.
+films again only those `references/walks.md` § 9c. Sort names.
 
 ## Follow-up
 
