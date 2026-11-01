@@ -3,7 +3,7 @@ name: commit
 description: "Write a Conventional Commits message compressed to intent only. Use for 'write a commit', 'commit message', /commit or /git-commit."
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 Write commit messages terse and exact. Conventional Commits format. No fluff. Why over what.
 

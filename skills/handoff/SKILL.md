@@ -4,7 +4,7 @@ description: "Build the prompt from the plan file /plan-up wrote in this chat (o
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 The prompt skeleton and the rules block live in
 `../../shared/handoff/` as templates, shared with `/build-and-prove`.

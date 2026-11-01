@@ -4,7 +4,7 @@ description: "Look back over coding sessions from every harness, and PRs no sess
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 The user asked for a **retrospective**. You suggest changes to the repo's agent **environment** (checks, pointers, review rules, standards, skills, steering files, tools) so future runs go better for everyone on the team. You change no code and no file here: every finding comes from the record (session transcripts and GitHub), and the user picks what becomes an issue.
 

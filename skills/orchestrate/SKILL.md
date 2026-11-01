@@ -4,7 +4,7 @@ description: "Run a set of GitHub issues (a list, an epic, or a rule such as ass
 disable-model-invocation: true
 ---
 
-Paths in this skill are relative to its folder, the one that holds this `SKILL.md`. Before you run or read one of them, put that folder's absolute path in front of it.
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the
 run's state file, decides what to start, and runs the watcher: a
