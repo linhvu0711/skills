@@ -28,7 +28,7 @@ flowchart LR
 - [capture](skills/capture/) parks an idea or a bug as an issue for later. A seed grows through grill. A bug goes to [triage](skills/triage/), which finds the cause and writes the fix ticket.
 - [discover-path](skills/discover-path/) takes work too big for one grill and splits it into questions, each one settled by grill.
 - [improve-architecture](skills/improve-architecture/) finds code worth reshaping, then grills you on the part you pick.
-- [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
+- [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
 - The work ends as one ticket from [to-issue](skills/to-issue/), or as a phased epic from [to-epic](skills/to-epic/).
 
 ### 2. Build and ship
@@ -83,7 +83,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
 | [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |
 | [plan-up](skills/plan-up/) | Turns a ready issue, or a run of tickets, into a plan a coding agent can follow cold: seams, tests, slices, doc updates, UI walks. |
-| [create-mockup](skills/create-mockup/) | Builds a clickable HTML mock of a UI change inside your app's real shell, before anyone writes the real code. |
+| [create-prototype](skills/create-prototype/) | Builds a clickable HTML prototype of a UI change inside your app's real shell, before anyone writes the real code. |
 | [create-diagram](skills/create-diagram/) | Draws a diagram of your code as an interactive HTML page, built only from facts found in the code. |
 
 ### Build and ship
@@ -157,7 +157,7 @@ Optional, only for the skills that name them:
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route.
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
-- The `impeccable` skill: [create-mockup](skills/create-mockup/) and [create-diagram](skills/create-diagram/), to match your design system.
+- The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
 
 ## Credits

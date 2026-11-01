@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Build a final-fidelity interactive UI prototype"
+  default_prompt: "$prototype"
+policy:
+  allow_implicit_invocation: false

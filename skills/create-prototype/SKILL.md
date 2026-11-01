@@ -1,17 +1,17 @@
 ---
-name: create-mockup
-description: "Build a clickable, final-fidelity HTML mock of an agreed UI change inside the app's real shell, with a floating state panel, and open it in the browser for review."
+name: create-prototype
+description: "Build a clickable, final-fidelity HTML prototype of an agreed UI change inside the app's real shell, with a floating state panel, and open it in the browser for review."
 disable-model-invocation: true
 argument-hint: "[feature or page]"
 ---
 
-# create-mockup
+# create-prototype
 
 One interactive HTML page: the agreed feature, page, or revamp at final fidelity, inside the app's real shell, every in-scope control working, plus a floating **state panel** that flips each component through its states. The user reviews it and asks for changes until satisfied. Every change updates the same file and the same local URL.
 
 ## 1. Scope contract
 
-Read the conversation, create `${CODEX_HOME:-$HOME/.codex}/artifacts/mockup/<slug>/`, and write `scope.md` there: the screens, components, and actions, with the states of each (loaded, loading, empty, error, disabled, invalid, submitting), plus the global ones the app has (toast, theme, role). Each line is one thing the user can click or see. "Billing page" is an intent; "plan card with an Upgrade button that opens a confirm dialog" is a line. Done when every line is concrete. A conversation that gives only an intent: stop, list what is missing, and name `/grill` as the way to settle it. Generated files stay outside the repository unless the user asks for a repository path.
+Read the conversation, create `${CODEX_HOME:-$HOME/.codex}/artifacts/prototype/<slug>/`, and write `scope.md` there: the screens, components, and actions, with the states of each (loaded, loading, empty, error, disabled, invalid, submitting), plus the global ones the app has (toast, theme, role). Each line is one thing the user can click or see. "Billing page" is an intent; "plan card with an Upgrade button that opens a confirm dialog" is a line. Done when every line is concrete. A conversation that gives only an intent: stop, list what is missing, and name `/grill` as the way to settle it. Generated files stay outside the repository unless the user asks for a repository path.
 
 ## 2. Visual truth
 
@@ -29,7 +29,7 @@ Write the findings to `tokens.md` next to `scope.md`. The repo stays untouched.
 
 ## 3. Build
 
-Use `impeccable` for the visual implementation when it is installed, then write one file at `${CODEX_HOME:-$HOME/.codex}/artifacts/mockup/<slug>/<slug>.html`. That path holds for the life of the mock, so follow-up changes update the same page.
+Use `impeccable` for the visual implementation when it is installed, then write one file at `${CODEX_HOME:-$HOME/.codex}/artifacts/prototype/<slug>/<slug>.html`. That path holds for the life of the prototype, so follow-up changes update the same page.
 
 - The real shell wraps the feature. Shell areas outside the scope are present with real labels and stay static.
 - Every scope line works: a dropdown opens and the choice changes what shows; tabs switch; a form validates in the app's error style; a dialog opens, closes, and closes on Esc; a toast appears and dismisses; the right nav item is active; hover, focus, and disabled are styled.
@@ -40,12 +40,12 @@ Use `impeccable` for the visual implementation when it is installed, then write 
 
 ## 4. Verify
 
-Serve the mockup folder on `127.0.0.1` (`python3 -m http.server 8765 --bind 127.0.0.1`) and check the page in a hidden browser, one the user does not see; `file://` is not the review path. Port 8765 taken: pick another free port and leave the running process alone. In Claude Code use playwright-cli, and run each command from the mockup folder, so its `.playwright-cli/` output stays there: `cd <mockup folder> && npx -y @playwright/cli@latest -s=mockup-<slug> <command>`. `open "<url>"` starts the hidden browser, and `close` ends the session when the check is done. The user asks to watch the check: `open --headed "<url>"`, for that run only. In Codex use the in-app browser. That browser is the agent's, not the user's: once the checks below pass, also open the page in the user's own browser, `open "<url>"` on macOS or `xdg-open "<url>"` on Linux, and again after every rebuild. Walk `scope.md` line by line: a fresh `snapshot` for the element refs before each click, since a re-render changes them, then `click <ref>` on it, flip its panel row through every option, and read `console` after each. `screenshot --filename <path>` for desktop; when the app is responsive, `resize 375 812` and a second screenshot for mobile. Fix everything in one batch, then confirm in at most one more round. Done when every scope line and every panel option has run with zero console errors. playwright-cli's `open` fails, or no browser tool: walk `scope.md` against the HTML by reading it, one render branch per panel row.
+Serve the prototype folder on `127.0.0.1` (`python3 -m http.server 8765 --bind 127.0.0.1`) and check the page in a hidden browser, one the user does not see; `file://` is not the review path. Port 8765 taken: pick another free port and leave the running process alone. In Claude Code use playwright-cli, and run each command from the prototype folder, so its `.playwright-cli/` output stays there: `cd <prototype folder> && npx -y @playwright/cli@latest -s=prototype-<slug> <command>`. `open "<url>"` starts the hidden browser, and `close` ends the session when the check is done. The user asks to watch the check: `open --headed "<url>"`, for that run only. In Codex use the in-app browser. That browser is the agent's, not the user's: once the checks below pass, also open the page in the user's own browser, `open "<url>"` on macOS or `xdg-open "<url>"` on Linux, and again after every rebuild. Walk `scope.md` line by line: a fresh `snapshot` for the element refs before each click, since a re-render changes them, then `click <ref>` on it, flip its panel row through every option, and read `console` after each. `screenshot --filename <path>` for desktop; when the app is responsive, `resize 375 812` and a second screenshot for mobile. Fix everything in one batch, then confirm in at most one more round. Done when every scope line and every panel option has run with zero console errors. playwright-cli's `open` fails, or no browser tool: walk `scope.md` against the HTML by reading it, one render branch per panel row.
 
 ## 5. Deliver and iterate
 
 Open `http://127.0.0.1:<port>/<slug>.html` in the browser and leave the finished page up for the user. Copy the local URL to the clipboard with `../../shared/copy.sh`; on any other exit than 0, say `Clipboard copy skipped.` Reply with the local URL, the HTML file path, `scope.md` as a checklist, which data is fake, what is out of scope, and that the backtick key hides the panel.
 
-On each change request, edit the same file, re-verify only the changed lines, reload the same local URL, and copy it again with `copy.sh`. A later session continues from the same file path. To publish the finished mock as a Claude artifact, run `/to-artifact <path>`.
+On each change request, edit the same file, re-verify only the changed lines, reload the same local URL, and copy it again with `copy.sh`. A later session continues from the same file path. To publish the finished prototype as a Claude artifact, run `/to-artifact <path>`.
 
 **Headless host** (`command -v open xdg-open` finds neither): there is no browser to leave the page in. Skip the local URL. Publish the page with the `to-artifact` skill and reply with the artifact link in place of the URL. A change request republishes to the same artifact. Publish fails: say why, give the HTML file path, stop.
