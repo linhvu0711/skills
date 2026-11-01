@@ -190,6 +190,21 @@ t_render_cloud_no_writing() {
   done
 }
 
+t_render_local_look_change() {
+  render local rules
+  eq exit 0 "$code"
+  has "look change" "It changes the look of a screen the issue does not name" "$out"
+}
+
+t_render_cloud_no_look_change() {
+  local ex
+  for ex in devin cursor; do
+    render "$ex" rules
+    eq "$ex exit" 0 "$code"
+    lacks "$ex look change" "It changes the look of a screen the issue does not name" "$out"
+  done
+}
+
 cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
@@ -216,4 +231,6 @@ cases=(
   "cloud prompt has a Perf heading and local has none|t_render_prompt_perf"
   "local rules name the writing skills|t_render_local_writing"
   "cloud rules leave the writing skills out|t_render_cloud_no_writing"
+  "local rules stop on a look change the issue does not name|t_render_local_look_change"
+  "cloud rules leave the look-change stop out|t_render_cloud_no_look_change"
 )

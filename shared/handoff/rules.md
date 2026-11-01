@@ -594,6 +594,11 @@ Sort each one:
 <!-- local -->
 - It changes a seam, a Done-when line, a schema, an API, a `Decided`
   line, or makes a `Gates` test fail: **stop and ask** (see Asking).
+- It changes the look of a screen the issue does not name: a shared
+  component, style, or token that another page uses, or a page outside
+  the plan's walks. **Stop and ask** before the change (see Asking),
+  and name the screens it reaches. A look change left for PR review is
+  found too late.
 <!-- /local -->
 - The same red after two fixes that did not turn it green: before a
   third fix, write down the cause you believe, and one check that shows

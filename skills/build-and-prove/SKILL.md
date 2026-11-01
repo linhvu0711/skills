@@ -224,9 +224,10 @@ done.
        write it to a file, `~/.claude/bin/herdr-send <PANE> --file
        <file> --no-wait`, tell the user in one line what was asked and
        answered, and wait again. **Big fork** (the list in plan-up step
-       5, plus a force push, a delete, another branch): quote the
-       question in a fenced block, then one question to the user, two
-       options at most, your pick first. The user answers
+       5, plus a force push, a delete,
+       another branch, a look change on a screen the issue does not name):
+       quote the question in a fenced block, then one question to the
+       user, two options at most, your pick first. The user answers
        `/build-and-prove <note>`. Stop.
      - The last line is `BUILT <branch>`: step 6.
      - The last line is `NOT BUILT <branch>: …`: show it, stop.
