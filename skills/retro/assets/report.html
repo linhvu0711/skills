@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Retro report: {{repo name}}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: light dark; --bg: #fafaf9; --fg: #0f172a; --card: #ffffff; --line: #e2e8f0; --muted: #64748b; --quote: #f5f5f4; --accent: #059669;
+    --strong: #059669; --amber: #d97706; --slate: #64748b; --empty: #e7e5e4; --add: #ecfdf5; --add-fg: #065f46; --del: #fef2f2; --del-fg: #991b1b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --fg: #e7e5e4; --card: #1c1917; --line: #292524; --muted: #a8a29e; --quote: #141210; --accent: #34d399;
+      --strong: #10b981; --amber: #f59e0b; --slate: #94a3b8; --empty: #292524; --add: #052e1f; --add-fg: #a7f3d0; --del: #2d0f0f; --del-fg: #fecaca; }
+  }
+  body { background: var(--bg); color: var(--fg); }
+  .card { background: var(--card); border-color: var(--line); }
+  .muted { color: var(--muted); }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; }
+  blockquote { background: var(--quote); border-left: 3px solid var(--line); overflow-wrap: anywhere; }
+  .dot, .cell { display: inline-block; background: var(--empty); border-radius: 3px; }
+  .dot { width: 12px; height: 12px; }
+  .cell { width: 22px; height: 16px; }
+  .hit-strong { background: var(--strong); }
+  .hit-amber { background: var(--amber); }
+  .hit-slate { background: var(--slate); }
+  .hit-one { background: var(--muted); }
+  .diff-add { background: var(--add); color: var(--add-fg); overflow-wrap: anywhere; }
+  .diff-del { background: var(--del); color: var(--del-fg); overflow-wrap: anywhere; }
+  .ov-row { border-top: 1px solid var(--line); }
+  .ov-link:hover { color: var(--accent); }
+  .top { border-color: var(--accent); }
+  a.accent { color: var(--accent); }
+  summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-12">
+  <header class="space-y-3">
+    <h1 class="font-serif text-3xl">Retro report: {{repo name}}</h1>
+    <p class="font-mono text-sm muted">{{scope}} · {{window}} · {{counts}}</p>
+    <div class="flex flex-wrap gap-4 text-xs uppercase tracking-wider muted">
+      <span class="flex items-center gap-2"><span class="dot hit-strong"></span>strong</span>
+      <span class="flex items-center gap-2"><span class="dot hit-amber"></span>worth exploring</span>
+      <span class="flex items-center gap-2"><span class="dot hit-slate"></span>speculative</span>
+      <span class="flex items-center gap-2"><span class="dot hit-one"></span>one-time or tip</span>
+      <span class="flex items-center gap-2"><span class="dot"></span>not seen in that item</span>
+    </div>
+    <details class="text-sm">
+      <summary class="muted">What was read</summary>
+      <div class="mt-2 space-y-2 muted max-w-3xl">{{read line}}</div>
+    </details>
+  </header>
+
+  <section id="overview" class="card rounded-xl border p-6 space-y-4">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 class="font-serif text-2xl">Where each problem showed up</h2>
+      <p class="text-xs muted">rows: cards · columns: the items they came from</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full">
+        <thead class="text-xs uppercase tracking-wider muted">
+          <tr>
+            <th></th><th class="text-left font-normal pb-2">Card</th>
+            <th class="p-1 font-normal text-center"><span class="block">S1</span><span class="block muted">#25</span></th>
+            <th class="p-1 font-normal text-center"><span class="block">PR</span><span class="block muted">#40</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ov-row">
+            <td class="pr-3 py-1 text-right font-mono muted">1</td>
+            <td class="pr-4 py-1"><a class="ov-link" href="#card-1">{{card title}}</a></td>
+            <td class="p-1 text-center"><span class="cell hit-strong"></span></td>
+            <td class="p-1 text-center"><span class="cell"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="cards" class="space-y-10">
+    <h2 class="font-serif text-2xl muted">Patterns</h2>
+
+    <!-- Example: a fix that changes text in a file on this machine. Replace this card. -->
+    <article id="card-1" class="card rounded-xl border p-6 space-y-5">
+      <h2 class="font-serif text-2xl">1. {{card title}}</h2>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">Strong</span>
+        <span class="rounded-full px-2 py-0.5 border">{{kind}}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex gap-1"><span class="dot hit-strong"></span><span class="dot"></span></div>
+        <span class="text-xs muted">{{k}} of {{n}} items · {{item list}}</span>
+      </div>
+      <ul class="font-mono text-sm muted"><li>{{where}}</li></ul>
+      <div class="grid md:grid-cols-2 gap-4 items-start">
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-wider muted">What happened</p>
+          <blockquote class="font-mono text-[13px] leading-relaxed px-3 py-2 rounded-r">{{quote}}<span class="block font-sans text-xs muted mt-1">{{item}} · {{where in it}}</span></blockquote>
+          <blockquote class="font-mono text-[13px] leading-relaxed px-3 py-2 rounded-r">{{quote}}<span class="block font-sans text-xs muted mt-1">{{item}} · {{where in it}}</span></blockquote>
+          <details class="text-sm">
+            <summary class="muted">{{k}} more quotes</summary>
+            <div class="space-y-2 mt-2">
+              <blockquote class="font-mono text-[13px] leading-relaxed px-3 py-2 rounded-r">{{quote}}<span class="block font-sans text-xs muted mt-1">{{item}} · {{where in it}}</span></blockquote>
+            </div>
+          </details>
+        </div>
+        <div class="card rounded-lg border p-4 space-y-3">
+          <p class="text-xs uppercase tracking-wider muted">The text, before and after</p>
+          <div class="space-y-1">
+            <p class="font-mono text-xs muted">{{file}} · {{place}}</p>
+            <div class="diff-del font-mono text-[13px] px-3 py-1.5 rounded">− {{text now}}</div>
+            <div class="diff-add font-mono text-[13px] px-3 py-1.5 rounded">+ {{text after}}</div>
+          </div>
+        </div>
+      </div>
+      <p><strong>Fix.</strong> {{fix}}</p>
+    </article>
+
+    <!-- Example: any other fix. Replace this card. -->
+    <article id="card-2" class="card rounded-xl border p-6 space-y-5">
+      <h2 class="font-serif text-2xl">2. {{card title}}</h2>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">Worth exploring</span>
+        <span class="rounded-full px-2 py-0.5 border">{{kind}}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex gap-1"><span class="dot hit-amber"></span><span class="dot hit-amber"></span></div>
+        <span class="text-xs muted">{{k}} of {{n}} items · {{item list}}</span>
+      </div>
+      <ul class="font-mono text-sm muted"><li>{{where}}</li></ul>
+      <div class="grid md:grid-cols-2 gap-4 items-start">
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-wider muted">What happened</p>
+          <blockquote class="font-mono text-[13px] leading-relaxed px-3 py-2 rounded-r">{{quote}}<span class="block font-sans text-xs muted mt-1">{{item}} · {{where in it}}</span></blockquote>
+        </div>
+        <div class="card rounded-lg border p-4 space-y-2">
+          <p class="text-xs uppercase tracking-wider muted">Fix</p>
+          <p>{{fix}}</p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section id="one-time" class="space-y-10">
+    <h2 class="font-serif text-2xl muted">One-time problems</h2>
+  </section>
+
+  <section id="top-pick">
+    <article class="card top rounded-xl border-2 p-8 space-y-3">
+      <p class="text-xs uppercase tracking-wider muted">Top pick</p>
+      <h2 class="font-serif text-3xl"><a class="accent" href="#card-1">1. {{card title}}</a></h2>
+      <p>{{why it goes first}}</p>
+      <p class="text-sm muted">Which cards should become issues? Answer in chat with their numbers, for example <code>1 4</code>, or <code>none</code>.</p>
+    </article>
+  </section>
+</main>
+</body>
+</html>
