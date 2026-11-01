@@ -371,9 +371,14 @@ The structure changes and the behavior does not.
 - **Callers.** Every caller moves to the new form, and the last slice
   deletes the old one, in the same PR. In a run, the old form is gone
   by the last layer.
-- **Rename.** Each hit of the old name's search is a `Change` or a
-  `Docs` line, or a `Decided` line that says why it stays. `Gates`
-  holds the search command and the hits that may stay.
+- **Rename.** The search for the old name is a
+  whole-word or call pattern, as `rg -n '\bBaseState\b'` or `rg -n 'released\('`, so
+  `FakeBaseState` is no hit; it is scoped to the files it is about, by
+  path or `-g`, so a private step of the same name elsewhere is no hit;
+  and it runs once on the base copy when the plan is written. Each hit
+  of that run is a `Change` or a `Docs` line, or a `Decided` line that
+  says why it stays. `Gates` holds the search command and the base hits
+  that may stay; after the change, any other hit fails the gate.
 
 ### perf
 
