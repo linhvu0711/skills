@@ -48,6 +48,8 @@ On a `perf` plan it runs the plan's command in the Sandbox in turns on the base 
 
 A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
 
+The walks guide now has a heading for each of its three parts: start the app, walker, and sort. A step that needs one part names it, and a step that runs a whole round still reads the whole guide. A run reads only its own layer of the plan.
+
 ## Needs
 
 - [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.

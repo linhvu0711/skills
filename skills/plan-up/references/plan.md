@@ -404,10 +404,14 @@ number can be trusted.
 Write plain marks: no long dash and no curly quote outside backticks.
 `scripts/build-page.py` refuses each one and names its line.
 
-**Summary.** Two to three lines: what changes, the path slice 1 takes,
+### Summary
+
+Two to three lines: what changes, the path slice 1 takes,
 and the counts. The page shows it as the layer's Overview lead.
 
-**Review.** Written last, from the blocks under it, and placed first.
+### Review
+
+Written last, from the blocks under it, and placed first.
 It is for a person who approves the plan and never reads a slice, so it
 uses the issue's words and the repo's names, and no plan words (`slice
 2`, `walk 1`); refs (`D2`, `P1`, `#3`, `O1`) are fine, since the page
@@ -430,7 +434,9 @@ links them. Each part keeps its limit; a part that needs more says less.
 - `In` and `Out` are the scope. `Out` names the `Out of scope` lines by
   their `O` ref.
 
-**Change map.** Drawn when a part is added or removed, a job moves from
+### Change map
+
+Drawn when a part is added or removed, a job moves from
 one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
@@ -456,21 +462,27 @@ part or flow changes.`, so the reader sees that the plan checked.
   stores on the right. The parts of one group sit in cells next to each
   other, with no other part inside the group's area.
 
-**Facts.** Every command is read from CI config, package scripts, or the
+### Facts
+
+Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
 fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk.
 
-**Proved.** One line per probe, numbered `P1`, `P2`. The fact first, as
+### Proved
+
+One line per probe, numbered `P1`, `P2`. The fact first, as
 exact as a `Then`: the value, the shape, the limit, the error. Then what
 ran, in one clause, and the day. `Used by` names each slice, walk, or
 `Decided` line that rests on it; a probe nothing uses was not needed,
 and its line goes. A big fork's option that a probe backs names its
 `P` line.
 
-**Proof.** One row per Done-when line, verbatim. A row names a test, or
+### Proof
+
+One row per Done-when line, verbatim. A row names a test, or
 says in the Test column why a test cannot see the line. A row on a
 screen also names its UI walk and the video step that shows its `See`,
 even when its test passes: the test proves the code gives the right
@@ -478,7 +490,9 @@ output, the walk proves a person sees it right, at the real width, in
 the real colors, with the real dialog. A row with no test and no reason
 is a gap; a row on a screen with no walk is a gap.
 
-**Seams.** A seam is public: something a caller, a user, or a client
+### Seams
+
+A seam is public: something a caller, a user, or a client
 reaches without knowing the inside. Prefer the seam the repo already
 tests. A new seam goes under `Decided`, with the seam it copies. A new
 seam that is a public API is a big fork. A new seam that swaps one thing
@@ -486,7 +500,9 @@ for another (an interface, a port, a client passed in) needs
 two adapters, such as the real one and the test fake. One adapter is a
 hypothetical seam: the code calls that one thing direct.
 
-**Slices.** One per change, in tracer-bullet order. A slice lists every
+### Slices
+
+One per change, in tracer-bullet order. A slice lists every
 test its change makes green, and nothing else: a test that would be green
 without a change of its own belongs to the slice that covers it, not to a
 slice of its own. `Then` is a known literal: a value from the issue, the
@@ -530,7 +546,9 @@ words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
 
-**Right design first.** The plan first says what each part the work
+#### Right design first
+
+The plan first says what each part the work
 touches would look like if it was built today for every job it has,
 the new one too. The facts round brings the signs that the current
 design is wrong: a flag or a branch for one case, the same logic in two
@@ -543,7 +561,9 @@ form, each caller moved to it, and last the old form deleted, all in the
 same PR. The simplest path then decides how: the fewest parts moved,
 each slice green on its own.
 
-**Shape first.** A `Change` that adds or changes data names its shape
+#### Shape first
+
+A `Change` that adds or changes data names its shape
 before its logic: the type, the table, or the file or key format, in
 the first slice that needs it. A new need goes into that shape as if it
 was there from the start. A flag, a mode, or one more branch for the
@@ -552,18 +572,24 @@ planned again. A new kind of ID gets its own type. Data from outside is
 parsed into a type at the edge. A type that a schema, a spec, or a
 generator already defines is taken from there, never written by hand.
 
-**Rerun and crash.** A `Change` that writes outside memory (a file, a
+#### Rerun and crash
+
+A `Change` that writes outside memory (a file, a
 row, a remote call) reads what is there and writes only the
 difference. A file is written under a temp name, then renamed into
 place. So a second run, and a run after a crash, end in the same state. Its
 slice has a test that runs the step twice; `Then` is the end state.
 
-**One writer.** Two actors that write one target (a file, a key, a
+#### One writer
+
+Two actors that write one target (a file, a key, a
 row) each get their own target, joined when it is read. A lock is
 planned only when one shared target must stay, and its `Decided` line
 says why.
 
-**Delete slice.** Dead code the facts round found in the area the
+#### Delete slice
+
+Dead code the facts round found in the area the
 ticket touches is deleted first, alone, so the new code is built on the
 simpler base and nothing copies the old way. Code is dead only when a
 search shows
@@ -585,14 +611,18 @@ runs it on both sides. It proves no Done-when line. The tracer bullet is the
 first slice after it.
 No dead code found: no delete slice and no line about it.
 
-**Look.** The executor has no taste, so the plan holds every look
+### Look
+
+The executor has no taste, so the plan holds every look
 decision. A slice on a screen names in `Change` the mockup frame it
 matches and the component or screen it copies, `file:line`. What the
 mockup and the repo leave open (spacing, copy, empty and error text, a
 color) is a small fork: pick, write it under `Decided`. No mockup and no
 rule to copy: a big fork, ask.
 
-**UI walks.** Every step names an exact label, route, key, or element.
+### UI walks
+
+Every step names an exact label, route, key, or element.
 `Setup` puts the app in the state the line assumes, from a command or
 fixture the repo has. Each `See` item is visible at the walk's `Screen`
 size in the state its `Setup` makes: a row the seed or fixture holds, on
@@ -629,7 +659,9 @@ or video and the step. In a terminal:
 
 never one step that types `clear; tally status; tally rules list`.
 
-**Before shots.** A walk's `Before` line names steps when
+### Before shots
+
+A walk's `Before` line names steps when
 its screen exists on the base and the change alters what a person sees
 there: a fix for a bug on a screen, a new look, layout, or text, or new
 behavior on a screen that exists, such as a new sort order or a new
@@ -646,17 +678,23 @@ size, so the two pictures line up. In a run, a layer's base is the
 branch of the layer below, so its before shot shows the screen as that
 layer left it.
 
-**Videos.** The fewest recordings that show every walk. Walks that share
+### Videos
+
+The fewest recordings that show every walk. Walks that share
 a `Setup` go in one video, ordered so each walk's end state is the next
 walk's start state, or with a reset step between them. Start a new video
 only when the `Setup` differs, or a walk leaves a state no in-video step
 can undo. Numbered steps, exact labels; a `Shows` line ties each walk's
 `See` to the step where it appears, and the screenshot is that frame.
 
-**Gates.** Name the existing tests that cover the touched seams, so the
+### Gates
+
+Name the existing tests that cover the touched seams, so the
 executor keeps them green rather than editing them.
 
-**Decided.** Every small fork, one line each, so the user can veto any
+### Decided
+
+Every small fork, one line each, so the user can veto any
 with one word. A choice the user made in a question goes here too, marked
 `(user)`.
 

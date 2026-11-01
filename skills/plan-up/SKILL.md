@@ -6,12 +6,15 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-Read `references/plan.md` first: the plan shape, how each block is
-filled, and the done rule. Read `references/executor.md` too: what the
-executor has and how it works a plan, so the plan fits it. At step 8,
+The rules live in `references/`: `plan.md`, the plan rules,
+`executor.md`, and `probes.md`. Each step names the section it reads,
+as `references/plan.md` § Change map: read from that heading to the
+next heading of its level or higher, not the whole file. A heading
+inside a code fence belongs to a template, not a section. A step that
+needs a whole file says so and why. First read `references/plan.md`
+§ Vocabulary: its words run through every step. At step 8,
 read `../../shared/plan-page.md`: where the plan is written
-and how it is shown. At step 4, read `references/probes.md` before the
-first probe. Before a `Decided` line adds a module or a seam, on the full
+and how it is shown. Before a `Decided` line adds a module or a seam, on the full
 path or the short one, read `../../shared/codebase-design.md`:
 the new one must pass its deletion test, and a seam needs two adapters.
 This file is the order of operations.
@@ -91,9 +94,10 @@ two match: ask. Then go on with their URLs.
    closes only the issue's `Open` lines, steps 6 to 8 run as written.
 
    The title's leading word is the issue's type, read through the
-   repo's `words` map, per `plan.md` § Type variants. A `fix` or a
-   `refactor` also follows `plan.md` § Type variants for its type: step
-   4 asks what that section adds, and steps 6 and 7 hold its rules.
+   repo's `words` map, per `plan.md` § Type variants, its opening
+   lines. A `fix`, a `refactor`, or a `perf` also follows the part of
+   § Type variants for its type, `plan.md` § fix, § refactor, or § perf:
+   step 4 asks what that section adds, and steps 6 and 7 hold its rules.
 
    A run: read the parent and every ticket, each with its comments, by
    the command above. A set: no parent, read every ticket the same way,
@@ -175,8 +179,10 @@ two match: ask. Then go on with their URLs.
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/triage`, stop. Nothing is planned.
 
-4. **Facts.** Round 1 is one message, one Explore agent per concern, and
-   in a run per ticket and concern:
+4. **Facts.** First read `plan.md` § Slices with its `####` rules: the
+   asks below feed them, and step 5 sorts forks by them. Round 1 is one
+   message, one Explore agent per concern, and in a run per ticket and
+   concern:
    - the code each Done-when line touches, with tests, and every caller
      with what it assumes: the shape it reads, the error it expects, the
      order it relies on;
@@ -243,7 +249,9 @@ two match: ask. Then go on with their URLs.
    hold the picture: run another round for whatever it still lacks.
 
    **Probes.** A doubt that reading leaves, and the plan hangs on, is
-   run, per `references/probes.md`: does the tool do it, what does the
+   run, per `references/probes.md`, read whole before the first probe,
+   since a probe uses every part of it, from When to What it leaves:
+   does the tool do it, what does the
    API return, where is the limit. Probe only what changes the plan;
    never to be thorough. Probes fan out like Explore agents, one
    sub-agent each, in one message, beside any round still open. A free
@@ -300,7 +308,13 @@ two match: ask. Then go on with their URLs.
    Every Open line from the issue closes here, by a fact or by a question.
    None survives into the plan.
 
-6. **Write the plan** per `plan.md`. Proof table first, one row per
+6. **Write the plan** per `plan.md`. First read `references/executor.md`
+   whole: its three parts say what the executor has, lacks, and does,
+   and every block is written for that. Then `plan.md` § Shape, the
+   opening lines of § Filling the blocks, and each block's section under
+   it as you write that block, with § Look and § Before shots for a plan
+   with walks. A run first reads § Run, a chat plan § Chat plan. Proof
+   table first, one row per
    Done-when line. Then the slices, one per test, in tracer-bullet order:
    the thinnest path end to end first, each next slice widening it, each
    with the `Docs` lines its change makes stale. Then UI walks, videos,
