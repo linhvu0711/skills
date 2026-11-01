@@ -270,7 +270,7 @@ done.
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
    (step 9a), send the walker in `before` mode and round 1 (step 9b),
-   and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
+   and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
    `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
@@ -281,7 +281,7 @@ done.
      it names on the base, a Wrong walk. Fix the line in the plan `.md`,
      add a `Decided` line, start the app again from the same temp
      worktree (step 9a), send the walker again for that walk, and stop
-     the app. A second `FAIL` for it: `box.sh down`, then stop with that line.
+     the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
 
    Remove the temp worktree only when this step ends, with the shots
    or with a stop. The next `box.sh run` without

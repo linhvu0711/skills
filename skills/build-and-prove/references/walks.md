@@ -4,11 +4,24 @@ Step 9 of SKILL.md. Step 7 uses 9a to 9c too. Paths start at the skill folder.
 
 Rounds, at most three:
 
-a. **Start the app.** You start it; the walker never does.
+a. **Start the app.** You start it; the walker never does. On linux:
 
    ```bash
-   bash scripts/box.sh run "$PROOF" -- sh -c '<Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
+   bash scripts/box.sh run "$PROOF" -- setsid -w sh -c '<Run line> >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid'
    ```
+
+   On macos:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'set -m; <Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
+   ```
+
+   Each puts the app and every process it starts in one process group,
+   and `/tmp/app.pid` holds the group's id, so the stop reaches them
+   all. A `Run` line such as `pnpm build && pnpm preview` runs its
+   server under an outer `sh`, and a kill of that `sh` alone leaves the
+   server on its port. Linux's `sh` turns `set -m` off with no
+   terminal, and macOS has no `setsid`.
 
    Then wait until it answers, the way the `Open` line reaches it:
    for a URL, `box.sh run "$PROOF" -- sh -c 'for i in $(seq 60); do
@@ -18,6 +31,24 @@ a. **Start the app.** You start it; the walker never does.
    fix it, `box.sh down`, then step 6 again. A crash in the code is
    the builder's: a follow-up (step 9c). Still down after that:
    `box.sh down`, then stop with the log's last line.
+
+   **Stop the app.** The only stop in this skill:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'g=$(cat /tmp/app.pid); kill -TERM -"$g"; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 30 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+   ```
+
+   Then, when the `Open` line is a URL, wait until the port is free:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'for i in $(seq 30); do curl -s -o /dev/null <url>; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1'
+   ```
+
+   curl exits 7 when nothing listens, so the port is free for the next
+   start. Exit 1: a process outside the group still holds the port;
+   `box.sh down`, then stop with `<url> still answers after the app
+   stopped`. Never `pkill` or `killall`: a name match can hit the
+   shell that runs it.
 
    A walk's `Setup` that sets the clock is how the app opens for that
    walk; the run never waits for the real clock to reach a time.
@@ -60,8 +91,7 @@ b. **Walker.** In Claude Code, the skill agent `walker`
    same walker). A second miss: `box.sh down`, then stop with
    `Walker report unreadable`.
    It ended with `GONE <id>`: the app died with its Sandbox, so stop
-   nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
-   sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
+   nothing and go to 9c. Else stop the app (9a, Stop the app). Read `/tmp/app.log` for each walk's `Must not`
    that the screen cannot show (console errors, failed requests):
    one found is a failed walk.
 
