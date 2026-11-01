@@ -10,7 +10,7 @@ You have more issues than you want to start by hand, and you work in T3 Code. Na
 - `/orchestrate epic 70`: every open sub-issue of the epic, and any it gets later.
 - `/orchestrate assigned to me`: your open issues, read once at the start.
 
-The thread you type it in becomes the orchestrator. It pins itself, takes the title `orchestrate: <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.
+The thread you type it in becomes the orchestrator. It pins itself, takes the title `🧭 <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.
 
 ## What you get
 
