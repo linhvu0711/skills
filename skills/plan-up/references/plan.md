@@ -430,9 +430,10 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, short enough to fit the box. `scripts/build-page.py`
-  holds the limits and names each line over one. `Change` is `new`, `changed` (the job
-  changes), `removed`, or `same`. A `same` part is on the map only when
+  job changes, short enough to fit the box. Each `Part` is at most 20 characters, each `Job` at most 30, and each flow label at most 20,
+  the same limits as `NAME_MAX`, `JOB_MAX`, and `LABEL_MAX` in
+  `scripts/build-page.py`, which names each line over one. `Change` is
+  `new`, `changed` (the job changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
   what changes in it), or `outside` (a tool, a service, a person, or an
@@ -441,7 +442,7 @@ part or flow changes.`, so the reader sees that the plan checked.
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
 - A flow names what moves or what is asked, never `imports`, in a few
-  words within the label limit in `scripts/build-page.py`. `(same)` may be left out.
+  words, at most 20 characters. `(same)` may be left out.
 - At most 12 parts. More: merge the `same` parts no changed flow needs,
   then parts of one group whose flows match. Still more: two maps, one
   per area, each block headed `## Change map · <area>`.
@@ -727,7 +728,7 @@ facts or forks.
 - The Change map block is there: a map, or the `None` line when no
   part, job, or flow changes. A map has at most 12 parts, each with a
   job, a `Change`, and a free `Grid` cell outside other groups' areas;
-  names, jobs, and flow labels fit their limits; every part but an `outside`
+  names, jobs, and flow labels fit their limits of 20, 30, and 20 characters; every part but an `outside`
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.

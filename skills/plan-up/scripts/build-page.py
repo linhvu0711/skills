@@ -22,7 +22,7 @@ NEEDS = {
     "stack": ["Change", "Approach", "Blast radius", "Risks", "In", "Out"],
     "layer": ["Change", "Choices", "Works when"],
 }
-# The longest text that fits a map box or a flow label in shell.html. plan.md points here.
+# The longest text that fits a map box or a flow label in shell.html. plan.md § Change map states the same numbers; change both.
 NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 PROVED = re.compile(r"P\d+ (.*): (.*), (\d{4}-\d{2}-\d{2})\. Used by (.+)\.$")
 
