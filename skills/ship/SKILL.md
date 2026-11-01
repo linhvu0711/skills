@@ -98,8 +98,17 @@ number, or words that point at one. Two words come off first and never reach pla
    (one question per message, wait). Step 8 changes: write the `.md`,
    run `build-page.py` on it and fix its problem lines, as plan-up says,
    but serve, open, publish, print, and wait for nothing yet; step 2
-   does that. Done when the plan `.md` exists, `build-page.py` printed
-   no problem line, and you hold its path.
+   does that.
+
+   A worktree or branch an earlier ticket left goes only through
+   `bash ../prune-worktrees/scripts/prune-worktrees.sh`, run from the
+   session's folder: it removes one only after it proves the PR merged
+   at its last commit. One it keeps stays, with its reason in the
+   report. Never remove one by hand, with `git worktree remove` or
+   `git branch -D`.
+
+   Done when the plan `.md` exists, `build-page.py` printed no problem
+   line, and you hold its path.
 
 2. **Ship mode.** Set the mode, then show the plan.
 
