@@ -14,7 +14,8 @@ the base, walker in `before` mode, `before-1.png`. Gates green on
 `1a2b3c4` in the Sandbox. Round 1: walk 3 fails,
 its screenshot shows the `Export` button disabled with rows on screen:
 an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
-pass. `proof.md` written, `box.sh down`, report.
+pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:`
+copies walk 3's round 1 FAIL.
 
 **`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 

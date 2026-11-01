@@ -12,6 +12,7 @@ The builder never guesses where a command runs. The plan names each slice's test
 ## Consequences
 
 - A slice test that cannot run on the local machine (a tool is missing) runs in the Sandbox, which then starts early and stays on.
+- In a repo with e2e tests, each slice runs the e2e spec files it touches in the Sandbox before its commit, so the Sandbox starts early and an e2e failure shows at its slice, not at the Gates.
 - A Gate that cannot run in the Sandbox, such as one that needs Docker, runs on the local machine, and its `checks.txt` line says so. When it can run in neither place, the line is `not run: <why>`.
 - Review fixes after the PR is open run their tests on the local machine and leave the full suite and the Build command to the PR's CI. A repo with no CI runs the Gates in a Sandbox.
 - The proofbox login is checked before Coding, so a missing login does not stop a run after Coding.

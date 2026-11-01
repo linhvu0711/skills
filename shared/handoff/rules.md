@@ -82,6 +82,16 @@ changed, runs the command there, and exits with the command's code, so
 a red test is a non-zero exit. The Sandbox stays for the rest of the
 run: never run `box.sh down`. A `stop:` line from it: stop and ask (see
 Asking below), say what it printed.
+
+A repo with e2e tests, ones that start the app and drive it in a
+browser (a Playwright or Cypress config, an `e2e` script): before each
+slice's commit, run the e2e spec files the slice changes, and those
+that open a screen or route the slice changes, found by a search of the
+e2e folder for that route, page, or component name. They need the app, so they run in
+the Sandbox: `box.sh up` once, as above, then `box.sh run <Proof
+folder> -- <the repo's e2e command> <spec files>`. Red: the slice is
+not green, as with its own test. None found: say so in one line, and
+commit.
 <!-- /local -->
 
 <!-- cloud -->
@@ -594,6 +604,11 @@ Sort each one:
 <!-- local -->
 - It changes a seam, a Done-when line, a schema, an API, a `Decided`
   line, or makes a `Gates` test fail: **stop and ask** (see Asking).
+- It changes the look of a screen the issue does not name: a shared
+  component, style, or token that another page uses, or a page outside
+  the plan's walks. **Stop and ask** before the change (see Asking),
+  and name the screens it reaches. A look change left for PR review is
+  found too late.
 <!-- /local -->
 - The same red after two fixes that did not turn it green: before a
   third fix, write down the cause you believe, and one check that shows

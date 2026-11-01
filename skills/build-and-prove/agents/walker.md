@@ -41,6 +41,20 @@ Every command takes the Sandbox id as `<id>`.
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
   the default human pace: a person watches these videos. Add
   `--screenshot <folder>/look.png` to an action to see its result.
+- Every `proofbox click` takes `--settle 3s`, so the screen has settled
+  and a viewer of the video sees each result. Two kinds of click take
+  `--settle 300ms` instead: a click whose result lasts under about 3 s
+  (a toast, a flash, a 5 s Undo bar), and a click inside a timed run of
+  steps.
+- A state that lasts under about 3 s is shot by the action that makes it
+  appear, with that action's
+  own `--screenshot <folder>/short-<walk>.png`. proofbox waits the
+  settle time before it shoots, so a later `proofbox screenshot` misses
+  the state.
+- Timed steps, ones that must happen inside a time limit such as `click
+  Undo within 5 s`, run back to back: between them only the next step's
+  `proofbox mark`, and no `proofbox screenshot`, no `--wait` mark, and
+  no other command. Each one's own `--screenshot` is how you look.
 - Put the text of `proofbox type` and `proofbox mark` in single quotes,
   as in `proofbox type <id> 'echo $?'`. In double quotes your own shell
   turns `$?` into `0` before proofbox gets it, so the screen or the
@@ -55,7 +69,12 @@ Every command takes the Sandbox id as `<id>`.
   <id> -- sh -c '<command> >/dev/null 2>&1 &'`. A web page: the browser
   opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
   Monospace -fs 12` from the brief, then click inside it before you
-  type; an unfocused window drops the keys.
+  type; an unfocused window drops the keys. The browser or window does
+  not start, or shows an error in place of the app:
+  retry the start once, with the command and flags the brief gives,
+  exactly. It fails again: stop that video, and report each of its
+  walks as `FAIL · the app did not open: "<the error text, word for
+  word>"`.
 - On macOS, a dialog asks for a password (a permission, the Keychain):
   type the Login password `runner` with `proofbox type`, as a person
   does. On Linux there is none.
@@ -89,10 +108,11 @@ One recording per video under `Videos`, in order:
    `record stop`, so `video-<n>-<k>.png` shows the screen after step
    `k`'s actions.
 5. For each walk the video's `Shows` line ties to step `k`: copy
-   `video-<n>-<k>.png` to `after-<walk>.png`, Read it, and check the
+   `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
+   state under about 3 s: copy `short-<walk>.png` in its place. Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`
    the screen cannot show (a console error, a failed request) is not
-   yours: say `not on screen` for it.
+   yours: write it as `not checked` on the walk's line (§ Report).
 
 A step breaks the walk (the label is not there, an error shows, the
 screen is not the one `Where` names): take `fail-<walk>.png`, do the
@@ -118,6 +138,11 @@ walk 1: pass · after-1.png · video 1 @ step 4
 walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
 walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step 2
 ```
+
+A walk with a `Must not` you did not check, one the screen cannot show,
+ends its line with ` · not checked: <that Must not line, word for word>`,
+as in `walk 1: pass · after-1.png · video 1 @ step 4 · not checked: no
+console errors`.
 
 In mode before, write `<folder>/walk-report-before-<round>.md` and end
 with the same lines, nothing else:

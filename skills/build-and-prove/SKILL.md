@@ -20,8 +20,8 @@ Coding runs on the local machine: each slice's red and green test,
 typecheck, and lint, in the worktree, with the repo's packages installed
 there. One run has one proofbox Sandbox. It starts after Coding and runs
 the Gates, the app, the before shots, and the walks (ADR 0011 in this
-repo). A slice test that needs a tool the local machine lacks starts it
-early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
+repo). A slice test that needs a tool the local machine lacks,
+or a slice's e2e spec files, start it early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
 prints its usage with no arguments.
 
 - `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
@@ -143,7 +143,8 @@ done.
      versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
      the install command its lockfile calls for, the tools the plan's
      `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
-     commands of its UI walks and videos use. It runs once
+     commands of its UI walks and videos use, and the browsers its e2e
+     tests need. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. `$HOME` is the Work folder, so the script keeps every
      tool, cache, and store outside it, in `/tmp/pb`. It puts them in
@@ -173,7 +174,8 @@ done.
    machine; install it and run again.` and stop. Coding has not started,
    and no Sandbox runs. No Sandbox runs yet: `proofbox list` shows none of this run
    until the last slice is committed, unless a slice test needed a tool
-   the local machine lacks (§ Sandbox).
+   the local machine lacks, or a slice ran its e2e spec files
+   (§ Sandbox).
 
    Assemble the prompt per
    `bash ../../shared/handoff/render.sh local prompt`: the
@@ -224,9 +226,10 @@ done.
        write it to a file, `~/.claude/bin/herdr-send <PANE> --file
        <file> --no-wait`, tell the user in one line what was asked and
        answered, and wait again. **Big fork** (the list in plan-up step
-       5, plus a force push, a delete, another branch): quote the
-       question in a fenced block, then one question to the user, two
-       options at most, your pick first. The user answers
+       5, plus a force push, a delete,
+       another branch, a look change on a screen the issue does not name):
+       quote the question in a fenced block, then one question to the
+       user, two options at most, your pick first. The user answers
        `/build-and-prove <note>`. Stop.
      - The last line is `BUILT <branch>`: step 6.
      - The last line is `NOT BUILT <branch>: …`: show it, stop.
@@ -237,8 +240,8 @@ done.
 
    **Any other model**: you build. Read the prompt file and follow it
    whole as its builder, in `$WT`: slices in order, tests first, each
-   slice's test, typecheck, and lint on the local machine, in `$WT`, one
-   commit per slice. A slice test in the Sandbox that stops on a tool
+   slice's test, typecheck, and lint on the local machine, in `$WT`, and
+   its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
    `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
    again. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are
@@ -270,7 +273,7 @@ done.
    folder, and run every command of this step as `box.sh run "$PROOF"
    --from <that folder> -- …`, so the base is what runs. Start the app
    (step 9a), send the walker in `before` mode and round 1 (step 9b),
-   and stop the app unless the walker ended with `GONE <id>`. On `GONE`,
+   and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
    `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
@@ -281,7 +284,7 @@ done.
      it names on the base, a Wrong walk. Fix the line in the plan `.md`,
      add a `Decided` line, start the app again from the same temp
      worktree (step 9a), send the walker again for that walk, and stop
-     the app. A second `FAIL` for it: `box.sh down`, then stop with that line.
+     the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
 
    Remove the temp worktree only when this step ends, with the shots
    or with a stop. The next `box.sh run` without
@@ -350,10 +353,22 @@ done.
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
     Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
     Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
+    Walk notes:
+    - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
+    - walk 1: not checked: no console errors
+    - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
     Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
     BUILT feat/42-export-orders-csv
     ```
+
+    The `Walk notes:` block copies, word for word: each `FAIL` line of
+    every `walk-report-before-<r>.md` and `walk-report-after-<r>.md` in
+    `PROOF`, with its mode and round in front; each `not checked:` part
+    of a walk's line, once per walk; and each `Decided` line this run
+    added in the `W<w> ... changed after round <r>` shape
+    (`references/walks.md` 9c). None of them: no notes block, and the
+    `Walks:` line says the walks passed, as above.
 
     `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
     A chat plan: the first line has no `#<n>`, as in

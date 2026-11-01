@@ -4,11 +4,24 @@ Step 9 of SKILL.md. Step 7 uses 9a to 9c too. Paths start at the skill folder.
 
 Rounds, at most three:
 
-a. **Start the app.** You start it; the walker never does.
+a. **Start the app.** You start it; the walker never does. On linux:
 
    ```bash
-   bash scripts/box.sh run "$PROOF" -- sh -c '<Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
+   bash scripts/box.sh run "$PROOF" -- setsid -w sh -c '<Run line> >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid'
    ```
+
+   On macos:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'set -m; <Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
+   ```
+
+   Each puts the app and every process it starts in one process group,
+   and `/tmp/app.pid` holds the group's id, so the stop reaches them
+   all. A `Run` line such as `pnpm build && pnpm preview` runs its
+   server under an outer `sh`, and a kill of that `sh` alone leaves the
+   server on its port. Linux's `sh` turns `set -m` off with no
+   terminal, and macOS has no `setsid`.
 
    Then wait until it answers, the way the `Open` line reaches it:
    for a URL, `box.sh run "$PROOF" -- sh -c 'for i in $(seq 60); do
@@ -18,6 +31,24 @@ a. **Start the app.** You start it; the walker never does.
    fix it, `box.sh down`, then step 6 again. A crash in the code is
    the builder's: a follow-up (step 9c). Still down after that:
    `box.sh down`, then stop with the log's last line.
+
+   **Stop the app.** The only stop in this skill:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'g=$(cat /tmp/app.pid); kill -TERM -"$g"; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 30 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+   ```
+
+   Then, when the `Open` line is a URL, wait until the port is free:
+
+   ```bash
+   bash scripts/box.sh run "$PROOF" -- sh -c 'for i in $(seq 30); do curl -s -o /dev/null <url>; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1'
+   ```
+
+   curl exits 7 when nothing listens, so the port is free for the next
+   start. Exit 1: a process outside the group still holds the port;
+   `box.sh down`, then stop with `<url> still answers after the app
+   stopped`. Never `pkill` or `killall`: a name match can hit the
+   shell that runs it.
 
    A walk's `Setup` that sets the clock is how the app opens for that
    walk; the run never waits for the real clock to reach a time.
@@ -32,17 +63,28 @@ b. **Walker.** In Claude Code, the skill agent `walker`
      screen size (1440x900 on linux, 1280x800 on macos);
    - how to open the app: the `Open` line, as a command it runs with
      `proofbox exec`. A browser opens on a new, empty profile for each
-     video: Chromium with `--user-data-dir=$(mktemp -d)`, or a browser
-     that Playwright launches, which starts empty. So no history from
-     the Sandbox image shows in the address bar;
-   - the plan's `UI walks` and `Videos` blocks, verbatim. In mode
-     after, a later round or a rerun gets only the videos 9c films
-     again and their walks, so the walker never overwrites a kept
+     video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
+     or a browser that Playwright launches, which starts empty. So no
+     history from the Sandbox image shows in the address bar.
+     `--no-sandbox` is there because Chromium's own sandbox cannot
+     start in a proofbox Sandbox: without it Chromium stops with `No
+     usable sandbox!`;
+   - the plan's `UI walks` and `Videos` blocks, verbatim, as text
+     pasted in the brief itself. Never a `$(cat <file>)` line or a path
+     in their place, since
+     the Agent tool runs no shell, so the walker gets that line, not the file.
+     In mode after, a later round or a rerun gets only the videos 9c
+     films again and their walks, so the walker never overwrites a kept
      video. Mode before gets the walks step 7 names. A round run again
      after `GONE`, in either mode, gets the same videos or walks as the
      round it repeats, so a shot the dead round left unchecked is taken
      again;
-   - the folder to write in, `PROOF`.
+   - the folder to write in, `PROOF`;
+   - the pace rules, so the walker cannot drop them: every click
+     `--settle 3s`; a state under about 3 s shot by its action's own
+     `--screenshot` with `--settle 300ms`;
+     timed steps run back to back with no wait or shot between
+     (`agents/walker.md` § How you see and act).
 
    It does not get the code, the slices, or the diff. It returns
    one line per walk and writes `walk-report-<mode>-<round>.md` in
@@ -54,8 +96,7 @@ b. **Walker.** In Claude Code, the skill agent `walker`
    same walker). A second miss: `box.sh down`, then stop with
    `Walker report unreadable`.
    It ended with `GONE <id>`: the app died with its Sandbox, so stop
-   nothing and go to 9c. Else stop the app: `box.sh run "$PROOF" --
-   sh -c 'kill $(cat /tmp/app.pid)'`. Read `/tmp/app.log` for each walk's `Must not`
+   nothing and go to 9c. Else stop the app (9a, Stop the app). Read `/tmp/app.log` for each walk's `Must not`
    that the screen cannot show (console errors, failed requests):
    one found is a failed walk.
 
@@ -124,8 +165,11 @@ c. **Sort.** The walker ended with `GONE <id>`: the Sandbox died
    - **Wrong walk**: a label, route, or step the plan named is not on
      the screen, and the Done-when line still holds there. A change
      to a failed walk's `See` or `Must not`, or to a number in them
-     such as a time limit, is a Wrong walk fix too, never a pass: it
-     gets a `Decided` line with the reason, and the walk counts as
+     such as a time limit, or to the step its video's `Shows` names,
+     the proof frame, is a Wrong walk fix too, never a pass: it gets a
+     `Decided` line with the reason, in this shape:
+     `- W<w> <See|Must not|Shows> changed after round <r>: "<old>" → "<new>". <the reason>`.
+     The walk counts as
      passed only when a later round's video shows it pass. Sort it
      by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
      fix the walk in the plan `.md`, add a `Decided` line, and say so
