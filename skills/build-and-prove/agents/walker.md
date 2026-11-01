@@ -41,6 +41,20 @@ Every command takes the Sandbox id as `<id>`.
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
   the default human pace: a person watches these videos. Add
   `--screenshot <folder>/look.png` to an action to see its result.
+- Every `proofbox click` takes `--settle 3s`, so the screen has settled
+  and a viewer of the video sees each result. Two kinds of click take
+  `--settle 300ms` instead: a click whose result lasts under about 3 s
+  (a toast, a flash, a 5 s Undo bar), and a click inside a timed run of
+  steps.
+- A state that lasts under about 3 s is shot by the action that makes it
+  appear, with that action's
+  own `--screenshot <folder>/short-<walk>.png`. proofbox waits the
+  settle time before it shoots, so a later `proofbox screenshot` misses
+  the state.
+- Timed steps, ones that must happen inside a time limit such as `click
+  Undo within 5 s`, run back to back: between them only the next step's
+  `proofbox mark`, and no `proofbox screenshot`, no `--wait` mark, and
+  no other command. Each one's own `--screenshot` is how you look.
 - Put the text of `proofbox type` and `proofbox mark` in single quotes,
   as in `proofbox type <id> 'echo $?'`. In double quotes your own shell
   turns `$?` into `0` before proofbox gets it, so the screen or the
@@ -94,7 +108,8 @@ One recording per video under `Videos`, in order:
    `record stop`, so `video-<n>-<k>.png` shows the screen after step
    `k`'s actions.
 5. For each walk the video's `Shows` line ties to step `k`: copy
-   `video-<n>-<k>.png` to `after-<walk>.png`, Read it, and check the
+   `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
+   state under about 3 s: copy `short-<walk>.png` in its place. Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`
    the screen cannot show (a console error, a failed request) is not
    yours: say `not on screen` for it.

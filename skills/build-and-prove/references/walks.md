@@ -79,7 +79,12 @@ b. **Walker.** In Claude Code, the skill agent `walker`
      after `GONE`, in either mode, gets the same videos or walks as the
      round it repeats, so a shot the dead round left unchecked is taken
      again;
-   - the folder to write in, `PROOF`.
+   - the folder to write in, `PROOF`;
+   - the pace rules, so the walker cannot drop them: every click
+     `--settle 3s`; a state under about 3 s shot by its action's own
+     `--screenshot` with `--settle 300ms`;
+     timed steps run back to back with no wait or shot between
+     (`agents/walker.md` § How you see and act).
 
    It does not get the code, the slices, or the diff. It returns
    one line per walk and writes `walk-report-<mode>-<round>.md` in
