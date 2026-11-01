@@ -112,7 +112,7 @@ One recording per video under `Videos`, in order:
    state under about 3 s: copy `short-<walk>.png` in its place. Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`
    the screen cannot show (a console error, a failed request) is not
-   yours: say `not on screen` for it.
+   yours: write it as `not checked` on the walk's line (§ Report).
 
 A step breaks the walk (the label is not there, an error shows, the
 screen is not the one `Where` names): take `fail-<walk>.png`, do the
@@ -138,6 +138,11 @@ walk 1: pass · after-1.png · video 1 @ step 4
 walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
 walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step 2
 ```
+
+A walk with a `Must not` you did not check, one the screen cannot show,
+ends its line with ` · not checked: <that Must not line, word for word>`,
+as in `walk 1: pass · after-1.png · video 1 @ step 4 · not checked: no
+console errors`.
 
 In mode before, write `<folder>/walk-report-before-<round>.md` and end
 with the same lines, nothing else:

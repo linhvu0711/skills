@@ -350,10 +350,22 @@ done.
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
     Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
     Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
+    Walk notes:
+    - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
+    - walk 1: not checked: no console errors
+    - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
     Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
     BUILT feat/42-export-orders-csv
     ```
+
+    The `Walk notes:` block copies, word for word: each `FAIL` line of
+    every `walk-report-before-<r>.md` and `walk-report-after-<r>.md` in
+    `PROOF`, with its mode and round in front; each `not checked:` part
+    of a walk's line, once per walk; and each `Decided` line this run
+    added in the `W<w> ... changed after round <r>` shape
+    (`references/walks.md` 9c). None of them: no notes block, and the
+    `Walks:` line says the walks passed, as above.
 
     `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
     A chat plan: the first line has no `#<n>`, as in
