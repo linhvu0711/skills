@@ -72,14 +72,14 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    Done when every moment, manual-steps line, and worth-sharing line in every evidence list is in a pattern, a one-time problem, or judged too small.
 
-8. **Report.** No card left: the report is the line `Nothing worth changing`, then what was read (§ Read line), and the run ends. Otherwise build the report page per `references/pages.md`, show it, and ask the user to paste the line its Copy button gives (`issue 1 3 4`). A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Wait.
+8. **Report.** No card left: the report is the line `Nothing worth changing`, then what was read (§ Read line), and the run ends. Otherwise build the report page per `references/pages.md`, show it, and ask in chat: `Which cards should become issues? Give their numbers, as 1 3 4, or none.` A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Wait.
 
-9. **File.** For each picked card, in order, in the repo the card's fix lives in:
+9. **File.** `none` ends the run. A number no card has: name it and ask again. For each card number the user gave, in order, in the repo the card's fix lives in:
    - Say the card in chat: its title, items, quotes, fix, and where. Then invoke the `to-issue` skill with the Skill tool, with the card as the conversation's last word and its repo named.
    - `to-issue`'s gate stops: invoke the `capture` skill with the Skill tool, with the card's title, fix, and quotes as the seed.
    - Neither can create it (no GitHub repo, no access): the card stays as text, with the reason.
 
-   Done when the chat holds one line per pick: `card 3 → #123 (to-issue)`, `card 4 → #124 seed (capture: <the gate's gap>)`, or `card 5 → not filed: <reason>`.
+   Done when the chat holds one line per pick: `card 3 → #123 (to-issue)`, `card 4 → #124 seed (capture: <the gate's gap>)`, or `card 5 → not filed: <reason>`. A tip's number gets `card 5 → not filed: a tip`.
 
 In Codex, readers are `explorer` sub-agents.
 
