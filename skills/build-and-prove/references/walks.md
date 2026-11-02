@@ -4,7 +4,8 @@ Step 6 of SKILL.md. Paths start at the skill folder. `CLIENT`, `AGENT`,
 and `PROOF` are the ones SKILL.md holds.
 
 Rounds, at most three. Each sends one note to the Proof agent, fetches
-its files, and sorts what failed. A setup fault (SKILL.md § Proof agent)
+its files, and sorts what failed. The Gates and the perf measure are not
+the agent's: `references/checks.md` runs them in the same round. A setup fault (SKILL.md § Proof agent)
 runs the same round again and does not count as a round.
 
 ## 6a. Send
@@ -18,8 +19,6 @@ field, only the fields this round needs:
 Branch: <branch> at <short SHA of HEAD>
 Check secrets: <names>
 Before: walks <w>, <w>
-Gates: all
-Perf: yes
 Videos: <n>, <n>
 Install: <tool>
 ```
@@ -29,11 +28,8 @@ Install: <tool>
   `before-<walk>.png` in `PROOF`, as when run 1 ended on a setup fault
   or a missing secret. The agent takes them on the base, before it
   checks out the branch.
-- `Gates`: `all` in round 1 and in each round after code changed, else
-  left out. A red Gate fixed by the builder: `all` again.
-- `Perf`: `yes` with a `PERF` block, in round 1 and after code changed.
 - `Videos`: round 1, every video; a later round or a rerun, only the
-  videos 6c names to film again. `UI: none`: left out.
+  videos 6c names to film again.
 - `Install`: a setup fault, the tool and how to install it when you
   know, as in `Install: ffmpeg (apt-get install -y ffmpeg)`.
 
@@ -67,7 +63,7 @@ bash "$CLIENT" artifacts "$AGENT"
 ```
 
 It prints `<path>\t<bytes>`, one line per file. The files this round
-expects: `checks.txt` when it ran Gates or perf, `walk-report-after-<r>.md`
+expects: `walk-report-after-<r>.md`
 and `videos.txt` when it filmed, each `video-<n>.mp4` it filmed, each
 `after-<walk>.png` or `short-<walk>.png` of their walks, each
 `fail-<walk>.png` the report names, and each `before-<walk>.png` with
@@ -84,26 +80,18 @@ first line `<file> did not reach the artifacts folder; film it again
 and save it there.`, then wait and fetch again (6a, 6b). Once per file
 per run. Still missing: that walk fails, and its line in
 `walk-report-after-<r>.md` becomes `walk <w>: FAIL · missing <file>`.
-A missing `checks.txt` or walk report: the same note once, then
-`down` and stop with `Proof agent sent no <file>`.
+A missing walk report: the same note once, then `down` and stop with
+`Proof agent sent no <file>`.
 
 **Report.** The walk report must end with its `WALKS` lines, or
 `BEFORE` lines. It does not: send a note once with § Report of
 `references/proof-agent.md` pasted whole. A second miss: `down`, then
 stop with `Proof report unreadable`.
 
-**Checks.** Each `checks.txt` line ends with where it ran. A line
-`<command> · <short SHA> · not run: <why>` from the agent runs on the
-local machine, `cd "$WT" && <command>`, and its line becomes `<command>
-· <short SHA> · <result> (local machine)`. It can run in neither place:
-the agent's line stays. A red Gate, here or on the agent, is the
-builder's: a follow-up per `render.sh local prompt` § Follow-up, `#
-Check` naming the Gate, then the next round with `Gates: all`. A perf
-line whose head misses the `Pass rule` is a red Gate.
-
 ## 6c. Sort
 
-Every walk passed and every Gate is green: SKILL.md step 7. Each failed
+Every walk passed and `references/checks.md` says the checks are done:
+SKILL.md step 7. Each failed
 walk, by its screenshot and the plan, never by the agent's guess:
 - **Setup fault**: the screen shows the agent's machine, not the app,
   is wrong: `command not found` for a tool the walk or the `Open` line
@@ -117,7 +105,8 @@ walk, by its screenshot and the plan, never by the agent's guess:
   names the walk, what it saw, and the screenshot's path; `#
   Check` names the tests to run again. The pane gets it with
   `herdr-send`; as the builder, you do it yourself. Then push
-  (SKILL.md step 5), and the next round has `Gates: all`.
+  (SKILL.md step 5), and the next round runs the checks again
+  (`references/checks.md`).
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A change
   to a failed walk's `See` or `Must not`, or to a number in them

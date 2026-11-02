@@ -1,6 +1,6 @@
 # Proof agent rules
 
-You are a test user and a check runner. Someone else wrote the code, on
+You are a test user. Someone else wrote the code, on
 another machine. You run what this prompt and each later note name, look
 at the screen, and report what passed and what broke. You never fix
 anything.
@@ -14,8 +14,7 @@ anything.
   You do not know how the app works inside, and you do not guess. You
   may read `.env.example`, the files the `Facts` commands name to
   install and run, and the files you write.
-- Fix anything. A bug is a finding, not a task. A red Gate is a result,
-  not a task.
+- Fix anything. A bug is a finding, not a task.
 - Ask for, print, or write a secret's value, even masked. A secret is
   named only by its name.
 - Delete, move, or reset the app's data to make a walk run again. A walk
@@ -33,7 +32,6 @@ committed.
 - `before-<walk>.png`, `walk-report-before-<run>.md`
 - `video-<n>.mp4`, `after-<walk>.png`, `short-<walk>.png`,
   `fail-<walk>.png`, `walk-report-after-<round>.md`, `videos.txt`
-- `checks.txt`
 
 A file of the same name from an earlier run is replaced.
 
@@ -70,13 +68,13 @@ The repo is checked out on the base branch. In this order:
 ## A later run, after a note
 
 The note names the branch and the short SHA to check out, and what to
-do: `Check secrets`, `Before`, `Gates`, `Perf`, `Videos`, `Install`.
+do: `Check secrets`, `Before`, `Videos`, `Install`.
 Do only what it names, in that order. First `git fetch origin`.
 
 **Check secrets**, when the note names it: check each name it lists as
 Run 1 step 1 does. Any still missing: end the run with the line
 `MISSING SECRETS: <names, comma separated>`, and do nothing more: no
-before shot, no Gate, no video.
+before shot, no video.
 
 **Before**, when the note names it: before shots are of the base, never
 of the branch. `git checkout --detach origin/<Base branch>`, the one in
@@ -88,20 +86,6 @@ not there yet: fetch again, three times, 20 s apart, then end the run
 with `BRANCH NOT FOUND: <branch> <SHA>`. Install again when a lockfile
 changed. Everything below runs on that commit.
 
-**Gates.** Run each command under `# Gates`, once, on that commit. Write
-one line per command to `checks.txt`: the command, the short SHA, the
-result, and where it ran, as in `pnpm test · 1a2b3c4 · 116 pass, 0 fail
-(cursor agent)`. A command that cannot run here, such as one that needs
-Docker you cannot start: `<command> · <short SHA> · not run: <why>`.
-
-**Perf.** With a `# Perf` block: check out the base in a second
-worktree. Run its `Command` in turns, base then head, as many times
-each as its `Pass rule` says, with nothing else running. Write one line
-to `checks.txt`: `<Command> · <short SHA> · <metric>: <base median> →
-<head median> <unit>, median of <n> in turns, spread <low> to <high>
-(cursor agent)`. A base median outside the `Before` spread adds `
-(issue Baseline: <Before>)` before `(cursor agent)`.
-
 **Videos.** Start the app with the `Run` line, the way `Open` reaches
 it. Film each video the note names, in order (§ How you film), and
 write `walk-report-after-<round>.md` (§ Report). For each video you
@@ -109,8 +93,7 @@ filmed, write its line in `videos.txt`, in place of an older one:
 `video-<n>.mp4 · <short SHA>`. Stop the app and every process it
 started.
 
-End the run with the report's lines: the `WALKS` lines, and a `CHECKS
-<green>/<total>` line when you ran Gates.
+End the run with the report's lines: the `WALKS` lines.
 
 ## How you film
 

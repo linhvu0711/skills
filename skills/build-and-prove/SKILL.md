@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it on a Cursor cloud agent: Coding runs on the local machine, and one Proof agent per run takes the before shots, runs the Gates, films the UI walks like a test user, and measures perf. Ends at a pushed branch, with no PR, one commit per slice, and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it: Coding, the Gates the PR's CI does not run, and the perf measure run on the local machine, and one Cursor Proof agent per run takes the before shots and films the UI walks like a test user. Ends at a pushed branch, with no PR, one commit per slice, and a proof folder for /make-pr. /ship runs it by default."
 disable-model-invocation: true
 ---
 
@@ -21,10 +21,12 @@ Coding runs on the local machine: each slice's red and green test,
 typecheck, lint, and e2e spec files, in the worktree, with the repo's
 packages installed there. One run has one Proof agent: a Cursor cloud
 agent that starts at the same time as Coding. It takes the before shots
-on the base, and after Coding it runs the Gates, the app, the walks
-with their videos, and the perf measure on the branch (ADR 0019 in this
-repo). It never edits code and never reads the app's code (ADR 0010):
-its rules are `references/proof-agent.md`, pasted whole into its prompt.
+on the base, and after Coding it runs the app and films the walks on
+the branch (ADRs 0019 and 0020 in this repo). The Gates and the perf
+measure run per `references/checks.md`: the PR's CI or the local
+machine, never the agent. It never edits code and never reads the
+app's code (ADR 0010): its rules are `references/proof-agent.md`,
+pasted whole into its prompt.
 
 `CLIENT` is `../../shared/cursor/cursor.sh`, the Cursor client
 `/handoff` runs too; it prints its usage with no arguments. This skill
@@ -47,7 +49,7 @@ uses `start`, `poll`, `wait`, `say`, `artifacts`, `download`, and
   does nothing.
 
 **Setup fault.** A run that ends with `SETUP FAULT: <tool> not found`,
-or a walk, a Gate, or the app that fails on a tool `not found`, is the
+or a walk or the app that fails on a tool `not found`, is the
 agent's machine, not the code. A follow-up with `Install: <tool>`
 (`references/walks.md` § 6a) has it install the tool and run the same
 round again. It does not count as a round. After three in one run:
@@ -136,12 +138,8 @@ first item that is not done.
    <w>`, the walks whose `Before` line names steps and that have no
    `before-<walk>.png` in `PROOF` yet, or `Before shots: none`; then `# Secrets`, the `SECRETS`
    names one per line, or `none`; `# Facts`, the plan's `Facts` block;
-   `# Gates`, one command per line: the full suite, typecheck, lint,
-   and build under `Facts`, and every command the repo's `AGENTS.md`
-   or `CLAUDE.md` names as a check; `# UI walks` and `# Videos`, the
-   plan's blocks verbatim, or `none` for `UI: none`; `# Perf`, the
-   `PERF` block, or `none`; then `# Rules`, `references/proof-agent.md`
-   whole, unchanged, once. Check: zero placeholders. Say `Proof prompt:
+   `# UI walks` and `# Videos`, the plan's blocks verbatim; then
+   `# Rules`, `references/proof-agent.md` whole, unchanged, once. Check: zero placeholders. Say `Proof prompt:
    <path> (<n> lines)`.
 
    **Start.**
@@ -270,10 +268,13 @@ first item that is not done.
    follow-up. Run 1 still going: `bash "$CLIENT" wait "$AGENT"` first,
    and sort it as step 4 does.
 
-6. **Proof rounds.** Read `references/walks.md` whole and follow it,
-   since each round runs all three of its sections: rounds, at most
-   three, each 6a send, 6b fetch, 6c sort. `UI: none` has rounds too:
-   the Gates and the perf measure, with no walk.
+6. **Proof rounds.** Rounds, at most three. Read
+   `references/checks.md` whole: every round runs its local checks,
+   the Gates and the perf measure, in round 1 and in each round after
+   code changed. A plan with walks also reads `references/walks.md`
+   whole and runs all three of its sections each round: 6a send first,
+   so the agent films while the local checks run, then 6b fetch and 6c
+   sort. A round is done when both are.
 
 7. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
    `../../shared/pr-shape.md` § Proof, one row per Done-when
@@ -284,8 +285,8 @@ first item that is not done.
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from
-   `checks.txt` goes in as its command, `not run: <why>`, and the words
-   `CI must prove it`. `agent.env` stays: `/ship` sends its re-films to
+   `checks.txt`, `CI runs it` too, goes in as its command, `not run:
+   <why>`, and the words `CI must prove it`. `agent.env` stays: `/ship` sends its re-films to
    that agent.
 
 8. **Give back.** `bash "$CLIENT" down "$AGENT"`. A Mac goes back to
