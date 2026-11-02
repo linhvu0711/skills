@@ -235,8 +235,11 @@ number, or words that point at one. Two words come off first and never reach pla
      body is written again for the new head.
 
    An agent that is gone, or whose run ends `expired`: start a new one
-   per `../build-and-prove/SKILL.md` step 3 on the PR's branch, with
-   only those walks, and write its id to `agent.env`.
+   per `../build-and-prove/SKILL.md` step 3, on the plan's `Base` as
+   that step starts it, so its run 1 takes only the before shots
+   `PROOF` lacks, on the base, and keeps the ones there. Write its id to
+   `agent.env`, then send it the note above, naming the PR's branch at
+   its head.
 
    It ends with `READY` or a stop point.
 

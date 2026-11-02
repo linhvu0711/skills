@@ -26,7 +26,9 @@ Install: <tool>
 
 - `Check secrets`: round 1, when run 1 ended with `MISSING SECRETS`.
 - `Before`: the walks whose `Before` line names steps and that have no
-  `before-<walk>.png` in `PROOF`, as when run 1 ended on a setup fault.
+  `before-<walk>.png` in `PROOF`, as when run 1 ended on a setup fault
+  or a missing secret. The agent takes them on the base, before it
+  checks out the branch.
 - `Gates`: `all` in round 1 and in each round after code changed, else
   left out. A red Gate fixed by the builder: `all` again.
 - `Perf`: `yes` with a `PERF` block, in round 1 and after code changed.

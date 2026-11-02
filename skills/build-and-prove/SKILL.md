@@ -132,7 +132,9 @@ first item that is not done.
 
    **Prompt.** Write `$HOME/.agents/artifacts/plan/proof-prompt-<slug>.md`:
    the head lines `Repo: <REPO>`, `Base branch: <BASE>`, `Branch:
-   <branch>`, `Platform: <platform>`; then `# Secrets`, the `SECRETS`
+   <branch>`, `Platform: <platform>`, and `Before shots: walks <w>,
+   <w>`, the walks whose `Before` line names steps and that have no
+   `before-<walk>.png` in `PROOF` yet, or `Before shots: none`; then `# Secrets`, the `SECRETS`
    names one per line, or `none`; `# Facts`, the plan's `Facts` block;
    `# Gates`, one command per line: the full suite, typecheck, lint,
    and build under `Facts`, and every command the repo's `AGENTS.md`

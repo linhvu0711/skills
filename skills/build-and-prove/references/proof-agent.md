@@ -56,26 +56,32 @@ The repo is checked out on the base branch. In this order:
    environment sets it, as in `[ -n "${NAME+x}" ]`. Print no value. Any
    missing: end the run with the line `MISSING SECRETS: <names, comma
    separated>`, and do nothing more.
-2. **Before shots.** For each walk whose `Before` line names steps,
-   only when `UI walks` is not `none`: start the app with the `Run`
+2. **Before shots.** For each walk the `Before shots:` head line
+   names, only when `UI walks` is not `none`: start the app with the `Run`
    line, do the walk's `Setup`, go to `Where`, do the steps the
    `Before` line names, and save a screenshot as `before-<walk>.png`.
-   Check that it shows what the `Before` line says. A walk whose
-   `Before` is `none` or `as walk n` gets no shot. Stop the app and
+   Check that it shows what the `Before` line says. A walk the head
+   line does not name gets no shot. Stop the app and
    every process it started, then write `walk-report-before-1.md`
    (§ Report).
-3. End the run with the report's lines, or with `BEFORE 0/0` when no
-   walk names steps.
+3. End the run with the report's lines, or with `BEFORE 0/0` when the
+   head line is `Before shots: none`.
 
 ## A later run, after a note
 
 The note names the branch and the short SHA to check out, and what to
 do: `Check secrets`, `Before`, `Gates`, `Perf`, `Videos`, `Install`.
-Do only what it names, in that order. First `git fetch origin` and
-`git checkout --detach <SHA>` on the named branch; a SHA that is not
-there yet: fetch again, three times, 20 s apart, then end the run with
-`BRANCH NOT FOUND: <branch> <SHA>`. Then install again when a lockfile
-changed.
+Do only what it names, in that order. First `git fetch origin`.
+
+**Before**, when the note names it: before shots are of the base, never
+of the branch. `git checkout --detach origin/<Base branch>`, the one in
+the head lines, then take the shots of the walks it names as Run 1
+step 2 does, and write `walk-report-before-<run>.md`.
+
+Then `git checkout --detach <SHA>` on the named branch; a SHA that is
+not there yet: fetch again, three times, 20 s apart, then end the run
+with `BRANCH NOT FOUND: <branch> <SHA>`. Install again when a lockfile
+changed. Everything below runs on that commit.
 
 **Gates.** Run each command under `# Gates`, once, on that commit. Write
 one line per command to `checks.txt`: the command, the short SHA, the
