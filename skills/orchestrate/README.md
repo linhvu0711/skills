@@ -1,6 +1,6 @@
 # orchestrate
 
-Runs a set of issues to closed from one pinned T3 Code thread. Every few minutes it starts a new thread for each issue that is free and has reached a new stage.
+Runs a set of issues to closed from one T3 Code thread. Every few minutes it starts a new thread for each issue that is free and has reached a new stage.
 
 ## Use it when
 
@@ -10,7 +10,7 @@ You have more issues than you want to start by hand, and you work in T3 Code. Na
 - `/orchestrate epic 70`: every open sub-issue of the epic, and any it gets later.
 - `/orchestrate assigned to me`: your open issues, read once at the start.
 
-The thread you type it in becomes the orchestrator. It pins itself, takes the title `🧭 <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.
+The thread you type it in becomes the orchestrator. It takes the title `🧭 <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.
 
 ## What you get
 
@@ -62,7 +62,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Needs
 
-- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads, the pin, and the snooze. The watcher is a background process on this machine.
+- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads and the snooze. The watcher is a background process on this machine.
 - `gh` (signed in), `git`, and `jq`.
 - `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).

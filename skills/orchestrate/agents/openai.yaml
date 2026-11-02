@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrate"
-  short_description: "Run a set of issues to closed from one pinned T3 Code thread"
+  short_description: "Run a set of issues to closed from one T3 Code thread"
   default_prompt: "$orchestrate"

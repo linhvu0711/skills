@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one pinned T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
@@ -51,8 +51,7 @@ comment, no label, no close, no merge.
    Its stops: `not inside T3 Code`, `a live run in <owner/repo>: <link>`
    (show the link: that thread is the orchestrator), `<name> has no open
    issue`, and the checkout resolver's.
-4. **Pin and watcher.** `t3_thread_organize` with `action: pin`, no
-   `threadId`. Then `scripts/orchestrate.sh watch <owner/repo>`. A stop
+4. **Watcher.** `scripts/orchestrate.sh watch <owner/repo>`. A stop
    from it: post its line; the run has no checks until `resume`.
 5. **Board, show, and start.** Serve the board from the run folder,
    `run` in step 3's JSON line:
@@ -236,7 +235,7 @@ the answers then run § Check.
 3. `old_task` set: the run is from before the watcher, and has a T3
    scheduled task; `delete_scheduled_task` on it. `null`: nothing to
    delete.
-4. Every run: pin and watcher as § Start step 4, then serve, post, and
+4. Every run: the watcher as § Start step 4, then serve, post, and
    open the board, § Check, and § Snooze, as § Start step 5.
 
 ## Done
