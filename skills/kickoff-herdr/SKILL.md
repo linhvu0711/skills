@@ -1,6 +1,6 @@
 ---
 name: kickoff-herdr
-description: "Open a new herdr pane beside this one and run /ship or /plan-up there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
+description: "Open a new herdr pane beside this one and run /ship there on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. One script does it all: finds the repo, leaves its tree as it is; picks the model, effort, and command from the labels unless the user names them; places and names the pane. Stops once the command is running."
 disable-model-invocation: true
 ---
 

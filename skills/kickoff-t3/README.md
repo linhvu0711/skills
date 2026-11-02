@@ -1,6 +1,6 @@
 # kickoff-t3
 
-Starts `/ship` or `/plan-up` in a new T3 Code thread on an issue, a run of tickets, or a whole epic.
+Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or a whole epic.
 
 ## Use it when
 
@@ -13,7 +13,7 @@ You work in T3 Code and want planning or a whole `/ship` run to start in its own
 - `/kickoff-t3 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-t3 on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge"), or "plan only" in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
+More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
 
 ## What you get
 
@@ -43,11 +43,11 @@ Your tree stays as it is: any branch, edits or not.
 - A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`.
 - `gh` (signed in), `git`, and `jq`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
-- The [ship](../ship/) and [plan-up](../plan-up/) skills, installed for Claude Code.
+- The [ship](../ship/) skill, installed for Claude Code.
 
 ## Fits with
 
-- Starts [ship](../ship/) or [plan-up](../plan-up/) in the new thread. It sets a ship mode only when you name one; else the `/ship` run picks it.
+- Starts [ship](../ship/) in the new thread. It sets a ship mode only when you name one; else the `/ship` run picks it.
 - [kickoff-herdr](../kickoff-herdr/) does the same in a herdr pane. Both run the shared decide script, `../../shared/kickoff/decide.sh`, and read `../../shared/kickoff/target.md`.
 - Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way: [orchestrate](../orchestrate/) does.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.

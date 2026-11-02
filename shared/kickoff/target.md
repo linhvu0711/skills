@@ -8,7 +8,7 @@ how to turn the user's words into a target.
 
 ## Target forms
 
-The target takes `/plan-up`'s forms, with full URLs, so the script
+The target takes `/ship`'s forms, with full URLs, so the script
 knows the repo. The thread's message names the same target by number,
 as `/ship #42 #43` or `/ship #42 on #80`, since the thread runs in that
 repo's checkout. When gh in that checkout sees another repo, as a fork
@@ -41,8 +41,6 @@ Flags you may add:
   `sonnet`, `haiku`) or a full model name.
 - `--effort <level>` when the user names an effort: `low`, `medium`,
   `high`, `xhigh`, or `max`.
-- `--command plan-up` when the user says "plan only". With no
-  `--command`, the thread runs `/ship`.
 - `--mode review`, `--mode ready`, or `--mode merge` when the user names
   how far `/ship` goes: "review the plan first" is `review`, "ship it"
   or "stop at a ready PR" is `ready`, "ship and merge" or "full ship" is
@@ -51,6 +49,7 @@ Flags you may add:
 - `--command triage`, `--command grill`, or `--command ready-pr` when
   the user names that skill: "triage it" is `triage`, "grill it" is
   `grill`, "ready the PR" is `ready-pr`. The table never picks these.
+  With no `--command`, the thread runs `/ship`.
 
 A value the user does not name comes from the table below. The report
 line marks each value `(default)` or `(set)`.
@@ -91,7 +90,7 @@ So you can answer questions about it:
 - Repo path: found by the checkout resolver,
   `../checkout.sh main <owner/repo>`, whose header says where it looks.
   A find is written to the map. None or several: it stops and says so.
-- Tree: left as is, on any branch, with edits or not. `/plan-up` reads
+- Tree: left as is, on any branch, with edits or not. `/ship` reads
   its own fresh copy of the base, so the script never switches, pulls,
   or stops on it.
 - Label, for a herdr pane and agent: `i` and the issue numbers, as

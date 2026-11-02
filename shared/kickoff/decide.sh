@@ -2,7 +2,7 @@
 # decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the orchestrator's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
-#                  [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
+#                  [--command ship|triage|grill|ready-pr] [--mode review|ready|merge]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -13,9 +13,9 @@
 # unless a flag names them; --size gives a ticket with no size label the size
 # the agent guessed, and a guess for a ticket with a size label is ignored.
 # The command is ship unless --command names another.
-# plan-up, triage, grill, and ready-pr come only from --command, and triage,
-# grill, and ready-pr each have their own model and effort row. --mode sets
-# /ship's ship mode; with none, the /ship thread picks it.
+# triage, grill, and ready-pr come only from --command, and each has its own
+# model and effort row. --mode sets /ship's ship mode; with none, the /ship
+# thread picks it.
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, mode, model, model_from, effort, effort_from, reason, base,
@@ -48,7 +48,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship|plan-up|triage|grill|ready-pr) ;; *) die "--command must be ship, plan-up, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship|triage|grill|ready-pr) ;; *) die "--command must be ship, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --mode)
       case "${2:-}" in review|ready|merge) ;; *) die "--mode must be review, ready, or merge, got: ${2:-nothing}" ;; esac
@@ -61,7 +61,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -204,7 +204,7 @@ fi
 found="$(bash "$here/../checkout.sh" main "$slug")" || exit 1
 path="${found#* MAIN=}"
 
-# The thread runs in that checkout, and /plan-up reads a number as an issue
+# The thread runs in that checkout, and /ship reads a number as an issue
 # of the repo gh sees there. A fork clone can make gh see its upstream, so
 # the URLs stay unless gh there names this repo.
 here_repo="$(cd "$path" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
