@@ -238,8 +238,11 @@ number, or words that point at one. Two words come off first and never reach pla
    per `../build-and-prove/SKILL.md` step 3, on the plan's `Base` as
    that step starts it, so its run 1 takes only the before shots
    `PROOF` lacks, on the base, and keeps the ones there. Write its id to
-   `agent.env`, then send it the note above, naming the PR's branch at
-   its head.
+   `agent.env`. Then `wait` for that run 1 and sort its end as
+   build-and-prove step 4 sorts run 1, with one change: a missing
+   secret shows its names and stops here, since no Coding goes on, and
+   so does a run that ends `error` or `expired`. Only then send it the
+   note above, naming the PR's branch at its head.
 
    It ends with `READY` or a stop point.
 

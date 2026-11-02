@@ -73,6 +73,11 @@ The note names the branch and the short SHA to check out, and what to
 do: `Check secrets`, `Before`, `Gates`, `Perf`, `Videos`, `Install`.
 Do only what it names, in that order. First `git fetch origin`.
 
+**Check secrets**, when the note names it: check each name it lists as
+Run 1 step 1 does. Any still missing: end the run with the line
+`MISSING SECRETS: <names, comma separated>`, and do nothing more: no
+before shot, no Gate, no video.
+
 **Before**, when the note names it: before shots are of the base, never
 of the branch. `git checkout --detach origin/<Base branch>`, the one in
 the head lines, then take the shots of the walks it names as Run 1

@@ -44,7 +44,9 @@ bash "$CLIENT" say "$AGENT" <note-path>
 bash "$CLIENT" wait "$AGENT"
 ```
 
-`409 agent_busy` on `say`: `wait`, then `say` again. In Claude Code
+`409 agent_busy` on `say`: the run before it still goes. `wait` for
+that run, whose line is not this round's and is not sorted here, then
+`say` again, then the `wait` above for the note's run. In Claude Code
 run `wait` in the background; the tool wakes you when it ends. Sort the
 line `wait` printed:
 - `error`, `cancelled`, or `expired`: SKILL.md § Proof agent.
