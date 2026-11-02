@@ -64,7 +64,7 @@ The Sandbox and the walker subagent this skill used before are kept, unused, in 
 - Builds the plan [plan-up](../plan-up/) writes, with the rules [handoff](../handoff/) renders for a local builder, and shares handoff's Cursor client.
 - Called by [ship](../ship/), which then runs [make-pr](../make-pr/) with the proof folder and [ready-pr](../ready-pr/).
 - Uses [kickoff-herdr](../kickoff-herdr/)'s `equalize_columns.py` to even out pane widths.
-- Why the proof runs on a Cursor agent, and why it never reads code: ADRs 0019 and 0010 in this repo.
+- Why the walks run on a Cursor agent, why the Gates do not, and why it never reads code: ADRs 0019, 0020, and 0010 in this repo.
 
 ## Credits
 
