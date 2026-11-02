@@ -265,6 +265,75 @@ t_cursor_handoff_adapter() {
   eq stdout "artifacts/checks.txt	120" "$out"
 }
 
+t_cursor_start_macos_hold() {
+  fake_curl; fake_mac
+  printf '{"items":[{"url":"https://github.com/o/r"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
+  printf '{"agent":{"id":"bc-1","url":"https://cursor.com/agents/bc-1"}}\n' > "$FAKE_CURL/POST_v1_agents.json"
+  printf '# Brief\n' > p.md
+  cursor_mac start p.md --repo o/r --platform macos --hold-mac
+  eq exit 0 "$code"
+  w=$(jq -r .env.name "$FAKE_CURL/POST_v1_agents.data")
+  eq row "bc-1	$w	wid-1	https://github.com/o/r	main	mac-1	hold" "$(macs)"
+}
+
+t_cursor_hold_needs_macos() {
+  fake_curl
+  printf '# Brief\n' > p.md
+  cursor start p.md --repo o/r --hold-mac
+  eq exit 1 "$code"
+  eq stderr "cursor.sh: --hold-mac needs --platform macos" "$err"
+}
+
+# held_row: agent bc-1 on a held mac-1, its latest run FINISHED.
+held_row() {
+  mkdir -p "$T/home/.config/dispatch"
+  printf 'bc-1\tho-1\twid-1\thttps://github.com/o/r\tmain\tmac-1\thold\n' > "$T/home/.config/dispatch/cursor-macs.tsv"
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"FINISHED","result":"Done"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+}
+
+t_cursor_poll_keeps_held_mac() {
+  fake_curl; fake_mac; held_row
+  cursor_mac poll bc-1
+  eq exit 0 "$code"
+  [ ! -f "$T/mac.calls" ] || eq "mac calls" "" "$(cat "$T/mac.calls")"
+  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1	hold" "$(macs)"
+}
+
+t_cursor_down_held_mac() {
+  fake_curl; fake_mac; held_row
+  cursor_mac down bc-1
+  eq exit 0 "$code"
+  eq stdout "bc-1: destroyed mac-1" "$out"
+  eq "mac down" "down mac-1" "$(cat "$T/mac.calls")"
+  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	-	hold" "$(macs)"
+}
+
+t_cursor_down_no_mac() {
+  fake_curl
+  cursor down bc-9
+  eq exit 0 "$code"
+  eq stdout "bc-9: no Mac" "$out"
+}
+
+t_cursor_wait() {
+  fake_curl
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"EXPIRED","result":"Ran out of time"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  cursor wait bc-1 --interval 0
+  eq exit 0 "$code"
+  eq stdout "expired	run-2|EXPIRED	-	https://cursor.com/agents/bc-1	Ran out of time" "$out"
+}
+
+t_cursor_wait_max() {
+  fake_curl
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"RUNNING"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  cursor wait bc-1 --interval 0 --max 1
+  eq exit 0 "$code"
+  eq stdout "still running	https://cursor.com/agents/bc-1" "$out"
+}
+
 cases=(
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
@@ -286,4 +355,11 @@ cases=(
   "cursor download stops when the file will not come|t_cursor_download_fails"
   "cursor start shows the API's reason|t_cursor_start_api_reason"
   "handoff's Cursor adapter runs the shared client|t_cursor_handoff_adapter"
+  "cursor start --hold-mac marks the Mac held|t_cursor_start_macos_hold"
+  "cursor start --hold-mac needs macos|t_cursor_hold_needs_macos"
+  "cursor poll keeps a held Mac when the run ends|t_cursor_poll_keeps_held_mac"
+  "cursor down gives back a held Mac|t_cursor_down_held_mac"
+  "cursor down on an agent with no Mac says so|t_cursor_down_no_mac"
+  "cursor wait prints the run that ended|t_cursor_wait"
+  "cursor wait stops at --max|t_cursor_wait_max"
 )

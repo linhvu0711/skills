@@ -4,9 +4,10 @@
 # ledger and runs the watch; /build-and-prove runs it for its Proof agent.
 #
 #   cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID]
-#                   [--platform linux|macos]               -> "<agent_id>\t<url>"
+#                   [--platform linux|macos [--hold-mac]]  -> "<agent_id>\t<url>"
 #   cursor.sh poll <agent> [--repo owner/name --issue N]   -> "<state>\t<run_id>|<run state>\t<prs>\t<url>\t<message>"
 #   cursor.sh say <agent> <note-file>                      -> sends a follow-up (a new run on the agent)
+#   cursor.sh wait <agent> [--interval S] [--max S]        -> poll's line once the latest run ends
 #   cursor.sh down <agent>                                 -> destroys the agent's Mac, if one runs
 #   cursor.sh artifacts <agent>                            -> "<path>\t<bytes>" per file the agent saved
 #   cursor.sh download <agent> <path> <file>               -> saves one artifact to <file>
@@ -25,6 +26,9 @@
 # workspace on, so a PR the agent opens with gh on its own branch never
 # shows there. poll with --repo and --issue also asks GitHub for open
 # PRs whose head is `<type>/<issue>-…` and reports those.
+# wait polls every --interval seconds (default 60) until the latest run is no
+# longer working, then prints that poll line; at --max seconds it prints
+# `still running<TAB><url>` and exits 0.
 # artifacts lists the files in the agent's artifacts folder; a path is
 # relative to it, as artifacts/video-1.mp4. download asks for a presigned
 # URL, good for 15 minutes, and fetches it with no key; a file that does not
@@ -34,8 +38,12 @@
 # The Mac lives for one run: poll destroys it when the latest run ends, and
 # say rents a new one before it sends, whose worker takes the first worker's
 # name and ID: Cursor sends an agent's runs to the worker ID it first ran on.
-# The rows, agent, worker, worker ID, repo, base, and Mac (`-` when none),
-# sit in ~/.config/dispatch/cursor-macs.tsv. A worker refuses a grok_ key, so a
+# start --hold-mac keeps the Mac past the end of a run, for a caller whose
+# agent waits between runs (/build-and-prove, through Coding): poll never
+# destroys it, and the caller runs down when it is done. down on an agent
+# with no Mac says so and exits 0, so a caller can always run it.
+# The rows, agent, worker, worker ID, repo, base, Mac (`-` when none), and
+# `hold` for a held Mac, sit in ~/.config/dispatch/cursor-macs.tsv. A worker refuses a grok_ key, so a
 # Mac needs a personal crsr_ key. --platform windows stops: Devin has one.
 # Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
 # leaves a stale value in a running shell). Never printed.
@@ -50,9 +58,10 @@ die() { echo "cursor.sh: $*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID] [--platform linux|macos]
+cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID] [--platform linux|macos [--hold-mac]]
 cursor.sh poll <agent> [--repo owner/name --issue N]
 cursor.sh say <agent> <note-file>
+cursor.sh wait <agent> [--interval S] [--max S]
 cursor.sh down <agent>
 cursor.sh artifacts <agent>
 cursor.sh download <agent> <path> <file>
@@ -123,30 +132,35 @@ fetch() {
   summary "$a" "$r"
 }
 
-# mac_row AGENT -> "worker<TAB>worker id<TAB>repo<TAB>base<TAB>mac" of a Mac agent, or nothing
+# mac_row AGENT -> "worker<TAB>worker id<TAB>repo<TAB>base<TAB>mac<TAB>life" of a Mac
+# agent, or nothing. life is `hold` for a held Mac, else `run` (an older
+# row has no seventh field).
 mac_row() {
   [[ -f "$MACS" ]] || return 0
-  awk -F'\t' -v a="$1" '$1 == a { r = $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 } END { if (r != "") print r }' "$MACS"
+  awk -F'\t' -v a="$1" '$1 == a { r = $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" ($7 == "hold" ? "hold" : "run") } END { if (r != "") print r }' "$MACS"
 }
 
-# mac_set AGENT WORKER WID REPO BASE MAC -> writes the agent's row, replacing an older one
+# mac_set AGENT WORKER WID REPO BASE MAC [LIFE] -> writes the agent's row,
+# replacing an older one; LIFE `hold` is written as a seventh field.
 mac_set() {
   local tmp
   mkdir -p "$(dirname "$MACS")"; touch "$MACS"
   tmp=$(mktemp "$MACS.XXXXXX")
   awk -F'\t' -v a="$1" '$1 != a' "$MACS" >"$tmp"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >>"$tmp"
+  printf '%s\t%s\t%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4" "$5" "$6" >>"$tmp"
+  [[ "${7:-}" == hold ]] && printf '\thold' >>"$tmp"
+  printf '\n' >>"$tmp"
   mv "$tmp" "$MACS"
 }
 
 # mac_clear AGENT MAC -> marks the agent as having no Mac, only while its row
 # still names MAC: a say that rented a newer Mac meanwhile keeps its row.
 mac_clear() {
-  local row w wid r b mac
+  local row w wid r b mac life
   row=$(mac_row "$1")
   [[ -n "$row" ]] || return 0
-  IFS=$'\t' read -r w wid r b mac <<<"$row"
-  [[ "$mac" == "$2" ]] && mac_set "$1" "$w" "$wid" "$r" "$b" -
+  IFS=$'\t' read -r w wid r b mac life <<<"$row"
+  [[ "$mac" == "$2" ]] && mac_set "$1" "$w" "$wid" "$r" "$b" - "$life"
   return 0
 }
 
@@ -193,7 +207,7 @@ repo_url() {
 
 cmd_start() {
   local file="${1:-}"; shift || true
-  local title="" repo="" base="main" model="" platform=linux
+  local title="" repo="" base="main" model="" platform=linux life=run
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --title) title="$2"; shift 2 ;;
@@ -201,9 +215,11 @@ cmd_start() {
       --base)  base="$2"; shift 2 ;;
       --model) model="$2"; shift 2 ;;
       --platform) platform="$2"; shift 2 ;;
+      --hold-mac) life=hold; shift ;;
       *) die "unknown option $1" ;;
     esac
   done
+  [[ "$life" == hold && "$platform" != macos ]] && die "--hold-mac needs --platform macos"
   case "$platform" in
     linux|macos) ;;
     windows) die "Cursor has no Windows machine: hand this one to devin" ;;
@@ -235,7 +251,7 @@ cmd_start() {
     res=$(api POST /agents "$body")
   fi
   id=$(jq -r '.agent.id' <<<"$res")
-  [[ -n "$worker" ]] && mac_set "$id" "$worker" "$wid" "$repo" "$base" "$mac"
+  [[ -n "$worker" ]] && mac_set "$id" "$worker" "$wid" "$repo" "$base" "$mac" "$life"
   url=$(jq -r '.agent.url // empty' <<<"$res")
   [[ -z "$url" ]] && url="https://cursor.com/agents/$id"
   printf '%s\t%s\n' "$id" "$url"
@@ -273,10 +289,11 @@ cmd_poll() {
   done
   all=$(echo $all | tr ' ' ',')
   # 1A: a Mac lives for one run. The run that ends frees it; say rents the next.
-  local mac
+  # A held Mac waits for down.
+  local mac life
   if [[ -n "$row" && "$st" != working ]]; then
-    IFS=$'\t' read -r _ _ _ _ mac <<<"$row"
-    if [[ "$mac" != "-" ]]; then
+    IFS=$'\t' read -r _ _ _ _ mac life <<<"$row"
+    if [[ "$mac" != "-" && "$life" != hold ]]; then
       bash "$MAC" down "$mac" >/dev/null 2>&1 || true
       mac_clear "$id" "$mac"
     fi
@@ -288,11 +305,11 @@ cmd_say() {
   local id; id=$(aid "${1:-}")
   local file="${2:-}"
   [[ -s "$file" ]] || die "note file missing or empty: $file"
-  local res rid row w wid r b mac up text new=""
+  local res rid row w wid r b mac life up text new=""
   text=$(cat "$file")
   row=$(mac_row "$id")
   if [[ -n "$row" ]]; then
-    IFS=$'\t' read -r w wid r b mac <<<"$row"
+    IFS=$'\t' read -r w wid r b mac life <<<"$row"
     if ! bash "$MAC" alive "$mac" 2>/dev/null; then
       mac_key_check
       [[ "$mac" != "-" ]] && { bash "$MAC" down "$mac" >/dev/null 2>&1 || true; }
@@ -307,21 +324,43 @@ $text"
     || { [[ -n "$new" ]] && bash "$MAC" down "$new" >/dev/null 2>&1; exit 1; }
   # Only now, with the new run the latest, may a poll see the new Mac: one
   # that saw it next to the ended run before would destroy it.
-  [[ -n "$new" ]] && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"
+  [[ -n "$new" ]] && mac_set "$id" "$w" "$wid" "$r" "$b" "$new" "$life"
   rid=$(jq -r '.run.id // "-"' <<<"$res")
   echo "sent to $id ($rid)"
 }
 
 cmd_down() {
   local id; id=$(aid "${1:-}")
-  local row w wid r b mac
+  local row w wid r b mac life
   row=$(mac_row "$id")
-  [[ -n "$row" ]] || die "$id has no Mac"
-  IFS=$'\t' read -r w wid r b mac <<<"$row"
+  [[ -n "$row" ]] || { echo "$id: no Mac"; return 0; }
+  IFS=$'\t' read -r w wid r b mac life <<<"$row"
   if [[ "$mac" == "-" ]]; then echo "$id: no Mac running"; return 0; fi
   bash "$MAC" down "$mac" >/dev/null 2>&1 || true
-  mac_set "$id" "$w" "$wid" "$r" "$b" -
+  mac_set "$id" "$w" "$wid" "$r" "$b" - "$life"
   echo "$id: destroyed $mac"
+}
+
+cmd_wait() {
+  local id; id=$(aid "${1:-}"); shift || true
+  local interval=60 max=0 start line st url
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --interval) interval="$2"; shift 2 ;;
+      --max) max="$2"; shift 2 ;;
+      *) die "unknown option $1" ;;
+    esac
+  done
+  start=$(date +%s)
+  while :; do
+    line=$(cmd_poll "$id")
+    IFS=$'\t' read -r st _ _ url _ <<<"$line"
+    [[ "$st" != working ]] && { printf '%s\n' "$line"; return 0; }
+    if (( max > 0 && $(date +%s) - start >= max )); then
+      printf 'still running\t%s\n' "$url"; return 0
+    fi
+    sleep "$interval"
+  done
 }
 
 cmd_artifacts() {
@@ -354,11 +393,12 @@ cmd_repos() {
 }
 
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|down|artifacts|download|models|repos) key >/dev/null ;; esac
+case "${1:-}" in start|poll|say|wait|down|artifacts|download|models|repos) key >/dev/null ;; esac
 case "${1:-}" in
   start)  shift; cmd_start "$@" ;;
   poll)   shift; cmd_poll "$@" ;;
   say)    shift; cmd_say "$@" ;;
+  wait)   shift; cmd_wait "$@" ;;
   down)   shift; cmd_down "$@" ;;
   artifacts) shift; cmd_artifacts "$@" ;;
   download)  shift; cmd_download "$@" ;;

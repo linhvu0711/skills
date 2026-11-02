@@ -343,6 +343,9 @@ lives for one run:
   So the watch is what frees it; a chat with no watch (Codex) runs
   `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
+  `start --hold-mac` keeps the Mac past a run's end until `down`; it is
+  for `/build-and-prove`, whose agent waits through Coding, and handoff
+  never sets it.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
