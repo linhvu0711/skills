@@ -16,9 +16,12 @@ The Gates are the full suite, typecheck, lint, and build under the
 plan's `Facts`, and every command the repo's `AGENTS.md` or `CLAUDE.md`
 names as a check. Sort each one:
 
-- **CI covers it**: a file under `$WT/.github/workflows/` names its
-  command. It runs on the PR, not here. Its line is `<command> · <short
-  SHA> · not run: CI runs it (<workflow file>)`.
+- **CI covers it**: a workflow under `$WT/.github/workflows/` that runs
+  on pull requests has a step that runs that exact command. A longer
+  command does not cover it (`pnpm test:e2e` is not `pnpm test`), and
+  neither does a comment or a job that pull requests skip. It runs on
+  the PR, not here. Its line is
+  `<command> · <short SHA> · not run: CI runs it (<workflow file>)`.
 - **Every other Gate** runs here, `cd "$WT" && <command>`,
   one at a time: never two at once, since two suites at once overload
   the local machine (ADR 0011). Its line is `<command> · <short SHA> · <result>

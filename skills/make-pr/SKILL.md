@@ -81,8 +81,8 @@ and stop before step 7.
    on the local machine, as the line's end says, and it
    does not run again here. A `not run: <why>` line is not a result: do
    not run that check either, and `Proof` says `CI must prove it`. When
-   no file under `.github/workflows/` names its command, nothing will
-   prove it: stop before the push, name the check, and ask the user how
+   no workflow under `.github/workflows/` that runs on pull requests has
+   a step that runs that exact command, nothing will prove it: stop before the push, name the check, and ask the user how
    to prove it. A red check: show its
    failing lines and stop, with the PR not opened. Done when every
    check is green and you hold each command, the short SHA of HEAD, and
