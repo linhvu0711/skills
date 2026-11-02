@@ -74,8 +74,8 @@ cmd_up() {
     (. ~/.ho-env; ~/.local/bin/agent worker start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
     for i in \$(seq 1 45); do
       if grep -q 'Worker is now running' ~/worker.log 2>/dev/null; then
-        grep -o '\"$worker\": *\"[0-9a-f-]*\"' ~/.cursor/agent-cli-state.json | grep -o '[0-9a-f-]\{36\}'
-        exit 0
+        w=\$(grep -o '\"$worker\": *\"[0-9a-f-]*\"' ~/.cursor/agent-cli-state.json 2>/dev/null | grep -o '[0-9a-f-]\{36\}' || true)
+        if [ -n \"\$w\" ]; then echo \"\$w\"; exit 0; fi
       fi
       sleep 2
     done
