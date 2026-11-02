@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # A Namespace Mac that runs a Cursor My Machines worker, for a Cursor agent
-# that needs macOS (Xcode, the iOS Simulator). The Cursor adapter calls it;
-# nothing else does.
+# that needs macOS (Xcode, the iOS Simulator). The shared Cursor client,
+# cursor.sh next to this file, calls it; nothing else does.
 #
 #   mac.sh up <worker> <repo-url> <base> [<worker id>]
 #                                          -> "<instance id>\t<worker id>" once the worker runs
 #   mac.sh alive <instance>                -> exit 0 when the Mac and its worker run
 #   mac.sh down <instance>                 -> deletes the keys and destroys the Mac
 #
-# up rents a Mac (macOS 26, Xcode 26) for at most HANDOFF_MAC_HOURS hours
+# up rents a Mac (macOS 26, Xcode 26) for at most CURSOR_MAC_HOURS hours
 # (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
 # the user's GitHub login (`gh auth token`) through stdin into a file only the
 # Mac's user reads, never on a command line, installs the Cursor CLI, clones
@@ -27,7 +27,7 @@
 # continues the agent, memory kept.
 set -euo pipefail
 
-HOURS="${HANDOFF_MAC_HOURS:-4}"
+HOURS="${CURSOR_MAC_HOURS:-4}"
 
 die() { echo "mac.sh: $*" >&2; exit 1; }
 

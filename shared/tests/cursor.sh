@@ -1,12 +1,12 @@
-# cursor.sh: the cases for this skill's Cursor adapter, driven through the fake
-# curl of test-lib.sh. The repo's test.sh sources this file after
+# cursor.sh: the cases for the shared Cursor client, shared/cursor/cursor.sh,
+# driven through the fake curl of test-lib.sh. The repo's test.sh sources this file after
 # test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# cursor <args>: run the Cursor adapter on the fake curl, with HOME in the
+# cursor <args>: run the Cursor client on the fake curl, with HOME in the
 # temp folder (no .zshrc).
-cursor() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../scripts/adapters/cursor.sh" "$@"; }
+cursor() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../cursor/cursor.sh" "$@"; }
 
 agent_bc1='{"id":"bc-1","status":"RUNNING","latestRunId":"run-2","url":"https://cursor.com/agents/bc-1"}'
 
@@ -62,12 +62,12 @@ t_cursor_say() {
 t_cursor_no_key() {
   fake_curl
   printf '# Brief\n' > p.md
-  run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../scripts/adapters/cursor.sh" start p.md --repo o/r
+  run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../cursor/cursor.sh" start p.md --repo o/r
   eq exit 1 "$code"
   eq stderr "cursor.sh: no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)" "$err"
 }
 
-# fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
+# fake_mac: a fake mac.sh in $T, CURSOR_MAC pointing there. It logs each
 # call's args to $T/mac.calls; `up` prints mac-<n> and wid-1, n its call count, and
 # `alive` exits with the content of $T/mac.alive (1 when missing), and `down`
 # runs $T/mac.on-down first when it exists.
@@ -82,11 +82,11 @@ case "$1" in
   down) [ ! -f "$d/mac.on-down" ] || bash "$d/mac.on-down"; echo "destroyed $2" ;;
 esac
 EOF
-  export HANDOFF_MAC="$T/mac.sh"
+  export CURSOR_MAC="$T/mac.sh"
 }
 
 # cursor_mac <args>: cursor with the fake mac.sh and a crsr_ key.
-cursor_mac() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY="${KEY:-crsr_k}" bash "$here/../scripts/adapters/cursor.sh" "$@"; }
+cursor_mac() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY="${KEY:-crsr_k}" bash "$here/../cursor/cursor.sh" "$@"; }
 
 macs() { cat "$T/home/.config/dispatch/cursor-macs.tsv"; }
 
@@ -211,6 +211,60 @@ down mac-1" "$(cat "$T/mac.calls")"
   eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	-" "$(macs)"
 }
 
+t_cursor_artifacts() {
+  fake_curl
+  printf '{"items":[{"path":"artifacts/video-1.mp4","sizeBytes":2048,"updatedAt":"2026-11-02T10:00:00Z"},{"path":"artifacts/checks.txt","sizeBytes":120,"updatedAt":"2026-11-02T10:00:00Z"}]}\n' \
+    > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts.json"
+  cursor artifacts bc-1
+  eq exit 0 "$code"
+  eq stdout "artifacts/video-1.mp4	2048
+artifacts/checks.txt	120" "$out"
+}
+
+# download_fixtures: the presigned URL for artifacts/video-1.mp4, and the file behind it.
+download_fixtures() {
+  printf '{"url":"https://s3.test/b/video-1.mp4?sig=x","expiresAt":"2026-11-02T10:15:00Z"}\n' \
+    > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts_download.json"
+  printf 'MP4DATA\n' > "$FAKE_CURL/GET_b_video-1.mp4.json"
+}
+
+t_cursor_download() {
+  fake_curl; download_fixtures
+  cursor download bc-1 artifacts/video-1.mp4 proof/video-1.mp4
+  eq exit 0 "$code"
+  eq stdout "saved proof/video-1.mp4" "$out"
+  eq file "MP4DATA" "$(cat proof/video-1.mp4)"
+  has calls "GET /b/video-1.mp4" "$(cat "$FAKE_CURL/calls")"
+}
+
+t_cursor_download_fails() {
+  fake_curl; download_fixtures
+  printf 403 > "$FAKE_CURL/GET_b_video-1.mp4.code"
+  cursor download bc-1 artifacts/video-1.mp4 proof/video-1.mp4
+  eq exit 1 "$code"
+  eq stderr "cursor.sh: download of artifacts/video-1.mp4 failed: HTTP 403" "$err"
+  [ ! -e proof/video-1.mp4 ] || eq file "none" "proof/video-1.mp4"
+}
+
+t_cursor_start_api_reason() {
+  fake_curl
+  printf '{"items":[{"url":"https://github.com/o/r"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
+  printf '{"error":{"code":"payment_required","message":"Add credit to run agents"}}\n' > "$FAKE_CURL/POST_v1_agents.json"
+  printf 402 > "$FAKE_CURL/POST_v1_agents.code"
+  printf '# Brief\n' > p.md
+  cursor start p.md --repo o/r
+  eq exit 1 "$code"
+  eq stderr "cursor.sh: HTTP 402 on POST /agents: payment_required (Add credit to run agents)" "$err"
+}
+
+t_cursor_handoff_adapter() {
+  fake_curl
+  printf '{"items":[{"path":"artifacts/checks.txt","sizeBytes":120}]}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts.json"
+  run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../../skills/handoff/scripts/adapters/cursor.sh" artifacts bc-1
+  eq exit 0 "$code"
+  eq stdout "artifacts/checks.txt	120" "$out"
+}
+
 cases=(
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
@@ -227,4 +281,9 @@ cases=(
   "cursor say keeps a Mac that runs|t_cursor_say_mac_alive"
   "cursor poll keeps a Mac a say rented meanwhile|t_cursor_poll_keeps_newer_mac"
   "cursor say destroys its new Mac when the send fails|t_cursor_say_send_fails"
+  "cursor artifacts lists each file with its size|t_cursor_artifacts"
+  "cursor download saves the file the presigned URL holds|t_cursor_download"
+  "cursor download stops when the file will not come|t_cursor_download_fails"
+  "cursor start shows the API's reason|t_cursor_start_api_reason"
+  "handoff's Cursor adapter runs the shared client|t_cursor_handoff_adapter"
 )
