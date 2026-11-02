@@ -239,10 +239,13 @@ number, or words that point at one. Two words come off first and never reach pla
    that step starts it, so its run 1 takes only the before shots
    `PROOF` lacks, on the base, and keeps the ones there. Write its id to
    `agent.env`. Then `wait` for that run 1 and sort its end as
-   build-and-prove step 4 sorts run 1, with one change: a missing
-   secret shows its names and stops here, since no Coding goes on, and
-   so does a run that ends `error` or `expired`. Only then send it the
-   note above, naming the PR's branch at its head.
+   build-and-prove step 4 sorts run 1, with one change: no Coding goes
+   on, so a missing secret stops here, as `../build-and-prove/references/walks.md`
+   § 6a stops on one: its names, where to add them on cursor.com, that a
+   new agent gets them on the next run, then `cursor.sh down "$AGENT"`
+   and stop. A run that ends `error` or `expired` also runs `down`
+   before it stops. Only then send it the note above, naming the PR's
+   branch at its head.
 
    It ends with `READY` or a stop point.
 
