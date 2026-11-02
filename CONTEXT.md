@@ -94,14 +94,6 @@ _Avoid_: CI, final checks
 The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
 _Avoid_: implementer, coder
 
-**Walker**:
-The subagent that does a plan's UI walks on a proofbox Sandbox the way a test user would. It gets the walks and the pass rule for each, never reads or changes the code, and reports what passed and what broke, with videos and screenshots.
-_Avoid_: tester, verifier, QA agent
-
-**Sandbox fault**:
-A failed walk whose screen shows the Sandbox, not the app, is wrong: a missing tool, or a mark drawn as other bytes for want of a UTF-8 locale. The setup script is fixed and the round runs again, and it does not count as a round.
-_Avoid_: flaky walk, env failure
-
 **Proof agent**:
 The Cursor cloud agent that `/build-and-prove` starts for one run, at the same time as Coding. It takes the before shots, runs the Gates, does the plan's UI walks as a test user with videos, and runs the perf measure. It never changes code. Each later round is a follow-up message to it.
 _Avoid_: walker, sandbox, verifier
