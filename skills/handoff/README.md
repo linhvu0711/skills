@@ -9,13 +9,13 @@ You have a plan you said `ok` to and want a cloud agent to build it, with its ow
 - `/handoff [devin|cursor] <issue-url>`: the first prompt for one ticket. No URL: the plan this chat holds. A plan with no issue (plan-up's chat plan) stops here: a cloud session needs an issue, so make one with [to-issue](../to-issue/) first.
 - `/handoff [devin|cursor] <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
 - `/handoff [devin|cursor] <note>`: a follow-up or an answer for the session on this chat's issue. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
-- `--model <id>` picks the Cursor model.
+- `--model <id>` picks the Cursor model. Without it Cursor's default runs, `Auto`.
 
 With no executor named, a follow-up goes to the executor that started the issue, and a new issue goes to Devin. An issue that already has a session asks you first: send the plan to that session, or start a new one. It only runs when you call it.
 
 ## What you get
 
-A prompt file holding the issue, the plan, and the build rules. Devin gets it as an attachment, on a machine picked for the repo (Linux unless it needs macOS or Windows, whatever your local machine runs). Cursor gets it whole as the agent's prompt, and the agent commits as you and opens the PR on the branch the plan names. Missing size labels are created; a size-label bot in the base branch's workflows, whatever branch your checkout is on, owns them instead. The prompt itself stays out of the chat:
+A prompt file holding the issue, the plan, and the build rules. Devin gets it as an attachment, on a machine picked for the repo (Linux unless it needs macOS or Windows, whatever your local machine runs). Cursor gets it whole as the agent's prompt, and the agent commits as you and opens the PR on the branch the plan names. Cursor's own machines run Linux; a task that needs macOS, such as an Xcode build or the iOS Simulator, runs on a Mac rented from Namespace for one run at a time, with a Cursor worker on it. The Mac is destroyed when the run ends and rented again for the next note. A plan that needs Windows goes to Devin. Missing size labels are created; a size-label bot in the base branch's workflows, whatever branch your checkout is on, owns them instead. The prompt itself stays out of the chat:
 
 ```
 Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
@@ -38,6 +38,7 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 
 - For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID`, in the environment or as `export` lines in `~/.zshrc`. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.
 - For Cursor: cloud agents and an API key in `CURSOR_API_KEY` (environment or `~/.zshrc`), the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
+- For Cursor on macOS: the Namespace CLI `nsc`, signed in, and a personal Cursor API key that starts with `crsr_`, since a Cursor worker refuses the `grok_` keys grok.com makes. The Mac gets your GitHub login from `gh` for the run, because Cursor's saved secrets do not reach your own machines.
 - `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
 - A plan from [plan-up](../plan-up/), and [to-issue](../to-issue/)'s `../to-issue/scripts/conventions.py` for the repo's size labels.
 - The shared core files in `../../shared/handoff/` (prompt and rules templates, `render.sh`), `../../shared/plan-page.md`, `../../shared/issue-rules.md`, and `../../shared/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.

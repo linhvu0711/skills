@@ -45,7 +45,7 @@ has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in
 # $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `issue view`
-# issue-view, `issue list` issue-list, `run view` run-view, `repo view` repo-view, `api graphql` graphql, `api user` user,
+# issue-view, `issue list` issue-list, `run view` run-view, `repo view` repo-view, `api graphql` graphql, `api user` user, `auth token` auth-token,
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
 # `api repos/…/status` status, `api repos/…/check-runs` check-runs,
 # `api repos/…/actions/jobs/…` job, any other
@@ -80,6 +80,7 @@ case "$args" in
   " repo view"*) key=repo-view ;;
   " api graphql"*) key=graphql ;;
   " api user"*) key=user ;;
+  " auth token"*) key=auth-token ;;
   " api repos/"*/rules/branches/*) key=rules ;;
   " api repos/"*/branches/*) key=branch ;;
   " api repos/"*/status*) key=status ;;
@@ -114,7 +115,8 @@ EOF
 # the URL's path, query dropped, every / as _, as in
 # POST_v3_organizations_org1_sessions. It logs `<METHOD> <path>` to calls,
 # writes -d to <route>.data, writes <route>.json to the -o file, and prints
-# <route>.code, or 200. A route with no fixture answers 404.
+# <route>.code, or 200. A route with no fixture answers 404; a <route>.exit
+# fixture makes the call exit with that code instead.
 fake_curl() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin" "$T/curl"
@@ -136,6 +138,9 @@ path="/${url#*://*/}"; path="${path%%\?*}"
 key="$method$(printf '%s' "$path" | tr / _)"
 printf '%s %s\n' "$method" "$path" >> "$FAKE_CURL/calls"
 [ -z "$data" ] || printf '%s\n' "$data" > "$FAKE_CURL/$key.data"
+# A <key>.exit file makes the call fail with that curl exit code, as a
+# timeout (28) does.
+[ ! -f "$FAKE_CURL/$key.exit" ] || exit "$(cat "$FAKE_CURL/$key.exit")"
 if [ -f "$FAKE_CURL/$key.json" ]; then
   cat "$FAKE_CURL/$key.json" > "$out"
   cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200

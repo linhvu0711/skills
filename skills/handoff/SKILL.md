@@ -24,7 +24,7 @@ executor: `route`, `start`, `status`, `say`, `watch`. Run it with no
 arguments for the usage. It keeps the handoff ledger,
 `~/.config/dispatch/handoff.tsv`, a row per session with its executor
 and issue, and its adapters read their own keys. The two Cursor verbs
-the module does not carry, `repos` and `models`, run as
+the module does not carry, `repos`, `models`, and `down`, run as
 `scripts/adapters/cursor.sh` (§ Cursor). Nothing is posted on GitHub,
 apart from size labels the repo lacks (step 3). Sessions are never
 archived: an archived session stops answering PR comments, and that
@@ -290,12 +290,19 @@ Integrations, GitHub.` and stop; `start` stops with the same words. The
 
 **Model.** `--model` is a model id from
 `bash scripts/adapters/cursor.sh models` (`claude-opus-5`, `gpt-5.5`,
-`composer-2.5`, …). Unknown id: print the list and stop. No flag: the
-account default, which was Cursor Grok 4.6 on 2026-09-16. Pass
-`--model` for anything real.
+`composer-2.5`, …). Unknown id: print the list and stop. No flag: no
+model is sent, and the account default runs, `Auto` on 2026-11-02. On a
+personal plan Auto is its Cost mode: Cursor picks the model, and the run
+draws from the weekly included usage.
 
 **Start options.** `--repo owner/name --base <base>`, and
-`--model <id>` when one is named. The prompt file goes whole into the
+`--model <id>` when one is named. `--platform` picks the machine by the
+same rule as § Devin, plus a plan's `Platform: macos-outpost`: no flag
+is Cursor's own Ubuntu machine; `--platform macos` is a Namespace Mac
+(§ Cursor on macOS). A plan that needs Windows does not go to Cursor:
+`start` stops with `Cursor has no Windows machine: hand this one to
+devin`; say it and stop. Say the pick and the reason in one line before
+`start`. The prompt file goes whole into the
 API as the prompt text: Cursor has no attachments and no documented
 length cap. A `validation_error` on the prompt means the text was too
 long after all: report the byte count and stop.
@@ -325,6 +332,39 @@ the message. The watch exits on `finished`, so after every `say` start
 it again. Review comments that land later start new runs on the agent
 by themselves (it is subscribed to its PR); to follow those rounds,
 start the watch with `--follow`, which does not exit on `finished`.
+
+**Cursor on macOS.** Cursor's own machines are Ubuntu only. With
+`--platform macos`, `cursor.sh` rents a Namespace Mac (macOS 26, Xcode
+26, iOS Simulators) through `scripts/mac.sh`, starts a Cursor worker on
+it, and makes the agent a My Machines agent on that worker. The Mac
+lives for one run:
+- `start` rents it; the first poll that sees the run end destroys it.
+  So the watch is what frees it; a chat with no watch (Codex) runs
+  `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
+  no one destroys ends by itself after 4 hours.
+- `say` rents a new Mac whose worker takes the first worker's name and
+  ID, and the agent goes on where it left off. Cursor sends an agent's
+  runs to the worker ID it first ran on, so a new worker under a new ID
+  never gets them; the ID sits in the adapter's row for the agent. The note gets a first line that tells the agent
+  to check its branch out again. Renting and setting up a Mac takes
+  2 to 3 minutes before the run starts.
+- A run that starts while no Mac is up ends as `error` in about 20 s;
+  Cursor does not wait. This is what happens to a review comment on the
+  PR between runs: the watch prints `error` for a run this chat never
+  sent. Answer it with a `say`: `A review round ended because its
+  machine was down. Read every open review thread and check on <PR url>
+  and handle them per the rules.`
+- Dashboard secrets never reach a worker. `mac.sh` puts the user's
+  GitHub login (`gh auth token`) and the Cursor key on the Mac by stdin,
+  in a file only its user reads, deleted with the Mac. The worker's
+  environment carries `GH_TOKEN`, so the rules' `gh` steps work as on
+  Linux.
+- A worker refuses a `grok_` key (the only kind grok.com makes since
+  2026-11): `start` and `say` stop and say so. It needs a personal
+  `crsr_` key in `CURSOR_API_KEY`.
+- Needs `nsc`, signed in (`nsc login`). The create call to a Mac agent
+  blocks until its run ends, so `cursor.sh` gives it 20 s and then finds
+  the agent by its worker's name.
 
 **Known limits.**
 - Commits show the user as author, from the `Author` line (proven
@@ -359,9 +399,17 @@ claude-opus-5` after the same `/plan-up`
 
 `Executor: cursor (named)`. `cursor.sh repos` lists `acme/shop`,
 `cursor.sh models` lists `claude-opus-5`, the `Author` line comes from
-`git config`. `start cursor` with `--repo acme/shop --base main --model
+`git config`. A web app, so no `--platform`. `start cursor` with `--repo acme/shop --base main --model
 claude-opus-5`, Monitor on `watch cursor <agent> --repo acme/shop
 --issue 42`. Stop.
+
+**User:** `/handoff cursor https://github.com/acme/clock/issues/9`; the
+repo's `packages/helper/Package.swift` has a macOS target
+
+`Platform: macos (Package.swift with a macOS target)`. `start cursor` with
+`--repo acme/clock --base main --platform macos`; about 3 minutes later
+it prints the agent. Watch as above. On `finished` the poll destroys the
+Mac; the next `say` rents a new one.
 
 **User:** `/handoff` after a short-path `/plan-up` of #57 ended with
 `Ready for /handoff.`
