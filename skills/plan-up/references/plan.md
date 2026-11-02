@@ -134,6 +134,7 @@ Slice 1, proves #1 and #2: <seam name>
     When:   <the one call through the seam>
     Then:   <a literal result, never computed>
     Red:    <a fix's first test only: what it shows on the base, § Type variants>
+    Mutate: <a test green before its own change only: `file:line`, the one edit that turns it red, § Tests that can fail>
   Test `orders.test.ts` "exports nothing for an empty store"
     Given:  <...>
     When:   <...>
@@ -367,7 +368,8 @@ The structure changes and the behavior does not.
 - **Lock test.** Where no test covers the code, the first slice after
   any delete slice is a lock test alone, with
   `Change: none, a lock test`. It passes on the base and stays green to
-  the end; its commit body says it was green before any change.
+  the end; its commit body says it was green before any change. Since it
+  passes on the base, it has a `Mutate:` line (§ Tests that can fail).
 - **Callers.** Every caller moves to the new form, and the last slice
   deletes the old one, in the same PR. In a run, the old form is gone
   by the last layer.
@@ -546,6 +548,35 @@ words were agreed, and the plan does not write them again. An entry
 already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
 the builder takes the next free number on its base when the slice runs.
 
+#### Tests that can fail
+
+A test proves a line only when it can go red. Three rules hold for
+every test a slice lists.
+
+- **Mutate.** A test the builder sees green before its own change has
+  a `Mutate:` line under its `Then`: one `file:line` the test reaches,
+  and one edit there that turns it red, such as `>` to `>=`, or the
+  check taken out. Two kinds are green before their change: a
+  refactor's lock test (§ refactor), and a test whose behavior the base
+  already has, such as an unhappy path an existing check already
+  refuses. `Mutate:` and `Red:` never sit on one test: `Red:` is a
+  fix's first test, red on the base.
+- **Refusals.** A test whose `Then` is a refusal (an error, a
+  rejection, an empty result, `false`) takes the `Given` of a passing
+  case with one input changed, so only that input can make it refuse.
+  Its `Then` holds the literal only its own check gives: the message,
+  the error code, or the field it names, never a bare `400`, `throws`,
+  or `false` alone. A refusal whose check is on the base has a
+  `Mutate:` line that takes that check out.
+- **One seam per Then.** One `Then` is checked at one seam. The facts
+  round names each existing test that already checks a Done-when line,
+  at any level. One that already checks the whole `Then` is the line's
+  Proof row, and no new test is planned for it. One that checks part of
+  it gets the new case in that test's file or table. A test of one
+  `Then` at two seams needs a `Decided` line that names the risk only
+  the second seam has, such as a process boundary or a real transport.
+  A UI walk beside a test is not a second test (§ Proof).
+
 #### Right design first
 
 The plan first says what each part the work
@@ -716,6 +747,14 @@ facts or forks.
 - Every seam is at a `file:line` seen this session, or at an earlier
   layer's slice.
 - Every `Then` is a literal.
+- Every test green before its own change has a `Mutate:` line with a
+  `file:line` and one edit; no test has both `Mutate:` and `Red:`.
+- Every refusal test takes a passing case's `Given` with one input
+  changed, and its `Then` is the literal only its own check gives.
+- Every Done-when line that an existing test already checks names that
+  test: as its Proof row when it checks the whole `Then`, or as the
+  file the new case joins. A `Then` checked at two seams has a
+  `Decided` line that names the risk only the second seam has.
 - Every `Change` names a `file:line` seen this session, or an earlier
   layer's slice, and a pattern to copy, or, in a rebuild, a `Decided`
   line that says why no pattern fits.

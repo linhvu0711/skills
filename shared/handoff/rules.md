@@ -146,7 +146,8 @@ what the line says, is a surprise (see below).
 
 - Work one slice at a time, in the order given. For each slice: write
   every test listed under it first and run them; they are red, except a
-  lock test and a delete slice's tests (see Tests). Write the smallest change that makes them all
+  lock test, a test with a `Mutate:` line, and a delete slice's tests
+  (see Tests). Write the smallest change that makes them all
   green. Run the test file and the typecheck; both green. Make the
   slice's `Docs` lines, so the doc lands with the code it describes.
   Commit.
@@ -195,9 +196,21 @@ what the line says, is a surprise (see below).
   assertion is not red: change the test until it fails for the bug's
   reason, then make the change.
 - A slice whose `Change` says `none, a lock test` holds a refactor's
-  lock test. It passes on the base: run it, see it green, and commit it
-  alone, with a commit body that says it was green before any change.
-  It stays green through every later slice.
+  lock test. It passes on the base: run it, see it green, run its
+  `Mutate:` check, and commit it alone, with a commit body that says it
+  was green before any change. It stays green through every later
+  slice.
+- A test with a `Mutate:` line is green before its change, so you make
+  its red by hand. Once it is green, make the one edit `Mutate:` names
+  and run the test: it fails on its assertion. Put the file back, so
+  `git diff --quiet -- <file>` exits 0, and run the test again: green.
+  The commit body says `Mutate: <file:line> turned it red`. A test that
+  stays green under the edit proves nothing: make the test stronger,
+  and keep its `Then`, until the edit turns it red. When no test with
+  that `Then` can go red under the edit, stop and ask (see Asking). A
+  test green before its change with no `Mutate:` line gets the same
+  check: pick the line its `Then` rests on, make one edit there, and
+  say so in the commit body.
 - A slice headed `deletes dead code` deletes code that no caller uses.
   Its tests exist already, or its test is a search from its `Change`
   lines: write none. Run them before the change: the tests are green,
@@ -215,6 +228,11 @@ what the line says, is a surprise (see below).
 - The case name is the one in the Proof table. One `Then` per test.
 - Existing tests named under `Gates` stay as they are and stay green.
   A change that breaks one of them is a surprise; see below.
+- A test that says no (an error, a rejection, an empty result, `false`)
+  must refuse at its own check. Its `Given` is a passing case's, with
+  one input changed, and it compares the literal only that check gives:
+  the message, the error code, or the field it names. A bare status,
+  `throws`, or `false` alone can come from any check.
 - Before the commit, ask two questions of the test. Would it still pass
   if the inside were rewritten with the same behavior? A `no` means it
   reads internals; move it to the seam. Would it fail if the code
