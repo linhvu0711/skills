@@ -69,7 +69,8 @@ t_cursor_no_key() {
 
 # fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
 # call's args to $T/mac.calls; `up` prints mac-<n> and wid-1, n its call count, and
-# `alive` exits with the content of $T/mac.alive (1 when missing).
+# `alive` exits with the content of $T/mac.alive (1 when missing), and `down`
+# runs $T/mac.on-down first when it exists.
 fake_mac() {
   cat > "$T/mac.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -78,7 +79,7 @@ printf '%s\n' "$*" >> "$d/mac.calls"
 case "$1" in
   up) n=$(( $(cat "$d/mac.n" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$d/mac.n"; printf 'mac-%s\twid-1\n' "$n" ;;
   alive) exit "$(cat "$d/mac.alive" 2>/dev/null || echo 1)" ;;
-  down) echo "destroyed $2" ;;
+  down) [ ! -f "$d/mac.on-down" ] || bash "$d/mac.on-down"; echo "destroyed $2" ;;
 esac
 EOF
   export HANDOFF_MAC="$T/mac.sh"
@@ -180,6 +181,36 @@ t_cursor_say_mac_alive() {
   eq note "# Changed" "$(jq -r .prompt.text "$FAKE_CURL/POST_v1_agents_bc-1_runs.data")"
 }
 
+t_cursor_poll_keeps_newer_mac() {
+  fake_curl; fake_mac
+  mkdir -p "$T/home/.config/dispatch"
+  printf 'bc-1\tho-1\twid-1\thttps://github.com/o/r\tmain\tmac-1\n' > "$T/home/.config/dispatch/cursor-macs.tsv"
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"FINISHED","result":"Done"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  # A say rents mac-2 while this poll frees mac-1.
+  printf "printf 'bc-1\\tho-1\\twid-1\\thttps://github.com/o/r\\tmain\\tmac-2\\n' > \"%s\"\n" \
+    "$T/home/.config/dispatch/cursor-macs.tsv" > "$T/mac.on-down"
+  cursor_mac poll bc-1
+  eq exit 0 "$code"
+  eq "mac down" "down mac-1" "$(cat "$T/mac.calls")"
+  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-2" "$(macs)"
+}
+
+t_cursor_say_send_fails() {
+  fake_curl; fake_mac
+  mkdir -p "$T/home/.config/dispatch"
+  printf 'bc-1\tho-1\twid-1\thttps://github.com/o/r\tmain\t-\n' > "$T/home/.config/dispatch/cursor-macs.tsv"
+  printf '{"error":{"code":"agent_busy"}}\n' > "$FAKE_CURL/POST_v1_agents_bc-1_runs.json"
+  echo 409 > "$FAKE_CURL/POST_v1_agents_bc-1_runs.code"
+  printf '# Changed\n' > note.md
+  cursor_mac say bc-1 note.md
+  eq exit 1 "$code"
+  eq "mac calls" "alive -
+up ho-1 https://github.com/o/r main wid-1
+down mac-1" "$(cat "$T/mac.calls")"
+  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	-" "$(macs)"
+}
+
 cases=(
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
@@ -194,4 +225,6 @@ cases=(
   "cursor poll destroys the Mac when the run ends|t_cursor_poll_frees_mac"
   "cursor say rents a new Mac when none runs|t_cursor_say_new_mac"
   "cursor say keeps a Mac that runs|t_cursor_say_mac_alive"
+  "cursor poll keeps a Mac a say rented meanwhile|t_cursor_poll_keeps_newer_mac"
+  "cursor say destroys its new Mac when the send fails|t_cursor_say_send_fails"
 )

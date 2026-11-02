@@ -131,6 +131,17 @@ mac_set() {
   mv "$tmp" "$MACS"
 }
 
+# mac_clear AGENT MAC -> marks the agent as having no Mac, only while its row
+# still names MAC: a say that rented a newer Mac meanwhile keeps its row.
+mac_clear() {
+  local row w wid r b mac
+  row=$(mac_row "$1")
+  [[ -n "$row" ]] || return 0
+  IFS=$'\t' read -r w wid r b mac <<<"$row"
+  [[ "$mac" == "$2" ]] && mac_set "$1" "$w" "$wid" "$r" "$b" -
+  return 0
+}
+
 # mac_up WORKER REPO BASE [WID] -> "<mac>\t<worker id>"; the key goes in the environment
 mac_up() { CURSOR_API_KEY="$(key)" bash "$MAC" up "$@"; }
 
@@ -233,7 +244,10 @@ cmd_poll() {
     esac
   done
   [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die "--repo and --issue go together"
-  local line ast rst rid prs url msg st ghprs all=" " p arr=()
+  local line ast rst rid prs url msg st ghprs all=" " p arr=() row
+  # The row is read before the run state: a Mac a say rents after this read
+  # is not in it, so an ended run read here never frees a Mac newer than it.
+  row=$(mac_row "$id")
   line=$(fetch "$id")
   IFS=$'\t' read -r ast rst rid prs url msg <<<"$line"
   case "$rst" in
@@ -251,13 +265,12 @@ cmd_poll() {
   done
   all=$(echo $all | tr ' ' ',')
   # 1A: a Mac lives for one run. The run that ends frees it; say rents the next.
-  local row mac w wid r b
-  row=$(mac_row "$id")
+  local mac
   if [[ -n "$row" && "$st" != working ]]; then
-    IFS=$'\t' read -r w wid r b mac <<<"$row"
+    IFS=$'\t' read -r _ _ _ _ mac <<<"$row"
     if [[ "$mac" != "-" ]]; then
       bash "$MAC" down "$mac" >/dev/null 2>&1 || true
-      mac_set "$id" "$w" "$wid" "$r" "$b" -
+      mac_clear "$id" "$mac"
     fi
   fi
   printf '%s\t%s\t%s\t%s\t%s\n' "$st" "$rid|$rst" "${all:--}" "$url" "$msg"
@@ -267,7 +280,7 @@ cmd_say() {
   local id; id=$(aid "${1:-}")
   local file="${2:-}"
   [[ -s "$file" ]] || die "note file missing or empty: $file"
-  local res rid row w wid r b mac up text
+  local res rid row w wid r b mac up text new=""
   text=$(cat "$file")
   row=$(mac_row "$id")
   if [[ -n "$row" ]]; then
@@ -276,14 +289,17 @@ cmd_say() {
       mac_key_check
       [[ "$mac" != "-" ]] && { bash "$MAC" down "$mac" >/dev/null 2>&1 || true; }
       up=$(mac_up "$w" "$r" "$b" "$wid") || die "no Mac for the agent"
-      IFS=$'\t' read -r mac _ <<<"$up"
-      mac_set "$id" "$w" "$wid" "$r" "$b" "$mac"
+      IFS=$'\t' read -r new _ <<<"$up"
       text="This run is on a new Mac: the repo is a fresh clone of $b. Before you change anything, fetch and check out the branch you worked on, and its PR's branch if one is open.
 
 $text"
     fi
   fi
-  res=$(api POST "/agents/$id/runs" "$(jq -Rn --arg t "$text" '{ prompt: { text: $t } }')")
+  res=$(api POST "/agents/$id/runs" "$(jq -Rn --arg t "$text" '{ prompt: { text: $t } }')") \
+    || { [[ -n "$new" ]] && bash "$MAC" down "$new" >/dev/null 2>&1; exit 1; }
+  # Only now, with the new run the latest, may a poll see the new Mac: one
+  # that saw it next to the ended run before would destroy it.
+  [[ -n "$new" ]] && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"
   rid=$(jq -r '.run.id // "-"' <<<"$res")
   echo "sent to $id ($rid)"
 }
