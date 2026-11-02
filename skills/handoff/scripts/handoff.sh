@@ -13,7 +13,7 @@
 # <executor> is devin or cursor. Each has an adapter, adapters/<executor>.sh;
 # HANDOFF_ADAPTERS names another folder (the tests use a fake one). Options
 # start does not know go to the adapter unchanged: devin --platform and
-# --mode, cursor --repo, --base, and --model.
+# --mode, cursor --repo, --base, --model, and --platform.
 # The handoff ledger, ~/.config/dispatch/handoff.tsv, holds a row per session:
 # time, executor, session, link, issue, title, tab separated.
 # Each command first moves in the rows of the old ledgers, sessions.tsv
