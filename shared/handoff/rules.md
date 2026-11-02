@@ -62,9 +62,11 @@ even masked.
 This machine is the local machine, and the repo's packages are
 already installed in the worktree.
 Each slice's tests, the typecheck, and lint run here, in the worktree,
-with the commands under `Facts`. The full suite, the build, and the app
-never run here: after you finish, `/build-and-prove` pushes the branch
-and has the Proof agent run the Gates, a Cursor cloud agent.
+with the commands under `Facts`. The full suite and the build never
+run here while you build: after you finish, `/build-and-prove` pushes
+the branch, runs each Gate the PR's CI does not run, and leaves the
+rest to CI. The app and its walks run on the Proof agent, a Cursor
+cloud agent.
 
 A slice's command that fails because this machine lacks a tool
 (`command not found`, exit 127): install nothing. Stop and ask (see
@@ -266,10 +268,11 @@ test("exports one order as CSV", async () => {
    under `Facts`. All green before you go on.
 <!-- /cloud -->
 <!-- local -->
-1. Run nothing more. The full suite and the build are Gates, and
-   `/build-and-prove` has the Proof agent run them.
+1. Run nothing more. The full suite and the build are Gates:
+   `/build-and-prove` runs each one the PR's CI does not run, and CI
+   runs the rest.
 2. Go to Finish. You open no PR and push nothing: `/build-and-prove`
-   pushes the branch, has the Proof agent run the Gates and film the
+   pushes the branch, runs those Gates, has the Proof agent film the
    walks, and `/make-pr` opens the PR.
 <!-- /local -->
 <!-- cloud -->
