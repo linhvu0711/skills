@@ -6,11 +6,11 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-One plan, one branch, one Proof agent, one proof folder. Facts come
-from reading, per `../../shared/facts.md`. Big forks go to
+One plan, one branch, at most one Proof agent, one proof folder. Facts
+come from reading, per `../../shared/facts.md`. Big forks go to
 the user; everything else you decide, write down, and go on. You push
-the branch so the Proof agent can check it out, and you never open a
-PR: `/make-pr` does that with the proof folder.
+the branch so the Proof agent, when there is one, can check it out, and
+you never open a PR: `/make-pr` does that with the proof folder.
 
 In Claude Code every Bash call starts in the session's directory. Every
 git command in the worktree is `git -C "$WT" …`.
@@ -54,6 +54,10 @@ agent's machine, not the code. A follow-up with `Install: <tool>`
 (`references/walks.md` § 6a) has it install the tool and run the same
 round again. It does not count as a round. After three in one run:
 `down`, then stop with the last one.
+
+**No Proof agent.** A plan with `UI: none` starts none (step 3). Every
+`poll`, `wait`, `say`, `artifacts`, `download`, and `down` in this
+skill is then skipped.
 
 ## Forms
 
@@ -123,7 +127,11 @@ first item that is not done.
    line. The branch has commits ahead of `BASE` already: this is a
    rerun (§ Rerun).
 
-3. **Proof agent.** Before Coding, so a missing key, credit, or secret
+3. **Proof agent.** `UI: none`: mark this item
+   `3. Proof agent. skip: no UI`, write no `agent.env`, and go on to
+   Coding. No Cursor key, credit, secret, or Mac is checked or rented.
+
+   A plan with walks: before Coding, so a missing key, credit, or secret
    shows in minutes, and the before shots are ready when Coding ends.
 
    **Secrets.** The names the app needs from outside: each name in
@@ -184,7 +192,8 @@ first item that is not done.
    `$HOME/.agents/artifacts/plan/prompt-<slug>.md`. Say
    `Prompt: <path> (<n> lines)`.
 
-   **The Proof agent's run 1** ends while Coding goes on. In Claude
+   **The Proof agent's run 1**, when step 3 started one, ends while
+   Coding goes on. In Claude
    Code, run `bash "$CLIENT" wait "$AGENT"` in the background; the tool
    wakes you when it ends. As the builder yourself, or in Codex, run
    `bash "$CLIENT" poll "$AGENT"` after each slice's commit. When it
@@ -258,7 +267,8 @@ first item that is not done.
    is committed. Its § Surprises are yours: stop and ask the user where
    it says stop and ask. It ends at `BUILT <branch>`.
 
-5. **Push.** The Proof agent checks the branch out from GitHub:
+5. **Push.** The Proof agent, when there is one, checks the branch out
+   from GitHub, and `/make-pr` opens the PR from it:
 
    ```bash
    git -C "$WT" push -u origin <branch>
@@ -286,17 +296,18 @@ first item that is not done.
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from
    `checks.txt`, `CI runs it` too, goes in as its command, `not run:
-   <why>`, and the words `CI must prove it`. `agent.env` stays: `/ship` sends its re-films to
-   that agent.
+   <why>`, and the words `CI must prove it`. `agent.env`, when there is
+   one, stays: `/ship` sends its re-films to that agent.
 
 8. **Give back.** `bash "$CLIENT" down "$AGENT"`. A Mac goes back to
-   Namespace; on Cursor's machines it prints `no Mac`.
+   Namespace; on Cursor's machines it prints `no Mac`. No Proof agent:
+   mark this item `8. Give back. skip: no Proof agent`.
 
 9. **Report.** Chat gets this and nothing more:
 
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
-    Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 on the Proof agent
+    Checks: pnpm lint green on 1a2b3c4 on the local machine · pnpm test, pnpm build: CI
     Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
@@ -315,9 +326,11 @@ first item that is not done.
     (`references/walks.md` § 6c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.
 
-    `UI: none`: `Walks: none (no UI)`. No setup fault: the `Proof
-    agent:` line has only the URL. A chat plan: the first line has no
-    `#<n>`, as in
+    The `Checks:` line names each Gate once: the green ones with where
+    they ran, then the ones left to CI. `UI: none`:
+    `Walks: none (no UI)` and `Proof agent: none (no UI)`. No setup
+    fault: the `Proof agent:` line has only the URL. A chat plan: the
+    first line has no `#<n>`, as in
     `Built: [feat] Export orders as CSV · feat/export-orders-csv`. The
     worktree is `WT`, and the branch is pushed with no PR: `/make-pr`
     with the proof folder is next.
@@ -328,7 +341,7 @@ The same plan again after a stop. `checkout.sh` hands back the same
 worktree, only when it is clean: a slice or a fix cut off before its
 commit leaves changes, and step 2 stops on them with the files named.
 The user commits or drops them, then runs again. Step 3 starts a new
-Proof agent. The commits ahead of `BASE` are the first slices, one
+Proof agent for a plan with walks. The commits ahead of `BASE` are the first slices, one
 commit each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is
 the number done, and the prompt starts at the next one. A count at or
 past the number of slices means every slice is in, since fix rounds
