@@ -75,7 +75,7 @@ _Avoid_: session list, sessions file
 ## Local build
 
 **Local machine**:
-The machine the session runs on, where the worktree lives and the Builder edits. It can run macOS, Linux, or Windows. A proofbox Sandbox is never the local machine.
+The machine the session runs on, where the worktree lives and the Builder edits. It can run macOS, Linux, or Windows. A Proof agent's machine is never the local machine.
 _Avoid_: Mac, laptop, host
 
 **Coding**:
@@ -87,23 +87,23 @@ The plan's `Build:` line, such as `pnpm build`, which turns the code into what t
 _Avoid_: the build (that word also names Coding)
 
 **Gates**:
-The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. They run once in the run's Sandbox after Coding, and each line in `checks.txt` says where it ran.
+The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. The run's Proof agent runs them once after Coding, and each line in `checks.txt` says where it ran.
 _Avoid_: CI, final checks
 
 **Builder**:
 The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
 _Avoid_: implementer, coder
 
-**Walker**:
-The subagent that does a plan's UI walks on a proofbox Sandbox the way a test user would. It gets the walks and the pass rule for each, never reads or changes the code, and reports what passed and what broke, with videos and screenshots.
-_Avoid_: tester, verifier, QA agent
+**Proof agent**:
+The Cursor cloud agent that `/build-and-prove` starts for one run, at the same time as Coding. It takes the before shots, runs the Gates, does the plan's UI walks as a test user with videos, and runs the perf measure. It never changes code. Each later round is a follow-up message to it.
+_Avoid_: walker, sandbox, verifier
 
-**Sandbox fault**:
-A failed walk whose screen shows the Sandbox, not the app, is wrong: a missing tool, or a mark drawn as other bytes for want of a UTF-8 locale. The setup script is fixed and the round runs again, and it does not count as a round.
-_Avoid_: flaky walk, env failure
+**Setup fault**:
+A failure caused by the Proof agent's machine, not by the code: a tool it lacks, such as `ffmpeg`. A follow-up tells the agent to install it and run again, and it does not count as a round. After three in one run, the run stops.
+_Avoid_: sandbox fault, flaky walk, env failure
 
 **Proof folder**:
-What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, and the filled Proof table. `/make-pr` builds the PR's Proof part from it.
+What `/build-and-prove` leaves for `/make-pr`: the videos and screenshots downloaded from the Proof agent, `checks.txt`, the filled Proof table, and the agent's id, so `/ship` can ask it for a re-film.
 _Avoid_: artifacts dir, media folder
 
 ## PRs

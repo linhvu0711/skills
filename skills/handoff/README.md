@@ -41,7 +41,7 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 - For Cursor on macOS: the Namespace CLI `nsc`, signed in, and a personal Cursor API key that starts with `crsr_`, since a Cursor worker refuses the `grok_` keys grok.com makes. The Mac gets your GitHub login from `gh` for the run, because Cursor's saved secrets do not reach your own machines.
 - `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
 - A plan from [plan-up](../plan-up/), and [to-issue](../to-issue/)'s `../to-issue/scripts/conventions.py` for the repo's size labels.
-- The shared core files in `../../shared/handoff/` (prompt and rules templates, `render.sh`), `../../shared/plan-page.md`, `../../shared/issue-rules.md`, and `../../shared/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
+- The shared core files in `../../shared/handoff/` (prompt and rules templates, `render.sh`), the Cursor client and Mac script in `../../shared/cursor/`, which build-and-prove shares, `../../shared/plan-page.md`, `../../shared/issue-rules.md`, and `../../shared/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
 
 ## Fits with
 

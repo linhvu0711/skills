@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine and proves it on one Cursor Proof agent that runs the Gates and films the walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
 disable-model-invocation: true
 ---
 
@@ -153,8 +153,9 @@ number, or words that point at one. Two words come off first and never reach pla
 3. **Route.** Cloud when the command named `devin` or `cursor`. Local
    otherwise, with walks or without, one ticket or a stack. One case
    asks: a plan with `Platform: windows` and no executor named, since
-   proofbox has no Windows. Ask `proofbox has no Windows. Build it on
-   Devin?`, A yes (pick), B stop; wait. A chat plan has no issue, and
+   Cursor's machines, which prove a local build, run no Windows. Ask
+   `Cursor's machines run no Windows. Build it on Devin?`, A yes (pick),
+   B stop; wait. A chat plan has no issue, and
    the cloud needs one (handoff § First prompt step 1): with `devin` or
    `cursor` named, or with `Platform: windows`, say `A chat plan has no
    issue, so it cannot build in the cloud. Run /to-issue first.` and
@@ -173,8 +174,8 @@ number, or words that point at one. Two words come off first and never reach pla
    three times, then step 8 with what is open.
 
 5. **Local: build.** Read `../build-and-prove/SKILL.md` and follow it
-   whole on the plan: worktree, setup files, Sandbox, builder, walks,
-   proof folder. Its stop points are yours. It ends with `BUILT
+   whole on the plan: worktree, Proof agent, builder, push, proof
+   rounds, proof folder. Its stop points are yours. It ends with `BUILT
    <branch>`; hold `WT`, the branch, the proof folder `PROOF`, and the
    surprises it reported.
 
@@ -191,7 +192,7 @@ number, or words that point at one. Two words come off first and never reach pla
    under `Summary`, the plan's Review `Change` and `Approach` in plain
    words, plus each surprise that changed what the code does; and the
    proof folder `PROOF`. The base is the layer's base from step 5. Its
-   checks already ran in the Sandbox, so it runs none here. The PR body
+   checks already ran on the Proof agent, so it runs none here. The PR body
    holds no ship mode.
 
 7. **Make ready.** First the checks on each PR, bottom of the stack
@@ -216,21 +217,35 @@ number, or words that point at one. Two words come off first and never reach pla
    Then read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
-   ready-pr says, and start no Sandbox: a Gate that CI covers is left to
-   the PR's CI. CI covers a Gate when a file under `$WT/.github/workflows/`
-   names its command. Three cases start a Sandbox, with the
-   build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
-   and end with `box.sh down`:
+   ready-pr says: a Gate that CI covers is left to the PR's CI. CI
+   covers a Gate when a file under `$WT/.github/workflows/` names its
+   command. Three cases go to the build's Proof agent, `AGENT` in
+   `$PROOF/agent.env`, after the push of fixes: a note per
+   `../build-and-prove/references/walks.md` § 6a with the branch at the
+   new head, sent and waited for with `../../shared/cursor/cursor.sh say`
+   and `wait`, then the files fetched per § 6b and failures sorted per
+   § 6c, as build-and-prove step 6 does; at the end, `cursor.sh down
+   "$AGENT"`:
    - A fix or a rebase that changes code a UI walk's screen shows:
-     the videos `../build-and-prove/references/walks.md` 9c names are
-     filmed again, as build-and-prove step 9 films them, those only.
-   - A Gate that CI does not cover: before each push of fixes, it runs
-     there, as build-and-prove step 8 runs it. A repo with no CI covers
-     no Gate, so all of them run.
+     `Videos` names only the videos § 6c names to film again.
+   - A Gate that CI does not cover: `Gates` names it. A repo with no CI
+     covers no Gate, so `Gates: all`.
    - A plan with a `Perf` block and a fix that changes code its
-     `Command` runs: before the push, the perf measure runs again, as
-     build-and-prove step 8 runs it, and the Target line's row in the PR
+     `Command` runs: `Perf: yes`, and the Target line's row in the PR
      body is written again for the new head.
+
+   An agent that is gone, or whose run ends `expired`: start a new one
+   per `../build-and-prove/SKILL.md` step 3, on the plan's `Base` as
+   that step starts it, so its run 1 takes only the before shots
+   `PROOF` lacks, on the base, and keeps the ones there. Write its id to
+   `agent.env`. Then `wait` for that run 1 and sort its end as
+   build-and-prove step 4 sorts run 1, with one change: no Coding goes
+   on, so a missing secret stops here, as `../build-and-prove/references/walks.md`
+   § 6a stops on one: its names, where to add them on cursor.com, that a
+   new agent gets them on the next run, then `cursor.sh down "$AGENT"`
+   and stop. A run that ends `error` or `expired` also runs `down`
+   before it stops. Only then send it the note above, naming the PR's
+   branch at its head.
 
    It ends with `READY` or a stop point.
 
@@ -373,8 +388,9 @@ Plan-up runs its short path and writes the plan. Step 2 picks `ready`:
 `small fix, no schema or API, no risk in the plan`. Summary printed, no
 page, no wait. `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
-Sandbox up, a Claude Code pane on Sonnet at high effort builds, every test
-through `box.sh run`. `BUILT fix/57-export-date-iso`, `Walks: none (no
+the Proof agent started, a Claude Code pane on Sonnet at high effort
+builds, each slice's test on the local machine, the branch pushed, the
+Gates on the Proof agent. `BUILT fix/57-export-date-iso`, `Walks: none (no
 UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
 ready-pr: `READY https://github.com/acme/shop/pull/61`. Report, with
 `Ship mode: ready · small fix, no schema or API, no risk in the plan`
@@ -385,7 +401,7 @@ Sonnet; the plan has three UI walks and two videos.
 
 The user typed the mode: `ready`. The plan's Blast radius lists a new
 column; you would have picked `review`. The worry is held. `Route: local
-(3 walks)`. build-and-prove builds in this session, the walker films two
+(3 walks)`. build-and-prove builds in this session, the Proof agent films two
 videos, round 2 passes. make-pr attaches the screenshots and videos.
 ready-pr readies PR 44. Report: `Ship mode: ready (set) · plan adds a
 column; I would have asked for a review`.
@@ -468,7 +484,7 @@ Ready step says `READY`. Report with `session: <url>`.
 **User:** `/ship https://github.com/acme/shop/issues/88`; the plan says
 `Platform: windows`.
 
-`proofbox has no Windows. Build it on Devin?` A yes, B stop. The user
+`Cursor's machines run no Windows. Build it on Devin?` A yes, B stop. The user
 says A: `Route: cloud (devin, asked)`, as above.
 
 **User:** `/plan-up https://github.com/acme/shop/issues/42`, then, once
