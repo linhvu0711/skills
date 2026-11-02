@@ -210,8 +210,10 @@ two match: ask. Then go on with their URLs.
      `plan.md` § Slices;
    - how the repo runs test, typecheck, lint, build, and the app, read
      from CI config, package scripts, and README;
-   - the nearest existing test at each candidate seam, and how the repo
-     mocks its borders;
+   - the nearest existing test at each candidate seam, how the repo
+     mocks its borders, and, for each Done-when line, each test at any
+     level that already checks it, whole or in part, per `plan.md`
+     § Tests that can fail;
    - when any line is on a screen: the UI kind and how it is opened,
      the mockup the issue links, and the repo's look rules: `DESIGN.md`,
      tokens, the shared component folder, the nearest existing screen,
