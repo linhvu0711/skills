@@ -45,7 +45,7 @@ On a `perf` plan the agent runs the plan's command in turns on the base and the 
 
 A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
 
-The proofbox Sandbox and the walker subagent this skill used before are kept, unused, in `deprecated/proofbox/` at the repo root.
+The Sandbox and the walker subagent this skill used before are kept, unused, in the repo's `deprecated/` folder.
 
 ## Needs
 
