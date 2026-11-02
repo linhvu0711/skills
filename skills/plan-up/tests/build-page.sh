@@ -442,6 +442,17 @@ t_build_red_line() {
     "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_mutate_line() {
+  T="$(mktemp -d)"
+  sed '66a\
+    Mutate: `src/orders/export.ts:31`, return an empty string
+' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  build "$T/plan-acme-shop-42.md"
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].slices[0].tests[0].mutate = "`src/orders/export.ts:31`, return an empty string"' "$here/build-page/ticket.json")" \
+    "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 # delete_slice: ticket.md with slice 1 turned into a delete slice: one Change
 # that deletes, no Docs, and the existing test it keeps green.
 delete_slice() {
@@ -544,4 +555,5 @@ cases=(
   "build-page refuses curly quotes|t_build_curly_quotes"
   "build-page passes a long dash and a curly quote inside backticks|t_build_marks_in_backticks"
   "build-page keeps a test's Red line|t_build_red_line"
+  "build-page keeps a test's Mutate line|t_build_mutate_line"
 )

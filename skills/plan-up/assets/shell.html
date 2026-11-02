@@ -612,7 +612,8 @@ const DATA = {};
           el('b', {}, 'Given'), R(t.given),
           el('b', {}, 'When'), R(t.when),
           el('b', {}, 'Then'), el('span', { class: 'then', html: rich(t.then) }),
-          t.red ? [el('b', {}, 'Red'), R(t.red)] : [])));
+          t.red ? [el('b', {}, 'Red'), R(t.red)] : [],
+          t.mutate ? [el('b', {}, 'Mutate'), R(t.mutate)] : [])));
       return card(`S${i + 1}`, `Slice ${i + 1} · ${s.seam}`, s.deletes ? 'deletes dead code' : provesText(s.proves), el('div', {}, changes, tests), i === 0);
     }));
   }
