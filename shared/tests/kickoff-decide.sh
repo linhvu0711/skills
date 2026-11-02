@@ -184,7 +184,18 @@ t_kd_bad_command() {
   kd_run --command deploy https://github.com/acme/app/issues/42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_plan_up_stops() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command plan-up https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: plan-up" "$err"
   eq stdout "" "$out"
 }
 
@@ -371,7 +382,8 @@ cases=(
   "every gh failure exits 2|t_kd_gh_fails_exit_2"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
-  "a bad command names the five values|t_kd_bad_command"
+  "a bad command names the four values|t_kd_bad_command"
+  "plan-up is not a command|t_kd_plan_up_stops"
   "mode merge goes in the message|t_kd_mode_in_message"
   "no mode, no option in the message|t_kd_no_mode_message"
   "mode needs ship|t_kd_mode_needs_ship"

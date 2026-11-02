@@ -1,6 +1,6 @@
 ---
 name: kickoff-t3
-description: "Start /ship or /plan-up in a new T3 Code thread on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. A script picks the model and effort from the labels and starts /ship with no ship mode unless the user names them, and makes the repo a T3 project; the agent starts the thread. Stops once the thread runs."
+description: "Start /ship in a new T3 Code thread on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. A script picks the model and effort from the labels and starts /ship with no ship mode unless the user names them, and makes the repo a T3 project; the agent starts the thread. Stops once the thread runs."
 disable-model-invocation: true
 ---
 

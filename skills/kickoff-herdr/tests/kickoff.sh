@@ -177,10 +177,10 @@ t_ko_epic_none_open() {
 
 t_ko_overrides() {
   ko_herdr; ko_issue '[{"name":"ready-to-build"},{"name":"size/XS"}]'
-  ko_go --model haiku --effort low --command plan-up https://github.com/acme/app/issues/42
+  ko_go --model haiku --effort low --command ship https://github.com/acme/app/issues/42
   has start "$(ko_start haiku low)" "$(cat "$T/herdr.log")"
-  has prompt "agent prompt i42 /plan-up #42" "$(cat "$T/herdr.log")"
-  has report " · /plan-up (set) · model haiku (set) · effort low (set) · ready-to-build · " "$out"
+  has prompt "agent prompt i42 /ship #42" "$(cat "$T/herdr.log")"
+  has report " · /ship (set) · model haiku (set) · effort low (set) · ready-to-build · " "$out"
 }
 
 t_ko_mode_merge() {
@@ -194,7 +194,7 @@ t_ko_bad_command() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --command deploy https://github.com/acme/app/issues/42
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, plan-up, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: deploy" "$err"
   [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
 }
 

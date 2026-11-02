@@ -1,6 +1,6 @@
 # kickoff-herdr
 
-Opens a new herdr pane next to the one you are in and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or a whole epic.
+Opens a new herdr pane next to the one you are in and starts `/ship` there on an issue, a run of tickets, or a whole epic.
 
 ## Use it when
 
@@ -13,7 +13,7 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 - `/kickoff-herdr 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-herdr on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge"), or "plan only" in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. URLs work too, and it takes the same forms as [plan-up](../plan-up/). It only runs when you call it.
+More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. URLs work too, and it takes the same forms as [ship](../ship/). It only runs when you call it.
 
 ## What you get
 
@@ -36,7 +36,7 @@ The chat gets one line and stops:
 #42 Export orders as CSV → w4/w4:t1/w4:p9M · /ship (default) · model opus (default) · effort medium (default) · size M · base main · split in w4:t1
 ```
 
-Your tree stays as it is: any branch, edits or not. `/ship` and plan-up read their own fresh copy of the base branch.
+Your tree stays as it is: any branch, edits or not. `/ship` reads its own fresh copy of the base branch.
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
@@ -46,11 +46,11 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Claude Code, which the script starts in the new pane.
 - `gh` (signed in), `git`, `jq`, and `python3`.
 - A main checkout the shared checkout resolver can find: the map `~/.config/kickoff-herdr/repos.tsv` (`owner/repo<TAB>path`, set `KICKOFF_REPO_MAP` to move it), the current folder, or a search under `~/development` (set `KICKOFF_DEV_ROOT` to change it).
-- The [ship](../ship/) and [plan-up](../plan-up/) skills in the new pane.
+- The [ship](../ship/) skill in the new pane.
 
 ## Fits with
 
-- Starts [ship](../ship/) or [plan-up](../plan-up/) in the new pane. It sets a ship mode only when you name one; else the `/ship` run picks it.
+- Starts [ship](../ship/) in the new pane. It sets a ship mode only when you name one; else the `/ship` run picks it.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 - It runs the shared decide script, `../../shared/kickoff/decide.sh`, and reads its target rules in `../../shared/kickoff/target.md`, as [kickoff-t3](../kickoff-t3/) does in a T3 Code thread.
 - It finds the repo through the shared checkout resolver, `../../shared/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.

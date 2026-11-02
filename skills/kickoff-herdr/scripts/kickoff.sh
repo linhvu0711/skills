@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# kickoff.sh: open a herdr pane and run /ship or /plan-up there.
+# kickoff.sh: open a herdr pane and run /ship there.
 #
 # Usage: kickoff.sh [--label L] [--model M] [--effort E]
-#                   [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
+#                   [--command ship|triage|grill|ready-pr] [--mode review|ready|merge]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -17,7 +17,7 @@
 # Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Nothing is half done: no pane exists until every check passed.
-# The tree is left as is: /ship and /plan-up read their own copy of the base.
+# The tree is left as is: /ship reads its own copy of the base.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

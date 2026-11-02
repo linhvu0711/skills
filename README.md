@@ -40,9 +40,7 @@ flowchart LR
   ticket --> kickofft3[kickoff-t3]
   ticket --> orchestrate[orchestrate]
   ticket --> planup[plan-up]
-  kickoffherdr -->|new pane| planup
   kickoffherdr -->|new pane| ship
-  kickofft3 -->|new thread| planup
   kickofft3 -->|new thread| ship
   orchestrate -->|thread per stage| ship
   subgraph ship [ship: one run]
@@ -63,7 +61,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, ready it, and merge it when that is the right call. After the plan, it picks a ship mode: `review` opens the plan as a page and builds only after you say `ok`, `ready` stops at a PR that is ready to merge, and `merge` merges it. Type `--review`, `--ready`, or `--merge` to pick the mode yourself. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship, or ready-pr) until all are closed.
-- To go step by step, run [plan-up](skills/plan-up/) yourself, or [kickoff-herdr](skills/kickoff-herdr/) to start it, or ship, in a new pane. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
+- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
@@ -90,8 +88,8 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 | Skill | What it does |
 |---|---|
-| [kickoff-herdr](skills/kickoff-herdr/) | Opens a new herdr pane and starts `/ship` or `/plan-up` there on an issue, a run of tickets, or an epic. |
-| [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` or `/plan-up` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
+| [kickoff-herdr](skills/kickoff-herdr/) | Opens a new herdr pane and starts `/ship` there on an issue, a run of tickets, or an epic. |
+| [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |

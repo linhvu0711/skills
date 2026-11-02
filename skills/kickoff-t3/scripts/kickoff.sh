@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# kickoff.sh: get /ship or /plan-up ready to start in a new T3 Code thread.
+# kickoff.sh: get /ship ready to start in a new T3 Code thread.
 #
 # Usage: kickoff.sh [--label L] [--model M] [--effort E]
-#                   [--command ship|plan-up|triage|grill|ready-pr] [--mode review|ready|merge]
+#                   [--command ship|triage|grill|ready-pr] [--mode review|ready|merge]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # The target and the flags are the shared decide script's, which picks the
