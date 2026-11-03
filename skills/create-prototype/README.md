@@ -20,7 +20,7 @@ Everything lives under `~/.codex/artifacts/prototype/<slug>/` (or `$CODEX_HOME` 
 
 - `python3`, to serve the page on `127.0.0.1`.
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
-- Optional: playwright-cli in Claude Code, run by `npx @playwright/cli` (or the Codex in-app browser), so the agent can click through the prototype itself in a hidden browser. Ask to watch and it opens a window. Also a clipboard tool, through [copy.sh](../../shared/copy.sh), to copy the URL; the `impeccable` skill for the visual design.
+- Optional: playwright-cli in Claude Code, run by `npx @playwright/cli` (or the Codex in-app browser), so the agent can click through the prototype itself in a hidden browser. Ask to watch and it opens a window. Also a clipboard tool, through [copy.sh](../../shared/copy.sh), to copy the URL; the `impeccable` skill for the visual design; a tool with screens and flows from real apps, such as the Mobbin MCP, for references.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.
 
 ## Fits with
