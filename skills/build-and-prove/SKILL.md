@@ -74,11 +74,13 @@ one.
 
 ## Todo list
 
-Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
-in Codex. It holds one item per step of § Steps, its number and bold
-title word for word, as in `5. Coding.` Run by `/ship`, open no list of
-your own: ship's list already holds these steps under its step 5, so
-mark those items.
+Before step 1, open a todo list with the todo tool your host gives:
+TaskCreate and TaskUpdate, or TodoWrite, in Claude Code; `update_plan`
+in Codex. No such tool: print the list in chat once, then one line as
+each item starts, as `5. Coding.` It holds one item per step of
+§ Steps, its number and bold title word for word, as in `5. Coding.`
+Run by `/ship`, open no list of your own: ship's list already holds
+these steps under its step 5, so mark those items.
 
 Mark each item in progress as it starts and done as it ends. A step the
 run does not do stays in the list as `<title> skip: <reason>`, as in
