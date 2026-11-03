@@ -87,8 +87,10 @@ while you walk. Its brief, whole:
 - the pace rules, so the walker cannot drop them: every click
   `--settle 3s`; a state under about 3 s shot by its action's own
   `--screenshot` with `--settle 300ms`;
-  timed steps run back to back with no wait or shot between
-  (`agents/walker.md` § How you see and act).
+  a timed run as one mark, one `proofbox exec` that holds every timed
+  action as an `/opt/proofbox/pixel` line, and one look, then an empty
+  mark for each further step of the run, so mark numbers stay step
+  numbers (`agents/walker.md` § How you see and act).
 
 It does not get the code, the slices, or the diff. It returns
 one line per walk and writes `walk-report-<mode>-<round>.md` in
