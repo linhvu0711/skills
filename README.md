@@ -156,6 +156,7 @@ Optional, only for the skills that name them:
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
+- A tool with screens and flows from real apps, such as the Mobbin MCP: [create-prototype](skills/create-prototype/), for references.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
 
 ## Credits
