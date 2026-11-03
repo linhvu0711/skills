@@ -11,7 +11,8 @@ The head lines (everything above the first `# ` heading) open the file,
 because the rules block reads `Repo`, `Base branch`, `Branch`, and
 `Proof folder` by name. A local prompt never has `UI walks`, `Videos`,
 `Perf`, or a `Stack`: the Proof agent does the walks, `/build-and-prove`
-has it measure the `Perf` block, and a run is built one layer per prompt.
+measures the `Perf` block on the local machine, and a run is built one
+layer per prompt.
 <!-- /local -->
 <!-- devin -->
 full, in this order. `devin.sh` sends it as an attachment: Devin's
