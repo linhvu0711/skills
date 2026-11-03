@@ -392,7 +392,7 @@ t_box_gates_usage() {
   box gates "$P" --
   # Then
   eq exit 1 "$code"
-  has stderr "gates <proof-dir> -- <command>..." "$err"
+  has stderr "gates <proof-dir> [--local <worktree>] -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
 }
@@ -463,7 +463,51 @@ t_box_gates_not_found_line() {
   has stderr "missing tool: pnpm test:docker · docker: command not found" "$err"
 }
 
+t_box_gates_local() {
+  # Given
+  fake_proofbox
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" --local "$R" -- 'echo one' 'pwd'
+  # Then
+  eq exit 0 "$code"
+  eq checks "echo one · $sha · one (local machine)
+pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
+  eq log "" "$(cat "$FAKE_PB/log" 2>/dev/null)"
+}
+
+t_box_gates_local_no_proofbox() {
+  # Given
+  repo
+  export PATH="/usr/bin:/bin"
+  P="$T/proof"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" --local "$R" -- 'echo one'
+  # Then
+  eq exit 0 "$code"
+  eq checks "echo one · $sha · one (local machine)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_local_red() {
+  # Given
+  fake_proofbox
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" --local "$R" -- 'echo bad; exit 3' 'no-such-tool-xyz' 'echo ok'
+  # Then
+  eq exit 1 "$code"
+  eq first "echo bad; exit 3 · $sha · red, exit 3: bad (local machine)" "$(sed -n 1p "$P/checks.txt")"
+  has second "no-such-tool-xyz · $sha · red, exit 127: " "$(sed -n 2p "$P/checks.txt")"
+  eq third "echo ok · $sha · ok (local machine)" "$(sed -n 3p "$P/checks.txt")"
+  has stderr "red: echo bad; exit 3 · exit 3 · output " "$err"
+  has stderr "missing tool: no-such-tool-xyz · " "$err"
+}
+
 cases=(
+  "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
+  "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
+  "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"
   "gates names a Gate whose tool is missing|t_box_gates_missing_tool"
   "gates names a not found line|t_box_gates_not_found_line"
   "gates keeps going after a red Gate and exits 1|t_box_gates_red"

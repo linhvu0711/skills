@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# box.sh: hold the one proofbox Sandbox of a build-and-prove run. Coding runs
-# on the local machine; the Gates, the app, and the walks run in this Sandbox.
+# box.sh: hold the one proofbox Sandbox of a build-and-prove run, and write its
+# checks.txt. Coding runs on the local machine; for a plan with UI walks, the
+# Gates, the app, and the walks run in this Sandbox. A plan with no UI starts
+# none, and runs its Gates on the local machine with `gates --local`.
 #
 #   box.sh auth <linux|macos>
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
-#   box.sh gates <proof-dir> -- <command>...
+#   box.sh gates <proof-dir> [--local <worktree>] -- <command>...
 #   box.sh down <proof-dir>
 #
 # auth checks the login of the Provider that ~/.config/proofbox/config picks
@@ -45,6 +47,12 @@
 # <command> · <that line>` on stderr. gates exits 1 when any command is red,
 # 0 when all are green. A stop leaves the old checks.txt as it was.
 #
+# gates --local <worktree> needs no Sandbox and no proofbox: it runs each
+# command on the local machine, one at a time, as `sh -c '<command>'` in
+# <worktree>, and takes the short SHA from there. Its lines end `(local
+# machine)` in place of `(sandbox)`; the rest is the same, so checks.txt keeps
+# one writer and one line shape.
+#
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
 #
@@ -57,9 +65,10 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> [--local <worktree>] -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
-command -v proofbox >/dev/null || die "proofbox is not installed"
+# Only `gates --local` runs without proofbox.
+[ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
 
 # create: make a Sandbox from the BOX_* values and write the state. proofbox's
 # stderr reaches the caller live; a copy is kept for its last line.
@@ -175,12 +184,18 @@ case "$verb" in
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"
-    dir="$1"; shift
+    dir="$1"; shift; local_wt=""
+    if [ "${1:-}" = "--local" ]; then
+      [ -d "${2:-}" ] || die "--local needs a worktree"
+      local_wt="$2"; shift 2
+    fi
     [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
     shift
-    load
+    if [ -n "$local_wt" ]; then where="local machine"; work="$local_wt"
+    else load; where="sandbox"; work="$BOX_WORK"; fi
+    mkdir -p "$dir"
     tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
-    sha="$(git -C "$BOX_WORK" rev-parse --short HEAD)"
+    sha="$(git -C "$work" rev-parse --short HEAD)"
     # checks.txt is moved into place whole, so a stop leaves the old one.
     tmp="$dir/checks.txt.tmp"
     trap 'rm -f "$tmp"' EXIT
@@ -188,14 +203,18 @@ case "$verb" in
     n=0; red=0
     for cmd in "$@"; do
       n=$((n + 1)); log="$logs/$n.log"
-      in_box sh -c "$cmd"
+      if [ -n "$local_wt" ]; then
+        rc=0; (cd "$local_wt" && sh -c "$cmd") >"$log" 2>&1 || rc=$?
+      else
+        in_box sh -c "$cmd"
+      fi
       last="$(tr -d '\r' < "$log" | awk 'NF { l = $0 } END { print l }')"
       last="${last:-no output}"
       if [ "$rc" -eq 0 ]; then
-        printf '%s · %s · %s (sandbox)\n' "$cmd" "$sha" "$last" >> "$tmp"
+        printf '%s · %s · %s (%s)\n' "$cmd" "$sha" "$last" "$where" >> "$tmp"
       else
         red=1
-        printf '%s · %s · red, exit %s: %s (sandbox)\n' "$cmd" "$sha" "$rc" "$last" >> "$tmp"
+        printf '%s · %s · red, exit %s: %s (%s)\n' "$cmd" "$sha" "$rc" "$last" "$where" >> "$tmp"
         printf 'red: %s · exit %s · output %s\n' "$cmd" "$rc" "$log" >&2
         miss="$(grep -m 1 'not found' "$log" || true)"
         [ "$rc" -ne 127 ] || miss="${miss:-exit 127}"
