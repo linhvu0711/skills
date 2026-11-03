@@ -5,6 +5,7 @@
 #   box.sh auth <linux|macos>
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
+#   box.sh gates <proof-dir> -- <command>...
 #   box.sh down <proof-dir>
 #
 # auth checks the login of the Provider that ~/.config/proofbox/config picks
@@ -32,6 +33,13 @@
 # the exec is made again once, from the same setup, and the command runs
 # again; BOX_REMADE counts these.
 #
+# gates runs each command, in order, as `sh -c '<command>'`, through the same
+# upload and one remake as run. Each command's output goes to its own file in a
+# box-gates.* temp folder, outside the proof folder, named on stderr as
+# `logs: <folder>`. It writes <proof-dir>/checks.txt fresh, one line per
+# command: `<command> · <short SHA> · <last non-empty output line> (sandbox)`.
+# A stop leaves the old checks.txt as it was.
+#
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
 #
@@ -44,7 +52,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 command -v proofbox >/dev/null || die "proofbox is not installed"
 
@@ -87,24 +95,47 @@ load() {
 }
 
 # attempt <command>...: upload, then exec. Sets `gone` when proofbox says the
-# Sandbox is gone, at either step; otherwise exits with the command's code.
-# exec's stderr still reaches the caller live; a copy is kept to tell a gone
-# Sandbox (125 and its line) from the command's own exit code.
+# Sandbox is gone, at either step; otherwise sets `rc` to the command's code.
+# With `log` empty, exec's stderr still reaches the caller live, and a copy is
+# kept to tell a gone Sandbox (125 and its line) from the command's own exit
+# code. With `log` set, exec's stdout and stderr go to that file with no pipe,
+# so nothing can stand in for the command's own code.
 attempt() {
-  local errf c=0
+  local errf src c=0
   errf="$(mktemp)"
-  gone=""
+  gone=""; rc=0
   proofbox upload "$BOX_ID" "${from:-$BOX_WORK}" >/dev/null 2>"$errf" || c=$?
   if [ "$c" -ne 0 ]; then
     if grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
     cat "$errf" >&2; rm -f "$errf"; exit "$c"
   fi
   set +e
-  { proofbox exec "$BOX_ID" -- "$@" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; c=${PIPESTATUS[0]}; } 3>&1
+  if [ -n "${log:-}" ]; then
+    proofbox exec "$BOX_ID" -- "$@" >"$log" 2>&1; c=$?
+    src="$log"
+  else
+    { proofbox exec "$BOX_ID" -- "$@" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; c=${PIPESTATUS[0]}; } 3>&1
+    src="$errf"
+  fi
   set -e
-  if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
+  if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$src"; then gone="$(tail -n 1 "$src")"; rm -f "$errf"; return; fi
   rm -f "$errf"
-  exit "$c"
+  rc="$c"
+}
+
+# in_box <command>...: attempt, and when the Sandbox is gone make it again once
+# and attempt again. Sets `rc`; a Sandbox gone twice is a stop.
+in_box() {
+  local old was
+  attempt "$@"
+  [ -n "$gone" ] || return 0
+  old="$gone"; was="$BOX_ID"
+  BOX_REMADE=$((BOX_REMADE + 1))
+  create
+  printf 'Sandbox %s is gone; made %s from its Snapshot\n' "$was" "$BOX_ID" >&2
+  attempt "$@"
+  [ -n "$gone" ] || return 0
+  die "$old"
 }
 
 case "$verb" in
@@ -134,13 +165,30 @@ case "$verb" in
     [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
     shift
     load
-    attempt "$@"
-    old="$gone"; was="$BOX_ID"
-    BOX_REMADE=$((BOX_REMADE + 1))
-    create
-    printf 'Sandbox %s is gone; made %s from its Snapshot\n' "$was" "$BOX_ID" >&2
-    attempt "$@"
-    die "$old"
+    in_box "$@"
+    exit "$rc"
+    ;;
+  gates)
+    [ $# -ge 1 ] || die "$usage"
+    dir="$1"; shift
+    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
+    shift
+    load
+    logs="$(mktemp -d "${TMPDIR:-/tmp}/box-gates.XXXXXX")"
+    sha="$(git -C "$BOX_WORK" rev-parse --short HEAD)"
+    # checks.txt is moved into place whole, so a stop leaves the old one.
+    tmp="$dir/checks.txt.tmp"
+    trap 'rm -f "$tmp"' EXIT
+    : > "$tmp"
+    n=0
+    for cmd in "$@"; do
+      n=$((n + 1)); log="$logs/$n.log"
+      in_box sh -c "$cmd"
+      last="$(tr -d '\r' < "$log" | awk 'NF { l = $0 } END { print l }')"
+      printf '%s · %s · %s (sandbox)\n' "$cmd" "$sha" "${last:-no output}" >> "$tmp"
+    done
+    mv "$tmp" "$dir/checks.txt"
+    printf 'logs: %s\n' "$logs" >&2
     ;;
   down)
     [ $# -eq 1 ] || die "$usage"

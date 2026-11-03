@@ -325,7 +325,79 @@ t_box_auth_config() {
   eq stdout "PROVIDER=docker" "$out"
 }
 
+# gate_fixture: an up Sandbox, an old checks.txt, and two Gate outputs; sets
+# sha to the fixture repo's short HEAD.
+gate_fixture() {
+  fake_proofbox
+  state ns:us:abc
+  echo 'old · 0000000 · 1 pass (sandbox)' > "$P/checks.txt"
+  printf 'ok a\n116 passed, 0 failed\n' > "$FAKE_PB/exec.1.out"
+  printf 'lint ok\n\n\n' > "$FAKE_PB/exec.2.out"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+}
+
+t_box_gates_green() {
+  # Given
+  gate_fixture
+  # When
+  box gates "$P" -- 'pnpm test' 'pnpm lint'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pnpm lint · $sha · lint ok (sandbox)" "$(cat "$P/checks.txt")"
+  eq log "upload ns:us:abc $R
+exec ns:us:abc -- sh -c pnpm test
+upload ns:us:abc $R
+exec ns:us:abc -- sh -c pnpm lint" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_gates_remakes() {
+  # Given
+  gate_fixture
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  # When
+  box gates "$P" -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  has state "BOX_ID=ns:us:def" "$(cat "$P/box.env")"
+  eq creates 1 "$(grep -c '^create ' "$FAKE_PB/log")"
+  has stderr "Sandbox ns:us:abc is gone; made ns:us:def from its Snapshot" "$err"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_gone_twice() {
+  # Given
+  gate_fixture
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
+  echo "Sandbox ns:us:def is gone" > "$FAKE_PB/upload.2.fail"
+  echo ns:us:def > "$FAKE_PB/create.out"
+  # When
+  box gates "$P" -- 'pnpm test'
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: Sandbox ns:us:abc is gone" "$err"
+  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
+  [ ! -e "$P/checks.txt.tmp" ] || { echo "checks.txt.tmp left" >&2; exit 1; }
+}
+
+t_box_gates_usage() {
+  # Given
+  gate_fixture
+  # When
+  box gates "$P" --
+  # Then
+  eq exit 1 "$code"
+  has stderr "gates <proof-dir> -- <command>..." "$err"
+  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
+  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+}
+
 cases=(
+  "gates runs each Gate in order and writes checks.txt|t_box_gates_green"
+  "gates makes a gone Sandbox again once|t_box_gates_remakes"
+  "gates stops when the new Sandbox is gone too|t_box_gates_gone_twice"
+  "gates with no command is a usage error|t_box_gates_usage"
   "up creates linux with idle 30m and no max life or provider|t_box_up_flags"
   "up creates macos with idle 10m|t_box_up_macos_idle"
   "run counts each Sandbox it makes again|t_box_run_counts_remakes"
