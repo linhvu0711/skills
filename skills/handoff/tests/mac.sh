@@ -1,4 +1,4 @@
-# mac.sh: the cases for the shared Namespace Mac script, shared/cursor/mac.sh, driven through a
+# mac.sh: the cases for this skill's Namespace Mac script, driven through a
 # fake nsc and the fake gh of test-lib.sh. The repo's test.sh sources this
 # file after test-lib.sh and runs its cases.
 
@@ -28,7 +28,7 @@ EOF
   printf 'gho_secret\n' > "$FAKE_GH/auth-token.json"
 }
 
-mac() { run env CURSOR_API_KEY=crsr_k bash "$here/../cursor/mac.sh" "$@"; }
+mac() { run env CURSOR_API_KEY=crsr_k bash "$here/../scripts/mac.sh" "$@"; }
 
 wid=0f0e0d0c-0b0a-4908-8706-050403020100
 

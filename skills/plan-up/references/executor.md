@@ -10,8 +10,9 @@ belong to `/handoff` or `/build-and-prove`; the plan never names it.
 - Hands: a shell, an editor, git, and the repo checked out on the base
   branch. It runs every command under `Facts` as written.
 - A browser and a desktop, so it can run the app and walk a screen. The
-  screen is 1024x768 on a cloud executor, the Proof agent of a local
-  build too; a wider layout needs a scroll or zoom step in the walk.
+  screen is 1024x768 on a cloud executor, and on a proofbox Sandbox
+  1440x900 on linux and 1280x800 on macOS; a wider layout needs a
+  scroll or zoom step in the walk.
 - A platform, one of `linux`, `windows`, `macos-outpost`, named under
   `Facts`.
 - A screen recorder and a way to attach images and video to the PR.

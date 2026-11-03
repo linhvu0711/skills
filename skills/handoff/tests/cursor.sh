@@ -1,12 +1,12 @@
-# cursor.sh: the cases for the shared Cursor client, shared/cursor/cursor.sh,
-# driven through the fake curl of test-lib.sh. The repo's test.sh sources this file after
+# cursor.sh: the cases for this skill's Cursor adapter, driven through the fake
+# curl of test-lib.sh. The repo's test.sh sources this file after
 # test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# cursor <args>: run the Cursor client on the fake curl, with HOME in the
+# cursor <args>: run the Cursor adapter on the fake curl, with HOME in the
 # temp folder (no .zshrc).
-cursor() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../cursor/cursor.sh" "$@"; }
+cursor() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../scripts/adapters/cursor.sh" "$@"; }
 
 agent_bc1='{"id":"bc-1","status":"RUNNING","latestRunId":"run-2","url":"https://cursor.com/agents/bc-1"}'
 
@@ -62,12 +62,12 @@ t_cursor_say() {
 t_cursor_no_key() {
   fake_curl
   printf '# Brief\n' > p.md
-  run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../cursor/cursor.sh" start p.md --repo o/r
+  run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../scripts/adapters/cursor.sh" start p.md --repo o/r
   eq exit 1 "$code"
   eq stderr "cursor.sh: no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)" "$err"
 }
 
-# fake_mac: a fake mac.sh in $T, CURSOR_MAC pointing there. It logs each
+# fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
 # call's args to $T/mac.calls; `up` prints mac-<n> and wid-1, n its call count, and
 # `alive` exits with the content of $T/mac.alive (1 when missing), and `down`
 # runs $T/mac.on-down first when it exists.
@@ -82,11 +82,11 @@ case "$1" in
   down) [ ! -f "$d/mac.on-down" ] || bash "$d/mac.on-down"; echo "destroyed $2" ;;
 esac
 EOF
-  export CURSOR_MAC="$T/mac.sh"
+  export HANDOFF_MAC="$T/mac.sh"
 }
 
 # cursor_mac <args>: cursor with the fake mac.sh and a crsr_ key.
-cursor_mac() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY="${KEY:-crsr_k}" bash "$here/../cursor/cursor.sh" "$@"; }
+cursor_mac() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY="${KEY:-crsr_k}" bash "$here/../scripts/adapters/cursor.sh" "$@"; }
 
 macs() { cat "$T/home/.config/dispatch/cursor-macs.tsv"; }
 
@@ -211,129 +211,6 @@ down mac-1" "$(cat "$T/mac.calls")"
   eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	-" "$(macs)"
 }
 
-t_cursor_artifacts() {
-  fake_curl
-  printf '{"items":[{"path":"artifacts/video-1.mp4","sizeBytes":2048,"updatedAt":"2026-11-02T10:00:00Z"},{"path":"artifacts/checks.txt","sizeBytes":120,"updatedAt":"2026-11-02T10:00:00Z"}]}\n' \
-    > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts.json"
-  cursor artifacts bc-1
-  eq exit 0 "$code"
-  eq stdout "artifacts/video-1.mp4	2048
-artifacts/checks.txt	120" "$out"
-}
-
-# download_fixtures: the presigned URL for artifacts/video-1.mp4, and the file behind it.
-download_fixtures() {
-  printf '{"url":"https://s3.test/b/video-1.mp4?sig=x","expiresAt":"2026-11-02T10:15:00Z"}\n' \
-    > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts_download.json"
-  printf 'MP4DATA\n' > "$FAKE_CURL/GET_b_video-1.mp4.json"
-}
-
-t_cursor_download() {
-  fake_curl; download_fixtures
-  cursor download bc-1 artifacts/video-1.mp4 proof/video-1.mp4
-  eq exit 0 "$code"
-  eq stdout "saved proof/video-1.mp4" "$out"
-  eq file "MP4DATA" "$(cat proof/video-1.mp4)"
-  has calls "GET /b/video-1.mp4" "$(cat "$FAKE_CURL/calls")"
-}
-
-t_cursor_download_fails() {
-  fake_curl; download_fixtures
-  printf 403 > "$FAKE_CURL/GET_b_video-1.mp4.code"
-  cursor download bc-1 artifacts/video-1.mp4 proof/video-1.mp4
-  eq exit 1 "$code"
-  eq stderr "cursor.sh: download of artifacts/video-1.mp4 failed: HTTP 403" "$err"
-  [ ! -e proof/video-1.mp4 ] || eq file "none" "proof/video-1.mp4"
-}
-
-t_cursor_start_api_reason() {
-  fake_curl
-  printf '{"items":[{"url":"https://github.com/o/r"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
-  printf '{"error":{"code":"payment_required","message":"Add credit to run agents"}}\n' > "$FAKE_CURL/POST_v1_agents.json"
-  printf 402 > "$FAKE_CURL/POST_v1_agents.code"
-  printf '# Brief\n' > p.md
-  cursor start p.md --repo o/r
-  eq exit 1 "$code"
-  eq stderr "cursor.sh: HTTP 402 on POST /agents: payment_required (Add credit to run agents)" "$err"
-}
-
-t_cursor_handoff_adapter() {
-  fake_curl
-  printf '{"items":[{"path":"artifacts/checks.txt","sizeBytes":120}]}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_artifacts.json"
-  run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../../skills/handoff/scripts/adapters/cursor.sh" artifacts bc-1
-  eq exit 0 "$code"
-  eq stdout "artifacts/checks.txt	120" "$out"
-}
-
-t_cursor_start_macos_hold() {
-  fake_curl; fake_mac
-  printf '{"items":[{"url":"https://github.com/o/r"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
-  printf '{"agent":{"id":"bc-1","url":"https://cursor.com/agents/bc-1"}}\n' > "$FAKE_CURL/POST_v1_agents.json"
-  printf '# Brief\n' > p.md
-  cursor_mac start p.md --repo o/r --platform macos --hold-mac
-  eq exit 0 "$code"
-  w=$(jq -r .env.name "$FAKE_CURL/POST_v1_agents.data")
-  eq row "bc-1	$w	wid-1	https://github.com/o/r	main	mac-1	hold" "$(macs)"
-}
-
-t_cursor_hold_needs_macos() {
-  fake_curl
-  printf '# Brief\n' > p.md
-  cursor start p.md --repo o/r --hold-mac
-  eq exit 1 "$code"
-  eq stderr "cursor.sh: --hold-mac needs --platform macos" "$err"
-}
-
-# held_row: agent bc-1 on a held mac-1, its latest run FINISHED.
-held_row() {
-  mkdir -p "$T/home/.config/dispatch"
-  printf 'bc-1\tho-1\twid-1\thttps://github.com/o/r\tmain\tmac-1\thold\n' > "$T/home/.config/dispatch/cursor-macs.tsv"
-  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
-  printf '{"id":"run-2","status":"FINISHED","result":"Done"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
-}
-
-t_cursor_poll_keeps_held_mac() {
-  fake_curl; fake_mac; held_row
-  cursor_mac poll bc-1
-  eq exit 0 "$code"
-  [ ! -f "$T/mac.calls" ] || eq "mac calls" "" "$(cat "$T/mac.calls")"
-  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1	hold" "$(macs)"
-}
-
-t_cursor_down_held_mac() {
-  fake_curl; fake_mac; held_row
-  cursor_mac down bc-1
-  eq exit 0 "$code"
-  eq stdout "bc-1: destroyed mac-1" "$out"
-  eq "mac down" "down mac-1" "$(cat "$T/mac.calls")"
-  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	-	hold" "$(macs)"
-}
-
-t_cursor_down_no_mac() {
-  fake_curl
-  cursor down bc-9
-  eq exit 0 "$code"
-  eq stdout "bc-9: no Mac" "$out"
-}
-
-t_cursor_wait() {
-  fake_curl
-  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
-  printf '{"id":"run-2","status":"EXPIRED","result":"Ran out of time"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
-  cursor wait bc-1 --interval 0
-  eq exit 0 "$code"
-  eq stdout "expired	run-2|EXPIRED	-	https://cursor.com/agents/bc-1	Ran out of time" "$out"
-}
-
-t_cursor_wait_max() {
-  fake_curl
-  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
-  printf '{"id":"run-2","status":"RUNNING"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
-  cursor wait bc-1 --interval 0 --max 1
-  eq exit 0 "$code"
-  eq stdout "still running	https://cursor.com/agents/bc-1" "$out"
-}
-
 cases=(
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
@@ -350,16 +227,4 @@ cases=(
   "cursor say keeps a Mac that runs|t_cursor_say_mac_alive"
   "cursor poll keeps a Mac a say rented meanwhile|t_cursor_poll_keeps_newer_mac"
   "cursor say destroys its new Mac when the send fails|t_cursor_say_send_fails"
-  "cursor artifacts lists each file with its size|t_cursor_artifacts"
-  "cursor download saves the file the presigned URL holds|t_cursor_download"
-  "cursor download stops when the file will not come|t_cursor_download_fails"
-  "cursor start shows the API's reason|t_cursor_start_api_reason"
-  "handoff's Cursor adapter runs the shared client|t_cursor_handoff_adapter"
-  "cursor start --hold-mac marks the Mac held|t_cursor_start_macos_hold"
-  "cursor start --hold-mac needs macos|t_cursor_hold_needs_macos"
-  "cursor poll keeps a held Mac when the run ends|t_cursor_poll_keeps_held_mac"
-  "cursor down gives back a held Mac|t_cursor_down_held_mac"
-  "cursor down on an agent with no Mac says so|t_cursor_down_no_mac"
-  "cursor wait prints the run that ended|t_cursor_wait"
-  "cursor wait stops at --max|t_cursor_wait_max"
 )

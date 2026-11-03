@@ -1,63 +1,63 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it: Coding, the Gates the PR's CI does not run, and the perf measure run on the local machine, and one Cursor Proof agent per run takes the before shots and films the UI walks like a test user. Ends at a pushed branch, with no PR, one commit per slice, and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it with proofbox: Coding runs on the local machine, then one proofbox Sandbox runs the Gates and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-One plan, one branch, at most one Proof agent, one proof folder. Facts
-come from reading, per `../../shared/facts.md`. Big forks go to
-the user; everything else you decide, write down, and go on. You push
-the branch so the Proof agent, when there is one, can check it out, and
-you never open a PR: `/make-pr` does that with the proof folder.
+One plan, one branch, one proofbox Sandbox, one proof folder. Facts come
+from reading, per `../../shared/facts.md`. Big forks go to
+the user; everything else you decide, write down, and go on. You never
+push and never open a PR: `/make-pr` does that with the proof folder.
 
 In Claude Code every Bash call starts in the session's directory. Every
 git command in the worktree is `git -C "$WT" …`.
 
-## Proof agent
+## Sandbox
 
 Coding runs on the local machine: each slice's red and green test,
-typecheck, lint, and e2e spec files, in the worktree, with the repo's
-packages installed there. One run has one Proof agent: a Cursor cloud
-agent that starts at the same time as Coding. It takes the before shots
-on the base, and after Coding it runs the app and films the walks on
-the branch (ADRs 0019 and 0020 in this repo). The Gates and the perf
-measure run per `references/checks.md`: the PR's CI or the local
-machine, never the agent. It never edits code and never reads the
-app's code (ADR 0010): its rules are `references/proof-agent.md`,
-pasted whole into its prompt.
+typecheck, and lint, in the worktree, with the repo's packages installed
+there. One run has one proofbox Sandbox. It starts after Coding and runs
+the Gates, the app, the before shots, and the walks (ADR 0011 in this
+repo). A slice test that needs a tool the local machine lacks,
+or a slice's e2e spec files, start it early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
+prints its usage with no arguments.
 
-`CLIENT` is `../../shared/cursor/cursor.sh`, the Cursor client
-`/handoff` runs too; it prints its usage with no arguments. This skill
-uses `start`, `poll`, `wait`, `say`, `artifacts`, `download`, and
-`down`. A `cursor.sh: ` line on stderr is the reason to stop.
+- `box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>` creates
+  it with an idle time of 30m on Linux and 10m on macOS, proofbox's
+  default max life of 3h, and no `--provider`, so proofbox's own config
+  picks the Provider. It shows every line proofbox prints as it makes
+  the Sandbox, so a failed setup script's last lines come before the
+  `stop:` line. It reads the setup script, the Secrets file `app.env`,
+  which it passes as `--secrets`, and the optional size file from
+  `~/.agents/proofbox/<owner>-<repo>/`. With a
+  Sandbox already in `<proof-dir>`, it keeps that one and prints its id.
+- `box.sh run <proof-dir> [--from <folder>] -- <command>…` uploads the
+  worktree's changed files, or `<folder>`'s, runs the command, and exits
+  with its code. A Sandbox that is gone, idle too long or past its max
+  life, is made again once from its Snapshot, and `run` says so on
+  stderr. Nothing is lost: the code lives in the worktree. A run can
+  last longer than one Sandbox.
+- `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
+  times it was made again.
 
-- An agent holds runs: `start` makes run 1, each `say` the next. One
-  run at a time: a `say` while a run is going stops with `409
-  agent_busy`, so `wait` first, then `say` again.
-- `wait` prints one line when the latest run ends: state, run, PRs,
-  URL, and the agent's last message, tab separated. The state is
-  `finished`, `error`, `cancelled`, or `expired`.
-- `error`, `cancelled`, or `expired`: show the agent's last message,
-  run `down`, and stop. The branch and its commits stay; a rerun starts
-  a new agent.
-- `Platform: macos-outpost`: the agent runs on a rented Namespace Mac
-  (`start --platform macos --hold-mac`), held through Coding. Step 8
-  gives it back, and every stop after step 3 runs `bash "$CLIENT" down
-  "$AGENT"` first. On Cursor's own machines `down` prints `no Mac` and
-  does nothing.
+`stop:` on stderr is the reason to stop. Every stop after `up` runs
+`down` first, so no Sandbox is left running; the worktree and its
+commits stay.
 
-**Setup fault.** A run that ends with `SETUP FAULT: <tool> not found`,
-or a walk or the app that fails on a tool `not found`, is the
-agent's machine, not the code. A follow-up with `Install: <tool>`
-(`references/walks.md` § 6a) has it install the tool and run the same
-round again. It does not count as a round. After three in one run:
-`down`, then stop with the last one.
-
-**No Proof agent.** A plan with `UI: none` starts none (step 3). Every
-`poll`, `wait`, `say`, `artifacts`, `download`, and `down` in this
-skill is then skipped.
+**Sandbox fault.** A command in the Sandbox that prints `not found`
+for a tool a setup script can install is the setup script's, not the
+code's, whatever its exit code: a script can catch the 127 and exit 1,
+as a check script that prints `stop: not inside a git repo` after
+`git: command not found` does. Check the tool with `box.sh run
+"$PROOF" -- sh -c 'command -v <tool>'`; exit 1 confirms it. A setup
+script from an earlier run, one that writes no `$PROOFBOX_ENV`, fails
+this way. Rewrite the script per step 4, `box.sh down`, `box.sh up`
+(step 6), and run the command again. This holds wherever the command
+ran: a slice test in a Sandbox Coding started early, a Gate, the app,
+a walk. After three in one run: `box.sh down`, then stop with the last
+one.
 
 ## Forms
 
@@ -73,19 +73,20 @@ skill is then skipped.
 
 Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
 in Codex. It holds one item per step of § Steps, its number and bold
-title word for word, as in `4. Coding.` Run by `/ship`, open no list of
+title word for word, as in `5. Coding.` Run by `/ship`, open no list of
 your own: ship's list already holds these steps under its step 5, so
 mark those items.
 
 Mark each item in progress as it starts and done as it ends. A step the
-run does not do stays in the list as `<title> skip: <reason>`. After
-the chat is compacted, the list says where the run is: go on from the
-first item that is not done.
+run does not do stays in the list as `<title> skip: <reason>`, as in
+`7. Before shots. skip: no Before steps`. After the chat is compacted,
+the list says where the run is: go on from the first item that is not
+done.
 
 ## Steps
 
-1. **Plan.** Read the plan `.md` whole: steps 3 and 4 paste its blocks
-   into the prompts. A run: read the blocks above the first
+1. **Plan.** Read the plan `.md` whole: step 5 pastes its blocks into
+   the builder's prompt. A run: read the blocks above the first
    `## Layer` heading, then this layer's, from `## Layer <n>` to the
    next `## Layer`; no other layer is held. Stop with one line on each
    of these:
@@ -94,23 +95,35 @@ first item that is not done.
      is not a /plan-up plan.`
    - a `## Stack` block and no `--layer`: `A run: /ship builds it
      layer by layer, or name --layer <n>.`
-   - `Platform: windows`: `Cursor's machines run no Windows. Use Devin:
-     /ship <issue-url> devin?` and wait for the answer. A chat plan (no
-     `#<n>` in its `# Plan:` line) has no issue for Devin: `Cursor's
-     machines run no Windows, and Devin needs an issue. Run /to-issue
-     first.` and stop.
+   - `Platform: windows`: `proofbox has no Windows. Use Devin: /ship
+     <issue-url> devin?` and wait for the answer. A chat plan (no
+     `#<n>` in its `# Plan:` line) has no issue for Devin: `proofbox has
+     no Windows, and the cloud needs an issue. Run /to-issue first.`
+     and stop.
 
    Hold `REPO` (the `Repo:` line), `BASE` (`--base`, else the `Base:`
-   line), the issue number `N`, `UI` (the `UI:` line), the platform
-   (`linux`, or `macos` for `macos-outpost`), `PERF` (the plan's `Perf`
-   block, or none), and the layer's blocks: for a run, only the blocks
-   under `## Layer <n>`, and `PERF` is the layer's. The slug is
-   `<owner>-<repo>-<N>`. A chat plan
-   (`../plan-up/references/plan.md` § Chat plan) has no `N`: its slug
-   is the plan file's, `plan-<slug>.md`. `PROOF` is
-   `$HOME/.agents/artifacts/proof/<slug>`. Make it.
+   line), the issue number `N`, `UI` (the `UI:` line), the OS (`linux`,
+   or `macos` for `macos-outpost`), `PERF` (the plan's `Perf` block, or
+   none), and the layer's blocks: for a run, only the blocks under
+   `## Layer <n>`, and `PERF` is the layer's. The slug is `<owner>-<repo>-<N>`.
+   A chat plan (`../plan-up/references/plan.md` § Chat plan) has no
+   `N`: its slug is the plan file's, `plan-<slug>.md`.
+   `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 
-2. **Worktree.** The branch follows the PR shape § Branch
+2. **proofbox.** `command -v proofbox`. Missing: say `proofbox is not
+   installed: https://github.com/linhvu0711/proofbox` and stop. Then
+   the login, before any work:
+
+   ```bash
+   bash scripts/box.sh auth <os>
+   ```
+
+   - `stop: log in first: <command>`: show the command, copy it with
+     `../../shared/copy.sh` (any other exit than 0: say
+     `Clipboard copy skipped.`), and stop. Coding has not started.
+   - Any other `stop:`: show it, stop.
+
+3. **Worktree.** The branch follows the PR shape § Branch
    (`../../shared/pr-shape.md`): the issue's type, its
    number, two to four words, as in `fix/133-uninstall-reverses-setup`.
    A chat plan: the type from its title, then the words of its slug
@@ -127,57 +140,45 @@ first item that is not done.
    line. The branch has commits ahead of `BASE` already: this is a
    rerun (§ Rerun).
 
-3. **Proof agent.** `UI: none`: mark this item
-   `3. Proof agent. skip: no UI`, write no `agent.env`, and go on to
-   Coding. No Cursor key, credit, secret, or Mac is checked or rented.
+4. **Setup files.** The folder is `~/.agents/proofbox/<owner>-<repo>/`,
+   outside every repo, as proofbox wants (its ADR 0007).
+   - No `setup-<os>.sh`: write it from what the repo shows: the runtime
+     versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
+     the install command its lockfile calls for, the tools the plan's
+     `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
+     commands of its UI walks and videos use, and the browsers its e2e
+     tests need. It runs once
+     on proofbox's Base image, as a user with no sudo, before the work
+     is built. `$HOME` is the Work folder, so the script keeps every
+     tool, cache, and store outside it, in `/tmp/pb`. It puts them in
+     reach of every later command by writing `NAME=value` lines to the
+     file at `$PROOFBOX_ENV`, the Setup env: `PATH`, with its tool
+     folders first (`echo "PATH=/tmp/pb/bin:$PATH" >> "$PROOFBOX_ENV"`),
+     `LANG=C.UTF-8`, so a terminal's xterm draws `✔`, and any other
+     setting its tools need. It writes no `env.sh`, and no command loads
+     a file first. A name in `app.env` never goes in the Setup env:
+     proofbox stops on it. Say `Setup: wrote <path>`.
+   - The app needs settings (`.env.example`, the plan's `Run` line): no
+     `app.env` yet, or one that lacks a name: write the names whose
+     values the repo shows (a test port, a local URL), and an empty
+     `NAME=` line for each secret. Then one message: the file's path
+     and the names to fill in, never a value. Wait until the user says
+     it is done. Never print the file.
+   - `size`, optional, one line such as `8x16`: the Sandbox size for
+     every run of this repo, which `box.sh` passes as `--size`, on `up`
+     and on each remake. The skill never writes it; the user does, when
+     proofbox's default (4x8 on Linux) is too slow.
 
-   A plan with walks: before Coding, so a missing key, credit, or secret
-   shows in minutes, and the before shots are ready when Coding ends.
-
-   **Secrets.** The names the app needs from outside: each name in
-   `$WT/.env.example` whose value there is empty or a placeholder, and
-   each `$NAME` the plan's `Run` line reads that no file in the repo
-   sets. A name whose value the repo shows, a test port or a local URL,
-   is not one. Hold them as `SECRETS`, or none. Never a value.
-
-   **Prompt.** Write `$HOME/.agents/artifacts/plan/proof-prompt-<slug>.md`:
-   the head lines `Repo: <REPO>`, `Base branch: <BASE>`, `Branch:
-   <branch>`, `Platform: <platform>`, and `Before shots: walks <w>,
-   <w>`, the walks whose `Before` line names steps and that have no
-   `before-<walk>.png` in `PROOF` yet, or `Before shots: none`; then `# Secrets`, the `SECRETS`
-   names one per line, or `none`; `# Facts`, the plan's `Facts` block;
-   `# UI walks` and `# Videos`, the plan's blocks verbatim; then
-   `# Rules`, `references/proof-agent.md` whole, unchanged, once. Check: zero placeholders. Say `Proof prompt:
-   <path> (<n> lines)`.
-
-   **Start.**
-
-   ```bash
-   bash "$CLIENT" start <prompt-path> --repo <REPO> --base <BASE> --title "Proof: <slug>"
-   ```
-
-   `macos` adds `--platform macos --hold-mac`. Its line is `<agent>\t<url>`.
-   Write `$PROOF/agent.env`: `AGENT=<agent>`, `URL=<url>`, and
-   `PLATFORM=<platform>`, one per line. Hold `AGENT`. Say `Proof agent:
-   <url>`. A stop line here comes before Coding:
-   - `cursor.sh: no CURSOR_API_KEY …`: show it, and the command that
-     puts a key in `~/.zshrc`, `echo 'export CURSOR_API_KEY=<your crsr_
-     key>' >> ~/.zshrc`, copied with `../../shared/copy.sh` (any other
-     exit than 0: say `Clipboard copy skipped.`). The user makes the key
-     at cursor.com/dashboard, API Keys. Stop.
-   - Any other `cursor.sh:` line, such as `HTTP 402 on POST /agents:
-     …` with no credit, or a repo not connected to Cursor: show it
-     whole, the API's reason in it, and stop.
-
-   A rerun: an `agent.env` from an earlier run is replaced; `down` its
-   `AGENT` first, so no Mac of it stays rented.
-
-4. **Coding.** Install the repo's packages in `$WT` on the local
-   machine, with the install command its lockfile calls for; a repo
-   with no lockfile installs nothing. The install fails because the
-   local machine lacks its tool (`command not found`, exit 127): say
-   `<tool> is not installed on this machine; install it and run again.`,
-   `down`, and stop.
+5. **Coding.** Install the repo's packages in `$WT` on the local
+   machine, with the install command its lockfile calls for (the one
+   step 4 reads for the setup script); a repo with no lockfile installs
+   nothing. The install fails because the local machine lacks its tool
+   (`command not found`, exit 127): say `<tool> is not installed on this
+   machine; install it and run again.` and stop. Coding has not started,
+   and no Sandbox runs. No Sandbox runs yet: `proofbox list` shows none of this run
+   until the last slice is committed, unless a slice test needed a tool
+   the local machine lacks, or a slice ran its e2e spec files
+   (§ Sandbox).
 
    Assemble the prompt per
    `bash ../../shared/handoff/render.sh local prompt`: the
@@ -191,23 +192,6 @@ first item that is not done.
    placeholders. Write it to
    `$HOME/.agents/artifacts/plan/prompt-<slug>.md`. Say
    `Prompt: <path> (<n> lines)`.
-
-   **The Proof agent's run 1**, when step 3 started one, ends while
-   Coding goes on. In Claude
-   Code, run `bash "$CLIENT" wait "$AGENT"` in the background; the tool
-   wakes you when it ends. As the builder yourself, or in Codex, run
-   `bash "$CLIENT" poll "$AGENT"` after each slice's commit. When it
-   ends, sort its last message:
-   - `MISSING SECRETS: <names>`: one message, while Coding goes on:
-     `The Proof agent lacks <names>. Add them to this repo's environment
-     on cursor.com (Cloud Agents, Secrets).` Never ask for or print a
-     value. Hold the names: step 6's first note checks them again.
-   - `SETUP FAULT: <tool> not found`: a setup fault (§ Proof agent),
-     its note the same round 1 again.
-   - `BEFORE` lines: hold them; step 6 downloads the shots.
-   - `error`, `cancelled`, or `expired`: § Proof agent. A pane that
-     still builds keeps its commits, and a rerun starts at its first
-     slice with no commit.
 
    Your system prompt names the model you run on.
 
@@ -224,7 +208,7 @@ first item that is not done.
 
      The label is the first four words of the issue title (a chat
      plan: the plan title, its type tag left out) in kebab case. `stop:` on stderr: show it, stop. Exit 0: print its report
-     line and hold `PANE`, and its `AGENT` as `AGENT_PANE`, apart from the Proof agent's. Then wait:
+     line and hold `PANE` and `AGENT`. Then wait:
 
      ```bash
      ~/.claude/bin/herdr-wait <PANE> --timeout-sec 21600
@@ -232,11 +216,10 @@ first item that is not done.
 
      In Claude Code run it in the background; the tool wakes you when
      it ends. In Codex run it in the foreground with a long timeout.
-     Read the tail, `herdr agent read <AGENT_PANE> --source visible --lines
+     Read the tail, `herdr agent read <AGENT> --source visible --lines
      80`, and sort:
-     - The last message starts with `QUESTION` about a tool the local
-       machine lacks: say `<tool> is not installed on this machine;
-       install it, then say go.` and wait. On `go`, answer per
+     - The last message starts with `QUESTION` about a tool `not found`
+       in the Sandbox: a Sandbox fault (§ Sandbox). Fix it, answer per
        `render.sh local prompt` § Answer that the tool is there now and
        to run the command again, send it, and wait again.
      - Any other `QUESTION`: sort it by the two
@@ -251,42 +234,109 @@ first item that is not done.
        quote the question in a fenced block, then one question to the
        user, two options at most, your pick first. The user answers
        `/build-and-prove <note>`. Stop.
-     - The last line is `BUILT <branch>`: step 5.
-     - The last line is `NOT BUILT <branch>: …`: show it, `down`, stop.
+     - The last line is `BUILT <branch>`: step 6.
+     - The last line is `NOT BUILT <branch>: …`: show it, stop.
      - Neither, and no question: the pane stopped short. Show the last
-       20 lines, `down`, and stop.
+       20 lines and stop.
      - `STATUS=timeout`: say how long it ran, the pane's last lines,
-       `down`, and stop.
+       and stop.
 
    **Any other model**: you build. Read the prompt file and follow it
    whole as its builder, in `$WT`: slices in order, tests first, each
-   slice's test, typecheck, lint, and e2e spec files on the local
-   machine, in `$WT`, one commit per slice. A tool the local machine
-   lacks: say `<tool> is not installed on this machine; install it,
-   then say go.` and wait. Say `Build: slice <k> of <n>` as each slice
-   is committed. Its § Surprises are yours: stop and ask the user where
-   it says stop and ask. It ends at `BUILT <branch>`.
+   slice's test, typecheck, and lint on the local machine, in `$WT`, and
+   its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
+   `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
+   again. Say `Build:
+   slice <k> of <n>` as each slice is committed. Its § Surprises are
+   yours: stop and ask the user where it says stop and ask. It ends at
+   `BUILT <branch>`.
 
-5. **Push.** The Proof agent, when there is one, checks the branch out
-   from GitHub, and `/make-pr` opens the PR from it:
+6. **Sandbox up.** After Coding.
 
    ```bash
-   git -C "$WT" push -u origin <branch>
+   bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
    ```
 
-   No PR. It fails: show git's error, `down`, and stop, before any
-   follow-up. Run 1 still going: `bash "$CLIENT" wait "$AGENT"` first,
-   and sort it as step 4 does.
+   - `stop: log in first: <command>`: the login expired since step 2.
+     Show the command, copy it with `../../shared/copy.sh` (any
+     other exit than 0: say `Clipboard copy skipped.`), and stop.
+   - A line that says the setup script failed: proofbox printed its
+     last 50 lines above it. Fix the script and run `up` again; after
+     three tries, stop with the last line.
+   - Any other `stop:`: show it, stop.
 
-6. **Proof rounds.** Rounds, at most three. Read
-   `references/checks.md` whole: every round runs its local checks,
-   the Gates and the perf measure, in round 1 and in each round after
-   code changed. A plan with walks also reads `references/walks.md`
-   whole and runs all three of its sections each round: 6a send first,
-   so the agent films while the local checks run, then 6b fetch and 6c
-   sort. A round is done when both are.
+   When Coding started one for a missing tool, `up` keeps it and prints
+   the same id. Say `Sandbox: <id>`.
 
-7. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
+7. **Before shots.** Only when `UI` is not `none` and a walk's `Before`
+   line names steps, and only for a walk with no `before-<walk>.png` in
+   `PROOF` yet. Read `references/walks.md` whole first: this step uses
+   its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
+   committed: add a detached worktree of `BASE` in a temp
+   folder, and run every command of this step as `box.sh run "$PROOF"
+   --from <that folder> -- …`, so the base is what runs. Start the app
+   (step 9a), send the walker in `before` mode and round 1 (step 9b),
+   and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
+   start the app again from the same temp worktree and send the walker
+   once more, round 2, as step 9c says. Each `FAIL` line in the
+   `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
+   is deleted, so no failed shot stays in `PROOF`:
+   - A Sandbox fault: fix the setup script, `box.sh down`, and start
+     again from step 6.
+   - Any other `FAIL`: the `Before` line's steps do not reach the screen
+     it names on the base, a Wrong walk. Fix the line in the plan `.md`,
+     add a `Decided` line, start the app again from the same temp
+     worktree (step 9a), send the walker again for that walk, and stop
+     the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
+
+   Remove the temp worktree only when this step ends, with the shots
+   or with a stop. The next `box.sh run` without
+   `--from` puts the branch back. Say `Before shots: <n>`.
+
+8. **Gates.** Yourself, once, on the head commit: the full suite,
+   typecheck, lint, and build under `Facts`, and every command the
+   repo's `AGENTS.md` or `CLAUDE.md` names as a check, each through
+   `box.sh run`. Write each to `$PROOF/checks.txt`, one line per
+   command: the command, the short SHA, the result, and where it ran,
+   as in `pnpm test · 1a2b3c4 · 116 pass, 0 fail (sandbox)`. `/make-pr`
+   counts these and runs none of them again. A fix round rewrites the
+   file. A red Gate is the builder's: a follow-up per `render.sh local
+   prompt` § Follow-up, `# Check` naming the Gate, then the Gates
+   again.
+
+   A Gate that prints `not found` sorts in this order. First, a tool no
+   setup script can make work in the Sandbox, such as `docker`, which
+   needs a daemon and root: the Gate runs on the local machine, below.
+   Any other tool, such as one the `Test`, `Lint`, or `Build` line
+   names, is a Sandbox fault (§ Sandbox), whatever its exit code: fix
+   it, then the Gates again.
+
+   A Gate the Sandbox cannot run in any case, such as `pnpm test:docker`
+   with no Docker in the Sandbox (`docker: command not found`, or its
+   output names a service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
+   <command>`, and its line ends `(local machine)`. It can run in
+   neither place: its line is `<command> · <short SHA> · not run:
+   <why>`.
+
+   With a `PERF` block, after the Gates, measure per
+   `../../shared/benchmark.md`. Add a detached worktree of
+   `BASE` in a temp folder, as step 7 does. Run the block's `Command` in
+   turns, `box.sh run "$PROOF" --from <that folder> -- <Command>` then
+   `box.sh run "$PROOF" -- <Command>`, as many times each as the `Pass
+   rule` says. Write one line to `checks.txt`: `<Command> · <short SHA>
+   · <metric>: <base median> → <head median> <unit>, median of <n> in
+   turns, spread <low> to <high> (sandbox)`. A base median outside the
+   `Before` spread adds ` (issue Baseline: <Before>)` before
+   `(sandbox)`, per `../../shared/pr-shape.md` § Proof. A
+   head that misses the `Pass rule` is a red Gate: a follow-up, as
+   above. Remove the temp worktree.
+
+9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
+   to step 10. Else read `references/walks.md` whole and follow it,
+   since each round runs all three of its sections: rounds, at most
+   three, each 9a start the app, 9b walker and video check, 9c sort.
+
+10. **Proof folder.** Write `$PROOF/proof.md`: the `## Proof` part per
    `../../shared/pr-shape.md` § Proof, one row per Done-when
    line from the plan's Proof table, the test case by name, and for a
    plan with walks the `Screenshot` and `Video` columns and the
@@ -295,25 +345,23 @@ first item that is not done.
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from
-   `checks.txt`, `CI runs it` too, goes in as its command, `not run:
-   <why>`, and the words `CI must prove it`. `agent.env`, when there is
-   one, stays: `/ship` sends its re-films to that agent.
+   `checks.txt` goes in as its command, `not run: <why>`, and the words
+   `CI must prove it`.
 
-8. **Give back.** `bash "$CLIENT" down "$AGENT"`. A Mac goes back to
-   Namespace; on Cursor's machines it prints `no Mac`. No Proof agent:
-   mark this item `8. Give back. skip: no Proof agent`.
+11. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
+    count for the report.
 
-9. **Report.** Chat gets this and nothing more:
+12. **Report.** Chat gets this and nothing more:
 
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
-    Checks: pnpm lint green on 1a2b3c4 on the local machine · pnpm test, pnpm build: CI
+    Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
     Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
     - walk 1: not checked: no console errors
     - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
-    Proof agent: https://cursor.com/agents/bc-1a2b · setup faults: 1
+    Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
     BUILT feat/42-export-orders-csv
     ```
@@ -323,32 +371,26 @@ first item that is not done.
     `PROOF`, with its mode and round in front; each `not checked:` part
     of a walk's line, once per walk; and each `Decided` line this run
     added in the `W<w> ... changed after round <r>` shape
-    (`references/walks.md` § 6c. Sort). None of them: no notes block, and the
+    (`references/walks.md` § 9c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.
 
-    The `Checks:` line names each Gate once: the green ones with where
-    they ran, then the ones left to CI. `UI: none`:
-    `Walks: none (no UI)` and `Proof agent: none (no UI)`. No setup
-    fault: the `Proof agent:` line has only the URL. A chat plan: the
-    first line has no `#<n>`, as in
+    `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
+    A chat plan: the first line has no `#<n>`, as in
     `Built: [feat] Export orders as CSV · feat/export-orders-csv`. The
-    worktree is `WT`, and the branch is pushed with no PR: `/make-pr`
-    with the proof folder is next.
+    worktree is `WT`, and the branch is not pushed: `/make-pr` with the proof folder is next.
 
 ## Rerun
 
 The same plan again after a stop. `checkout.sh` hands back the same
 worktree, only when it is clean: a slice or a fix cut off before its
-commit leaves changes, and step 2 stops on them with the files named.
-The user commits or drops them, then runs again. Step 3 starts a new
-Proof agent for a plan with walks. The commits ahead of `BASE` are the first slices, one
-commit each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is
-the number done, and the prompt starts at the next one. A count at or
-past the number of slices means every slice is in, since fix rounds
-commit only after the last slice: no builder, go to step 5. Before
-shots in `PROOF` are kept, and the new agent's run 1 takes only the
-ones missing. The videos in `PROOF` are kept too, and step 6 films
-again only those `references/walks.md` § 6c. Sort names.
+commit leaves changes, and step 3 stops on them with the files named.
+The user commits or drops them, then runs again. The commits ahead of `BASE` are the first slices, one commit
+each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
+number done, and the prompt starts at the next one. A count at or past
+the number of slices means every slice is in, since fix rounds commit
+only after the last slice: no builder, go to step 6. Before shots in
+`PROOF` are kept. The videos in `PROOF` are kept too, and step 9
+films again only those `references/walks.md` § 9c. Sort names.
 
 ## Follow-up
 
@@ -356,10 +398,10 @@ again only those `references/walks.md` § 6c. Sort names.
 sort the note by plan-up step 5 (a big fork it leaves open goes to the
 user first), shape it per `render.sh local prompt` § Answer when it
 answers a `QUESTION`, else § Follow-up, `herdr-send <PANE> --file
-<file>`, then back to step 4's sort. This chat started none: say so and
+<file>`, then back to step 5's sort. This chat started none: say so and
 stop.
 
 ## Examples
 
-Sample runs, a missing secret, a no-credit stop, and a wrong walk:
-`references/examples.md`. Read it when a step here is unclear.
+Sample runs, a login stop, and a wrong walk: `references/examples.md`.
+Read it when a step here is unclear.

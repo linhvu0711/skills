@@ -1,112 +1,173 @@
-# Step 6: Proof rounds
+# Step 9: Walks
 
-Step 6 of SKILL.md. Paths start at the skill folder. `CLIENT`, `AGENT`,
-and `PROOF` are the ones SKILL.md holds.
+Step 9 of SKILL.md. Step 7 uses 9a to 9c too. Paths start at the skill folder.
 
-Rounds, at most three. Each sends one note to the Proof agent, fetches
-its files, and sorts what failed. The Gates and the perf measure are not
-the agent's: `references/checks.md` runs them in the same round. A setup fault (SKILL.md § Proof agent)
-runs the same round again and does not count as a round.
+Rounds, at most three:
 
-## 6a. Send
+## 9a. Start the app
 
-Write the round's note to
-`$HOME/.agents/artifacts/plan/proof-note-<slug>-<r>.md`, one line per
-field, only the fields this round needs:
-
-```
-# Round <r>
-Branch: <branch> at <short SHA of HEAD>
-Check secrets: <names>
-Before: walks <w>, <w>
-Videos: <n>, <n>
-Install: <tool>
-```
-
-- `Check secrets`: round 1, when run 1 ended with `MISSING SECRETS`.
-- `Before`: the walks whose `Before` line names steps and that have no
-  `before-<walk>.png` in `PROOF`, as when run 1 ended on a setup fault
-  or a missing secret. The agent takes them on the base, before it
-  checks out the branch.
-- `Videos`: round 1, every video; a later round or a rerun, only the
-  videos 6c names to film again.
-- `Install`: a setup fault, the tool and how to install it when you
-  know, as in `Install: ffmpeg (apt-get install -y ffmpeg)`.
-
-Send it, then wait for the run to end:
+You start it; the walker never does. On linux:
 
 ```bash
-bash "$CLIENT" say "$AGENT" <note-path>
-bash "$CLIENT" wait "$AGENT"
+bash scripts/box.sh run "$PROOF" -- setsid -w sh -c '<Run line> >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid'
 ```
 
-`409 agent_busy` on `say`: the run before it still goes. `wait` for
-that run, whose line is not this round's and is not sorted here, then
-`say` again, then the `wait` above for the note's run. In Claude Code
-run `wait` in the background; the tool wakes you when it ends. Sort the
-line `wait` printed:
-- `error`, `cancelled`, or `expired`: SKILL.md § Proof agent.
-- The last message is `MISSING SECRETS: <names>`: the names were not
-  added, or a running agent cannot see them. Show them with `Add them to
-  this repo's environment on cursor.com (Cloud Agents, Secrets), then
-  run /build-and-prove again: a new agent gets them.`, `down`, and stop.
-- `SETUP FAULT: <tool> not found`: a setup fault; the same round again
-  with `Install: <tool>`.
-- `BRANCH NOT FOUND: …`: the push did not land. Push again (SKILL.md
-  step 5) and send the same note once more. A second one: `down`, stop.
-- Else 6b.
-
-## 6b. Fetch
+On macos:
 
 ```bash
-bash "$CLIENT" artifacts "$AGENT"
+bash scripts/box.sh run "$PROOF" -- sh -c 'set -m; <Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
 ```
 
-It prints `<path>\t<bytes>`, one line per file. The files this round
-expects: `walk-report-after-<r>.md`
-and `videos.txt` when it filmed, each `video-<n>.mp4` it filmed, each
-`after-<walk>.png` or `short-<walk>.png` of their walks, each
-`fail-<walk>.png` the report names, and each `before-<walk>.png` with
-its `walk-report-before-<run>.md` from run 1 or a `Before` line. For
-each listed path whose file name is one of them:
+Each puts the app and every process it starts in one process group,
+and `/tmp/app.pid` holds the group's id, so the stop reaches them
+all. A `Run` line such as `pnpm build && pnpm preview` runs its
+server under an outer `sh`, and a kill of that `sh` alone leaves the
+server on its port. Linux's `sh` turns `set -m` off with no
+terminal, and macOS has no `setsid`.
+
+Then wait until it answers, the way the `Open` line reaches it:
+for a URL, `box.sh run "$PROOF" -- sh -c 'for i in $(seq 60); do
+curl -fsS -o /dev/null <url> && exit 0; sleep 2; done; exit 1'`.
+It does not answer: read `box.sh run "$PROOF" -- tail -n 50
+/tmp/app.log`. A missing tool or package is the setup script's:
+fix it, `box.sh down`, then step 6 again. A crash in the code is
+the builder's: a follow-up (step 9c). Still down after that:
+`box.sh down`, then stop with the log's last line.
+
+**Stop the app.** The only stop in this skill:
 
 ```bash
-bash "$CLIENT" download "$AGENT" <path> "$PROOF/<file name>"
+bash scripts/box.sh run "$PROOF" -- sh -c 'g=$(cat /tmp/app.pid); kill -TERM -"$g"; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 30 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
 ```
 
-**Empty.** An expected file the list lacks, or a download that stops:
-send one note that names that walk's video under `Videos`, with a
-first line `<file> did not reach the artifacts folder; film it again
-and save it there.`, then wait and fetch again (6a, 6b). Once per file
-per run. Still missing: that walk fails, and its line in
-`walk-report-after-<r>.md` becomes `walk <w>: FAIL · missing <file>`.
-A missing walk report: the same note once, then `down` and stop with
-`Proof agent sent no <file>`.
+Then, when the `Open` line is a URL, wait until the port is free:
 
-**Report.** The walk report must end with its `WALKS` lines, or
-`BEFORE` lines. It does not: send a note once with § Report of
-`references/proof-agent.md` pasted whole. A second miss: `down`, then
-stop with `Proof report unreadable`.
+```bash
+bash scripts/box.sh run "$PROOF" -- sh -c 'for i in $(seq 30); do curl -s -o /dev/null <url>; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1'
+```
 
-## 6c. Sort
+curl exits 7 when nothing listens, so the port is free for the next
+start. Exit 1: a process outside the group still holds the port;
+`box.sh down`, then stop with `<url> still answers after the app
+stopped`. Never `pkill` or `killall`: a name match can hit the
+shell that runs it.
 
-Every walk passed and `references/checks.md` says the checks are done:
-SKILL.md step 7. Each failed
-walk, by its screenshot and the plan, never by the agent's guess:
-- **Setup fault**: the screen shows the agent's machine, not the app,
-  is wrong: `command not found` for a tool the walk or the `Open` line
-  uses, a window the `Open` line starts never shows, or a mark drawn
-  as other bytes (`â` where the app prints `✔`). The same round again
-  with `Install:`, not counted (SKILL.md § Proof agent); the other
-  failed walks wait for that round.
+A walk's `Setup` that sets the clock is how the app opens for that
+walk; the run never waits for the real clock to reach a time.
+
+## 9b. Walker
+
+In Claude Code, the skill agent `walker`
+(`agents/walker.md`, which sets its model and effort; not found:
+`../../shared/facts.md` § Skill agents); in Codex, no sub-agent, so
+you read `agents/walker.md` and follow it yourself, reading no code
+while you walk. Its brief, whole:
+- the mode, `before` or `after`, and the round;
+- the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
+  screen size (1440x900 on linux, 1280x800 on macos);
+- how to open the app: the `Open` line, as a command it runs with
+  `proofbox exec`. A browser opens on a new, empty profile for each
+  video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
+  or a browser that Playwright launches, which starts empty. So no
+  history from the Sandbox image shows in the address bar.
+  `--no-sandbox` is there because Chromium's own sandbox cannot
+  start in a proofbox Sandbox: without it Chromium stops with `No
+  usable sandbox!`;
+- the plan's `UI walks` and `Videos` blocks, verbatim, as text
+  pasted in the brief itself. Never a `$(cat <file>)` line or a path
+  in their place, since
+  the Agent tool runs no shell, so the walker gets that line, not the file.
+  In mode after, a later round or a rerun gets only the videos 9c
+  films again and their walks, so the walker never overwrites a kept
+  video. Mode before gets the walks step 7 names. A round run again
+  after `GONE`, in either mode, gets the same videos or walks as the
+  round it repeats, so a shot the dead round left unchecked is taken
+  again;
+- the folder to write in, `PROOF`;
+- the pace rules, so the walker cannot drop them: every click
+  `--settle 3s`; a state under about 3 s shot by its action's own
+  `--screenshot` with `--settle 300ms`;
+  timed steps run back to back with no wait or shot between
+  (`agents/walker.md` § How you see and act).
+
+It does not get the code, the slices, or the diff. It returns
+one line per walk and writes `walk-report-<mode>-<round>.md` in
+`PROOF`: `walk-report-before-<round>.md` or
+`walk-report-after-<round>.md`, so neither overwrites the other.
+Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
+`GONE <id>`. It does not: send it back once with § Report of
+`agents/walker.md` pasted whole (in Claude Code, a message to the
+same walker). A second miss: `box.sh down`, then stop with
+`Walker report unreadable`.
+It ended with `GONE <id>`: the app died with its Sandbox, so stop
+nothing and go to 9c. Else stop the app (9a, Stop the app). Read `/tmp/app.log` for each walk's `Must not`
+that the screen cannot show (console errors, failed requests):
+one found is a failed walk.
+
+**Video check.** After mode, when the walker did not end with
+`GONE`, before the sort: for each video under the plan's `Videos`,
+the `video-<n>.mp4` this round filmed, find its cuts on a
+strip sheet, then look only at the frames next to each cut. In a temp
+folder outside `PROOF`, take two frames a second, then tile the
+bottom sixth of each, where proofbox draws the `» <N> s later`
+label, 80 to a sheet:
+
+```bash
+ffmpeg -v error -i "$PROOF/video-<n>.mp4" -vf fps=2 <tmp>/f-%03d.png
+ffmpeg -v error -i <tmp>/f-%03d.png -vf "crop=iw:ih/6:0:ih*5/6,scale=480:-1,tile=4x20" <tmp>/s-%02d.png
+```
+
+Read every sheet. Tiles run left to right, then top to bottom, so
+tile `t` of sheet `s` is frame `f-<80*(s-1)+t>`. A run of tiles
+that show a `» <N> s later` label is one cut. For each cut, Read
+two full frames: the last one before its first label tile, and the
+first one after its last label tile. A video whose sheets show no
+label has no cut and hides nothing; Read no frame of it. The caption
+at the top of a frame names the step (`step <k>: …`). Each step's action must show: typed letters
+appearing, the pointer reaching what it clicks, the screen
+changing after a key. A step whose action falls in a cut, as when
+the frame before a `» <N> s later` label shows none or part of the
+typed text and the frame after shows all of it, hides its action.
+Only a cut hides an action: a quick click or key that falls
+between two frames, in a step with no `» <N> s later` label, is
+not hidden. That fails the walk the step belongs to, the one whose `Shows`
+step is the first at or after it: write its line in
+`walk-report-after-<round>.md` as `walk <w>: FAIL · video <n>
+hides step <k> (<action>)`, as in `walk 1: FAIL · video 1 hides
+step 1 (typing)`, and lower the passed count in its `WALKS` line.
+Remove the temp folder. Then, for each video this round filmed,
+write its line in `$PROOF/videos.txt`, in place of an older one:
+`video-<n>.mp4 · <short SHA>`, the head the app ran.
+
+## 9c. Sort
+
+The walker ended with `GONE <id>`: the Sandbox died
+under it, idle or at its max life. No walk failed; run the round
+again from 9a, where `box.sh run` makes a new Sandbox, and it does
+not count as a round. A second `GONE` in the same round: `box.sh
+down`, then stop with that line. Every walk passed: step 10. Each
+failed walk, by its screenshot and the plan, never by the walker's
+guess:
+- **Sandbox fault**: the screen shows the Sandbox, not the app, is
+  wrong: `command not found` for a tool the walk or the `Open` line
+  uses, a window the `Open` line starts never shows, or a mark
+  drawn as other bytes (`â` where the app prints `✔`). Check a tool
+  with `box.sh run "$PROOF" -- sh -c 'command -v <tool>'`; exit 1
+  is a Sandbox fault. Fix the setup script (step 4), run `box.sh
+  down`, start again from step 6, and walk the round again. Like
+  `GONE`, it does not count as a round, and the other failed walks
+  wait for that round. After three Sandbox faults in one run:
+  `box.sh down`, then stop with the last one.
 - **App bug**: the steps reached the screen the walk names, and
   `See` is not there or a `Must not` is. A follow-up to the
   builder per `render.sh local prompt` § Follow-up: `# Changed`
   names the walk, what it saw, and the screenshot's path; `#
   Check` names the tests to run again. The pane gets it with
-  `herdr-send`; as the builder, you do it yourself. Then push
-  (SKILL.md step 5), and the next round runs the checks again
-  (`references/checks.md`).
+  `herdr-send`; as the builder, you do it yourself. Then the
+  Gates again (step 8).
+- **Video cut**: the video check found a hidden step. Not the
+  builder's and not the plan's: no follow-up, no plan change; the
+  next round films the video again.
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A change
   to a failed walk's `See` or `Must not`, or to a number in them
@@ -121,23 +182,17 @@ walk, by its screenshot and the plan, never by the agent's guess:
   in one line. Big fork, such as a walk whose fix changes what a
   Done-when line means: one question to the user, your pick first.
   Wait.
-- **Missing file**: 6b's Empty rule already sent it once; it stays
-  failed, and the report names the file.
 
-A failed before shot is sorted the same way, and its `before-<walk>.png`
-is deleted from `PROOF`, so no failed shot reaches the PR; a wrong
-`Before` line is fixed in the plan and named under `Before` in the next
-note.
-
-Say `Proof round <r>: <p> passed, <f> failed`. Then the next round from
-6a, which films only the videos that need it. A video is filmed again,
-whole, when one of its walks failed, or when
+Say `Walks round <r>: <p> passed, <f> failed`. Then the next round
+from 9a, which films only the videos that need it. A video is
+filmed again, whole, when one of its walks failed, or when
 `git -C "$WT" diff --name-only <its SHA> HEAD`, with its SHA from
 its line in `videos.txt`, names a file that a walk of it shows:
 a file a slice behind the walk's Proof rows changes, or a file you
 read and find on that walk's screen. Not sure, or the video has no
-line in the list: film it again. The note holds only those videos;
-every other video keeps its `video-<n>.mp4`, its `after-<walk>.png`
-files, and its passes. A rerun (SKILL.md § Rerun) sorts the videos in
-`PROOF` the same way. After round three with a failed walk: `down`,
-then stop with the failing videos' paths, one per line.
+line in the list: film it again. The walker's brief holds only
+those videos and their walks (9b); every other video keeps its
+`video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
+rerun (SKILL.md § Rerun) sorts the videos in `PROOF` the same way.
+After round three with a failed walk: `box.sh down`, then stop with
+the failing videos' paths, one per line.

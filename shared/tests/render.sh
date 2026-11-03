@@ -9,11 +9,10 @@ render() { T="$(cd "$(mktemp -d)" && pwd -P)"; run bash "$here/../handoff/render
 # lacks <name> <needle> <haystack>: fail when the needle is in the haystack.
 lacks() { case "$3" in *"$2"*) printf '%s: [%s] found\n' "$1" "$2" >&2; exit 1 ;; esac; }
 
-t_render_local_no_box() {
+t_render_local_box() {
   render local rules
   eq exit 0 "$code"
-  lacks "box.sh" "box.sh" "$out"
-  lacks "proofbox" "proofbox" "$out"
+  has "box.sh" "box.sh run" "$out"
   has "end line" "BUILT" "$out"
   lacks "pr create" "gh pr create" "$out"
 }
@@ -71,8 +70,7 @@ t_render_local_split() {
 t_render_local_gates() {
   render local rules
   eq exit 0 "$code"
-  has "gates" "runs each Gate the PR's CI does not run" "$out"
-  lacks "agent gates" "has the Proof agent run the Gates" "$out"
+  has "gates" "runs the Gates in the run's proofbox Sandbox" "$out"
   lacks "full suite" "Run the full test suite" "$out"
 }
 
@@ -80,8 +78,7 @@ t_render_local_missing_tool() {
   render local rules
   eq exit 0 "$code"
   has "missing tool" "command not found" "$out"
-  has "question" "with a \`QUESTION\` that names the tool" "$out"
-  lacks "sandbox" "Sandbox" "$out"
+  has "box.sh up" "box.sh up <Proof folder> <Worktree> <os> <Repo>" "$out"
 }
 
 t_render_cloud_full_suite() {
@@ -203,7 +200,6 @@ t_render_local_e2e() {
   render local rules
   eq exit 0 "$code"
   has "e2e" "run the e2e spec files the slice changes" "$out"
-  has "e2e here" "They run here, with" "$out"
 }
 
 t_render_cloud_no_e2e() {
@@ -225,7 +221,7 @@ t_render_cloud_no_look_change() {
 }
 
 cases=(
-  "local rules name no proofbox and still end at BUILT|t_render_local_no_box"
+  "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
@@ -233,8 +229,8 @@ cases=(
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
   "pr-shape Summary opens with the problem|t_render_summary_problem"
   "local rules run each slice's checks here|t_render_local_split"
-  "local rules leave the Gates to build-and-prove and CI|t_render_local_gates"
-  "local rules ask on a missing tool|t_render_local_missing_tool"
+  "local rules leave the Gates to the Sandbox|t_render_local_gates"
+  "local rules start the Sandbox on a missing tool|t_render_local_missing_tool"
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
   "every executor's rules test a belief before a third fix|t_render_belief_rule"
@@ -252,6 +248,6 @@ cases=(
   "cloud rules leave the writing skills out|t_render_cloud_no_writing"
   "local rules stop on a look change the issue does not name|t_render_local_look_change"
   "cloud rules leave the look-change stop out|t_render_cloud_no_look_change"
-  "local rules run a slice's e2e specs here|t_render_local_e2e"
+  "local rules run a slice's e2e specs in the Sandbox|t_render_local_e2e"
   "cloud rules leave the per-slice e2e rule out|t_render_cloud_no_e2e"
 )
