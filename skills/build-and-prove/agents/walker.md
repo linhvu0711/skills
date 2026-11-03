@@ -76,9 +76,10 @@ scratch folder when you finish; the system clears its temp folders.
      `Setup` from the start in a new browser, and go to `Where`.
   4. The screen is not as it was before the rehearsal, as when the
      deleted row is still gone: the rehearsal changed data that `Setup`
-     does not put back. Record no video; report each of its walks as
-     `FAIL · the rehearsal changed data that Setup does not put back:
-     "<what the screen shows now>"`.
+     does not put back. Record no video. Take `proofbox screenshot
+     <id> --out <folder>/fail-<walk>.png` for each of its walks, and
+     report each as `FAIL · the rehearsal changed data that Setup does
+     not put back: "<what the screen shows now>" · fail-<walk>.png`.
 
   Then the run:
   1. `proofbox mark <id> 'steps <a>-<b>: <the steps>'`, cut to 60
