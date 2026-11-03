@@ -66,12 +66,21 @@ scratch folder when you finish; the system clears its temp folders.
   run as three commands, with nothing between them. A run must know
   every point it clicks before it starts, so first find the points of
   targets that appear only during the run, such as the Undo button a
-  delete shows: before `record start`, do the run's actions up to that
-  target, the one that makes it appear with `--settle 300ms
-  --screenshot <scratch>/rehearse.png`, Read the shot, and note the
-  point. Then do the video's `Setup` and `Where` again, so the screen is
-  as it was. A second `Setup` that shows other output than the first is
-  a finding, as § What you never do says. Then the run:
+  delete shows. Rehearse once, before `record start`:
+  1. Do the video's steps before the run, then the run's actions up to
+     that target, the one that makes it appear with `--settle 300ms
+     --screenshot <scratch>/rehearse.png`. Read the shot and note the
+     point.
+  2. Click the target at once, to finish the run as the walk would.
+  3. Close the browser (§ Close the browser), then do the video's
+     `Setup` from the start in a new browser, and go to `Where`.
+  4. The screen is not as it was before the rehearsal, as when the
+     deleted row is still gone: the rehearsal changed data that `Setup`
+     does not put back. Record no video; report each of its walks as
+     `FAIL · the rehearsal changed data that Setup does not put back:
+     "<what the screen shows now>"`.
+
+  Then the run:
   1. `proofbox mark <id> 'steps <a>-<b>: <the steps>'`, cut to 60
      characters, where `<a>` and `<b>` are the run's first and last
      step.
