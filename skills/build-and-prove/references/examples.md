@@ -3,41 +3,27 @@
 **User:** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-42.md`
 on Sonnet; the plan has `UI: web`, three walks, two videos.
 
-Plan read, slug `acme-shop-42`. Worktree
+Plan read, slug `acme-shop-42`. proofbox found. Worktree
 `~/development/worktrees/acme/shop/feat-42-export-orders-csv` from
-`main`. `.env.example` has `PORT=3000` and an empty `STRIPE_KEY=`:
-`SECRETS` is `STRIPE_KEY`. The proof prompt is written, and `cursor.sh
-start` prints `bc-7f3a`; `agent.env` holds it. This session builds four
-slices, each test red then green on the local machine. After slice 2,
-`poll` shows run 1 ended: `BEFORE 1/1`, walk 1's before shot taken on
-`main`. After slice 4: push, then the round 1 note with `Gates: all`
-and `Videos: 1, 2`. Gates green on `1a2b3c4` on the Proof agent. Walk 3
-fails, its screenshot shows the `Export` button disabled with rows on
-screen: an app bug, a follow-up, slice 4's code fixed, pushed. Round 2
-films video 2 again and runs the Gates: all pass. `proof.md` written,
-`down`, report, whose `Walk notes:` copies walk 3's round 1 FAIL.
+`main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`;
+`app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it
+in. Prompt written, this session builds four slices, each test red
+then green on the local machine. After the fourth, `box.sh up` prints
+`SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from
+the base, walker in `before` mode, `before-1.png`. Gates green on
+`1a2b3c4` in the Sandbox. Round 1: walk 3 fails,
+its screenshot shows the `Export` button disabled with rows on screen:
+an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
+pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:`
+copies walk 3's round 1 FAIL.
 
-**Missing secret.** Run 1 ends `MISSING SECRETS: STRIPE_KEY` while slice
-2 is being built.
+**`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 
-One message: `The Proof agent lacks STRIPE_KEY. Add them to this repo's
-environment on cursor.com (Cloud Agents, Secrets).` Coding goes on. The
-round 1 note has `Check secrets: STRIPE_KEY`; the user added it, so the
-run goes on to the Gates.
+Show it, copy it with `copy.sh`, stop. No worktree, no Coding, and no Sandbox yet.
 
-**No credit.** `cursor.sh start` prints `cursor.sh: HTTP 402 on POST
-/agents: payment_required (Add credit to run agents)`.
-
-Show it, stop. No Coding yet; the worktree stays.
-
-**Proof agent** reports walk 2 failed: step 3 says click `Save`, the
-screen shows `Save changes`, and after it the saved row is there.
+**Walker** reports walk 2 failed: step 3 says click `Save`, the screen
+shows `Save changes`, and after it the saved row is there.
 
 The Done-when line holds; only the label in the plan was wrong. Small
 fork: walk 2's step fixed in the plan, a `Decided` line, one line to the
-user, round 2 films walk 2's video again.
-
-**Setup fault.** Round 1 ends `SETUP FAULT: ffmpeg not found`.
-
-The round 1 note again, with `Install: ffmpeg (apt-get install -y
-ffmpeg)`. It does not count as a round.
+user, round 2.

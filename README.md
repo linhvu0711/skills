@@ -61,7 +61,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, ready it, and merge it when that is the right call. After the plan, it picks a ship mode: `review` opens the plan as a page and builds only after you say `ok`, `ready` stops at a PR that is ready to merge, and `merge` merges it. Type `--review`, `--ready`, or `--merge` to pick the mode yourself. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship, or ready-pr) until all are closed.
-- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine and has one Cursor agent run the Gates and film the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
+- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it with one proofbox Sandbox and films the walks; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
@@ -92,7 +92,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
-| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, and has one Cursor agent run the Gates and the app and film the UI walks as proof. |
+| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine, runs the Gates and the app in one proofbox Sandbox, and has a walker film the UI walks as proof. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |
@@ -152,8 +152,9 @@ Optional, only for the skills that name them:
 
 - `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
+- proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route.
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
-- Cursor: [build-and-prove](skills/build-and-prove/), [ship](skills/ship/) on both routes, and [handoff](skills/handoff/).
+- Cursor: [handoff](skills/handoff/).
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
 

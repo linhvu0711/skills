@@ -25,8 +25,7 @@ arguments for the usage. It keeps the handoff ledger,
 `~/.config/dispatch/handoff.tsv`, a row per session with its executor
 and issue, and its adapters read their own keys. The two Cursor verbs
 the module does not carry, `repos`, `models`, and `down`, run as
-`scripts/adapters/cursor.sh` (§ Cursor), which runs the shared Cursor
-client, `../../shared/cursor/cursor.sh`, that `/build-and-prove` runs too. Nothing is posted on GitHub,
+`scripts/adapters/cursor.sh` (§ Cursor). Nothing is posted on GitHub,
 apart from size labels the repo lacks (step 3). Sessions are never
 archived: an archived session stops answering PR comments, and that
 kills the review loop.
@@ -336,16 +335,13 @@ start the watch with `--follow`, which does not exit on `finished`.
 
 **Cursor on macOS.** Cursor's own machines are Ubuntu only. With
 `--platform macos`, `cursor.sh` rents a Namespace Mac (macOS 26, Xcode
-26, iOS Simulators) through the shared `../../shared/cursor/mac.sh`, starts a Cursor worker on
+26, iOS Simulators) through `scripts/mac.sh`, starts a Cursor worker on
 it, and makes the agent a My Machines agent on that worker. The Mac
 lives for one run:
 - `start` rents it; the first poll that sees the run end destroys it.
   So the watch is what frees it; a chat with no watch (Codex) runs
   `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
-  `start --hold-mac` keeps the Mac past a run's end until `down`; it is
-  for `/build-and-prove`, whose agent waits through Coding, and handoff
-  never sets it.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
