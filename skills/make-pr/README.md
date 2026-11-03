@@ -27,7 +27,6 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 - `gh`, signed in, and `git`. With a proof folder, `gh` 2.99 or newer, and `ffmpeg`, to read a video's frames for the leak check.
 - [commit](../commit/), for the commit messages.
 - [unslop](../unslop/), for the prose of the title and body.
-- [build-and-prove](../build-and-prove/)'s `references/checks.md`, for how to tell whether the PR's CI runs a check.
 - From the shared core: [pr-shape.md](../../shared/pr-shape.md), [size.md](../../shared/size.md), and [issue-rules.md](../../shared/issue-rules.md) for the repo's size labels.
 - `python3`, for the saved size-label map in [to-issue](../to-issue/)'s `scripts/conventions.py`.
 

@@ -87,7 +87,7 @@ The plan's `Build:` line, such as `pnpm build`, which turns the code into what t
 _Avoid_: the build (that word also names Coding)
 
 **Gates**:
-The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. After Coding, `/build-and-prove` runs each one the PR's CI does not run on the local machine, one at a time, and CI runs the rest. Each line in `checks.txt` says where it ran, or that CI runs it.
+The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. The run's Proof agent runs them once after Coding, and each line in `checks.txt` says where it ran.
 _Avoid_: CI, final checks
 
 **Builder**:
@@ -95,7 +95,7 @@ The agent in `/build-and-prove` that writes the code, the tests, and the commits
 _Avoid_: implementer, coder
 
 **Proof agent**:
-The Cursor cloud agent that `/build-and-prove` starts for a run whose plan has UI walks, at the same time as Coding. It takes the before shots and does the plan's UI walks as a test user with videos. It runs no Gate and no perf measure, and it never changes code. Each later round is a follow-up message to it.
+The Cursor cloud agent that `/build-and-prove` starts for one run, at the same time as Coding. It takes the before shots, runs the Gates, does the plan's UI walks as a test user with videos, and runs the perf measure. It never changes code. Each later round is a follow-up message to it.
 _Avoid_: walker, sandbox, verifier
 
 **Setup fault**:

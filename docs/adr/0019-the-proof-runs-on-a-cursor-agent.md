@@ -1,5 +1,5 @@
 ---
-status: amended by ADR-0020
+status: accepted
 ---
 
 # The proof runs on a Cursor agent

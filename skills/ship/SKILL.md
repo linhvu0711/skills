@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine, runs the Gates CI does not run here, and has one Cursor Proof agent film the walks of a plan that has them, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine and proves it on one Cursor Proof agent that runs the Gates and films the walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
 disable-model-invocation: true
 ---
 
@@ -192,8 +192,7 @@ number, or words that point at one. Two words come off first and never reach pla
    under `Summary`, the plan's Review `Change` and `Approach` in plain
    words, plus each surprise that changed what the code does; and the
    proof folder `PROOF`. The base is the layer's base from step 5. Its
-   checks are in `checks.txt`, run on the local machine or left to CI,
-   so it runs none here. The PR body
+   checks already ran on the Proof agent, so it runs none here. The PR body
    holds no ship mode.
 
 7. **Make ready.** First the checks on each PR, bottom of the stack
@@ -218,36 +217,35 @@ number, or words that point at one. Two words come off first and never reach pla
    Then read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
-   ready-pr says. After the push of fixes, two cases run again per
-   `../build-and-prove/references/checks.md`, on the new head:
-   - A Gate that CI does not cover, sorted as that file sorts it. A
-     repo with no CI covers no Gate, so every Gate runs.
+   ready-pr says: a Gate that CI covers is left to the PR's CI. CI
+   covers a Gate when a file under `$WT/.github/workflows/` names its
+   command. Three cases go to the build's Proof agent, `AGENT` in
+   `$PROOF/agent.env`, after the push of fixes: a note per
+   `../build-and-prove/references/walks.md` § 6a with the branch at the
+   new head, sent and waited for with `../../shared/cursor/cursor.sh say`
+   and `wait`, then the files fetched per § 6b and failures sorted per
+   § 6c, as build-and-prove step 6 does; at the end, `cursor.sh down
+   "$AGENT"`:
+   - A fix or a rebase that changes code a UI walk's screen shows:
+     `Videos` names only the videos § 6c names to film again.
+   - A Gate that CI does not cover: `Gates` names it. A repo with no CI
+     covers no Gate, so `Gates: all`.
    - A plan with a `Perf` block and a fix that changes code its
-     `Command` runs: its perf measure, and the Target line's row in the
-     PR body is written again for the new head.
+     `Command` runs: `Perf: yes`, and the Target line's row in the PR
+     body is written again for the new head.
 
-   One case goes to the build's Proof agent, `AGENT` in
-   `$PROOF/agent.env`: a fix or a rebase that changes code a UI walk's
-   screen shows. Send a note per `../build-and-prove/references/walks.md`
-   § 6a with the branch at the new head, whose `Videos` names only the
-   videos § 6c names to film again; send and wait for it with
-   `../../shared/cursor/cursor.sh say` and `wait`, fetch the files per
-   § 6b, and sort failures per § 6c, as build-and-prove step 6 does; at
-   the end, `cursor.sh down "$AGENT"`. A plan with no walks has no
-   `agent.env` and starts no agent.
-
-   An agent that is gone, or whose run ends `expired`, when a re-film
-   needs it: start a new one per `../build-and-prove/SKILL.md` step 3,
-   on the plan's `Base` as that step starts it, so its run 1 takes only
-   the before shots `PROOF` lacks, on the base, and keeps the ones
-   there. Write its id to `agent.env`. Then `wait` for that run 1 and
-   sort its end as build-and-prove step 4 sorts run 1, with one change:
-   no Coding goes on, so a missing secret stops here, as
-   `../build-and-prove/references/walks.md` § 6a stops on one: its
-   names, where to add them on cursor.com, that a new agent gets them
-   on the next run, then `cursor.sh down "$AGENT"` and stop. A run that
-   ends `error` or `expired` also runs `down` before it stops. Only then
-   send it the note above, naming the PR's branch at its head.
+   An agent that is gone, or whose run ends `expired`: start a new one
+   per `../build-and-prove/SKILL.md` step 3, on the plan's `Base` as
+   that step starts it, so its run 1 takes only the before shots
+   `PROOF` lacks, on the base, and keeps the ones there. Write its id to
+   `agent.env`. Then `wait` for that run 1 and sort its end as
+   build-and-prove step 4 sorts run 1, with one change: no Coding goes
+   on, so a missing secret stops here, as `../build-and-prove/references/walks.md`
+   § 6a stops on one: its names, where to add them on cursor.com, that a
+   new agent gets them on the next run, then `cursor.sh down "$AGENT"`
+   and stop. A run that ends `error` or `expired` also runs `down`
+   before it stops. Only then send it the note above, naming the PR's
+   branch at its head.
 
    It ends with `READY` or a stop point.
 
@@ -390,9 +388,9 @@ Plan-up runs its short path and writes the plan. Step 2 picks `ready`:
 `small fix, no schema or API, no risk in the plan`. Summary printed, no
 page, no wait. `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
-no Proof agent, a Claude Code pane on Sonnet at high effort builds,
-each slice's test on the local machine, the branch pushed, `pnpm lint`
-green on the local machine, `pnpm test` left to CI. `BUILT fix/57-export-date-iso`, `Walks: none (no
+the Proof agent started, a Claude Code pane on Sonnet at high effort
+builds, each slice's test on the local machine, the branch pushed, the
+Gates on the Proof agent. `BUILT fix/57-export-date-iso`, `Walks: none (no
 UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
 ready-pr: `READY https://github.com/acme/shop/pull/61`. Report, with
 `Ship mode: ready · small fix, no schema or API, no risk in the plan`

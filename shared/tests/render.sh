@@ -71,8 +71,7 @@ t_render_local_split() {
 t_render_local_gates() {
   render local rules
   eq exit 0 "$code"
-  has "gates" "runs each Gate the PR's CI does not run" "$out"
-  lacks "agent gates" "has the Proof agent run the Gates" "$out"
+  has "gates" "has the Proof agent run the Gates" "$out"
   lacks "full suite" "Run the full test suite" "$out"
 }
 
@@ -233,7 +232,7 @@ cases=(
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
   "pr-shape Summary opens with the problem|t_render_summary_problem"
   "local rules run each slice's checks here|t_render_local_split"
-  "local rules leave the Gates to build-and-prove and CI|t_render_local_gates"
+  "local rules leave the Gates to the Proof agent|t_render_local_gates"
   "local rules ask on a missing tool|t_render_local_missing_tool"
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
