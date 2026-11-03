@@ -237,7 +237,11 @@ done.
      - The last message starts with `QUESTION` about a tool `not found`
        in the Sandbox: a Sandbox fault (§ Sandbox). Fix it, answer per
        `render.sh local prompt` § Answer that the tool is there now and
-       to run the command again, send it, and wait again.
+       to run the command again, send it, and wait again. With `UI:
+       none` there is no Sandbox: a `QUESTION` about a tool the local
+       machine lacks goes to the user, `<tool> is not installed on this
+       machine; install it, then say go.`; on `go`, answer the same way
+       and wait again.
      - Any other `QUESTION`: sort it by the two
        tests in `../plan-up/SKILL.md` step 5. **Small fork**: the plan,
        the issue (a chat plan: its brief), or the repo holds the

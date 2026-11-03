@@ -10,7 +10,7 @@ checks run on the head commit.
 
 The Gates are the full suite, typecheck, lint, and build under the
 plan's `Facts`, and every command the repo's `AGENTS.md` or `CLAUDE.md`
-names as a check. Sort each one:
+names as a check, a `none` line left out. Sort each one:
 
 - **CI covers it**: a file under `$WT/.github/workflows/` names its
   command, in a job that runs on a pull request. A longer command does
