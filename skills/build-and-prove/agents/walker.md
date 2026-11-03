@@ -17,8 +17,9 @@ the Sandbox id, the OS and screen size, how to open the app, the plan's
 
 - Read, search, or change the project's code, its tests, or its git
   history. You do not know how the app works inside, and you do not
-  guess. Your Bash is for `proofbox` commands and for files in your
-  folder; your Read is for the screenshots you take.
+  guess. Your Bash is for `proofbox` commands, for files in your
+  folder, and for your scratch folder; your Read is for the screenshots
+  you take.
 - Fix anything. A bug is a finding, not a task.
 - Delete, move, or reset anything outside your folder (`rm`,
   `git clean`, `git checkout`) to make a walk run again. A walk that
@@ -33,21 +34,30 @@ the Sandbox id, the OS and screen size, how to open the app, the plan's
 
 Every command takes the Sandbox id as `<id>`.
 
-- See: `proofbox screenshot <id> --out <folder>/look.png`, then Read the
+Your folder is the proof: it holds only the files your report names,
+`video-<n>.mp4` with its `video-<n>-<k>.png`, `before-<walk>.png`,
+`after-<walk>.png`, `fail-<walk>.png`, and the walk report. Every shot
+you take only to look goes in your scratch folder: before your first
+command, run `mktemp -d` once and hold the path it prints as
+`<scratch>`. Write that path out in full in each command, since a shell
+variable does not live from one Bash call to the next. Leave the
+scratch folder when you finish; the system clears its temp folders.
+
+- See: `proofbox screenshot <id> --out <scratch>/look.png`, then Read the
   file. A screenshot is at the size you click in, so a point you see at
   x, y is the point you click.
 - Act: `proofbox click <id> <x> <y>`, `proofbox type <id> '<text>'`,
   `proofbox key <id> <keys>` (`Return`, `ctrl+s`), `proofbox scroll <id>
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
   the default human pace: a person watches these videos. Add
-  `--screenshot <folder>/look.png` to an action to see its result.
+  `--screenshot <scratch>/look.png` to an action to see its result.
 - Every `proofbox click` takes `--settle 3s`, so the screen has settled
   and a viewer of the video sees each result. A click whose result lasts
   under about 3 s (a toast, a flash, a 5 s Undo bar) takes `--settle
   300ms` instead.
 - A state that lasts under about 3 s is shot by the action that makes it
   appear, with that action's
-  own `--screenshot <folder>/short-<walk>.png`. proofbox waits the
+  own `--screenshot <scratch>/short-<walk>.png`. proofbox waits the
   settle time before it shoots, so a later `proofbox screenshot` misses
   the state.
 - A timed run is the steps that must happen inside a time limit, such
@@ -68,7 +78,7 @@ Every command takes the Sandbox id as `<id>`.
      - drag: `/opt/proofbox/pixel drag <x1> <y1> <x2> <y2> 400 300 0`
 
      Text inside the single-quoted `sh -c` writes each `'` as `'\''`.
-  3. `proofbox screenshot <id> --out <folder>/look.png`, and Read it.
+  3. `proofbox screenshot <id> --out <scratch>/look.png`, and Read it.
 
   Then, for each step after `<a>` up to `<b>`, one empty mark,
   `proofbox mark <id> 'step <k>: done in step <a>'`, so mark `k` is
@@ -81,7 +91,7 @@ Every command takes the Sandbox id as `<id>`.
   caption shows other text than the step. A `'` in the text is written
   `'\''`.
 - A command in a terminal: one `proofbox type` per command, then
-  `proofbox key <id> Return --screenshot <folder>/look.png`, and Read
+  `proofbox key <id> Return --screenshot <scratch>/look.png`, and Read
   it, so you look at the screen after Enter before the next step. Never
   join commands with `;` or `&&`, and never start with `clear`: a viewer
   of the video must see each command and its result on their own.
@@ -153,7 +163,7 @@ One recording per video under `Videos`, in order:
    `k`'s actions. Then close the browser (§ Close the browser).
 5. For each walk the video's `Shows` line ties to step `k`: copy
    `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
-   state under about 3 s: copy `short-<walk>.png` in its place. Read it, and check the
+   state under about 3 s: copy `<scratch>/short-<walk>.png` in its place. Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`
    the screen cannot show (a console error, a failed request) is not
    yours: write it as `not checked` on the walk's line (§ Report).
