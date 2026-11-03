@@ -39,6 +39,9 @@ prints its usage with no arguments.
   life, is made again once from its Snapshot, and `run` says so on
   stderr. Nothing is lost: the code lives in the worktree. A run can
   last longer than one Sandbox.
+- `box.sh gates <proof-dir> -- '<command>'…` runs each command as
+  `run` does, keeps each one's own exit code and full output in a temp
+  file, and writes `<proof-dir>/checks.txt` (step 8).
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
   times it was made again.
 
@@ -295,16 +298,27 @@ done.
 
 8. **Gates.** Yourself, once, on the head commit: the full suite,
    typecheck, lint, and build under `Facts`, and every command the
-   repo's `AGENTS.md` or `CLAUDE.md` names as a check, each through
-   `box.sh run`. Write each to `$PROOF/checks.txt`, one line per
-   command: the command, the short SHA, the result, and where it ran,
-   as in `pnpm test · 1a2b3c4 · 116 pass, 0 fail (sandbox)`. `/make-pr`
-   counts these and runs none of them again. A fix round rewrites the
-   file. A red Gate is the builder's: a follow-up per `render.sh local
-   prompt` § Follow-up, `# Check` naming the Gate, then the Gates
-   again.
+   repo's `AGENTS.md` or `CLAUDE.md` names as a check, all in one call,
+   each command in single quotes, a `none` line left out:
 
-   A Gate that prints `not found` sorts in this order. First, a tool no
+   ```bash
+   bash scripts/box.sh gates "$PROOF" -- '<Test>' '<Typecheck>' '<Lint>' '<Build>' '<check>'
+   ```
+
+   It runs each one in the Sandbox and writes `$PROOF/checks.txt` fresh,
+   one line per command: the command, the short SHA, the last line of
+   its output, and where it ran, as in `pnpm test · 1a2b3c4 · 116 pass,
+   0 fail (sandbox)`. Write no Sandbox line by hand. `/make-pr` counts
+   these lines and runs none of them again. Exit 1 means a red Gate:
+   stderr has `red: <command> · exit <code> · output <file>` for each.
+   A red Gate is the builder's: a follow-up per `render.sh local
+   prompt` § Follow-up, `# Check` naming the Gate and its output file,
+   so the builder reads the output and does not run the Gate again.
+   Then the `gates` call again, which writes the file fresh. `stop:` on
+   stderr: show it, `box.sh down`, stop.
+
+   A Gate that prints `not found` gets a `missing tool:` line on
+   stderr. It sorts in this order. First, a tool no
    setup script can make work in the Sandbox, such as `docker`, which
    needs a daemon and root: the Gate runs on the local machine, below.
    Any other tool, such as one the `Test`, `Lint`, or `Build` line
@@ -316,7 +330,9 @@ done.
    output names a service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
    <command>`, and its line ends `(local machine)`. It can run in
    neither place: its line is `<command> · <short SHA> · not run:
-   <why>`.
+   <why>`. Run `gates` again without that Gate, then add its line to
+   `checks.txt`. Add it again after each later `gates` call, since that
+   call writes the file fresh.
 
    With a `PERF` block, after the Gates, measure per
    `../../shared/benchmark.md`. Add a detached worktree of
