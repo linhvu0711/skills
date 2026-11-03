@@ -87,7 +87,7 @@ A plan with no issue must end with a `## Brief` block that holds a `Task:` line 
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.
 
-A slice can prove several lines joined by `and` or commas. A map's quoted file locations stay whole, even when a path contains a comma.
+A slice or a walk can prove several lines, joined by commas, `and`, or both, as in `#1, #2, and #3`. A video can show one walk, as in `shows walk 9`, or several, as in `shows walks 1, 3`. A map's quoted file locations stay whole, even when a path contains a comma.
 
 A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so, and its Read this first note names slice 2 as where the build starts; the builder refuses that heading on any slice but the first of a layer, and with any number but 1.
 

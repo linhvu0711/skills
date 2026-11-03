@@ -292,6 +292,42 @@ t_build_multiple_proofs() {
     .layers[0].walks[0].proves = [1, 2]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_serial_comma_proofs() {
+  # Given: slice 1 and walk 1 prove three lines, with a serial comma
+  T="$(mktemp -d)"
+  sed 's/Slice 1, proves #1:/Slice 1, proves #1, #2, and #3:/;
+    s/Walk 1, proves #1$/Walk 1, proves #1, #2, and #3/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].slices[0].proves = [1, 2, 3] |
+    .layers[0].walks[0].proves = [1, 2, 3]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
+t_build_video_one_walk() {
+  # Given: video 1 shows one walk, as `shows walk 9`
+  T="$(mktemp -d)"
+  sed 's/Video 1, Setup of walk 1, shows walks 1/Video 1, Setup of walk 9, shows walk 9/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].videos[0].walks = [9] | .layers[0].videos[0].setup = "walk 9" |
+    .layers[0].videos[0].title = "Setup of walk 9"' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
+t_build_video_two_walks() {
+  # Given: video 1 shows two walks, as `shows walks 1, 3`
+  T="$(mktemp -d)"
+  sed 's/shows walks 1$/shows walks 1, 3/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq DATA "$(jq -S '.layers[0].videos[0].walks = [1, 3]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
+}
+
 t_build_at_comma() {
   T="$(mktemp -d)"
   sed 's/`src\/web\/orders.tsx:12` |/`src\/web\/orders,v2.tsx:12`, `src\/db\/orders,v2.ts:4`, src\/types.ts:7, S2 |/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -325,6 +361,7 @@ t_build_stack_identity() {
 
 t_build_bad_record_headings() {
   bad_ticket 's/Slice 2, proves/Slice two, proves/' 'slices: Slice two, proves #2: export route is not a `Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>` heading'
+  bad_ticket 's/Slice 1, proves #1:/Slice 1 proves #1:/' 'slices: Slice 1 proves #1: export route is not a `Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>` heading'
   bad_ticket 's/Slice 1, proves #1:/Slice 1, proves #1 and two:/' 'slices: Slice 1, proves #1 and two: export route is not a `Slice <n>, proves #<n>: <seam>` or `Slice 1, deletes dead code: <area>` heading'
   bad_ticket 's/Walk 1, proves/Walk one, proves/' 'UI walks: Walk one, proves #1 is not a `Walk <n>, proves #<n>` heading'
   bad_ticket 's/Video 1, Setup/Video one, Setup/' 'videos: Video one, Setup of walk 1, shows walks 1 is not a `Video <n>, Setup of walk <n>, shows walks <n>` heading'
@@ -535,6 +572,9 @@ cases=(
   "build-page preserves earlier-layer seam locations|t_build_earlier_seam"
   "build-page keeps every mixed-format map location|t_build_mixed_at"
   "build-page accepts and-separated proof references|t_build_multiple_proofs"
+  "build-page accepts a serial comma in proof lists|t_build_serial_comma_proofs"
+  "build-page accepts a video that shows one walk|t_build_video_one_walk"
+  "build-page reads a video that shows two walks|t_build_video_two_walks"
   "build-page keeps commas inside quoted map locations|t_build_at_comma"
   "build-page refuses malformed or mismatched Stack rows|t_build_stack_identity"
   "build-page refuses malformed Slice Walk and Video headings|t_build_bad_record_headings"
