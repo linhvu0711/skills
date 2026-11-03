@@ -72,11 +72,16 @@ two match: ask. Then go on with their URLs.
    ```
 
    It fetches `origin/<base>` and adds a detached worktree of it, with
-   its submodules, in a temp folder. `stop:` on stderr: show it, stop. Hold `BASE_WT` and
+   its submodules, in a temp folder. It also installs the packages the
+   base's lockfile names, with no install scripts run, so the copy holds
+   the library code and types a reader looks up. `stop:` on stderr: show
+   it, stop. A `warn:` line on stderr: show it and go on; that copy has
+   no packages. Hold `BASE_WT` and
    `BASE_SHA` from its line. Every repo fact comes from `BASE_WT`: each
    Explore brief names it as the folder to read, every command that
    reads the code runs there, and a `file:line` is a line there, written
-   from the repo root. Nothing is written in it. The checkout you start
+   from the repo root. Nothing is written in it but what the script
+   installs. The checkout you start
    in is never read for facts and never changed.
 
    The copy lives until the run ends, by `ok` or by any stop. Then

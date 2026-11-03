@@ -13,7 +13,7 @@ You have a ticket that passes the readiness gate and you want it built by an age
 - `/plan-up <issue> on <pr>`: one more layer on an open stack.
 - `/plan-up` with no issue named: plan the work this chat agreed on, with no issue. Words after it say which part of the chat to plan.
 
-It reads every ticket with its comments, since a later comment can change what the ticket asks. Before it plans, it checks whether someone is already on each ticket: an open PR that closes or mentions it, an assignee who is not you, or a comment that claims the work. If it finds one, it names them and asks whether to review their PR, build anyway, or stop. When `gh` fails during the check, it says the check could not run and asks whether to go on. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
+It reads every ticket with its comments, since a later comment can change what the ticket asks. Before it plans, it checks whether someone is already on each ticket: an open PR that closes or mentions it, an assignee who is not you, or a comment that claims the work. If it finds one, it names them and asks whether to review their PR, build anyway, or stop. When `gh` fails during the check, it says the check could not run and asks whether to go on. Your checkout can be on any branch, with edits or not: it reads a fresh copy of the base branch in a temp folder, removes the copy when it ends, and never touches your tree. The copy also holds the base's packages, installed from its lockfile with no install scripts run, so library code and types are there to read. When the install fails, it says so and goes on with no packages. A ticket that fails the gate comes back as a list of questions for [grill](../grill/) or [triage](../triage/).
 
 With no issue named, there is no issue to read. It writes a short brief from the chat instead: a title, the task, the Done-when lines, and a size, by the same rules as an issue. It prints the brief and goes on, and the brief goes through the same gate. A plan with no issue has no claims to check, no short path, and a file named `plan-<owner>-<repo>-chat-<words>.md`. The words also name its branch, so it picks words that no other plan file and no branch uses yet, adding `-2` or `-3` when it must. Its PR has no `Closes #<n>` line, and only a local build can take it, since the cloud needs an issue.
 
@@ -62,6 +62,7 @@ Each step now reads only the section of the plan guide it needs, named by its he
 
 - `gh`, signed in, and `git`.
 - `python3`, to check for claims and to build and serve the page. `curl` and `lsof` for the local server.
+- The package tool the base's lockfile needs (`pnpm`, `npm`, `yarn`, or `bun`), to install its packages in the base copy. Without it, the copy has none and the run goes on.
 - A browser (`open` on macOS, `xdg-open` on Linux). Without one, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Readers, per the reader job in `../../shared/facts.md`, with the web for library docs (Codex reads the files itself), and runners for probes, per the runner job in the same file (Codex runs them itself).
 - From the shared core: [facts.md](../../shared/facts.md), [grilling.md](../../shared/grilling.md) for the question format and how to pick, [codebase-design.md](../../shared/codebase-design.md) for the rules a new module or seam must pass, [issue-rules.md](../../shared/issue-rules.md) for the gate, [plan-page.md](../../shared/plan-page.md) for the page, [benchmark.md](../../shared/benchmark.md) for a perf plan, and [serve.sh](../../shared/serve.sh) to serve the page.
@@ -76,6 +77,8 @@ Each step now reads only the section of the plan guide it needs, named by its he
 ## Tests
 
 The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+
+The cases for [base-copy.sh](scripts/base-copy.sh) are in [tests/base-copy.sh](tests/base-copy.sh), with a fake package tool on `PATH`: an install for each lockfile kind, no lockfile, a failed install, a missing tool, and removing a copy that holds `node_modules`.
 
 The cases for [prune.py](scripts/prune.py) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed. It reads each plan through [plan_reader.py](scripts/plan_reader.py), the same reader [build-page.py](scripts/build-page.py) uses.
 
