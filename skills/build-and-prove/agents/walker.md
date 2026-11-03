@@ -85,14 +85,19 @@ Every command takes the Sandbox id as `<id>`.
   it, so you look at the screen after Enter before the next step. Never
   join commands with `;` or `&&`, and never start with `clear`: a viewer
   of the video must see each command and its result on their own.
-- Open the app with the command the brief gives, through `proofbox exec
-  <id> -- sh -c '<command> >/dev/null 2>&1 &'`. A web page: the browser
+- Open the app with the command the brief gives, in its own process
+  group, and save the group's id in `/tmp/walk-open.pid`. On linux:
+  `proofbox exec <id> -- setsid -w sh -c '<command> >/dev/null 2>&1 &
+  echo $$ >/tmp/walk-open.pid'`. On macOS: `proofbox exec <id> -- sh
+  -c 'set -m; <command> >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid'`.
+  The group holds the browser and every process it starts, so § Close
+  the browser stops them all. A web page: the browser
   opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
   Monospace -fs 12` from the brief, then click inside it before you
   type; an unfocused window drops the keys. The browser or window does
   not start, or shows an error in place of the app:
-  retry the start once, with the command and flags the brief gives,
-  exactly. It fails again: stop that video, and report each of its
+  close it (§ Close the browser), then retry the start once, with the
+  command and flags the brief gives, exactly. It fails again: stop that video, and report each of its
   walks as `FAIL · the app did not open: "<the error text, word for
   word>"`.
 - On macOS, a dialog asks for a password (a permission, the Keychain):
@@ -102,14 +107,32 @@ Every command takes the Sandbox id as `<id>`.
   step names on the screen. It is not there: that is a finding; take a
   screenshot and go on to the next walk.
 
+## Close the browser
+
+Stop the group you opened, by its id:
+
+```bash
+proofbox exec <id> -- sh -c 'g=$(cat /tmp/walk-open.pid 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 10 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+```
+
+It ends `true`, so a browser that already quit, as when its last tab
+was closed, does not fail the video. Run it after each `record stop`,
+before each new open, and after the last shot of mode before. The next
+video then starts with no old browser.
+
+Stop it only this way. `pkill` and `killall` match by name, and the
+name also matches the `sh -c` that runs them, so the command kills
+itself and the browser stays open.
+
 ## Mode before
 
 For each walk whose `Before` line names steps: do the walk's `Setup`, go
 to `Where`, do the steps the `Before` line names, and take
 `proofbox screenshot <id> --out <folder>/before-<walk>.png`. Check that
 it shows what the `Before` line says. A walk whose `Before` is `none` or
-`as walk n` gets no shot. No recording in this mode. Then write the
-report (§ Report).
+`as walk n` gets no shot. No recording in this mode. After the last
+shot, close the browser (§ Close the browser). Then write the report
+(§ Report).
 
 ## Mode after
 
@@ -127,7 +150,7 @@ One recording per video under `Videos`, in order:
    `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox
    takes a step's screenshot when the step ends, at the next mark or at
    `record stop`, so `video-<n>-<k>.png` shows the screen after step
-   `k`'s actions.
+   `k`'s actions. Then close the browser (§ Close the browser).
 5. For each walk the video's `Shows` line ties to step `k`: copy
    `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
    state under about 3 s: copy `short-<walk>.png` in its place. Read it, and check the
