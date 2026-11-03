@@ -10,7 +10,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # in $FAKE_PB: call n of a verb prints <verb>.<n>.fail or <verb>.fail to stderr
 # and exits 125 when one exists, else prints <verb>.err to stderr when it
 # exists, then <verb>.<n>.out or <verb>.out. `exec` then exits with the number
-# in exec.code, or 0.
+# in exec.<n>.code or exec.code, or 0.
 fake_proofbox() {
   repo
   mkdir -p "$T/bin" "$T/pb" "$T/home/.agents/proofbox/acme-shop"
@@ -27,7 +27,11 @@ if [ -f "$FAKE_PB/$verb.err" ]; then cat "$FAKE_PB/$verb.err" >&2; fi
 for f in "$FAKE_PB/$verb.$n.out" "$FAKE_PB/$verb.out"; do
   if [ -f "$f" ]; then cat "$f"; break; fi
 done
-[ "$verb" = exec ] && exit "$(cat "$FAKE_PB/exec.code" 2>/dev/null || echo 0)"
+if [ "$verb" = exec ]; then
+  for f in "$FAKE_PB/exec.$n.code" "$FAKE_PB/exec.code"; do
+    if [ -f "$f" ]; then exit "$(cat "$f")"; fi
+  done
+fi
 exit 0
 EOF
   chmod +x "$T/bin/proofbox"
@@ -393,7 +397,49 @@ t_box_gates_usage() {
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
 }
 
+t_box_gates_red() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo 1 > "$FAKE_PB/exec.1.code"
+  printf 'FAIL a\n1 passed, 1 failed\n' > "$FAKE_PB/exec.1.out"
+  echo 'lint ok' > "$FAKE_PB/exec.2.out"
+  echo built > "$FAKE_PB/exec.3.out"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" -- 'pnpm test' 'pnpm lint' 'make build'
+  # Then
+  eq exit 1 "$code"
+  eq execs 3 "$(grep -c '^exec ' "$FAKE_PB/log")"
+  eq checks "pnpm test · $sha · red, exit 1: 1 passed, 1 failed (sandbox)
+pnpm lint · $sha · lint ok (sandbox)
+make build · $sha · built (sandbox)" "$(cat "$P/checks.txt")"
+  has stderr "red: pnpm test · exit 1 · output " "$err"
+  f="$(printf '%s\n' "$err" | sed -n 's/^red: pnpm test · exit 1 · output //p')"
+  [ -f "$f" ] || eq "output file" "a file" "$f"
+  case "$f" in "$P"*) eq "output file" "outside $P" "$f" ;; esac
+  has output "FAIL a" "$(cat "$f")"
+  case "$err" in *"red: pnpm lint"*) eq stderr "no red line for pnpm lint" "$err" ;; esac
+}
+
+t_box_gates_own_code() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo 3 > "$FAKE_PB/exec.code"
+  printf '2 failed\n\n\n\n' > "$FAKE_PB/exec.out"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" -- 'pnpm test | tail -n 5'
+  # Then
+  eq exit 1 "$code"
+  eq checks "pnpm test | tail -n 5 · $sha · red, exit 3: 2 failed (sandbox)" "$(cat "$P/checks.txt")"
+  has log "exec ns:us:abc -- sh -c pnpm test | tail -n 5" "$(cat "$FAKE_PB/log")"
+}
+
 cases=(
+  "gates keeps going after a red Gate and exits 1|t_box_gates_red"
+  "gates keeps the Gate's own exit code|t_box_gates_own_code"
   "gates runs each Gate in order and writes checks.txt|t_box_gates_green"
   "gates makes a gone Sandbox again once|t_box_gates_remakes"
   "gates stops when the new Sandbox is gone too|t_box_gates_gone_twice"

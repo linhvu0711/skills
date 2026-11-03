@@ -38,7 +38,11 @@
 # box-gates.* temp folder, outside the proof folder, named on stderr as
 # `logs: <folder>`. It writes <proof-dir>/checks.txt fresh, one line per
 # command: `<command> · <short SHA> · <last non-empty output line> (sandbox)`.
-# A stop leaves the old checks.txt as it was.
+# A command that exits non-zero gets `<command> · <short SHA> · red, exit
+# <code>: <last non-empty output line> (sandbox)` and a stderr line
+# `red: <command> · exit <code> · output <file>`; the other commands still run.
+# gates exits 1 when any command is red, 0 when all are green. A stop leaves
+# the old checks.txt as it was.
 #
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
@@ -180,15 +184,23 @@ case "$verb" in
     tmp="$dir/checks.txt.tmp"
     trap 'rm -f "$tmp"' EXIT
     : > "$tmp"
-    n=0
+    n=0; red=0
     for cmd in "$@"; do
       n=$((n + 1)); log="$logs/$n.log"
       in_box sh -c "$cmd"
       last="$(tr -d '\r' < "$log" | awk 'NF { l = $0 } END { print l }')"
-      printf '%s · %s · %s (sandbox)\n' "$cmd" "$sha" "${last:-no output}" >> "$tmp"
+      last="${last:-no output}"
+      if [ "$rc" -eq 0 ]; then
+        printf '%s · %s · %s (sandbox)\n' "$cmd" "$sha" "$last" >> "$tmp"
+      else
+        red=1
+        printf '%s · %s · red, exit %s: %s (sandbox)\n' "$cmd" "$sha" "$rc" "$last" >> "$tmp"
+        printf 'red: %s · exit %s · output %s\n' "$cmd" "$rc" "$log" >&2
+      fi
     done
     mv "$tmp" "$dir/checks.txt"
     printf 'logs: %s\n' "$logs" >&2
+    exit "$red"
     ;;
   down)
     [ $# -eq 1 ] || die "$usage"
