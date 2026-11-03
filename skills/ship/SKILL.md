@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine with one proofbox Sandbox and films its walks, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
+description: "Take any target (one issue, a run of epic tickets, a set, a whole epic, or a new layer on a stack) from plan to PRs in one run, and pick how far to take it: the ship mode. review opens the plan as a page and waits for your ok; ready stops at ready-to-merge PRs; merge merges them. /plan-up first, same arguments. Add --review, --ready, or --merge to set the ship mode. With no option, the agent picks it from its own plan, the safer one when unsure; typing /ship with no option is the go-ahead to merge when the agent picks merge. With no issue named, it starts from the plan /plan-up already made in this chat, or plans the work this chat agreed on with no issue. By default, /build-and-prove builds each ticket on this machine, with one proofbox Sandbox that films its walks when it has any, /make-pr opens the PR with the proof, and /ready-pr readies it; a stack goes layer by layer. Add devin or cursor to the command to build in the cloud through /handoff instead. Stops only at the plan's big forks, the build's surprises, and a review finding it cannot settle alone."
 disable-model-invocation: true
 ---
 
@@ -194,7 +194,8 @@ number, or words that point at one. Two words come off first and never reach pla
    under `Summary`, the plan's Review `Change` and `Approach` in plain
    words, plus each surprise that changed what the code does; and the
    proof folder `PROOF`. The base is the layer's base from step 5. Its
-   checks already ran in the Sandbox, so it runs none here. The PR body
+   checks are in `checks.txt`, run in the Sandbox, on the local
+   machine, or left to CI, so it runs none here. The PR body
    holds no ship mode.
 
 7. **Make ready.** First the checks on each PR, bottom of the stack
@@ -221,7 +222,11 @@ number, or words that point at one. Two words come off first and never reach pla
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
    ready-pr says, and start no Sandbox: a Gate that CI covers is left to
    the PR's CI. CI covers a Gate when a file under `$WT/.github/workflows/`
-   names its command. Three cases start a Sandbox, with the
+   names its command. A plan with `UI: none` starts no Sandbox: a Gate
+   CI does not cover, and the perf measure of a fix that changes code
+   its `Command` runs, run before each push of fixes per
+   `../build-and-prove/references/checks.md`. For a plan with walks,
+   three cases start a Sandbox, with the
    build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
    and end with `box.sh down`:
    - A fix or a rebase that changes code a UI walk's screen shows:
@@ -376,9 +381,10 @@ Plan-up runs its short path and writes the plan. Step 2 picks `ready`:
 `small fix, no schema or API, no risk in the plan`. Summary printed, no
 page, no wait. `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
-Sandbox up, a Claude Code pane on Sonnet at high effort builds, every test
-through `box.sh run`. `BUILT fix/57-export-date-iso`, `Walks: none (no
-UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
+no Sandbox, a Claude Code pane on Sonnet at high effort builds, every
+slice test on the local machine. CI runs `pnpm test`, so it is left to
+CI; `box.sh gates --local` runs `pnpm lint`. `BUILT
+fix/57-export-date-iso`, `Walks: none (no UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
 ready-pr: `READY https://github.com/acme/shop/pull/61`. Report, with
 `Ship mode: ready · small fix, no schema or API, no risk in the plan`
 above the `READY` line.

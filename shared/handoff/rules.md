@@ -66,6 +66,14 @@ with the commands under `Facts`. The full suite, the build, and the app
 never run here: after you finish, `/build-and-prove`
 runs the Gates in the run's proofbox Sandbox.
 
+With `UI: none` under `Facts`, there is no Sandbox: `/build-and-prove`
+runs the Gates on this machine and leaves the rest to the PR's CI.
+Never run `box.sh`. A slice's command that fails because this machine
+lacks a tool (`command not found`, exit 127): install nothing; stop and
+ask (see Asking below), and name the tool, so the user installs it.
+The repo's e2e spec files are left to the PR's CI. The two paragraphs
+below are for a plan with UI walks.
+
 A slice's command that fails because this machine lacks a tool
 (`command not found`, exit 127): install nothing here. Start the
 Sandbox once, then run that command there, every time it runs:

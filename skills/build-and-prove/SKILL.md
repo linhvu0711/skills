@@ -1,12 +1,12 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it with proofbox: Coding runs on the local machine, then one proofbox Sandbox runs the Gates and the app, and a walker subagent films the UI walks like a test user. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the Gates and the app, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-One plan, one branch, one proofbox Sandbox, one proof folder. Facts come
+One plan, one branch, at most one proofbox Sandbox, one proof folder. Facts come
 from reading, per `../../shared/facts.md`. Big forks go to
 the user; everything else you decide, write down, and go on. You never
 push and never open a PR: `/make-pr` does that with the proof folder.
@@ -18,7 +18,15 @@ git command in the worktree is `git -C "$WT" …`.
 
 Coding runs on the local machine: each slice's red and green test,
 typecheck, and lint, in the worktree, with the repo's packages installed
-there. One run has one proofbox Sandbox. It starts after Coding and runs
+there.
+
+**No UI, no Sandbox.** A plan with `UI: none` starts no Sandbox and
+needs no proofbox (ADR 0019). Steps 2, 4, 6, and 11 are skipped, step
+8 runs the Gates and the perf measure per `references/checks.md`, and
+no other `box.sh` call runs. The rest of this section is for a plan
+with UI walks.
+
+One run of a plan with walks has one proofbox Sandbox. It starts after Coding and runs
 the Gates, the app, the before shots, and the walks (ADR 0011 in this
 repo). A slice test that needs a tool the local machine lacks,
 or a slice's e2e spec files, start it early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
@@ -115,7 +123,8 @@ done.
    `N`: its slug is the plan file's, `plan-<slug>.md`.
    `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 
-2. **proofbox.** `command -v proofbox`. Missing: say `proofbox is not
+2. **proofbox.** `UI: none`: mark it `2. proofbox. skip: no UI` and
+   go to step 3. Else `command -v proofbox`. Missing: say `proofbox is not
    installed: https://github.com/linhvu0711/proofbox` and stop. Then
    the login, before any work:
 
@@ -145,7 +154,8 @@ done.
    line. The branch has commits ahead of `BASE` already: this is a
    rerun (§ Rerun).
 
-4. **Setup files.** The folder is `~/.agents/proofbox/<owner>-<repo>/`,
+4. **Setup files.** `UI: none`: mark it `4. Setup files. skip: no UI`
+   and go to step 5. Else the folder is `~/.agents/proofbox/<owner>-<repo>/`,
    outside every repo, as proofbox wants (its ADR 0007).
    - No `setup-<os>.sh`: write it from what the repo shows: the runtime
      versions (`.nvmrc`, `.tool-versions`, `engines`, `packageManager`),
@@ -180,7 +190,8 @@ done.
    nothing. The install fails because the local machine lacks its tool
    (`command not found`, exit 127): say `<tool> is not installed on this
    machine; install it and run again.` and stop. Coding has not started,
-   and no Sandbox runs. No Sandbox runs yet: `proofbox list` shows none of this run
+   and no Sandbox runs. With `UI: none` no Sandbox runs at all. Else
+   no Sandbox runs yet: `proofbox list` shows none of this run
    until the last slice is committed, unless a slice test needed a tool
    the local machine lacks, or a slice ran its e2e spec files
    (§ Sandbox).
@@ -226,7 +237,11 @@ done.
      - The last message starts with `QUESTION` about a tool `not found`
        in the Sandbox: a Sandbox fault (§ Sandbox). Fix it, answer per
        `render.sh local prompt` § Answer that the tool is there now and
-       to run the command again, send it, and wait again.
+       to run the command again, send it, and wait again. With `UI:
+       none` there is no Sandbox: a `QUESTION` about a tool the local
+       machine lacks goes to the user, `<tool> is not installed on this
+       machine; install it, then say go.`; on `go`, answer the same way
+       and wait again.
      - Any other `QUESTION`: sort it by the two
        tests in `../plan-up/SKILL.md` step 5. **Small fork**: the plan,
        the issue (a chat plan: its brief), or the repo holds the
@@ -251,12 +266,16 @@ done.
    slice's test, typecheck, and lint on the local machine, in `$WT`, and
    its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
    `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
-   again. Say `Build:
+   again. With `UI: none`, there is no Sandbox, as the prompt's rules
+   say: the e2e spec files are left to the PR's CI, and a slice test
+   whose tool the local machine lacks stops and asks the user to
+   install it. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are
    yours: stop and ask the user where it says stop and ask. It ends at
    `BUILT <branch>`.
 
-6. **Sandbox up.** After Coding.
+6. **Sandbox up.** `UI: none`: mark it `6. Sandbox up. skip: no UI`
+   and go to step 7. Else after Coding:
 
    ```bash
    bash scripts/box.sh up "$PROOF" "$WT" <os> <REPO>
@@ -298,7 +317,12 @@ done.
    or with a stop. The next `box.sh run` without
    `--from` puts the branch back. Say `Before shots: <n>`.
 
-8. **Gates.** Yourself, once, on the head commit: the full suite,
+8. **Gates.** `UI: none`: read `references/checks.md` whole, since
+   its four sections are one pass: run the Gates and the perf measure
+   per that file, then go to step 9. The rest of this step is for a
+   plan with walks.
+
+   Yourself, once, on the head commit: the full suite,
    typecheck, lint, and build under `Facts`, and every command the
    repo's `AGENTS.md` or `CLAUDE.md` names as a check, all in one call,
    each command in single quotes, a `none` line left out:
@@ -363,10 +387,11 @@ done.
    SHA, and the result from `checks.txt`. The Target line's row of a
    plan with a `PERF` block carries the perf line from `checks.txt`, per
    `../../shared/pr-shape.md` § Proof. A `not run` line from
-   `checks.txt` goes in as its command, `not run: <why>`, and the words
-   `CI must prove it`.
+   `checks.txt`, `not run: CI runs it` too, goes in as its command,
+   `not run: <why>`, and the words `CI must prove it`.
 
-11. **Down.** `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
+11. **Down.** `UI: none`: mark it `11. Down. skip: no UI`. Else
+    `bash scripts/box.sh down "$PROOF"`. Hold its `REMADE`
     count for the report.
 
 12. **Report.** Chat gets this and nothing more:
@@ -392,7 +417,11 @@ done.
     (`references/walks.md` § 9c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.
 
-    `UI: none`: `Walks: none (no UI)`. `REMADE=0`: no `Sandbox:` line.
+    The `Checks:` line names each Gate once: the green ones with where
+    they ran, then the ones left to CI, as in `Checks: pnpm lint green
+    on 1a2b3c4 on the local machine · pnpm test: CI`. `UI: none`:
+    `Walks: none (no UI)` and no `Sandbox:` line. `REMADE=0`: no
+    `Sandbox:` line.
     A chat plan: the first line has no `#<n>`, as in
     `Built: [feat] Export orders as CSV · feat/export-orders-csv`. The
     worktree is `WT`, and the branch is not pushed: `/make-pr` with the proof folder is next.
@@ -406,7 +435,8 @@ The user commits or drops them, then runs again. The commits ahead of `BASE` are
 each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
 number done, and the prompt starts at the next one. A count at or past
 the number of slices means every slice is in, since fix rounds commit
-only after the last slice: no builder, go to step 6. Before shots in
+only after the last slice: no builder, go to step 6 (step 8 with `UI:
+none`). Before shots in
 `PROOF` are kept. The videos in `PROOF` are kept too, and step 9
 films again only those `references/walks.md` § 9c. Sort names.
 

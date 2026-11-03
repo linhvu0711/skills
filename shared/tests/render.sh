@@ -220,7 +220,14 @@ t_render_cloud_no_look_change() {
   done
 }
 
+t_render_local_no_ui() {
+  render local rules
+  eq exit 0 "$code"
+  has "no sandbox" "With \`UI: none\` under \`Facts\`, there is no Sandbox" "$out"
+}
+
 cases=(
+  "local rules start no Sandbox for a plan with no UI|t_render_local_no_ui"
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"

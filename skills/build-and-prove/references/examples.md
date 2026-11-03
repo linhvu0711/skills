@@ -17,6 +17,18 @@ an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
 pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:`
 copies walk 3's round 1 FAIL.
 
+**No UI.** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-57.md`;
+the plan is a fix with `UI: none`.
+
+Steps 2, 4, and 6 are skipped: no proofbox, no setup files, no
+Sandbox. This session builds two slices on the local machine. Step 8
+reads `references/checks.md`: `.github/workflows/ci.yml` runs
+`pnpm test` on pull requests, so its line is `pnpm test · 9e18c16 · not
+run: CI runs it (ci.yml)`; `box.sh gates "$PROOF" --local "$WT" --
+'pnpm lint'` writes `pnpm lint · 9e18c16 · 0 errors (local machine)`.
+Step 11 is skipped. The report says `Checks: pnpm lint green on 9e18c16
+on the local machine · pnpm test: CI` and `Walks: none (no UI)`.
+
 **`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 
 Show it, copy it with `copy.sh`, stop. No worktree, no Coding, and no Sandbox yet.
