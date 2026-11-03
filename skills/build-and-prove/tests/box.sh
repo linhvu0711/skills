@@ -437,7 +437,35 @@ t_box_gates_own_code() {
   has log "exec ns:us:abc -- sh -c pnpm test | tail -n 5" "$(cat "$FAKE_PB/log")"
 }
 
+t_box_gates_missing_tool() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo 127 > "$FAKE_PB/exec.code"
+  echo 'sh: 1: pnpm: not found' > "$FAKE_PB/exec.out"
+  # When
+  box gates "$P" -- 'pnpm test'
+  # Then
+  eq exit 1 "$code"
+  has stderr "missing tool: pnpm test · sh: 1: pnpm: not found" "$err"
+}
+
+t_box_gates_not_found_line() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo 1 > "$FAKE_PB/exec.code"
+  echo 'docker: command not found' > "$FAKE_PB/exec.out"
+  # When
+  box gates "$P" -- 'pnpm test:docker'
+  # Then
+  eq exit 1 "$code"
+  has stderr "missing tool: pnpm test:docker · docker: command not found" "$err"
+}
+
 cases=(
+  "gates names a Gate whose tool is missing|t_box_gates_missing_tool"
+  "gates names a not found line|t_box_gates_not_found_line"
   "gates keeps going after a red Gate and exits 1|t_box_gates_red"
   "gates keeps the Gate's own exit code|t_box_gates_own_code"
   "gates runs each Gate in order and writes checks.txt|t_box_gates_green"

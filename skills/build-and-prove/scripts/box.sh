@@ -41,8 +41,9 @@
 # A command that exits non-zero gets `<command> · <short SHA> · red, exit
 # <code>: <last non-empty output line> (sandbox)` and a stderr line
 # `red: <command> · exit <code> · output <file>`; the other commands still run.
-# gates exits 1 when any command is red, 0 when all are green. A stop leaves
-# the old checks.txt as it was.
+# A red command that exits 127 or prints `not found` also gets `missing tool:
+# <command> · <that line>` on stderr. gates exits 1 when any command is red,
+# 0 when all are green. A stop leaves the old checks.txt as it was.
 #
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
@@ -178,7 +179,7 @@ case "$verb" in
     [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
     shift
     load
-    logs="$(mktemp -d "${TMPDIR:-/tmp}/box-gates.XXXXXX")"
+    tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
     sha="$(git -C "$BOX_WORK" rev-parse --short HEAD)"
     # checks.txt is moved into place whole, so a stop leaves the old one.
     tmp="$dir/checks.txt.tmp"
@@ -196,6 +197,9 @@ case "$verb" in
         red=1
         printf '%s · %s · red, exit %s: %s (sandbox)\n' "$cmd" "$sha" "$rc" "$last" >> "$tmp"
         printf 'red: %s · exit %s · output %s\n' "$cmd" "$rc" "$log" >&2
+        miss="$(grep -m 1 'not found' "$log" || true)"
+        [ "$rc" -ne 127 ] || miss="${miss:-exit 127}"
+        [ -z "$miss" ] || printf 'missing tool: %s · %s\n' "$cmd" "$miss" >&2
       fi
     done
     mv "$tmp" "$dir/checks.txt"
