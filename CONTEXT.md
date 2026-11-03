@@ -87,7 +87,7 @@ The plan's `Build:` line, such as `pnpm build`, which turns the code into what t
 _Avoid_: the build (that word also names Coding)
 
 **Gates**:
-The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. They run once in the run's Sandbox after Coding, and each line in `checks.txt` says where it ran.
+The checks a run proves on its head commit: the full suite, typecheck, lint, the Build command, and every command the repo's `AGENTS.md` or `CLAUDE.md` names as a check. They run once after Coding: in the run's Sandbox for a plan with UI walks; for a plan with no UI, on the local machine, each one the PR's CI does not run. Each line in `checks.txt` says where it ran, or that CI runs it.
 _Avoid_: CI, final checks
 
 **Builder**:
