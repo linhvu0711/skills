@@ -262,7 +262,10 @@ done.
    slice's test, typecheck, and lint on the local machine, in `$WT`, and
    its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
    `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
-   again. Say `Build:
+   again. With `UI: none`, there is no Sandbox, as the prompt's rules
+   say: the e2e spec files are left to the PR's CI, and a slice test
+   whose tool the local machine lacks stops and asks the user to
+   install it. Say `Build:
    slice <k> of <n>` as each slice is committed. Its § Surprises are
    yours: stop and ask the user where it says stop and ask. It ends at
    `BUILT <branch>`.
