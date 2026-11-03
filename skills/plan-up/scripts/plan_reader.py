@@ -17,11 +17,13 @@ BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
 CHANGES = {"new", "changed", "removed", "same"}
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
-REFS = r"#\d+(?:(?:,\s*|\s+and\s+)#\d+)*"
+# A list of numbers as English writes it: `1, 2`, `1 and 2`, or `1, 2, and 3`.
+JOIN = r"(?:,\s*(?:and\s+)?|\s+and\s+)"
+REFS = rf"#\d+(?:{JOIN}#\d+)*"
 RECORD = {
     "slice": re.compile(rf"Slice \d+, (?:proves ({REFS})|(deletes dead code)):\s*(.+)"),
     "walk": re.compile(rf"Walk \d+, proves ({REFS})"),
-    "video": re.compile(r"Video \d+, (Setup of walk (\d+)), shows walks (\d+(?:,\s*\d+)*)"),
+    "video": re.compile(rf"Video \d+, (Setup of walk (\d+)), shows walks? (\d+(?:{JOIN}\d+)*)"),
 }
 
 

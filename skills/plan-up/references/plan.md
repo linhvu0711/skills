@@ -490,7 +490,9 @@ screen also names its UI walk and the video step that shows its `See`,
 even when its test passes: the test proves the code gives the right
 output, the walk proves a person sees it right, at the real width, in
 the real colors, with the real dialog. A row with no test and no reason
-is a gap; a row on a screen with no walk is a gap.
+is a gap; a row on a screen with no walk is a gap, except a state under
+about 1 s with no hook to hold it (§ UI walks): its UI walk column says
+`none: under 1 s, no hook`, and its test is the proof.
 
 ### Seams
 
@@ -664,7 +666,12 @@ value the `Setup` fixes, or the clock is set as below. A walk whose `See` depend
 day sets the clock in `Setup`, to a named time, with the hook the
 repo's tests use (a fake timer, a seed date, Playwright's
 `clock.install`), so the walk shows the same at any hour and never
-waits for the real clock. No such hook in the repo: a big fork, ask. `Must not` is the negative check. In a web or
+waits for the real clock. No such hook in the repo: a big fork, ask. A
+`See` state that lasts under about 1 s, such as a loading spinner, a
+flash, or a toast that fades, names in its walk's `Setup` a fake, a
+test scenario, or a delay hook the repo has that keeps it on screen, so
+the walk can stop on it. With no such hook, that line is proved by a
+test, not by a walk. `Must not` is the negative check. In a web or
 desktop walk it is often what the screenshot cannot show (a console
 error, a failed request). In a terminal walk it is text the screen
 shows or must not show, as in `no line starting Error:`, never `stderr`
@@ -743,7 +750,7 @@ facts or forks.
   a doc stale carries its `Docs` line.
 - Every Done-when line has a Proof row; every row has a test or a
   stated reason why no test can see it; every row on a screen also has
-  a walk.
+  a walk, or says `none: under 1 s, no hook` (§ UI walks).
 - Every seam is at a `file:line` seen this session, or at an earlier
   layer's slice.
 - Every `Then` is a literal.
