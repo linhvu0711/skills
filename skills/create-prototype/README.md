@@ -12,7 +12,7 @@ If all you have is an intent ("a better billing page"), it stops and lists what 
 
 - One self-contained HTML page, opened in your browser at a local URL. Every control in scope works: dropdowns, tabs, dialogs, form errors, toasts.
 - A floating state panel that flips each part through its states (loading, empty, error, disabled...). The backtick key hides it.
-- `scope.md`, the checklist of what the prototype covers, and `tokens.md`, the colors, fonts, and spacing it copied from your app.
+- `scope.md`, the checklist of what the prototype covers, and `tokens.md`, the colors, fonts, and spacing it copied from your app, plus the real app screens it used as references.
 
 Everything lives under `~/.codex/artifacts/prototype/<slug>/` (or `$CODEX_HOME` when set), outside your repo. Ask for a change and the same file and URL update.
 

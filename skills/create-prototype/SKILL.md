@@ -15,7 +15,7 @@ Read the conversation, create `${CODEX_HOME:-$HOME/.codex}/artifacts/prototype/<
 
 ## 2. Visual truth
 
-**Screen references.** Look in this session's tools for one that gives screens and flows from real apps, such as the Mobbin MCP. Search it for the screens and flows in `scope.md`, as in "billing page" or "upgrade flow", and keep the three to five that fit best. List each in `tokens.md`: the app, the screen, and its link. No such tool, or one that fails or asks for a login: go on with no references.
+**Screen references.** Look in this session's tools for one that gives screens and flows from real apps, such as the Mobbin MCP. Search it for the screens and flows in `scope.md`, as in "billing page" or "upgrade flow", and keep the three to five that fit best. `tokens.md` keeps them in its own `## References` part, each as the app, the screen, and its link; every later write to `tokens.md` keeps that part. No such tool, or one that fails or asks for a login: go on with no references.
 
 **Existing app.** Start with `DESIGN.md` and `PRODUCT.md` when the repo has them. They hold the settled tokens and product context: copy from them first, and read the code only for what they leave out. Where they disagree with the code, the shipped code wins. Then read the real files and copy values, not impressions:
 
