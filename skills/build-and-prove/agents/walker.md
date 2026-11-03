@@ -63,7 +63,15 @@ scratch folder when you finish; the system clears its temp folders.
 - A timed run is the steps that must happen inside a time limit, such
   as a delete and then `click Undo within 5 s`. Each `proofbox` command
   takes 2 to 5 s, so a run of them misses a 5 s window. Run the whole
-  run as three commands, with nothing between them:
+  run as three commands, with nothing between them. A run must know
+  every point it clicks before it starts, so first find the points of
+  targets that appear only during the run, such as the Undo button a
+  delete shows: before `record start`, do the run's actions up to that
+  target, the one that makes it appear with `--settle 300ms
+  --screenshot <scratch>/rehearse.png`, Read the shot, and note the
+  point. Then do the video's `Setup` and `Where` again, so the screen is
+  as it was. A second `Setup` that shows other output than the first is
+  a finding, as § What you never do says. Then the run:
   1. `proofbox mark <id> 'steps <a>-<b>: <the steps>'`, cut to 60
      characters, where `<a>` and `<b>` are the run's first and last
      step.
@@ -78,7 +86,12 @@ scratch folder when you finish; the system clears its temp folders.
      - drag: `/opt/proofbox/pixel drag <x1> <y1> <x2> <y2> 400 300 0`
 
      Text inside the single-quoted `sh -c` writes each `'` as `'\''`.
+     The action whose result a walk's `See` needs before the run ends,
+     as a delete's Undo bar, ends its line in `1 >/tmp/short-<walk>.png`
+     in place of `0`, so it shoots the screen right after its settle.
   3. `proofbox screenshot <id> --out <scratch>/look.png`, and Read it.
+     Then bring back each mid-run shot, `proofbox exec <id> -- base64
+     /tmp/short-<walk>.png | base64 -d > <scratch>/short-<walk>.png`.
 
   Then, for each step after `<a>` up to `<b>`, one empty mark,
   `proofbox mark <id> 'step <k>: done in step <a>'`, so mark `k` is
@@ -163,7 +176,8 @@ One recording per video under `Videos`, in order:
    `k`'s actions. Then close the browser (§ Close the browser).
 5. For each walk the video's `Shows` line ties to step `k`: copy
    `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
-   state under about 3 s: copy `<scratch>/short-<walk>.png` in its place. Read it, and check the
+   state under about 3 s, or a state a timed run shows before its last
+   step: copy `<scratch>/short-<walk>.png` in its place. Read it, and check the
    walk's `See` is on it and nothing in its `Must not` is. A `Must not`
    the screen cannot show (a console error, a failed request) is not
    yours: write it as `not checked` on the walk's line (§ Report).
