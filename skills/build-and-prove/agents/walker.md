@@ -42,19 +42,39 @@ Every command takes the Sandbox id as `<id>`.
   the default human pace: a person watches these videos. Add
   `--screenshot <folder>/look.png` to an action to see its result.
 - Every `proofbox click` takes `--settle 3s`, so the screen has settled
-  and a viewer of the video sees each result. Two kinds of click take
-  `--settle 300ms` instead: a click whose result lasts under about 3 s
-  (a toast, a flash, a 5 s Undo bar), and a click inside a timed run of
-  steps.
+  and a viewer of the video sees each result. A click whose result lasts
+  under about 3 s (a toast, a flash, a 5 s Undo bar) takes `--settle
+  300ms` instead.
 - A state that lasts under about 3 s is shot by the action that makes it
   appear, with that action's
   own `--screenshot <folder>/short-<walk>.png`. proofbox waits the
   settle time before it shoots, so a later `proofbox screenshot` misses
   the state.
-- Timed steps, ones that must happen inside a time limit such as `click
-  Undo within 5 s`, run back to back: between them only the next step's
-  `proofbox mark`, and no `proofbox screenshot`, no `--wait` mark, and
-  no other command. Each one's own `--screenshot` is how you look.
+- A timed run is the steps that must happen inside a time limit, such
+  as a delete and then `click Undo within 5 s`. Each `proofbox` command
+  takes 2 to 5 s, so a run of them misses a 5 s window. Run the whole
+  run as three commands, with nothing between them:
+  1. `proofbox mark <id> 'steps <a>-<b>: <the steps>'`, cut to 60
+     characters, where `<a>` and `<b>` are the run's first and last
+     step.
+  2. `proofbox exec <id> -- sh -c '<line>; <line>'`, one line per timed
+     action, each a call of proofbox's own input helper. It takes the
+     same arguments on linux and macOS, moves the pointer as `proofbox
+     click` does at the human pace, and settles 300 ms:
+     - click: `/opt/proofbox/pixel click <x> <y> 1 400 300 0`
+     - key: `/opt/proofbox/pixel key <keys> 300 0`
+     - type: `/opt/proofbox/pixel type 100 300 0 <text>`
+     - scroll down: `/opt/proofbox/pixel scroll <x> <y> 5 <steps> 400 300 0`
+     - drag: `/opt/proofbox/pixel drag <x1> <y1> <x2> <y2> 400 300 0`
+
+     Text inside the single-quoted `sh -c` writes each `'` as `'\''`.
+  3. `proofbox screenshot <id> --out <folder>/look.png`, and Read it.
+
+  Then, for each step after `<a>` up to `<b>`, one empty mark,
+  `proofbox mark <id> 'step <k>: done in step <a>'`, so mark `k` is
+  still step `k` and `video-<n>-<k>.png` shows the screen after the
+  run. A video's `Shows` step and a report's `@ step <k>` keep the
+  step numbers.
 - Put the text of `proofbox type` and `proofbox mark` in single quotes,
   as in `proofbox type <id> 'echo $?'`. In double quotes your own shell
   turns `$?` into `0` before proofbox gets it, so the screen or the
@@ -100,7 +120,8 @@ One recording per video under `Videos`, in order:
 2. `proofbox record start <id>`.
 3. For each numbered step: first `proofbox mark <id> 'step <k>: <the
    step>'`, cut to 60 characters, then do the step. One mark per step,
-   so the mark's number is the step's number. Waiting for something
+   so the mark's number is the step's number; a timed run keeps this
+   with its empty marks (§ How you see and act). Waiting for something
    slow: `proofbox mark <id> '<why you wait>' --wait`.
 4. `proofbox record stop <id> --out <folder>/video-<n>.mp4`. It writes
    `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox
