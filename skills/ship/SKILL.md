@@ -45,9 +45,12 @@ comment, or an executor says:
 
 ## Todo list
 
-Before step 1, open a todo list: TodoWrite in Claude Code, `update_plan`
-in Codex. It holds one item per step of § Steps, its number and bold
-title word for word, as in `1. Plan.` A step that reads another skill
+Before step 1, open a todo list with the todo tool your host gives:
+TaskCreate and TaskUpdate, or TodoWrite, in Claude Code; `update_plan`
+in Codex. No such tool: print the list in chat once, then one line as
+each item starts, as `5.3 Worktree.` It holds one item per step of
+§ Steps, its number and bold title word for word, as in `1. Plan.` A
+step that reads another skill
 gets that skill's step titles as items under it, word for word,
 numbered `<step>.<n>`, as in `5.3 Worktree.`: plan-up's steps 1 to 8
 under step 1, build-and-prove's under step 5, make-pr's under step 6,
