@@ -44,6 +44,6 @@ Done when the page shows every node in the fact list, with its path in the panel
 
 ## 5. Deliver and reply
 
-Open `http://127.0.0.1:<port>/diagram-<slug>.html` in the browser and keep the local server running for follow-up changes. Port 8765 taken: pick another free port and leave the running process alone. Reply with the local URL, the HTML file path, the frame line, the guide lines, and the findings; the page carries the rest. To publish it as a Claude artifact, run `/to-artifact <path>`.
+Open `http://127.0.0.1:<port>/diagram-<slug>.html` in the browser and keep the local server running for follow-up changes. Port 8765 taken: pick another free port and leave the running process alone. Reply with the local URL, the HTML file path, the frame line, the guide lines, and the findings; the page carries the rest.
 
 **Headless host** (`command -v open xdg-open` finds neither): there is no browser to leave the page in. Skip the local URL. Publish the page with the `to-artifact` skill and reply with the artifact link in place of the URL. A change request republishes to the same artifact. Publish fails: say why, give the HTML file path, stop.
