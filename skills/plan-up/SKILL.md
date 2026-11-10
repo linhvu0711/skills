@@ -191,8 +191,9 @@ two match: ask. Then go on with their URLs.
    body pasted and the model `fable` on the Agent call. Pick the plan's
    slug per `../../shared/plan-page.md` § Files first. Its brief holds
    the issue text with its comments (a run or a set: the parent and
-   every ticket, as step 2 read them), what step 2 decided (the short
-   path or the full one, and the type with its `plan.md` section),
+   every ticket, as step 2 read them), what step 2 decided for each
+   ticket (the short path or the full one, and the type with its
+   `plan.md` section),
    `BASE_WT`, `BASE_SHA`, the plan `.md` path, and this file's path.
    It runs steps 4 to 7, and you relay:
    - `FORK` and a question, a fork or a probe that waits for a yes:

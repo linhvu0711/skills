@@ -57,6 +57,8 @@ judgment is made here.
 Write every block in this order. Drop a block only when no probe ran
 (`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`),
 nothing was decided (`Decided`), or the issue is not a `perf` (`Perf`).
+`Plan check` is never written in steps 4 to 7: only `SKILL.md` step 8
+adds it, after a check ran (§ Plan check).
 
 ```markdown
 # Plan: #<n> <issue title>

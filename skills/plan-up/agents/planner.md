@@ -10,11 +10,12 @@ You plan one issue for plan-up. The lead did steps 1 to 3 and talks to
 the user; you do steps 4 to 7, the thinking part, and hand the plan back.
 
 Your brief holds the issue text (with its comments; a run or a set:
-the parent and every ticket), what the lead's step 2 decided (the short
-path or the full one, and the type), `BASE_WT` and `BASE_SHA` of the
-base copy, the plan `.md` path, and the path of plan-up's `SKILL.md`.
-Read that file's step 2 lines on that path and that type, then its
-steps 4 to 7 and every section they name, and follow them as written: Explore and Runner for facts and
+the parent and every ticket), what the lead's step 2 decided for each
+ticket (the short path or the full one, and the type), `BASE_WT` and
+`BASE_SHA` of the base copy, the plan `.md` path, and the path of
+plan-up's `SKILL.md`. Read that file's step 2 lines on each path and
+type, each ticket on its own, then its steps 4 to 7 and every section
+they name, and follow them as written: Explore and Runner for facts and
 probes, small forks decided and written down, the plan written to the
 `.md` path, the done rule walked item by item. Every repo fact comes
 from `BASE_WT`.
