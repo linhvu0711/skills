@@ -167,14 +167,18 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 
 ## Out of scope
 - <from the issue's Scope Out, plus anything the plan chose to leave>
+
+## Plan check
+By: plan-checker · <n> round(s)
+- F1 <what was wrong>. Done: fixed (<ref>) | asked you (<answer>) | kept (<why>)
 ```
 
 ## Chat plan
 
 A chat plan (`SKILL.md` § Six forms) has no issue. It takes the shape
 of one ticket, with two changes. The head line has no number:
-`# Plan: <brief title>`. And a `## Brief` block comes last, after Out
-of scope: the brief's `Task` and `Done when` lines from `SKILL.md`
+`# Plan: <brief title>`. And a `## Brief` block comes after Out of
+scope, last but for a `## Plan check` block: the brief's `Task` and `Done when` lines from `SKILL.md`
 step 2, word for word, since there is no issue for the build prompt to
 quote.
 
@@ -735,6 +739,16 @@ executor keeps them green rather than editing them.
 Every small fork, one line each, so the user can veto any
 with one word. A choice the user made in a question goes here too, marked
 `(user)`.
+
+### Plan check
+
+Written by `SKILL.md` step 8, only when the check ran, and always last
+in the file. The head line names the agent and how many rounds it ran.
+Then one line per finding the checker sent, in its order, with what
+became of it: `fixed`, with the ref of the block it changed; `asked
+you`, with the user's answer; or `kept`, with why the plan stands. A
+check that found nothing: one line, `- none`. The page does not show
+this block; the summary's `Plan check:` line points the reader to it.
 
 ## Done
 

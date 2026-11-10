@@ -39,11 +39,14 @@ A `fix` plan proves the bug is gone. The type comes from the title's first word,
 
 When reading leaves a doubt the plan hangs on (does this tool do what we need, what does this API really return), it runs a small probe first, in a temp folder or a throwaway worktree, never in your tree. Probes run in parallel sub-agents, like the code search. Only doubts that change the plan get a probe. A free, safe probe runs on its own; one that costs money, needs a credential, or touches anything shared waits for your yes.
 
+Before you see the plan, a second model can check it with fresh eyes. The `plan-checker` agent, on Fable at high effort, gets only the issue, the plan, and a clean copy of the code, never the planner's notes, so it does not start from the planner's view. It can start Explore and Runner to settle a doubt, and it changes nothing. Every plan of size L or XL gets the check, an M plan gets it when it looks risky or the planner is unsure, and XS and S skip it. A plan Fable wrote skips it too, and so does a run in Codex. The planner fixes each finding it agrees with and asks you about the rest, one question at a time; a fix that changes the approach gets a second look. The findings sit at the end of the `.md`, under `## Plan check`, and the page does not show them. A check that fails (an error, a refusal, a usage limit) lets the plan go on unchecked and says so.
+
 Chat gets only a summary:
 
 ```
 Plan: #42 Export orders as CSV · size/M · base main
 6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
+Plan check: 3 found · 2 fixed · 1 asked you
 http://127.0.0.1:8765/plan-acme-shop-42.html
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
@@ -86,7 +89,7 @@ The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh
 
 A perf plan's `## Perf` block shows on the Overview tab under the facts, and the builder refuses a Perf block that lacks one of its four lines, and a `[perf]` ticket or run layer with no Perf block.
 
-A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them.
+A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them. A `## Plan check` block after it builds, and leaves the page as it was.
 
 The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.
 

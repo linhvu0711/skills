@@ -52,7 +52,7 @@ each item starts, as `5.3 Worktree.` It holds one item per step of
 § Steps, its number and bold title word for word, as in `1. Plan.` A
 step that reads another skill
 gets that skill's step titles as items under it, word for word,
-numbered `<step>.<n>`, as in `5.3 Worktree.`: plan-up's steps 1 to 8
+numbered `<step>.<n>`, as in `5.3 Worktree.`: plan-up's steps 1 to 9
 under step 1, build-and-prove's under step 5, make-pr's under step 6,
 review-pr's, when it runs, then ready-pr's under step 7. A stack adds
 the items of steps 5 to 7 once per layer, each ending ` (layer <n>)`.
@@ -94,14 +94,14 @@ number, or words that point at one. Two words come off first and never reach pla
 
 1. **Plan.** A plan this chat made (§ No issue): skip this step. Else
    read `../plan-up/SKILL.md` and follow its
-   steps 1 to 8 whole: base copy, issue, gate, facts, forks, plan, done
-   rule, page. Its stop points are yours: a base that cannot be fetched,
+   steps 1 to 9 whole: base copy, issue, gate, facts, forks, plan, done
+   rule, check, page. Its stop points are yours: a base that cannot be fetched,
    a gate that fails, a `manual` ticket, a claimed ticket you do not
    build anyway, a stale step, and every big fork
-   (one question per message, wait). Step 8 changes: write the `.md`,
-   run `build-page.py` on it and fix its problem lines, as plan-up says,
-   but serve, open, publish, print, and wait for nothing yet; step 2
-   does that.
+   (one question per message, wait), the plan check's questions
+   included. Step 9 changes: run `build-page.py` on the `.md` and fix
+   its problem lines, as plan-up says, but serve, open, publish, print,
+   and wait for nothing yet; step 2 does that.
 
    A worktree or branch an earlier ticket left goes only through
    `bash ../prune-worktrees/scripts/prune-worktrees.sh`, run from the
@@ -128,7 +128,9 @@ number, or words that point at one. Two words come off first and never reach pla
      the safer one, `review` before `ready` before `merge`. Many
      tickets: one mode for the run, and `review` when any ticket needs
      it, else the safest any ticket needs. Typing `/ship` with no option
-     is the user's go-ahead to merge when you pick `merge`.
+     is the user's go-ahead to merge when you pick `merge`. A plan whose
+     `Plan check:` line says `failed`: `review`, since no second model
+     read it.
    - Hold `<why>`: one short phrase for the pick, as `small fix, no
      schema or API, no risk in the plan`.
 

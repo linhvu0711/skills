@@ -335,8 +335,43 @@ two match: ask. Then go on with their URLs.
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
 
-8. **Present.** Per `../../shared/plan-page.md`: write the plan to its `.md`,
-   run `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
+8. **Check.** Write the plan to its `.md`, per
+   `../../shared/plan-page.md` § Files. Then decide whether a second
+   model checks it, with fresh eyes, before the user sees it (ADR 0020).
+   Hold one `Plan check:` line for the summary.
+
+   - **Who gets it.** Size the plan as `../../shared/size.md` sizes a
+     ticket, from its Blast radius and its slices. L or XL: always. M:
+     when a risk in the plan looks high to you, and when you are
+     unsure. XS and S: never, and the line is
+     `Plan check: skipped · size <x>`. A plan the `planner` agent wrote,
+     or that you wrote while you run on Fable: never, and the line is
+     `Plan check: skipped · made by Fable`. In Codex: never, and the
+     line is `Plan check: skipped · not in Claude Code`.
+   - **Start it.** The skill agent `plan-checker`, per
+     `../../shared/facts.md` § Skill agents. Its brief holds the issue
+     text (a chat plan: its `## Brief` block), the plan path, and
+     `BASE_WT`, and nothing else: no notes, no reasons, no chat. When
+     it is not found, `general-purpose` with its body pasted and the
+     model `fable` on the Agent call.
+   - **Sort each finding.** One you agree with: fix the plan. One you
+     disagree with, or whose fix is a big fork by step 5's two tests:
+     ask the user, one question per message in the format of
+     `../../shared/grilling.md`, with the finding as one option and
+     the plan as the other. Wait. Then fix the plan by the answer.
+   - **Look again.** A fix that changed the `Approach` line or a
+     `Decided` line: send the same checker the changed blocks, by
+     SendMessage, once, and sort its answer the same way.
+   - **Record.** A `## Plan check` block, last in the `.md`, per
+     `references/plan.md` § Plan check. The line is
+     `Plan check: <n> found · <f> fixed · <a> asked you`, or
+     `Plan check: none found`.
+   - **It fails.** An error, a refusal, or a usage limit: the plan goes
+     on unchecked, with no block, and the line is
+     `Plan check: failed · <why>`.
+
+9. **Present.** Per `../../shared/plan-page.md`: run
+   `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
    the `.md` and run it again. Never write `DATA`: the builder makes it.
    Serve with `../../shared/serve.sh`, open it in the browser, or publish it on a
    headless host. Chat

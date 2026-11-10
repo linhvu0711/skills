@@ -44,6 +44,21 @@ chat_plan() {
   printf '\n%s\n' "${2-$'## Brief\nTask: staff download the orders list as CSV\nDone when:\n- the Export menu offers CSV\n- a note with a newline stays in one field'}" >> "$1"
 }
 
+t_build_plan_check_last() {
+  # Given: one chat plan, and the same plan with a Plan check block after its Brief
+  T="$(mktemp -d)"
+  chat_plan "$T/plan-acme-shop-chat-orders-csv.md"
+  chat_plan "$T/plan-acme-shop-chat-orders-csv-2.md"
+  printf '\n## Plan check\nBy: plan-checker · 1 round\n- F1 the export misses the old screen. Done: fixed (S2)\n' >> "$T/plan-acme-shop-chat-orders-csv-2.md"
+  # When
+  build "$T/plan-acme-shop-chat-orders-csv.md"
+  eq "plain exit" 0 "$code"
+  build "$T/plan-acme-shop-chat-orders-csv-2.md"
+  # Then
+  eq "checked exit" 0 "$code"
+  eq DATA "$(page_data "$T/plan-acme-shop-chat-orders-csv.html")" "$(page_data "$T/plan-acme-shop-chat-orders-csv-2.html")"
+}
+
 t_build_chat() {
   T="$(mktemp -d)"
   chat_plan "$T/plan-acme-shop-chat-orders-csv.md"
@@ -540,6 +555,7 @@ cases=(
   "build-page refuses a [perf] ticket with no Perf block|t_build_perf_no_block"
   "build-page refuses a [perf] run layer with no Perf block|t_build_run_perf_no_block"
   "build-page builds a chat plan with no issue|t_build_chat"
+  "build-page builds a plan whose Plan check block comes last|t_build_plan_check_last"
   "build-page refuses a chat plan with no Brief|t_build_chat_no_brief"
   "build-page refuses a Brief with no Task or Done when|t_build_chat_brief_gaps"
   "build-page stops on a file with no Review|t_build_no_review"
