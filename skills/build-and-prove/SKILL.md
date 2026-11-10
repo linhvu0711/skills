@@ -75,8 +75,6 @@ one.
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: layer `n` of
   a run's plan, its branch made from `<branch>`. `/ship` uses this form.
-- `/build-and-prove <note>`: an answer or follow-up for the pane this
-  chat started (§ Follow-up).
 - No plan named and none in this chat: say `Run /plan-up first.` and
   stop.
 
@@ -209,60 +207,8 @@ done.
    `$HOME/.agents/artifacts/plan/prompt-<slug>.md`. Say
    `Prompt: <path> (<n> lines)`.
 
-   Your system prompt names the model you run on.
-
-   **Fable** (`Fable`, `claude-fable-*`): a Claude Code pane builds, on
-   Sonnet at high effort.
-   - `HERDR_ENV` is not `1`: say `Not inside herdr. Open a herdr pane
-     and run this there, or say "here" to build in this session.` and
-     stop. `here` means the "Any other model" branch below.
-   - Otherwise:
-
-     ```bash
-     bash scripts/pane.sh "$WT" <label> <prompt-path>
-     ```
-
-     The label is the first four words of the issue title (a chat
-     plan: the plan title, its type tag left out) in kebab case. `stop:` on stderr: show it, stop. Exit 0: print its report
-     line and hold `PANE` and `AGENT`. Then wait:
-
-     ```bash
-     ~/.claude/bin/herdr-wait <PANE> --timeout-sec 21600
-     ```
-
-     In Claude Code run it in the background; the tool wakes you when
-     it ends. In Codex run it in the foreground with a long timeout.
-     Read the tail, `herdr agent read <AGENT> --source visible --lines
-     80`, and sort:
-     - The last message starts with `QUESTION` about a tool `not found`
-       in the Sandbox: a Sandbox fault (§ Sandbox). Fix it, answer per
-       `render.sh local prompt` § Answer that the tool is there now and
-       to run the command again, send it, and wait again. With `UI:
-       none` there is no Sandbox: a `QUESTION` about a tool the local
-       machine lacks goes to the user, `<tool> is not installed on this
-       machine; install it, then say go.`; on `go`, answer the same way
-       and wait again.
-     - Any other `QUESTION`: sort it by the two
-       tests in `../plan-up/SKILL.md` step 5. **Small fork**: the plan,
-       the issue (a chat plan: its brief), or the repo holds the
-       answer; fetch the `file:line` with Explore, shape it per `render.sh local prompt` § Answer,
-       write it to a file, `~/.claude/bin/herdr-send <PANE> --file
-       <file> --no-wait`, tell the user in one line what was asked and
-       answered, and wait again. **Big fork** (the list in plan-up step
-       5, plus a force push, a delete,
-       another branch, a look change on a screen the issue does not name):
-       quote the question in a fenced block, then one question to the
-       user, two options at most, your pick first. The user answers
-       `/build-and-prove <note>`. Stop.
-     - The last line is `BUILT <branch>`: step 6.
-     - The last line is `NOT BUILT <branch>: …`: show it, stop.
-     - Neither, and no question: the pane stopped short. Show the last
-       20 lines and stop.
-     - `STATUS=timeout`: say how long it ran, the pane's last lines,
-       and stop.
-
-   **Any other model**: you build. Read the prompt file and follow it
-   whole as its builder, in `$WT`: slices in order, tests first, each
+   You build. Read the prompt file and follow it whole as its
+   builder, in `$WT`: slices in order, tests first, each
    slice's test, typecheck, and lint on the local machine, in `$WT`, and
    its e2e spec files in the Sandbox, one commit per slice. A slice test in the Sandbox that stops on a tool
    `not found` is a Sandbox fault (§ Sandbox): fix it and run the test
@@ -399,7 +345,7 @@ done.
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
     Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
-    Walks: 3 passed in round 2 · videos: 2 · built by: claude pane w4:p9M
+    Walks: 3 passed in round 2 · videos: 2 · built by: session
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
     - walk 1: not checked: no console errors
@@ -439,15 +385,6 @@ only after the last slice: no builder, go to step 6 (step 8 with `UI:
 none`). Before shots in
 `PROOF` are kept. The videos in `PROOF` are kept too, and step 9
 films again only those `references/walks.md` § 9c. Sort names.
-
-## Follow-up
-
-`/build-and-prove <note>` with no plan path. A pane this chat started:
-sort the note by plan-up step 5 (a big fork it leaves open goes to the
-user first), shape it per `render.sh local prompt` § Answer when it
-answers a `QUESTION`, else § Follow-up, `herdr-send <PANE> --file
-<file>`, then back to step 5's sort. This chat started none: say so and
-stop.
 
 ## Examples
 

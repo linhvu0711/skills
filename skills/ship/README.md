@@ -31,7 +31,7 @@ With one of the three options, that mode is used. With none, the agent reads the
 
 Two guards stay in every mode. The plan's big forks still stop for you. And before each merge the agent picked, it reads the PR's real diff again; if the change is riskier than the plan said, it does not merge that PR or the PRs above it, and the report says so. It can only move to a safer mode, never a riskier one. A mode you typed is not stopped by that check: the worry goes in the report.
 
-**The plan,** from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Unless the ship mode is `review`, no page opens: the chat gets a short summary with the file's path, and the run goes on.
+**The plan,** from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Unless the ship mode is `review`, no page opens: the chat gets a short summary with the file's path, and the run goes on. When plan-up's plan check fails, the run takes `review` and waits for your ok, since no second model read the plan.
 
 **The run.** It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; with no todo tool in the host, it keeps the list in the chat. A step it skips stays in the list with the reason. It never merges outside its merge step, never force-pushes a branch it did not make, never closes a PR; the rules sit together at the top of the skill. A worktree left from an earlier ticket goes only through [prune-worktrees](../prune-worktrees/), which checks the merge first, and only when no other ticket is building in the repo, since a fresh worktree with no PR also counts as merged; never by hand. Then the route:
 
@@ -54,7 +54,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 
 ```
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
-Route: local · built by: claude pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
+Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
 Worktree: ~/development/worktrees/acme/app/feat-42-login
 After merge: /prune-worktrees
 Ship mode: ready · small fix, no schema or API, no risk in the plan

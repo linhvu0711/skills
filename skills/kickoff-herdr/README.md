@@ -53,7 +53,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Starts [ship](../ship/) in the new pane. It sets a ship mode only when you name one; else the `/ship` run picks it.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 - It runs the shared decide script, `../../shared/kickoff/decide.sh`, and reads its target rules in `../../shared/kickoff/target.md`, as [kickoff-t3](../kickoff-t3/) does in a T3 Code thread.
-- It finds the repo through the shared checkout resolver, `../../shared/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do; [build-and-prove](../build-and-prove/) uses its `equalize_columns.py` to even out pane widths.
+- It finds the repo through the shared checkout resolver, `../../shared/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do.
 
 ## Tests
 

@@ -164,9 +164,8 @@ guess:
   `See` is not there or a `Must not` is. A follow-up to the
   builder per `render.sh local prompt` § Follow-up: `# Changed`
   names the walk, what it saw, and the screenshot's path; `#
-  Check` names the tests to run again. The pane gets it with
-  `herdr-send`; as the builder, you do it yourself. Then the
-  Gates again (step 8).
+  Check` names the tests to run again. As the builder, you do it
+  yourself. Then the Gates again (step 8).
 - **Video cut**: the video check found a hidden step. Not the
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.

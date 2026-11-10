@@ -12,7 +12,7 @@ as `references/plan.md` § Change map: read from that heading to the
 next heading of its level or higher, not the whole file. A heading
 inside a code fence belongs to a template, not a section. A step that
 needs a whole file says so and why. First read `references/plan.md`
-§ Vocabulary: its words run through every step. At step 8,
+§ Vocabulary: its words run through every step. At steps 8 and 9,
 read `../../shared/plan-page.md`: where the plan is written
 and how it is shown. Before a `Decided` line adds a module or a seam, on the full
 path or the short one, read `../../shared/codebase-design.md`:
@@ -96,7 +96,7 @@ two match: ask. Then go on with their URLs.
    Read the comments too; a later comment can change a line. Carrying
    `ready-to-build`: the **short path**, `plan.md` § Ready-to-build. The
    Steps are trusted. Step 4 asks only what that section lists, step 5
-   closes only the issue's `Open` lines, steps 6 to 8 run as written.
+   closes only the issue's `Open` lines, steps 6 to 9 run as written.
 
    The title's leading word is the issue's type, read through the
    repo's `words` map, per `plan.md` § Type variants, its opening
@@ -183,6 +183,29 @@ two match: ask. Then go on with their URLs.
    its gaps name `/grill` only. Pass: continue. Fail: name the
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/triage`, stop. Nothing is planned.
+
+   **Who plans.** In Claude Code, on a model that is not Fable, an
+   issue labelled `size/L` or `size/XL` (a run: its largest ticket) is
+   planned by the skill agent `planner`, per `../../shared/facts.md`
+   § Skill agents; when it is not found, `general-purpose` with its
+   body pasted and the model `fable` on the Agent call. Pick the plan's
+   slug per `../../shared/plan-page.md` § Files first. Its brief holds
+   the issue text with its comments (a run or a set: the parent and
+   every ticket, as step 2 read them), what step 2 decided for each
+   ticket (the short path or the full one, and the type with its
+   `plan.md` section),
+   `BASE_WT`, `BASE_SHA`, the plan `.md` path, and this file's path.
+   It runs steps 4 to 7, and you relay:
+   - `FORK` and a question, a fork or a probe that waits for a yes:
+     ask the user that question, as step 5 asks. Wait. Send the answer to the same planner by SendMessage,
+     and keep relaying.
+   - `PLANNED <path>`: go to step 8; the plan was made by Fable.
+   - `STOP <why>`: that stop is yours.
+   - An error, a refusal, or a usage limit: delete any `.md` it wrote,
+     run steps 4 to 7 yourself, so the plan is yours, and the
+     `Plan check:` line step 8 holds ends ` · planner failed: <why>`.
+
+   Any other size, a main chat on Fable, or Codex: you run steps 4 to 7.
 
 4. **Facts.** First read `plan.md` § Slices with its `####` rules: the
    asks below feed them, and step 5 sorts forks by them. Round 1 is one
@@ -335,8 +358,47 @@ two match: ask. Then go on with their URLs.
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
 
-8. **Present.** Per `../../shared/plan-page.md`: write the plan to its `.md`,
-   run `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
+8. **Check.** Write the plan to its `.md`, per
+   `../../shared/plan-page.md` § Files, unless the planner returned
+   `PLANNED`. Then decide whether a second
+   model checks it, with fresh eyes, before the user sees it (ADR 0020).
+   Hold one `Plan check:` line for the summary.
+
+   - **Who gets it.** Size the plan as `../../shared/size.md` sizes a
+     ticket, from its Blast radius and its slices. L or XL: always. M:
+     when a risk in the plan looks high to you, and when you are
+     unsure. XS and S: never, and the line is
+     `Plan check: skipped · size <x>`. A plan the `planner` returned
+     with `PLANNED`, or that you wrote while you run on Fable: never,
+     and the line is
+     `Plan check: skipped · made by Fable`. In Codex: never, and the
+     line is `Plan check: skipped · not in Claude Code`.
+   - **Start it.** The skill agent `plan-checker`, per
+     `../../shared/facts.md` § Skill agents. Its brief holds the issue
+     text with its comments (a run or a set: the parent and every ticket; a chat plan:
+     its `## Brief` block), the plan path, `BASE_WT`, and the full
+     path of `../../shared/facts.md`, and nothing else: no notes, no
+     reasons, no chat. When
+     it is not found, `general-purpose` with its body pasted and the
+     model `fable` on the Agent call.
+   - **Sort each finding.** One you agree with: fix the plan. One you
+     disagree with, or whose fix is a big fork by step 5's two tests:
+     ask the user, one question per message in the format of
+     `../../shared/grilling.md`, with the finding as one option and
+     the plan as the other. Wait. Then fix the plan by the answer.
+   - **Look again.** A fix that changed the `Approach` line or a
+     `Decided` line: send the same checker the changed blocks, by
+     SendMessage, once, and sort its answer the same way.
+   - **Record.** A `## Plan check` block, last in the `.md`, per
+     `references/plan.md` § Plan check. The line is
+     `Plan check: <n> found · <f> fixed · <a> asked you`, or
+     `Plan check: none found`.
+   - **It fails.** An error, a refusal, or a usage limit: the plan goes
+     on unchecked, with no block, and the line is
+     `Plan check: failed · <why>`.
+
+9. **Present.** Per `../../shared/plan-page.md`: run
+   `python3 scripts/build-page.py <plan .md>`, and on problem lines fix
    the `.md` and run it again. Never write `DATA`: the builder makes it.
    Serve with `../../shared/serve.sh`, open it in the browser, or publish it on a
    headless host. Chat

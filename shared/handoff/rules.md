@@ -595,12 +595,10 @@ and go on when a rule below says stop and ask.
 <!-- local -->
 ## Asking
 
-To ask, end the turn: your last message is the question and nothing
-else, and its first line is `QUESTION`. Say what the plan said, what
-you found, and the options you see, two or three, the one you would
-pick first. Then do no more work. The answer comes as your next prompt,
-with `# Answer` at the top. Never guess and go on when a rule below
-says stop and ask.
+To ask, stop and ask the user in chat: what the plan said, what you
+found, and the options you see, two or three, the one you would pick
+first. Then wait for the answer. Never guess and go on when a rule
+below says stop and ask.
 
 <!-- /local -->
 ## Surprises

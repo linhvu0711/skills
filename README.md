@@ -150,7 +150,7 @@ bash scripts/link.sh
 
 Optional, only for the skills that name them:
 
-- `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/), and [build-and-prove](skills/build-and-prove/) when it builds in a pane.
+- `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/).
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).

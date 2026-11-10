@@ -84,12 +84,16 @@ After the page is open, chat gets this and nothing more:
 ```
 Plan: #42 Export orders as CSV · size/M · base main
 6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
+Plan check: 3 found · 2 fixed · 1 asked you
 http://127.0.0.1:8765/plan-acme-shop-42.html
 $HOME/.agents/artifacts/plan/plan-acme-shop-42.md
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
-A run: one line per layer under the first. A chat plan: its first line
+The `Plan check:` line is the one plan-up step 8 holds: the counts, or
+`skipped · <why>`, or `failed · <why>`, with ` · planner failed: <why>`
+at its end when the planner agent failed. A run: one line per layer under
+the first. A chat plan: its first line
 has no `#<n>`, as in
 `Plan: [feat] Export orders as CSV · size/M · base main`. A
 `ready-to-build` ticket adds `· short path` after the size, so the user

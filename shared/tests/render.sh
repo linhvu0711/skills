@@ -226,7 +226,23 @@ t_render_local_no_ui() {
   has "no sandbox" "With \`UI: none\` under \`Facts\`, there is no Sandbox" "$out"
 }
 
+t_render_local_no_pane() {
+  # Given: the local templates on this branch
+  # When
+  render local rules
+  rules_code="$code"; rules="$out"
+  render local prompt
+  # Then
+  eq "rules exit" 0 "$rules_code"
+  eq "prompt exit" 0 "$code"
+  for needle in pane QUESTION herdr-send; do
+    lacks "rules" "$needle" "$rules"
+    lacks "prompt" "$needle" "$out"
+  done
+}
+
 cases=(
+  "local templates name no pane and no QUESTION line|t_render_local_no_pane"
   "local rules start no Sandbox for a plan with no UI|t_render_local_no_ui"
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"

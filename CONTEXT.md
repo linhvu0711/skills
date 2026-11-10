@@ -46,6 +46,14 @@ _Avoid_: architecture diagram, component diagram, dependency graph
 A sign that someone else is already on an issue: an open PR that closes or mentions it, an assignee, or a comment that takes the work. Plan-up asks before it plans a claimed issue.
 _Avoid_: lock, reservation
 
+**Planner**:
+The skill agent that plans an L or XL issue for plan-up, on Fable: it finds the facts, settles the small forks, and writes the plan. Its big forks reach the user through the main chat.
+_Avoid_: plan agent, architect
+
+**Plan check**:
+A second model's read of a finished plan, with only the issue, the plan, and the code, before the user sees it. Plan-up runs it on an Opus plan of size L or XL, and on M when the plan looks risky. Its findings sit at the end of the plan file.
+_Avoid_: plan review, critic, second opinion
+
 **Not proved**:
 A risk in the Review view that no probe has checked. Each risk names the `Proved` line that proves it, or says `not proved`. Reading the code does not prove a risk.
 _Avoid_: unproven, unverified, assumed
@@ -91,7 +99,7 @@ The checks a run proves on its head commit: the full suite, typecheck, lint, the
 _Avoid_: CI, final checks
 
 **Builder**:
-The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
+The agent in `/build-and-prove` that writes the code, the tests, and the commits: the session itself.
 _Avoid_: implementer, coder
 
 **Walker**:
