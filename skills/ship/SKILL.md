@@ -350,7 +350,10 @@ picks the start; the option and `devin` or `cursor` are taken off first,
 as in § Forms.
 
 1. **A build this chat started.** The words are a follow-up. A local
-   build: build-and-prove § Follow-up. A cloud session: handoff
+   build: sort the words by plan-up step 5 (a big fork goes to the user
+   first), then build them yourself in its worktree as `render.sh local
+   prompt` § Follow-up shapes them, and go on from build-and-prove
+   step 8, Gates. A cloud session: handoff
    § Follow-up. No words: say `A build from this chat is open; say what
    to change.` and stop.
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
