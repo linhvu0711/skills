@@ -184,6 +184,26 @@ two match: ask. Then go on with their URLs.
    ticket, list the gaps, each as the question that closes it, name
    `/grill` or `/triage`, stop. Nothing is planned.
 
+   **Who plans.** In Claude Code, on a model that is not Fable, an
+   issue labelled `size/L` or `size/XL` (a run: its largest ticket) is
+   planned by the skill agent `planner`, per `../../shared/facts.md`
+   § Skill agents; when it is not found, `general-purpose` with its
+   body pasted and the model `fable` on the Agent call. Pick the plan's
+   slug per `../../shared/plan-page.md` § Files first. Its brief holds
+   the issue text with its comments, `BASE_WT`, `BASE_SHA`, the plan
+   `.md` path, and this file's path. It runs steps 4 to 7, and you
+   relay:
+   - `FORK` and a question: ask the user that question, as step 5
+     asks. Wait. Send the answer to the same planner by SendMessage,
+     and keep relaying.
+   - `PLANNED <path>`: go to step 8; the plan was made by Fable.
+   - `STOP <why>`: that stop is yours.
+   - An error, a refusal, or a usage limit: run steps 4 to 7 yourself,
+     and the `Plan check:` line step 8 holds ends
+     ` · planner failed: <why>`.
+
+   Any other size, a main chat on Fable, or Codex: you run steps 4 to 7.
+
 4. **Facts.** First read `plan.md` § Slices with its `####` rules: the
    asks below feed them, and step 5 sorts forks by them. Round 1 is one
    message, one Explore agent per concern, and in a run per ticket and
@@ -336,7 +356,7 @@ two match: ask. Then go on with their URLs.
    back to step 4 or 5.
 
 8. **Check.** Write the plan to its `.md`, per
-   `../../shared/plan-page.md` § Files. Then decide whether a second
+   `../../shared/plan-page.md` § Files, unless the planner did. Then decide whether a second
    model checks it, with fresh eyes, before the user sees it (ADR 0020).
    Hold one `Plan check:` line for the summary.
 
