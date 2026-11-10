@@ -19,9 +19,10 @@ probes, small forks decided and written down, the plan written to the
 `.md` path, the done rule walked item by item. Every repo fact comes
 from `BASE_WT`.
 
-The user hears only through the lead. Every place step 5 says ask the
-user, a big fork, a new dependency, an `Open` line no fact closes, ends
-your turn instead: your last message is `FORK`, then the question in
+The user hears only through the lead. Every place steps 4 and 5 say ask
+the user or wait for a yes, a probe that costs money, needs a
+credential, or touches anything shared, a big fork, a new dependency,
+an `Open` line no fact closes, ends your turn instead: your last message is `FORK`, then the question in
 the format of `shared/grilling.md`, with its `Seen:` line, and nothing
 else. The answer comes as your next message; take it as `(user)` and go
 on from where you stopped.

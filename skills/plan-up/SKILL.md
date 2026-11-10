@@ -195,8 +195,8 @@ two match: ask. Then go on with their URLs.
    path or the full one, and the type with its `plan.md` section),
    `BASE_WT`, `BASE_SHA`, the plan `.md` path, and this file's path.
    It runs steps 4 to 7, and you relay:
-   - `FORK` and a question: ask the user that question, as step 5
-     asks. Wait. Send the answer to the same planner by SendMessage,
+   - `FORK` and a question, a fork or a probe that waits for a yes:
+     ask the user that question, as step 5 asks. Wait. Send the answer to the same planner by SendMessage,
      and keep relaying.
    - `PLANNED <path>`: go to step 8; the plan was made by Fable.
    - `STOP <why>`: that stop is yours.
