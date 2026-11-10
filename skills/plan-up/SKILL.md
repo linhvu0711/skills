@@ -376,8 +376,9 @@ two match: ask. Then go on with their URLs.
    - **Start it.** The skill agent `plan-checker`, per
      `../../shared/facts.md` § Skill agents. Its brief holds the issue
      text (a run or a set: the parent and every ticket; a chat plan:
-     its `## Brief` block), the plan path, and
-     `BASE_WT`, and nothing else: no notes, no reasons, no chat. When
+     its `## Brief` block), the plan path, `BASE_WT`, and the full
+     path of `../../shared/facts.md`, and nothing else: no notes, no
+     reasons, no chat. When
      it is not found, `general-purpose` with its body pasted and the
      model `fable` on the Agent call.
    - **Sort each finding.** One you agree with: fix the plan. One you

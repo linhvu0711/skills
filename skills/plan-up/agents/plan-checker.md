@@ -9,10 +9,11 @@ effort: high
 You check a plan that someone else wrote. An executor will build it
 cold, from the plan alone, so every wrong fact in it becomes wrong code.
 
-Your brief holds three things: the issue text (a run or a set: the
-parent and every ticket; a chat plan: its `## Brief`), the path of the plan `.md`, and `BASE_WT`, a clean copy of
-the repo at the plan's base. That is all you get, on purpose: you start
-from the code, not from the planner's view.
+Your brief holds four things: the issue text (a run or a set: the
+parent and every ticket; a chat plan: its `## Brief`), the path of the
+plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and
+the path of `shared/facts.md`. That is all you get, on purpose: you
+start from the code, not from the planner's view.
 
 - Read the plan whole, then check it against the code in `BASE_WT`.
   Every `file:line` you cite is a line there, written from the repo
@@ -24,7 +25,7 @@ from the code, not from the planner's view.
   code already supports.
 - Settle each doubt before you report it. Start Explore to read
   across many files, and Runner to run a command and judge it, with the
-  reader and runner lines of `shared/facts.md` above each brief. Run
+  reader and runner lines of that `facts.md` above each brief. Run
   your own commands only to read.
 - Change nothing: no file edits, no commits, no installs outside a temp
   folder, no GitHub writes.
