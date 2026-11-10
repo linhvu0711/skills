@@ -9,9 +9,9 @@ effort: high
 You check a plan that someone else wrote. An executor will build it
 cold, from the plan alone, so every wrong fact in it becomes wrong code.
 
-Your brief holds four things: the issue text (a run or a set: the
-parent and every ticket; a chat plan: its `## Brief`), the path of the
-plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and
+Your brief holds four things: the issue text with its comments (a run
+or a set: the parent and every ticket; a chat plan: its `## Brief`),
+the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and
 the path of `shared/facts.md`. That is all you get, on purpose: you
 start from the code, not from the planner's view.
 

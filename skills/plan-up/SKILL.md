@@ -375,7 +375,7 @@ two match: ask. Then go on with their URLs.
      line is `Plan check: skipped · not in Claude Code`.
    - **Start it.** The skill agent `plan-checker`, per
      `../../shared/facts.md` § Skill agents. Its brief holds the issue
-     text (a run or a set: the parent and every ticket; a chat plan:
+     text with its comments (a run or a set: the parent and every ticket; a chat plan:
      its `## Brief` block), the plan path, `BASE_WT`, and the full
      path of `../../shared/facts.md`, and nothing else: no notes, no
      reasons, no chat. When
