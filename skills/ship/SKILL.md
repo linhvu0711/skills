@@ -353,8 +353,9 @@ as in § Forms.
    build: sort the words by plan-up step 5 (a big fork goes to the user
    first), then build them yourself in its worktree as `render.sh local
    prompt` § Follow-up shapes them, with every slice of the first
-   prompt not built yet, and go on from build-and-prove step 8, Gates. A cloud session: handoff
-   § Follow-up. No words: say `A build from this chat is open; say what
+   prompt not built yet. Then build-and-prove steps 6 to 12 again,
+   each of steps 6 and 7 skipped when this build already did it. A
+   cloud session: handoff § Follow-up. No words: say `A build from this chat is open; say what
    to change.` and stop.
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
    with no build yet. Hold its `.md`, the path its summary names, and
