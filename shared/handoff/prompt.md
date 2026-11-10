@@ -5,8 +5,7 @@ The prompt file is the only thing the executor gets. It reads no file
 of ours beyond it. So it carries the issue, the plan, and the rules in
 <!-- local -->
 full, in this order. `/build-and-prove` writes the file and the
-builder reads it whole: the Claude Code pane gets `Read <path> whole and
-follow it` as its first prompt, or the session follows the file itself.
+session follows the file itself.
 The head lines (everything above the first `# ` heading) open the file,
 because the rules block reads `Repo`, `Base branch`, `Branch`, and
 `Proof folder` by name. A local prompt never has `UI walks`, `Videos`,
@@ -181,9 +180,8 @@ A follow-up goes into a session that already holds the first prompt.
 Only what changed, same headings, nothing repeated:
 <!-- /devin -->
 <!-- local -->
-A follow-up goes into the pane that already holds the first prompt,
-with `herdr-send`, or is the next thing the planning session does
-itself. Only what changed, same headings, nothing repeated:
+A follow-up is the next thing the planning session does itself. Only
+what changed, same headings, nothing repeated:
 <!-- /local -->
 <!-- cursor -->
 A follow-up goes into an agent that already holds the first prompt. It
@@ -218,10 +216,11 @@ The session keeps the rules it already has. When a follow-up changes a
 The agent keeps the rules it already has. When a follow-up changes a
 <!-- /cursor -->
 <!-- local -->
-The pane keeps the rules it already has. When a follow-up changes a
+The session keeps the rules it already has. When a follow-up changes a
 <!-- /local -->
 Decided line, say so under `Changed`.
 
+<!-- cloud -->
 ## Answer
 
 <!-- devin -->
@@ -229,11 +228,6 @@ An answer goes into a session that stopped on a question. It is short:
 the pick, the fact behind it, and what to do now. No headings the
 question did not ask for.
 <!-- /devin -->
-<!-- local -->
-An answer goes into a pane whose last message was a `QUESTION`. It is
-short: the pick, the fact behind it, and what to do now. No headings
-the question did not ask for.
-<!-- /local -->
 <!-- cursor -->
 An answer goes into an agent whose last run ended on a question. It is
 short: the pick, the fact behind it, and what to do now. No headings
@@ -260,10 +254,8 @@ The session keeps the rules it already has. When the user made the pick
 <!-- cursor -->
 The agent keeps the rules it already has. When the user made the pick
 <!-- /cursor -->
-<!-- local -->
-The pane keeps the rules it already has. When the user made the pick
-<!-- /local -->
 (a big fork), `Why` says so in one line and still gives the `file:line`.
+<!-- /cloud -->
 
 <!-- cloud -->
 ## New layer

@@ -91,7 +91,7 @@ The checks a run proves on its head commit: the full suite, typecheck, lint, the
 _Avoid_: CI, final checks
 
 **Builder**:
-The agent in `/build-and-prove` that writes the code, the tests, and the commits: a Claude Code pane, or the session itself.
+The agent in `/build-and-prove` that writes the code, the tests, and the commits: the session itself.
 _Avoid_: implementer, coder
 
 **Walker**:

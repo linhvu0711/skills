@@ -304,7 +304,7 @@ number, or words that point at one. Two words come off first and never reach pla
 
    ```
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
-   Route: local · built by: claude pane w4:p9M · walks: 3 in round 2 · review rounds: 2 · Filed: none
+   Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
    Worktree: ~/development/worktrees/acme/app/feat-42-login
    After merge: /prune-worktrees
    Ship mode: ready · small fix, no schema or API, no risk in the plan
@@ -373,15 +373,15 @@ as in § Forms.
 
 ## Examples
 
-**User:** `/ship https://github.com/acme/shop/issues/57` on Fable inside
-herdr; #57 is a `[fix]`, size S, `ready-to-build`, no screen. The plan's
+**User:** `/ship https://github.com/acme/shop/issues/57` on Opus; #57
+is a `[fix]`, size S, `ready-to-build`, no screen. The plan's
 Review block has no risk.
 
 Plan-up runs its short path and writes the plan. Step 2 picks `ready`:
 `small fix, no schema or API, no risk in the plan`. Summary printed, no
 page, no wait. `Route: local (no UI)`. build-and-prove: worktree
 `~/development/worktrees/acme/shop/fix-57-export-date-iso` from `main`,
-no Sandbox, a Claude Code pane on Sonnet at high effort builds, every
+no Sandbox, this session builds, every
 slice test on the local machine. CI runs `pnpm test`, so it is left to
 CI; `box.sh gates --local` runs `pnpm lint`. `BUILT
 fix/57-export-date-iso`, `Walks: none (no UI)`. make-pr opens PR 61 with the proof folder's `Proof` part.
