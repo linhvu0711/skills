@@ -200,9 +200,9 @@ two match: ask. Then go on with their URLs.
      and keep relaying.
    - `PLANNED <path>`: go to step 8; the plan was made by Fable.
    - `STOP <why>`: that stop is yours.
-   - An error, a refusal, or a usage limit: run steps 4 to 7 yourself,
-     and the `Plan check:` line step 8 holds ends
-     ` · planner failed: <why>`.
+   - An error, a refusal, or a usage limit: delete any `.md` it wrote,
+     run steps 4 to 7 yourself, so the plan is yours, and the
+     `Plan check:` line step 8 holds ends ` · planner failed: <why>`.
 
    Any other size, a main chat on Fable, or Codex: you run steps 4 to 7.
 
@@ -358,7 +358,8 @@ two match: ask. Then go on with their URLs.
    back to step 4 or 5.
 
 8. **Check.** Write the plan to its `.md`, per
-   `../../shared/plan-page.md` § Files, unless the planner did. Then decide whether a second
+   `../../shared/plan-page.md` § Files, unless the planner returned
+   `PLANNED`. Then decide whether a second
    model checks it, with fresh eyes, before the user sees it (ADR 0020).
    Hold one `Plan check:` line for the summary.
 
@@ -366,8 +367,9 @@ two match: ask. Then go on with their URLs.
      ticket, from its Blast radius and its slices. L or XL: always. M:
      when a risk in the plan looks high to you, and when you are
      unsure. XS and S: never, and the line is
-     `Plan check: skipped · size <x>`. A plan the `planner` agent wrote,
-     or that you wrote while you run on Fable: never, and the line is
+     `Plan check: skipped · size <x>`. A plan the `planner` returned
+     with `PLANNED`, or that you wrote while you run on Fable: never,
+     and the line is
      `Plan check: skipped · made by Fable`. In Codex: never, and the
      line is `Plan check: skipped · not in Claude Code`.
    - **Start it.** The skill agent `plan-checker`, per
