@@ -12,7 +12,7 @@ as `references/plan.md` § Change map: read from that heading to the
 next heading of its level or higher, not the whole file. A heading
 inside a code fence belongs to a template, not a section. A step that
 needs a whole file says so and why. First read `references/plan.md`
-§ Vocabulary: its words run through every step. At step 8,
+§ Vocabulary: its words run through every step. At steps 8 and 9,
 read `../../shared/plan-page.md`: where the plan is written
 and how it is shown. Before a `Decided` line adds a module or a seam, on the full
 path or the short one, read `../../shared/codebase-design.md`:
@@ -96,7 +96,7 @@ two match: ask. Then go on with their URLs.
    Read the comments too; a later comment can change a line. Carrying
    `ready-to-build`: the **short path**, `plan.md` § Ready-to-build. The
    Steps are trusted. Step 4 asks only what that section lists, step 5
-   closes only the issue's `Open` lines, steps 6 to 8 run as written.
+   closes only the issue's `Open` lines, steps 6 to 9 run as written.
 
    The title's leading word is the issue's type, read through the
    repo's `words` map, per `plan.md` § Type variants, its opening
@@ -190,9 +190,11 @@ two match: ask. Then go on with their URLs.
    § Skill agents; when it is not found, `general-purpose` with its
    body pasted and the model `fable` on the Agent call. Pick the plan's
    slug per `../../shared/plan-page.md` § Files first. Its brief holds
-   the issue text with its comments, `BASE_WT`, `BASE_SHA`, the plan
-   `.md` path, and this file's path. It runs steps 4 to 7, and you
-   relay:
+   the issue text with its comments (a run or a set: the parent and
+   every ticket, as step 2 read them), what step 2 decided (the short
+   path or the full one, and the type with its `plan.md` section),
+   `BASE_WT`, `BASE_SHA`, the plan `.md` path, and this file's path.
+   It runs steps 4 to 7, and you relay:
    - `FORK` and a question: ask the user that question, as step 5
      asks. Wait. Send the answer to the same planner by SendMessage,
      and keep relaying.
@@ -370,7 +372,8 @@ two match: ask. Then go on with their URLs.
      line is `Plan check: skipped · not in Claude Code`.
    - **Start it.** The skill agent `plan-checker`, per
      `../../shared/facts.md` § Skill agents. Its brief holds the issue
-     text (a chat plan: its `## Brief` block), the plan path, and
+     text (a run or a set: the parent and every ticket; a chat plan:
+     its `## Brief` block), the plan path, and
      `BASE_WT`, and nothing else: no notes, no reasons, no chat. When
      it is not found, `general-purpose` with its body pasted and the
      model `fable` on the Agent call.
