@@ -129,8 +129,8 @@ number, or words that point at one. Two words come off first and never reach pla
      tickets: one mode for the run, and `review` when any ticket needs
      it, else the safest any ticket needs. Typing `/ship` with no option
      is the user's go-ahead to merge when you pick `merge`. A plan whose
-     `Plan check:` line says `failed`: `review`, since no second model
-     read it.
+     `Plan check:` line starts `Plan check: failed`: `review`, since no
+     second model read it.
    - Hold `<why>`: one short phrase for the pick, as `small fix, no
      schema or API, no risk in the plan`.
 
@@ -352,8 +352,8 @@ as in § Forms.
 1. **A build this chat started.** The words are a follow-up. A local
    build: sort the words by plan-up step 5 (a big fork goes to the user
    first), then build them yourself in its worktree as `render.sh local
-   prompt` § Follow-up shapes them, and go on from build-and-prove
-   step 8, Gates. A cloud session: handoff
+   prompt` § Follow-up shapes them, with every slice of the first
+   prompt not built yet, and go on from build-and-prove step 8, Gates. A cloud session: handoff
    § Follow-up. No words: say `A build from this chat is open; say what
    to change.` and stop.
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
