@@ -337,14 +337,18 @@ two match: ask. Then go on with their URLs.
 
 8. **Check.** Write the plan to its `.md`, per
    `../../shared/plan-page.md` § Files. Then decide whether a second
-   model checks it, with fresh eyes, before the user sees it (ADR 0020).
-   Hold one `Plan check:` line for the summary.
+   model checks it, with fresh eyes, before the user sees it (ADR 0020,
+   ADR 0021). Hold one `Plan check:` line for the summary.
 
    - **Who gets it.** Size the plan as `../../shared/size.md` sizes a
-     ticket, from its Blast radius and its slices. L or XL: always. M:
-     when a risk in the plan looks high to you, and when you are
-     unsure. XS and S: never, and the line is
-     `Plan check: skipped · size <x>`. A plan you wrote while you run
+     ticket, from its Blast radius and its slices. XS and S: never, and
+     the line is `Plan check: skipped · size <x>`. M, L, or XL: run it
+     when you can name what a wrong plan would break and that fix costs
+     real work. Weigh the Risks marked `not proved`, and a table, an
+     API, or a data migration in the Blast radius: a plan that adds a
+     column to the orders table gets the check. Unsure: skip. A skip's
+     line gives the reason, as `Plan check: skipped · new screen, no
+     table or API, every risk proved`. A plan you wrote while you run
      on Fable: never, and the line is
      `Plan check: skipped · made by Fable`. In Codex: never, and the
      line is `Plan check: skipped · not in Claude Code`.

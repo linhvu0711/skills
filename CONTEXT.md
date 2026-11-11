@@ -47,7 +47,7 @@ A sign that someone else is already on an issue: an open PR that closes or menti
 _Avoid_: lock, reservation
 
 **Plan check**:
-A second model's read of a finished plan, with only the issue, the plan, and the code, before the user sees it. Plan-up runs it on an Opus plan of size L or XL, and on M when the plan looks risky. Its findings sit at the end of the plan file.
+A second model's read of a finished plan, with only the issue, the plan, and the code, before the user sees it. Plan-up runs it on an M, L, or XL plan when a wrong plan would break something costly to fix. Its findings sit at the end of the plan file.
 _Avoid_: plan review, critic, second opinion
 
 **Not proved**:
