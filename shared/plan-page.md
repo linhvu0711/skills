@@ -91,8 +91,7 @@ Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
 The `Plan check:` line is the one plan-up step 8 holds: the counts, or
-`skipped · <why>`, or `failed · <why>`, with ` · planner failed: <why>`
-at its end when the planner agent failed. A run: one line per layer under
+`skipped · <why>`, or `failed · <why>`. A run: one line per layer under
 the first. A chat plan: its first line
 has no `#<n>`, as in
 `Plan: [feat] Export orders as CSV · size/M · base main`. A
