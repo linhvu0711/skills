@@ -141,7 +141,8 @@ set's, the first ticket URL. Say the pick in one line, as
    `<state> <link> :: <message>` for `blocked`, `finished`, `error`,
    `cancelled`, `expired`, or `suspended:<why>`. After three failed polls
    in a row it prints `poll failed <link> :: <error>` and exits: show it
-   and stop. On each line, tell the user the state and the message in
+   and stop. It also prints each warning a working poll gives, such as
+   `mac.sh: could not destroy <id> ...`: tell the user that line as it is. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
    section. Without a Monitor, add `--once`: the watch exits on the first
    event, and you start it again after you answer. In Codex there is no
