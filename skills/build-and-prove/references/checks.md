@@ -10,31 +10,22 @@ checks run on the head commit.
 
 The Gates are the full suite, typecheck, lint, and build under the
 plan's `Facts`, and every command the repo's `AGENTS.md` or `CLAUDE.md`
-names as a check, a `none` line left out. Sort each one:
+names as a check, a `none` line left out. Run them all in one call,
+each command in single quotes:
 
-- **CI covers it**: a file under `$WT/.github/workflows/` names its
-  command, in a job that runs on a pull request. A longer command does
-  not cover it (`pnpm test:e2e` is not `pnpm test`), and neither does a
-  comment. It runs on the PR, not here. Its line is
-  `<command> · <short SHA> · not run: CI runs it (<workflow file>)`.
-- **Every other Gate** runs here, all in one call, each command in
-  single quotes:
+```bash
+bash scripts/box.sh gates "$PROOF" --local "$WT" -- '<Gate>' '<Gate>'
+```
 
-  ```bash
-  bash scripts/box.sh gates "$PROOF" --local "$WT" -- '<Gate>' '<Gate>'
-  ```
-
-  It runs them one at a time, never two at once, since two suites at
-  once overload the local machine (ADR 0011). It writes
-  `$PROOF/checks.txt` fresh, one line per command, ending `(local
-  machine)`, as in `pnpm lint · 1a2b3c4 · 0 errors (local machine)`.
-  Write no such line by hand. Exit 1 means a red Gate: stderr has
-  `red: <command> · exit <code> · output <file>` for each (§ Red).
-
-Then add the line of each Gate CI covers to `checks.txt`, and again
-after each later `gates` call, since that call writes the file fresh.
-No Gate left to run here: skip the call and write the CI lines alone.
-A repo with no workflow file covers no Gate, so every Gate runs here.
+It asks `../../shared/ci-covers.sh` which Gates the PR's CI runs. Each
+of those runs on the PR, not here, and its line is `<command> · <short
+SHA> · not run: CI runs it (<workflow file>)`. It runs the other Gates
+one at a time, never two at once, since two suites at once overload the
+local machine (ADR 0011), and their lines end `(local machine)`, as in
+`pnpm lint · 1a2b3c4 · 0 errors (local machine)`. It writes every line
+of `$PROOF/checks.txt`, fresh on each call. Write no Gate line by hand.
+Exit 1 means a red Gate: stderr has `red: <command> · exit <code> ·
+output <file>` for each (§ Red).
 
 ## Missing tool
 

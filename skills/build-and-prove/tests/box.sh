@@ -504,7 +504,22 @@ t_box_gates_local_red() {
   has stderr "missing tool: no-such-tool-xyz · " "$err"
 }
 
+t_box_gates_local_ci() {
+  # Given
+  fake_proofbox
+  mkdir -p "$R/.github/workflows"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: echo one' > "$R/.github/workflows/ci.yml"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" --local "$R" -- 'echo one' 'echo two'
+  # Then
+  eq exit 0 "$code"
+  eq checks "echo one · $sha · not run: CI runs it (ci.yml)
+echo two · $sha · two (local machine)" "$(cat "$P/checks.txt")"
+}
+
 cases=(
+  "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
   "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"

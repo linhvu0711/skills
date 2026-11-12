@@ -47,11 +47,13 @@
 # <command> · <that line>` on stderr. gates exits 1 when any command is red,
 # 0 when all are green. A stop leaves the old checks.txt as it was.
 #
-# gates --local <worktree> needs no Sandbox and no proofbox: it runs each
-# command on the local machine, one at a time, as `sh -c '<command>'` in
-# <worktree>, and takes the short SHA from there. Its lines end `(local
-# machine)` in place of `(sandbox)`; the rest is the same, so checks.txt keeps
-# one writer and one line shape.
+# gates --local <worktree> needs no Sandbox and no proofbox. It asks the shared
+# core's ci-covers.sh which commands the PR's GitHub CI runs; each of those is
+# not run, and its line is `<command> · <short SHA> · not run: CI runs it
+# (<workflow file>)`. It runs each other command on the local machine, one at
+# a time, as `sh -c '<command>'` in <worktree>, and takes the short SHA from
+# there. Its lines end `(local machine)` in place of `(sandbox)`; the rest is
+# the same, so checks.txt keeps one writer and one line shape.
 #
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
@@ -64,6 +66,9 @@ set -euo pipefail
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+cover="$here/../../../shared/ci-covers.sh"
 
 usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> [--local <worktree>] -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
@@ -199,10 +204,26 @@ case "$verb" in
     # checks.txt is moved into place whole, so a stop leaves the old one.
     tmp="$dir/checks.txt.tmp"
     trap 'rm -f "$tmp"' EXIT
+    # With --local, a Gate the PR's CI runs is left to CI: covered[i] is its
+    # workflow file, or empty.
+    covered=()
+    if [ -n "$local_wt" ]; then
+      cerr="$(mktemp)"
+      cover_out="$(bash "$cover" "$local_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
+      rm -f "$cerr"
+      while IFS= read -r v; do
+        v="${v%% · *}"
+        case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
+      done <<<"$cover_out"
+    fi
     : > "$tmp"
     n=0; red=0
     for cmd in "$@"; do
       n=$((n + 1)); log="$logs/$n.log"
+      if [ -n "${covered[$((n - 1))]:-}" ]; then
+        printf '%s · %s · not run: CI runs it (%s)\n' "$cmd" "$sha" "${covered[$((n - 1))]}" >> "$tmp"
+        continue
+      fi
       if [ -n "$local_wt" ]; then
         rc=0; (cd "$local_wt" && sh -c "$cmd") >"$log" 2>&1 || rc=$?
       else
