@@ -635,6 +635,18 @@ description: |
   eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_counts_block_nested_indent() {
+  # Given: a block description of 510, then 512 indented two more, so YAML
+  # keeps those two spaces: 510 + 1 newline + 2 + 512 = 1025. When: check.sh
+  header "name: demo
+description: |
+  $(times 510 a)
+    $(times 512 a)"
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 t_counts_description_characters() {
   # Given: a description of 1024 two-byte characters, 2048 bytes. When: check.sh
   header "name: demo
@@ -887,6 +899,7 @@ cases=(
   "passes a quoted description of 1024 characters|t_passes_description_at_limit"
   "flags a block description over 1024 characters|t_flags_long_block_description"
   "counts a description by characters, not bytes|t_counts_description_characters"
+  "counts the nested indent of a block description|t_counts_block_nested_indent"
   "flags a name over 64 characters|t_flags_long_name"
   "flags an AGENTS.md of 200 lines|t_flags_long_agents_md"
   "passes an AGENTS.md of 199 lines|t_passes_agents_md_under_limit"

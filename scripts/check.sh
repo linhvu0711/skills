@@ -119,7 +119,8 @@ agent_files() { git ls-files -- 'skills/*/agents/*.md' | awk -F/ 'NF == 4'; }
 # <what> it should match), an empty `description`, or an empty <key>. A quoted
 # value is what the quotes hold, with `''` read as `'` and a `\`-escaped char
 # kept; an unquoted one loses its `#` comment, and `null` or `~` is empty. A
-# block scalar is its indented lines, indent taken off, joined by newlines.
+# block scalar is its indented lines, less the first line's indent, joined by
+# newlines, as YAML reads it.
 # With --limits, also Anthropic's SKILL.md limits: `body too long` at 500 lines
 # or more under the frontmatter, `description too long` over 1024 characters,
 # and `name too long` over 64.
@@ -145,7 +146,8 @@ frontmatter_problems() {
     NR == 1          { if ($0 != "---") exit; next }
     closed           { body++; next }
     blk && /^[ \t]*$/ { if (desc != "") gap = gap "\n"; next }
-    blk && /^[ \t]/  { line = $0; sub(/^[ \t]+/, "", line)
+    blk && /^[ \t]/  { match($0, /^[ \t]*/); if (desc == "") ind = RLENGTH
+                       line = substr($0, (RLENGTH < ind ? RLENGTH : ind) + 1)
                        desc = (desc == "") ? line : desc "\n" gap line; gap = ""; next }
     blk              { blk = 0 }
     $0 == "---"      { closed = 1; next }
