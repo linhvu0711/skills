@@ -257,9 +257,12 @@ done.
    `PROOF` yet. Read `references/walks.md` whole first: this step uses
    its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
    committed: add a detached worktree of `BASE` in a temp
-   folder, and start the app (step 9a) with `box.sh start "$PROOF"
-   --from <that folder> …`, so the base is what runs; it prints
-   `TREE=base`. Send the walker in `before` mode and round 1 (step 9b),
+   folder. Every start of the app in this step, the first and each one
+   again below, is `box.sh start "$PROOF" --from <that folder> …`
+   (step 9a), so the base is what runs; each prints `TREE=base`, and a
+   `TREE=branch` is a start without `--from`: stop the app and start it
+   again with it. Start the app, send the walker in `before` mode and
+   round 1 (step 9b),
    and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
