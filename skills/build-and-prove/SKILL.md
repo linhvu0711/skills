@@ -427,9 +427,11 @@ updates the PR from `PROOF`.
   on the next follow-up. No slice left and nothing to build, as with
   `review fixes are committed`: no builder.
 - **Sandbox.** A plan with walks only. `box.sh up` (step 6) runs at the
-  first step below that needs the Sandbox, and only then: a before shot
-  to take, a Gate or the perf measure that runs there, a video to film.
-  None of them: no `up`, and step 11 is skipped.
+  first step that needs the Sandbox, and only then: a slice test that
+  runs there, as step 5 says (a tool the local machine lacks, the
+  slice's e2e spec files), a before shot to take, a Gate or the perf
+  measure that runs there, a video to film. None of them: no `up`, and
+  step 11 is skipped.
 - **Step 7.** Only the walks with no `before-<walk>.png` in `PROOF`.
 - **Step 8.** Every Gate line of `checks.txt` names HEAD's short SHA
   and none is red: the Gates stand, and no `gates` call runs. The perf
