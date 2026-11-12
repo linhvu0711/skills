@@ -222,10 +222,11 @@ number, or words that point at one. Two words come off first and never reach pla
    Then read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
-   ready-pr says, and start no Sandbox. Before each push of fixes, after
-   ready-pr step 5's rebase when it rebased, follow
-   `../build-and-prove/SKILL.md` § Follow-up in `$WT` with the change
-   `review fixes are committed`, and the layer's `--layer` and `--base`
+   ready-pr says, and start no Sandbox. Before each push of ready-pr
+   step 5, of fixes or of a rebase alone, and after its rebase when it
+   rebased, follow `../build-and-prove/SKILL.md` § Follow-up in `$WT`
+   with the change `review fixes are committed`, or `rebased on <BASE>`
+   for a rebase alone, and the layer's `--layer` and `--base`
    from step 5 for a layer of a stack; its stop points are yours. After the
    push, follow `../make-pr/SKILL.md` in `$WT` with step 6's caller
    settings: it updates the PR from `PROOF`. make-pr comes after the
