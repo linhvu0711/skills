@@ -431,8 +431,9 @@ updates the PR from `PROOF`.
   to take, a Gate or the perf measure that runs there, a video to film.
   None of them: no `up`, and step 11 is skipped.
 - **Step 7.** Only the walks with no `before-<walk>.png` in `PROOF`.
-- **Step 8.** Every line of `checks.txt` names HEAD's short SHA and none
-  is red: the Gates stand, and no `gates` call runs. Else, with no open
+- **Step 8.** Every Gate line of `checks.txt` names HEAD's short SHA
+  and none is red: the Gates stand, and no `gates` call runs. The perf
+  line is not a Gate line: it keeps the SHA it was measured on. Else, with no open
   PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
   --head <branch> --state open --json url -q '.[0].url'` prints a URL;
   then only the Gates CI does not run run here. `UI: none`: step 8 as
