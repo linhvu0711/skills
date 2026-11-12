@@ -141,7 +141,8 @@ set's, the first ticket URL. Say the pick in one line, as
    `<state> <link> :: <message>` for `blocked`, `finished`, `error`,
    `cancelled`, `expired`, or `suspended:<why>`. After three failed polls
    in a row it prints `poll failed <link> :: <error>` and exits: show it
-   and stop. On each line, tell the user the state and the message in
+   and stop. It also prints each warning a working poll gives, such as
+   `mac.sh: could not destroy <id> ...`: tell the user that line as it is. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
    section. Without a Monitor, add `--once`: the watch exits on the first
    event, and you start it again after you answer. In Codex there is no
@@ -342,6 +343,10 @@ lives for one run:
   So the watch is what frees it; a chat with no watch (Codex) runs
   `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
+- A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
+  line, which names the Mac and the hand command, and the next poll or
+  `status` tries again; `cursor.sh down` exits 1. Tell the user that
+  line: the Mac costs money until it goes.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID

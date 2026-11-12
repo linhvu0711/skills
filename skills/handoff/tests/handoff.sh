@@ -11,7 +11,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # files in $FAKE_AD, by route <name>.<verb>: each route counts its calls in
 # <route>.calls and logs the args after the verb in <route>.args, one line per
 # call. Call n prints <route>.<n>.fail or <route>.fail to stderr and fails when
-# one exists, else prints <route>.<n>.out or <route>.out.
+# one exists, else prints <route>.<n>.err to stderr when it exists, then
+# <route>.<n>.out or <route>.out.
 fake_adapters() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/adapters" "$T/ad" "$T/home"
@@ -25,6 +26,7 @@ printf '%s\n' "$*" >> "$FAKE_AD/$key.args"
 for f in "$FAKE_AD/$key.$n.fail" "$FAKE_AD/$key.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
 done
+[ ! -f "$FAKE_AD/$key.$n.err" ] || cat "$FAKE_AD/$key.$n.err" >&2
 f="$FAKE_AD/$key.$n.out"; [ -f "$f" ] || f="$FAKE_AD/$key.out"
 cat "$f"
 EOF
@@ -190,6 +192,19 @@ t_watch_stops_on_failing_polls() {
   eq stdout "poll failed devin-abc :: devin.sh: HTTP 401 on GET /sessions/devin-abc: bad key" "$(unstamped)"
 }
 
+t_watch_shows_poll_warning() {
+  # Given: a poll that works and warns of a Mac it could not give back
+  fake_adapters
+  printf 'mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.poll.1.err"
+  printf 'finished\tfinished|Done\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.1.out"
+  # When
+  handoff watch cursor bc-1 --interval 0
+  # Then
+  eq exit 0 "$code"
+  eq stdout "mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force
+finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped)"
+}
+
 # old_ledgers: the two old ledgers, one bad line in the devin one.
 old_ledgers() {
   mkdir -p "$HOME/.config/dispatch"
@@ -279,6 +294,7 @@ cases=(
   "watch --once exits on a new PR|t_watch_once_on_pr"
   "watch goes on after one failed poll|t_watch_survives_a_failed_poll"
   "watch stops after three failed polls in a row|t_watch_stops_on_failing_polls"
+  "watch shows a warning a poll printed|t_watch_shows_poll_warning"
   "first run moves the old ledgers|t_migrate_moves_rows"
   "migration warns on a row it cannot read|t_migrate_warns_bad_row"
   "migration renames the old files|t_migrate_renames_files"

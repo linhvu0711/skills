@@ -29,8 +29,9 @@
 # keeps going past the end, for a session that gets a follow-up. At --max
 # seconds it prints `still running <link>`. A failed poll is tried again; after
 # three in a row it prints `poll failed <link> :: <the adapter's error>` and
-# exits 1. The interval defaults to 120s for
-# devin and 60s for cursor. start on an issue that only another executor has prints
+# exits 1. Each line a working poll writes on stderr, such as a Mac the
+# adapter could not give back, is printed too, stamped. The interval
+# defaults to 120s for devin and 60s for cursor. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
 
@@ -166,7 +167,7 @@ cmd_watch() {
       *) opts+=("$1"); shift ;;
     esac
   done
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0 w
   errf=$(mktemp); trap "rm -f '$errf'" EXIT
   start=$(date +%s)
   while :; do
@@ -180,6 +181,11 @@ cmd_watch() {
       fi
     else
       fails=0
+      # A poll that works can still warn, as of a Mac it could not give back;
+      # the chat reads only this output, so the warning goes there.
+      while IFS= read -r w; do
+        if [[ -n "$w" ]]; then echo "[$(date +%H:%M)] $w"; fi
+      done <"$errf"
       IFS=$'\t' read -r st key prs link msg <<<"$line"
       last_link="$link"
       if [[ "$prs" != "-" ]]; then
