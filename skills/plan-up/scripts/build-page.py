@@ -55,28 +55,13 @@ def plain(records):
 
 def page_layer(layer, issue):
     review, forks = layer_review(layer["review"])
-    proof = []
-    for r in layer["proof"]:
-        if len(r) != 6:
-            continue
-        w = re.search(r"walk (\d+)", r[3])
-        proof.append({"line": r[1], "test": None if r[2] == "none" else r[2],
-                      "walk": int(w.group(1)) if w else None, "video": None if r[4] == "none" else r[4], "artifact": r[5]})
-    seams = []
-    for item in layer["seams"]:
-        m = re.match(r"(.*?):\s*(?:`([^`]+)`|(layer \d+, slice \d+))\s*,\s*(.*)", item)
-        if m:
-            seams.append({"name": m.group(1), "at": m.group(2) or m.group(3), "why": m.group(4)})
-    decided = []
-    for item in layer["decided"]:
-        what, _, why = re.sub(r"^D\d+ ", "", item).partition(": ")
-        decided.append({"what": what, "why": why})
+    proof = [{k: r[k] for k in ("line", "test", "walk", "video", "artifact")} for r in layer["proof"] if r["cells"] == 6]
     gates = layer["gates"]
     page = {"issue": issue, "title": layer["title"], "summary": " ".join(layer["summary"]), "review": review,
-            "forks": forks, "seams": seams, "proof": proof, "slices": plain(layer["slices"]),
+            "forks": forks, "seams": layer["seams"], "proof": proof, "slices": plain(layer["slices"]),
             "walks": plain(layer["walks"]), "videos": plain(layer["videos"]),
             "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
-            "decided": decided, "out": [re.sub(r"^O\d+ ", "", x) for x in layer["out"]]}
+            "decided": layer["decided"], "out": layer["out"]}
     if layer["perf"] is not None:
         page["perf"] = layer["perf"]
     return page

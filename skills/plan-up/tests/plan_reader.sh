@@ -90,7 +90,29 @@ t_reader_map_part() {
     '{"at": ["src/web/orders.tsx:12"], "cell": "0,1", "change": "same", "group": "Web", "job": "asks for an export", "kind": "part", "layer": null, "name": "Orders page", "ref": "M1", "x": 0, "y": 1}'
 }
 
+t_reader_proof_row() {
+  good_part 'plan["layers"][0]["proof"][1]' \
+    '{"artifact": "test", "cells": 6, "line": "an empty export has a header", "n": "2", "test": "`src/orders/export.test.ts` \"exports an empty list\"", "video": null, "walk": null}'
+}
+
+t_reader_seam() {
+  good_part 'plan["layers"][0]["seams"][0]' \
+    '{"at": "src/orders/export.ts:31", "name": "export route", "why": "receives the chosen format"}'
+}
+
+t_reader_decided() {
+  good_part 'plan["layers"][0]["decided"][1]' '{"what": "delimiter", "why": "`,` as the spec says"}'
+}
+
+t_reader_out() {
+  good_part 'plan["layers"][0]["out"]' '["orders export as PDF"]'
+}
+
 cases=(
+  "plan_reader reads a Proof row into its cells|t_reader_proof_row"
+  "plan_reader reads a seam into its name, place, and reason|t_reader_seam"
+  "plan_reader reads a Decided line without its ref|t_reader_decided"
+  "plan_reader reads an Out of scope line without its ref|t_reader_out"
   "plan_reader reads a map part into its files and grid cell|t_reader_map_part"
   "plan_reader reads a risk into belief, if wrong, and proved|t_reader_risk_parts"
   "plan_reader reads a fork choice into its question and pick|t_reader_fork_parts"

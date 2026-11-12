@@ -263,6 +263,27 @@ def records(lines, kind):
     return got
 
 
+def proof_row(cells):
+    """One Proof row as its parts; a row of any other width than 6 keeps only its first cell and count."""
+    row = {"n": cells[0], "cells": len(cells), "line": None, "test": None, "walk": None, "video": None, "artifact": None}
+    if len(cells) == 6:
+        walk = re.search(r"walk (\d+)", cells[3])
+        row.update({"line": cells[1], "test": None if cells[2] == "none" else cells[2],
+                    "walk": int(walk.group(1)) if walk else None,
+                    "video": None if cells[4] == "none" else cells[4], "artifact": cells[5]})
+    return row
+
+
+def seam(item):
+    m = re.match(r"(.*?):\s*(?:`([^`]+)`|(layer \d+, slice \d+))\s*,\s*(.*)", item)
+    return {"name": m.group(1), "at": m.group(2) or m.group(3), "why": m.group(4)} if m else None
+
+
+def decided(item):
+    what, _, why = re.sub(r"^D\d+ ", "", item).partition(": ")
+    return {"what": what, "why": why}
+
+
 def unread(section):
     got = []
     for block, kind in [("Slices", "slice"), ("UI walks", "walk"), ("Videos", "video")]:
@@ -286,10 +307,10 @@ def layer(section, n, issue, title, review):
     return {
         "n": n, "issue": issue, "title": title, "review": review,
         "summary": [line.strip() for line in section.get("Summary", []) if line.strip()],
-        "proof": [r for r in table_rows(section.get("Proof", [])) if r and r[0].isdigit()],
-        "seams": list_items(section.get("Seams", [])),
-        "decided": list_items(section.get("Decided", [])),
-        "out": list_items(section.get("Out of scope", [])),
+        "proof": [proof_row(r) for r in table_rows(section.get("Proof", [])) if r and r[0].isdigit()],
+        "seams": [s for s in map(seam, list_items(section.get("Seams", []))) if s],
+        "decided": [decided(x) for x in list_items(section.get("Decided", []))],
+        "out": [re.sub(r"^O\d+ ", "", x) for x in list_items(section.get("Out of scope", []))],
         "gates": key_values(section.get("Gates", []), ["Slice done", "Task done"]),
         "perf": key_values(section["Perf"], PERF) if "Perf" in section else None,
         "slices": records(section.get("Slices", []), "slice"),
@@ -623,8 +644,8 @@ def problems(plan):
             elif s.get("deletes") and s["n"] != 1:
                 yield f"slices: layer {n} delete slice is headed `Slice {s['n']}`; it is `Slice 1`"
         for row in layer["proof"]:
-            if len(row) != 6:
-                yield f"proof: layer {n} row {row[0]} has {len(row)} cells, needs 6"
+            if row["cells"] != 6:
+                yield f"proof: layer {n} row {row['n']} has {row['cells']} cells, needs 6"
         if not layer["summary"]:
             yield f"summary: layer {n} has no `## Summary` block"
         elif len(layer["summary"]) > SUMMARY_MAX:
