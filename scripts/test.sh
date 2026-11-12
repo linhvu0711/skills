@@ -577,6 +577,85 @@ t_flags_escaped_quote_name() {
   eq "stderr line 1" "skills/demo/SKILL.md: name does not match folder: demo'-other" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+# times <n> <text>: <text> written <n> times, with no newline.
+times() { local i; for ((i = 0; i < $1; i++)); do printf '%s' "$2"; done; }
+
+# body <n>: repo with skills/demo, its README headings, and a SKILL.md whose
+# body under the frontmatter is <n> lines of `x`, committed; then run check.sh.
+body() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  for ((i = 0; i < $1; i++)); do printf 'x\n'; done >> skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_flags_long_body() {
+  # Given: a body of 500 lines. When: check.sh
+  body 500
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: body too long: 500 lines (limit: under 500)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_passes_body_under_limit() {
+  # Given: a body of 499 lines. When: check.sh
+  body 499
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_long_description() {
+  # Given: a quoted description of 1025 characters. When: check.sh
+  header "name: demo
+description: \"$(times 1025 a)\""
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_passes_description_at_limit() {
+  # Given: a quoted description of 1024 characters. When: check.sh
+  header "name: demo
+description: \"$(times 1024 a)\""
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_long_block_description() {
+  # Given: a block description of two lines of 512, joined by one newline. When: check.sh
+  header "name: demo
+description: |
+  $(times 512 a)
+  $(times 512 a)"
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_counts_description_characters() {
+  # Given: a description of 1024 two-byte characters, 2048 bytes. When: check.sh
+  header "name: demo
+description: \"$(times 1024 é)\""
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_long_name() {
+  # Given: a skill whose folder and name are 65 characters
+  local n; n="$(times 65 a)"
+  repo; skill "$n"
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/$n/SKILL.md: name too long: 65 characters (limit: 64)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 # readme_msg <skill>: the line the commit-msg hook prints for a skill
 # changed without its README.
 readme_msg() { printf '%s: changed without its README; add "Readme: unchanged" to the message to skip' "$1"; }
@@ -777,6 +856,13 @@ cases=(
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
+  "flags a SKILL.md body of 500 lines|t_flags_long_body"
+  "passes a SKILL.md body of 499 lines|t_passes_body_under_limit"
+  "flags a description over 1024 characters|t_flags_long_description"
+  "passes a quoted description of 1024 characters|t_passes_description_at_limit"
+  "flags a block description over 1024 characters|t_flags_long_block_description"
+  "counts a description by characters, not bytes|t_counts_description_characters"
+  "flags a name over 64 characters|t_flags_long_name"
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"
