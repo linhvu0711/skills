@@ -46,7 +46,19 @@ prints its usage with no arguments.
   with its code. A Sandbox that is gone, idle too long or past its max
   life, is made again once from its Snapshot, and `run` says so on
   stderr. Nothing is lost: the code lives in the worktree. A run can
-  last longer than one Sandbox.
+  last longer than one Sandbox. It notes in `box.env` which tree the
+  Sandbox holds: `BOX_TREE=base` after `--from`, else `BOX_TREE=branch`.
+- `box.sh start <proof-dir> [--from <folder>] [--url <url>] -- '<Run line>'`
+  uploads as `run` does and starts the app in its own process group,
+  prints `TREE=base` or `TREE=branch`, and with `--url` waits up to
+  120 s for it to answer (step 9a).
+- `box.sh stop <proof-dir> [--url <url>]` ends the app's process group,
+  waiting up to 30 s before it kills it, and with `--url` waits up to
+  30 s for the port to be free (step 9a).
+- `box.sh open <proof-dir> -- '<command>'` and `box.sh close
+  <proof-dir>` are the walker's: they start its browser or terminal in
+  its own process group and end that group, waiting up to 10 s before
+  the kill. Neither uploads or makes a gone Sandbox again.
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full
@@ -245,9 +257,12 @@ done.
    `PROOF` yet. Read `references/walks.md` whole first: this step uses
    its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
    committed: add a detached worktree of `BASE` in a temp
-   folder, and run every command of this step as `box.sh run "$PROOF"
-   --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 9a), send the walker in `before` mode and round 1 (step 9b),
+   folder. Every start of the app in this step, the first and each one
+   again below, is `box.sh start "$PROOF" --from <that folder> …`
+   (step 9a), so the base is what runs; each prints `TREE=base`, and a
+   `TREE=branch` is a start without `--from`: stop the app and start it
+   again with it. Start the app, send the walker in `before` mode and
+   round 1 (step 9b),
    and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
@@ -262,8 +277,9 @@ done.
      the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
 
    Remove the temp worktree only when this step ends, with the shots
-   or with a stop. The next `box.sh run` without
-   `--from` puts the branch back. Say `Before shots: <n>`.
+   or with a stop. The next `start`, `run`, or `gates` without
+   `--from` puts the branch back, and `box.env` notes it. Say
+   `Before shots: <n>`.
 
 8. **Gates.** `UI: none`: read `references/checks.md` whole, since
    its four sections are one pass: run the Gates and the perf measure

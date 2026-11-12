@@ -10,7 +10,11 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # in $FAKE_PB: call n of a verb prints <verb>.<n>.fail or <verb>.fail to stderr
 # and exits 125 when one exists, else prints <verb>.err to stderr when it
 # exists, then <verb>.<n>.out or <verb>.out. `exec` then exits with the number
-# in exec.<n>.code or exec.code, or 0.
+# in exec.<n>.code or exec.code, or 0. An exec.<n>.run file makes call n of
+# `exec` run its command on this machine instead, each argument that starts
+# with /tmp/ moved to $FAKE_PB/tmp/, as a Sandbox has its own /tmp, and exit
+# with the command's code. A fake `sleep` on PATH logs its argument to
+# $FAKE_PB/sleep.log and returns at once, so a wait runs to its limit fast.
 fake_proofbox() {
   repo
   mkdir -p "$T/bin" "$T/pb" "$T/home/.agents/proofbox/acme-shop"
@@ -23,6 +27,13 @@ printf '%s\n' "$*" >> "$FAKE_PB/log"
 for f in "$FAKE_PB/$verb.$n.fail" "$FAKE_PB/$verb.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 125; fi
 done
+if [ "$verb" = exec ] && [ -f "$FAKE_PB/exec.$n.run" ]; then
+  shift 3
+  mkdir -p "$FAKE_PB/tmp"
+  args=("${@/#\/tmp\//$FAKE_PB/tmp/}")
+  c=0; "${args[@]}" || c=$?
+  exit "$c"
+fi
 if [ -f "$FAKE_PB/$verb.err" ]; then cat "$FAKE_PB/$verb.err" >&2; fi
 for f in "$FAKE_PB/$verb.$n.out" "$FAKE_PB/$verb.out"; do
   if [ -f "$f" ]; then cat "$f"; break; fi
@@ -35,6 +46,8 @@ fi
 exit 0
 EOF
   chmod +x "$T/bin/proofbox"
+  printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "$FAKE_PB/sleep.log"\n' > "$T/bin/sleep"
+  chmod +x "$T/bin/sleep"
   export PATH="$T/bin:$PATH" FAKE_PB="$T/pb" HOME="$T/home"
   SETUP="$HOME/.agents/proofbox/acme-shop/setup-linux.sh"
   printf '#!/bin/sh\n' > "$SETUP"
@@ -43,11 +56,38 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
-# state <id> [<remade>] [<size>] [<secrets>]: an up Sandbox, without running up.
+# state <id> [<remade>] [<size>] [<secrets>] [<os>]: an up Sandbox, without
+# running up. The OS is linux unless named.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "${5:-linux}" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
 }
+
+# group <pid file> [term]: a process group on this machine, as the app or the
+# browser is in the Sandbox, with its id in <pid file>; sets gpid. With
+# `term`, the group ignores TERM, so only a KILL ends it. A case that fails
+# before its stop still kills the group when it ends.
+group() {
+  mkdir -p "$(dirname "$1")"
+  if [ "${2:-}" = term ]; then
+    bash -c 'set -m; (trap "" TERM; exec /bin/sleep 300) >/dev/null 2>&1 & echo $! > "$1"' _ "$1"
+  else
+    bash -c 'set -m; /bin/sleep 300 >/dev/null 2>&1 & echo $! > "$1"' _ "$1"
+  fi
+  gpid="$(cat "$1")"
+  trap 'kill -KILL "$gpid" 2>/dev/null || true' EXIT
+}
+
+# ended <pid>: the process ends within 2 s.
+ended() {
+  local i
+  for i in $(seq 20); do kill -0 "$1" 2>/dev/null || return 0; /bin/sleep 0.1; done
+  kill -KILL "$1" 2>/dev/null || true
+  eq "process $1" ended "still running"
+}
+
+# line <n> <text>: line n of the text.
+line() { printf '%s\n' "$2" | sed -n "$1p"; }
 
 t_box_up_flags() {
   fake_proofbox
@@ -596,6 +636,248 @@ t_box_gates_upload_fails() {
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
 }
 
+t_box_run_notes_tree() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  mkdir -p "$T/base"
+  # When
+  box run "$P" --from "$T/base" -- true
+  # Then
+  eq "exit after --from" 0 "$code"
+  has "state after --from" "BOX_TREE=base" "$(cat "$P/box.env")"
+  # When
+  box run "$P" -- true
+  # Then
+  eq exit 0 "$code"
+  has state "BOX_TREE=branch" "$(cat "$P/box.env")"
+  case "$(cat "$P/box.env")" in *BOX_TREE=base*) eq state "no BOX_TREE=base" "$(cat "$P/box.env")" ;; esac
+}
+
+t_box_up_notes_branch() {
+  # Given
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  # When
+  box up "$P" "$R" linux acme/shop
+  # Then
+  eq exit 0 "$code"
+  has state "BOX_TREE=branch" "$(cat "$P/box.env")"
+}
+
+t_box_start_linux() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo '{}' > "$FAKE_CURL/GET_.json"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq stdout "TREE=branch" "$out"
+  eq "log line 1" "upload ns:us:abc $R" "$(line 1 "$(cat "$FAKE_PB/log")")"
+  eq "log line 2" 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid sh pnpm dev' "$(line 2 "$(cat "$FAKE_PB/log")")"
+  has "log line 3" 'exec ns:us:abc -- sh -c for i in $(seq 60)' "$(line 3 "$(cat "$FAKE_PB/log")")"
+  eq "curl calls" "GET /" "$(cat "$FAKE_CURL/calls")"
+  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
+}
+
+t_box_start_macos() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  # When
+  box start "$P" -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq log "upload ns:us:abc $R"'
+exec ns:us:abc -- sh -c set -m; sh -c "$1" >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid sh pnpm dev' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_start_from_base() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  mkdir -p "$T/base"
+  # When
+  box start "$P" --from "$T/base" -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq stdout "TREE=base" "$out"
+  eq "log line 1" "upload ns:us:abc $T/base" "$(line 1 "$(cat "$FAKE_PB/log")")"
+  has state "BOX_TREE=base" "$(cat "$P/box.env")"
+}
+
+t_box_start_no_answer() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  echo "Error: Cannot find module 'vite'" > "$FAKE_PB/tmp/app.log"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 1 "$code"
+  eq sleeps "$(printf '2\n%.0s' $(seq 60))" "$(cat "$FAKE_PB/sleep.log")"
+  has stderr "Error: Cannot find module 'vite'" "$err"
+  eq "last stderr line" "stop: http://localhost:3000/ did not answer in 120 s; the app log's last lines are above" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
+t_box_start_no_answer_stops() {
+  # Given: the app runs but never answers
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"; : > "$FAKE_PB/exec.4.run"
+  group "$FAKE_PB/tmp/app.pid"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 1 "$code"
+  ended "$gpid"
+}
+
+t_box_stop() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"
+  group "$FAKE_PB/tmp/app.pid"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  ended "$gpid"
+  # A group can take a moment to end after TERM, as on linux, so a wait of a
+  # second or two is fine; the 30 s limit is not.
+  [ "$(cat "$FAKE_PB/sleep.log" 2>/dev/null | wc -l)" -lt 30 ] || eq sleeps "under 30" "$(cat "$FAKE_PB/sleep.log" | wc -l)"
+  case "$(cat "$FAKE_PB/log")" in *upload*) eq log "no upload" "$(cat "$FAKE_PB/log")" ;; esac
+}
+
+t_box_stop_limit() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  group "$FAKE_PB/tmp/app.pid" term
+  # When
+  box stop "$P"
+  # Then
+  eq exit 0 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
+  ended "$gpid"
+}
+
+t_box_stop_port_busy() {
+  # Given: the app already ended, and a process outside its group holds the port
+  fake_proofbox
+  fake_curl
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 1 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
+  # The fake curl prints its status code, as a real `curl -o /dev/null` does not.
+  eq "last stderr line" "stop: http://localhost:3000/ still answers after the app stopped" "$(printf '%s\n' "$err" | tail -n 1 | sed 's/^\(404\)*//')"
+}
+
+t_box_stop_gone() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
+  eq log 'exec ns:us:abc -- sh -c g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true sh /tmp/app.pid 30' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_stop_gone_port_wait() {
+  # Given: the app already ended, and the Sandbox dies during the port wait
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.2.fail"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
+}
+
+t_box_open_linux() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  # When
+  box open "$P" -- chromium --no-sandbox http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh chromium --no-sandbox http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_open_macos() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  # When
+  box open "$P" -- open -a Safari http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh open -a Safari http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_close_limit() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  group "$FAKE_PB/tmp/walk-open.pid" term
+  # When
+  box close "$P"
+  # Then
+  eq exit 0 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 10))" "$(cat "$FAKE_PB/sleep.log")"
+  ended "$gpid"
+}
+
+t_box_close_none() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  # When
+  box close "$P"
+  # Then
+  eq exit 0 "$code"
+  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
+}
+
+t_box_open_gone() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
+  # When
+  box open "$P" -- chromium http://localhost:3000/
+  # Then
+  eq exit 125 "$code"
+  has stderr "Sandbox ns:us:abc is gone" "$err"
+  case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -644,4 +926,21 @@ cases=(
   "auth stops when an env token is not accepted|t_box_auth_rejected"
   "auth passes a logged-in Provider|t_box_auth_ok"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
+  "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
+  "up notes the branch|t_box_up_notes_branch"
+  "start runs the Run line in its own group on linux and waits for the URL|t_box_start_linux"
+  "start runs the Run line in its own group on macos|t_box_start_macos"
+  "start --from starts the base and prints it|t_box_start_from_base"
+  "start stops with the log's last lines when the app does not answer|t_box_start_no_answer"
+  "start stops the app's group when the app does not answer|t_box_start_no_answer_stops"
+  "stop ends the app's group and waits for a free port|t_box_stop"
+  "stop waits 30 s for the group, then kills it|t_box_stop_limit"
+  "stop fails when the port stays busy|t_box_stop_port_busy"
+  "stop on a gone Sandbox has nothing to stop|t_box_stop_gone"
+  "stop on a Sandbox gone during the port wait has nothing to stop|t_box_stop_gone_port_wait"
+  "open runs the walker's command in its own group on linux|t_box_open_linux"
+  "open runs the walker's command in its own group on macos|t_box_open_macos"
+  "close waits 10 s for the group, then kills it|t_box_close_limit"
+  "close with no browser open exits 0|t_box_close_none"
+  "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
 )

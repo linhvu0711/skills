@@ -6,51 +6,35 @@ Rounds, at most three:
 
 ## 9a. Start the app
 
-You start it; the walker never does. On linux:
+You start it; the walker never does:
 
 ```bash
-bash scripts/box.sh run "$PROOF" -- setsid -w sh -c '<Run line> >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid'
+bash scripts/box.sh start "$PROOF" --url <url> -- '<Run line>'
 ```
 
-On macos:
+`--url` only when the `Open` line is a URL. `start` runs the app and
+every process it starts in one process group, so the stop reaches
+them all. It prints `TREE=base` or `TREE=branch`, the tree the app
+runs, then waits up to 120 s for the URL to answer.
 
-```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'set -m; <Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
-```
-
-Each puts the app and every process it starts in one process group,
-and `/tmp/app.pid` holds the group's id, so the stop reaches them
-all. A `Run` line such as `pnpm build && pnpm preview` runs its
-server under an outer `sh`, and a kill of that `sh` alone leaves the
-server on its port. Linux's `sh` turns `set -m` off with no
-terminal, and macOS has no `setsid`.
-
-Then wait until it answers, the way the `Open` line reaches it:
-for a URL, `box.sh run "$PROOF" -- sh -c 'for i in $(seq 60); do
-curl -fsS -o /dev/null <url> && exit 0; sleep 2; done; exit 1'`.
-It does not answer: read `box.sh run "$PROOF" -- tail -n 50
-/tmp/app.log`. A missing tool or package is the setup script's:
-fix it, `box.sh down`, then step 6 again. A crash in the code is
-the builder's: a follow-up (step 9c). Still down after that:
+It does not answer: `start` prints the app log's last 50 lines,
+stops the app, then prints its `stop:` line. A missing tool or package is the setup
+script's: fix it, `box.sh down`, then step 6 again. A crash in the
+code is the builder's: a follow-up (step 9c). Still down after that:
 `box.sh down`, then stop with the log's last line.
 
 **Stop the app.** The only stop in this skill:
 
 ```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'g=$(cat /tmp/app.pid); kill -TERM -"$g"; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 30 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+bash scripts/box.sh stop "$PROOF" --url <url>
 ```
 
-Then, when the `Open` line is a URL, wait until the port is free:
-
-```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'for i in $(seq 30); do curl -s -o /dev/null <url>; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1'
-```
-
-curl exits 7 when nothing listens, so the port is free for the next
-start. Exit 1: a process outside the group still holds the port;
-`box.sh down`, then stop with `<url> still answers after the app
-stopped`. Never `pkill` or `killall`: a name match can hit the
-shell that runs it.
+`--url` only when the `Open` line is a URL. `stop` ends the app's
+process group, waiting up to 30 s before it kills it, then waits up
+to 30 s until the URL no longer answers, so the port is free for the
+next start. Its `stop: <url> still answers after the app stopped`: a
+process outside the group holds the port; `box.sh down`, then stop
+with that line.
 
 A walk's `Setup` that sets the clock is how the app opens for that
 walk; the run never waits for the real clock to reach a time.
@@ -65,8 +49,10 @@ while you walk. Its brief, whole:
 - the mode, `before` or `after`, and the round;
 - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
   screen size (1440x900 on linux, 1280x800 on macos);
+- the full path of `scripts/box.sh`, this skill's real folder in front
+  of it, for the walker's `box.sh open` and `box.sh close`;
 - how to open the app: the `Open` line, as a command it runs with
-  `proofbox exec`. A browser opens on a new, empty profile for each
+  `box.sh open`. A browser opens on a new, empty profile for each
   video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
   or a browser that Playwright launches, which starts empty. So no
   history from the Sandbox image shows in the address bar.
