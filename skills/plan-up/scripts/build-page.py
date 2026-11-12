@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 import plan_reader
-from plan_reader import BLAST, PROVED, grid
+from plan_reader import BLAST, PROVED
 
 
 def text(values):
@@ -42,16 +42,9 @@ def page_maps(maps):
     for m in maps:
         if m["none"]:
             continue
-        parts = []
-        for p in m["parts"]:
-            at = p.get("At", "")
-            xy = grid(p.get("Grid")) or (0.0, 0.0)
-            parts.append({"ref": p.get("Ref"), "name": p.get("Part"), "job": p.get("Job"),
-                          "change": p.get("Change"), "group": p.get("Group", ""), "kind": p.get("Kind"),
-                          "at": [re.sub(r"^`(.*)`$", r"\1", entry.strip())
-                                 for entry in re.findall(r"(?:`[^`]*`|[^,])+", at) if entry.strip()],
-                          "x": int(xy[0]) if xy[0].is_integer() else xy[0],
-                          "y": int(xy[1]) if xy[1].is_integer() else xy[1], "layer": p.get("Layer") or None})
+        parts = [{"ref": p["ref"], "name": p["name"], "job": p["job"], "change": p["change"], "group": p["group"],
+                  "kind": p["kind"], "at": p["at"], "x": p["x"] or 0, "y": p["y"] or 0, "layer": p["layer"]}
+                 for p in m["parts"]]
         got.append({"area": m["area"], "parts": parts, "flows": [f for f in m["flows"] if "bad" not in f]})
     return got
 

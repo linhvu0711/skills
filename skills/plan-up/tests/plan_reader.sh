@@ -85,7 +85,13 @@ t_reader_touches_parts() {
   good_part 'plan["reviews"][0]["parts"]["Blast radius"]["Touches"]' '["Web", "API"]'
 }
 
+t_reader_map_part() {
+  good_part 'plan["maps"][0]["parts"][0]' \
+    '{"at": ["src/web/orders.tsx:12"], "cell": "0,1", "change": "same", "group": "Web", "job": "asks for an export", "kind": "part", "layer": null, "name": "Orders page", "ref": "M1", "x": 0, "y": 1}'
+}
+
 cases=(
+  "plan_reader reads a map part into its files and grid cell|t_reader_map_part"
   "plan_reader reads a risk into belief, if wrong, and proved|t_reader_risk_parts"
   "plan_reader reads a fork choice into its question and pick|t_reader_fork_parts"
   "plan_reader reads a Works when line into its number and text|t_reader_works_parts"

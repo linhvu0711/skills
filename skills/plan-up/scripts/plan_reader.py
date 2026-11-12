@@ -193,7 +193,7 @@ def maps(named):
                 if cells and cells[0] == "Ref":
                     header = cells
                 elif header and cells and re.match(r"M\d+$", cells[0]):
-                    cur["parts"].append(dict(zip(header, cells)))
+                    cur["parts"].append(map_part(dict(zip(header, cells))))
             elif t.lower().startswith("flows:"):
                 in_flows = True
             elif in_flows and t.startswith("-"):
@@ -206,6 +206,17 @@ def maps(named):
                                      "change": next((x for x in tags if x in CHANGES), "same"),
                                      "layer": next((x for x in tags if re.match(r"L\d+$", x)), None)})
     return got
+
+
+def map_part(row):
+    """One Change map row as its parts: `at` the files, each backtick span whole; `cell` the Grid text."""
+    at = [re.sub(r"^`(.*)`$", r"\1", entry.strip())
+          for entry in re.findall(r"(?:`[^`]*`|[^,])+", row.get("At", "")) if entry.strip()]
+    xy = grid(row.get("Grid"))
+    x, y = (int(v) if v.is_integer() else v for v in xy) if xy else (None, None)
+    return {"ref": row.get("Ref"), "name": row.get("Part"), "job": row.get("Job"), "change": row.get("Change"),
+            "group": row.get("Group", ""), "kind": row.get("Kind"), "at": at, "cell": row.get("Grid"),
+            "x": x, "y": y, "layer": row.get("Layer") or None}
 
 
 def proves(value):
@@ -404,41 +415,41 @@ def map_problems(blocks, is_run):
             yield f"{name}: {len(parts)} parts, the limit is {PARTS_MAX}; merge the `same` ones first"
         refs, cells = {}, {}
         for p in parts:
-            ref = p.get("Ref", "?")
+            ref = p["ref"]
             if ref in seen:
                 yield f"{name}: {ref} is used twice"
             seen.add(ref)
             refs[ref] = p
-            if not p.get("Part") or not p.get("Job"):
+            if not p["name"] or not p["job"]:
                 yield f"{name}: {ref} needs a part name and a job"
-            if len(p.get("Part") or "") > NAME_MAX:
-                yield f"{name}: {ref} part name is {len(p['Part'])} characters, the limit is {NAME_MAX}"
-            if len(p.get("Job") or "") > JOB_MAX:
-                yield f"{name}: {ref} job is {len(p['Job'])} characters, the limit is {JOB_MAX}"
-            if p.get("Change") not in CHANGES:
-                yield f"{name}: {ref} change `{p.get('Change')}` is not new, changed, removed, or same"
-            if p.get("Kind") not in KINDS:
-                yield f"{name}: {ref} kind `{p.get('Kind')}` is not part, store, or outside"
-            if p.get("Kind") != "outside" and not (p.get("At") or "").strip():
+            if len(p["name"] or "") > NAME_MAX:
+                yield f"{name}: {ref} part name is {len(p['name'])} characters, the limit is {NAME_MAX}"
+            if len(p["job"] or "") > JOB_MAX:
+                yield f"{name}: {ref} job is {len(p['job'])} characters, the limit is {JOB_MAX}"
+            if p["change"] not in CHANGES:
+                yield f"{name}: {ref} change `{p['change']}` is not new, changed, removed, or same"
+            if p["kind"] not in KINDS:
+                yield f"{name}: {ref} kind `{p['kind']}` is not part, store, or outside"
+            if p["kind"] != "outside" and not p["at"]:
                 yield f"{name}: {ref} has no files and no slice in `At`"
-            g = grid(p.get("Grid"))
+            g = None if p["x"] is None else (p["x"], p["y"])
             if g is None:
-                yield f"{name}: {ref} grid `{p.get('Grid')}` is not `column,row` with both 0 or more"
+                yield f"{name}: {ref} grid `{p['cell']}` is not `column,row` with both 0 or more"
             elif g in cells:
-                yield f"{name}: {ref} and {cells[g]} share the grid cell {p.get('Grid')}"
+                yield f"{name}: {ref} and {cells[g]} share the grid cell {p['cell']}"
             else:
                 cells[g] = ref
-            if is_run and p.get("Change") != "same" and not re.match(r"L\d+$", p.get("Layer") or ""):
-                yield f"{name}: {ref} is {p.get('Change')} but names no layer"
+            if is_run and p["change"] != "same" and not re.match(r"L\d+$", p["layer"] or ""):
+                yield f"{name}: {ref} is {p['change']} but names no layer"
         # A group's gray area spans its cells; a part of no such group inside it misstates the map.
         groups = {}
         for p in parts:
-            if p.get("Group") and grid(p.get("Grid")):
-                groups.setdefault(p["Group"], []).append(grid(p["Grid"]))
+            if p["group"] and p["x"] is not None:
+                groups.setdefault(p["group"], []).append((p["x"], p["y"]))
         for gname, gcells in groups.items():
             xs, ys = [c[0] for c in gcells], [c[1] for c in gcells]
             for c, ref in cells.items():
-                if refs[ref].get("Group") != gname and min(xs) <= c[0] <= max(xs) and min(ys) <= c[1] <= max(ys):
+                if refs[ref]["group"] != gname and min(xs) <= c[0] <= max(xs) and min(ys) <= c[1] <= max(ys):
                     yield f"{name}: {ref} sits inside the area of group `{gname}`; put the group's parts in cells next to each other"
         touched = set()
         for f in b["flows"]:
@@ -457,7 +468,7 @@ def map_problems(blocks, is_run):
                 if is_run and not f["layer"]:
                     yield f"{name}: flow {f['from']} → {f['to']} is {f['change']} but names no layer"
         for ref, p in refs.items():
-            if p.get("Change") == "same" and ref not in touched:
+            if p["change"] == "same" and ref not in touched:
                 yield f"{name}: {ref} has no change and no changed flow touches it; leave it out"
 
 
