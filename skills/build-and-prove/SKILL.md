@@ -414,6 +414,10 @@ updates the PR from `PROOF`.
   a walk, or a video goes into the plan `.md` first, with a `Decided`
   line that says so, as a Wrong walk fix does (`references/walks.md`
   § 9c. Sort).
+- **Step 2.** With slices or a change to build, as written, so a
+  missing login stops before Coding. With nothing to build, the login
+  check runs just before the first `up`, and not at all when no `up`
+  runs.
 - **Step 3.** `checkout.sh` hands back the same worktree, only when it
   is clean: a slice or a fix cut off before its commit leaves changes,
   and step 3 stops on them with the files named. The user commits or
