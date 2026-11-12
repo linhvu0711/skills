@@ -314,6 +314,7 @@ case "$verb" in
     [ "$rc" -eq 0 ] || exit "$rc"
     [ -n "$url" ] || exit 0
     bare sh -c 'for i in $(seq 30); do curl -s -o /dev/null "$1"; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1' sh "$url"
+    if [ -n "$gone" ]; then printf '%s; nothing to stop\n' "$gone" >&2; exit 0; fi
     [ "$rc" -eq 0 ] || die "$url still answers after the app stopped"
     ;;
   open)

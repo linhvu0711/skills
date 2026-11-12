@@ -789,6 +789,19 @@ t_box_stop_gone() {
   eq log 'exec ns:us:abc -- sh -c g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true sh /tmp/app.pid 30' "$(cat "$FAKE_PB/log")"
 }
 
+t_box_stop_gone_port_wait() {
+  # Given: the app already ended, and the Sandbox dies during the port wait
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.2.fail"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
+}
+
 t_box_open_linux() {
   # Given
   fake_proofbox
@@ -908,6 +921,7 @@ cases=(
   "stop waits 30 s for the group, then kills it|t_box_stop_limit"
   "stop fails when the port stays busy|t_box_stop_port_busy"
   "stop on a gone Sandbox has nothing to stop|t_box_stop_gone"
+  "stop on a Sandbox gone during the port wait has nothing to stop|t_box_stop_gone_port_wait"
   "open runs the walker's command in its own group on linux|t_box_open_linux"
   "open runs the walker's command in its own group on macos|t_box_open_macos"
   "close waits 10 s for the group, then kills it|t_box_close_limit"
