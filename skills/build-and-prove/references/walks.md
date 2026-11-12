@@ -18,7 +18,7 @@ them all. It prints `TREE=base` or `TREE=branch`, the tree the app
 runs, then waits up to 120 s for the URL to answer.
 
 It does not answer: `start` prints the app log's last 50 lines,
-then its `stop:` line. A missing tool or package is the setup
+stops the app, then prints its `stop:` line. A missing tool or package is the setup
 script's: fix it, `box.sh down`, then step 6 again. A crash in the
 code is the builder's: a follow-up (step 9c). Still down after that:
 `box.sh down`, then stop with the log's last line.

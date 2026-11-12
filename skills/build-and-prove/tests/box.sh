@@ -728,6 +728,21 @@ t_box_start_no_answer() {
   eq "last stderr line" "stop: http://localhost:3000/ did not answer in 120 s; the app log's last lines are above" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
+t_box_start_no_answer_stops() {
+  # Given: the app runs but never answers
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"; : > "$FAKE_PB/exec.4.run"
+  group "$FAKE_PB/tmp/app.pid"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 1 "$code"
+  ended "$gpid"
+}
+
 t_box_stop() {
   # Given
   fake_proofbox
@@ -917,6 +932,7 @@ cases=(
   "start runs the Run line in its own group on macos|t_box_start_macos"
   "start --from starts the base and prints it|t_box_start_from_base"
   "start stops with the log's last lines when the app does not answer|t_box_start_no_answer"
+  "start stops the app's group when the app does not answer|t_box_start_no_answer_stops"
   "stop ends the app's group and waits for a free port|t_box_stop"
   "stop waits 30 s for the group, then kills it|t_box_stop_limit"
   "stop fails when the port stays busy|t_box_stop_port_busy"

@@ -48,7 +48,7 @@
 # stop reaches every process it starts. It prints TREE=base or TREE=branch,
 # the tree it runs. With --url it then waits up to 120 s for the URL to
 # answer, one try every 2 s; it does not: the log's last 50 lines on stderr,
-# then a stop.
+# the app's group stopped as stop does, then a stop.
 #
 # stop sends TERM to the app's process group, waits up to 30 s for it to end,
 # then sends KILL. With --url it then waits up to 30 s, one try a second, until
@@ -298,6 +298,8 @@ case "$verb" in
     [ "$rc" -ne 0 ] || exit 0
     [ -z "$gone" ] || die "$gone"
     bare tail -n 50 /tmp/app.log
+    # A slow app may still hold the port; the next start needs it free.
+    group_stop /tmp/app.pid 30
     die "$url did not answer in 120 s; the app log's last lines are above"
     ;;
   stop)
