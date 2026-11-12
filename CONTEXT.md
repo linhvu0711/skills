@@ -110,6 +110,10 @@ _Avoid_: flaky walk, env failure
 What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, and the filled Proof table. `/make-pr` builds the PR's Proof part from it.
 _Avoid_: artifacts dir, media folder
 
+**Follow-up**:
+More work on a ticket after its first build: a change the user asks for, or a review fix after the PR is open. It redoes only what the change touches. `/build-and-prove` runs a local one; a rerun after a stop is a follow-up with no change. `/handoff` sends a cloud one to the executor that started the issue.
+_Avoid_: rework, second pass, iteration
+
 ## PRs
 
 **Readiness verdict**:

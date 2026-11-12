@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the Gates and the app, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the Gates and the app, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. Also runs a follow-up on a branch it built, a change or review fixes, and redoes only what the change touches. /ship runs it by default."
 disable-model-invocation: true
 ---
 
@@ -89,6 +89,9 @@ one.
 - `/build-and-prove <plan.md>`: the plan of one ticket.
 - `/build-and-prove <plan.md> --layer <n> --base <branch>`: layer `n` of
   a run's plan, its branch made from `<branch>`. `/ship` uses this form.
+- `/build-and-prove <plan.md> [--layer <n> --base <branch>] follow-up
+  <change>`: more work on the branch a build of this plan made
+  (§ Follow-up). `/ship` uses it for a change and for review fixes.
 - No plan named and none in this chat: say `Run /plan-up first.` and
   stop.
 
@@ -156,7 +159,7 @@ done.
    after `chat-`, as in `feat/export-orders-csv` for
    `acme-shop-chat-export-orders-csv`. The slug was picked so that no
    branch had this name, so an existing branch here is this plan's
-   rerun.
+   follow-up (§ Follow-up).
 
    ```bash
    bash ../../shared/checkout.sh <REPO> <branch> --base <BASE>
@@ -164,7 +167,7 @@ done.
 
    `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=`
    line. The branch has commits ahead of `BASE` already: this is a
-   rerun (§ Rerun).
+   follow-up (§ Follow-up), with no change when none was named.
 
 4. **Setup files.** `UI: none`: mark it `4. Setup files. skip: no UI`
    and go to step 5. Else the folder is `~/.agents/proofbox/<owner>-<repo>/`,
@@ -214,9 +217,9 @@ done.
    the issue's `Task` and `Done when` verbatim (a chat plan: its
    `## Brief` block's), the plan's blocks, and
    the rules block from `render.sh local rules` pasted whole,
-   unchanged, once. No `UI walks`, no `Videos`. On a rerun, one line
+   unchanged, once. No `UI walks`, no `Videos`. On a follow-up, one line
    under `# Slices` first: `Slices 1 to <k> are committed; start at
-   slice <k+1>.` Check: every Proof row, every `file:line`, zero
+   slice <k+1>.` (§ Follow-up). Check: every Proof row, every `file:line`, zero
    placeholders. Write it to
    `$HOME/.agents/artifacts/plan/prompt-<slug>.md`. Say
    `Prompt: <path> (<n> lines)`.
@@ -391,19 +394,67 @@ done.
     `Built: [feat] Export orders as CSV · feat/export-orders-csv`. The
     worktree is `WT`, and the branch is not pushed: `/make-pr` with the proof folder is next.
 
-## Rerun
+## Follow-up
 
-The same plan again after a stop. `checkout.sh` hands back the same
-worktree, only when it is clean: a slice or a fix cut off before its
-commit leaves changes, and step 3 stops on them with the files named.
-The user commits or drops them, then runs again. The commits ahead of `BASE` are the first slices, one commit
-each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD` is the
-number done, and the prompt starts at the next one. A count at or past
-the number of slices means every slice is in, since fix rounds commit
-only after the last slice: no builder, go to step 6 (step 8 with `UI:
-none`). Before shots in
-`PROOF` are kept. The videos in `PROOF` are kept too, and step 9
-films again only those `references/walks.md` § 9c. Sort names.
+More work on the branch a build of this plan made. The change is named
+any way: the user's words, as `the button says Export CSV`, or `review
+fixes are committed` when the fixes are already in commits. A rerun
+after a stop is a follow-up with no change, and so is the plain form
+on a branch with commits ahead of `BASE` (step 3).
+
+It runs steps 1 to 12 with the rules below. What is done is read from
+disk: the commits ahead of `BASE`, the before shots in `PROOF`,
+`videos.txt` with each video's commit, `checks.txt`, and `box.env`. It
+writes the branch's commits and `PROOF`, nothing else: `/make-pr`
+updates the PR from `PROOF`.
+
+- **The change.** Sort it first by the two tests of
+  `../plan-up/SKILL.md` step 5; a big fork goes to the user, and the
+  follow-up waits. A change that adds or changes a Proof row, a slice,
+  a walk, or a video goes into the plan `.md` first, with a `Decided`
+  line that says so, as a Wrong walk fix does (`references/walks.md`
+  § 9c. Sort).
+- **Step 3.** `checkout.sh` hands back the same worktree, only when it
+  is clean: a slice or a fix cut off before its commit leaves changes,
+  and step 3 stops on them with the files named. The user commits or
+  drops them, then runs again.
+- **Step 5.** The commits ahead of `BASE` are the first slices, one
+  commit each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD`
+  is the number done, and the prompt starts at the next one. A count at
+  or past the number of slices means every slice is in. The change
+  comes after the last slice, as one more part shaped by `render.sh
+  local prompt` § Follow-up, with its own commits, so the count holds
+  on the next follow-up. No slice left and nothing to build, as with
+  `review fixes are committed`: no builder.
+- **Sandbox.** A plan with walks only. `box.sh up` (step 6) runs at the
+  first step below that needs the Sandbox, and only then: a before shot
+  to take, a Gate or the perf measure that runs there, a video to film.
+  None of them: no `up`, and step 11 is skipped.
+- **Step 7.** Only the walks with no `before-<walk>.png` in `PROOF`.
+- **Step 8.** Every line of `checks.txt` names HEAD's short SHA and none
+  is red: the Gates stand, and no `gates` call runs. Else, with no open
+  PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
+  --head <branch> --state open --json url -q '.[0].url'` prints a URL;
+  then only the Gates CI does not run run here. `UI: none`: step 8 as
+  written, since `gates --local` already asks. A plan with walks asks
+  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. Every line `ci`:
+  `box.sh gates "$PROOF" --local "$WT"` with every Gate after `--`,
+  which writes each one's `not run: CI runs it` line and needs no
+  Sandbox. Else the Sandbox `gates` call with the `here` Gates after
+  `--`, and each `ci <file>` Gate as `--not-run '<Gate>' 'CI runs it
+  (<file>)'`.
+  With a `PERF` block, the measure runs again only when `git -C "$WT"
+  diff --name-only <its line's SHA> HEAD` names a file its `Command`
+  runs. Else copy its line out of `checks.txt` before the `gates` call
+  and add it back after, since `gates` writes the file fresh.
+- **Step 9.** Films only the videos `references/walks.md` § 9c. Sort
+  names; every other video keeps its files and its passes. None: no
+  walker.
+- **Steps 10 to 12.** As written: `proof.md` again from `checks.txt`
+  and `videos.txt`, `box.sh down` only after an `up` of this follow-up,
+  and the report.
+- **Todo list.** Run by `/ship` after its step 5 is done, open no list:
+  say one line as each step starts, as `Follow-up: 8. Gates.`
 
 ## Examples
 
