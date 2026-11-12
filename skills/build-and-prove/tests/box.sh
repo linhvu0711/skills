@@ -10,7 +10,11 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # in $FAKE_PB: call n of a verb prints <verb>.<n>.fail or <verb>.fail to stderr
 # and exits 125 when one exists, else prints <verb>.err to stderr when it
 # exists, then <verb>.<n>.out or <verb>.out. `exec` then exits with the number
-# in exec.<n>.code or exec.code, or 0.
+# in exec.<n>.code or exec.code, or 0. An exec.<n>.run file makes call n of
+# `exec` run its command on this machine instead, each argument that starts
+# with /tmp/ moved to $FAKE_PB/tmp/, as a Sandbox has its own /tmp, and exit
+# with the command's code. A fake `sleep` on PATH logs its argument to
+# $FAKE_PB/sleep.log and returns at once, so a wait runs to its limit fast.
 fake_proofbox() {
   repo
   mkdir -p "$T/bin" "$T/pb" "$T/home/.agents/proofbox/acme-shop"
@@ -23,6 +27,13 @@ printf '%s\n' "$*" >> "$FAKE_PB/log"
 for f in "$FAKE_PB/$verb.$n.fail" "$FAKE_PB/$verb.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 125; fi
 done
+if [ "$verb" = exec ] && [ -f "$FAKE_PB/exec.$n.run" ]; then
+  shift 3
+  mkdir -p "$FAKE_PB/tmp"
+  args=("${@/#\/tmp\//$FAKE_PB/tmp/}")
+  c=0; "${args[@]}" || c=$?
+  exit "$c"
+fi
 if [ -f "$FAKE_PB/$verb.err" ]; then cat "$FAKE_PB/$verb.err" >&2; fi
 for f in "$FAKE_PB/$verb.$n.out" "$FAKE_PB/$verb.out"; do
   if [ -f "$f" ]; then cat "$f"; break; fi
@@ -35,6 +46,8 @@ fi
 exit 0
 EOF
   chmod +x "$T/bin/proofbox"
+  printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "$FAKE_PB/sleep.log"\n' > "$T/bin/sleep"
+  chmod +x "$T/bin/sleep"
   export PATH="$T/bin:$PATH" FAKE_PB="$T/pb" HOME="$T/home"
   SETUP="$HOME/.agents/proofbox/acme-shop/setup-linux.sh"
   printf '#!/bin/sh\n' > "$SETUP"
@@ -43,11 +56,15 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
-# state <id> [<remade>] [<size>] [<secrets>]: an up Sandbox, without running up.
+# state <id> [<remade>] [<size>] [<secrets>] [<os>]: an up Sandbox, without
+# running up. The OS is linux unless named.
 state() {
   mkdir -p "$P"
-  printf 'BOX_ID=%s\nBOX_OS=linux\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
+  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "${5:-linux}" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
 }
+
+# line <n> <text>: line n of the text.
+line() { printf '%s\n' "$2" | sed -n "$1p"; }
 
 t_box_up_flags() {
   fake_proofbox
@@ -625,6 +642,69 @@ t_box_up_notes_branch() {
   has state "BOX_TREE=branch" "$(cat "$P/box.env")"
 }
 
+t_box_start_linux() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo '{}' > "$FAKE_CURL/GET_.json"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq stdout "TREE=branch" "$out"
+  eq "log line 1" "upload ns:us:abc $R" "$(line 1 "$(cat "$FAKE_PB/log")")"
+  eq "log line 2" 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid sh pnpm dev' "$(line 2 "$(cat "$FAKE_PB/log")")"
+  has "log line 3" 'exec ns:us:abc -- sh -c for i in $(seq 60)' "$(line 3 "$(cat "$FAKE_PB/log")")"
+  eq "curl calls" "GET /" "$(cat "$FAKE_CURL/calls")"
+  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
+}
+
+t_box_start_macos() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  # When
+  box start "$P" -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq log "upload ns:us:abc $R"'
+exec ns:us:abc -- sh -c set -m; sh -c "$1" >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid sh pnpm dev' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_start_from_base() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  mkdir -p "$T/base"
+  # When
+  box start "$P" --from "$T/base" -- pnpm dev
+  # Then
+  eq exit 0 "$code"
+  eq stdout "TREE=base" "$out"
+  eq "log line 1" "upload ns:us:abc $T/base" "$(line 1 "$(cat "$FAKE_PB/log")")"
+  has state "BOX_TREE=base" "$(cat "$P/box.env")"
+}
+
+t_box_start_no_answer() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  echo "Error: Cannot find module 'vite'" > "$FAKE_PB/tmp/app.log"
+  # When
+  box start "$P" --url http://localhost:3000/ -- pnpm dev
+  # Then
+  eq exit 1 "$code"
+  eq sleeps "$(printf '2\n%.0s' $(seq 60))" "$(cat "$FAKE_PB/sleep.log")"
+  has stderr "Error: Cannot find module 'vite'" "$err"
+  eq "last stderr line" "stop: http://localhost:3000/ did not answer in 120 s; the app log's last lines are above" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -675,4 +755,8 @@ cases=(
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
   "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
   "up notes the branch|t_box_up_notes_branch"
+  "start runs the Run line in its own group on linux and waits for the URL|t_box_start_linux"
+  "start runs the Run line in its own group on macos|t_box_start_macos"
+  "start --from starts the base and prints it|t_box_start_from_base"
+  "start stops with the log's last lines when the app does not answer|t_box_start_no_answer"
 )

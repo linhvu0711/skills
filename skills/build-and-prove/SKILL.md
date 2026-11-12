@@ -48,6 +48,10 @@ prints its usage with no arguments.
   stderr. Nothing is lost: the code lives in the worktree. A run can
   last longer than one Sandbox. It notes in `box.env` which tree the
   Sandbox holds: `BOX_TREE=base` after `--from`, else `BOX_TREE=branch`.
+- `box.sh start <proof-dir> [--from <folder>] [--url <url>] -- '<Run line>'`
+  uploads as `run` does and starts the app in its own process group,
+  prints `TREE=base` or `TREE=branch`, and with `--url` waits up to
+  120 s for it to answer (step 9a).
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full
@@ -246,9 +250,9 @@ done.
    `PROOF` yet. Read `references/walks.md` whole first: this step uses
    its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
    committed: add a detached worktree of `BASE` in a temp
-   folder, and run every command of this step as `box.sh run "$PROOF"
-   --from <that folder> -- …`, so the base is what runs. Start the app
-   (step 9a), send the walker in `before` mode and round 1 (step 9b),
+   folder, and start the app (step 9a) with `box.sh start "$PROOF"
+   --from <that folder> …`, so the base is what runs; it prints
+   `TREE=base`. Send the walker in `before` mode and round 1 (step 9b),
    and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
    start the app again from the same temp worktree and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
@@ -263,8 +267,9 @@ done.
      the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
 
    Remove the temp worktree only when this step ends, with the shots
-   or with a stop. The next `box.sh run` without
-   `--from` puts the branch back. Say `Before shots: <n>`.
+   or with a stop. The next `start`, `run`, or `gates` without
+   `--from` puts the branch back, and `box.env` notes it. Say
+   `Before shots: <n>`.
 
 8. **Gates.** `UI: none`: read `references/checks.md` whole, since
    its four sections are one pass: run the Gates and the perf measure

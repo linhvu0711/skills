@@ -6,32 +6,21 @@ Rounds, at most three:
 
 ## 9a. Start the app
 
-You start it; the walker never does. On linux:
+You start it; the walker never does:
 
 ```bash
-bash scripts/box.sh run "$PROOF" -- setsid -w sh -c '<Run line> >/tmp/app.log 2>&1 & echo $$ >/tmp/app.pid'
+bash scripts/box.sh start "$PROOF" --url <url> -- '<Run line>'
 ```
 
-On macos:
+`--url` only when the `Open` line is a URL. `start` runs the app and
+every process it starts in one process group, so the stop reaches
+them all. It prints `TREE=base` or `TREE=branch`, the tree the app
+runs, then waits up to 120 s for the URL to answer.
 
-```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'set -m; <Run line> >/tmp/app.log 2>&1 & echo $! >/tmp/app.pid'
-```
-
-Each puts the app and every process it starts in one process group,
-and `/tmp/app.pid` holds the group's id, so the stop reaches them
-all. A `Run` line such as `pnpm build && pnpm preview` runs its
-server under an outer `sh`, and a kill of that `sh` alone leaves the
-server on its port. Linux's `sh` turns `set -m` off with no
-terminal, and macOS has no `setsid`.
-
-Then wait until it answers, the way the `Open` line reaches it:
-for a URL, `box.sh run "$PROOF" -- sh -c 'for i in $(seq 60); do
-curl -fsS -o /dev/null <url> && exit 0; sleep 2; done; exit 1'`.
-It does not answer: read `box.sh run "$PROOF" -- tail -n 50
-/tmp/app.log`. A missing tool or package is the setup script's:
-fix it, `box.sh down`, then step 6 again. A crash in the code is
-the builder's: a follow-up (step 9c). Still down after that:
+It does not answer: `start` prints the app log's last 50 lines,
+then its `stop:` line. A missing tool or package is the setup
+script's: fix it, `box.sh down`, then step 6 again. A crash in the
+code is the builder's: a follow-up (step 9c). Still down after that:
 `box.sh down`, then stop with the log's last line.
 
 **Stop the app.** The only stop in this skill:
