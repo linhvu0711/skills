@@ -46,7 +46,8 @@ prints its usage with no arguments.
   with its code. A Sandbox that is gone, idle too long or past its max
   life, is made again once from its Snapshot, and `run` says so on
   stderr. Nothing is lost: the code lives in the worktree. A run can
-  last longer than one Sandbox.
+  last longer than one Sandbox. It notes in `box.env` which tree the
+  Sandbox holds: `BOX_TREE=base` after `--from`, else `BOX_TREE=branch`.
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full

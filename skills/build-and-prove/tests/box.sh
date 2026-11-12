@@ -596,6 +596,35 @@ t_box_gates_upload_fails() {
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
 }
 
+t_box_run_notes_tree() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  mkdir -p "$T/base"
+  # When
+  box run "$P" --from "$T/base" -- true
+  # Then
+  eq "exit after --from" 0 "$code"
+  has "state after --from" "BOX_TREE=base" "$(cat "$P/box.env")"
+  # When
+  box run "$P" -- true
+  # Then
+  eq exit 0 "$code"
+  has state "BOX_TREE=branch" "$(cat "$P/box.env")"
+  case "$(cat "$P/box.env")" in *BOX_TREE=base*) eq state "no BOX_TREE=base" "$(cat "$P/box.env")" ;; esac
+}
+
+t_box_up_notes_branch() {
+  # Given
+  fake_proofbox
+  echo ns:us:abc > "$FAKE_PB/create.out"
+  # When
+  box up "$P" "$R" linux acme/shop
+  # Then
+  eq exit 0 "$code"
+  has state "BOX_TREE=branch" "$(cat "$P/box.env")"
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -644,4 +673,6 @@ cases=(
   "auth stops when an env token is not accepted|t_box_auth_rejected"
   "auth passes a logged-in Provider|t_box_auth_ok"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
+  "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
+  "up notes the branch|t_box_up_notes_branch"
 )

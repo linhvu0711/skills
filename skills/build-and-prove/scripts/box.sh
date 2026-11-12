@@ -27,14 +27,16 @@
 # times more and a new Sandbox costs 1 to 3. It passes no --max-life, so
 # proofbox's 3h applies, which every Namespace plan allows. The state goes in
 # <proof-dir>/box.env as KEY=value lines: BOX_ID, BOX_OS, BOX_WORK,
-# BOX_SETUP, BOX_ENV, BOX_REMADE, BOX_SIZE.
+# BOX_SETUP, BOX_ENV, BOX_REMADE, BOX_SIZE, and BOX_TREE, the tree the Sandbox
+# holds: `base` after an upload with --from, `branch` after any other upload or
+# a create.
 #
 # run uploads the worktree's changed files, runs the command in the Sandbox,
 # and exits with its code. --from uploads that folder instead, such as a copy
 # of the base for before shots; the next run without it puts the worktree
 # back. A Sandbox that is gone (idle, or past its max life) at the upload or
 # the exec is made again once, from the same setup, and the command runs
-# again; BOX_REMADE counts these.
+# again; BOX_REMADE counts these. Each upload notes its tree in BOX_TREE.
 #
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
@@ -108,20 +110,29 @@ create() {
   fi
   rm -f "$errf"
   BOX_ID="$(tail -n 1 <<<"$id")"
-  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' \
-    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" "$BOX_SIZE" > "$dir/box.env"
+  # create uploads --work, the worktree.
+  BOX_TREE=branch
+  save
 }
 
-# load: read the state as text, its seven keys only; the file never runs.
+# save: write the state under a temp name, then move it into place, so a stop
+# mid-write leaves the old file whole.
+save() {
+  printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\nBOX_TREE=%s\n' \
+    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" "$BOX_SIZE" "$BOX_TREE" > "$dir/box.env.tmp"
+  mv "$dir/box.env.tmp" "$dir/box.env"
+}
+
+# load: read the state as text, its eight keys only; the file never runs.
 load() {
   [ -f "$dir/box.env" ] || die "no Sandbox for $dir; run box.sh up first"
-  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_REMADE=0; BOX_SIZE=""
+  BOX_ID=""; BOX_OS=""; BOX_WORK=""; BOX_SETUP=""; BOX_ENV=""; BOX_REMADE=0; BOX_SIZE=""; BOX_TREE=""
   local k v
   while IFS='=' read -r k v; do
     case "$k" in
       BOX_ID) BOX_ID="$v" ;; BOX_OS) BOX_OS="$v" ;; BOX_WORK) BOX_WORK="$v" ;;
       BOX_SETUP) BOX_SETUP="$v" ;; BOX_ENV) BOX_ENV="$v" ;; BOX_REMADE) BOX_REMADE="$v" ;;
-      BOX_SIZE) BOX_SIZE="$v" ;;
+      BOX_SIZE) BOX_SIZE="$v" ;; BOX_TREE) BOX_TREE="$v" ;;
     esac
   done < "$dir/box.env"
 }
@@ -142,6 +153,8 @@ attempt() {
     local why; why="$(tail -n 1 "$errf")"
     cat "$errf" >&2; rm -f "$errf"; die "${why:-proofbox upload failed}"
   fi
+  if [ -n "${from:-}" ]; then BOX_TREE=base; else BOX_TREE=branch; fi
+  save
   set +e
   if [ -n "${log:-}" ]; then
     proofbox exec "$BOX_ID" -- "$@" >"$log" 2>&1; c=$?
