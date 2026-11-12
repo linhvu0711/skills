@@ -65,8 +65,8 @@ adds it, after a check ran (§ Plan check).
 Size: size/<x>    Date: YYYY-MM-DD
 
 ## Review
-Change:   <before> → <after>, at most 4 lines
-Approach: <how it is built, and why not the other way>, at most 4 lines
+Change:   <before> → <after>, a few lines
+Approach: <how it is built, and why not the other way>, a few lines
 Blast radius:
   Touches:    <the modules or packages the change reaches, comma list>
   Dependency: none | <name>, D<n>
@@ -82,8 +82,8 @@ Risks:
 Works when:
   - #1 <Done-when line 1 in plain words>
   - #2 <...>
-In:  <what the plan builds>, at most 4 lines
-Out: <what it leaves, with O refs>, at most 4 lines
+In:  <what the plan builds>, a few lines
+Out: <what it leaves, with O refs>, a few lines
 
 ## Change map
 | Ref | Part | Job | Change | Group | Kind | At | Grid |
@@ -116,7 +116,7 @@ Pass rule: <median of n runs per side, in turns on base and head; head reaches t
   one clause>, <YYYY-MM-DD>. Used by <S2, D1>.
 
 ## Summary
-<2 to 3 lines: what changes, the path slice 1 takes, the counts>
+<a few lines: what changes, the path slice 1 takes, the counts>
 
 ## Proof
 | # | Done-when line | Test (file, case) | UI walk | Video | Artifact |
@@ -225,7 +225,7 @@ for the whole stack>
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
 and under it a small `## Review` block, then `## Summary`, Proof, Seams, Slices, UI
 walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
-The layer's Review holds three parts: `Change`, at most 2 lines, what
+The layer's Review holds three parts: `Change`, in brief, what
 this layer's PR adds to the stack; `Choices`, its forks and decisions;
 `Works when`, its Proof rows.
 
@@ -412,9 +412,12 @@ number can be trusted.
 Write plain marks: no long dash and no curly quote outside backticks.
 `scripts/build-page.py` refuses each one and names its line.
 
+Each Review part, map name, job, flow label, and count has a limit, and
+`scripts/build-page.py` names any line over its limit.
+
 ### Summary
 
-Two to three lines: what changes, the path slice 1 takes,
+A few lines: what changes, the path slice 1 takes,
 and the counts. The page shows it as the layer's Overview lead.
 
 ### Review
@@ -431,11 +434,10 @@ links them. Each part keeps its limit; a part that needs more says less.
 - `Blast radius` has all six lines. `none` is a finding: it tells the
   reader the plan checked. `Dependency` names every package the plan
   adds or bumps, with its `Decided` ref.
-- `Choices` lists every big fork, marked `(user)`, then at most 3 lines
-  from `Decided`: the ones whose wrong pick costs the most. Nothing was
+- `Choices` lists every big fork, marked `(user)`, then the `Decided`
+  lines whose wrong pick costs the most. Nothing was
   forked or decided: one line, `- none`.
-- `Risks` holds at most 3 beliefs the plan rests on, the ones with the
-  worst failure, each with what breaks if it is wrong and the `P` line
+- `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line
   that proves it, or `not proved`. No belief carries a risk: `- none`.
 - `Works when` has one line per Proof row, in order, the Done-when line
   in plain words.
@@ -449,9 +451,8 @@ one part to another, or a flow is added, removed, or changes. A change
 inside one part's job draws no map: the block holds one line, `None: no
 part or flow changes.`, so the reader sees that the plan checked.
 - A part is named in the repo's words and carries its job, or how its
-  job changes, short enough to fit the box. Each `Part` is at most 20 characters, each `Job` at most 30, and each flow label at most 20,
-  the same limits as `NAME_MAX`, `JOB_MAX`, and `LABEL_MAX` in
-  `scripts/build-page.py`, which names each line over one. `Change` is
+  job changes, short enough to fit the box; the builder names a `Part`,
+  `Job`, or flow label over its limit. `Change` is
   `new`, `changed` (the job changes), `removed`, or `same`. A `same` part is on the map only when
   a changed flow touches it.
 - `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
@@ -461,10 +462,10 @@ part or flow changes.`, so the reader sees that the plan checked.
   comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
   `outside` part leaves it empty.
 - A flow names what moves or what is asked, never `imports`, in a few
-  words, at most 20 characters. `(same)` may be left out.
-- At most 12 parts. More: merge the `same` parts no changed flow needs,
-  then parts of one group whose flows match. Still more: two maps, one
-  per area, each block headed `## Change map · <area>`.
+  words. `(same)` may be left out.
+- Over the part limit: merge the `same` parts no changed flow needs,
+  then parts of one group whose flows match. Still over: one map per
+  area, each block headed `## Change map · <area>`.
 - `Grid` is `column,row`, both 0 or more, and no two parts share a
   cell. Flow goes left to right: people and outside callers on the left,
   stores on the right. The parts of one group sit in cells next to each
@@ -830,16 +831,15 @@ facts or forks.
 - A run: the Stack block lists every layer with its base, and the order
   respects every `Blocked by` edge.
 - The Review block has every part, each in its limit: `Change`,
-  `Approach`, `In`, and `Out` at most 4 lines, a run layer's `Change`
-  at most 2; `Blast radius` all six lines; `Choices` every big fork and
-  at most 3 `Decided` lines; `Risks` at most 3; `Works when` one line
+  `Approach`, `In`, and `Out`; `Blast radius` all six lines; `Choices`
+  every big fork and its `Decided` lines; `Risks`; `Works when` one line
   per Proof row. A run: one stack Review, and one small Review per layer.
 - A `fix` or `refactor` issue: every rule of § Type variants for its
   type holds.
 - The Change map block is there: a map, or the `None` line when no
-  part, job, or flow changes. A map has at most 12 parts, each with a
-  job, a `Change`, and a free `Grid` cell outside other groups' areas;
-  names, jobs, and flow labels fit their limits of 20, 30, and 20 characters; every part but an `outside`
+  part, job, or flow changes. A map is within its part limit, each part
+  with a job, a `Change`, and a free `Grid` cell outside other groups'
+  areas; names, jobs, and flow labels fit their limits; every part but an `outside`
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.
