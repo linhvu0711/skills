@@ -24,8 +24,9 @@ one at a time, never two at once, since two suites at once overload the
 local machine (ADR 0011), and their lines end `(local machine)`, as in
 `pnpm lint · 1a2b3c4 · 0 errors (local machine)`. It writes every line
 of `$PROOF/checks.txt`, fresh on each call. Write no Gate line by hand.
-Exit 1 means a red Gate: stderr has `red: <command> · exit <code> ·
-output <file>` for each (§ Red).
+Exit 3 means a red Gate: stderr has `red: <command> · exit <code> ·
+output <file>` for each (§ Red). Exit 1 is a stop, with `stop:` on
+stderr: show it, stop.
 
 ## Missing tool
 

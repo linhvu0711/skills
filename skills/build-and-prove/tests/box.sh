@@ -409,7 +409,7 @@ t_box_gates_red() {
   # When
   box gates "$P" -- 'pnpm test' 'pnpm lint' 'make build'
   # Then
-  eq exit 1 "$code"
+  eq exit 3 "$code"
   eq execs 3 "$(grep -c '^exec ' "$FAKE_PB/log")"
   eq checks "pnpm test · $sha · red, exit 1: 1 passed, 1 failed (sandbox)
 pnpm lint · $sha · lint ok (sandbox)
@@ -432,7 +432,7 @@ t_box_gates_own_code() {
   # When
   box gates "$P" -- 'pnpm test | tail -n 5'
   # Then
-  eq exit 1 "$code"
+  eq exit 3 "$code"
   eq checks "pnpm test | tail -n 5 · $sha · red, exit 3: 2 failed (sandbox)" "$(cat "$P/checks.txt")"
   has log "exec ns:us:abc -- sh -c pnpm test | tail -n 5" "$(cat "$FAKE_PB/log")"
 }
@@ -446,7 +446,7 @@ t_box_gates_missing_tool() {
   # When
   box gates "$P" -- 'pnpm test'
   # Then
-  eq exit 1 "$code"
+  eq exit 3 "$code"
   has stderr "missing tool: pnpm test · sh: 1: pnpm: not found" "$err"
 }
 
@@ -459,7 +459,7 @@ t_box_gates_not_found_line() {
   # When
   box gates "$P" -- 'pnpm test:docker'
   # Then
-  eq exit 1 "$code"
+  eq exit 3 "$code"
   has stderr "missing tool: pnpm test:docker · docker: command not found" "$err"
 }
 
@@ -496,7 +496,7 @@ t_box_gates_local_red() {
   # When
   box gates "$P" --local "$R" -- 'echo bad; exit 3' 'no-such-tool-xyz' 'echo ok'
   # Then
-  eq exit 1 "$code"
+  eq exit 3 "$code"
   eq first "echo bad; exit 3 · $sha · red, exit 3: bad (local machine)" "$(sed -n 1p "$P/checks.txt")"
   has second "no-such-tool-xyz · $sha · red, exit 127: " "$(sed -n 2p "$P/checks.txt")"
   eq third "echo ok · $sha · ok (local machine)" "$(sed -n 3p "$P/checks.txt")"
@@ -584,7 +584,20 @@ t_box_gates_local_only_not_run() {
   eq checks "pnpm test:docker · $sha · not run: no Docker here" "$(cat "$P/checks.txt")"
 }
 
+t_box_gates_upload_fails() {
+  # Given
+  gate_fixture
+  echo 'upload: connection refused' > "$FAKE_PB/upload.fail"
+  # When
+  box gates "$P" -- 'pnpm test'
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: upload: connection refused" "$(printf '%s\n' "$err" | tail -n 1)"
+  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
+}
+
 cases=(
+  "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
   "gates writes a --not-run line|t_box_gates_not_run"
   "gates writes every line again on a second call|t_box_gates_rewrites_all"
@@ -596,7 +609,7 @@ cases=(
   "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"
   "gates names a Gate whose tool is missing|t_box_gates_missing_tool"
   "gates names a not found line|t_box_gates_not_found_line"
-  "gates keeps going after a red Gate and exits 1|t_box_gates_red"
+  "gates keeps going after a red Gate and exits 3|t_box_gates_red"
   "gates keeps the Gate's own exit code|t_box_gates_own_code"
   "gates runs each Gate in order and writes checks.txt|t_box_gates_green"
   "gates makes a gone Sandbox again once|t_box_gates_remakes"

@@ -45,7 +45,7 @@
 # <code>: <last non-empty output line> (sandbox)` and a stderr line
 # `red: <command> · exit <code> · output <file>`; the other commands still run.
 # A red command that exits 127 or prints `not found` also gets `missing tool:
-# <command> · <that line>` on stderr. gates exits 1 when any command is red,
+# <command> · <that line>` on stderr. gates exits 3 when any command is red,
 # 0 when all are green. A stop leaves the old checks.txt as it was.
 #
 # The caller names its special Gates as options, and gates writes their lines
@@ -72,7 +72,8 @@
 #
 # down deletes the Sandbox and the state, and prints REMADE=<n>.
 #
-# Exit 1: `stop: <why>` as the last stderr line.
+# Exit 1, in every verb: `stop: <why>` as the last stderr line. An upload that
+# fails for another reason than a gone Sandbox is a stop too.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -138,7 +139,8 @@ attempt() {
   proofbox upload "$BOX_ID" "${from:-$BOX_WORK}" >/dev/null 2>"$errf" || c=$?
   if [ "$c" -ne 0 ]; then
     if grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
-    cat "$errf" >&2; rm -f "$errf"; exit "$c"
+    local why; why="$(tail -n 1 "$errf")"
+    cat "$errf" >&2; rm -f "$errf"; die "${why:-proofbox upload failed}"
   fi
   set +e
   if [ -n "${log:-}" ]; then
@@ -282,7 +284,7 @@ case "$verb" in
     done
     mv "$tmp" "$dir/checks.txt"
     printf 'logs: %s\n' "$logs" >&2
-    exit "$red"
+    [ "$red" -eq 0 ] || exit 3
     ;;
   down)
     [ $# -eq 1 ] || die "$usage"

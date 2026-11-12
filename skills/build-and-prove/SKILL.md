@@ -283,13 +283,13 @@ done.
    one line per command: the command, the short SHA, the last line of
    its output, and where it ran, as in `pnpm test · 1a2b3c4 · 116 pass,
    0 fail (sandbox)`. Write no Sandbox line by hand. `/make-pr` counts
-   these lines and runs none of them again. Exit 1 means a red Gate:
+   these lines and runs none of them again. Exit 3 means a red Gate:
    stderr has `red: <command> · exit <code> · output <file>` for each.
    A red Gate is the builder's: a follow-up per `render.sh local
    prompt` § Follow-up, `# Check` naming the Gate and its output file,
    so the builder reads the output and does not run the Gate again.
-   Then the `gates` call again, which writes the file fresh. `stop:` on
-   stderr: show it, `box.sh down`, stop.
+   Then the `gates` call again, which writes the file fresh. Exit 1 is
+   a stop, with `stop:` on stderr: show it, `box.sh down`, stop.
 
    A Gate that prints `not found` gets a `missing tool:` line on
    stderr. It sorts in this order. First, a tool no
