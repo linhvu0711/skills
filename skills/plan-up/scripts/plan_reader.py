@@ -133,7 +133,44 @@ def reviews(named, run):
                     last[0][last[1]] += " " + t
                 else:
                     part["text"].append(t)
+        rv["parts"] = {name: review_part(name, raw) for name, raw in rv["parts"].items()}
     return got
+
+
+def listed(raw):
+    # A lone `- none` says the part was checked and holds nothing.
+    return [] if [x.lower() for x in raw["items"]] == ["none"] else raw["items"]
+
+
+def choice(line):
+    ref, _, text = line.partition(": ")
+    fork = None
+    if ref == "Fork":
+        question, _, pick = text.partition(" → ")
+        fork = {"question": question, "pick": pick.removesuffix(" (user)")}
+    return {"line": line, "ref": None if ref == "Fork" else ref, "text": text, "fork": fork}
+
+
+def risk(line):
+    belief, _, rest = line.partition(" If wrong:")
+    wrong, _, proved = rest.partition(" Proved:")
+    return {"line": line, "belief": belief, "ifWrong": wrong.strip().removesuffix("."), "proved": proved.strip()}
+
+
+def works(line):
+    m = re.match(r"#(\d+)\s", line)
+    return {"line": line, "n": int(m.group(1)) if m else None, "text": re.sub(r"^#\d+\s+", "", line)}
+
+
+def review_part(name, raw):
+    """One Review part as its parts: text lines, the Blast radius keys, or a list of cut lines."""
+    if name == "Blast radius":
+        keys = dict(raw["keys"])
+        if "Touches" in keys:
+            keys["Touches"] = keys["Touches"].split(", ") if keys["Touches"] else []
+        return keys
+    cut = {"Choices": choice, "Risks": risk, "Works when": works}.get(name)
+    return [cut(x) for x in listed(raw)] if cut else raw["text"]
 
 
 def maps(named):
@@ -289,12 +326,6 @@ def read(path):
     return plan
 
 
-def items(part):
-    got = part["items"] if part else []
-    return [] if [x.lower() for x in got] == ["none"] else got
-
-
-
 def grid(cell):
     m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*", cell or "")
     return tuple(float(x) for x in m.groups()) if m else None
@@ -319,17 +350,17 @@ def review_problems(plan):
                 yield f"{name}: no `{p}` part"
         for p, cap in [("Change", LAYER_CHANGE_MAX if r["kind"] == "layer" else LINES_MAX), ("Approach", LINES_MAX),
                        ("In", LINES_MAX), ("Out", LINES_MAX)]:
-            if p in parts and len(parts[p]["text"]) > cap:
-                yield f"{name}: `{p}` has {len(parts[p]['text'])} lines, the limit is {cap}"
-            if p in parts and not parts[p]["text"]:
+            if p in parts and len(parts[p]) > cap:
+                yield f"{name}: `{p}` has {len(parts[p])} lines, the limit is {cap}"
+            if p in parts and not parts[p]:
                 yield f"{name}: `{p}` is empty"
         if "Blast radius" in parts:
-            keys = parts["Blast radius"]["keys"]
+            keys = parts["Blast radius"]
             for k in BLAST:
                 if not keys.get(k):
                     yield f"{name}: `Blast radius` has no `{k}` line"
         if "Choices" in parts:
-            got = items(parts["Choices"])
+            got = [c["line"] for c in parts["Choices"]]
             odd = [x for x in got if not re.match(r"(Fork|D\d+):", x)]
             if odd:
                 yield f"{name}: each `Choices` line starts `Fork:` or `D<n>:`, not: {odd[0][:60]}"
@@ -337,14 +368,14 @@ def review_problems(plan):
             if len(decided) > DECIDED_MAX:
                 yield f"{name}: `Choices` has {len(decided)} `Decided` lines, the limit is {DECIDED_MAX}"
         if "Risks" in parts:
-            got = items(parts["Risks"])
+            got = [x["line"] for x in parts["Risks"]]
             if len(got) > RISKS_MAX:
                 yield f"{name}: `Risks` has {len(got)} lines, the limit is {RISKS_MAX}"
             for x in got:
                 if "If wrong:" not in x or "Proved:" not in x:
                     yield f"{name}: a risk needs `If wrong:` and `Proved:`: {x[:60]}"
         if "Works when" in parts:
-            got = items(parts["Works when"])
+            got = [x["line"] for x in parts["Works when"]]
             rows = proof_rows[r["layer"]]
             if len(got) != rows:
                 yield f"{name}: `Works when` has {len(got)} lines, its Proof has {rows} rows"

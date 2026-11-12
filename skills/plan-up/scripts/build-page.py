@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 import plan_reader
-from plan_reader import BLAST, PROVED, grid, items
+from plan_reader import BLAST, PROVED, grid
 
 
 def text(values):
@@ -21,29 +21,20 @@ def text(values):
 
 
 def top_review(parts):
-    rv = {k: text(parts.get(p, {}).get("text", [])) for k, p in
+    rv = {k: text(parts.get(p, [])) for k, p in
           [("change", "Change"), ("approach", "Approach"), ("in", "In"), ("out", "Out")]}
-    blast = parts.get("Blast radius", {}).get("keys", {})
+    blast = parts.get("Blast radius", {})
     rv["blast"] = {k.lower(): blast.get(k, "") for k in BLAST if k != "Touches"}
-    rv["blast"]["touches"] = blast.get("Touches", "").split(", ")
-    rv["risks"] = []
-    for risk in items(parts.get("Risks")):
-        belief, _, rest = risk.partition(" If wrong:")
-        wrong, _, proved = rest.partition(" Proved:")
-        rv["risks"].append({"belief": belief, "ifWrong": wrong.strip().removesuffix("."), "proved": proved.strip()})
+    rv["blast"]["touches"] = blast.get("Touches", [])
+    rv["risks"] = [{"belief": r["belief"], "ifWrong": r["ifWrong"], "proved": r["proved"]} for r in parts.get("Risks", [])]
     return rv
 
 
 def layer_review(parts):
-    choices = []
-    forks = []
-    for item in items(parts.get("Choices")):
-        ref, _, value = item.partition(": ")
-        choices.append({"ref": None if ref == "Fork" else ref, "text": value})
-        if ref == "Fork":
-            question, _, pick = value.partition(" → ")
-            forks.append({"question": question, "pick": pick.removesuffix(" (user)")})
-    return {"choices": choices, "works": [re.sub(r"^#\d+\s+", "", x) for x in items(parts.get("Works when"))]}, forks
+    choices = parts.get("Choices", [])
+    return ({"choices": [{"ref": c["ref"], "text": c["text"]} for c in choices],
+             "works": [w["text"] for w in parts.get("Works when", [])]},
+            [c["fork"] for c in choices if c["fork"]])
 
 
 def page_maps(maps):
@@ -118,7 +109,7 @@ def page_data(plan):
                            "url": f"https://github.com/{facts.get('repo', '')}/issues/{layer['issue']}",
                            "size": row[3] if len(row) > 3 else ""}
             page = page_layer(layer, layer_issue)
-            page["review"]["change"] = text(layer["review"].get("Change", {}).get("text", []))
+            page["review"]["change"] = text(layer["review"].get("Change", []))
             page["targets"] = row[2] if len(row) > 2 else ""
             page["points"] = int(row[4]) if len(row) > 4 and row[4].isdecimal() else 0
             layers.append(page)
