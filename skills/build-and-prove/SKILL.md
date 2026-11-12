@@ -425,7 +425,7 @@ updates the PR from `PROOF`.
   comes after the last slice, as one more part shaped by `render.sh
   local prompt` § Follow-up, with its own commits, so the count holds
   on the next follow-up. No slice left and nothing to build, as with
-  `review fixes are committed`: no builder.
+  `review fixes are committed` or `rebased on <BASE>`: no builder.
 - **Sandbox.** A plan with walks only. `box.sh up` (step 6) runs at the
   first step that needs the Sandbox, and only then: a slice test that
   runs there, as step 5 says (a tool the local machine lacks, the
