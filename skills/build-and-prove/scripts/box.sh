@@ -8,6 +8,7 @@
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh start <proof-dir> [--from <folder>] [--url <url>] -- <Run line>
+#   box.sh stop <proof-dir> [--url <url>]
 #   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
@@ -46,6 +47,13 @@
 # the tree it runs. With --url it then waits up to 120 s for the URL to
 # answer, one try every 2 s; it does not: the log's last 50 lines on stderr,
 # then a stop.
+#
+# stop sends TERM to the app's process group, waits up to 30 s for it to end,
+# then sends KILL. With --url it then waits up to 30 s, one try a second, until
+# nothing answers there (curl exits 7), so the port is free for the next start;
+# still answering is a stop. It stops by the group's id, never by name: pkill
+# and killall can match the shell that runs them. A Sandbox gone under it has
+# no app to stop: it says so and exits 0.
 #
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
@@ -94,7 +102,7 @@ idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # Only `gates --local` runs without proofbox.
 [ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -222,6 +230,13 @@ group_argv() {
   fi
 }
 
+# group_stop <pid file> <limit>: TERM the group whose id is in <pid file>, wait
+# up to <limit> s for it to end, then KILL it. No pid file: nothing to stop. It
+# ends `true`, so a group that already ended is no failure.
+group_stop() {
+  bare sh -c 'g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true' sh "$1" "$2"
+}
+
 case "$verb" in
   up)
     [ $# -eq 4 ] || die "$usage"
@@ -275,6 +290,22 @@ case "$verb" in
     [ -z "$gone" ] || die "$gone"
     bare tail -n 50 /tmp/app.log
     die "$url did not answer in 120 s; the app log's last lines are above"
+    ;;
+  stop)
+    [ $# -ge 1 ] || die "$usage"
+    dir="$1"; shift; url=""
+    if [ "${1:-}" = "--url" ]; then
+      [ -n "${2:-}" ] || die "--url needs a URL"
+      url="$2"; shift 2
+    fi
+    [ $# -eq 0 ] || die "$usage"
+    load
+    group_stop /tmp/app.pid 30
+    if [ -n "$gone" ]; then printf '%s; nothing to stop\n' "$gone" >&2; exit 0; fi
+    [ "$rc" -eq 0 ] || exit "$rc"
+    [ -n "$url" ] || exit 0
+    bare sh -c 'for i in $(seq 30); do curl -s -o /dev/null "$1"; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1' sh "$url"
+    [ "$rc" -eq 0 ] || die "$url still answers after the app stopped"
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"

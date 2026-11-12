@@ -52,6 +52,9 @@ prints its usage with no arguments.
   uploads as `run` does and starts the app in its own process group,
   prints `TREE=base` or `TREE=branch`, and with `--url` waits up to
   120 s for it to answer (step 9a).
+- `box.sh stop <proof-dir> [--url <url>]` ends the app's process group,
+  waiting up to 30 s before it kills it, and with `--url` waits up to
+  30 s for the port to be free (step 9a).
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full

@@ -26,20 +26,15 @@ code is the builder's: a follow-up (step 9c). Still down after that:
 **Stop the app.** The only stop in this skill:
 
 ```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'g=$(cat /tmp/app.pid); kill -TERM -"$g"; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 30 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+bash scripts/box.sh stop "$PROOF" --url <url>
 ```
 
-Then, when the `Open` line is a URL, wait until the port is free:
-
-```bash
-bash scripts/box.sh run "$PROOF" -- sh -c 'for i in $(seq 30); do curl -s -o /dev/null <url>; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1'
-```
-
-curl exits 7 when nothing listens, so the port is free for the next
-start. Exit 1: a process outside the group still holds the port;
-`box.sh down`, then stop with `<url> still answers after the app
-stopped`. Never `pkill` or `killall`: a name match can hit the
-shell that runs it.
+`--url` only when the `Open` line is a URL. `stop` ends the app's
+process group, waiting up to 30 s before it kills it, then waits up
+to 30 s until the URL no longer answers, so the port is free for the
+next start. Its `stop: <url> still answers after the app stopped`: a
+process outside the group holds the port; `box.sh down`, then stop
+with that line.
 
 A walk's `Setup` that sets the clock is how the app opens for that
 walk; the run never waits for the real clock to reach a time.

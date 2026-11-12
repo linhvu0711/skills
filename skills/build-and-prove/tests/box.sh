@@ -63,6 +63,29 @@ state() {
   printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\n' "$1" "${5:-linux}" "$R" "$SETUP" "${4:-}" "${2:-0}" "${3:-}" > "$P/box.env"
 }
 
+# group <pid file> [term]: a process group on this machine, as the app or the
+# browser is in the Sandbox, with its id in <pid file>; sets gpid. With
+# `term`, the group ignores TERM, so only a KILL ends it. A case that fails
+# before its stop still kills the group when it ends.
+group() {
+  mkdir -p "$(dirname "$1")"
+  if [ "${2:-}" = term ]; then
+    bash -c 'set -m; (trap "" TERM; exec /bin/sleep 300) >/dev/null 2>&1 & echo $! > "$1"' _ "$1"
+  else
+    bash -c 'set -m; /bin/sleep 300 >/dev/null 2>&1 & echo $! > "$1"' _ "$1"
+  fi
+  gpid="$(cat "$1")"
+  trap 'kill -KILL "$gpid" 2>/dev/null || true' EXIT
+}
+
+# ended <pid>: the process ends within 2 s.
+ended() {
+  local i
+  for i in $(seq 20); do kill -0 "$1" 2>/dev/null || return 0; /bin/sleep 0.1; done
+  kill -KILL "$1" 2>/dev/null || true
+  eq "process $1" ended "still running"
+}
+
 # line <n> <text>: line n of the text.
 line() { printf '%s\n' "$2" | sed -n "$1p"; }
 
@@ -705,6 +728,66 @@ t_box_start_no_answer() {
   eq "last stderr line" "stop: http://localhost:3000/ did not answer in 120 s; the app log's last lines are above" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
+t_box_stop() {
+  # Given
+  fake_proofbox
+  fake_curl
+  echo 7 > "$FAKE_CURL/GET_.exit"
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"
+  group "$FAKE_PB/tmp/app.pid"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  ended "$gpid"
+  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
+  case "$(cat "$FAKE_PB/log")" in *upload*) eq log "no upload" "$(cat "$FAKE_PB/log")" ;; esac
+}
+
+t_box_stop_limit() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  group "$FAKE_PB/tmp/app.pid" term
+  # When
+  box stop "$P"
+  # Then
+  eq exit 0 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
+  ended "$gpid"
+}
+
+t_box_stop_port_busy() {
+  # Given
+  fake_proofbox
+  fake_curl
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"
+  group "$FAKE_PB/tmp/app.pid"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 1 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
+  # The fake curl prints its status code, as a real `curl -o /dev/null` does not.
+  eq "last stderr line" "stop: http://localhost:3000/ still answers after the app stopped" "$(printf '%s\n' "$err" | tail -n 1 | sed 's/^\(404\)*//')"
+}
+
+t_box_stop_gone() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
+  # When
+  box stop "$P" --url http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
+  eq log 'exec ns:us:abc -- sh -c g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true sh /tmp/app.pid 30' "$(cat "$FAKE_PB/log")"
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -759,4 +842,8 @@ cases=(
   "start runs the Run line in its own group on macos|t_box_start_macos"
   "start --from starts the base and prints it|t_box_start_from_base"
   "start stops with the log's last lines when the app does not answer|t_box_start_no_answer"
+  "stop ends the app's group and waits for a free port|t_box_stop"
+  "stop waits 30 s for the group, then kills it|t_box_stop_limit"
+  "stop fails when the port stays busy|t_box_stop_port_busy"
+  "stop on a gone Sandbox has nothing to stop|t_box_stop_gone"
 )
