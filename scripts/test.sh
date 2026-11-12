@@ -644,6 +644,31 @@ description: \"$(times 1024 é)\""
   eq stdout "check: clean" "$out"
 }
 
+# agents_md <n>: repo with skills/demo, its README headings, and an AGENTS.md
+# of <n> lines of `x`, committed; then run check.sh.
+agents_md() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  for ((i = 0; i < $1; i++)); do printf 'x\n'; done > AGENTS.md
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_flags_long_agents_md() {
+  # Given: an AGENTS.md of 200 lines. When: check.sh
+  agents_md 200
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "AGENTS.md: too long: 200 lines (limit: under 200)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_passes_agents_md_under_limit() {
+  # Given: an AGENTS.md of 199 lines. When: check.sh
+  agents_md 199
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 t_flags_long_name() {
   # Given: a skill whose folder and name are 65 characters
   local n; n="$(times 65 a)"
@@ -863,6 +888,8 @@ cases=(
   "flags a block description over 1024 characters|t_flags_long_block_description"
   "counts a description by characters, not bytes|t_counts_description_characters"
   "flags a name over 64 characters|t_flags_long_name"
+  "flags an AGENTS.md of 200 lines|t_flags_long_agents_md"
+  "passes an AGENTS.md of 199 lines|t_passes_agents_md_under_limit"
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"

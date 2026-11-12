@@ -31,7 +31,8 @@
 # a frontmatter (a `---` first line and a closing `---` line), a `name` equal to
 # its folder, and a `description` that is not empty. Each SKILL.md also stays in
 # Anthropic's limits: a body under 500 lines, a `description` of at most 1024
-# characters, and a `name` of at most 64. Each skill agent,
+# characters, and a `name` of at most 64. The top AGENTS.md stays under 200
+# lines, Anthropic's limit for a CLAUDE.md. Each skill agent,
 # `skills/<name>/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
 # file name without `.md`, a `description` that is not empty, and a `model` and
 # an `effort`.
@@ -342,6 +343,12 @@ if [ ${#paths[@]} -eq 0 ]; then
       printf '%s\n' "$readme" | grep -qxF -e "## $h" || problems+=("$skill/README.md: missing heading: ## $h")
     done
   done < <(skill_dirs)
+
+  # The top AGENTS.md stays under 200 lines, Anthropic's limit for a CLAUDE.md.
+  if in_index AGENTS.md; then
+    n="$(git show :AGENTS.md | wc -l | tr -d ' ')"
+    if [ "$n" -ge 200 ]; then problems+=("AGENTS.md: too long: $n lines (limit: under 200)"); fi
+  fi
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,
