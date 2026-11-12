@@ -439,18 +439,19 @@ updates the PR from `PROOF`.
 - **Step 7.** Only the walks with no `before-<walk>.png` in `PROOF`.
 - **Step 8.** Every Gate line of `checks.txt` names HEAD's short SHA
   and none is red: the Gates stand, and no `gates` call runs. The perf
-  line is not a Gate line: it keeps the SHA it was measured on. Else, with no open
-  PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
+  line is not a Gate line: it keeps the SHA it was measured on. Else,
+  with no open PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
   --head <branch> --state open --json url -q '.[0].url'` prints a URL;
   then only the Gates CI does not run run here. `UI: none`: step 8 as
   written, since `gates --local` already asks. A plan with walks asks
-  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. No `here` Gate
-  left for the Sandbox, each one `ci` or one the build ran as
-  `--on-local`: `box.sh gates "$PROOF" --local "$WT"` with every Gate
-  after `--`, which writes each one's `not run: CI runs it` line, runs
+  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. A Sandbox Gate
+  is a `here` one the build ran neither `--on-local` nor `--not-run`.
+  No Sandbox Gate: `box.sh gates "$PROOF" --local "$WT"`, with the
+  `ci` and `--on-local` Gates after `--` and the `--not-run` ones as
+  before; it writes each `ci` one's `not run: CI runs it` line, runs
   the rest on the local machine, and needs no Sandbox. Else the Sandbox
-  `gates` call with the other `here` Gates after `--`, each `ci <file>`
-  Gate as `--not-run '<Gate>' 'CI runs it (<file>)'`, and the build's
+  `gates` call with the Sandbox Gates after `--`, each `ci <file>` Gate
+  as `--not-run '<Gate>' 'CI runs it (<file>)'`, and the build's
   `--on-local` and `--not-run` Gates passed as before.
   With a `PERF` block, the measure runs again only when `git -C "$WT"
   diff --name-only <its line's SHA> HEAD` names a file its `Command`
