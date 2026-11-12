@@ -225,7 +225,8 @@ number, or words that point at one. Two words come off first and never reach pla
    ready-pr says, and start no Sandbox. Before each push of fixes, after
    ready-pr step 5's rebase when it rebased, follow
    `../build-and-prove/SKILL.md` § Follow-up in `$WT` with the change
-   `review fixes are committed`; its stop points are yours. After the
+   `review fixes are committed`, and the layer's `--layer` and `--base`
+   from step 5 for a layer of a stack; its stop points are yours. After the
    push, follow `../make-pr/SKILL.md` in `$WT` with step 6's caller
    settings: it updates the PR from `PROOF`. make-pr comes after the
    push, since its own push stops on a rebased head.
