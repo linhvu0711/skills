@@ -42,6 +42,8 @@ Push too little down and the top bloats; push too much and you hide material the
 
 **Sprawl** is the failure mode here: a document simply too long, even when every line is live and unique. Attention thins across the excess, and every extra line is one more to keep relevant. The cure is the ladder: disclose reference behind pointers, and split by branch or sequence so each path carries only what it needs.
 
+**Hard limits**, from Anthropic's docs: a `SKILL.md` body under 500 lines, a skill `description` of at most 1,024 characters and a `name` of at most 64, and an `AGENTS.md` or `CLAUDE.md` under 200 lines. Near one, move reference down the ladder.
+
 ## Steps and completion criteria
 
 Every step ends on a **completion criterion**, the condition that tells the agent the work is done. Two properties make it a lever:

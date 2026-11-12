@@ -20,4 +20,4 @@ No other skill in this repo calls it. The wording passes on the skills here foll
 
 ## Credits
 
-A copy of `productivity/writing-for-agents` from [mattpocock/skills](https://github.com/mattpocock/skills), MIT license. The skill text is upstream's, except the `## Paths` part of `SKILL-MECHANICS.md`, which is this repo's own.
+A copy of `productivity/writing-for-agents` from [mattpocock/skills](https://github.com/mattpocock/skills), MIT license. The skill text is upstream's, except the `## Paths` part of `SKILL-MECHANICS.md` and the **Hard limits** paragraph of `SKILL.md`, which are this repo's own.
