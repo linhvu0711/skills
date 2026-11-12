@@ -1,7 +1,7 @@
-# test-lib.sh: the helpers every test case shares, the one fake gh, and the
-# fake curl. test.sh sources this file first, then each skills/*/tests/*.sh
-# and shared/tests/*.sh, so the cases there call these helpers by
-# name.
+# test-lib.sh: the helpers every test case shares, the one fake gh, the
+# fake curl, and the fake nsc. test.sh sources this file first, then each
+# skills/*/tests/*.sh and shared/tests/*.sh, so the cases there call these
+# helpers by name.
 #
 # Every leak string below is joined from two halves at runtime, so this file
 # holds nothing check.sh flags.
@@ -152,4 +152,28 @@ EOF
   chmod +x "$T/bin/curl"
   export PATH="$T/bin:$PATH" FAKE_CURL="$T/curl"
   cd "$T"
+}
+
+# fake_nsc: a fake nsc first on PATH, beside the fake gh. Call n logs its
+# args to $FAKE_NSC/calls and its stdin to $FAKE_NSC/stdin.<n>; `create`
+# writes mac-1 to its --cidfile; a call prints $FAKE_NSC/<n>.out and exits
+# with $FAKE_NSC/<n>.exit when those files exist.
+fake_nsc() {
+  fake_gh
+  mkdir -p "$T/nsc"
+  cat > "$T/bin/nsc" <<'EOF'
+#!/usr/bin/env bash
+n=$(( $(cat "$FAKE_NSC/n" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$FAKE_NSC/n"
+printf '%s\n' "$*" >> "$FAKE_NSC/calls"
+cat > "$FAKE_NSC/stdin.$n"
+if [ "$1" = create ]; then
+  while [ $# -gt 0 ]; do [ "$1" = --cidfile ] && echo mac-1 > "$2"; shift; done
+fi
+[ ! -f "$FAKE_NSC/$n.out" ] || cat "$FAKE_NSC/$n.out"
+[ ! -f "$FAKE_NSC/$n.exit" ] || exit "$(cat "$FAKE_NSC/$n.exit")"
+exit 0
+EOF
+  chmod +x "$T/bin/nsc"
+  export FAKE_NSC="$T/nsc"
+  printf 'gho_secret\n' > "$FAKE_GH/auth-token.json"
 }

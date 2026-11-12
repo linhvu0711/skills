@@ -6,7 +6,10 @@
 #   mac.sh up <worker> <repo-url> <base> [<worker id>]
 #                                          -> "<instance id>\t<worker id>" once the worker runs
 #   mac.sh alive <instance>                -> exit 0 when the Mac and its worker run
-#   mac.sh down <instance>                 -> deletes the keys and destroys the Mac
+#   mac.sh down <instance>                 -> deletes the keys and destroys the Mac:
+#                                             "destroyed <id>", or "already gone <id>";
+#                                             exit 1, with the hand command on stderr,
+#                                             when the Mac still runs
 #
 # up rents a Mac (macOS 26, Xcode 26) for at most HANDOFF_MAC_HOURS hours
 # (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
@@ -58,7 +61,7 @@ cmd_up() {
   name="${repo##*/}"
   { printf 'export CURSOR_API_KEY=%q\n' "$key"; printf 'export GH_TOKEN=%q\n' "$token"; } \
     | remote_in "$id" 'umask 077; cat > ~/.ho-env' >/dev/null \
-    || { cmd_down "$id" >/dev/null 2>&1 || true; die "could not send the keys to $id"; }
+    || { cmd_down "$id" >/dev/null || true; die "could not send the keys to $id"; }
   [[ -n "$wid" ]] && state="mkdir -p ~/.cursor && printf '{\"version\":1,\"workerIdsByDisplayName\":{\"%s\":\"%s\"}}\n' $worker $wid > ~/.cursor/agent-cli-state.json"
   # git asks the helper for the token each time, so the token never sits in
   # .git/config; the image's keychain helper is dropped, as SSH cannot write
@@ -80,10 +83,10 @@ cmd_up() {
       sleep 2
     done
     grep -v -i keychain ~/worker.log | tail -5 >&2; exit 1") \
-    || { cmd_down "$id" >/dev/null 2>&1 || true; die "the worker did not start on $id"; }
+    || { cmd_down "$id" >/dev/null || true; die "the worker did not start on $id"; }
   wid=$(tail -1 <<<"$wid")
   [[ "$wid" =~ ^[0-9a-f-]{36}$ ]] \
-    || { cmd_down "$id" >/dev/null 2>&1 || true; die "the worker on $id has no ID in agent-cli-state.json"; }
+    || { cmd_down "$id" >/dev/null || true; die "the worker on $id has no ID in agent-cli-state.json"; }
   printf '%s\t%s\n' "$id" "$wid"
 }
 
@@ -94,11 +97,23 @@ cmd_alive() {
 }
 
 cmd_down() {
-  local id="${1:-}"
+  local id="${1:-}" log why
   [[ -n "$id" && "$id" != "-" ]] || die "instance id required"
+  # A Mac whose worker hangs must still be destroyed, so this step may fail.
   remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
-  nsc destroy "$id" --force </dev/null >/dev/null 2>&1 || true
-  echo "destroyed $id"
+  log=$(mktemp)
+  if nsc destroy "$id" --force </dev/null >"$log" 2>&1; then
+    rm -f "$log"; echo "destroyed $id"; return 0
+  fi
+  # Proven 2026-11-12: nsc destroy of an ID Namespace does not hold exits 1
+  # with "Failed: <id>: does not exist.", so that Mac costs nothing.
+  if grep -q 'does not exist\.' "$log"; then
+    rm -f "$log"; echo "already gone $id"; return 0
+  fi
+  why=$(grep -v -e '^info:' -e '^[[:space:]]*$' "$log" | head -1 || true)
+  rm -f "$log"
+  echo "mac.sh: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
+  return 1
 }
 
 for c in nsc gh; do command -v "$c" >/dev/null || die "$c is required"; done
