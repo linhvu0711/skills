@@ -440,12 +440,14 @@ updates the PR from `PROOF`.
   --head <branch> --state open --json url -q '.[0].url'` prints a URL;
   then only the Gates CI does not run run here. `UI: none`: step 8 as
   written, since `gates --local` already asks. A plan with walks asks
-  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. Every line `ci`:
-  `box.sh gates "$PROOF" --local "$WT"` with every Gate after `--`,
-  which writes each one's `not run: CI runs it` line and needs no
-  Sandbox. Else the Sandbox `gates` call with the `here` Gates after
-  `--`, and each `ci <file>` Gate as `--not-run '<Gate>' 'CI runs it
-  (<file>)'`.
+  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. No `here` Gate
+  left for the Sandbox, each one `ci` or one the build ran as
+  `--on-local`: `box.sh gates "$PROOF" --local "$WT"` with every Gate
+  after `--`, which writes each one's `not run: CI runs it` line, runs
+  the rest on the local machine, and needs no Sandbox. Else the Sandbox
+  `gates` call with the other `here` Gates after `--`, each `ci <file>`
+  Gate as `--not-run '<Gate>' 'CI runs it (<file>)'`, and the build's
+  `--on-local` and `--not-run` Gates passed as before.
   With a `PERF` block, the measure runs again only when `git -C "$WT"
   diff --name-only <its line's SHA> HEAD` names a file its `Command`
   runs. Else copy its line out of `checks.txt` before the `gates` call
