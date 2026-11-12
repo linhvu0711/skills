@@ -223,8 +223,9 @@ number, or words that point at one. Two words come off first and never reach pla
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
    ready-pr says, and start no Sandbox: a Gate that CI covers is left to
-   the PR's CI. CI covers a Gate when a file under `$WT/.github/workflows/`
-   names its command. A plan with `UI: none` starts no Sandbox: a Gate
+   the PR's CI. `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`
+   says which Gates CI covers: a `ci` line is covered, a `here` line is
+   not. A plan with `UI: none` starts no Sandbox: a Gate
    CI does not cover, and the perf measure of a fix that changes code
    its `Command` runs, run before each push of fixes per
    `../build-and-prove/references/checks.md`. For a plan with walks,
@@ -235,8 +236,8 @@ number, or words that point at one. Two words come off first and never reach pla
      the videos `../build-and-prove/references/walks.md` 9c names are
      filmed again, as build-and-prove step 9 films them, those only.
    - A Gate that CI does not cover: before each push of fixes, it runs
-     there, as build-and-prove step 8 runs it. A repo with no CI covers
-     no Gate, so all of them run.
+     there, as build-and-prove step 8 runs it, with only the Gates of
+     the `here` lines after `--`.
    - A plan with a `Perf` block and a fix that changes code its
      `Command` runs: before the push, the perf measure runs again, as
      build-and-prove step 8 runs it, and the Target line's row in the PR

@@ -22,10 +22,10 @@ the plan is a fix with `UI: none`.
 
 Steps 2, 4, and 6 are skipped: no proofbox, no setup files, no
 Sandbox. This session builds two slices on the local machine. Step 8
-reads `references/checks.md`: `.github/workflows/ci.yml` runs
-`pnpm test` on pull requests, so its line is `pnpm test · 9e18c16 · not
-run: CI runs it (ci.yml)`; `box.sh gates "$PROOF" --local "$WT" --
-'pnpm lint'` writes `pnpm lint · 9e18c16 · 0 errors (local machine)`.
+reads `references/checks.md`: `box.sh gates "$PROOF" --local "$WT" --
+'pnpm test' 'pnpm lint'` writes `pnpm test · 9e18c16 · not run: CI
+runs it (ci.yml)`, since `ci.yml` runs `pnpm test` on pull requests,
+and `pnpm lint · 9e18c16 · 0 errors (local machine)`.
 Step 11 is skipped. The report says `Checks: pnpm lint green on 9e18c16
 on the local machine · pnpm test: CI` and `Walks: none (no UI)`.
 

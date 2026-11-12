@@ -47,9 +47,11 @@ prints its usage with no arguments.
   life, is made again once from its Snapshot, and `run` says so on
   stderr. Nothing is lost: the code lives in the worktree. A run can
   last longer than one Sandbox.
-- `box.sh gates <proof-dir> -- '<command>'…` runs each command as
-  `run` does, keeps each one's own exit code and full output in a temp
-  file, and writes `<proof-dir>/checks.txt` (step 8).
+- `box.sh gates <proof-dir> [--local <worktree>] [--on-local
+  '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
+  each command as `run` does, keeps each one's own exit code and full
+  output in a temp file, and writes every line of
+  `<proof-dir>/checks.txt` (step 8).
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
   times it was made again.
 
@@ -281,13 +283,13 @@ done.
    one line per command: the command, the short SHA, the last line of
    its output, and where it ran, as in `pnpm test · 1a2b3c4 · 116 pass,
    0 fail (sandbox)`. Write no Sandbox line by hand. `/make-pr` counts
-   these lines and runs none of them again. Exit 1 means a red Gate:
+   these lines and runs none of them again. Exit 3 means a red Gate:
    stderr has `red: <command> · exit <code> · output <file>` for each.
    A red Gate is the builder's: a follow-up per `render.sh local
    prompt` § Follow-up, `# Check` naming the Gate and its output file,
    so the builder reads the output and does not run the Gate again.
-   Then the `gates` call again, which writes the file fresh. `stop:` on
-   stderr: show it, `box.sh down`, stop.
+   Then the `gates` call again, which writes the file fresh. Exit 1 is
+   a stop, with `stop:` on stderr: show it, `box.sh down`, stop.
 
    A Gate that prints `not found` gets a `missing tool:` line on
    stderr. It sorts in this order. First, a tool no
@@ -299,12 +301,13 @@ done.
 
    A Gate the Sandbox cannot run in any case, such as `pnpm test:docker`
    with no Docker in the Sandbox (`docker: command not found`, or its
-   output names a service the Sandbox lacks): run it on the local machine, `cd "$WT" &&
-   <command>`, and its line ends `(local machine)`. It can run in
-   neither place: its line is `<command> · <short SHA> · not run:
-   <why>`. Run `gates` again without that Gate, then add its line to
-   `checks.txt`. Add it again after each later `gates` call, since that
-   call writes the file fresh.
+   output names a service the Sandbox lacks): run `gates` again with it
+   as `--on-local '<command>'` in place of its place after `--`.
+   `box.sh` runs it on the local machine in the worktree, and its line
+   ends `(local machine)`. A Gate that can run in neither place goes in
+   as `--not-run '<command>' '<why>'`, and its line is `<command> ·
+   <short SHA> · not run: <why>`. Pass both options on every later
+   `gates` call: each call writes every line of `checks.txt`.
 
    With a `PERF` block, after the Gates, measure per
    `../../shared/benchmark.md`. Add a detached worktree of
