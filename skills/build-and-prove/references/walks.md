@@ -63,7 +63,7 @@ while you walk. Its brief, whole:
   pasted in the brief itself. Never a `$(cat <file>)` line or a path
   in their place, since
   the Agent tool runs no shell, so the walker gets that line, not the file.
-  In mode after, a later round or a rerun gets only the videos 9c
+  In mode after, a later round or a follow-up gets only the videos 9c
   films again and their walks, so the walker never overwrites a kept
   video. Mode before gets the walks step 7 names. A round run again
   after `GONE`, in either mode, gets the same videos or walks as the
@@ -180,6 +180,6 @@ read and find on that walk's screen. Not sure, or the video has no
 line in the list: film it again. The walker's brief holds only
 those videos and their walks (9b); every other video keeps its
 `video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
-rerun (SKILL.md § Rerun) sorts the videos in `PROOF` the same way.
+follow-up (SKILL.md § Follow-up) sorts the videos in `PROOF` the same way.
 After round three with a failed walk: `box.sh down`, then stop with
 the failing videos' paths, one per line.

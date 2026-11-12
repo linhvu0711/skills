@@ -222,26 +222,15 @@ number, or words that point at one. Two words come off first and never reach pla
    Then read `../ready-pr/SKILL.md` and follow it whole on
    each PR, bottom of the stack first, in its worktree.
    Its fixes run their tests on the local machine, `cd "$WT" && …`, as
-   ready-pr says, and start no Sandbox: a Gate that CI covers is left to
-   the PR's CI. `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`
-   says which Gates CI covers: a `ci` line is covered, a `here` line is
-   not. A plan with `UI: none` starts no Sandbox: a Gate
-   CI does not cover, and the perf measure of a fix that changes code
-   its `Command` runs, run before each push of fixes per
-   `../build-and-prove/references/checks.md`. For a plan with walks,
-   three cases start a Sandbox, with the
-   build's `box.sh up` arguments (`../build-and-prove/SKILL.md` step 6),
-   and end with `box.sh down`:
-   - A fix or a rebase that changes code a UI walk's screen shows:
-     the videos `../build-and-prove/references/walks.md` 9c names are
-     filmed again, as build-and-prove step 9 films them, those only.
-   - A Gate that CI does not cover: before each push of fixes, it runs
-     there, as build-and-prove step 8 runs it, with only the Gates of
-     the `here` lines after `--`.
-   - A plan with a `Perf` block and a fix that changes code its
-     `Command` runs: before the push, the perf measure runs again, as
-     build-and-prove step 8 runs it, and the Target line's row in the PR
-     body is written again for the new head.
+   ready-pr says, and start no Sandbox. Before each push of ready-pr
+   step 5, of fixes or of a rebase alone, and after its rebase when it
+   rebased, follow `../build-and-prove/SKILL.md` § Follow-up in `$WT`
+   with the change `review fixes are committed`, or `rebased on <BASE>`
+   for a rebase alone, and the layer's `--layer` and `--base`
+   from step 5 for a layer of a stack; its stop points are yours. After the
+   push, follow `../make-pr/SKILL.md` in `$WT` with step 6's caller
+   settings: it updates the PR from `PROOF`. make-pr comes after the
+   push, since its own push stops on a rebased head.
 
    It ends with `READY` or a stop point.
 
@@ -351,11 +340,10 @@ picks the start; the option and `devin` or `cursor` are taken off first,
 as in § Forms.
 
 1. **A build this chat started.** The words are a follow-up. A local
-   build: sort the words by plan-up step 5 (a big fork goes to the user
-   first), then build them yourself in its worktree as `render.sh local
-   prompt` § Follow-up shapes them, with every slice of the first
-   prompt not built yet. Then build-and-prove steps 6 to 12 again,
-   where step 7 takes only the before shots this build has not taken.
+   build: follow `../build-and-prove/SKILL.md` § Follow-up in its
+   worktree with the words as the change, and `--layer` and `--base`
+   for a layer of a stack; its stop points are yours. Then go on from
+   step 6: make-pr opens the PR, or updates the open one from `PROOF`.
    A cloud session: handoff § Follow-up. No words: say `A build from
    this chat is open; say what to change.` and stop.
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1,
