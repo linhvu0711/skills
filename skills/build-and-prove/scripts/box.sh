@@ -7,7 +7,8 @@
 #   box.sh auth <linux|macos>
 #   box.sh up <proof-dir> <worktree> <linux|macos> <owner/repo>
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
-#   box.sh gates <proof-dir> [--local <worktree>] -- <command>...
+#   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
+#                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
 #
 # auth checks the login of the Provider that ~/.config/proofbox/config picks
@@ -47,6 +48,17 @@
 # <command> · <that line>` on stderr. gates exits 1 when any command is red,
 # 0 when all are green. A stop leaves the old checks.txt as it was.
 #
+# The caller names its special Gates as options, and gates writes their lines
+# after the others, each kind in the order given:
+#   --on-local <command>      a Gate the Sandbox cannot run, such as one that
+#                             needs Docker: it runs on the local machine in the
+#                             worktree, its line ending `(local machine)`.
+#                             Not with --local, where every Gate runs there.
+#   --not-run <command> <why> a Gate that runs nowhere: `<command> · <short
+#                             SHA> · not run: <why>`.
+# Each call writes every line of checks.txt again, so a caller passes its
+# special Gates on every call. At least one Gate, of any kind.
+#
 # gates --local <worktree> needs no Sandbox and no proofbox. It asks the shared
 # core's ci-covers.sh which commands the PR's GitHub CI runs; each of those is
 # not run, and its line is `<command> · <short SHA> · not run: CI runs it
@@ -70,7 +82,7 @@ idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> [--local <worktree>] -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # Only `gates --local` runs without proofbox.
 [ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -189,15 +201,26 @@ case "$verb" in
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"
-    dir="$1"; shift; local_wt=""
+    dir="$1"; shift; local_wt=""; on_local=(); not_run=()
+    # --local stays first, so the proofbox check above sees it.
     if [ "${1:-}" = "--local" ]; then
       [ -d "${2:-}" ] || die "--local needs a worktree"
       local_wt="$2"; shift 2
     fi
-    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
+    while [ $# -gt 0 ] && [ "$1" != -- ]; do
+      case "$1" in
+        --on-local) [ $# -ge 2 ] || die "$usage"; on_local+=("$2"); shift 2 ;;
+        --not-run) [ $# -ge 3 ] || die "$usage"; not_run+=("$2" "$3"); shift 3 ;;
+        *) die "$usage" ;;
+      esac
+    done
+    [ "${1:-}" = "--" ] || die "$usage"
     shift
-    if [ -n "$local_wt" ]; then where="local machine"; work="$local_wt"
-    else load; where="sandbox"; work="$BOX_WORK"; fi
+    [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ] || [ ${#not_run[@]} -ge 1 ] || die "$usage"
+    [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
+      || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
+    if [ -n "$local_wt" ]; then mode=local; work="$local_wt"
+    else load; mode=sandbox; work="$BOX_WORK"; fi
     mkdir -p "$dir"
     tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
     sha="$(git -C "$work" rev-parse --short HEAD)"
@@ -207,7 +230,7 @@ case "$verb" in
     # With --local, a Gate the PR's CI runs is left to CI: covered[i] is its
     # workflow file, or empty.
     covered=()
-    if [ -n "$local_wt" ]; then
+    if [ -n "$local_wt" ] && [ $# -ge 1 ]; then
       cerr="$(mktemp)"
       cover_out="$(bash "$cover" "$local_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
       rm -f "$cerr"
@@ -218,16 +241,16 @@ case "$verb" in
     fi
     : > "$tmp"
     n=0; red=0
-    for cmd in "$@"; do
+
+    # gate <command> <local|sandbox>: run it there, write its line, and name
+    # it on stderr when it is red.
+    gate() {
+      local cmd="$1" where last miss
       n=$((n + 1)); log="$logs/$n.log"
-      if [ -n "${covered[$((n - 1))]:-}" ]; then
-        printf '%s · %s · not run: CI runs it (%s)\n' "$cmd" "$sha" "${covered[$((n - 1))]}" >> "$tmp"
-        continue
-      fi
-      if [ -n "$local_wt" ]; then
-        rc=0; (cd "$local_wt" && sh -c "$cmd") >"$log" 2>&1 || rc=$?
+      if [ "$2" = sandbox ]; then
+        where="sandbox"; in_box sh -c "$cmd"
       else
-        in_box sh -c "$cmd"
+        where="local machine"; rc=0; (cd "$work" && sh -c "$cmd") >"$log" 2>&1 || rc=$?
       fi
       last="$(tr -d '\r' < "$log" | awk 'NF { l = $0 } END { print l }')"
       last="${last:-no output}"
@@ -241,6 +264,21 @@ case "$verb" in
         [ "$rc" -ne 127 ] || miss="${miss:-exit 127}"
         [ -z "$miss" ] || printf 'missing tool: %s · %s\n' "$cmd" "$miss" >&2
       fi
+    }
+
+    i=0
+    for cmd in "$@"; do
+      i=$((i + 1))
+      if [ -n "${covered[$((i - 1))]:-}" ]; then
+        printf '%s · %s · not run: CI runs it (%s)\n' "$cmd" "$sha" "${covered[$((i - 1))]}" >> "$tmp"
+      else
+        gate "$cmd" "$mode"
+      fi
+    done
+    for cmd in ${on_local[@]+"${on_local[@]}"}; do gate "$cmd" local; done
+    set -- ${not_run[@]+"${not_run[@]}"}
+    while [ $# -ge 2 ]; do
+      printf '%s · %s · not run: %s\n' "$1" "$sha" "$2" >> "$tmp"; shift 2
     done
     mv "$tmp" "$dir/checks.txt"
     printf 'logs: %s\n' "$logs" >&2

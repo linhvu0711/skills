@@ -33,8 +33,10 @@ A `missing tool:` line on stderr, for a tool the local machine lacks:
 say `<tool> is not installed on this machine; install it, then say
 go.` and wait. On `go`, run the `gates` call again. A Gate that cannot
 run here for another reason, such as one that needs Docker the machine
-cannot start: its line is `<command> · <short SHA> · not run: <why>`,
-added as the CI lines are, and `/make-pr` names it for CI.
+cannot start: run the `gates` call again with it as `--not-run
+'<command>' '<why>'` in place of its place after `--`, and pass that
+option on every later call. Its line is `<command> · <short SHA> · not
+run: <why>`, and `/make-pr` names it for CI.
 
 ## Perf
 

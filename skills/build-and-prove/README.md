@@ -13,7 +13,7 @@ It only runs when you call it.
 
 ## What you get
 
-A worktree under `~/development/worktrees` on the issue's branch (a plan with no issue gets a branch with no number, as in `feat/export-orders-csv`), with one commit per slice, every Gate green in the Sandbox, green on your machine, or left to the PR's CI. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<slug>/`, named like the plan file (`<owner>-<repo>-<n>`, or `<owner>-<repo>-chat-<words>`): the videos, the before and after screenshots, `proof.md`, the PR's `Proof` part, and `checks.txt`, the Gates it ran on the head commit, each line ending with where it ran, so make-pr runs none of them again. A Gate the Sandbox cannot run runs on your machine; one that can run in neither place is marked for CI. [make-pr](../make-pr/) turns that into the PR.
+A worktree under `~/development/worktrees` on the issue's branch (a plan with no issue gets a branch with no number, as in `feat/export-orders-csv`), with one commit per slice, every Gate green in the Sandbox, green on your machine, or left to the PR's CI. The branch is not pushed. Next to it, a proof folder at `~/.agents/artifacts/proof/<slug>/`, named like the plan file (`<owner>-<repo>-<n>`, or `<owner>-<repo>-chat-<words>`): the videos, the before and after screenshots, `proof.md`, the PR's `Proof` part, and `checks.txt`, the Gates it ran on the head commit, each line ending with where it ran, so make-pr runs none of them again. A Gate the Sandbox cannot run runs on your machine; one that can run in neither place is marked for CI. `box.sh gates` writes those lines too, from its `--on-local` and `--not-run` options, so no Gate line is written by hand. [make-pr](../make-pr/) turns that into the PR.
 
 On the way:
 

@@ -392,7 +392,7 @@ t_box_gates_usage() {
   box gates "$P" --
   # Then
   eq exit 1 "$code"
-  has stderr "gates <proof-dir> [--local <worktree>] -- <command>..." "$err"
+  has stderr "gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
 }
@@ -518,7 +518,78 @@ t_box_gates_local_ci() {
 echo two · $sha · two (local machine)" "$(cat "$P/checks.txt")"
 }
 
+# special_fixture: an up Sandbox whose every exec prints a green test line.
+special_fixture() {
+  fake_proofbox
+  state ns:us:abc
+  echo '116 passed, 0 failed' > "$FAKE_PB/exec.out"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+}
+
+t_box_gates_on_local() {
+  # Given
+  special_fixture
+  # When
+  box gates "$P" --on-local 'pwd' -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
+  eq execs 1 "$(grep -c '^exec ' "$FAKE_PB/log")"
+}
+
+t_box_gates_not_run() {
+  # Given
+  special_fixture
+  # When
+  box gates "$P" --not-run 'pnpm test:docker' 'no Docker on either machine' -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pnpm test:docker · $sha · not run: no Docker on either machine" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_rewrites_all() {
+  # Given
+  special_fixture
+  # When
+  box gates "$P" --on-local 'pwd' --not-run 'pnpm test:docker' 'no Docker' -- 'pnpm test'
+  box gates "$P" --on-local 'pwd' --not-run 'pnpm test:docker' 'no Docker' -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pwd · $sha · $R (local machine)
+pnpm test:docker · $sha · not run: no Docker" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_on_local_with_local() {
+  # Given
+  gate_fixture
+  # When
+  box gates "$P" --local "$R" --on-local 'pwd' -- 'echo one'
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: --on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine" "$err"
+  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_local_only_not_run() {
+  # Given
+  fake_proofbox
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+  # When
+  box gates "$P" --local "$R" --not-run 'pnpm test:docker' 'no Docker here' --
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test:docker · $sha · not run: no Docker here" "$(cat "$P/checks.txt")"
+}
+
 cases=(
+  "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
+  "gates writes a --not-run line|t_box_gates_not_run"
+  "gates writes every line again on a second call|t_box_gates_rewrites_all"
+  "gates refuses --on-local with --local|t_box_gates_on_local_with_local"
+  "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
