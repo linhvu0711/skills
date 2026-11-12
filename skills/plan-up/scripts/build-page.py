@@ -8,12 +8,11 @@ without changing the old page when a block is bad.
 """
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
 import plan_reader
-from plan_reader import BLAST, PROVED
+from plan_reader import BLAST
 
 
 def text(values):
@@ -73,29 +72,25 @@ def page_data(plan):
     if number:
         issue = {"number": number, "url": f"https://github.com/{facts.get('repo', '')}/issues/{number}", **issue}
     parts = plan["reviews"][0]["parts"] if plan["reviews"] else {}
-    proved = []
-    for item in plan["proved"]:
-        m = PROVED.fullmatch(item)
-        if m:
-            proved.append(dict(zip(["fact", "ran", "date", "usedBy"], m.groups())))
+    proved = [{"fact": p["fact"], "ran": p["ran"], "date": p["date"], "usedBy": p["usedBy"]}
+              for p in plan["proved"] if p["fact"] is not None]
     layers = []
     if plan["run"]:
-        stack = {int(r[0]): r for r in plan["stack"] if r[0].isdecimal()}
+        stack = {int(r["n"]): r for r in plan["stack"] if r["n"].isdecimal()}
         for layer in plan["layers"]:
-            row = stack.get(layer["n"], [])
+            row = stack.get(layer["n"], {})
             layer_issue = {"number": layer["issue"],
                            "url": f"https://github.com/{facts.get('repo', '')}/issues/{layer['issue']}",
-                           "size": row[3] if len(row) > 3 else ""}
+                           "size": row.get("size") or ""}
             page = page_layer(layer, layer_issue)
             page["review"]["change"] = text(layer["review"].get("Change", []))
-            page["targets"] = row[2] if len(row) > 2 else ""
-            page["points"] = int(row[4]) if len(row) > 4 and row[4].isdecimal() else 0
+            page["targets"] = row.get("base") or ""
+            page["points"] = row.get("points") or 0
             layers.append(page)
     else:
         layers.append(page_layer(plan["layers"][0], dict(issue)))
-    kind = re.match(r"\[([^]]+)\]", title)
-    if kind:
-        issue["kind"] = kind.group(1)
+    if plan["kind"]:
+        issue["kind"] = plan["kind"]
     data = {"title": title, "issue": issue, "date": plan["date"], "run": plan["run"],
             "review": top_review(parts), "maps": page_maps(plan["maps"]), "facts": facts, "proved": proved, "layers": layers}
     if plan["run"]:

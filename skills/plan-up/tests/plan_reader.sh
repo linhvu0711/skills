@@ -108,7 +108,29 @@ t_reader_out() {
   good_part 'plan["layers"][0]["out"]' '["orders export as PDF"]'
 }
 
+t_reader_proved() {
+  good_part 'plan["proved"][0]' \
+    '{"date": "2026-10-04", "fact": "csv-stringify keeps a note with a newline whole", "ran": "streamed three rows in a temp folder", "ref": "P1", "usedBy": "S1"}'
+}
+
+t_reader_stack_row() {
+  # Given: run.md as it is
+  T="$(mktemp -d)"
+  # When
+  parts "$here/build-page/run.md" 'plan["stack"][1]'
+  # Then
+  eq exit 0 "$code"
+  eq parts '{"base": "layer 1", "issue": "#73 Add a member", "n": "2", "points": 2, "row": ["2", "#73 Add a member", "layer 1", "S", "2"], "size": "S"}' "$out"
+}
+
+t_reader_kind() {
+  good_part 'plan["kind"]' '"feat"'
+}
+
 cases=(
+  "plan_reader reads a Proved line into its fact, run, date, and users|t_reader_proved"
+  "plan_reader reads a Stack row into its cells|t_reader_stack_row"
+  "plan_reader reads the type word of the title|t_reader_kind"
   "plan_reader reads a Proof row into its cells|t_reader_proof_row"
   "plan_reader reads a seam into its name, place, and reason|t_reader_seam"
   "plan_reader reads a Decided line without its ref|t_reader_decided"

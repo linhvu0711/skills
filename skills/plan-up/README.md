@@ -57,6 +57,8 @@ A `ready-to-build` ticket takes a short path: its Steps are trusted and only the
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
+The plan reader now cuts every plan line into its parts and owns every line shape, limit, and error message. The builder only renders the page from those parts, so each limit lives in one place.
+
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
 Each step now reads only the section of the plan guide it needs, named by its heading, so a run no longer loads the whole 39 KB guide at the start. The probe and executor guides are short and still read whole, at the step that uses them.

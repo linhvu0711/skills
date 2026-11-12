@@ -263,6 +263,20 @@ def records(lines, kind):
     return got
 
 
+def stack_row(cells):
+    """One Stack row as its parts; `row` keeps the cells as written, for the check that quotes one."""
+    cell = lambda i: cells[i] if len(cells) > i else None
+    points = cell(4)
+    return {"n": cell(0), "issue": cell(1), "base": cell(2), "size": cell(3),
+            "points": int(points) if points and points.isdecimal() else None, "row": cells}
+
+
+def proved(item):
+    m = PROVED.fullmatch(item)
+    fact, ran, date, used = m.groups() if m else (None,) * 4
+    return {"ref": item.split()[0] if item.split() else "", "fact": fact, "ran": ran, "date": date, "usedBy": used}
+
+
 def proof_row(cells):
     """One Proof row as its parts; a row of any other width than 6 keeps only its first cell and count."""
     row = {"n": cells[0], "cells": len(cells), "line": None, "test": None, "walk": None, "video": None, "artifact": None}
@@ -328,8 +342,10 @@ def read(path):
     h1 = next((re.match(r"# Plan: (?:#(\d+) )?(.*)", l) for l in top["head"] if l.startswith("# Plan: ")), None)
     run = "Stack" in top
     got = reviews(named, run)
+    kind = re.match(r"\[([^]]+)\]", h1.group(2)) if h1 else None
     plan = {
         "title": h1.group(2) if h1 else "",
+        "kind": kind.group(1) if kind else None,
         "number": int(h1.group(1)) if h1 and h1.group(1) else None,
         "size": head.get("size", ""),
         "date": head.get("date", ""),
@@ -337,13 +353,13 @@ def read(path):
         # A chat plan has no issue: its `# Plan:` line has a title and no `#<n>`.
         "chat": not run and bool(h1) and not h1.group(1) and h1.group(2)[:1] not in ("", "#"),
         "facts": key_values(top.get("Facts", []), FACTS),
-        "stack": stack_rows(top.get("Stack", [])),
+        "stack": [stack_row(r) for r in stack_rows(top.get("Stack", []))],
         "stack_issues": [int(m.group(1)) for r in stack_rows(top.get("Stack", []))
                          if len(r) > 1 and r[0].isdecimal() and (m := re.match(r"#(\d+)", r[1]))],
         "points": key_values(top.get("Stack", []), ["Points"]).get("points", ""),
         "reviews": got,
         "maps": maps(named),
-        "proved": list_items(top.get("Proved", [])),
+        "proved": [proved(x) for x in list_items(top.get("Proved", []))],
         "brief": brief(top.get("Brief", [])),
         # A backtick span quotes code or output as it is, so only the text outside it is prose.
         "prose": [(n, re.sub(r"`[^`]*`", "``", line)) for n, line in enumerate(lines, 1)],
@@ -563,7 +579,7 @@ def stack_problems(rows, layers):
     if len(rows) != len(layers):
         yield f"stack: {len(rows)} rows, {len(layers)} `## Layer` headings"
         return
-    for n, (row, layer) in enumerate(zip(rows, layers), 1):
+    for n, (row, layer) in enumerate(zip((r["row"] for r in rows), layers), 1):
         if layer["n"] != n:
             yield f"stack: layer heading {layer['n']} is not layer {n}"
         if len(row) != 5:
@@ -657,9 +673,8 @@ def problems(plan):
                 if not layer["perf"].get(key.lower()):
                     yield f"perf: layer {n} has no `{key}:` line"
     for item in plan["proved"]:
-        if not PROVED.fullmatch(item):
-            ref = item.split()[0]
-            yield f"proved: {ref} needs `, <YYYY-MM-DD>. Used by <refs>.` at its end"
+        if item["fact"] is None:
+            yield f"proved: {item['ref']} needs `, <YYYY-MM-DD>. Used by <refs>.` at its end"
     walks = [{"layer": n, "n": walk["n"], "kind": before_kind(walk["before"]) if "before" in walk else None}
              for n, layer in enumerate(layers, 1) for walk in layer["walks"]]
     yield from md_before_problems(walks)
