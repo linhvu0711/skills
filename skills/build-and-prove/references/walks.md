@@ -49,8 +49,10 @@ while you walk. Its brief, whole:
 - the mode, `before` or `after`, and the round;
 - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
   screen size (1440x900 on linux, 1280x800 on macos);
+- the full path of `scripts/box.sh`, this skill's real folder in front
+  of it, for the walker's `box.sh open` and `box.sh close`;
 - how to open the app: the `Open` line, as a command it runs with
-  `proofbox exec`. A browser opens on a new, empty profile for each
+  `box.sh open`. A browser opens on a new, empty profile for each
   video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
   or a browser that Playwright launches, which starts empty. So no
   history from the Sandbox image shows in the address bar.

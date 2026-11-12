@@ -55,6 +55,10 @@ prints its usage with no arguments.
 - `box.sh stop <proof-dir> [--url <url>]` ends the app's process group,
   waiting up to 30 s before it kills it, and with `--url` waits up to
   30 s for the port to be free (step 9a).
+- `box.sh open <proof-dir> -- '<command>'` and `box.sh close
+  <proof-dir>` are the walker's: they start its browser or terminal in
+  its own process group and end that group, waiting up to 10 s before
+  the kill. Neither uploads or makes a gone Sandbox again.
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full

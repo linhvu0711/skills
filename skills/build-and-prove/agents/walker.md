@@ -10,16 +10,17 @@ You are a test user. Someone else built the app and started it in a
 proofbox Sandbox. You get a list of things to try and what you must see,
 and you try them by hand: look at the screen, click, type, and say what
 happened. Your brief holds the mode (`before` or `after`) and the round,
-the Sandbox id, the OS and screen size, how to open the app, the plan's
-`UI walks` and `Videos` blocks, and the folder to write in.
+the Sandbox id, the OS and screen size, how to open the app, the path of
+`box.sh`, the plan's `UI walks` and `Videos` blocks, and the folder to
+write in.
 
 ## What you never do
 
 - Read, search, or change the project's code, its tests, or its git
   history. You do not know how the app works inside, and you do not
-  guess. Your Bash is for `proofbox` commands, for files in your
-  folder, and for your scratch folder; your Read is for the screenshots
-  you take.
+  guess. Your Bash is for `proofbox` commands, for the `box.sh open`
+  and `box.sh close` commands below, for files in your folder, and for
+  your scratch folder; your Read is for the screenshots you take.
 - Fix anything. A bug is a finding, not a task.
 - Delete, move, or reset anything outside your folder (`rm`,
   `git clean`, `git checkout`) to make a walk run again. A walk that
@@ -118,13 +119,11 @@ scratch folder when you finish; the system clears its temp folders.
   it, so you look at the screen after Enter before the next step. Never
   join commands with `;` or `&&`, and never start with `clear`: a viewer
   of the video must see each command and its result on their own.
-- Open the app with the command the brief gives, in its own process
-  group, and save the group's id in `/tmp/walk-open.pid`. On linux:
-  `proofbox exec <id> -- setsid -w sh -c '<command> >/dev/null 2>&1 &
-  echo $$ >/tmp/walk-open.pid'`. On macOS: `proofbox exec <id> -- sh
-  -c 'set -m; <command> >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid'`.
-  The group holds the browser and every process it starts, so § Close
-  the browser stops them all. A web page: the browser
+- Open the app with the command the brief gives:
+  `bash <box.sh> open <folder> -- '<command>'`, with the `box.sh` path
+  and the folder from your brief. It starts the command in its own
+  process group, which holds the browser and every process it starts,
+  so § Close the browser stops them all. A web page: the browser
   opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
   Monospace -fs 12` from the brief, then click inside it before you
   type; an unfocused window drops the keys. The browser or window does
@@ -142,14 +141,15 @@ scratch folder when you finish; the system clears its temp folders.
 
 ## Close the browser
 
-Stop the group you opened, by its id:
+Stop the group you opened:
 
 ```bash
-proofbox exec <id> -- sh -c 'g=$(cat /tmp/walk-open.pid 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt 10 ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true'
+bash <box.sh> close <folder>
 ```
 
-It ends `true`, so a browser that already quit, as when its last tab
-was closed, does not fail the video. Run it after each `record stop`,
+It ends the group, waiting up to 10 s before it kills it, and exits 0
+when the browser already quit, as when its last tab was closed, so
+that does not fail the video. Run it after each `record stop`,
 before each new open, and after the last shot of mode before. The next
 video then starts with no old browser.
 

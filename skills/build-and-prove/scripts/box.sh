@@ -9,6 +9,8 @@
 #   box.sh run <proof-dir> [--from <folder>] -- <command>...
 #   box.sh start <proof-dir> [--from <folder>] [--url <url>] -- <Run line>
 #   box.sh stop <proof-dir> [--url <url>]
+#   box.sh open <proof-dir> -- <command>...
+#   box.sh close <proof-dir>
 #   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
@@ -54,6 +56,13 @@
 # still answering is a stop. It stops by the group's id, never by name: pkill
 # and killall can match the shell that runs them. A Sandbox gone under it has
 # no app to stop: it says so and exits 0.
+#
+# open and close are the walker's: open runs its command, a browser or a
+# terminal window, in its own process group, whose id goes in
+# /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
+# exits 0 when the window already closed. Neither uploads or makes a gone
+# Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
+# exit code is proofbox's, so the walker sees the Sandbox died.
 #
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
@@ -102,7 +111,7 @@ idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # Only `gates --local` runs without proofbox.
 [ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -306,6 +315,21 @@ case "$verb" in
     [ -n "$url" ] || exit 0
     bare sh -c 'for i in $(seq 30); do curl -s -o /dev/null "$1"; [ $? -eq 7 ] && exit 0; sleep 1; done; exit 1' sh "$url"
     [ "$rc" -eq 0 ] || die "$url still answers after the app stopped"
+    ;;
+  open)
+    [ $# -ge 3 ] && [ "$2" = "--" ] || die "$usage"
+    dir="$1"; shift 2
+    load
+    group_argv /tmp/walk-open.pid /dev/null "$*"
+    bare "${gcmd[@]}"
+    exit "$rc"
+    ;;
+  close)
+    [ $# -eq 1 ] || die "$usage"
+    dir="$1"
+    load
+    group_stop /tmp/walk-open.pid 10
+    exit "$rc"
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"

@@ -788,6 +788,67 @@ t_box_stop_gone() {
   eq log 'exec ns:us:abc -- sh -c g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true sh /tmp/app.pid 30' "$(cat "$FAKE_PB/log")"
 }
 
+t_box_open_linux() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  # When
+  box open "$P" -- chromium --no-sandbox http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh chromium --no-sandbox http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_open_macos() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  # When
+  box open "$P" -- open -a Safari http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh open -a Safari http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+}
+
+t_box_close_limit() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  group "$FAKE_PB/tmp/walk-open.pid" term
+  # When
+  box close "$P"
+  # Then
+  eq exit 0 "$code"
+  eq sleeps "$(printf '1\n%.0s' $(seq 10))" "$(cat "$FAKE_PB/sleep.log")"
+  ended "$gpid"
+}
+
+t_box_close_none() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  # When
+  box close "$P"
+  # Then
+  eq exit 0 "$code"
+  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
+}
+
+t_box_open_gone() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
+  # When
+  box open "$P" -- chromium http://localhost:3000/
+  # Then
+  eq exit 125 "$code"
+  has stderr "Sandbox ns:us:abc is gone" "$err"
+  case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -846,4 +907,9 @@ cases=(
   "stop waits 30 s for the group, then kills it|t_box_stop_limit"
   "stop fails when the port stays busy|t_box_stop_port_busy"
   "stop on a gone Sandbox has nothing to stop|t_box_stop_gone"
+  "open runs the walker's command in its own group on linux|t_box_open_linux"
+  "open runs the walker's command in its own group on macos|t_box_open_macos"
+  "close waits 10 s for the group, then kills it|t_box_close_limit"
+  "close with no browser open exits 0|t_box_close_none"
+  "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
 )
