@@ -7,7 +7,8 @@
 #                   [--platform linux|macos]               -> "<agent_id>\t<url>"
 #   cursor.sh poll <agent> [--repo owner/name --issue N]   -> "<state>\t<run_id>|<run state>\t<prs>\t<url>\t<message>"
 #   cursor.sh say <agent> <note-file>                      -> sends a follow-up (a new run on the agent)
-#   cursor.sh down <agent>                                 -> destroys the agent's Mac, if one runs
+#   cursor.sh down <agent>                                 -> destroys the agent's Mac, if one runs;
+#                                                             exit 1, row kept, when it still runs
 #   cursor.sh models                                       -> model ids this account can use
 #   cursor.sh repos                                        -> repos connected to this account
 #
@@ -28,6 +29,8 @@
 # The Mac lives for one run: poll destroys it when the latest run ends, and
 # say rents a new one before it sends, whose worker takes the first worker's
 # name and ID: Cursor sends an agent's runs to the worker ID it first ran on.
+# A Mac mac.sh cannot destroy keeps its row: poll prints mac.sh's line, which
+# names the Mac and the hand command, on stderr, and the next poll tries again.
 # The rows, agent, worker, worker ID, repo, base, and Mac (`-` when none),
 # sit in ~/.config/dispatch/cursor-macs.tsv. A worker refuses a grok_ key, so a
 # Mac needs a personal crsr_ key. --platform windows stops: Devin has one.
@@ -145,6 +148,11 @@ mac_clear() {
 # mac_up WORKER REPO BASE [WID] -> "<mac>\t<worker id>"; the key goes in the environment
 mac_up() { CURSOR_API_KEY="$(key)" bash "$MAC" up "$@"; }
 
+# mac_down MAC -> mac.sh's line on stdout; exit 1, with the reason and the
+# hand command on its stderr, when the Mac still runs. Every give-back goes
+# through here, so a failed one is never thrown away.
+mac_down() { bash "$MAC" down "$1"; }
+
 # mac_key_check -> dies when the key cannot run a worker
 mac_key_check() {
   [[ "$(key)" == grok_* ]] && die "a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY"
@@ -222,7 +230,7 @@ cmd_start() {
     up=$(mac_up "$worker" "$repo" "$base") || die "no Mac for the agent"
     IFS=$'\t' read -r mac wid <<<"$up"
     res=$(create_on_mac "$body" "$worker") \
-      || { bash "$MAC" down "$mac" >/dev/null 2>&1 || true; exit 1; }
+      || { mac_down "$mac" >/dev/null || echo "cursor.sh: no agent started, so no later poll gives $mac back" >&2; exit 1; }
   else
     res=$(api POST /agents "$body")
   fi
@@ -268,8 +276,8 @@ cmd_poll() {
   local mac
   if [[ -n "$row" && "$st" != working ]]; then
     IFS=$'\t' read -r _ _ _ _ mac <<<"$row"
-    if [[ "$mac" != "-" ]]; then
-      bash "$MAC" down "$mac" >/dev/null 2>&1 || true
+    # A Mac not given back keeps its row, so the next poll tries again.
+    if [[ "$mac" != "-" ]] && mac_down "$mac" >/dev/null; then
       mac_clear "$id" "$mac"
     fi
   fi
@@ -287,7 +295,10 @@ cmd_say() {
     IFS=$'\t' read -r w wid r b mac <<<"$row"
     if ! bash "$MAC" alive "$mac" 2>/dev/null; then
       mac_key_check
-      [[ "$mac" != "-" ]] && { bash "$MAC" down "$mac" >/dev/null 2>&1 || true; }
+      # Renting now would replace the only row that names the old Mac.
+      if [[ "$mac" != "-" ]] && ! mac_down "$mac" >/dev/null; then
+        die "no note sent: $mac was not given back"
+      fi
       up=$(mac_up "$w" "$r" "$b" "$wid") || die "no Mac for the agent"
       IFS=$'\t' read -r new _ <<<"$up"
       text="This run is on a new Mac: the repo is a fresh clone of $b. Before you change anything, fetch and check out the branch you worked on, and its PR's branch if one is open.
@@ -295,8 +306,10 @@ cmd_say() {
 $text"
     fi
   fi
+  # A new Mac not given back takes the row: the latest run is still the one
+  # that ended, so the next poll gives it back.
   res=$(api POST "/agents/$id/runs" "$(jq -Rn --arg t "$text" '{ prompt: { text: $t } }')") \
-    || { [[ -n "$new" ]] && bash "$MAC" down "$new" >/dev/null 2>&1; exit 1; }
+    || { [[ -n "$new" ]] && ! mac_down "$new" >/dev/null && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"; exit 1; }
   # Only now, with the new run the latest, may a poll see the new Mac: one
   # that saw it next to the ended run before would destroy it.
   [[ -n "$new" ]] && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"
@@ -311,9 +324,10 @@ cmd_down() {
   [[ -n "$row" ]] || die "$id has no Mac"
   IFS=$'\t' read -r w wid r b mac <<<"$row"
   if [[ "$mac" == "-" ]]; then echo "$id: no Mac running"; return 0; fi
-  bash "$MAC" down "$mac" >/dev/null 2>&1 || true
+  local line
+  line=$(mac_down "$mac") || exit 1
   mac_set "$id" "$w" "$wid" "$r" "$b" -
-  echo "$id: destroyed $mac"
+  echo "$id: $line"
 }
 
 cmd_models() {

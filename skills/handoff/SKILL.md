@@ -342,6 +342,10 @@ lives for one run:
   So the watch is what frees it; a chat with no watch (Codex) runs
   `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
+- A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
+  line, which names the Mac and the hand command, and the next poll or
+  `status` tries again; `cursor.sh down` exits 1. Tell the user that
+  line: the Mac costs money until it goes.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
