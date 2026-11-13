@@ -11,6 +11,7 @@
 #   box.sh stop <proof-dir> [--url <url>]
 #   box.sh open <proof-dir> -- <command>...
 #   box.sh close <proof-dir>
+#   box.sh fit <proof-dir>
 #   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
@@ -64,6 +65,15 @@
 # Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
+# fit is the walker's check before a recording: does the active window, the
+# browser, end above the taskbar? On linux it reads the window's bottom with
+# xdotool and the bottom of the screen's work area, the screen less fluxbox's
+# taskbar, with xprop, and prints `FIT window bottom <b> · screen bottom <s>`,
+# or `TALL ...` and exits 3 when the window runs past it. A page cannot tell:
+# Playwright makes its screen size the viewport's. On macos it checks nothing
+# and prints `FIT not checked on macos`. Like open, it neither uploads nor
+# makes a gone Sandbox again.
+#
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
 # box-gates.* temp folder, outside the proof folder, named on stderr as
@@ -111,7 +121,7 @@ idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> | fit <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # Only `gates --local` runs without proofbox.
 [ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -333,6 +343,30 @@ case "$verb" in
     load
     group_stop /tmp/walk-open.pid 10
     exit "$rc"
+    ;;
+  fit)
+    [ $# -eq 1 ] || die "$usage"
+    dir="$1"
+    load
+    if [ "$BOX_OS" = macos ]; then echo "FIT not checked on macos"; exit 0; fi
+    # The geometry goes in a variable first: eval of a failed command's empty
+    # output succeeds, and an unset Y reads as 0, a window that seems to fit.
+    measure='g=$(xdotool getactivewindow getwindowgeometry --shell) && eval "$g" && set -- $(xprop -root _NET_WORKAREA | sed "s/.*= //; s/,//g") && echo "$((Y + HEIGHT)) $(($2 + $4))"'
+    outf="$(mktemp)"; errf="$(mktemp)"
+    set +e
+    { proofbox exec "$BOX_ID" -- sh -c "$measure" 2>&1 >"$outf" | tee "$errf" 1>&2; rc=${PIPESTATUS[0]}; }
+    set -e
+    if [ "$rc" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then rm -f "$outf" "$errf"; exit 125; fi
+    read -r bottom area < "$outf" || true
+    why="$(tail -n 1 "$errf")"; rm -f "$outf" "$errf"
+    if [ "$rc" -ne 0 ] || ! [[ "${bottom:-}" =~ ^[0-9]+$ && "${area:-}" =~ ^[0-9]+$ ]]; then
+      die "cannot measure the window: ${why:-no output}"
+    fi
+    if [ "$bottom" -le "$area" ]; then
+      echo "FIT window bottom $bottom · screen bottom $area"
+    else
+      echo "TALL window bottom $bottom · screen bottom $area"; exit 3
+    fi
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"

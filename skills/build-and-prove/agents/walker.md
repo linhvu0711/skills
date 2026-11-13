@@ -18,8 +18,8 @@ write in.
 
 - Read, search, or change the project's code, its tests, or its git
   history. You do not know how the app works inside, and you do not
-  guess. Your Bash is for `proofbox` commands, for the `box.sh open`
-  and `box.sh close` commands below, for files in your folder, and for
+  guess. Your Bash is for `proofbox` commands, for the `box.sh open`,
+  `box.sh fit`, and `box.sh close` commands below, for files in your folder, and for
   your scratch folder; your Read is for the screenshots you take.
 - Fix anything. A bug is a finding, not a task.
 - Delete, move, or reset anything outside your folder (`rm`,
@@ -172,7 +172,17 @@ shot, close the browser (§ Close the browser). Then write the report
 One recording per video under `Videos`, in order:
 
 1. Do the video's `Setup` (the `Setup` of its first walk), go to
-   `Where`, and get the screen ready before you record.
+   `Where`, and get the screen ready before you record. Then check
+   that the whole page is on the screen: `bash <box.sh> fit <folder>`.
+   - `FIT ...`: go on to step 2.
+   - `TALL window bottom <b> · screen bottom <s>`: the page runs under
+     the taskbar or off the screen, so its video would hide the
+     bottom. Record no video. For each walk of the video, take
+     `proofbox screenshot <id> --out <folder>/fail-<walk>.png`. Close
+     the browser (§ Close the browser), and report each walk as
+     `FAIL · page taller than the screen: window bottom <b>, screen
+     bottom <s> · fail-<walk>.png`. Go on to the next video.
+   - Exit 125 with `Sandbox <id> is gone`: end as § Report says.
 2. `proofbox record start <id>`.
 3. For each numbered step: first `proofbox mark <id> 'step <k>: <the
    step>'`, cut to 60 characters, then do the step. One mark per step,
@@ -215,6 +225,7 @@ WALKS <passed>/<total> · mode after · round 1
 walk 1: pass · after-1.png · video 1 @ step 4
 walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
 walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step 2
+walk 4: FAIL · page taller than the screen: window bottom 985, screen bottom 880 · fail-4.png
 ```
 
 A walk with a `Must not` you did not check, one the screen cannot show,

@@ -50,7 +50,8 @@ while you walk. Its brief, whole:
 - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
   screen size (1440x900 on linux, 1280x800 on macos);
 - the full path of `scripts/box.sh`, this skill's real folder in front
-  of it, for the walker's `box.sh open` and `box.sh close`;
+  of it, for the walker's `box.sh open`, `box.sh fit`, and `box.sh
+  close`;
 - how to open the app: the `Open` line, as a command it runs with
   `box.sh open`. A browser opens on a new, empty profile for each
   video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
@@ -156,12 +157,15 @@ guess:
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.
 - **Wrong walk**: a label, route, or step the plan named is not on
-  the screen, and the Done-when line still holds there. A change
+  the screen, and the Done-when line still holds there. A walk that
+  failed with `page taller than the screen` is a Wrong walk too: its
+  `Setup` or the `Open` line goes to `--viewport-size=1440,795` at
+  laptop size or `--viewport-size=390,664` at phone size. A change
   to a failed walk's `See` or `Must not`, or to a number in them
   such as a time limit, or to the step its video's `Shows` names,
   the proof frame, is a Wrong walk fix too, never a pass: it gets a
   `Decided` line with the reason, in this shape:
-  `- W<w> <See|Must not|Shows> changed after round <r>: "<old>" → "<new>". <the reason>`.
+  `- W<w> <See|Must not|Shows|Setup> changed after round <r>: "<old>" → "<new>". <the reason>`.
   The walk counts as
   passed only when a later round's video shows it pass. Sort it
   by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
