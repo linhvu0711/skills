@@ -299,7 +299,7 @@ two match: ask. Then go on with their URLs.
    and gains nothing the user would weigh. A clear winner: decide it.
    Its `Decided` line gives the `file:line` that settles it and ends
    `(hard to undo)`, and the Review lists it under `Choices` with its
-   Risk, so the user sees it and can veto it. For example, a saved
+   Risk and the same mark, so the user sees it and can veto it. For example, a saved
    record is always read and written whole, and the test database
    cannot group writes: one row per record wins over two tables, so
    decide it. No clear winner, the options trade off something real, or

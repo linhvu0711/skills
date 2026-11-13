@@ -77,6 +77,7 @@ Blast radius:
 Choices:
   - Fork: <question> → <pick> (user)
   - D<n>: <the decision>. Risk: <what a wrong pick costs>
+  - D<n>: <the decision>. Risk: <what a wrong pick costs> (hard to undo)
 Risks:
   - <what we believe>. If wrong: <what breaks>. Proved: P<n> | not proved
 Works when:
@@ -435,7 +436,8 @@ links them. Each part keeps its limit; a part that needs more says less.
   reader the plan checked. `Dependency` names every package the plan
   adds or bumps, with its `Decided` ref.
 - `Choices` lists every big fork, marked `(user)`,
-  then every `Decided` line marked `(hard to undo)`, then the other
+  then every `Decided` line marked `(hard to undo)`, its `Choices`
+  line ending `(hard to undo)` too, so `/ship` sees it; then the other
   `Decided` lines whose wrong pick costs the most. Nothing was
   forked or decided: one line, `- none`.
 - `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line
