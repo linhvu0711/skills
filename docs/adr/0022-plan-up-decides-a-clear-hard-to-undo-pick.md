@@ -1,0 +1,3 @@
+# Plan-up decides a hard-to-undo pick when one option clearly wins
+
+Plan-up asked the user about every choice that is hard to undo, such as how data is stored, even when the facts showed one clear winner and the user could add nothing. Now it asks when the pick needs what only the user holds (what they meant, how the product acts, cost, scope), when a hard-to-undo choice has no clear winner, and for every new dependency. A hard-to-undo choice with a clear winner is decided and marked `(hard to undo)` in the plan's Choices, where the user can veto it, and /ship weighs such a pick toward review mode. We considered keeping the question for every hard-to-undo choice, and dropped it because those questions asked the user to approve a pick they could not improve.

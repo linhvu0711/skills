@@ -434,8 +434,9 @@ links them. Each part keeps its limit; a part that needs more says less.
 - `Blast radius` has all six lines. `none` is a finding: it tells the
   reader the plan checked. `Dependency` names every package the plan
   adds or bumps, with its `Decided` ref.
-- `Choices` lists every big fork, marked `(user)`, then the `Decided`
-  lines whose wrong pick costs the most. Nothing was
+- `Choices` lists every big fork, marked `(user)`,
+  then every `Decided` line marked `(hard to undo)`, then the other
+  `Decided` lines whose wrong pick costs the most. Nothing was
   forked or decided: one line, `- none`.
 - `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line
   that proves it, or `not proved`. No belief carries a risk: `- none`.
@@ -506,7 +507,8 @@ about 1 s with no hook to hold it (§ UI walks): its UI walk column says
 A seam is public: something a caller, a user, or a client
 reaches without knowing the inside. Prefer the seam the repo already
 tests. A new seam goes under `Decided`, with the seam it copies. A new
-seam that is a public API is a big fork. A new seam that swaps one thing
+seam that is a public API is hard to undo: sort it per `SKILL.md`
+step 5. A new seam that swaps one thing
 for another (an interface, a port, a client passed in) needs
 two adapters, such as the real one and the test fake. One adapter is a
 hypothetical seam: the code calls that one thing direct.
@@ -741,7 +743,8 @@ executor keeps them green rather than editing them.
 
 Every small fork, one line each, so the user can veto any
 with one word. A choice the user made in a question goes here too, marked
-`(user)`.
+`(user)`. A hard-to-undo pick with a clear winner, per `SKILL.md`
+step 5, ends `(hard to undo)`.
 
 ### Plan check
 
@@ -822,6 +825,8 @@ facts or forks.
 - Every walk is in exactly one video; no two videos share a `Setup`;
   every walk's Proof row names its video and step.
 - No Open line remains. Every big fork was put to the user and answered.
+- Every `Decided` line marked `(hard to undo)` names the `file:line`
+  that settles it, and the Review lists it under `Choices`.
 - Every dependency a `Change` adds or bumps was asked as a big fork,
   and its `Decided` line is marked `(user)`.
 - Gates name the existing tests on the touched seams.
