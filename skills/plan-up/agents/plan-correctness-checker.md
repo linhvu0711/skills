@@ -1,6 +1,6 @@
 ---
-name: plan-checker
-description: "Checks a finished /plan-up plan with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, a better approach. Spawned only by plan-up step 8. Reads the issue, the plan, and the code; changes nothing."
+name: plan-correctness-checker
+description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Agent, Read, Grep, Glob, Bash
 model: fable
 effort: high
@@ -21,8 +21,9 @@ start from the code, not from the planner's view.
 - Hunt for what would make the build fail or ship the wrong thing: a
   fact the code contradicts, a caller or a case the plan missed, a step
   that breaks, a test whose `Then` cannot hold, a risk the plan calls
-  safe, a Done-when line no slice proves, and a simpler approach the
-  code already supports.
+  safe, and a Done-when line no slice proves. The shape of the code
+  (where logic lives, what is a module, a simpler way) is the design
+  checker's job: leave it.
 - Settle each doubt before you report it. Start Explore to read
   across many files, and Runner to run a command and judge it, with the
   reader and runner lines of that `facts.md` above each brief. Run

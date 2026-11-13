@@ -132,8 +132,8 @@ number, or words that point at one. Two words come off first and never reach pla
      tickets: one mode for the run, and `review` when any ticket needs
      it, else the safest any ticket needs. Typing `/ship` with no option
      is the user's go-ahead to merge when you pick `merge`. A plan whose
-     `Plan check:` line starts `Plan check: failed`: `review`, since no
-     second model read it.
+     `Plan check:` line holds `failed`: `review`, since a checker the
+     plan was due did not read it.
    - Hold `<why>`: one short phrase for the pick, as `small fix, no
      schema or API, no risk in the plan`.
 

@@ -172,8 +172,9 @@ Task done:  every Proof row has its artifact, full suite green, lint green,
 - <from the issue's Scope Out, plus anything the plan chose to leave>
 
 ## Plan check
-By: plan-checker · <n> round(s)
-- F1 <what was wrong>. Done: fixed (<ref>) | asked you (<answer>) | kept (<why>)
+By: plan-correctness-checker · <n> round(s); plan-design-checker · <n> round(s)
+- Correctness F1 <what was wrong>. Done: fixed (<ref>) | asked you (<answer>) | kept (<why>)
+- Design F1 <what was wrong>. Done: fixed (<ref>) | asked you (<answer>) | kept (<why>)
 ```
 
 ## Chat plan
@@ -757,13 +758,16 @@ step 5, ends `(hard to undo)`.
 
 ### Plan check
 
-Written by `SKILL.md` step 8, only when the check ran, and always last
-in the file. The head line names the agent and how many rounds it ran.
-Then one line per finding the checker sent, in its order, with what
-became of it: `fixed`, with the ref of the block it changed; `asked
-you`, with the user's answer; or `kept`, with why the plan stands. A
-check that found nothing: one line, `- none`. The page does not show
-this block; the summary's `Plan check:` line points the reader to it.
+Written by `SKILL.md` step 8, only when a checker ran and did not
+fail, and always last in the file. The head line names each checker
+that ran and how many rounds it ran, joined by `; `. Then one line per
+finding: the correctness findings first, each as `Correctness F<n>`,
+then the design findings as `Design F<n>`, each in its checker's
+order, with what became of it: `fixed`, with the ref of the block it
+changed; `asked you`, with the user's answer; or `kept`, with why the
+plan stands. A checker that found nothing: one line, `- Correctness
+none` or `- Design none`. The page does not show this block; the
+summary's `Plan check:` line points the reader to it.
 
 ## Done
 
