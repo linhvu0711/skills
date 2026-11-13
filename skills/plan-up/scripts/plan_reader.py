@@ -40,6 +40,8 @@ NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 # The most lines a Review part, a run layer's Change, and a layer's Summary hold.
 LINES_MAX, LAYER_CHANGE_MAX, SUMMARY_MAX = 4, 2, 3
 # The most Decided lines in Choices, Risks, maps, and parts in one map.
+# A Decided line marked (hard to undo) is not counted: Choices must hold
+# each one, since /ship reads them.
 DECIDED_MAX, RISKS_MAX, MAPS_MAX, PARTS_MAX = 3, 3, 2, 12
 # The tallest page the linux Sandbox shows: a 900 px screen, a 20 px taskbar, and 85 px of browser bars and frame.
 PAGE_MAX = 795
@@ -415,7 +417,8 @@ def review_problems(plan):
             odd = [x for x in got if not re.match(r"(Fork|D\d+):", x)]
             if odd:
                 yield f"{name}: each `Choices` line starts `Fork:` or `D<n>:`, not: {odd[0][:60]}"
-            decided = [x for x in got if re.match(r"D\d+:", x)]
+            decided = [x for x in got
+                       if re.match(r"D\d+:", x) and not x.endswith("(hard to undo)")]
             if len(decided) > DECIDED_MAX:
                 yield f"{name}: `Choices` has {len(decided)} `Decided` lines, the limit is {DECIDED_MAX}"
         if "Risks" in parts:

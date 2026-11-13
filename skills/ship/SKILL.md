@@ -124,7 +124,10 @@ number, or words that point at one. Two words come off first and never reach pla
      short phrase for step 9.
    - No option: read the plan's Review block (Blast radius, Choices,
      Risks) and the issue. Pick `review`, `ready`, or `merge` by your
-     judgment, with no fixed rule and no list. Unsure between two: take
+     judgment, with no fixed rule and no list. A `Choices` line, in
+     the Review or in a layer's Review, that is
+     marked `(hard to undo)` is a pick the user has not seen: it weighs
+     toward `review`. Unsure between two: take
      the safer one, `review` before `ready` before `merge`. Many
      tickets: one mode for the run, and `review` when any ticket needs
      it, else the safest any ticket needs. Typing `/ship` with no option

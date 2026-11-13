@@ -270,23 +270,42 @@ two match: ask. Then go on with their URLs.
    A gap that neither reading nor a probe can close becomes a question.
 
 5. **Forks.** Sort every choice the facts leave open by two tests:
-   - the right pick needs a fact the repo does not hold: data size,
-     traffic, who else calls this, what it may cost, what the user meant.
-     A Known line that holds the fact settles this test;
-   - a wrong pick is hard to undo: it ships to data or callers you cannot
-     see, or the next issue copies it.
+   - **The user's fact**: the right pick needs a fact only the user
+     holds: what they meant, how the product should act, what it may
+     cost, how far the scope goes, or a number the repo does not hold,
+     such as data size, traffic, or who else calls this. A Known line
+     that holds the fact settles this test. It holds for a Done-when
+     line that reads two ways, and for a rebuild of a part whose design
+     the facts round found wrong (`plan.md` § Slices, Right design
+     first), with the patch as a lower option and what it costs later.
+   - **Hard to undo**: a wrong pick ships to data or callers you cannot
+     see, or the next issue copies it. It looks like: a schema or stored
+     data, a public API, auth, input a user controls, a secret, data
+     that leaves the system, a pattern new to the repo (first queue,
+     cache, job), a move of work between layers, a choice that scales
+     with size or load.
 
-   Either holds: **big fork**. Ask the user, one question per message, in
-   the question format of
+   The user's fact holds: **big fork**. Ask the user, one question per
+   message, in the question format of
    `../../shared/grilling.md`, the `file:line` behind each
-   option on the question's `Seen:` line. Wait. Big forks look like:
-   a schema or stored data, a public API, auth, input a user controls,
-   a secret, data that leaves the system,
-   a pattern new to the repo (first queue, cache, job), a move
-   of work between layers, a choice that scales with size or load, a
-   Done-when line that reads two ways, a rebuild of a part whose design
-   the facts round found wrong (`plan.md` § Slices, Right design first),
-   with the patch as a lower option and what it costs later.
+   option on the question's `Seen:` line. Wait. A Done-when line that
+   reads two ways is asked as what the line means: each reading in the
+   user's words, with one small example of what the user sees under it.
+   The code follows from the answer, so the options never name code.
+
+   Only hard to undo holds: look for a **clear winner**, the option a
+   careful senior engineer would ship, per `../../shared/grilling.md`
+   § Your pick, where each other option is a shortcut or plainly worse
+   and gains nothing the user would weigh. A clear winner: decide it.
+   Its `Decided` line gives the `file:line` that settles it and ends
+   `(hard to undo)`, and the Review lists it under `Choices` with its
+   Risk and the same mark, so the user sees it and can veto it. For
+   example, a saved record is always read and written whole, and the
+   test database cannot group writes: one row per record wins over two
+   tables, so decide it. No clear winner, the options trade off
+   something real, or you are not sure: **big fork**, ask as above. A
+   new dependency never takes this path: it is asked, per the next
+   paragraph, however clear its win.
 
    **A new dependency is a big fork every time.** The two tests do not
    apply; do not reason it down to a small fork. A dependency is any
@@ -361,7 +380,7 @@ two match: ask. Then go on with their URLs.
      it is not found, `general-purpose` with its body pasted and the
      model `fable` on the Agent call.
    - **Sort each finding.** One you agree with: fix the plan. One you
-     disagree with, or whose fix is a big fork by step 5's two tests:
+     disagree with, or whose fix is a big fork by step 5's sort:
      ask the user, one question per message in the format of
      `../../shared/grilling.md`, with the finding as one option and
      the plan as the other. Wait. Then fix the plan by the answer.
