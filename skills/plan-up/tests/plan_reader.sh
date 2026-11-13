@@ -50,6 +50,20 @@ t_reader_odd_choice() {
     'review: each `Choices` line starts `Fork:` or `D<n>:`, not: Note: delimiter is `,`. Risk: a different delimiter breaks i'
 }
 
+t_reader_choices_cap() {
+  bad_line '16{p;p;p;}' 'review: `Choices` has 4 `Decided` lines, the limit is 3'
+}
+
+t_reader_marked_choices_uncapped() {
+  # Given: four Decided lines in Choices, each marked (hard to undo)
+  ticket 's/imports$/imports (hard to undo)/;16{p;p;p;}'
+  # When
+  problems "$T/plan.md"
+  # Then
+  eq exit 0 "$code"
+  eq problems "" "$out"
+}
+
 t_reader_works_order() {
   bad_line 's/  - #2 an empty/  - #3 an empty/' 'review: `Works when` line 2 must start `#2 `'
 }
@@ -143,6 +157,8 @@ cases=(
   "plan_reader finds no problem in a good ticket plan|t_reader_good_ticket"
   "plan_reader names a risk with no Proved part|t_reader_risk_no_proved"
   "plan_reader names a Choices line that is neither a fork nor a decision|t_reader_odd_choice"
+  "plan_reader names Choices over three Decided lines|t_reader_choices_cap"
+  "plan_reader takes any number of Decided lines marked hard to undo|t_reader_marked_choices_uncapped"
   "plan_reader names a Works when line out of order|t_reader_works_order"
   "plan_reader names a Proof row short of a cell|t_reader_proof_cells"
 )

@@ -438,7 +438,8 @@ links them. Each part keeps its limit; a part that needs more says less.
 - `Choices` lists every big fork, marked `(user)`,
   then every `Decided` line marked `(hard to undo)`, its `Choices`
   line ending `(hard to undo)` too, so `/ship` sees it; then the other
-  `Decided` lines whose wrong pick costs the most. Nothing was
+  `Decided` lines whose wrong pick costs the most, three at most; the
+  marked lines do not count toward the three. Nothing was
   forked or decided: one line, `- none`.
 - `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line
   that proves it, or `not proved`. No belief carries a risk: `- none`.
