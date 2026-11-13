@@ -84,14 +84,16 @@ After the page is open, chat gets this and nothing more:
 ```
 Plan: #42 Export orders as CSV · size/M · base main
 6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
-Plan check: 3 found · 2 fixed · 1 asked you
+Plan check: correctness 3 found · 2 fixed · 1 asked you; design none found
 http://127.0.0.1:8765/plan-acme-shop-42.html
 $HOME/.agents/artifacts/plan/plan-acme-shop-42.md
 Say ok, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
-The `Plan check:` line is the one plan-up step 8 holds: the counts, or
-`skipped · <why>`, or `failed · <why>`. A run: one line per layer under
+The `Plan check:` line is the one plan-up step 8 holds: one part per
+checker, correctness first, each the counts, `none found`,
+`skipped · <why>`, or `failed · <why>`; or one `skipped · <why>` for
+both. A run: one line per layer under
 the first. A chat plan: its first line
 has no `#<n>`, as in
 `Plan: [feat] Export orders as CSV · size/M · base main`. A

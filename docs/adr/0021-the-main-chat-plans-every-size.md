@@ -1,3 +1,7 @@
+---
+status: amended by ADR-0023
+---
+
 # The main chat plans every size, and Fable checks only costly plans
 
 Plan-up's main chat writes every plan, and the Fable `planner` agent for L and XL is gone. Fable costs twice what Opus costs per token, and Anthropic keeps Opus as the default model, so Fable checks where an Opus plan falls short instead of writing the plan. The `plan-checker` runs on an M, L, or XL plan only when the chat can name what a wrong plan would break and that fix costs real work, such as a changed table, API, or data migration, or a risk not proved. When unsure, the chat skips the check and says why. XS and S always skip. We considered keeping Fable as the planner for L and XL, a fixed list of triggers (ADR 0014 turned one down for the ship mode), and a check on every L and XL plan, and chose judgment with named signs.

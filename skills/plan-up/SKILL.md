@@ -198,9 +198,8 @@ two match: ask. Then go on with their URLs.
      § Slices;
    - for each part the work touches: what it would look like if built
      today for every job it has, the new one too; the signs in the code
-     that its current design is wrong (a flag or a branch for one case,
-     the same logic in two places, a caller that works around it, a new
-     need that fits only at the side); and the simplest path to that
+     that its current design is wrong, as `plan.md` § Slices, Right
+     design first lists them; and the simplest path to that
      design: what can stay, what moves, how many callers move. The plan
      picks extend or rebuild per `plan.md` § Slices, Right design first;
    - the data the work reads and writes: its type, table, file, or key;
@@ -355,45 +354,69 @@ two match: ask. Then go on with their URLs.
    back to step 4 or 5.
 
 8. **Check.** Write the plan to its `.md`, per
-   `../../shared/plan-page.md` § Files. Then decide whether a second
-   model checks it, with fresh eyes, before the user sees it (ADR 0020,
-   ADR 0021). Hold one `Plan check:` line for the summary.
+   `../../shared/plan-page.md` § Files. Then decide which second
+   models check it, with fresh eyes, before the user sees it (ADR
+   0020, ADR 0021, ADR 0023). Two checkers can run, side by side,
+   each on its own signs: `plan-correctness-checker` looks for what
+   would make the build fail or ship the wrong thing, and
+   `plan-design-checker` looks for a code shape the plan should not
+   build. Hold one `Plan check:` line for the summary.
 
-   - **Who gets it.** Size the plan as `../../shared/size.md` sizes a
-     ticket, from its Blast radius and its slices. XS and S: never, and
-     the line is `Plan check: skipped · size <x>`. M, L, or XL: run it
-     when you can name what a wrong plan would break and that fix costs
-     real work. Weigh the Risks marked `not proved`, and a table, an
-     API, or a data migration in the Blast radius: a plan that adds a
-     column to the orders table gets the check. Unsure: skip. A skip's
-     line gives the reason, as `Plan check: skipped · new screen, no
-     table or API, every risk proved`. A plan you wrote while you run
-     on Fable: never, and the line is
-     `Plan check: skipped · made by Fable`. In Codex: never, and the
-     line is `Plan check: skipped · not in Claude Code`.
-   - **Start it.** The skill agent `plan-checker`, per
-     `../../shared/facts.md` § Skill agents. Its brief holds the issue
-     text with its comments (a run or a set: the parent and every ticket; a chat plan:
-     its `## Brief` block), the plan path, `BASE_WT`, and the full
-     path of `../../shared/facts.md`, and nothing else: no notes, no
-     reasons, no chat. When
-     it is not found, `general-purpose` with its body pasted and the
-     model `fable` on the Agent call.
-   - **Sort each finding.** One you agree with: fix the plan. One you
-     disagree with, or whose fix is a big fork by step 5's sort:
-     ask the user, one question per message in the format of
-     `../../shared/grilling.md`, with the finding as one option and
-     the plan as the other. Wait. Then fix the plan by the answer.
+   - **Who gets them.** Size the plan as `../../shared/size.md` sizes
+     a ticket, from its Blast radius and its slices. XS: neither, and
+     the line is `Plan check: skipped · size XS`. A plan you wrote
+     while you run on Fable: neither, and the line is
+     `Plan check: skipped · made by Fable`. In Codex: neither, and the
+     line is `Plan check: skipped · not in Claude Code`. Else judge
+     each checker by its own signs, never by a fixed list:
+     - **Correctness**: run it when you can name what a wrong plan
+       would break and that fix costs real work. Weigh the Risks
+       marked `not proved`, and a table, an API, or a data migration
+       in the Blast radius: a plan that adds a column to the orders
+       table gets it.
+     - **Design**: run it when the plan adds or moves a part (a new
+       module, a new seam, logic that moves from one file to
+       another), or touches a part where the facts round found a sign
+       of a wrong design, per `references/plan.md` § Slices, Right
+       design first, whether the plan patches that part or rebuilds
+       it. A plan that adds a helper module gets it; a plan that fixes
+       a date inside one function does not.
+
+     Unsure: skip that checker. A skipped checker's part of the line
+     gives the reason, as `design skipped · no new or moved part, no
+     sign of a wrong design`.
+   - **Start them.** Each checker due, per `../../shared/facts.md`
+     § Skill agents, both in one message when both are due. Each
+     brief holds the issue text with its comments (a run or a set:
+     the parent and every ticket; a chat plan: its `## Brief` block),
+     the plan path, `BASE_WT`, and the full path of
+     `../../shared/facts.md`. The design checker's brief adds the full
+     paths of `../../shared/codebase-design.md` and
+     `references/plan.md`. Nothing else: no notes, no reasons, no
+     chat. A checker not found: `general-purpose` with its body pasted
+     and the model `fable` on the Agent call.
+   - **Sort each finding.** Design findings first, since one can
+     change the approach and leave a correctness finding about a step
+     that is gone; that finding is `kept`, with that reason. One you
+     agree with: fix the plan. One you disagree with, or whose fix is
+     a big fork by step 5's sort: ask the user, one question per
+     message in the format of `../../shared/grilling.md`, with the
+     finding as one option and the plan as the other. Wait. Then fix
+     the plan by the answer. A design finding that turns a patch into
+     a rebuild, or a rebuild into a patch, is a big fork (step 5).
    - **Look again.** A fix that changed the `Approach` line or a
-     `Decided` line: send the same checker the changed blocks, by
-     SendMessage, once, and sort its answer the same way.
+     `Decided` line: send each checker that ran the changed blocks,
+     by SendMessage, once, and sort its answer the same way.
    - **Record.** A `## Plan check` block, last in the `.md`, per
-     `references/plan.md` § Plan check. The line is
-     `Plan check: <n> found · <f> fixed · <a> asked you`, or
-     `Plan check: none found`.
-   - **It fails.** An error, a refusal, or a usage limit: the plan goes
-     on unchecked, with no block, and the line is
-     `Plan check: failed · <why>`.
+     `references/plan.md` § Plan check. The line has one part per
+     checker, correctness first, joined by `; `. Each part is
+     `<n> found · <f> fixed · <a> asked you`, `none found`,
+     `skipped · <why>`, or `failed · <why>`, as
+     `Plan check: correctness 3 found · 2 fixed · 1 asked you; design skipped · no new or moved part`.
+   - **One fails.** An error, a refusal, or a usage limit: the plan
+     goes on without that checker, which gets no line in the block,
+     and its part of the line is `failed · <why>`. The other
+     checker's findings stand. No checker that ran is left: no block.
 
 9. **Present.** Per `../../shared/plan-page.md`: run
    `python3 scripts/build-page.py <plan .md>`, and on problem lines fix

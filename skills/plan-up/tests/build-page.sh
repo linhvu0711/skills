@@ -49,7 +49,7 @@ t_build_plan_check_last() {
   T="$(mktemp -d)"
   chat_plan "$T/plan-acme-shop-chat-orders-csv.md"
   chat_plan "$T/plan-acme-shop-chat-orders-csv-2.md"
-  printf '\n## Plan check\nBy: plan-checker · 1 round\n- F1 the export misses the old screen. Done: fixed (S2)\n' >> "$T/plan-acme-shop-chat-orders-csv-2.md"
+  printf '\n## Plan check\nBy: plan-correctness-checker · 1 round\n- Correctness F1 the export misses the old screen. Done: fixed (S2)\n' >> "$T/plan-acme-shop-chat-orders-csv-2.md"
   # When
   build "$T/plan-acme-shop-chat-orders-csv.md"
   eq "plain exit" 0 "$code"
