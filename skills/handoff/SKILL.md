@@ -445,7 +445,8 @@ again. Stop.
 **Watch prints** `finished <link> :: The users table has no team_id
 column. Should I add a migration or …` from Cursor, no `pr` line
 
-A question, and stored data: big fork. Quoted, the link, then one
+A question whose answer sets the scope, a migration in this PR or
+its own ticket: big fork. Quoted, the link, then one
 question: `A` add the migration in this PR (would pick,
 `migrations/0042.sql` shows the shape), `B` file it as its own ticket.
 Stop. The user's `/handoff A, add the migration` goes as § Answer.
