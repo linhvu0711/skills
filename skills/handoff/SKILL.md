@@ -157,7 +157,8 @@ set's, the first ticket URL. Say the pick in one line, as
    message whole. Then sort it as `../plan-up/SKILL.md`
    step 5 sorts a fork, the same sort § Follow-up step 1 uses:
    - **Small fork**: the plan, the issue, or the repo holds the answer,
-     a hard-to-undo pick with a clear winner included.
+     a hard-to-undo pick with a clear winner included, a new
+     dependency never.
      Fetch the code with Explore when you need a `file:line`. Decide,
      shape the answer per `prompt.md` § Answer, `say` it. Under 20
      lines: print it in one fenced block; longer: its file path and one
@@ -165,7 +166,8 @@ set's, the first ticket URL. Say the pick in one line, as
      one line what the executor asked and what you answered, and say
      `(hard to undo)` when it was. The watch
      goes on as the executor's section says. Stop.
-   - **Big fork**: step 5 says ask; or the answer is a force push, a
+   - **Big fork**: step 5 says ask, as for every new dependency; or
+     the answer is a force push, a
      delete, or anything that touches other branches or PRs than the
      plan names, which is asked every time. Quote the
      executor's question as it is, in a fenced block, then the session
