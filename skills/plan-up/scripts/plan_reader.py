@@ -41,6 +41,9 @@ NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 LINES_MAX, LAYER_CHANGE_MAX, SUMMARY_MAX = 4, 2, 3
 # The most Decided lines in Choices, Risks, maps, and parts in one map.
 DECIDED_MAX, RISKS_MAX, MAPS_MAX, PARTS_MAX = 3, 3, 2, 12
+# The tallest page the linux Sandbox shows: a 900 px screen, a 20 px taskbar, and 85 px of browser bars and frame.
+PAGE_MAX = 795
+VIEWPORT = re.compile(r'--viewport-size[= ]"?(\d+),\s*(\d+)')
 
 
 def blocks(lines):
@@ -363,6 +366,9 @@ def read(path):
         "brief": brief(top.get("Brief", [])),
         # A backtick span quotes code or output as it is, so only the text outside it is prose.
         "prose": [(n, re.sub(r"`[^`]*`", "``", line)) for n, line in enumerate(lines, 1)],
+        # Commands sit in backticks, so the sizes are read from the raw lines.
+        "viewports": [(n, m.group(1), int(m.group(2))) for n, line in enumerate(lines, 1)
+                      for m in VIEWPORT.finditer(line)],
     }
     if run:
         plan["layers"] = [
@@ -635,8 +641,16 @@ def prose_problems(prose):
                 yield f"line {n}: {fix}"
 
 
+def viewport_problems(viewports):
+    for n, width, height in viewports:
+        if height > PAGE_MAX:
+            yield (f"line {n}: `--viewport-size={width},{height}` is {height} px tall; the Sandbox shows a page"
+                   f" at most {PAGE_MAX} px tall under the browser bars and the taskbar, so use 1440,795 or 390,664")
+
+
 def problems(plan):
     yield from prose_problems(plan["prose"])
+    yield from viewport_problems(plan["viewports"])
     is_run, layers = plan["run"], plan["layers"]
     if is_run and (plan["number"] is None or not plan["title"]):
         yield "head: no `# Plan: #<n>` line"
