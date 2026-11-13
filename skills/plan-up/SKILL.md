@@ -378,7 +378,7 @@ two match: ask. Then go on with their URLs.
      it is not found, `general-purpose` with its body pasted and the
      model `fable` on the Agent call.
    - **Sort each finding.** One you agree with: fix the plan. One you
-     disagree with, or whose fix is a big fork by step 5's two tests:
+     disagree with, or whose fix is a big fork by step 5's sort:
      ask the user, one question per message in the format of
      `../../shared/grilling.md`, with the finding as one option and
      the plan as the other. Wait. Then fix the plan by the answer.

@@ -408,8 +408,8 @@ disk: the commits ahead of `BASE`, the before shots in `PROOF`,
 writes the branch's commits and `PROOF`, nothing else: `/make-pr`
 updates the PR from `PROOF`.
 
-- **The change.** Sort it first by the two tests of
-  `../plan-up/SKILL.md` step 5; a big fork goes to the user, and the
+- **The change.** Sort it first as `../plan-up/SKILL.md`
+  step 5 sorts a fork; a big fork goes to the user, and the
   follow-up waits. A change that adds or changes a Proof row, a slice,
   a walk, or a video goes into the plan `.md` first, with a `Decided`
   line that says so, as a Wrong walk fix does (`references/walks.md`

@@ -164,7 +164,7 @@ guess:
   `- W<w> <See|Must not|Shows> changed after round <r>: "<old>" → "<new>". <the reason>`.
   The walk counts as
   passed only when a later round's video shows it pass. Sort it
-  by the two tests in `../plan-up/SKILL.md` step 5. Small fork:
+  as `../plan-up/SKILL.md` step 5 sorts a fork. Small fork:
   fix the walk in the plan `.md`, add a `Decided` line, and say so
   in one line. Big fork, such as a walk whose fix changes what a
   Done-when line means: one question to the user, your pick first.

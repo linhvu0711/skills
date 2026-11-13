@@ -154,20 +154,20 @@ set's, the first ticket URL. Say the pick in one line, as
    wrote the plan; you answer, not the user. First get the whole
    question: the watch line cuts it, so run
    `bash scripts/handoff.sh status <executor> <session>` and read the
-   message whole. Then sort it by the two tests in
-   `../plan-up/SKILL.md` step 5, the same sort § Follow-up step 1 uses:
-   - **Small fork**: the plan, the issue, or the repo holds the answer.
+   message whole. Then sort it as `../plan-up/SKILL.md`
+   step 5 sorts a fork, the same sort § Follow-up step 1 uses:
+   - **Small fork**: the plan, the issue, or the repo holds the answer,
+     a hard-to-undo pick with a clear winner included.
      Fetch the code with Explore when you need a `file:line`. Decide,
      shape the answer per `prompt.md` § Answer, `say` it. Under 20
      lines: print it in one fenced block; longer: its file path and one
      line of summary. Then one line: `Answered <link>`. Tell the user in
-     one line what the executor asked and what you answered. The watch
+     one line what the executor asked and what you answered, and say
+     `(hard to undo)` when it was. The watch
      goes on as the executor's section says. Stop.
-   - **Big fork**: the pick needs a fact the repo does not hold, or a
-     wrong pick is hard to undo (the list in plan-up step 5: a schema or
-     stored data, a public API, auth, a secret, data that leaves the
-     system, a new dependency, a force push, a delete, anything that
-     touches other branches or PRs than the plan names). Quote the
+   - **Big fork**: step 5 says ask; or the answer is a force push, a
+     delete, or anything that touches other branches or PRs than the
+     plan names, which is asked every time. Quote the
      executor's question as it is, in a fenced block, then the session
      link, then one question to the user, two options at most, with the
      option you would pick first and the `file:line` behind each on the
@@ -211,8 +211,8 @@ set's, the first ticket URL. Say the pick in one line, as
 ## Follow-up
 
 1. **Sort the note.** Fetch the code it touches with Explore. A choice
-   it leaves open is a fork; sort it by the two tests in
-   `../plan-up/SKILL.md` step 5. A big fork goes to the user
+   it leaves open is a fork; sort it as `../plan-up/SKILL.md`
+   step 5 sorts a fork. A big fork goes to the user
    first. Anything else: shape it as is. A note that answers a big fork
    from First prompt step 8 is an answer: `prompt.md` § Answer, not
    § Follow-up.
