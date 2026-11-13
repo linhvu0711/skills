@@ -101,7 +101,7 @@ Repo: owner/name        Base: main
 Test: <cmd>             Typecheck: <cmd>      Lint: <cmd>       Build: <cmd>
 Run: <cmd>              UI: web | desktop | terminal | none
 Open: <how the executor reaches the UI after Run>
-Screen: <web: 1440 and 375 wide | desktop: window size | terminal: cols x rows>
+Screen: <web: 1440x795 and 390x664 | desktop: window size | terminal: cols x rows>
 Platform: linux | windows | macos-outpost
 Standards: <the files that hold the rules, or "the code">
 
@@ -478,7 +478,13 @@ README, never guessed. `Open` says how the executor reaches the UI from a
 fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
-needs a scroll or zoom step in the walk.
+needs a scroll or zoom step in the walk. A web walk on the linux
+Sandbox opens its page with `--viewport-size=1440,795` at laptop size
+and `--viewport-size=390,664` at phone size, the page of an iPhone 13
+or 14. The 900 px screen loses 85 px to the browser bars and 20 px to
+the taskbar, so a taller page runs under the taskbar or off the screen,
+and the video hides its bottom. `scripts/build-page.py` refuses a
+`--viewport-size` taller than 795.
 
 ### Proved
 

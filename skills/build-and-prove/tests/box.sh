@@ -878,6 +878,71 @@ t_box_open_gone() {
   case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
 }
 
+t_box_fit_fits() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "880 880" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "FIT window bottom 880 · screen bottom 880" "$out"
+  has log "exec ns:us:abc -- sh -c" "$(cat "$FAKE_PB/log")"
+  has log "_NET_WORKAREA" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_fit_tall() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "985 880" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 3 "$code"
+  eq stdout "TALL window bottom 985 · screen bottom 880" "$out"
+}
+
+t_box_fit_macos() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  echo "880 880" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "FIT not checked on macos" "$out"
+  [ ! -e "$FAKE_PB/log" ] || eq log "no exec" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_fit_gone() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 125 "$code"
+  has stderr "Sandbox ns:us:abc is gone" "$err"
+  case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
+}
+
+t_box_fit_unmeasured() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo 1 > "$FAKE_PB/exec.1.code"
+  echo "xdo_get_active_window reported an error" > "$FAKE_PB/exec.err"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: cannot measure the window: xdo_get_active_window reported an error" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
 cases=(
   "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
@@ -943,4 +1008,9 @@ cases=(
   "close waits 10 s for the group, then kills it|t_box_close_limit"
   "close with no browser open exits 0|t_box_close_none"
   "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
+  "fit says FIT when the window ends above the taskbar|t_box_fit_fits"
+  "fit says TALL when the window runs under the taskbar|t_box_fit_tall"
+  "fit checks nothing on macos|t_box_fit_macos"
+  "fit on a gone Sandbox passes proofbox's line|t_box_fit_gone"
+  "fit stops when the window cannot be measured|t_box_fit_unmeasured"
 )

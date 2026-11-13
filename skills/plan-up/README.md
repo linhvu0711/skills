@@ -96,7 +96,7 @@ A perf plan's `## Perf` block shows on the Overview tab under the facts, and the
 
 A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them. A `## Plan check` block after it builds, and leaves the page as it was.
 
-The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line.
+The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line. It refuses a `--viewport-size` taller than 795 px too: that is the tallest page the linux Sandbox shows under its browser bars and taskbar, so a walk's video shows the whole page. Plans use 1440x795 for laptop and 390x664 for phone.
 
 A slice or a walk can prove several lines, joined by commas, `and`, or both, as in `#1, #2, and #3`. A video can show one walk, as in `shows walk 9`, or several, as in `shows walks 1, 3`. A map's quoted file locations stay whole, even when a path contains a comma.
 

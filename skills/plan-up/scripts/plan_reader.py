@@ -41,6 +41,9 @@ NAME_MAX, JOB_MAX, LABEL_MAX = 20, 30, 20
 LINES_MAX, LAYER_CHANGE_MAX, SUMMARY_MAX = 4, 2, 3
 # The most Decided lines in Choices, Risks, maps, and parts in one map.
 DECIDED_MAX, RISKS_MAX, MAPS_MAX, PARTS_MAX = 3, 3, 2, 12
+# The tallest page the linux Sandbox shows: a 900 px screen, a 20 px taskbar, and 85 px of browser bars and frame.
+PAGE_MAX = 795
+VIEWPORT = re.compile(r'--viewport-size[= ]"?(\d+),\s*(\d+)')
 
 
 def blocks(lines):
@@ -635,8 +638,29 @@ def prose_problems(prose):
                 yield f"line {n}: {fix}"
 
 
+def viewport_problems(plan):
+    # Only the commands a walk runs: a note that quotes an old size opens nothing.
+    places = [("facts open", plan["facts"].get("open", ""))]
+    layers = plan["layers"]
+    for layer in layers:
+        name = f"layer {layer['n']} " if len(layers) > 1 else ""
+        for walk in layer["walks"]:
+            places.append((f"{name}walk {walk['n']} setup", walk.get("setup", "")))
+            places += [(f"{name}walk {walk['n']} steps", step) for step in walk["steps"]]
+            places.append((f"{name}walk {walk['n']} before", walk.get("before", "")))
+        for video in layer["videos"]:
+            places += [(f"{name}video {video['n']} step {k}", step) for k, step in enumerate(video["steps"], 1)]
+    for where, text in places:
+        for m in VIEWPORT.finditer(text):
+            width, height = m.group(1), int(m.group(2))
+            if height > PAGE_MAX:
+                yield (f"{where}: `--viewport-size={width},{height}` is {height} px tall; the Sandbox shows a page"
+                       f" at most {PAGE_MAX} px tall under the browser bars and the taskbar, so use 1440,795 or 390,664")
+
+
 def problems(plan):
     yield from prose_problems(plan["prose"])
+    yield from viewport_problems(plan)
     is_run, layers = plan["run"], plan["layers"]
     if is_run and (plan["number"] is None or not plan["title"]):
         yield "head: no `# Plan: #<n>` line"

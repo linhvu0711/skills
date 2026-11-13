@@ -413,6 +413,39 @@ t_build_quoted_semicolon() {
   eq stdout "page: $T/plan-acme-shop-42.html" "$out"
 }
 
+t_build_viewport_too_tall() {
+  # Given: the walk opens a 1440x900 page, as the repro's plan did
+  bad_ticket 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,900 http://localhost:3000/orders`|' \
+    'walk 1 setup: `--viewport-size=1440,900` is 900 px tall; the Sandbox shows a page at most 795 px tall under the browser bars and the taskbar, so use 1440,795 or 390,664'
+}
+
+t_build_viewport_fits() {
+  # Given: the walk opens a laptop page and the Open line a phone page, both of a size that fits
+  T="$(mktemp -d)"
+  sed 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,795 http://localhost:3000/orders`|;
+    s|^Open: http://localhost:3000/orders|Open: `bunx playwright open --viewport-size=390,664 http://localhost:3000/orders`|' \
+    "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
+t_build_viewport_in_note() {
+  # Given: a fitting walk, and a Decided line that quotes the old size it replaced
+  T="$(mktemp -d)"
+  sed 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,795 http://localhost:3000/orders`|;
+    s|^- D2 delimiter: `,` as the spec says|&\
+- W1 Setup changed after round 2: "`--viewport-size=1440,900`" -> "`--viewport-size=1440,795`". The page ran under the taskbar|' \
+    "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "page: $T/plan-acme-shop-42.html" "$out"
+}
+
 t_build_video_step_two_commands() {
   bad_ticket 's/  2\. Click Export, pick CSV\./  2. Type `tally status`, press Return; type `tally list`, press Return./' \
     'video 1 step 2: types 2 commands; type one command per step'
@@ -612,4 +645,7 @@ cases=(
   "build-page passes a long dash and a curly quote inside backticks|t_build_marks_in_backticks"
   "build-page keeps a test's Red line|t_build_red_line"
   "build-page keeps a test's Mutate line|t_build_mutate_line"
+  "build-page refuses a page taller than the Sandbox shows|t_build_viewport_too_tall"
+  "build-page passes the laptop and phone sizes that fit|t_build_viewport_fits"
+  "build-page passes an old size quoted in a note|t_build_viewport_in_note"
 )

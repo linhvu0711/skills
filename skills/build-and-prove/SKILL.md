@@ -59,6 +59,10 @@ prints its usage with no arguments.
   <proof-dir>` are the walker's: they start its browser or terminal in
   its own process group and end that group, waiting up to 10 s before
   the kill. Neither uploads or makes a gone Sandbox again.
+- `box.sh fit <proof-dir>` is the walker's check before each
+  recording, that the browser window ends above the taskbar: `FIT`,
+  `TALL` with exit 3, or `FIT not checked on macos`. Like `open`, it
+  neither uploads nor makes a gone Sandbox again.
 - `box.sh gates <proof-dir> [--local <worktree>] [--on-local
   '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
   each command as `run` does, keeps each one's own exit code and full
