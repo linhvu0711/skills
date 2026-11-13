@@ -342,7 +342,15 @@ two match: ask. Then go on with their URLs.
    table first, one row per
    Done-when line. Then the slices, one per test, in tracer-bullet order:
    the thinnest path end to end first, each next slice widening it, each
-   with the `Docs` lines its change makes stale. Then UI walks, videos,
+   with the `Docs` lines its change makes stale. Before the first `Docs`
+   line, read whole the guide for its reader:
+   `../write-for-agents/SKILL.md` for a file an agent reads (a skill's
+   `SKILL.md` and the files it reads, an agent file, `AGENTS.md`,
+   `CLAUDE.md`), and `../unslop/SKILL.md` for prose people read (a
+   README, a file under `docs/`, a `CHANGELOG`, a guide), then write
+   that text by its rules. The build copies these words, so this is
+   where they meet the guides. A `Docs` line copied from the issue's
+   `## Docs to write` keeps its agreed words. Then UI walks, videos,
    gates, decided, out of scope. Last, the Review block and the Change
    map, from the blocks you just wrote, placed first in the file: the
    part a person reads to approve the plan. A run: `plan.md` § Run, one
