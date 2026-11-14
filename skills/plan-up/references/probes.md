@@ -87,7 +87,9 @@ found.
 ## How
 
 Probes fan out like readers: one runner per probe, all in one message,
-beside any reader round still open. Each brief pastes the runner job's
+beside any reader round still open. An install probe (§ Where) goes to
+no runner: the lead runs it, with the same question, rule, time box,
+and cleanup as a brief. Each brief pastes the runner job's
 lines from `../../shared/facts.md` § Reader and runner, and the temp
 folder they name is the probe's folder (§ Where). In Codex, run them
 yourself, one after another.
