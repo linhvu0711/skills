@@ -176,14 +176,23 @@ guess:
 
 Say `Walks round <r>: <p> passed, <f> failed`. Then the next round
 from 9a, which films only the videos that need it. A video is
-filmed again, whole, when one of its walks failed, or when
-`git -C "$WT" diff --name-only <its SHA> HEAD`, with its SHA from
-its line in `videos.txt`, names a file that a walk of it shows:
-a file a slice behind the walk's Proof rows changes, or a file you
-read and find on that walk's screen. Not sure, or the video has no
-line in the list: film it again. The walker's brief holds only
-those videos and their walks (9b); every other video keeps its
-`video-<n>.mp4`, its `after-<walk>.png` files, and its passes. A
-follow-up (SKILL.md § Follow-up) sorts the videos in `PROOF` the same way.
+filmed again, whole, when one of its walks failed, when it has
+no line in `videos.txt`, or when a hunk of
+`git -C "$WT" diff <its SHA> HEAD`, its SHA from that line, changes
+what one of its walks does or shows. Read only the hunks in a file
+a walk of it shows: a file a slice behind the walk's Proof rows
+changes, or a file you read and find on that walk's screen. Such a
+hunk changes the walk when a step of the walk's `Setup` or `Steps`
+runs its code, or when a screen the walk reaches shows what it
+draws. A hunk on a path the walk never takes keeps the video: an
+error the walk never meets, a limit it never reaches, a mode it
+never opens. For example, a fix to the save form's message for a
+full list keeps a video that saves into a list with room. Then say
+one line, `Videos: film 1, 3 · keep 2 (<why>)`, the reason for each
+kept video in a few words, a part with no video left out. The
+walker's brief holds only the videos it films and their walks (9b);
+every other video keeps its `video-<n>.mp4`, its `after-<walk>.png`
+files, and its passes. A follow-up (SKILL.md § Follow-up) sorts the
+videos in `PROOF` the same way.
 After round three with a failed walk: `box.sh down`, then stop with
 the failing videos' paths, one per line.
