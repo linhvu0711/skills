@@ -1,5 +1,5 @@
 ---
-status: amended by ADR-0015
+status: amended by ADR-0015, ADR-0024
 ---
 
 # The orchestrator only starts threads

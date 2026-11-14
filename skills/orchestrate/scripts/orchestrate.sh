@@ -5,6 +5,7 @@
 #        orchestrate.sh check <owner/repo>
 #        orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
+#        orchestrate.sh settled <owner/repo> <thread-id> <run-id> [--kept <why>]
 #        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
@@ -30,6 +31,9 @@
 # It also finds each open PR with conflicts whose thread finished its turn,
 # once per head; a watcher check claims it in the state file like a start and
 # sends that thread `/ready-pr <pr-url>` itself.
+# And it lists each /grill or /triage thread that finished or failed, is not
+# settled, and whose issue moved to a new stage; the agent settles or keeps it
+# and records that with `settled`.
 #
 # watch starts the watcher, a background loop that runs one watcher check
 # every few minutes, with no chat turn, and wakes the orchestrator thread
@@ -52,7 +56,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: orchestrate.sh start|check|started|proposed|change|timer|resume|watch <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|watch <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -366,7 +370,7 @@ fail_check() {
 # check and for a watcher check, so the two never read a run two ways. It
 # keeps the state as read in S0, adds the issues it joins to S, and leaves
 # issues, joined, statuses, starts, claims, sends, sent, rows, gone_rows,
-# cards, propose, and done for its caller. A read that fails calls "$on_fail" <why>.
+# cards, propose, settles, and done for its caller. A read that fails calls "$on_fail" <why>.
 observe() {
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
@@ -391,7 +395,7 @@ observe() {
     issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null)))' <<<"$issues")"
   fi
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
-  statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt}}) | from_entries' <<<"$t3list")"
+  statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
   local n j st sk free blocked rec prop line wait rc gone row conf owners
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
@@ -476,6 +480,19 @@ observe() {
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
   # propose: the unlabeled issues with no proposal yet.
   propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.number | tostring] == null)) | .number]' <<<"$S")"
+  # settles: the /grill and /triage threads whose issue moved to a new stage,
+  # once they finished or failed, while T3 shows them not settled. A thread
+  # the run settled stays the user's after that; one it kept waits for a new
+  # turn. A removed issue has no row, so its threads are left out.
+  settles="$(jq -c --argjson rows "$rows" --argjson ts "$statuses" '
+    if .status != "running" then [] else
+    [.threads[] | select(.status == "started" and .thread != null and (.command == "grill" or .command == "triage"))
+     | . as $r | ($ts[$r.thread] // {}) as $t
+     | ($rows[] | select(.number == $r.number) | .stage) as $now
+     | select($now != $r.stage and ($t.status == "completed" or $t.status == "failed") and ($t.settled // false) == false
+         and ($r.settle.verdict // "") != "settled"
+         and (($r.settle.verdict // "") != "kept" or $r.settle.run != $t.run))
+     | {number, stage, command, thread, link, status: $t.status, run: $t.run, now: $now}] end' <<<"$S")"
 }
 
 cmd_check() {
@@ -498,12 +515,12 @@ cmd_check() {
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
   jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
-    --argjson joined "$joined" --argjson done "$done" --argjson propose "$propose" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
+    --argjson joined "$joined" --argjson done "$done" --argjson propose "$propose" --argjson settles "$settles" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
     ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
       or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
-    | {run: $run, status: $S.status, starts: $starts, issues: $marked, joined: $joined, done: $done,
+    | {run: $run, status: $S.status, starts: $starts, settles: $settles, issues: $marked, joined: $joined, done: $done,
        propose: $propose}
-    | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $done or $seen.status != $S.status)}
+    | . + {changed: (any($marked[]; .changed) or $joined != [] or .propose != [] or $settles != [] or $done or $seen.status != $S.status)}
     + if $done then {summary: [$rows[] | .number as $n | {number, title,
         stages: (reduce ($S.threads[] | select(.number == $n) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.number == $n and .link != null) | .link]}],
@@ -534,6 +551,25 @@ cmd_started() {
   S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
     | .threads[$i] += $u' <<<"$S")"
+  save
+}
+
+# ---------- settled ----------
+# settled <thread-id> <run-id> [--kept <why>]: what the agent did with a
+# /grill or /triage thread a check listed in settles: settled it at that
+# turn, or kept it open for the user, with why.
+cmd_settled() {
+  local susage="usage: orchestrate.sh settled <owner/repo> <thread-id> <run-id> [--kept <why>]"
+  [ $# -eq 2 ] || { [ $# -eq 4 ] && [ "$3" = --kept ] && [ -n "$4" ]; } || die "$susage"
+  newest_run
+  local id="$1" upd
+  [ "$(jq --arg t "$id" '[.threads[] | select(.thread == $t and .status == "started" and (.command == "grill" or .command == "triage"))] | length' <<<"$S")" -gt 0 ] \
+    || die "$id is no grill or triage thread of this run"
+  upd="$(jq -cn --arg run "$2" --arg why "${4:-}" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{verdict: (if $why == "" then "settled" else "kept" end), run: $run, why: (if $why == "" then null else $why end), at: $at}')"
+  S="$(jq -c --arg t "$id" --argjson u "$upd" '
+    (.threads | map(.thread == $t) | rindex(true)) as $i
+    | .threads[$i].settle = $u' <<<"$S")"
   save
 }
 
@@ -823,8 +859,8 @@ cmd_watch() {
     "$t3" thread send "$(jq -r .thread <<<"$c")" "$(jq -r .message <<<"$c")" >/dev/null 2>"$errf" \
       || printf 'ready-pr send failed: #%s PR #%s: %s\n' "$(jq -r .number <<<"$c")" "$(jq -r .pr <<<"$c")" "$(tail -1 "$errf")" >&2
   done < <(jq -c '.[]' <<<"$sends")
-  reasons="$(jq -cn --argjson starts "$starts" --argjson propose "$propose" --argjson done "$done" '
-    [$starts[] | "start #\(.number)"] + [$propose[] | "propose #\(.)"] + (if $done then ["done"] else [] end)')"
+  reasons="$(jq -cn --argjson starts "$starts" --argjson propose "$propose" --argjson settles "$settles" --argjson done "$done" '
+    [$starts[] | "start #\(.number)"] + [$propose[] | "propose #\(.)"] + [$settles[] | "settle #\(.number)"] + (if $done then ["done"] else [] end)')"
   [ "$reasons" = "[]" ] || woke="$(wake)"
   jq -cn --argjson w "$reasons" --argjson woke "$woke" --argjson sends "$sends" \
     '{wake: $w, woke: $woke, sent: [$sends[] | {number, pr, thread}]}'
@@ -834,6 +870,7 @@ case "$cmd" in
   start) cmd_start "$@" ;;
   check) cmd_check ;;
   started) cmd_started "$@" ;;
+  settled) cmd_settled "$@" ;;
   proposed) cmd_proposed "$@" ;;
   change) cmd_change "$@" ;;
   timer) cmd_timer "$@" ;;

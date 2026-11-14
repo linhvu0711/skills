@@ -231,7 +231,7 @@ _Avoid_: lane, path, mode (alone), auto
 ## Orchestrator
 
 **Orchestrator**:
-The skill, and its T3 thread, that starts one thread for each issue in a Set when the issue has no open blocker and reaches a new Stage. It never builds or merges, and writes in the threads it starts only to send `/ready-pr` to a thread whose PR has conflicts. The user handles each thread.
+The skill, and its T3 thread, that starts one thread for each issue in a Set when the issue has no open blocker and reaches a new Stage. It never builds or merges, and in the threads it starts it only sends `/ready-pr` to a thread whose PR has conflicts and settles a finished /grill or /triage thread whose issue moved on. The user handles each thread.
 _Avoid_: factory, autopilot, scheduler
 
 **Run**:
@@ -251,7 +251,7 @@ One pass of the orchestrator's script. It reads the state file, GitHub, and T3, 
 _Avoid_: tick, poll, cycle
 
 **Watcher**:
-The background process of a Run that runs a Check every few minutes with no chat turn. It claims nothing, sends `/ready-pr` on a conflict, and wakes the orchestrator thread only when the agent must act: a thread to start, a proposal to make, the Run done, or three failed Checks in a row.
+The background process of a Run that runs a Check every few minutes with no chat turn. It claims nothing, sends `/ready-pr` on a conflict, and wakes the orchestrator thread only when the agent must act: a thread to start, a proposal to make, a thread to settle, the Run done, or three failed Checks in a row.
 _Avoid_: daemon, poller, timer
 
 **Board**:
