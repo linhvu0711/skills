@@ -1,5 +1,5 @@
 ---
-status: amends ADR-0021
+status: amends ADR-0021, amended by ADR-0025
 ---
 
 # Two checkers read a plan, each started by its own signs
