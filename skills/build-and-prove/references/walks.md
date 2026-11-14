@@ -95,7 +95,9 @@ one found is a failed walk.
 
 **Video check.** After mode, when the walker did not end with
 `GONE`, before the sort: for each video under the plan's `Videos`,
-the `video-<n>.mp4` this round filmed, find its cuts on a
+the `video-<n>.mp4` this round filmed; a video the walker reported as
+`proofbox made no video` has no file, so it has no sheet and no
+`videos.txt` line. Find its cuts on a
 strip sheet, then look only at the frames next to each cut. In a temp
 folder outside `PROOF`, take two frames a second, then tile the
 bottom sixth of each, where proofbox draws the `» <N> s later`
@@ -135,8 +137,11 @@ under it, idle or at its max life. No walk failed; run the round
 again from 9a, where `box.sh run` makes a new Sandbox, and it does
 not count as a round. A second `GONE` in the same round: `box.sh
 down`, then stop with that line. Every walk passed: step 10. Each
-failed walk, by its screenshot and the plan, never by the walker's
-guess:
+failed walk whose line says `proofbox made no video` is **No video**,
+read from that line, whatever its screenshot shows: the walker took
+that shot after the recording, when a short `See` such as a toast is
+gone. Each other failed walk, by its screenshot and the plan, never
+by the walker's guess:
 - **Sandbox fault**: the screen shows the Sandbox, not the app, is
   wrong: `command not found` for a tool the walk or the `Open` line
   uses, a window the `Open` line starts never shows, or a mark
@@ -156,6 +161,12 @@ guess:
 - **Video cut**: the video check found a hidden step. Not the
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.
+- **No video**: the walker reported `proofbox made no video`, after
+  its one try more. proofbox's screen check misses a small change,
+  such as a toggle (linhvu0711/proofbox#229). Not the builder's and
+  not the plan's: no follow-up, no plan change; the next round films
+  the video again. It counts as a round, so a video refused in every
+  round ends at round three like any failed walk.
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A walk that
   failed with `page taller than the screen` is a Wrong walk too: its

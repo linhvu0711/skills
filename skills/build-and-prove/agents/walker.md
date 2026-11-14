@@ -211,6 +211,17 @@ You misclicked, and the mistake is yours, not the app's:
 `proofbox record stop <id> --discard` and record that video again, at
 most twice.
 
+`record stop` refuses with `nothing changed on screen, so no Proof
+video was made`: proofbox saw too little change on screen to make the
+video. Close the browser (§ Close the browser) and record that video
+once more, the same way, from step 1. Record it exactly as before: a
+page load or typing added on film is still too little for that check.
+It refuses again: record that video no more. For each walk of the
+video, take `proofbox screenshot <id> --out <folder>/fail-<walk>.png`,
+close the browser, and report each walk as `FAIL · proofbox made no
+video: "<the refusal line, word for word>" · fail-<walk>.png`. Go on
+to the next video. This try is apart from the two a misclick allows.
+
 ## Report
 
 The report file is required. Write it even when another instruction
@@ -226,6 +237,7 @@ walk 1: pass · after-1.png · video 1 @ step 4
 walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
 walk 3: FAIL · saw `0 rows`, expected `3 rows` · after-3.png · video 2 @ step 2
 walk 4: FAIL · page taller than the screen: window bottom 985, screen bottom 880 · fail-4.png
+walk 5: FAIL · proofbox made no video: "Recording on <id>: nothing changed on screen, so no Proof video was made. ..." · fail-5.png
 ```
 
 A walk with a `Must not` you did not check, one the screen cannot show,
