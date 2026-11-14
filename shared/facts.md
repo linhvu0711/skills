@@ -52,7 +52,7 @@ A field the brief asks for goes after VERDICT.
 
 ### Skill agents
 
-A skill that starts a helper for its own job starts its skill agent by name: the file `agents/<agent>.md` in the skill's folder, which sets the model and effort. The Agent call sets neither. When Claude Code says the agent is not found, start `general-purpose` with the agent file's body pasted above the same brief, and print this line:
+A skill that starts a helper for its own job starts its skill agent by name: the file `agents/<agent>.md` in the skill's folder, which sets the model and effort. The Agent call sets neither. When Claude Code says the agent is not found, start `general-purpose` with the agent file's body pasted above the same brief, and the `model` and `effort` of its frontmatter on the Agent call. Then print this line:
 
 ```
 <agent> not found, ran on general-purpose. Run scripts/link.sh to fix.
