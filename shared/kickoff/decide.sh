@@ -143,8 +143,12 @@ case "$form" in
   *) list=("$number") ;;
 esac
 # One task thread drives one browser for one issue, so a task never shares a thread.
-[ "$set_command" != complete-task ] || [ "${#list[@]}" -eq 1 ] \
-  || die "complete-task takes one task issue, got ${#list[@]}"
+# A run, a set, an epic, or a stack names more than the one issue the
+# thread's message must name.
+if [ "$set_command" = complete-task ] && [ "$form" != issue ]; then
+  case "$form" in on) what="a stack" ;; epic) what="an epic" ;; *) what="a $form" ;; esac
+  die "complete-task takes one task issue, not $what"
+fi
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"

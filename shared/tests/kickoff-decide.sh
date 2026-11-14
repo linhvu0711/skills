@@ -205,7 +205,19 @@ t_kd_complete_task_one_issue() {
   kd_run --command complete-task https://github.com/acme/app/issues/42 '#43'
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: complete-task takes one task issue, got 2" "$err"
+  eq stderr "stop: complete-task takes one task issue, not a set" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_complete_task_epic() {
+  # Given: #42 manual, an epic with one open sub-issue #43, one checkout of acme/app
+  kd_setup '[{"name":"manual"}]'; kd_clone "$T/dev/app"
+  printf '{"number":42,"title":"Export orders","labels":[{"name":"manual"}],"subIssues":{"nodes":[{"number":43,"state":"OPEN"}]},"state":"OPEN"}\n' > "$FAKE_GH/issue-view.json"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: complete-task takes one task issue, not an epic" "$err"
   eq stdout "" "$out"
 }
 
@@ -418,6 +430,7 @@ cases=(
   "complete-task takes a manual ticket at opus medium|t_kd_complete_task_row"
   "complete-task on a ticket with no manual label stops|t_kd_complete_task_not_task"
   "complete-task on a set of tickets stops|t_kd_complete_task_one_issue"
+  "complete-task on an epic stops|t_kd_complete_task_epic"
   "plan-up is not a command|t_kd_plan_up_stops"
   "mode merge goes in the message|t_kd_mode_in_message"
   "no mode, no option in the message|t_kd_no_mode_message"
