@@ -583,7 +583,10 @@ every test a slice lists.
   refactor's lock test (§ refactor), and a test whose behavior the base
   already has, such as an unhappy path an existing check already
   refuses. `Mutate:` and `Red:` never sit on one test: `Red:` is a
-  fix's first test, red on the base.
+  fix's first test, red on the base. A race test (Overlap) always
+  carries `Mutate:` unless it has `Red:`, even when it is red before its
+  change: once it is green, its `Mutate:` edit opens the race again and
+  turns it red.
 - **Refusals.** A test whose `Then` is a refusal (an error, a
   rejection, an empty result, `false`) takes the `Given` of a passing
   case with one input changed, so only that input can make it refuse.
