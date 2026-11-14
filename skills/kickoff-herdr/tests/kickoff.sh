@@ -194,7 +194,7 @@ t_ko_bad_command() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --command deploy https://github.com/acme/app/issues/42
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
   [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
 }
 

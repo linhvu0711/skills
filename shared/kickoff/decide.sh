@@ -2,7 +2,7 @@
 # decide.sh: work out what kickoff starts, for kickoff-herdr, kickoff-t3, and the orchestrator's check.
 #
 # Usage: decide.sh [--label L] [--model M] [--effort E]
-#                  [--command ship|triage|grill|ready-pr] [--mode review|ready|merge]
+#                  [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
 # <issue-url> #n ...: when the first issue has sub-issues it is the parent and
@@ -13,8 +13,10 @@
 # unless a flag names them; --size gives a ticket with no size label the size
 # the agent guessed, and a guess for a ticket with a size label is ignored.
 # The command is ship unless --command names another.
-# triage, grill, and ready-pr come only from --command, and each has its own
-# model and effort row. --mode sets /ship's ship mode; with none, the /ship
+# triage, grill, ready-pr, and complete-task come only from --command, and
+# each has its own model and effort row. complete-task takes only a manual
+# ticket, and its message carries --ready, so a launched task thread waits
+# for the user's go. --mode sets /ship's ship mode; with none, the /ship
 # thread picks it.
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
@@ -48,7 +50,7 @@ while [ $# -gt 0 ]; do
       case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship|triage|grill|ready-pr) ;; *) die "--command must be ship, triage, grill, or ready-pr, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --mode)
       case "${2:-}" in review|ready|merge) ;; *) die "--mode must be review, ready, or merge, got: ${2:-nothing}" ;; esac
@@ -61,7 +63,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -132,7 +134,7 @@ add_ticket() {
 
 # The tickets the target holds: a run's #n, a set's issue and #n, an epic's
 # open sub-issues, else the issue. A manual ticket is a person's work, so it
-# does not count.
+# does not count, except under complete-task, which takes only a manual ticket.
 case "$form" in
   run) list=("${tickets[@]}") ;;
   set) list=("$number" "${tickets[@]}") ;;
@@ -144,7 +146,11 @@ counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"
   else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || gh_die "gh could not read #$n in $slug"; fi
-  jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null && continue
+  if jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null; then
+    [ "$set_command" = complete-task ] || continue
+  elif [ "$set_command" = complete-task ]; then
+    die "#$n is not a task: it has no manual label"
+  fi
   add_ticket "$json"; counted=$((counted+1))
 done
 [ "$counted" -gt 0 ] || die "#$number has no open ticket for an agent"
@@ -163,6 +169,7 @@ fi
 case "$set_command" in
   triage|grill) model=opus; effort=high; reason="command $set_command" ;;
   ready-pr) model=opus; effort=medium; reason="command ready-pr" ;;
+  complete-task) model=opus; effort=medium; reason="command complete-task" ;;
 esac
 if [ "$counted" -gt 1 ]; then
   reason="$reason of $counted tickets"
@@ -259,4 +266,4 @@ jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg 
   '{number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
     mode: $mode, model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
     reason: $reason, base: $base, path: $path, label: $label, heading: $heading,
-    message: "/\($command)\(if $mode == "" then "" else " --\($mode)" end) \($args)"}'
+    message: "/\($command)\(if $mode != "" then " --\($mode)" elif $command == "complete-task" then " --ready" else "" end) \($args)"}'

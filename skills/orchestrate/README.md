@@ -38,6 +38,7 @@ An issue starts only when every issue that blocks it is closed. The model and ef
 | XL, or no size | opus | xhigh |
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
+| `/complete-task` | opus | medium |
 
  Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 

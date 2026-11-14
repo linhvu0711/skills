@@ -13,7 +13,7 @@ You work in herdr (a terminal workspace for AI coding agents) and want planning 
 - `/kickoff-herdr 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-herdr on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. URLs work too, and it takes the same forms as [ship](../ship/). It only runs when you call it.
+More than one issue goes in one pane, unless you say "one pane each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. For a task issue, one with the `manual` label, name complete-task ("do the task"): it runs on opus at medium, and the agent says it is ready and waits for your `go`. URLs work too, and it takes the same forms as [ship](../ship/). It only runs when you call it.
 
 ## What you get
 
@@ -26,7 +26,7 @@ A shared script finds the repo on disk and picks the model, effort, and command 
 | any M or L | opus | high | `/ship` |
 | any XL, or no size | opus | xhigh | `/ship` |
 
-In a group of tickets, the biggest one picks the row. `manual` tickets do not count. A ticket with no size label gets a size from its text, guessed by the agent, and the line says `guessed`.
+In a group of tickets, the biggest one picks the row. `manual` tickets do not count, except under complete-task, which takes only a `manual` ticket. A ticket with no size label gets a size from its text, guessed by the agent, and the line says `guessed`.
 
 The pane gets the command with issue numbers, not URLs: `/ship #42`, `/ship #42 #43`, or `/ready-pr #43`. If `gh` in that checkout sees another repo, as a fork clone can, it gets the full URLs.
 
