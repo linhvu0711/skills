@@ -55,8 +55,33 @@ stays read-only. Each probe gets its own `mktemp -d` folder. A probe
 that needs the repo's code adds a detached worktree there:
 `git worktree add --detach "$PROBE/wt" <BASE_SHA>`, and removes it with
 `git worktree remove --force "$PROBE/wt"` when it ends, pass or fail.
-A package it needs installs into its folder, never into the repo's
-manifests. A service it starts (a container, a dev server) it stops.
+Before the brief goes out, the lead readies the folder, since the
+runner installs nothing:
+
+- A probe whose question is an install itself, such as a scaffold or a
+  component add, goes to no runner and gets no link: the lead runs it
+  in its probe folder, where the question needs it, as an empty folder
+  for a scaffold, or a worktree with the repo's install run there for a
+  component add. The bullets below are for a probe that goes to a
+  runner.
+- A probe with a worktree where a link cannot serve gets the repo's
+  install, run by the lead in the worktree, and no link at all: the
+  base copy holds no installed packages of the kind the probe needs (a
+  Yarn Plug'n'Play tree, a Python or Go repo); the probe uses a package
+  that its install script builds (a native addon), since the base copy
+  installed with no scripts; or the probe's tool writes into its
+  packages (a bundler cache), or it needs a package the repo lacks,
+  since a link lets that write reach the base copy. The lead adds such
+  a package in the worktree after the install, never to the repo's
+  manifests.
+- Any other probe with a worktree gets the base copy's installed
+  packages linked in: each `node_modules` folder of the base copy, the
+  root's and each workspace package's, linked at the same path in the
+  worktree, as `ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`.
+- A probe with no worktree that needs a package gets it installed by
+  the lead into its probe folder.
+
+A service a probe starts (a container, a dev server) it stops.
 When the probes end, `git status --porcelain` is as step 1 found it,
 and `git worktree list` holds only the base copy beyond what step 1
 found.
@@ -64,7 +89,9 @@ found.
 ## How
 
 Probes fan out like readers: one runner per probe, all in one message,
-beside any reader round still open. Each brief pastes the runner job's
+beside any reader round still open. An install probe (§ Where) goes to
+no runner: the lead runs it, with the same question, rule, time box,
+and cleanup as a brief. Each brief pastes the runner job's
 lines from `../../shared/facts.md` § Reader and runner, and the temp
 folder they name is the probe's folder (§ Where). In Codex, run them
 yourself, one after another.
