@@ -142,6 +142,9 @@ case "$form" in
           < <(jq -r '.subIssues.nodes[] | select(.state == "OPEN") | .number' <<<"$issue_json") ;;
   *) list=("$number") ;;
 esac
+# One task thread drives one browser for one issue, so a task never shares a thread.
+[ "$set_command" != complete-task ] || [ "${#list[@]}" -eq 1 ] \
+  || die "complete-task takes one task issue, got ${#list[@]}"
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"

@@ -51,7 +51,8 @@ Flags you may add:
   `grill`, "ready the PR" is `ready-pr`. The table never picks these.
   With no `--command`, the thread runs `/ship`.
 - `--command complete-task` for a task issue, one with the `manual`
-  label. It takes only a `manual` ticket and stops on any other. Its
+  label. It takes only one `manual` ticket and stops on any other, or on more
+  than one. Its
   message carries `--ready`, as `/complete-task --ready #16`, so the
   thread says it is ready and waits for the user's `go`.
 

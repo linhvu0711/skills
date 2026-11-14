@@ -198,6 +198,17 @@ t_kd_complete_task_not_task() {
   eq stdout "" "$out"
 }
 
+t_kd_complete_task_one_issue() {
+  # Given: a set of #42 and #43, both manual, one checkout of acme/app
+  kd_setup '[{"name":"manual"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: complete-task takes one task issue, got 2" "$err"
+  eq stdout "" "$out"
+}
+
 t_kd_bad_command() {
   # Given: #42 size/S, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -406,6 +417,7 @@ cases=(
   "a bad command names the five values|t_kd_bad_command"
   "complete-task takes a manual ticket at opus medium|t_kd_complete_task_row"
   "complete-task on a ticket with no manual label stops|t_kd_complete_task_not_task"
+  "complete-task on a set of tickets stops|t_kd_complete_task_one_issue"
   "plan-up is not a command|t_kd_plan_up_stops"
   "mode merge goes in the message|t_kd_mode_in_message"
   "no mode, no option in the message|t_kd_no_mode_message"
