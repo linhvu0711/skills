@@ -21,9 +21,13 @@ start from the code, not from the planner's view.
 - Hunt for what would make the build fail or ship the wrong thing: a
   fact the code contradicts, a caller or a case the plan missed, a step
   that breaks, a test whose `Then` cannot hold, a risk the plan calls
-  safe, and a Done-when line no slice proves. The shape of the code
-  (where logic lives, what is a module, a simpler way) is the design
-  checker's job: leave it.
+  safe, a Done-when line no slice proves, and a race the plan does not
+  prove: a `Change` with a check before a write, or two actors that
+  write one target, with no `Race:` Proof row for each interleaving that
+  matters, or a race test whose writes never overlap at the seam, such
+  as two requests through a harness that serves one at a time. The
+  shape of the code (where logic lives, what is a module, a simpler
+  way) is the design checker's job: leave it.
 - Settle each doubt before you report it. Start Explore to read
   across many files, and Runner to run a command and judge it, with the
   reader and runner lines of that `facts.md` above each brief. Run
