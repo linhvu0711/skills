@@ -246,6 +246,10 @@ _Avoid_: queue, backlog, scope
 Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, epic, or done. A Stage picks the skill a new thread starts with; at unlabeled, the user's answer to the orchestrator's proposal picks it. One thread for each issue at each Stage.
 _Avoid_: status, state, phase
 
+**Task turn**:
+The one slot on a Mac for a task issue that has a thread. Its Run holds it while the issue is open, until the issue gets `waiting` or is removed. Other task issues wait for it.
+_Avoid_: lock, queue
+
 **Check**:
 One pass of the orchestrator's script. It reads the state file, GitHub, and T3, and prints what to start. The Watcher runs it every few minutes; the agent runs it when the Watcher wakes it or the user asks. A failed Check starts nothing.
 _Avoid_: tick, poll, cycle

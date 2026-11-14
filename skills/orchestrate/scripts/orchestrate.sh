@@ -61,7 +61,8 @@ usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|r
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
 owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"
-runs="${ORCHESTRATE_HOME:-$HOME/.agents/orchestrate}/$owner-$repo"
+home="${ORCHESTRATE_HOME:-$HOME/.agents/orchestrate}"
+runs="$home/$owner-$repo"
 
 # in_t3: T3 Code sets T3CODE_CLI_PATH to its own t3 command in every chat.
 in_t3() {
@@ -372,7 +373,8 @@ fail_check() {
 # check and for a watcher check, so the two never read a run two ways. It
 # keeps the state as read in S0, adds the issues it joins to S, and leaves
 # issues, joined, statuses, starts, claims, sends, sent, rows, gone_rows,
-# cards, propose, settles, and done for its caller. A read that fails calls "$on_fail" <why>.
+# cards, propose, settles, done, holders, and task_turn for its caller. A
+# read that fails calls "$on_fail" <why>.
 observe() {
   S0="$S"
   # The set first, then each round of issues it brings: the open sub-issues
@@ -399,8 +401,28 @@ observe() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc gone row conf owners
+  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
+  stages="{}"
+  for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
+    j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
+    [ "$j" != null ] || continue
+    stages="$(jq -c --arg n "$n" --arg s "$(stage "$j" "$(jq -r .started_at <<<"$S")")" '.[$n] = $s' <<<"$stages")"
+  done
+  # The task turn: one task issue with a thread per Mac, since two tasks at
+  # once can fight over the browser and the user. This run holds it for a
+  # task whose task thread is pending or started; when it holds none, a
+  # running run of any repo may. A paused or stopped run has no watcher to
+  # free its turn, so only a running one counts.
+  holders="$(jq -c --argjson st "$stages" '. as $S | [.set[] | select($st[tostring] == "task") | . as $n
+    | ([$S.threads[] | select(.number == $n)] | last) as $r
+    | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S")"
+  turn="$(jq -r --arg slug "$slug" 'if . == [] then empty else "\($slug)#\(.[0])" end' <<<"$holders")"
+  if [ -z "$turn" ]; then
+    turn="$(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z \
+      | xargs -0 cat | jq -rs '[.[] | select(.status == "running" and ((.task_turn // []) != []))] | first // empty | "\(.repo)#\(.task_turn[0])"')"
+  fi
+  task_turn="$holders"
   # owners: each PR's owner, the first issue in set order that it closes. A
   # shared PR's conflict goes only to its owner's thread, so no two threads
   # rebase one branch, even when the owner's thread is busy or just starting.
@@ -411,7 +433,7 @@ observe() {
     gone="$(jq --argjson n "$n" '.removed | index([$n]) != null' <<<"$S")"
     j="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
-    st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"
+    st="$(jq -r --arg n "$n" '.[$n]' <<<"$stages")"
     # The stage stays unlabeled; the user's answer only picks the skill.
     if [ "$st" = unlabeled ]; then
       sk="$(answer_skill "$(jq -r --arg n "$n" '(.proposals // {})[$n].answer // empty' <<<"$S")")"
@@ -427,12 +449,18 @@ observe() {
     [ "$gone" = false ] || wait="removed from the set"
     if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --argjson n "$n" --arg s "$st" '[.threads[] | select(.number == $n and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
-      # decide.sh exits 2 when gh failed, and that fails the check; any
-      # other stop is this issue's alone, and it waits.
-      rc=0; line="$(decide_for "$n" "$sk")" || rc=$?
-      if [ "$rc" -ne 0 ]; then
-        wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
-        [ "$rc" -ne 2 ] || "$on_fail" "$wait"
+      if [ "$st" = task ] && [ -n "$turn" ]; then
+        wait="waits for the task turn: $turn"
+      else
+        # decide.sh exits 2 when gh failed, and that fails the check; any
+        # other stop is this issue's alone, and it waits.
+        rc=0; line="$(decide_for "$n" "$sk")" || rc=$?
+        if [ "$rc" -ne 0 ]; then
+          wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
+          [ "$rc" -ne 2 ] || "$on_fail" "$wait"
+        elif [ "$st" = task ]; then
+          turn="$slug#$n"; task_turn="$(jq -c --argjson n "$n" '. + [$n]' <<<"$task_turn")"
+        fi
       fi
     fi
     if [ -n "$line" ]; then
@@ -506,9 +534,9 @@ cmd_check() {
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
-  S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" \
+  S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" --argjson tt "$task_turn" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '.threads += $c | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at
+    '.threads += $c | .task_turn = $tt | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at
      | if $done then .status = "done" else . end
      | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
@@ -850,9 +878,11 @@ cmd_watch() {
   local at view reasons woke=false
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
-  # A conflict is claimed before it is sent, so a failed send is never tried again.
-  S="$(jq -c --arg at "$at" --argjson sent "$sent" \
-    '.conflicts = ((.conflicts // []) + $sent) | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
+  # A conflict is claimed before it is sent, so a failed send is never tried
+  # again. The task turn keeps only its holders: a watcher claims no start,
+  # but a task that closed frees the turn for the other runs now.
+  S="$(jq -c --arg at "$at" --argjson sent "$sent" --argjson tt "$holders" \
+    '.conflicts = ((.conflicts // []) + $sent) | .task_turn = $tt | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
   save
   S="$view"
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"

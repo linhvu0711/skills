@@ -364,6 +364,95 @@ t_fs_task_starts_complete_task() {
   has stdout '"thread_title":"#42 Export orders"' "$out"
 }
 
+t_fs_second_task_waits() {
+  # Given: a run of #42 and #43, both open and manual
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[42]' "$(jq -c '[.starts[] | .number]' <<<"$out")"
+  has stdout '"wait":"waits for the task turn: acme/app#42"' "$out"
+  eq state '[42]' "$(fs_state '.task_turn')"
+}
+
+# fs_other_run <status>: a run of acme/web whose state holds the task turn for #7.
+fs_other_run() {
+  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"
+  jq -cn --arg s "$1" '{repo: "acme/web", status: $s, task_turn: [7]}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+}
+
+t_fs_other_run_holds_turn() {
+  # Given: a run of #42, open and manual; a running run of acme/web holds the turn for #7
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run running
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"waits for the task turn: acme/web#7"' "$out"
+}
+
+t_fs_stopped_run_no_turn() {
+  # Given: the same, with the acme/web run stopped
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run stopped
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+}
+
+t_fs_closed_task_frees_turn() {
+  # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 closed
+  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42
+  fs_issue 42 CLOSED '["manual"]'; fs_issue 43 OPEN '["manual"]'
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+}
+
+t_fs_later_task_holds_turn() {
+  # Given: a run of #42 and #43, both manual; #43's task thread started, #42 has none
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 43 task t43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"waits for the task turn: acme/app#43"' "$out"
+}
+
+t_fs_removed_task_frees_turn() {
+  # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 removed
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42; fs_go change acme/app remove 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+}
+
+t_fs_watch_claims_no_turn() {
+  # Given: a run of #42, open and manual, with no thread record
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '[]' "$(fs_state '.task_turn')"
+}
+
+t_fs_watch_frees_closed_turn() {
+  # Given: a run of #42, manual, whose task thread started and holds the turn; then #42 closed
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_record 42 task t42; fs_set_state '.task_turn = [42]'
+  fs_issue 42 CLOSED '["manual"]'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '[]' "$(fs_state '.task_turn')"
+}
+
 t_fs_unlabeled_waits() {
   # Given: a run of #42, open, labelled only p1
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -1892,6 +1981,14 @@ cases=(
   "a PR from before the run starts ready-pr|t_fs_old_pr_starts_ready_pr"
   "a PR the run opened starts nothing new|t_fs_new_pr_starts_nothing"
   "a task starts complete-task, ready first|t_fs_task_starts_complete_task"
+  "a second task waits for the turn|t_fs_second_task_waits"
+  "a task in another live run holds the turn|t_fs_other_run_holds_turn"
+  "a stopped run holds no turn|t_fs_stopped_run_no_turn"
+  "a closed task frees the turn|t_fs_closed_task_frees_turn"
+  "a resumed task waits while a later task holds the turn|t_fs_later_task_holds_turn"
+  "a removed task frees the turn|t_fs_removed_task_frees_turn"
+  "a watcher check claims no turn|t_fs_watch_claims_no_turn"
+  "a watcher check frees a closed task's turn|t_fs_watch_frees_closed_turn"
   "an unlabeled issue waits|t_fs_unlabeled_waits"
   "a closed seed is done|t_fs_closed_seed_done"
   "an open blocker holds the issue|t_fs_open_blocker_holds"

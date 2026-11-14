@@ -240,6 +240,9 @@ the answers then run § Check.
 - `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
   issue's thread runs on.
 - `restart #n`: `change <owner/repo> restart <n>`, then § Check.
+- `skip #n` on an issue at stage `task`: `change <owner/repo> remove
+  <n>`, then § Check, so the next task takes the task turn. Its thread
+  runs on.
 - Answers to § Propose: `all yes`, `all skip`, `#n yes`, `#n <skill>`,
   `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
   <word>` per part, the per-issue parts first, so `all` fills only the
