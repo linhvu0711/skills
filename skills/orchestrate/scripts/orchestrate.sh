@@ -283,7 +283,7 @@ board='
       elif .wait then held("waits: \(.wait)")
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
       elif .stage == "waiting" then you("Waits outside: say resume #\(.number)")
-      elif .stage == "task" and $rec.status == "started" and $t.status == "completed" then you("Open the thread: send go, or answer it")
+      elif .stage == "task" and $rec.status == "started" and $t.status == "completed" then you("Open the thread: it waits for you")
       elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
       elif $t.status == "running" then agent("/\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)") + {since: $t.createdAt}
       elif .stage == "unlabeled" and .answer == "task" then you("Do the task, then close it")
@@ -574,7 +574,8 @@ cmd_check() {
 # ---------- started ----------
 # started <n> <stage> <thread-id> <link>, or <n> <stage> --failed <why>: the
 # claim of that stage becomes the thread the agent launched, or a failed
-# launch. A failed one is never started again; `restart` clears it.
+# launch. A failed one is never started again; `restart` clears it. A failed
+# task launch frees the task turn now, so other runs need not wait a check.
 cmd_started() {
   [ $# -eq 4 ] || die "usage: orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link> | --failed <why>"
   newest_run
@@ -588,7 +589,8 @@ cmd_started() {
   fi
   S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
-    | .threads[$i] += $u' <<<"$S")"
+    | .threads[$i] += $u
+    | if $u.status == "failed" then .task_turn = ((.task_turn // []) - [$n]) else . end' <<<"$S")"
   save
 }
 
