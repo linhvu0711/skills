@@ -343,7 +343,7 @@ two match: ask. Then go on with their URLs.
    Done-when line. Then the slices, one per test, in tracer-bullet order:
    the thinnest path end to end first, each next slice widening it, each
    with the `Docs` lines its change makes stale. Before the first `Docs`
-   line, read whole the guide for its reader:
+   line for each reader, read whole the guide for that reader:
    `../write-for-agents/SKILL.md` for a file an agent reads (a skill's
    `SKILL.md` and the files it reads, an agent file, `AGENTS.md`,
    `CLAUDE.md`), and `../unslop/SKILL.md` for prose people read (a
