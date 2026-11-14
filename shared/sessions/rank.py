@@ -1,7 +1,7 @@
 """Rank sessions against a search, for the finders under sessions/.
 
 Each session is a dict of named text fields, as {"title": ..., "prompts": ...,
-"work": ...}. The score is BM25F, the usual search-engine formula:
+"body": ...}. The score is BM25F, the usual search-engine formula:
 
 - whole words only, so "in" never matches inside "install";
 - a word found in few sessions counts more than one found in most, so
@@ -36,20 +36,65 @@ K1 = 1.2  # how fast repeats of a word stop adding to its score
 B = 0.75  # how much a field's length counts against it
 
 
+VOWELS = "aeiou"
+
+
+def _consonant(w: str, i: int) -> bool:
+    if w[i] in VOWELS:
+        return False
+    return w[i] != "y" or i == 0 or not _consonant(w, i - 1)
+
+
+def _measure(w: str) -> int:
+    """Porter's m: how many vowel-then-consonant runs the word has."""
+    runs, prev = 0, True
+    for i in range(len(w)):
+        cons = _consonant(w, i)
+        runs += cons and not prev
+        prev = cons
+    return runs
+
+
+def _has_vowel(w: str) -> bool:
+    return any(not _consonant(w, i) for i in range(len(w)))
+
+
+def _cvc(w: str) -> bool:
+    """Ends consonant, vowel, consonant, the last not w, x, or y: as in "mak"."""
+    return (len(w) >= 3 and _consonant(w, len(w) - 3) and not _consonant(w, len(w) - 2)
+            and _consonant(w, len(w) - 1) and w[-1] not in "wxy")
+
+
 @lru_cache(maxsize=None)
 def stem(word: str) -> str:
-    """A light stem, so "gates" finds "gate" and "running" finds "run"."""
-    if len(word) > 4 and word.endswith("ies"):
-        return word[:-3] + "y"
-    if len(word) > 5 and word.endswith("ing"):
-        word = word[:-3]
-        return word[:-1] if len(word) > 2 and word[-1] == word[-2] else word
-    if len(word) > 4 and word.endswith("ed"):
-        word = word[:-2]
-        return word[:-1] if len(word) > 2 and word[-1] == word[-2] else word
-    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
-        return word[:-1]
-    return word
+    """Steps 1 and 5a of the Porter stemmer, so "gates" finds "gate",
+    "making" finds "make", and "note" stays apart from "not"."""
+    w = word
+    if w.endswith("sses") or w.endswith("ies"):
+        w = w[:-2]
+    elif w.endswith("s") and not w.endswith("ss") and len(w) > 2:
+        w = w[:-1]
+    if w.endswith("eed"):
+        if _measure(w[:-3]) > 0:
+            w = w[:-1]
+    else:
+        for suffix in ("ed", "ing"):
+            if w.endswith(suffix) and _has_vowel(w[:-len(suffix)]):
+                w = w[:-len(suffix)]
+                if w.endswith(("at", "bl", "iz")):
+                    w += "e"
+                elif len(w) > 1 and w[-1] == w[-2] and _consonant(w, len(w) - 1) and w[-1] not in "lsz":
+                    w = w[:-1]
+                elif _measure(w) == 1 and _cvc(w):
+                    w += "e"
+                break
+    if w.endswith("y") and _has_vowel(w[:-1]):
+        w = w[:-1] + "i"
+    if w.endswith("e"):
+        m = _measure(w[:-1])
+        if m > 1 or (m == 1 and not _cvc(w[:-1])):
+            w = w[:-1]
+    return w
 
 
 def words(text: str) -> list[str]:

@@ -54,9 +54,16 @@ t_rank_prompt_beats_reply() {
 }
 
 t_rank_word_forms() {
-  # Given: the session says "gate" and "run"
-  # When / Then: "gates" and "running" still find it
+  # Given: the session says "gate", "run", and "make"
+  # When / Then: "gates", "running", and "making" still find it
   eq order "a 1" "$(rank_order "running gates" '[{"name":"a","prompts":"run the gate","body":""}]')"
+  eq order "a 1" "$(rank_order "making" '[{"name":"a","prompts":"make the plan","body":""}]')"
+}
+
+t_rank_look_alike_words() {
+  # Given: "not" and "plan" only, never "note" or "plane"
+  # When / Then: no match
+  eq order "a 0" "$(rank_order "note plane" '[{"name":"a","prompts":"not the plan","body":""}]')"
 }
 
 t_rank_filler_only() {
@@ -71,5 +78,6 @@ cases=(
   "rank gives a long session no edge for its length|t_rank_long_session_no_edge"
   "rank counts a word the user typed above one the agent wrote|t_rank_prompt_beats_reply"
   "rank finds other forms of a word|t_rank_word_forms"
+  "rank keeps look-alike words apart|t_rank_look_alike_words"
   "rank scores a search of only filler words 0|t_rank_filler_only"
 )
