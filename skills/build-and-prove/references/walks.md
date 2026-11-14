@@ -137,8 +137,11 @@ under it, idle or at its max life. No walk failed; run the round
 again from 9a, where `box.sh run` makes a new Sandbox, and it does
 not count as a round. A second `GONE` in the same round: `box.sh
 down`, then stop with that line. Every walk passed: step 10. Each
-failed walk, by its screenshot and the plan, never by the walker's
-guess:
+failed walk whose line says `proofbox made no video` is **No video**,
+read from that line, whatever its screenshot shows: the walker took
+that shot after the recording, when a short `See` such as a toast is
+gone. Each other failed walk, by its screenshot and the plan, never
+by the walker's guess:
 - **Sandbox fault**: the screen shows the Sandbox, not the app, is
   wrong: `command not found` for a tool the walk or the `Open` line
   uses, a window the `Open` line starts never shows, or a mark
