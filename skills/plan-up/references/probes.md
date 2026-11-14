@@ -70,14 +70,16 @@ runner installs nothing:
   Yarn Plug'n'Play tree, a Python or Go repo); the probe uses a package
   that its install script builds (a native addon), since the base copy
   installed with no scripts; or the probe's tool writes into its
-  packages (a bundler cache), since a link lets that write reach the
-  base copy.
+  packages (a bundler cache), or it needs a package the repo lacks,
+  since a link lets that write reach the base copy. The lead adds such
+  a package in the worktree after the install, never to the repo's
+  manifests.
 - Any other probe with a worktree gets the base copy's installed
   packages linked in: each `node_modules` folder of the base copy, the
   root's and each workspace package's, linked at the same path in the
   worktree, as `ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`.
-- A package the repo lacks the lead installs into the probe folder,
-  never into the repo's manifests.
+- A probe with no worktree that needs a package gets it installed by
+  the lead into its probe folder.
 
 A service a probe starts (a container, a dev server) it stops.
 When the probes end, `git status --porcelain` is as step 1 found it,
