@@ -58,6 +58,10 @@ that needs the repo's code adds a detached worktree there:
 Before the brief goes out, the lead readies the folder, since the
 runner installs nothing:
 
+- A probe whose question is an install itself, such as a scaffold or a
+  component add, goes to no runner and gets no link: the lead runs it,
+  in a worktree with the repo's install run there. The bullets below
+  are for a probe that goes to a runner.
 - A probe with a worktree where a link cannot serve gets the repo's
   install, run by the lead in the worktree, and no link at all: the
   base copy holds no installed packages of the kind the probe needs (a
@@ -72,8 +76,6 @@ runner installs nothing:
   worktree, as `ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`.
 - A package the repo lacks the lead installs into the probe folder,
   never into the repo's manifests.
-- A probe whose question is an install itself, such as a scaffold or a
-  component add, goes to no runner: the lead runs it.
 
 A service a probe starts (a container, a dev server) it stops.
 When the probes end, `git status --porcelain` is as step 1 found it,
