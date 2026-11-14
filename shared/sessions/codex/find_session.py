@@ -408,7 +408,9 @@ def main() -> int:
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
     ap.add_argument("--active-days", type=int,
                     help="only sessions used in the last N days, wherever they started (by the rollout's mtime)")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
+    # The caller judges the list by meaning, and judges well once the session is
+    # in it; 20 holds the right one far more often than 8 for a word search.
+    ap.add_argument("--limit", type=int, default=20, help="max candidates to show (default 20, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()

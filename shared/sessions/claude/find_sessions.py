@@ -25,7 +25,7 @@ Usage:
                                                         # several roots, worktrees under them
     find_sessions.py --all-projects --days 3 --all      # every project, last 3 days
     find_sessions.py "..." --date yesterday | --days 30 # narrow by last activity
-    find_sessions.py "..." --limit 12                   # show more candidates (0: all)
+    find_sessions.py "..." --limit 40                   # show more candidates (0: all)
 """
 import argparse
 import datetime as dt
@@ -302,7 +302,9 @@ def main():
     ap.add_argument("--date", help="one local calendar day of last activity: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only sessions active in the last N days (default: all time)")
     ap.add_argument("--all", action="store_true", help="list every session (newest first), ignore scoring")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
+    # The caller judges the list by meaning, and judges well once the session is
+    # in it; 20 holds the right one far more often than 8 for a word search.
+    ap.add_argument("--limit", type=int, default=20, help="max candidates to show (default 20, 0 for all)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()
 
