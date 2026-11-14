@@ -81,7 +81,26 @@ t_ccf_name_clash() {
   eq ids "s1" "$(ids)"
 }
 
+t_ccf_finds_skill_started_chat() {
+  # Given: s1 is a lone "/ship 237" whose agent did the box gates work;
+  # s2 is a long chat that names box again and again, never gates
+  ccf_home
+  local f="$HOME/.claude/projects/-p-app/s1.jsonl"
+  mkdir -p "$(dirname "$f")"
+  printf '{"type":"user","message":{"role":"user","content":"<command-name>/ship</command-name>\\n<command-args>237</command-args>"},"cwd":"/p/app"}\n' > "$f"
+  printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Running every gate with one box.sh gates call."}]},"cwd":"/p/app"}\n' >> "$f"
+  cc_session -p-app s2 /p/app "$(python3 -c 'print("box box box box " + " ".join(f"word{i}" for i in range(400)))')"
+  cc_session -p-app s3 /p/app "fix the export"
+  # When
+  run python3 "$F" "box gates" --project-dir /p/app --json
+  # Then: the /ship chat first, its prompt shown with its arguments
+  eq exit 0 "$code"
+  eq order "s1 s2" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(s["id"] for s in json.load(sys.stdin)["sessions"]))')"
+  eq prompt "/ship 237" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessions"][0]["first_prompt"])')"
+}
+
 cases=(
+  "finder ranks a chat a skill started by its agent's work|t_ccf_finds_skill_started_chat"
   "finder lists a project session|t_ccf_lists_project_session"
   "finder keeps apart two projects with the same folder name|t_ccf_name_clash"
   "finder lists every project|t_ccf_every_project"

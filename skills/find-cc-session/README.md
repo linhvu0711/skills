@@ -14,6 +14,8 @@ One line with the ID, title, age, and prompt count, and the ID already copied:
 3f9c21ab-...  "fix the flaky CI job"  2 days ago  14 prompts  (copied)
 ```
 
+It ranks sessions the way a search engine does. A rare word in your description, such as `gates`, counts more than a word every session has, such as `skill`. A long session gets no extra points for its length. A session another skill started, such as a lone `/ship 237`, is found by what its agent did.
+
 When a few sessions fit, it lists them and asks you to pick. When nothing fits, it says so and shows the closest ones. It never loads the session unless you ask.
 
 ## Needs

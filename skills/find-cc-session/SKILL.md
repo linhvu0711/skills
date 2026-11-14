@@ -7,7 +7,7 @@ description: "Find a past Claude Code session in the current project by what it 
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-Claude Code keeps each session as a JSONL transcript under `~/.claude/projects/<encoded-cwd>/`. The script does the mechanical part: it lists the current project's sessions, scores their keyword overlap with the description, and prints the top candidates. You judge which one the user meant.
+Claude Code keeps each session as a JSONL transcript under `~/.claude/projects/<encoded-cwd>/`. The script does the mechanical part: it lists the current project's sessions, ranks them by the description's words as a search engine does (whole words, a rare word worth more than a common one, a long session no edge for its length), and prints the top candidates. You judge which one the user meant.
 
 Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in Claude Code and in Codex; only the load offer at the end differs.
 
@@ -17,7 +17,7 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
    `python3 ../../shared/sessions/claude/find_sessions.py "<description>"`
    No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
-2. **Judge the candidates.** The score is a keyword heuristic, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
+2. **Judge the candidates.** The score counts words, not meaning, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
 
 3. **Act on the verdict.**
    - One match: `printf "%s" "<id>" | bash ../../shared/copy.sh`, then report the ID with its title, age, and prompt count on one line. Any other exit than 0: the line ends `(clipboard copy skipped)`.

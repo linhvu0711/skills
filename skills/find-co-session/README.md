@@ -14,6 +14,8 @@ One line with the ID, opening prompt, age, and prompt count, and the ID already 
 019e631d-...  "add the orders migration"  yesterday  9 prompts  (copied)
 ```
 
+It ranks sessions the way a search engine does. A rare word in your description, such as `gates`, counts more than a word every session has, such as `skill`. A long session gets no extra points for its length. A session another skill started is found by what its agent did.
+
 Words like "yesterday" or "last week" narrow the search by date. When a few sessions fit, it lists them and asks you to pick. When nothing fits, it says so and shows the closest ones. The first run in a project builds a cache, so later runs take under a second.
 
 ## Needs

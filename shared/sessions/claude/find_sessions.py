@@ -9,8 +9,8 @@ non-alphanumeric character replaced by '-'.
 This script lists the sessions for one project (default: the current working
 directory) with enough metadata — title, first/last human prompt, age, size —
 for a model to judge which ones match a natural-language description. When a
-query is given it also scores each session by keyword overlap and surfaces the
-best-matching snippet, so the obvious matches float to the top. It does NOT
+query is given it also scores each session against it (../rank.py) and surfaces
+the best-matching snippet, so the obvious matches float to the top. It does NOT
 decide the final match or touch the clipboard — that judgment is left to the
 caller, which is better at fuzzy/semantic matching than keyword counting.
 
@@ -30,11 +30,18 @@ Usage:
 import argparse
 import datetime as dt
 import glob
+import importlib.util
 import json
 import os
 import re
 import sys
 import time
+
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "rank", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rank.py"))
+rank = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(rank)
 
 WRAP_PREFIXES = (
     "<local-command-caveat>",
@@ -48,6 +55,10 @@ WRAP_PREFIXES = (
 PROMPT_DISPLAY_CAP = 500  # cap stored first/last prompt so a pasted wall-of-text can't flood output
 BODY_CAP = 200_000  # cap chars indexed per session for scoring (keeps big files fast)
 SNIPPET_LEN = 180
+# A word in the title or a prompt says what the user steered toward; the
+# agent's replies still count, since a chat another skill started (a lone
+# "/ship 237") holds its topic only there.
+WEIGHTS = {"title": 3.0, "prompts": 2.0, "body": 1.0}
 
 
 def encode_cwd(path):
@@ -144,9 +155,12 @@ def strip_wrappers(text):
     stripped = text.strip()
     # Whole message is just command/caveat/reminder scaffolding -> not a human prompt.
     if stripped.startswith(WRAP_PREFIXES):
-        # A slash-command invocation: pull the command name out so it's still searchable.
+        # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
-        return m.group(1).strip() if m else ""
+        if not m:
+            return ""
+        a = re.search(r"<command-args>([^<]*)</command-args>", text)
+        return f"{m.group(1).strip()} {a.group(1).strip() if a else ''}".strip()
     if stripped.startswith("<system-reminder>") and stripped.endswith("</system-reminder>"):
         return ""
     # Remove any embedded reminder/caveat blocks but keep surrounding prose.
@@ -161,12 +175,7 @@ def is_bare_command(text):
 
 
 def parse_session(path):
-    """Return a dict of metadata for one .jsonl transcript, or None if unreadable.
-
-    Scoring leans on what the *human* steered the session toward (title + prompts);
-    the assistant's output (``body``) is kept only for snippet display, because its
-    sheer volume would otherwise let incidental word hits drown out the real topic.
-    """
+    """Return a dict of metadata for one .jsonl transcript, or None if unreadable."""
     sid = os.path.basename(path)[: -len(".jsonl")]
     title = None
     cwd = None
@@ -256,72 +265,15 @@ def parse_session(path):
     }
 
 
-def score_session(sess, tokens, phrase):
-    """Relevance by how well the query overlaps the session's *topic*.
-
-    Topic lives in the title (summary) and the human prompts — those are what the
-    user steered toward. We score by token *presence* there (not raw frequency) so a
-    short, on-topic session isn't beaten by a long, sprawling one that mentions the
-    words in passing. The assistant body counts only as a faint tiebreaker, by
-    distinct tokens present, so volume can't dominate. Returns (score, snippet).
-    """
-    if not tokens:
-        return 0, ""
-    title = (sess["title"] or "").lower()
-    prompts = sess["prompts"].lower()
-    body = sess["body"].lower()
-
-    score = 0
-    matched = set()
-    for tok in tokens:
-        hit = False
-        if tok in title:
-            score += 6
-            hit = True
-        if tok in prompts:
-            # presence is the main signal; a little extra for repeated emphasis
-            score += 4 + min(prompts.count(tok) - 1, 3)
-            hit = True
-        if tok in body:
-            score += 1  # distinct-token presence only — no frequency multiplier
-            hit = True
-        if hit:
-            matched.add(tok)
-    # Reward breadth: matching many distinct query words beats hammering one.
-    score += len(matched) * len(matched)
-    # Exact phrase is a strong signal of a real match.
-    if phrase and len(phrase) > 3:
-        if phrase in title:
-            score += 40
-        elif phrase in prompts:
-            score += 20
-        elif phrase in body:
-            score += 6
-    return score, best_snippet(sess, tokens)
-
-
-def best_snippet(sess, tokens):
-    """Pick the most query-dense line from the prompts/title/body for display."""
-    candidates = []
-    if sess["title"]:
-        candidates.append(sess["title"])
+def best_snippet(sess, query):
+    """The line holding the most search words, from the title, prompts, and replies."""
+    lines = [sess["title"]] if sess["title"] else []
     for key in ("first_prompt", "last_prompt"):
         if sess[key]:
-            candidates.extend(sess[key].splitlines())
-    candidates.extend(sess["body"].splitlines())
-    best, best_hits = "", 0
-    for line in candidates:
-        line = line.strip()
-        if not line:
-            continue
-        low = line.lower()
-        hits = sum(1 for tok in tokens if tok in low)
-        if hits > best_hits:
-            best, best_hits = line, hits
-            if best_hits == len(tokens):
-                break
-    snippet = best or (sess["first_prompt"] or sess["title"] or "")
-    snippet = re.sub(r"\s+", " ", snippet).strip()
+            lines.extend(sess[key].splitlines())
+    lines.extend(sess["body"].splitlines())
+    snippet = rank.best_line(lines, query) if query else ""
+    snippet = re.sub(r"\s+", " ", snippet or sess["first_prompt"] or sess["title"] or "").strip()
     return snippet[:SNIPPET_LEN] + ("…" if len(snippet) > SNIPPET_LEN else "")
 
 
@@ -337,14 +289,6 @@ def humanize_age(mtime):
     if days < 14:
         return f"{int(days)}d ago"
     return f"{int(days / 7)}w ago"
-
-
-def tokenize(query):
-    toks = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) >= 2]
-    # Drop a few ultra-common words that add noise to keyword scoring.
-    stop = {"the", "and", "for", "with", "that", "this", "from", "was", "were",
-            "where", "when", "about", "into", "your", "you", "our", "are", "can"}
-    return [t for t in toks if t not in stop]
 
 
 def main():
@@ -382,16 +326,13 @@ def main():
     sessions = [s for s in (parse_session(p) for p in files)
                 if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
 
-    tokens = tokenize(args.query)
-    phrase = args.query.strip().lower()
-    use_query = bool(tokens) and not args.all
+    use_query = bool(rank.terms(args.query)) and not args.all
+    marks = rank.scores(sessions, args.query, WEIGHTS) if use_query else [0] * len(sessions)
 
-    for s in sessions:
+    for s, mark in zip(sessions, marks):
         s["is_current"] = (s["id"] == current_id)
-        if use_query:
-            s["score"], s["snippet"] = score_session(s, tokens, phrase)
-        else:
-            s["score"], s["snippet"] = 0, best_snippet(s, [])
+        s["score"] = mark
+        s["snippet"] = best_snippet(s, args.query if use_query else "")
 
     if use_query:
         ranked = [s for s in sessions if s["score"] > 0]
@@ -425,7 +366,7 @@ def main():
           else f"Project session dirs: {len(dirs)}")
     print(f"Total sessions in project: {len(sessions)}")
     if use_query:
-        print(f'Query: "{args.query}"  →  {len(ranked)} with keyword overlap '
+        print(f'Query: "{args.query}"  →  {len(ranked)} with a search word '
               f'(showing top {len(shown)})')
     else:
         print(f"Listing {len(shown)} most recent (no query / --all)")
