@@ -184,7 +184,9 @@ a walk of it shows: a file a slice behind the walk's Proof rows
 changes, or a file you read and find on that walk's screen. Such a
 hunk changes the walk when a step of the walk's `Setup` or `Steps`
 runs its code, or when a screen the walk reaches shows what it
-draws. A hunk on a path the walk never takes keeps the video: an
+draws. A changed binary file, which `git diff` prints with no hunk,
+counts the same when a screen the walk reaches loads it, as with an
+image or a font. A hunk on a path the walk never takes keeps the video: an
 error the walk never meets, a limit it never reaches, a mode it
 never opens. For example, a fix to the save form's message for a
 full list keeps a video that saves into a list with room. Then say
