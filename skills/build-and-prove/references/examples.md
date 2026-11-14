@@ -39,3 +39,9 @@ shows `Save changes`, and after it the saved row is there.
 The Done-when line holds; only the label in the plan was wrong. Small
 fork: walk 2's step fixed in the plan, a `Decided` line, one line to the
 user, round 2.
+
+**Follow-up after a review fix.** The fix changes the save form's
+message for a full list. All three videos open the save form, but no
+walk fills the list, so no step runs the new code: `Videos: keep 1, 2,
+3 (only a full list shows the new message)`. No walker; the Gates run
+as § Follow-up says.
