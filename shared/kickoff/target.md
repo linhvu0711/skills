@@ -50,6 +50,11 @@ Flags you may add:
   the user names that skill: "triage it" is `triage`, "grill it" is
   `grill`, "ready the PR" is `ready-pr`. The table never picks these.
   With no `--command`, the thread runs `/ship`.
+- `--command complete-task` for a task issue, one with the `manual`
+  label. It takes only one `manual` ticket and stops on any other, or on more
+  than one. Its
+  message carries `--ready`, as `/complete-task --ready #16`, so the
+  thread says it is ready and waits for the user's `go`.
 
 A value the user does not name comes from the table below. The report
 line marks each value `(default)` or `(set)`.
@@ -72,15 +77,17 @@ So you can answer questions about it:
   In a run, a set, or a whole epic the biggest ticket picks the row;
   only a target whose every ticket is `ready-to-build` takes the
   `ready-to-build` row. A whole epic counts its open tickets. `manual` tickets do not
-  count; a target with none left stops.
+  count, except under `--command complete-task`, which takes only a
+  `manual` ticket; a target with none left stops.
 
-  A named `triage`, `grill`, or `ready-pr` picks its own row instead:
+  A named `triage`, `grill`, `ready-pr`, or `complete-task` picks its own row instead:
 
   | Command | Model | Effort |
   |---|---|---|
   | `/triage` | `opus` | `high` |
   | `/grill` | `opus` | `high` |
   | `/ready-pr` | `opus` | `medium` |
+  | `/complete-task` | `opus` | `medium` |
 
   `--model` and `--effort` still win over every row. With `ready-pr`,
   the thread gets the open PR that closes the issue, as `/ready-pr #43`,

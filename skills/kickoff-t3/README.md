@@ -13,7 +13,7 @@ You work in T3 Code and want planning or a whole `/ship` run to start in its own
 - `/kickoff-t3 42 on PR 80`: one ticket as a new layer on an open stack.
 - `/kickoff-t3 on this`, right after making an issue: it finds the issue in the chat.
 
-More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
+More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. For a task issue, one with the `manual` label, name complete-task ("do the task"): it runs on opus at medium, and the agent says it is ready and waits for your `go`. It only runs when you call it. For a herdr pane, use [kickoff-herdr](../kickoff-herdr/).
 
 ## What you get
 

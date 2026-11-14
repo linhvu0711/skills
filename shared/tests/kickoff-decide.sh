@@ -177,6 +177,50 @@ t_kd_grill_row() {
   eq stdout "$(kd_line grill high "command grill")" "$out"
 }
 
+t_kd_complete_task_row() {
+  # Given: #42 labelled manual, one checkout of acme/app
+  kd_setup '[{"name":"manual"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"complete-task","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"command complete-task","base":"main","path":"%s","label":"i42","heading":"#42","message":"/complete-task --ready #42"}' "$T/dev/app")" "$out"
+}
+
+t_kd_complete_task_not_task() {
+  # Given: #42 labelled size/S, not manual, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 is not a task: it has no manual label" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_complete_task_one_issue() {
+  # Given: a set of #42 and #43, both manual, one checkout of acme/app
+  kd_setup '[{"name":"manual"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42 '#43'
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: complete-task takes one task issue, not a set" "$err"
+  eq stdout "" "$out"
+}
+
+t_kd_complete_task_epic() {
+  # Given: #42 manual, an epic with one open sub-issue #43, one checkout of acme/app
+  kd_setup '[{"name":"manual"}]'; kd_clone "$T/dev/app"
+  printf '{"number":42,"title":"Export orders","labels":[{"name":"manual"}],"subIssues":{"nodes":[{"number":43,"state":"OPEN"}]},"state":"OPEN"}\n' > "$FAKE_GH/issue-view.json"
+  # When
+  kd_run --command complete-task https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: complete-task takes one task issue, not an epic" "$err"
+  eq stdout "" "$out"
+}
+
 t_kd_bad_command() {
   # Given: #42 size/S, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -184,7 +228,7 @@ t_kd_bad_command() {
   kd_run --command deploy https://github.com/acme/app/issues/42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: deploy" "$err"
+  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
   eq stdout "" "$out"
 }
 
@@ -195,7 +239,7 @@ t_kd_plan_up_stops() {
   kd_run --command plan-up https://github.com/acme/app/issues/42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, or ready-pr, got: plan-up" "$err"
+  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: plan-up" "$err"
   eq stdout "" "$out"
 }
 
@@ -382,7 +426,11 @@ cases=(
   "every gh failure exits 2|t_kd_gh_fails_exit_2"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
-  "a bad command names the four values|t_kd_bad_command"
+  "a bad command names the five values|t_kd_bad_command"
+  "complete-task takes a manual ticket at opus medium|t_kd_complete_task_row"
+  "complete-task on a ticket with no manual label stops|t_kd_complete_task_not_task"
+  "complete-task on a set of tickets stops|t_kd_complete_task_one_issue"
+  "complete-task on an epic stops|t_kd_complete_task_epic"
   "plan-up is not a command|t_kd_plan_up_stops"
   "mode merge goes in the message|t_kd_mode_in_message"
   "no mode, no option in the message|t_kd_no_mode_message"

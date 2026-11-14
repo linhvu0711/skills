@@ -351,14 +351,146 @@ t_fs_conflict_send_failed() {
   eq state '[43]' "$(fs_state '[.conflicts[] | .pr]')"
 }
 
-t_fs_manual_never_starts() {
+t_fs_task_starts_complete_task() {
   # Given: a run of #42, open, labelled manual
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
+  has stdout '"command":"complete-task"' "$out"
+  has stdout '"model":"opus"' "$out"
+  has stdout '"effort":"medium"' "$out"
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+  has stdout '"thread_title":"#42 Export orders"' "$out"
+}
+
+t_fs_second_task_waits() {
+  # Given: a run of #42 and #43, both open and manual
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[42]' "$(jq -c '[.starts[] | .number]' <<<"$out")"
+  has stdout '"wait":"waits for the task turn: acme/app#42"' "$out"
+  eq state '[42]' "$(fs_state '.task_turn')"
+}
+
+# fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
+# task turn for #7, with its watcher's pid.
+fs_other_run() {
+  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"
+  jq -cn --arg s "$1" --arg p "${2:-}" '{repo: "acme/web", status: $s, task_turn: [7],
+    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+}
+
+t_fs_other_run_holds_turn() {
+  # Given: a run of #42, open and manual; a running run of acme/web, whose
+  # watcher is alive, holds the turn for #7
+  local w
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  (exec -a "orchestrate.sh watch acme/web --loop" /bin/sleep 60) & w=$!
+  fs_other_run running "$w"
+  # When
+  fs_go check acme/app
+  kill "$w"
+  # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"stage":"task","free":true,"blocked_by":[],"skill":null' "$out"
+  has stdout '"wait":"waits for the task turn: acme/web#7"' "$out"
+}
+
+t_fs_dead_watcher_no_turn() {
+  # Given: a run of #42, open and manual; a running run of acme/web holds the
+  # turn for #7, but its watcher's pid now runs something else, as after a restart
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run running "$$"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+}
+
+t_fs_stopped_run_no_turn() {
+  # Given: the same, with the acme/web run stopped
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run stopped
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+}
+
+t_fs_broken_run_no_turn() {
+  # Given: a run of #42, open and manual; another run's state file does not parse
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"; echo '{"repo":' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+}
+
+t_fs_failed_task_launch_frees_turn() {
+  # Given: a run of #42, manual, claimed by a check, so it holds the turn
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_go check acme/app
+  eq "turn held" '[42]' "$(fs_state '.task_turn')"
+  # When
+  fs_go started acme/app 42 task --failed "no reply"
+  # Then
+  eq exit 0 "$code"
+  eq state '[]' "$(fs_state '.task_turn')"
+}
+
+t_fs_closed_task_frees_turn() {
+  # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 closed
+  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42
+  fs_issue 42 CLOSED '["manual"]'; fs_issue 43 OPEN '["manual"]'
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+}
+
+t_fs_later_task_holds_turn() {
+  # Given: a run of #42 and #43, both manual; #43's task thread started, #42 has none
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 43 task t43
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"waits for the task turn: acme/app#43"' "$out"
+}
+
+t_fs_removed_task_frees_turn() {
+  # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 removed
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42; fs_go change acme/app remove 42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+}
+
+t_fs_watch_claims_no_turn() {
+  # Given: a run of #42, open and manual, with no thread record
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '[]' "$(fs_state '.task_turn')"
+}
+
+t_fs_watch_frees_closed_turn() {
+  # Given: a run of #42, manual, whose task thread started and holds the turn; then #42 closed
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_record 42 task t42; fs_set_state '.task_turn = [42]'
+  fs_issue 42 CLOSED '["manual"]'
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq state '[]' "$(fs_state '.task_turn')"
 }
 
 t_fs_unlabeled_waits() {
@@ -726,8 +858,8 @@ t_fs_first_check_all_changed() {
 }
 
 t_fs_second_check_quiet() {
-  # Given: a run of #42, a manual task, checked once
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # Given: a run of unlabeled #42, answered skip, checked once
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 skip
   fs_go check acme/app
   # When
   fs_go check acme/app
@@ -736,9 +868,10 @@ t_fs_second_check_quiet() {
 }
 
 t_fs_status_change_marks_issue() {
-  # Given: #42's ticket thread t42 running and checked, #43 a manual task;
-  # then t42 waits for the user
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # Given: #42's ticket thread t42 running and checked, #43 unlabeled and
+  # answered skip; then t42 waits for the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["p1"]'; fs_start 42 43
+  fs_go change acme/app answer 43 skip
   fs_record 42 ticket t42
   echo '[{"threadId":"t42","status":"running"}]' > "$T/t3-threads.json"
   fs_go check acme/app
@@ -764,8 +897,8 @@ t_fs_start_marks_changed() {
 fs_sends() { if [ -e "$T/t3-sends.log" ]; then cat "$T/t3-sends.log"; else echo none; fi; }
 
 t_fs_watch_quiet() {
-  # Given: a run of #42, a manual task
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # Given: a run of unlabeled #42, answered skip
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 skip
   # When
   fs_go watch acme/app --once
   # Then
@@ -1488,13 +1621,44 @@ t_fs_board_launch_failed_yours() {
   eq card '{"column":"build","mark":"you","action":"Launch failed: say restart #42"}' "$(fs_card 42)"
 }
 
-t_fs_board_task_yours() {
+t_fs_waiting_task_no_turn() {
+  # Given: #42 manual and waiting, whose task thread started; #43 manual
+  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+  eq row '{"stage":"waiting","skill":null}' "$(jq -c '.issues[] | select(.number == 42) | {stage, skill}' <<<"$out")"
+}
+
+t_fs_board_waiting_task() {
+  # Given: #42, manual and waiting
+  fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Waits outside: say resume #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_ready_task() {
+  # Given: #42 manual, whose task thread t42 started and completed its turn
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_record 42 task t42; fs_thread t42 completed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Open the thread: it waits for you"}' "$(fs_card 42)"
+}
+
+t_fs_board_task_starts() {
   # Given: #42, a manual task with no blocker
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
-  eq card '{"column":"build","mark":"you","action":"Do the task, then close it"}' "$(fs_card 42)"
+  eq card '{"column":"build","mark":"agent","action":"starting /complete-task"}' "$(fs_card 42)"
 }
 
 # fs_merge_ready: a run from 12:00 of #42, whose ticket thread t42 completed
@@ -1637,10 +1801,12 @@ t_fs_board_links() {
 }
 
 t_fs_board_order() {
-  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a free task
+  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a
+  # ticket whose launch failed
   # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
-  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["manual"]'; fs_issue 43 OPEN '["size/S"]'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'
   fs_start 42 43 44
+  fs_set_state '.threads += [{number: 44, stage: "ticket", thread: null, link: null, status: "failed", why: "no reply"}]'
   # When
   fs_go check acme/app
   # Then
@@ -1885,7 +2051,18 @@ cases=(
   "a bug starts triage|t_fs_bug_starts_triage"
   "a PR from before the run starts ready-pr|t_fs_old_pr_starts_ready_pr"
   "a PR the run opened starts nothing new|t_fs_new_pr_starts_nothing"
-  "a manual task never starts|t_fs_manual_never_starts"
+  "a task starts complete-task, ready first|t_fs_task_starts_complete_task"
+  "a second task waits for the turn|t_fs_second_task_waits"
+  "a task in another live run holds the turn|t_fs_other_run_holds_turn"
+  "a run whose watcher is gone holds no turn|t_fs_dead_watcher_no_turn"
+  "a stopped run holds no turn|t_fs_stopped_run_no_turn"
+  "a broken state file in another run holds no turn|t_fs_broken_run_no_turn"
+  "a failed task launch frees the turn|t_fs_failed_task_launch_frees_turn"
+  "a closed task frees the turn|t_fs_closed_task_frees_turn"
+  "a resumed task waits while a later task holds the turn|t_fs_later_task_holds_turn"
+  "a removed task frees the turn|t_fs_removed_task_frees_turn"
+  "a watcher check claims no turn|t_fs_watch_claims_no_turn"
+  "a watcher check frees a closed task's turn|t_fs_watch_frees_closed_turn"
   "an unlabeled issue waits|t_fs_unlabeled_waits"
   "a closed seed is done|t_fs_closed_seed_done"
   "an open blocker holds the issue|t_fs_open_blocker_holds"
@@ -1985,7 +2162,10 @@ cases=(
   "an interrupted thread is yours|t_fs_board_interrupted_yours"
   "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
   "a failed launch is yours|t_fs_board_launch_failed_yours"
-  "a free task is yours|t_fs_board_task_yours"
+  "a free task is starting|t_fs_board_task_starts"
+  "a waiting task holds no turn|t_fs_waiting_task_no_turn"
+  "a waiting task waits for resume|t_fs_board_waiting_task"
+  "a finished task thread waits for you|t_fs_board_ready_task"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
   "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
   "a proposal with no answer is yours|t_fs_board_proposal_yours"

@@ -228,6 +228,16 @@ _Avoid_: translator, parser
 How far one /ship run takes a ticket: `review` stops after the plan for the user's ok, `ready` stops at a ready-to-merge PR, `merge` merges it. The user forces it with an option; with none, the agent picks it from the plan.
 _Avoid_: lane, path, mode (alone), auto
 
+## Tasks
+
+**Your step**:
+A step of a task that only the user does: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, or moving a secret.
+_Avoid_: manual step, human step
+
+**Ready thread**:
+The thread orchestrate starts for a task issue when it gets the Task turn. It says what to have near you and how long it takes, then waits for go.
+_Avoid_: draft thread, idle thread
+
 ## Orchestrator
 
 **Orchestrator**:
@@ -243,8 +253,12 @@ The issues a Run must close. It is fixed at the start, from a list, an epic, or 
 _Avoid_: queue, backlog, scope
 
 **Stage**:
-Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, epic, or done. A Stage picks the skill a new thread starts with; at unlabeled, the user's answer to the orchestrator's proposal picks it. One thread for each issue at each Stage.
+Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, PR open, task, waiting, epic, or done. A Stage picks the skill a new thread starts with; at unlabeled, the user's answer to the orchestrator's proposal picks it. One thread for each issue at each Stage.
 _Avoid_: status, state, phase
+
+**Task turn**:
+The one slot on a Mac for a task issue that has a thread. Its Run holds it while the issue is open, until the issue gets `waiting` or is removed. Other task issues wait for it.
+_Avoid_: lock, queue
 
 **Check**:
 One pass of the orchestrator's script. It reads the state file, GitHub, and T3, and prints what to start. The Watcher runs it every few minutes; the agent runs it when the Watcher wakes it or the user asks. A failed Check starts nothing.

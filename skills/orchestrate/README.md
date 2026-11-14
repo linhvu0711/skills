@@ -22,7 +22,8 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | bug | a `bug` label | `/triage` |
 | ticket | a size label | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>` |
-| task | a `manual` label | none: it is yours |
+| task | a `manual` label | `/complete-task --ready`: the thread says it is ready and waits for your `go`. One task at a time on this Mac. |
+| waiting | a `waiting` label on a task | none: say `resume #n` when the wait is over |
 | epic | sub-issues | none: its open sub-issues join the set |
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
 | done | closed | none |
@@ -38,6 +39,7 @@ An issue starts only when every issue that blocks it is closed. The model and ef
 | XL, or no size | opus | xhigh |
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
+| `/complete-task` | opus | medium |
 
  Each issue gets one thread per stage. When triage turns a bug into a fix ticket, the next check starts `/ship` on it. New sub-issues and the follow-ups `/ready-pr` lists in a PR body join the set by themselves.
 
@@ -55,10 +57,12 @@ Say these in the orchestrator thread:
 - `ship merge #12` or `ship merge all`, and `ship review` and `ship ready` the same way, to set the ship mode: `review` waits for your ok on the plan, `ready` stops at a ready PR, `merge` merges it. With none set, each `/ship` thread picks its own. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
+- `skip #16` on a task: take it out of the run, so the next task gets its turn.
+- `resume #16` on a waiting task: take off its `waiting` label, and start a new ready thread when the turn is free.
 
 A check that cannot read GitHub or T3 starts nothing, and the watcher writes why to `watch.log`. After three in a row, the watcher wakes the thread, and it tells you why and what to do. When every issue is closed, with no open PR left on one, the watcher ends, and the orchestrator posts one summary line per issue (its stages, its PR, its threads), runs [prune-worktrees](../prune-worktrees/), and starts one more thread that runs [retro](../retro/) on everything the run did: its sessions and its PRs, unless you took issues out of the run; then it posts the `/retro run` line for you to type when the work is done. If that thread cannot start, it posts the `/retro run` line for you to type. It never closes an epic.
 
-The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the watcher and its interval, and its proposals: each route, size, and answer. Next to it sit `board.json`, the page data each check writes, `board.html`, the page, and `watch.log`, a line for each watcher check that failed, woke the thread, or sent `/ready-pr`. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the watcher and its interval, its proposals: each route, size, and answer, and `task_turn`: the task issues this run holds the task turn for, which the other running runs read, so only one task thread runs on this Mac at a time. Next to it sit `board.json`, the page data each check writes, `board.html`, the page, and `watch.log`, a line for each watcher check that failed, woke the thread, or sent `/ready-pr`. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 
