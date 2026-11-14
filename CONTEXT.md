@@ -228,6 +228,16 @@ _Avoid_: translator, parser
 How far one /ship run takes a ticket: `review` stops after the plan for the user's ok, `ready` stops at a ready-to-merge PR, `merge` merges it. The user forces it with an option; with none, the agent picks it from the plan.
 _Avoid_: lane, path, mode (alone), auto
 
+## Tasks
+
+**Your step**:
+A step of a task that only the user does: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, or moving a secret.
+_Avoid_: manual step, human step
+
+**Ready thread**:
+The thread orchestrate starts for a task issue when it gets the Task turn. It says what to have near you and how long it takes, then waits for go.
+_Avoid_: draft thread, idle thread
+
 ## Orchestrator
 
 **Orchestrator**:

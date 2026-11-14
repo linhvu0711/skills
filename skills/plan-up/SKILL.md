@@ -114,7 +114,7 @@ two match: ask. Then go on with their URLs.
 
    A ticket labelled `manual` is a `task`: human work in a platform, per
    the rules file § Task body. It is never planned. One named alone: say
-   `This is yours, not an agent's.` and stop. Open tasks in an epic or a
+   `This is a task: run /complete-task #<n>.` and stop. Open tasks in an epic or a
    run: list them first, number and title, then ask in one line whether
    to plan the tickets they do not block, or wait. Plan only on a yes,
    with the tasks and the tickets they block left out.

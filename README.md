@@ -91,6 +91,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [kickoff-herdr](skills/kickoff-herdr/) | Opens a new herdr pane and starts `/ship` there on an issue, a run of tickets, or an epic. |
 | [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
+| [complete-task](skills/complete-task/) | Does a task issue's steps in your browser, and stops only for the steps that are yours. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine. For a plan with UI walks, it runs the Gates and the app in one proofbox Sandbox and has a walker film the walks as proof; a plan with no UI runs its Gates on your machine and in CI. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
@@ -99,6 +100,12 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
 | [ready-pr](skills/ready-pr/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
 | [prune-worktrees](skills/prune-worktrees/) | Removes the worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays. |
+
+### Mac
+
+| Skill | What it does |
+|---|---|
+| [use-mac](skills/use-mac/) | Works in the desktop apps on your Mac in the background: opens, reads, clicks, and types across apps, and proves each step. |
 
 ### Review and standards
 
@@ -156,6 +163,7 @@ Optional, only for the skills that name them:
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
 - Cursor: [handoff](skills/handoff/).
+- macOS and `agent-desktop`: [use-mac](skills/use-mac/) and [complete-task](skills/complete-task/).
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
 - A tool with screens and flows from real apps, such as the Mobbin MCP: [create-prototype](skills/create-prototype/), for references.
 - `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).

@@ -94,7 +94,9 @@ Nine. The type is the leading word of the title.
 Security work is `fix` or `feat`. Design or UX work is `spike` until a
 behaviour is decided, then `feat`.
 
-A `task` is always human work. Setup an agent can run from a CLI with a token
+A `task` needs a person's login or hands. The complete-task skill drives it,
+and the person does only their own steps: a password, a passkey or 2FA
+check, a payment, a Mac pop-up, moving a secret. Setup an agent can run from a CLI with a token
 (`railway init`, `wrangler r2 bucket create`) is a `chore` that lands as a
 script. One task per platform and account: Railway and Cloudflare R2 are two
 tasks, two logins, two owners.
@@ -317,7 +319,8 @@ code does not do yet. The PR that ships the code writes it, word for word.
 
 ### Task body
 
-The reader is a person, in a platform they may not know, doing it cold. The
+The reader is a person, or the complete-task agent, in a platform they may
+not know, doing it cold. The
 four headings stay. Inside them:
 
 ```markdown
@@ -531,7 +534,8 @@ gh label create "size/S"  --color 7FC8CC --description "One thin path, existing 
 gh label create "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
 gh label create "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
 gh label create "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
-gh label create "manual" --color 6E7781 --description "Human work in a platform outside the repo; agents skip it"
+gh label create "manual" --color 6E7781 --description "Work in a platform outside the repo; /complete-task drives it"
+gh label create "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
 ```
 
 Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`,

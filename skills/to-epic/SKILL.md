@@ -221,7 +221,7 @@ Work the frontier: any ticket whose "after" tickets are closed. Start a phase wh
 ### Phase 1 · <name>
 - [ ] #12 · S · after: none. Delivers: <one line>
 - [ ] #13 · M · after: #12. Delivers: <one line>
-- [ ] #14 · task · after: none. Delivers: <one line>. Yours, not an agent's.
+- [ ] #14 · task · after: none. Delivers: <one line>. Yours: /complete-task drives it.
 
 ## Context
 - Terms, ADRs, files, Open. As in the rules file.
