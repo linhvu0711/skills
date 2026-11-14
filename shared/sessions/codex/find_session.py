@@ -11,7 +11,7 @@ session id, cwd, and start time. The user's own prompts and the assistant's repl
 ``response_item`` records.
 
 The script lists the sessions whose cwd is the target project, scores each one
-by keyword overlap with the query, and prints the top candidates. It leaves the
+against the query (../rank.py), and prints the top candidates. It leaves the
 final call (which candidate the user meant) to the caller, and never touches
 the clipboard.
 
@@ -54,17 +54,20 @@ from pathlib import Path
 _spec = importlib.util.spec_from_file_location("rollout_io", Path(__file__).with_name("rollout_io.py"))
 rollout_io = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rollout_io)
+_spec = importlib.util.spec_from_file_location("rank", Path(__file__).parent.parent / "rank.py")
+rank = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(rank)
 
 INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
 INDEX_PATH = INDEX_PATHS[0]
-INDEX_VERSION = 5  # 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
+INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
-BODY_CAP = 5_000           # chars of assistant text kept per session (tiebreaker + snippet)
+BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
 SNIPPET_LEN = 180
 
 # Injected context, not a human prompt.
@@ -78,9 +81,9 @@ BLOB_MARKERS = (
 )
 BLOB_LEN = 20_000
 
-STOP = {"the", "and", "for", "with", "that", "this", "from", "was", "were",
-        "where", "when", "about", "into", "your", "you", "our", "are", "can",
-        "session", "codex", "chat", "find"}
+# A word the user typed says what they steered toward; the agent's replies
+# still count, since a chat another skill started holds its topic only there.
+WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
 # ---------------------------------------------------------------- parsing
@@ -333,54 +336,15 @@ def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
 
 # ---------------------------------------------------------------- scoring
 
-def tokenize(query: str) -> list[str]:
-    toks = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) >= 2]
-    return [t for t in toks if t not in STOP]
-
-
-def score_session(s: dict, tokens: list[str], phrase: str) -> int:
-    """Presence of query words in the user's prompts is the signal; the assistant
-    body is a faint tiebreaker so volume cannot win."""
-    prompts = "\n".join(s["prompts"]).lower()
-    body = s["body"].lower()
-    score = 0
-    matched = 0
-    for tok in tokens:
-        hit = False
-        if tok in prompts:
-            score += 4 + min(prompts.count(tok) - 1, 3)
-            hit = True
-        if tok in body:
-            score += 1
-            hit = True
-        matched += hit
-    score += matched * matched
-    if phrase and len(phrase) > 3:
-        if phrase in prompts:
-            score += 20
-        elif phrase in body:
-            score += 6
-    return score
-
-
-def best_snippet(s: dict, tokens: list[str]) -> str:
+def best_snippet(s: dict, query: str) -> str:
+    """The line holding the most search words, from the prompts and replies."""
     lines = []
     for key in ("first_prompt", "last_prompt"):
         if s.get(key):
             lines.extend(s[key].splitlines())
     lines.extend(s["body"].splitlines())
-    best, best_hits = "", 0
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        low = line.lower()
-        hits = sum(1 for t in tokens if t in low)
-        if hits > best_hits:
-            best, best_hits = line, hits
-            if hits == len(tokens):
-                break
-    snip = re.sub(r"\s+", " ", best or s.get("first_prompt") or "").strip()
+    snip = rank.best_line(lines, query) if query else ""
+    snip = re.sub(r"\s+", " ", snip or s.get("first_prompt") or "").strip()
     return snip[:SNIPPET_LEN] + ("…" if len(snip) > SNIPPET_LEN else "")
 
 
@@ -444,7 +408,9 @@ def main() -> int:
     ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
     ap.add_argument("--active-days", type=int,
                     help="only sessions used in the last N days, wherever they started (by the rollout's mtime)")
-    ap.add_argument("--limit", type=int, default=8, help="max candidates to show (default 8, 0 for all)")
+    # The caller judges the list by meaning, and judges well once the session is
+    # in it; 20 holds the right one far more often than 8 for a word search.
+    ap.add_argument("--limit", type=int, default=20, help="max candidates to show (default 20, 0 for all)")
     ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()
@@ -492,13 +458,12 @@ def main() -> int:
                        args.include_subdirs, args.include_subagents, idx,
                        interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
-    tokens = tokenize(args.query)
-    phrase = args.query.strip().lower()
-    use_query = bool(tokens) and not args.all
-
-    for s in sessions:
-        s["score"] = score_session(s, tokens, phrase) if use_query else 0
-        s["snippet"] = best_snippet(s, tokens if use_query else [])
+    use_query = bool(rank.terms(args.query)) and not args.all
+    docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]
+    marks = rank.scores(docs, args.query, WEIGHTS) if use_query else [0] * len(sessions)
+    for s, mark in zip(sessions, marks):
+        s["score"] = mark
+        s["snippet"] = best_snippet(s, args.query if use_query else "")
     if use_query:
         ranked = [s for s in sessions if s["score"] > 0]
         ranked.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
@@ -519,7 +484,7 @@ def main() -> int:
     print(f"Project: {target}{' (+subdirs)' if args.include_subdirs else ''}")
     print(f"Sessions for this project: {len(sessions)}")
     if use_query:
-        print(f'Query: "{args.query}"  →  {len(ranked)} with keyword overlap (showing top {len(shown)})')
+        print(f'Query: "{args.query}"  →  {len(ranked)} with a search word (showing top {len(shown)})')
     else:
         print(f"Listing {len(shown)} most recent")
     if not shown:

@@ -34,7 +34,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 ../../shared/sessions/<harness>/adapter.py find --root <root>... [--since D] [--until D] [--query "<topic>"] [--id <prefix>...]
    ```
 
-   A topic score is a keyword count, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line from the scan goes to the report as it is.
+   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line from the scan goes to the report as it is.
 
    Done when every row is kept or dropped with a reason, and every scan line is held for the report.
 

@@ -57,7 +57,7 @@ t_coa_rows_carry_query_fields() {
   # When
   run python3 "$A" find --root /p/app --query export
   # Then
-  eq row "c1 25 True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"], r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
+  eq row "c1 True True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"] > 0, r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
 }
 
 t_coa_extract_summary() {
