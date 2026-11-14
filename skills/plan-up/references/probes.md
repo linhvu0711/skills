@@ -62,11 +62,13 @@ runner installs nothing:
   linked in: each `node_modules` folder of the base copy, the root's and
   each workspace package's, linked at the same path in the worktree, as
   `ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`.
-- The base copy installed with no install scripts, and a link lets a
-  write reach it. So a probe that runs a package's install script (a
-  native addon) or whose tool writes into its packages (a bundler
-  cache) gets no link: the lead runs the repo's install in the
-  worktree.
+- The lead runs the repo's install in the worktree, with no link, when
+  a link cannot serve: the base copy holds no installed packages of the
+  kind the probe needs (a Yarn Plug'n'Play tree, a Python or Go repo);
+  the probe uses a package that its install script builds (a native
+  addon), since the base copy installed with no scripts; or the probe's
+  tool writes into its packages (a bundler cache), since a link lets
+  that write reach the base copy.
 - A package the repo lacks the lead installs into the probe folder,
   never into the repo's manifests.
 - A probe whose question is an install itself, such as a scaffold or a
