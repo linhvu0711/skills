@@ -53,6 +53,8 @@ The walks guide now has a heading for each of its three parts: start the app, wa
 
 Starting and stopping the app, and opening and closing the walker's browser, are now `box.sh` commands with tests: `start`, `stop`, `open`, and `close`. Before, the session and the walker copied long shell lines by hand, and the two copies had different wait times. The waits stay the same: 30 s for the app to stop, 10 s for the browser. `box.env` also notes whether the Sandbox holds the base or the branch, and `start` prints which one it runs.
 
+When proofbox refuses a video with `nothing changed on screen`, the walker now records it once more, then fails its walks with proofbox's own line, and the next round films it again, within the usual three rounds. Before, the walker had no rule for it and kept trying, six times in one round. The cause is proofbox's screen check, which misses a change as small as a toggle; linhvu0711/proofbox#229 fixes it there.
+
 ## Needs
 
 - For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.

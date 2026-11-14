@@ -95,7 +95,9 @@ one found is a failed walk.
 
 **Video check.** After mode, when the walker did not end with
 `GONE`, before the sort: for each video under the plan's `Videos`,
-the `video-<n>.mp4` this round filmed, find its cuts on a
+the `video-<n>.mp4` this round filmed; a video the walker reported as
+`proofbox made no video` has no file, so it has no sheet and no
+`videos.txt` line. Find its cuts on a
 strip sheet, then look only at the frames next to each cut. In a temp
 folder outside `PROOF`, take two frames a second, then tile the
 bottom sixth of each, where proofbox draws the `» <N> s later`
@@ -156,6 +158,12 @@ guess:
 - **Video cut**: the video check found a hidden step. Not the
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.
+- **No video**: the walker reported `proofbox made no video`, after
+  its one try more. proofbox's screen check misses a small change,
+  such as a toggle (linhvu0711/proofbox#229). Not the builder's and
+  not the plan's: no follow-up, no plan change; the next round films
+  the video again. It counts as a round, so a video refused in every
+  round ends at round three like any failed walk.
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A walk that
   failed with `page taller than the screen` is a Wrong walk too: its
