@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread; the orchestrator settles a finished /grill or /triage thread whose issue moved on. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, /ready-pr, or /complete-task. The user handles each thread; the orchestrator settles a finished /grill or /triage thread whose issue moved on. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 

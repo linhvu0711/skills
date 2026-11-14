@@ -400,6 +400,17 @@ t_fs_stopped_run_no_turn() {
   has stdout '"message":"/complete-task --ready #42"' "$out"
 }
 
+t_fs_broken_run_no_turn() {
+  # Given: a run of #42, open and manual; another run's state file does not parse
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"; echo '{"repo":' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+}
+
 t_fs_closed_task_frees_turn() {
   # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 closed
   # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
@@ -2015,6 +2026,7 @@ cases=(
   "a second task waits for the turn|t_fs_second_task_waits"
   "a task in another live run holds the turn|t_fs_other_run_holds_turn"
   "a stopped run holds no turn|t_fs_stopped_run_no_turn"
+  "a broken state file in another run holds no turn|t_fs_broken_run_no_turn"
   "a closed task frees the turn|t_fs_closed_task_frees_turn"
   "a resumed task waits while a later task holds the turn|t_fs_later_task_holds_turn"
   "a removed task frees the turn|t_fs_removed_task_frees_turn"

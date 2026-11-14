@@ -406,7 +406,7 @@ observe() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn
+  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
@@ -423,9 +423,12 @@ observe() {
     | ([$S.threads[] | select(.number == $n)] | last) as $r
     | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S")"
   turn="$(jq -r --arg slug "$slug" 'if . == [] then empty else "\($slug)#\(.[0])" end' <<<"$holders")"
+  # Another run's file that does not parse holds no turn, so it never fails this check.
   if [ -z "$turn" ]; then
-    turn="$(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z \
-      | xargs -0 cat | jq -rs '[.[] | select(.status == "running" and ((.task_turn // []) != []))] | first // empty | "\(.repo)#\(.task_turn[0])"')"
+    while IFS= read -r -d '' f; do
+      turn="$(jq -r 'select(.status == "running" and ((.task_turn // []) != [])) | "\(.repo)#\(.task_turn[0])"' "$f" 2>/dev/null)" || turn=""
+      [ -z "$turn" ] || break
+    done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
   fi
   task_turn="$holders"
   # owners: each PR's owner, the first issue in set order that it closes. A
