@@ -59,9 +59,11 @@ Before the brief goes out, the lead readies the folder, since the
 runner installs nothing:
 
 - A probe whose question is an install itself, such as a scaffold or a
-  component add, goes to no runner and gets no link: the lead runs it,
-  in a worktree with the repo's install run there. The bullets below
-  are for a probe that goes to a runner.
+  component add, goes to no runner and gets no link: the lead runs it
+  in its probe folder, where the question needs it, as an empty folder
+  for a scaffold, or a worktree with the repo's install run there for a
+  component add. The bullets below are for a probe that goes to a
+  runner.
 - A probe with a worktree where a link cannot serve gets the repo's
   install, run by the lead in the worktree, and no link at all: the
   base copy holds no installed packages of the kind the probe needs (a
