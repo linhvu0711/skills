@@ -267,7 +267,8 @@ block above, and the Done rule holds whole.
   proves; `Then` is the literal the issue gives (`116 pass`, the ISO
   date). No literal in the issue: the Explore round reads the test file
   and the code, and the plan writes one.
-- **Proof.** One row per Done-when line, as always. A line the named
+- **Proof.** One row per Done-when line, as always, and one `Race:`
+  row per interleaving § One writer asks. A line the named
   case proves points at it. A line only a command shows (`grep … is
   empty`, `bun test` passes) puts that command in the Test column; its
   artifact is the command's output. A line neither reaches gets a test
@@ -502,7 +503,8 @@ and its line goes. A big fork's option that a probe backs names its
 
 ### Proof
 
-One row per Done-when line, verbatim. A row names a test, or
+One row per Done-when line, verbatim. A race row (§ One writer)
+follows them, its cell starting `Race:`. A row names a test, or
 says in the Test column why a test cannot see the line. A row on a
 screen also names its UI walk and the video step that shows its `See`,
 even when its test passes: the test proves the code gives the right
@@ -571,7 +573,7 @@ the builder takes the next free number on its base when the slice runs.
 
 #### Tests that can fail
 
-A test proves a line only when it can go red. Three rules hold for
+A test proves a line only when it can go red. Four rules hold for
 every test a slice lists.
 
 - **Mutate.** A test the builder sees green before its own change has
@@ -597,6 +599,16 @@ every test a slice lists.
   `Then` at two seams needs a `Decided` line that names the risk only
   the second seam has, such as a process boundary or a real transport.
   A UI walk beside a test is not a second test (§ Proof).
+- **Overlap.** A race test (§ One writer) makes the two writes overlap
+  at the seam where the race lives: it calls the store or the function
+  that checks and writes, and holds the first write open between its
+  check and its write with a database trigger, a hook, or a fake that
+  waits, while the second runs. Two requests through a test harness
+  that serves one request at a time run one after the other, so such a
+  test stays green on the broken code. A race test always carries one
+  of the two lines: `Red:` when the race is the bug on the base, else
+  `Mutate:` with the edit that opens the race again, such as the lock,
+  the unique key, or the check in the same transaction taken out.
 
 #### Right design first
 
@@ -638,6 +650,20 @@ Two actors that write one target (a file, a key, a
 row) each get their own target, joined when it is read. A lock is
 planned only when one shared target must stay, and its `Decided` line
 says why.
+
+A target that stays shared, by a lock or by design, still races: two
+actors reach it in the same moment. Two shapes show it: a check before
+a write (a cap counted, then a row inserted), and two writes of one key
+(two tabs save one record, two adds of one name). Each interleaving
+that matters gets its own Proof row after the Done-when rows, its
+Done-when cell starting `Race:`, as in `Race: both adds pass the 300
+cap check before either inserts`, and one line in `Works when`. The
+interleavings that matter: both actors pass the check before either
+writes; both write the same key; one removes what the other writes. Its
+test sits in the slice whose change closes the race, has one `Then`,
+the end state after both writes, as in `300 items; the second add
+refused with "list is full"`, and follows § Tests that can fail,
+Overlap.
 
 #### Delete slice
 
@@ -788,7 +814,8 @@ facts or forks.
   layer's slice.
 - Every `Then` is a literal.
 - Every test green before its own change has a `Mutate:` line with a
-  `file:line` and one edit; no test has both `Mutate:` and `Red:`.
+  `file:line` and one edit; no test has both `Mutate:` and `Red:`;
+  every race test has one of the two.
 - Every refusal test takes a passing case's `Given` with one input
   changed, and its `Then` is the literal only its own check gives.
 - Every Done-when line that an existing test already checks names that
@@ -814,6 +841,10 @@ facts or forks.
   twice (Rerun and crash).
 - Every target that two actors write has one target per actor, or a
   `Decided` line for its lock (One writer).
+- Every check before a write, and every target that stays shared, has
+  a `Race:` Proof row per interleaving that matters, each with its own
+  `Then`, and its test overlaps the writes at the seam and carries
+  `Red:` or `Mutate:` (One writer, Overlap).
 - Dead code the facts round found is a delete slice, slice 1, whose
   `Change` lines only delete, each with the search that showed
   no caller in the code, in strings, in scripts, and in config;
