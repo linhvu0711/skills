@@ -55,15 +55,24 @@ stays read-only. Each probe gets its own `mktemp -d` folder. A probe
 that needs the repo's code adds a detached worktree there:
 `git worktree add --detach "$PROBE/wt" <BASE_SHA>`, and removes it with
 `git worktree remove --force "$PROBE/wt"` when it ends, pass or fail.
-Before the brief goes out, the lead readies the folder. A probe with a
-worktree gets the base copy's installed packages linked into it, as
-`ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`. A link lets
-a write reach the base copy, so a probe whose tool writes into its
-packages (a bundler cache, a scaffold that adds a package) gets a copy,
-`cp -R`, in place of the link. A package the repo lacks the lead
-installs into the probe folder, never into the repo's manifests. The
-runner installs nothing. A service it starts (a container, a dev
-server) it stops.
+Before the brief goes out, the lead readies the folder, since the
+runner installs nothing:
+
+- A probe with a worktree gets the base copy's installed packages
+  linked in: each `node_modules` folder of the base copy, the root's and
+  each workspace package's, linked at the same path in the worktree, as
+  `ln -s <base copy>/node_modules "$PROBE/wt/node_modules"`.
+- The base copy installed with no install scripts, and a link lets a
+  write reach it. So a probe that runs a package's install script (a
+  native addon) or whose tool writes into its packages (a bundler
+  cache) gets no link: the lead runs the repo's install in the
+  worktree.
+- A package the repo lacks the lead installs into the probe folder,
+  never into the repo's manifests.
+- A probe whose question is an install itself, such as a scaffold or a
+  component add, goes to no runner: the lead runs it.
+
+A service a probe starts (a container, a dev server) it stops.
 When the probes end, `git status --porcelain` is as step 1 found it,
 and `git worktree list` holds only the base copy beyond what step 1
 found.
