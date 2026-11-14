@@ -170,12 +170,15 @@ chip() {
 
 # stage <issue json> <run start>: where the issue is: closed, a task,
 # an epic, and an open PR first, then the kind. Closed comes first, since a
-# closed seed keeps its label. A PR counts only when it was open before the
-# run: a PR the run's own thread opened is that thread's work.
+# closed seed keeps its label. A task with the `waiting` label waits on
+# someone outside: it starts nothing and holds no task turn. A PR counts
+# only when it was open before the run: a PR the run's own thread opened is
+# that thread's work.
 stage() {
   local kind
   kind="$(label_kind "$1")"
   if [ "$(jq -r .state <<<"$1")" = CLOSED ]; then echo done
+  elif [ "$kind" = task ] && jq -e '[.labels.nodes[].name | ascii_downcase] | index("waiting")' <<<"$1" >/dev/null; then echo waiting
   elif [ "$kind" = task ]; then echo task
   elif [ "$(jq '.subIssues.nodes | length' <<<"$1")" -gt 0 ]; then echo epic
   elif [ "$(jq --arg t "$2" '[.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN" and .createdAt < $t)] | length' <<<"$1")" -gt 0 ]; then echo pr
@@ -262,7 +265,7 @@ thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 board='
   def column: if .stage == "done" then "done"
     elif any(.prs[]; .state == "OPEN") then "review"
-    elif (.stage == "ticket" or .stage == "task" or .stage == "pr") then "build"
+    elif (.stage == "ticket" or .stage == "task" or .stage == "waiting" or .stage == "pr") then "build"
     else "shape" end;
   def you($a): {mark: "you", action: $a};
   def agent($a): {mark: "agent", action: $a};
@@ -279,9 +282,11 @@ board='
       elif $t.status == "interrupted" then you("Thread interrupted: open it, or say restart #\(.number)")
       elif .wait then held("waits: \(.wait)")
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
+      elif .stage == "waiting" then you("Waits outside: say resume #\(.number)")
+      elif .stage == "task" and $rec.status == "started" and $t.status == "completed" then you("Open the thread: send go, or answer it")
       elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
       elif $t.status == "running" then agent("/\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)") + {since: $t.createdAt}
-      elif .stage == "task" or (.stage == "unlabeled" and .answer == "task") then you("Do the task, then close it")
+      elif .stage == "unlabeled" and .answer == "task" then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
           ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))

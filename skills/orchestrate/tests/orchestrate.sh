@@ -1581,6 +1581,37 @@ t_fs_board_launch_failed_yours() {
   eq card '{"column":"build","mark":"you","action":"Launch failed: say restart #42"}' "$(fs_card 42)"
 }
 
+t_fs_waiting_task_no_turn() {
+  # Given: #42 manual and waiting, whose task thread started; #43 manual
+  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
+  fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  fs_record 42 task t42
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #43"' "$out"
+  eq row '{"stage":"waiting","skill":null}' "$(jq -c '.issues[] | select(.number == 42) | {stage, skill}' <<<"$out")"
+}
+
+t_fs_board_waiting_task() {
+  # Given: #42, manual and waiting
+  fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Waits outside: say resume #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_ready_task() {
+  # Given: #42 manual, whose task thread t42 started and completed its turn
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_record 42 task t42; fs_thread t42 completed
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Open the thread: send go, or answer it"}' "$(fs_card 42)"
+}
+
 t_fs_board_task_starts() {
   # Given: #42, a manual task with no blocker
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
@@ -2089,6 +2120,9 @@ cases=(
   "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
   "a failed launch is yours|t_fs_board_launch_failed_yours"
   "a free task is starting|t_fs_board_task_starts"
+  "a waiting task holds no turn|t_fs_waiting_task_no_turn"
+  "a waiting task waits for resume|t_fs_board_waiting_task"
+  "a ready task thread waits for your go|t_fs_board_ready_task"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
   "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
   "a proposal with no answer is yours|t_fs_board_proposal_yours"

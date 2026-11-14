@@ -24,7 +24,9 @@ thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is
 the user's from its first turn: leave it to them. So the orchestrator starts
 a thread once, and a thread that failed or ended with no new stage
 waits for the user's `restart #n`. It writes nothing to GitHub: no
-comment, no label, no close, no merge.
+comment, no label, no close, no merge. One exception: `resume #n` takes
+the `waiting` label off a task, as § Commands says, since the user
+asked for it.
 
 ## Start
 
@@ -109,7 +111,8 @@ One line per issue, set order:
 issue's `wait`, `blocked by #a #b`, its thread's link and
 `thread_status`, `launch failed: <why>; say restart #<number>` when
 `claim` is `failed`, or `done`. A `task` thread's line reads
-`/complete-task`, and the thread waits for the user's `go`. An `unlabeled`
+`/complete-task`, and the thread waits for the user's `go`. A `waiting`
+issue reads `waits outside; say resume #<number>`. An `unlabeled`
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
@@ -240,6 +243,10 @@ the answers then run § Check.
 - `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
   issue's thread runs on.
 - `restart #n`: `change <owner/repo> restart <n>`, then § Check.
+- `resume #n` on an issue at stage `waiting`: `gh issue edit <n> --repo
+  <owner/repo> --remove-label waiting`, then `change <owner/repo> restart
+  <n>`, then § Check, so a new ready thread starts when the task turn is
+  free. A restart that stops with `has no thread to restart` is fine: go on.
 - `skip #n` on an issue at stage `task`: `change <owner/repo> remove
   <n>`, then § Check, so the next task takes the task turn. Its thread
   runs on.
