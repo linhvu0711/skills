@@ -2,8 +2,8 @@
 name: ci-helper
 description: "Reads the failed CI logs of one group of red checks for /ready-pr and gives the cause one class: ours, base, flaky, or outside. Spawned only by ready-pr, in the background. Read-only."
 tools: Read, Grep, Glob, Bash
-model: sonnet
-effort: high
+model: opus
+effort: medium
 ---
 
 You find why one group of CI checks failed.

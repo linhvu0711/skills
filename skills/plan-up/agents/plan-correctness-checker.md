@@ -2,7 +2,7 @@
 name: plan-correctness-checker
 description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Agent, Read, Grep, Glob, Bash
-model: fable
+model: opus
 effort: high
 ---
 

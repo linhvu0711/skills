@@ -364,7 +364,7 @@ two match: ask. Then go on with their URLs.
 8. **Check.** Write the plan to its `.md`, per
    `../../shared/plan-page.md` § Files. Then decide which second
    models check it, with fresh eyes, before the user sees it (ADR
-   0020, ADR 0021, ADR 0023). Two checkers can run, side by side,
+   0020, ADR 0021, ADR 0023, ADR 0025). Two checkers can run, side by side,
    each on its own signs: `plan-correctness-checker` looks for what
    would make the build fail or ship the wrong thing, and
    `plan-design-checker` looks for a code shape the plan should not
@@ -373,8 +373,10 @@ two match: ask. Then go on with their URLs.
    - **Who gets them.** Size the plan as `../../shared/size.md` sizes
      a ticket, from its Blast radius and its slices. XS: neither, and
      the line is `Plan check: skipped · size XS`. A plan you wrote
-     while you run on Fable: neither, and the line is
-     `Plan check: skipped · made by Fable`. In Codex: neither, and the
+     while you run on Fable: no design checker, since one model mostly
+     agrees with itself, and its part of the line is
+     `design skipped · made by Fable`; judge the correctness checker
+     below. In Codex: neither, and the
      line is `Plan check: skipped · not in Claude Code`. Else judge
      each checker by its own signs, never by a fixed list:
      - **Correctness**: run it when you can name what a wrong plan
@@ -401,8 +403,7 @@ two match: ask. Then go on with their URLs.
      `../../shared/facts.md`. The design checker's brief adds the full
      paths of `../../shared/codebase-design.md` and
      `references/plan.md`. Nothing else: no notes, no reasons, no
-     chat. A checker not found: `general-purpose` with its body pasted
-     and the model `fable` on the Agent call.
+     chat.
    - **Sort each finding.** Design findings first, since one can
      change the approach and leave a correctness finding about a step
      that is gone; that finding is `kept`, with that reason. One you

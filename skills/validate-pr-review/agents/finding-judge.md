@@ -2,8 +2,8 @@
 name: finding-judge
 description: "Judges one group of review findings for /validate-pr-review, each against three questions: is it true, is it this PR's, is it worth fixing. Spawned only by validate-pr-review, one per file group. Read-only."
 tools: Read, Grep, Glob, Bash
-model: sonnet
-effort: high
+model: opus
+effort: medium
 ---
 
 You judge the review findings of one group of files.
