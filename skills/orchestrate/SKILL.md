@@ -108,7 +108,8 @@ One line per issue, set order:
 `<what happens>` is the started thread's link and `/<skill>`, the
 issue's `wait`, `blocked by #a #b`, its thread's link and
 `thread_status`, `launch failed: <why>; say restart #<number>` when
-`claim` is `failed`, `yours` for `task`, or `done`. An `unlabeled`
+`claim` is `failed`, or `done`. A `task` thread's line reads
+`/complete-task`, and the thread waits for the user's `go`. An `unlabeled`
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.

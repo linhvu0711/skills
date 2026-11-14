@@ -351,14 +351,17 @@ t_fs_conflict_send_failed() {
   eq state '[43]' "$(fs_state '[.conflicts[] | .pr]')"
 }
 
-t_fs_manual_never_starts() {
+t_fs_task_starts_complete_task() {
   # Given: a run of #42, open, labelled manual
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
-  has stdout '"starts":[]' "$out"
-  has stdout '"stage":"task","free":true,"blocked_by":[],"skill":null' "$out"
+  has stdout '"command":"complete-task"' "$out"
+  has stdout '"model":"opus"' "$out"
+  has stdout '"effort":"medium"' "$out"
+  has stdout '"message":"/complete-task --ready #42"' "$out"
+  has stdout '"thread_title":"#42 Export orders"' "$out"
 }
 
 t_fs_unlabeled_waits() {
@@ -726,8 +729,8 @@ t_fs_first_check_all_changed() {
 }
 
 t_fs_second_check_quiet() {
-  # Given: a run of #42, a manual task, checked once
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # Given: a run of unlabeled #42, answered skip, checked once
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 skip
   fs_go check acme/app
   # When
   fs_go check acme/app
@@ -736,9 +739,10 @@ t_fs_second_check_quiet() {
 }
 
 t_fs_status_change_marks_issue() {
-  # Given: #42's ticket thread t42 running and checked, #43 a manual task;
-  # then t42 waits for the user
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
+  # Given: #42's ticket thread t42 running and checked, #43 unlabeled and
+  # answered skip; then t42 waits for the user
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["p1"]'; fs_start 42 43
+  fs_go change acme/app answer 43 skip
   fs_record 42 ticket t42
   echo '[{"threadId":"t42","status":"running"}]' > "$T/t3-threads.json"
   fs_go check acme/app
@@ -764,8 +768,8 @@ t_fs_start_marks_changed() {
 fs_sends() { if [ -e "$T/t3-sends.log" ]; then cat "$T/t3-sends.log"; else echo none; fi; }
 
 t_fs_watch_quiet() {
-  # Given: a run of #42, a manual task
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  # Given: a run of unlabeled #42, answered skip
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 skip
   # When
   fs_go watch acme/app --once
   # Then
@@ -1488,13 +1492,13 @@ t_fs_board_launch_failed_yours() {
   eq card '{"column":"build","mark":"you","action":"Launch failed: say restart #42"}' "$(fs_card 42)"
 }
 
-t_fs_board_task_yours() {
+t_fs_board_task_starts() {
   # Given: #42, a manual task with no blocker
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   # When
   fs_go check acme/app
   # Then
-  eq card '{"column":"build","mark":"you","action":"Do the task, then close it"}' "$(fs_card 42)"
+  eq card '{"column":"build","mark":"agent","action":"starting /complete-task"}' "$(fs_card 42)"
 }
 
 # fs_merge_ready: a run from 12:00 of #42, whose ticket thread t42 completed
@@ -1637,10 +1641,12 @@ t_fs_board_links() {
 }
 
 t_fs_board_order() {
-  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a free task
+  # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a
+  # ticket whose launch failed
   # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
-  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["manual"]'; fs_issue 43 OPEN '["size/S"]'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'
   fs_start 42 43 44
+  fs_set_state '.threads += [{number: 44, stage: "ticket", thread: null, link: null, status: "failed", why: "no reply"}]'
   # When
   fs_go check acme/app
   # Then
@@ -1885,7 +1891,7 @@ cases=(
   "a bug starts triage|t_fs_bug_starts_triage"
   "a PR from before the run starts ready-pr|t_fs_old_pr_starts_ready_pr"
   "a PR the run opened starts nothing new|t_fs_new_pr_starts_nothing"
-  "a manual task never starts|t_fs_manual_never_starts"
+  "a task starts complete-task, ready first|t_fs_task_starts_complete_task"
   "an unlabeled issue waits|t_fs_unlabeled_waits"
   "a closed seed is done|t_fs_closed_seed_done"
   "an open blocker holds the issue|t_fs_open_blocker_holds"
@@ -1985,7 +1991,7 @@ cases=(
   "an interrupted thread is yours|t_fs_board_interrupted_yours"
   "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
   "a failed launch is yours|t_fs_board_launch_failed_yours"
-  "a free task is yours|t_fs_board_task_yours"
+  "a free task is starting|t_fs_board_task_starts"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
   "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
   "a proposal with no answer is yours|t_fs_board_proposal_yours"

@@ -187,13 +187,15 @@ stage() {
 }
 
 # skill <stage>: the command a thread at that stage starts with, or
-# nothing. A ticket starts /ship; ship_mode says how far it goes.
+# nothing. A ticket starts /ship; ship_mode says how far it goes. A task
+# starts /complete-task, whose message from decide.sh waits for the user's go.
 skill() {
   case "$1" in
     seed) echo grill ;;
     bug) echo triage ;;
     ticket) echo ship ;;
     pr) echo ready-pr ;;
+    task) echo complete-task ;;
   esac
 }
 
