@@ -28,6 +28,7 @@
   .diff-add { background: var(--add); color: var(--add-fg); overflow-wrap: anywhere; }
   .diff-del { background: var(--del); color: var(--del-fg); overflow-wrap: anywhere; }
   .ov-row { border-top: 1px solid var(--line); }
+  .ov-kind td { border-top: 1px solid var(--line); }
   .ov-link:hover { color: var(--accent); }
   .top { border-color: var(--accent); }
   a.accent { color: var(--accent); }
@@ -67,6 +68,7 @@
           </tr>
         </thead>
         <tbody>
+          <tr class="ov-kind"><td></td><td colspan="3" class="pt-3 pb-1 text-xs uppercase tracking-wider muted">{{kind}}</td></tr>
           <tr class="ov-row">
             <td class="pr-3 py-1 text-right font-mono muted">1</td>
             <td class="pr-4 py-1"><a class="ov-link" href="#card-1">{{card title}}</a></td>
@@ -78,15 +80,16 @@
     </div>
   </section>
 
-  <section id="cards" class="space-y-10">
-    <h2 class="font-serif text-2xl muted">Patterns</h2>
+  <section id="cards" class="space-y-12">
+    <!-- One group per kind of finding that has a card. Replace this group. -->
+    <div id="kind-{{kind slug}}" class="space-y-10">
+    <h2 class="font-serif text-2xl muted">{{kind}}</h2>
 
     <!-- Example: a fix that changes text in a file on this machine. Replace this card. -->
     <article id="card-1" class="card rounded-xl border p-6 space-y-5">
-      <h2 class="font-serif text-2xl">1. {{card title}}</h2>
+      <h3 class="font-serif text-2xl">1. {{card title}}</h3>
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <span class="rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">Strong</span>
-        <span class="rounded-full px-2 py-0.5 border">{{kind}}</span>
       </div>
       <div class="flex items-center gap-3">
         <div class="flex gap-1"><span class="dot hit-strong"></span><span class="dot"></span></div>
@@ -119,10 +122,9 @@
 
     <!-- Example: any other fix. Replace this card. -->
     <article id="card-2" class="card rounded-xl border p-6 space-y-5">
-      <h2 class="font-serif text-2xl">2. {{card title}}</h2>
+      <h3 class="font-serif text-2xl">2. {{card title}}</h3>
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <span class="rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">Worth exploring</span>
-        <span class="rounded-full px-2 py-0.5 border">{{kind}}</span>
       </div>
       <div class="flex items-center gap-3">
         <div class="flex gap-1"><span class="dot hit-amber"></span><span class="dot hit-amber"></span></div>
@@ -140,10 +142,7 @@
         </div>
       </div>
     </article>
-  </section>
-
-  <section id="one-time" class="space-y-10">
-    <h2 class="font-serif text-2xl muted">One-time problems</h2>
+    </div>
   </section>
 
   <section id="top-pick">

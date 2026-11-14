@@ -195,7 +195,7 @@ Two or more moments, from two or more sessions or PRs, that one fix would stop. 
 _Avoid_: trend, theme
 
 **One-time problem**:
-A serious moment from one session that is part of no pattern. The retro report lists it after the patterns.
+A serious moment from one session that is part of no pattern. The retro report lists it in the group of its kind of finding, with a `One-time` badge.
 _Avoid_: outlier
 
 **Repeated correction**:
