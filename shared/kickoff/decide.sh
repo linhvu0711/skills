@@ -168,8 +168,7 @@ else
 fi
 case "$set_command" in
   triage|grill) model=opus; effort=high; reason="command $set_command" ;;
-  ready-pr) model=opus; effort=medium; reason="command ready-pr" ;;
-  complete-task) model=opus; effort=medium; reason="command complete-task" ;;
+  ready-pr|complete-task) model=opus; effort=medium; reason="command $set_command" ;;
 esac
 if [ "$counted" -gt 1 ]; then
   reason="$reason of $counted tickets"

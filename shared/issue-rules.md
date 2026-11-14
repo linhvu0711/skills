@@ -96,9 +96,9 @@ behaviour is decided, then `feat`.
 
 A `task` needs a person's login or hands. The complete-task skill drives it,
 and the person does only their own steps: a password, a passkey or 2FA
-check, a payment, a Mac pop-up, moving a secret. Setup an agent can run from a CLI with a token
-(`railway init`, `wrangler r2 bucket create`) is a `chore` that lands as a
-script. One task per platform and account: Railway and Cloudflare R2 are two
+check, a payment, a Mac pop-up, moving a secret. Setup an agent can run
+from a CLI with a token (`railway init`, `wrangler r2 bucket create`) is a
+`chore` that lands as a script. One task per platform and account: Railway and Cloudflare R2 are two
 tasks, two logins, two owners.
 
 A ticket is **pure**: all code, or all human work. Walk the Done when list
@@ -320,8 +320,7 @@ code does not do yet. The PR that ships the code writes it, word for word.
 ### Task body
 
 The reader is a person, or the complete-task agent, in a platform they may
-not know, doing it cold. The
-four headings stay. Inside them:
+not know, doing it cold. The four headings stay. Inside them:
 
 ```markdown
 ## What to build

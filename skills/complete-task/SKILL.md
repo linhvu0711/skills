@@ -1,12 +1,14 @@
 ---
 name: complete-task
-description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, moving a secret. Use for '/complete-task #16' or '$complete-task #16'; orchestrate starts it with --ready."
+description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, moving a secret."
 disable-model-invocation: true
 ---
 
+Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
+
 # Complete task
 
-Do a task issue for the user, so they do the least: only their own steps, each one written out. All the rest is yours.
+Do a task issue for the user, so they do the least: only their own steps, each one written out. You do all the rest.
 
 Input: `[--ready] <issue number or URL>`. The repo is the URL's, or this checkout's (`gh repo view --json nameWithOwner`).
 
@@ -39,7 +41,7 @@ You read names, never values. While a page shows a secret, take no snapshot, no 
 
 1. **Ready.** Only with `--ready`. Read the issue as in step 2, then post `Ready: #N <title>. Have near you: <Bring>. About <time>. Send go when you are free.` Bring is the body's **Bring:** line; the time is your guess of the whole run. End the turn. On `go`, go on at step 2. With no `--ready`, start at step 2.
 2. **Read.** `gh issue view <n> --repo <owner/repo> --json number,title,body,labels,comments,state`. A closed issue, or one with no `manual` label: say which, and stop with nothing changed.
-3. **Sort.** List each step from `## Steps`. Mark each one yours, a your step, or ask first. With no steps, work them out from `## What to build` and `## Done when`; when that still leaves a doubt, ask one question with your pick. Tell the user in one line which steps will be theirs.
+3. **Sort.** List each step from `## Steps`. Mark each one: yours to do, a your step, or ask first. With no steps, work them out from `## What to build` and `## Done when`; when that still leaves a doubt, ask one question with your pick. Tell the user in one line which steps will be theirs.
 4. **Terminal first.** A step a CLI can do or show with a login it has already (`gh`, `wrangler`, `railway`, `vercel`), do there.
 5. **Browser and apps.** The rest through use-mac: § Browser for a web page, in your own window with your tab found by ID; its loop for a Mac app. Prove each step by reading the page or app again. When a page differs from the issue's steps, do what the page needs for the same result, and keep the difference for the result comment.
 6. **Your step and ask first.** As § Your step and § Ask first say, at the point the step comes.
@@ -57,8 +59,6 @@ You read names, never values. While a page shows a secret, take no snapshot, no 
 ## Wrong path
 
 - **A step fails.** Try it once more when that is safe: a read, a page load, a form that saved nothing. Else stop, and give the user numbered steps for what is left, with what you saw.
-- **Not a task.** Step 2 stops.
-- **No steps.** Step 3 works them out.
 - **A long wait**, such as an app review or a DNS change that takes hours. Comment `Waiting for <what>, about <time>. Say resume #<n> to the orchestrator when it is over.`, then `gh issue edit <n> --repo <owner/repo> --add-label waiting`. When `gh` fails because the label is missing, create it with its line in `../../shared/issue-rules.md` § Labels, and add it again. Then end: the task turn moves on to the next task.
 - **No reach to the browser.** A script error about JavaScript from Apple Events, or an Automation pop-up. Give a your step that turns it on: in Brave, View > Developer > Allow JavaScript from Apple Events; for the pop-up, OK, or System Settings > Privacy & Security > Automation, then your terminal app, then the browser.
 - **No rights.** Name the account you are in and the right it lacks, such as `signed in as <account>, which is not an owner of the Cloudflare account`, and give a your step to switch accounts or get the right.
