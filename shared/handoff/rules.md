@@ -209,10 +209,13 @@ what the line says, is a surprise (see below).
   was green before any change. It stays green through every later
   slice.
 - A test with a `Mutate:` line is green before its change, so you make
-  its red by hand. Once it is green, make the one edit `Mutate:` names
-  and run the test: it fails on its assertion. Put the file back, so
-  `git diff --quiet -- <file>` exits 0, and run the test again: green.
-  The commit body says `Mutate: <file:line> turned it red`. A test that
+  its red by hand. Once it is green, copy the file to a temp folder
+  outside the worktree, make the one edit `Mutate:` names, and run the
+  test: it fails on its assertion. Copy the file back from the temp
+  folder, so `cmp <file> <copy>` exits 0, and run the test again:
+  green. Never undo the edit with `git checkout`, `git restore`, or
+  `git stash`: the slice's change is not committed yet, and they throw
+  it away. The commit body says `Mutate: <file:line> turned it red`. A test that
   stays green under the edit proves nothing: make the test stronger,
   and keep its `Then`, until the edit turns it red. When no test with
   that `Then` can go red under the edit, stop and ask (see Asking). A

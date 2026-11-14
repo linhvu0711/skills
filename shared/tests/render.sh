@@ -109,6 +109,19 @@ t_render_belief_rule() {
   every_rules_hold "before a third fix, write down the cause you believe, and one check that shows whether it is the cause"
 }
 
+t_render_mutate_copy_rule() {
+  local ex
+  every_rules_hold "Copy the file back from the temp folder, so \`cmp <file> <copy>\` exits 0"
+  for ex in local devin cursor; do
+    render "$ex" rules
+    lacks "$ex rules" 'git diff --quiet -- <file>' "$(printf '%s' "$out" | tr -s ' \n' '  ')"
+  done
+}
+
+t_render_mutate_no_git_rule() {
+  every_rules_hold "Never undo the edit with \`git checkout\`, \`git restore\`, or \`git stash\`"
+}
+
 t_render_same_kind_rule() {
   every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
 }
@@ -257,6 +270,8 @@ cases=(
   "cloud rules still run the full suite|t_render_cloud_full_suite"
   "local rules hold the red rule for a Red test|t_render_local_red_rule"
   "every executor's rules test a belief before a third fix|t_render_belief_rule"
+  "every executor's rules put a Mutate break back from a copy|t_render_mutate_copy_rule"
+  "every executor's rules never undo a Mutate break with git|t_render_mutate_no_git_rule"
   "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
   "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
   "every executor's rules keep a comment only when it says why|t_render_comment_rule"
