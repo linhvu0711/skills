@@ -42,7 +42,7 @@ The screen route works when the target app shares a Space with the app the user 
 
 A page the user is signed in to lives in their own browser. Drive it with `osascript` and JavaScript; the browser needs JavaScript from Apple Events turned on (Brave and Chrome: View > Developer; Safari: Develop menu). The examples use Brave.
 
-1. **Own window.** Read the front app first: `osascript -e 'id of application (path to frontmost application as text)'`. Then `tell application "Brave Browser" to make new window`, and keep its `id` and the `id` of its tab. Wait 1 second and give the screen back: `tell application id "<front app id>" to activate`.
+1. **Own window.** Read the front app first: `osascript -e 'id of application (path to frontmost application as text)'`. When it is the browser itself, also keep the `id` of its front window, the user's. Then `tell application "Brave Browser" to make new window`, and keep its `id` and the `id` of its tab. Wait 1 second and give the screen back: `tell application id "<front app id>" to activate`; when the user was in the browser, also `set index of window id <user's window> to 1`. Prove it: the front app, and in the browser the front window's `id`, are the user's again.
 2. **Address by ID.** `execute (tab id T of window id W) javascript "<js>"`. A position such as `tab 17 of window 1` moves when the user opens or closes a tab. A tab in a window behind the user's still runs scripts.
 3. **Load a page** with `execute ... javascript "location.href='<url>'"`. `set URL` brings the window to the front again.
 4. **Time out.** Wrap each call in `with timeout of 10 seconds`. A tab the browser put to sleep can time out: make it the active tab of your own window, then try again.
