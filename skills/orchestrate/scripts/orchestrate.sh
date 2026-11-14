@@ -406,7 +406,7 @@ observe() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f
+  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f pid
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
   for n in $(jq -r '.set[], .removed[]' <<<"$S"); do
@@ -423,10 +423,14 @@ observe() {
     | ([$S.threads[] | select(.number == $n)] | last) as $r
     | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S")"
   turn="$(jq -r --arg slug "$slug" 'if . == [] then empty else "\($slug)#\(.[0])" end' <<<"$holders")"
-  # Another run's file that does not parse holds no turn, so it never fails this check.
+  # Another run's file that does not parse holds no turn, so it never fails
+  # this check. Nor does a run whose watcher is gone, as after a restart: no
+  # check of its own would ever free its turn.
   if [ -z "$turn" ]; then
     while IFS= read -r -d '' f; do
-      turn="$(jq -r 'select(.status == "running" and ((.task_turn // []) != [])) | "\(.repo)#\(.task_turn[0])"' "$f" 2>/dev/null)" || turn=""
+      read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
+        | "\(.repo)#\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
+      watcher_alive "${pid:-}" || turn=""
       [ -z "$turn" ] || break
     done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
   fi
@@ -813,13 +817,18 @@ wake() {
   else printf 'wake failed: %s\n' "$(tail -1 "$errf")" >&2; echo false; fi
 }
 
+# watcher_alive <pid>: true when <pid> runs a watcher. A pid whose command is
+# not a watcher is a reused pid, as after a restart.
+watcher_alive() {
+  [ -n "$1" ] && [[ "$(ps -p "$1" -o command= 2>/dev/null || true)" == *"orchestrate.sh watch"* ]]
+}
+
 # stop_watcher: end the run's watcher and forget it. A pid whose command is
 # not a watcher is a reused pid and is left alone.
 stop_watcher() {
-  local pid i what=""
+  local pid i
   pid="$(jq -r '.timer.watcher.pid // empty' <<<"$S")"
-  [ -z "$pid" ] || what="$(ps -p "$pid" -o command= 2>/dev/null || true)"
-  if [[ "$what" == *"orchestrate.sh watch"* ]]; then
+  if watcher_alive "$pid"; then
     kill "$pid" 2>/dev/null || true
     for i in $(seq 50); do kill -0 "$pid" 2>/dev/null || break; sleep 0.1; done
   fi

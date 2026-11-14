@@ -375,20 +375,37 @@ t_fs_second_task_waits() {
   eq state '[42]' "$(fs_state '.task_turn')"
 }
 
-# fs_other_run <status>: a run of acme/web whose state holds the task turn for #7.
+# fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
+# task turn for #7, with its watcher's pid.
 fs_other_run() {
   mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"
-  jq -cn --arg s "$1" '{repo: "acme/web", status: $s, task_turn: [7]}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  jq -cn --arg s "$1" --arg p "${2:-}" '{repo: "acme/web", status: $s, task_turn: [7],
+    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
 }
 
 t_fs_other_run_holds_turn() {
-  # Given: a run of #42, open and manual; a running run of acme/web holds the turn for #7
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run running
+  # Given: a run of #42, open and manual; a running run of acme/web, whose
+  # watcher is alive, holds the turn for #7
+  local w
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  (exec -a "orchestrate.sh watch acme/web --loop" /bin/sleep 60) & w=$!
+  fs_other_run running "$w"
   # When
   fs_go check acme/app
+  kill "$w"
   # Then
   has stdout '"starts":[]' "$out"
   has stdout '"wait":"waits for the task turn: acme/web#7"' "$out"
+}
+
+t_fs_dead_watcher_no_turn() {
+  # Given: a run of #42, open and manual; a running run of acme/web holds the
+  # turn for #7, but its watcher's pid now runs something else, as after a restart
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run running "$$"
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/complete-task --ready #42"' "$out"
 }
 
 t_fs_stopped_run_no_turn() {
@@ -2037,6 +2054,7 @@ cases=(
   "a task starts complete-task, ready first|t_fs_task_starts_complete_task"
   "a second task waits for the turn|t_fs_second_task_waits"
   "a task in another live run holds the turn|t_fs_other_run_holds_turn"
+  "a run whose watcher is gone holds no turn|t_fs_dead_watcher_no_turn"
   "a stopped run holds no turn|t_fs_stopped_run_no_turn"
   "a broken state file in another run holds no turn|t_fs_broken_run_no_turn"
   "a failed task launch frees the turn|t_fs_failed_task_launch_frees_turn"
