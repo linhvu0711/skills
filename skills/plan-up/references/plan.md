@@ -592,7 +592,9 @@ every test a slice lists.
   Its `Then` holds the literal only its own check gives: the message,
   the error code, or the field it names, never a bare `400`, `throws`,
   or `false` alone. A refusal whose check is on the base has a
-  `Mutate:` line that takes that check out.
+  `Mutate:` line that takes that check out. In a race test (Overlap)
+  the passing case is the one write alone, and the changed input is the
+  second write that overlaps it.
 - **One seam per Then.** One `Then` is checked at one seam. The facts
   round names each existing test that already checks a Done-when line,
   at any level. One that already checks the whole `Then` is the line's
