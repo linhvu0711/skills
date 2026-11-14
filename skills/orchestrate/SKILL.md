@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, or /ready-pr. The user handles each thread; the orchestrator settles a finished /grill or /triage thread whose issue moved on. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
@@ -17,9 +17,10 @@ with `stop:`; show it as is, and that command ends there.
 
 ## Never
 
-The orchestrator starts threads, and a thread gets one message only:
-`/ready-pr <pr-url>` when that thread's PR has conflicts, which the
-script's watcher sends (ADR 0013, ADR 0015). Each thread it starts is
+The orchestrator starts threads, and does two things in a thread it
+started: the script's watcher sends `/ready-pr <pr-url>` when that
+thread's PR has conflicts, and you settle a finished /grill or /triage
+thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is
 the user's from its first turn: leave it to them. So the orchestrator starts
 a thread once, and a thread that failed or ended with no new stage
 waits for the user's `restart #n`. It writes nothing to GitHub: no
@@ -86,6 +87,8 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 2. Started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
    Not started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
 
+Then § Settle, for each item of `settles`.
+
 Then post, by what ran the check:
 
 - The watcher's prompt, `/orchestrate check`, and the line's `changed`
@@ -113,7 +116,39 @@ The `ship` skill reads `/ship`, plus `--review`, `--ready`, or `--merge`
 when the user set that ship mode for the issue or for all; with none,
 the `/ship` thread picks the ship mode from its own plan. Lead with `Joined: #a #b` when `joined` is
 not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
-§ Done. `propose` not empty: § Propose, after these lines.
+§ Done. `propose` not empty: § Propose, after these lines. `settles`
+not empty: one line per item, after the issue lines, per § Settle.
+
+## Settle
+
+Each item of `settles` is a /grill or /triage thread that finished or
+failed, is not settled, and whose issue moved to a new stage. For
+each, in order:
+
+1. **Read.** `status` is `failed`: the problem is `thread failed`; go
+   to step 3. Else `"$T3CODE_CLI_PATH" thread show <thread> --messages 5 --json`:
+   its latest messages. `t3_thread_read` starts at the first message,
+   so it misses the last turn.
+2. **Judge.** A problem is anything that still needs the user: a
+   question or a choice left for them, an error or a `stop:` line the
+   thread did not get past, work it says it left undone, or a step it
+   asks the user to do. Judge by reading; no fixed words.
+3. **Act.** No problem: `t3_thread_organize` with `action: settle` and
+   the thread as `threadId`, then
+   `scripts/orchestrate.sh settled <owner/repo> <thread> <run>`. A
+   problem, or the settle failed:
+   `scripts/orchestrate.sh settled <owner/repo> <thread> <run> --kept "<why in a few words>"`.
+
+Post one line per item:
+
+```
+#<number> /<command> thread <link> · settled
+#<number> /<command> thread <link> · kept open: <why>
+```
+
+A kept thread stays in the user's thread list, which is the signal, so
+it does not unsnooze this thread. It is judged again only after a new
+turn in it.
 
 ## Snooze
 

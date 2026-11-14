@@ -325,7 +325,7 @@ t_fs_conflict_new_stage() {
   # When
   fs_go watch acme/app --once
   # Then
-  eq line '{"wake":["start #42"],"sent":[]}' "$(jq -c '{wake, sent}' <<<"$out")"
+  eq line '{"wake":["start #42","settle #42"],"sent":[]}' "$(jq -c '{wake, sent}' <<<"$out")"
 }
 
 t_fs_check_no_conflict() {
@@ -1752,6 +1752,130 @@ t_fs_two_runs_two_pages() {
   eq pages differ "$diff"
 }
 
+# fs_settle_run: a run of #42, size/S now, whose triage thread t42 finished
+# turn r1 and is not settled.
+fs_settle_run() {
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t42 triage
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+}
+
+# fs_settle_of <thread> <jq>: that jq on the settle verdict of the thread's record.
+fs_settle_of() { fs_state --arg t "$1" "[.threads[] | select(.thread == \$t) | .settle | $2]"; }
+
+t_fs_settle_triage_listed() {
+  # Given: #42 moved from bug to ticket; its triage thread t42 finished and is not settled
+  fs_settle_run
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '{"settles":[{"number":42,"stage":"bug","command":"triage","thread":"t42","link":"[i42](t3-thread://v1/t42)","status":"completed","run":"r1","now":"ticket"}],"changed":true}' \
+    "$(jq -c '{settles, changed}' <<<"$out")"
+}
+
+t_fs_settle_grill_listed() {
+  # Given: #44 moved from seed to ticket; its grill thread t44 finished turn r7
+  fs_setup; fs_issue 44 OPEN '["size/M"]'; fs_start 44; fs_record 44 seed t44 grill
+  echo '[{"threadId":"t44","status":"completed","settled":false,"latestRunId":"r7"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq settles '[{"number":44,"command":"grill","run":"r7","now":"ticket"}]' "$(jq -c '[.settles[] | {number, command, run, now}]' <<<"$out")"
+}
+
+t_fs_settle_not_listed() {
+  # Given: #42 is still a bug; t44 runs; t46 waits; #48's thread is /ship; t50 is settled; #52's thread is /ready-pr
+  fs_setup
+  fs_issue 42 OPEN '["bug"]'; fs_issue 44 OPEN '["size/S"]'; fs_issue 46 OPEN '["size/S"]'
+  fs_issue 48 CLOSED '["size/S"]'; fs_issue 50 OPEN '["size/S"]'; fs_issue 52 OPEN '["size/S"]'
+  fs_start 42 44 46 48 50 52
+  fs_record 42 bug t42 triage; fs_record 44 bug t44 triage; fs_record 46 seed t46 grill
+  fs_record 48 ticket t48 ship; fs_record 50 bug t50 triage; fs_record 52 pr t52 ready-pr
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r1"},{"threadId":"t44","status":"running","settled":false,"latestRunId":"r1"},{"threadId":"t46","status":"waiting","settled":false,"latestRunId":"r1"},{"threadId":"t48","status":"completed","settled":false,"latestRunId":"r1"},{"threadId":"t50","status":"completed","settled":true,"latestRunId":"r1"},{"threadId":"t52","status":"completed","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq settles '[]' "$(jq -c .settles <<<"$out")"
+}
+
+t_fs_settle_failed_listed() {
+  # Given: #42 moved from bug to ticket; its triage thread t42 failed
+  fs_settle_run
+  echo '[{"threadId":"t42","status":"failed","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq settles '[{"number":42,"status":"failed"}]' "$(jq -c '[.settles[] | {number, status}]' <<<"$out")"
+}
+
+t_fs_settle_paused() {
+  # Given: the run of fs_settle_run, paused
+  fs_settle_run; fs_go timer acme/app pause
+  # When
+  fs_go check acme/app
+  # Then
+  eq settles '[]' "$(jq -c .settles <<<"$out")"
+}
+
+t_fs_settle_once() {
+  # Given: the run settled t42 at r1; the user unsettled it and wrote once more (r2)
+  fs_settle_run; fs_go settled acme/app t42 r1
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r2"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq settles '[]' "$(jq -c .settles <<<"$out")"
+  eq verdict '[{"verdict":"settled","run":"r1","why":null}]' "$(fs_settle_of t42 '{verdict, run, why}')"
+}
+
+t_fs_settle_kept_new_turn() {
+  # Given: t42 kept at r1, #42's ship thread t43 runs, and a check after the verdict
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t42 triage; fs_record 42 ticket t43 ship
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r1"},{"threadId":"t43","status":"running","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  fs_go check acme/app
+  fs_go settled acme/app t42 r1 --kept "asks which label"
+  fs_go check acme/app
+  eq "check at r1" '{"settles":[],"changed":false}' "$(jq -c '{settles, changed}' <<<"$out")"
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r2"},{"threadId":"t43","status":"running","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq line '{"runs":["r2"],"changed":true,"issues":[false]}' "$(jq -c '{runs: [.settles[] | .run], changed, issues: [.issues[] | .changed]}' <<<"$out")"
+  eq verdict '[{"verdict":"kept","run":"r1","why":"asks which label"}]' "$(fs_settle_of t42 '{verdict, run, why}')"
+}
+
+t_fs_settled_twice() {
+  # Given: the run settled t42 at r1
+  fs_settle_run; fs_go settled acme/app t42 r1
+  # When
+  fs_go settled acme/app t42 r1
+  # Then
+  eq exit 0 "$code"
+  eq verdict '[{"verdict":"settled","run":"r1"}]' "$(fs_settle_of t42 '{verdict, run}')"
+}
+
+t_fs_settled_refuses_ship() {
+  # Given: #42's thread t42 started with /ship, not /triage
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t42 ship
+  echo '[{"threadId":"t42","status":"completed","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  # When
+  fs_go settled acme/app t42 r1
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: t42 is no grill or triage thread of this run" "$(printf '%s\n' "$err" | tail -1)"
+  eq verdicts false "$(fs_state '[.threads[] | .settle] | map(. != null) | any')"
+}
+
+t_fs_watch_wakes_settle() {
+  # Given: #42 went from bug (t1 finished, not settled) to ticket (t2 runs); f1 finished its turn
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 bug t1 triage; fs_record 42 ticket t2 ship
+  echo '[{"threadId":"f1","status":"completed"},{"threadId":"t1","status":"completed","settled":false,"latestRunId":"r1"},{"threadId":"t2","status":"running","settled":false,"latestRunId":"r1"}]' > "$T/t3-threads.json"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq line '{"wake":["settle #42"],"woke":true,"sent":[]}' "$out"
+  eq sends "thread send f1 /orchestrate check" "$(fs_sends)"
+}
+
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
   "a free ticket starts ship|t_fs_ticket_starts_ship"
@@ -1899,4 +2023,14 @@ cases=(
   "an issue that starts a thread sends no conflict|t_fs_conflict_new_stage"
   "a check sends no conflict|t_fs_check_no_conflict"
   "a failed /ready-pr send is not sent again|t_fs_conflict_send_failed"
+  "a finished triage thread whose issue moved on is listed to settle|t_fs_settle_triage_listed"
+  "a finished grill thread whose issue moved on is listed to settle|t_fs_settle_grill_listed"
+  "a thread not finished or not moved on is not listed|t_fs_settle_not_listed"
+  "a failed thread whose issue moved on is listed|t_fs_settle_failed_listed"
+  "a paused run lists nothing to settle|t_fs_settle_paused"
+  "a settled thread is not listed again|t_fs_settle_once"
+  "a kept thread is listed again only after a new turn|t_fs_settle_kept_new_turn"
+  "settled twice keeps one verdict|t_fs_settled_twice"
+  "settled refuses a thread that is not grill or triage|t_fs_settled_refuses_ship"
+  "the watcher wakes the orchestrator to settle|t_fs_watch_wakes_settle"
 )
