@@ -221,8 +221,12 @@ def file_rows(lines):
             header = cells
         elif header and cells and not re.fullmatch(r":?-+:?", cells[0]):
             row = dict(zip(header, cells))
-            got.append({"path": row.get("File", "").strip("`"), "from": None, "change": row.get("Change", ""),
-                        "generated": False, "slices": [int(n) for n in re.findall(r"S(\d+)", row.get("Slices", ""))],
+            old, arrow, new = row.get("File", "").partition("→")
+            change, *tags = [t.strip() for t in row.get("Change", "").split(",")]
+            got.append({"path": (new if arrow else old).strip().strip("`"),
+                        "from": old.strip().strip("`") if arrow else None,
+                        "change": change, "generated": "generated" in tags,
+                        "slices": [int(n) for n in re.findall(r"S(\d+)", row.get("Slices", ""))],
                         "note": row.get("Note", "")})
     return got
 

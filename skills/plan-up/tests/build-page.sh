@@ -105,6 +105,15 @@ t_build_perf() {
     "$(page_data "$T/plan-acme-shop-42.html" | jq -c .layers[0].perf)"
 }
 
+t_build_files() {
+  T="$(mktemp -d)"
+  cp "$here/build-page/files.md" "$T/plan-acme-shop-44.md"
+  build "$T/plan-acme-shop-44.md"
+  eq exit 0 "$code"
+  eq files '[{"change":"new","from":null,"generated":false,"note":"writes one order as a CSV row","path":"src/orders/csv.ts","slices":[1]},{"change":"edited","from":null,"generated":false,"note":"streams CSV beside JSON","path":"src/orders/export.ts","slices":[1,2]},{"change":"deleted","from":null,"generated":false,"note":"the old JSON-only path","path":"src/orders/json-only.ts","slices":[1]},{"change":"moved","from":"src/orders/format.ts","generated":false,"note":"","path":"src/orders/formats/json.ts","slices":[2]},{"change":"edited","from":null,"generated":false,"note":"+ csv and empty cases","path":"src/orders/export.test.ts","slices":[1,2]},{"change":"edited","from":null,"generated":true,"note":"","path":"src/orders/__snapshots__/export.test.ts.snap","slices":[2]},{"change":"edited","from":null,"generated":false,"note":"CSV next to JSON","path":"src/README.md","slices":[1]}]' \
+    "$(page_data "$T/plan-acme-shop-44.html" | jq -c .layers[0].files)"
+}
+
 bad_perf() {
   T="$(mktemp -d)"
   sed "$1" "$here/build-page/perf.md" > "$T/plan-acme-shop-42.md"
@@ -580,6 +589,7 @@ cases=(
   "build-page builds a run page from its .md|t_build_run"
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
+  "build-page reads moved and generated file rows|t_build_files"
   "build-page builds a plan whose first slice deletes dead code|t_build_delete_slice"
   "build-page refuses a delete slice that is not slice 1|t_build_late_delete_slice"
   "build-page refuses a first delete slice not headed Slice 1|t_build_delete_slice_number"

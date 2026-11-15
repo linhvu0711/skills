@@ -140,6 +140,8 @@
   .mk.edited { background: var(--soft); color: var(--accent); }
   .mk.deleted { background: var(--bad-soft); color: var(--bad); }
   .mk.moved { background: var(--warn-soft); color: var(--warn); }
+  .ft-was { font-family: var(--mono); font-size: 12.5px; }
+  .ft-row.gen .ft-name, .ft-row.gen .ft-note { opacity: .6; }
   .ft-row.deleted .ft-name { text-decoration: line-through; text-decoration-color: var(--bad); }
   .map { margin-top: 12px; }
   .map h4 { margin: 0 0 6px; font-size: 13px; }
@@ -373,10 +375,12 @@ const DATA = {};
           rows.push(el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), name + '/'), el('span', {}), el('span', {})));
           walk(d, next);
         } else {
-          rows.push(el('div', { class: 'ft-row ' + k.change },
+          rows.push(el('div', { class: 'ft-row ' + k.change + (k.generated ? ' gen' : '') },
             el('span', { class: 'mk ' + k.change, title: k.change }, MARKS[k.change] || '?'),
             el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), k.name),
-            el('span', { class: 'ft-note' }, k.note),
+            el('span', { class: 'ft-note' },
+              k.from ? ['from ', el('span', { class: 'ft-was' }, k.from), k.note ? ' \u00b7 ' : ''] : null,
+              k.note, k.generated ? (k.note ? ' \u00b7 ' : '') + 'generated' : null),
             el('span', { class: 'ft-sl' }, (k.slices || []).map((n) => el('span', { class: 'ref' }, 'S' + n)))));
         }
       });
