@@ -270,6 +270,13 @@ board='
   def you($a): {mark: "you", action: $a};
   def agent($a): {mark: "agent", action: $a};
   def held($a): {mark: "blocked", action: $a};
+  # quiet: the thread had no update for 10 minutes before this check, or T3
+  # gave no time. A /ship thread ends its turn each time it waits for its
+  # helpers, so a short pause is not a stop; 10 minutes is two watcher checks
+  # at the 5 minute default (#279). T3 writes milliseconds, which
+  # fromdateiso8601 refuses.
+  def quiet($t): $t.updatedAt == null
+    or (($S.timer.checked_at | fromdateiso8601) - ($t.updatedAt | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) >= 600);
   # The first rule that holds names who has the ball and the one action.
   def owner($rec; $t):
     (.prs | map(select(.state == "OPEN")) | first) as $pr
@@ -284,8 +291,8 @@ board='
       elif $pr and $t.status != "running" then you("Merge PR #\($pr.number)")
       elif .stage == "waiting" then you("Waits outside: say resume #\(.number)")
       elif .stage == "task" and $rec.status == "started" and $t.status == "completed" then you("Open the thread: it waits for you")
-      elif $t.status == "completed" and $rec.stage == .stage then you("No change: say restart #\(.number)")
-      elif $t.status == "running" then agent("/\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)") + {since: $t.createdAt}
+      elif $t.status == "completed" and $rec.stage == .stage and quiet($t) then you("No change: say restart #\(.number)")
+      elif $t.status == "running" or ($t.status == "completed" and $rec.stage == .stage) then agent("/\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)") + {since: $t.createdAt}
       elif .stage == "unlabeled" and .answer == "task" then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
@@ -404,7 +411,7 @@ observe() {
     issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null)))' <<<"$issues")"
   fi
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || "$on_fail" "$(tail -1 "$errf")"
-  statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
+  statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
   local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f pid
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
