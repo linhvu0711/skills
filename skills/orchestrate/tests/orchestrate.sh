@@ -1569,8 +1569,15 @@ t_fs_bug_old_pr_chip() {
   eq card '{"stage":"pr","chip":"bug"}' "$(fs_board '.issues[] | select(.number == 42) | {stage, chip}')"
 }
 
-# fs_thread <id> <status>: T3 lists one thread, made at 12:10.
-fs_thread() { printf '[{"threadId":"%s","status":"%s","createdAt":"2026-10-28T12:10:00Z"}]\n' "$1" "$2" > "$T/t3-threads.json"; }
+# fs_thread <id> <status> [updated]: T3 lists one thread, made at 12:10, with
+# its last update at <updated> when given.
+fs_thread() {
+  jq -cn --arg id "$1" --arg s "$2" --arg up "${3:-}" \
+    '[{threadId: $id, status: $s, createdAt: "2026-10-28T12:10:00Z"} + (if $up == "" then {} else {updatedAt: $up} end)]' > "$T/t3-threads.json"
+}
+
+# ago <s>: the time <s> seconds before now, as T3 writes it, with milliseconds.
+ago() { jq -nr --argjson s "$1" 'now - $s | strftime("%Y-%m-%dT%H:%M:%S.000Z")'; }
 
 # fs_card <n>: the column, mark, and action of #n's card.
 fs_card() { fs_board --argjson n "$1" '.issues[] | select(.number == $n) | {column, mark, action}'; }
@@ -1611,6 +1618,24 @@ t_fs_board_no_change_yours() {
   eq card '{"column":"shape","mark":"you","action":"No change: say restart #42"}' "$(fs_card 42)"
 }
 
+t_fs_board_paused_agent() {
+  # Given: #42's ticket thread t42 completed its turn 2 minutes ago, with no new stage
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 completed "$(ago 120)"
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"agent","action":"/ship"}' "$(fs_card 42)"
+}
+
+t_fs_board_quiet_yours() {
+  # Given: #42's ticket thread t42 completed its turn 10 minutes ago, with no new stage
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_record 42 ticket t42; fs_thread t42 completed "$(ago 600)"
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"No change: say restart #42"}' "$(fs_card 42)"
+}
+
 t_fs_board_launch_failed_yours() {
   # Given: #42 was claimed, and its launch failed with "no reply"
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -1640,6 +1665,16 @@ t_fs_board_waiting_task() {
   fs_go check acme/app
   # Then
   eq card '{"column":"build","mark":"you","action":"Waits outside: say resume #42"}' "$(fs_card 42)"
+}
+
+t_fs_board_task_just_finished() {
+  # Given: #42 manual, whose task thread t42 completed its turn 2 minutes ago
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
+  fs_record 42 task t42; fs_thread t42 completed "$(ago 120)"
+  # When
+  fs_go check acme/app
+  # Then
+  eq card '{"column":"build","mark":"you","action":"Open the thread: it waits for you"}' "$(fs_card 42)"
 }
 
 t_fs_board_ready_task() {
@@ -2161,11 +2196,14 @@ cases=(
   "a failed thread is yours|t_fs_board_failed_yours"
   "an interrupted thread is yours|t_fs_board_interrupted_yours"
   "a completed thread with no new stage is yours|t_fs_board_no_change_yours"
+  "a paused thread is the agent's|t_fs_board_paused_agent"
+  "a thread quiet for 10 minutes is yours|t_fs_board_quiet_yours"
   "a failed launch is yours|t_fs_board_launch_failed_yours"
   "a free task is starting|t_fs_board_task_starts"
   "a waiting task holds no turn|t_fs_waiting_task_no_turn"
   "a waiting task waits for resume|t_fs_board_waiting_task"
   "a finished task thread waits for you|t_fs_board_ready_task"
+  "a task thread that just finished waits for you|t_fs_board_task_just_finished"
   "an open PR with no running thread waits for your merge|t_fs_board_merge_yours"
   "an unlabeled issue with no proposal is the agent's|t_fs_board_unlabeled_proposing"
   "a proposal with no answer is yours|t_fs_board_proposal_yours"
