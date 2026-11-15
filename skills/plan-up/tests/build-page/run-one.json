@@ -82,6 +82,10 @@
         ]
       },
       "forks": [],
+      "files": [
+        {"path": "src/switcher.ts", "from": null, "change": "edited", "generated": false, "slices": [1], "note": "the team switcher in the header"},
+        {"path": "src/switcher.test.ts", "from": null, "change": "new", "generated": false, "slices": [1], "note": "switches teams"}
+      ],
       "seams": [
         {
           "name": "team command",

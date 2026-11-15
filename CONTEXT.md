@@ -42,6 +42,10 @@ _Avoid_: summary, overview
 The one diagram kind in the Review view. A box is a part with a job, named in the project's own words; an arrow is what moves between parts, or who asks whom; a gray area is the app or package the parts live in. A store box lists the tables, columns, or keys that change. Files are details of a box, never boxes.
 _Avoid_: architecture diagram, component diagram, dependency graph
 
+**File changes**:
+The plan's list of every file it adds, edits, deletes, or moves, each with the slices that change it and a short note. The Review view draws it as a file tree under the Change map.
+_Avoid_: file list, diff
+
 **Claim**:
 A sign that someone else is already on an issue: an open PR that closes or mentions it, an assignee, or a comment that takes the work. Plan-up asks before it plans a claimed issue.
 _Avoid_: lock, reservation

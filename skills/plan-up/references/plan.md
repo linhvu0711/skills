@@ -48,6 +48,9 @@ judgment is made here.
   app or package the parts live in. A store box names the tables,
   columns, or keys that change. Files are a box's details, never boxes,
   and an import is never an arrow.
+- **File changes**: every file the plan adds, edits, deletes, or moves,
+  with the slices that change it. The Review view draws it as a file
+  tree under the Change map.
 - **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
   ticket is one **layer**; layer 1's PR targets the base, each later
   layer's PR targets the branch of the layer below.
@@ -96,6 +99,14 @@ Out: <what it leaves, with O refs>, a few lines
 Flows:
 - M1 → M2: install (new)
 - M1 → M3: writes agent (removed)
+
+## File changes
+| File | Change | Slices | Note |
+|---|---|---|---|
+| `src/orders/export.ts` | edited | S1, S2 | streams CSV beside JSON |
+| `src/orders/csv.ts` | new | S1 | writes one order as a CSV row |
+| `src/orders/format.ts` → `src/orders/formats/json.ts` | moved | S2 | |
+| `src/orders/__snapshots__/export.test.ts.snap` | edited, generated | S2 | |
 
 ## Facts
 Repo: owner/name        Base: main
@@ -225,7 +236,7 @@ for the whole stack>
 ```
 
 Then, for each layer in stack order, a heading `## Layer n · #N <title>`
-and under it a small `## Review` block, then `## Summary`, Proof, Seams, Slices, UI
+and under it a small `## Review` block, then `## File changes`, `## Summary`, Proof, Seams, Slices, UI
 walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
 The layer's Review holds three parts: `Change`, in brief, what
 this layer's PR adds to the stack; `Choices`, its forks and decisions;
@@ -476,6 +487,28 @@ part or flow changes.`, so the reader sees that the plan checked.
   cell. Flow goes left to right: people and outside callers on the left,
   stores on the right. The parts of one group sit in cells next to each
   other, with no other part inside the group's area.
+
+### File changes
+
+Every file the slices add, edit, delete, or move, one row each, written
+after the slices and before the Review.
+- `File` is the path from the repo root in backticks; a moved file is
+  `` `old` → `new` ``.
+- `Change` is `new`, `edited`, `deleted`, or `moved`. A file a tool
+  writes whole, such as a migration, a snapshot, or a lockfile, adds
+  `, generated`, and a name the tool picks is written with a `<name>`
+  part, as `` `migrations/0006_<name>.sql` ``.
+- `Slices` names each slice that changes the file, `S1, S3`; in a run,
+  the layer's own slices.
+- `Note` says the file's job or what changes in it, in a few words, and
+  may be empty.
+
+A run writes the block in each layer, after the layer's Review. The page
+draws it as a file tree under Blast radius.
+`scripts/build-page.py` refuses a plan with no block, a row with an
+unknown change, a moved row with no `→`, a row with no slice or a slice
+the layer lacks, a row whose slice does not name it (a generated row is
+not checked), and a file listed twice.
 
 ### Facts
 
@@ -896,3 +929,7 @@ facts or forks.
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.
+- The File changes block is there, in each layer of a run: one row per
+  file a `Change` or `Docs` line adds, edits, deletes, or moves, never a
+  file a line only copies from; each row names every slice that changes
+  it, and each of those slices names the file.

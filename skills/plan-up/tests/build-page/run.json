@@ -104,6 +104,10 @@
         ]
       },
       "forks": [],
+      "files": [
+        {"path": "src/teams.ts", "from": null, "change": "new", "generated": false, "slices": [1], "note": "the team entity"},
+        {"path": "src/teams.test.ts", "from": null, "change": "new", "generated": false, "slices": [1], "note": "creates a team"}
+      ],
       "seams": [
         {
           "name": "team command",
@@ -170,6 +174,10 @@
         ]
       },
       "forks": [],
+      "files": [
+        {"path": "src/members.ts", "from": null, "change": "new", "generated": false, "slices": [1], "note": "adds a member to a team"},
+        {"path": "src/members.test.ts", "from": null, "change": "new", "generated": false, "slices": [1], "note": "joins a team"}
+      ],
       "seams": [
         {
           "name": "team command",

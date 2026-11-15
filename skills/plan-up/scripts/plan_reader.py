@@ -18,6 +18,7 @@ PERF = ["Metric", "Command", "Before", "Pass rule"]
 PART = re.compile(r"(Change|Approach|Blast radius|Choices|Risks|Works when|In|Out):\s*(.*)$")
 BLAST = ["Touches", "Dependency", "Schema", "API", "Config", "CI"]
 CHANGES = {"new", "changed", "removed", "same"}
+FILE_CHANGES = {"new", "edited", "deleted", "moved"}
 FLOW = re.compile(r"-\s*(M\d+)\s*(?:→|->)\s*(M\d+):\s*(.*?)\s*(?:\(([^)]*)\))?\s*$")
 LAYER = re.compile(r"Layer (\d+) · #(\d+) (.+)$")
 # A list of numbers as English writes it: `1, 2`, `1 and 2`, or `1, 2, and 3`.
@@ -213,6 +214,24 @@ def maps(named):
     return got
 
 
+def file_rows(lines):
+    """The File changes table: one record per file row, keyed by the header's names."""
+    got, header = [], None
+    for cells in table_rows(lines):
+        if cells and cells[0] == "File":
+            header = cells
+        elif header and cells and not re.fullmatch(r":?-+:?", cells[0]):
+            row = dict(zip(header, cells))
+            old, arrow, new = row.get("File", "").partition("→")
+            change, *tags = [t.strip() for t in row.get("Change", "").split(",")]
+            got.append({"path": (new if arrow else old).strip().strip("`"),
+                        "from": old.strip().strip("`") if arrow else None,
+                        "change": change, "generated": "generated" in tags,
+                        "slices": [int(n) for n in re.findall(r"S(\d+)", row.get("Slices", ""))],
+                        "note": row.get("Note", "")})
+    return got
+
+
 def map_part(row):
     """One Change map row as its parts: `at` the files, each backtick span whole; `cell` the Grid text."""
     at = [re.sub(r"^`(.*)`$", r"\1", entry.strip())
@@ -333,6 +352,8 @@ def layer(section, n, issue, title, review):
         "gates": key_values(section.get("Gates", []), ["Slice done", "Task done"]),
         "perf": key_values(section["Perf"], PERF) if "Perf" in section else None,
         "slices": records(section.get("Slices", []), "slice"),
+        "files": file_rows(section.get("File changes", [])),
+        "has_files": "File changes" in section,
         "walks": records(section.get("UI walks", []), "walk"),
         "videos": records(section.get("Videos", []), "video"),
         "unread": unread(section),
@@ -436,6 +457,41 @@ def review_problems(plan):
             for j, x in enumerate(got, 1):
                 if not x.startswith(f"#{j} "):
                     yield f"{name}: `Works when` line {j} must start `#{j} `"
+
+
+def file_problems(layer, n):
+    if not layer["has_files"]:
+        yield f"file changes: layer {n} has no `## File changes` block"
+        return
+    if not layer["files"]:
+        yield f"file changes: layer {n} has no file row"
+        return
+    # A slice heading the reader could not read is named once by record_problems; its slice refs would only repeat it.
+    check_slices = not any(block == "Slices" for block, _ in layer["unread"])
+    slices = {s["n"]: s for s in layer["slices"]}
+    seen = set()
+    for f in layer["files"]:
+        path, where = f["path"], f"file changes: layer {n} `{f['path']}`"
+        named = [p.rsplit("/", 1)[-1] for p in (path, f["from"]) if p]
+        missing = next((k for k in f["slices"] if k not in slices), None)
+        silent = next((k for k in f["slices"] if k in slices and not any(
+            name in " ".join(slices[k]["change"] + slices[k]["docs"] + [t["file"] for t in slices[k]["tests"]])
+            for name in named)), None)
+        if f["change"] not in FILE_CHANGES:
+            yield f"{where} change `{f['change']}` is not new, edited, deleted, or moved"
+        elif f["change"] == "moved" and not f["from"]:
+            yield f"{where} is moved and needs `<old> → <new>`"
+        elif f["change"] != "moved" and f["from"]:
+            yield f"{where} has `→`, and only a moved row has it"
+        elif not f["slices"]:
+            yield f"{where} names no slice"
+        elif check_slices and missing is not None:
+            yield f"{where} names S{missing}; layer {n} has no slice {missing}"
+        elif check_slices and not f["generated"] and silent is not None:
+            yield f"{where} names S{silent}, and slice {silent} does not name it"
+        elif path in seen:
+            yield f"{where} is listed twice"
+        seen.add(path)
 
 
 def map_problems(blocks, is_run):
@@ -686,6 +742,7 @@ def problems(plan):
                 yield f"slices: layer {n} slice {k} deletes dead code; only slice 1 may"
             elif s.get("deletes") and s["n"] != 1:
                 yield f"slices: layer {n} delete slice is headed `Slice {s['n']}`; it is `Slice 1`"
+        yield from file_problems(layer, n)
         for row in layer["proof"]:
             if row["cells"] != 6:
                 yield f"proof: layer {n} row {row['n']} has {row['cells']} cells, needs 6"

@@ -51,6 +51,11 @@
           "pick": "stream"
         }
       ],
+      "files": [
+        {"path": "src/orders/export.ts", "from": null, "change": "edited", "generated": false, "slices": [1, 2], "note": "streams CSV beside JSON"},
+        {"path": "src/orders/export.test.ts", "from": null, "change": "edited", "generated": false, "slices": [1, 2], "note": "+ csv and empty cases"},
+        {"path": "src/README.md", "from": null, "change": "edited", "generated": false, "slices": [1], "note": "CSV next to JSON"}
+      ],
       "seams": [
         {
           "name": "export route",

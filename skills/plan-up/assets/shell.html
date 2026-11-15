@@ -129,6 +129,32 @@
   .rv-list .why { color: var(--muted); font-size: 13.5px; }
   .rv-list button.ref { border: 0; cursor: pointer; }
   .rv-list button.ref:hover { color: var(--accent); }
+  .ft-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+  .ft-sp { flex: 1; }
+  .ft-f { font: 500 12.5px var(--sans); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 2px 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+  .ft-f[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); }
+  .ft-f[disabled] { opacity: .45; cursor: default; }
+  .ft-f b { font-weight: 600; }
+  .ft-gen { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .ft { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .ft-row { display: grid; grid-template-columns: 22px minmax(0, max-content) 1fr auto; gap: 0 12px; align-items: baseline; padding: 3px 10px; font-size: 13.5px; background: var(--panel); }
+  .ft-name { font-family: var(--mono); font-size: 13px; white-space: pre; }
+  .ft-row.dir .ft-name, .ft-br { color: var(--muted); }
+  .ft-note { color: var(--muted); font-size: 13px; min-width: 0; }
+  .ft-sl { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+  .ft-sl button.ref { border: 0; cursor: pointer; }
+  .ft-sl button.ref:hover { color: var(--accent); }
+  .ft-sl button.ref.first { font-weight: 700; }
+  .ft-row:hover { background: var(--neutral-soft); }
+  .card { scroll-margin-top: 72px; }
+  .mk { font: 700 12px var(--mono); width: 18px; height: 18px; border-radius: 4px; display: inline-grid; place-items: center; }
+  .mk.new { background: var(--ok-soft); color: var(--ok); }
+  .mk.edited { background: var(--soft); color: var(--accent); }
+  .mk.deleted { background: var(--bad-soft); color: var(--bad); }
+  .mk.moved { background: var(--warn-soft); color: var(--warn); }
+  .ft-was { font-family: var(--mono); font-size: 12.5px; }
+  .ft-row.gen .ft-name, .ft-row.gen .ft-note { opacity: .6; }
+  .ft-row.deleted .ft-nm { text-decoration: line-through; text-decoration-color: var(--bad); }
   .map { margin-top: 12px; }
   .map h4 { margin: 0 0 6px; font-size: 13px; }
   .mapkey { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; width: fit-content; max-width: 100%; margin: 0 0 8px auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 12.5px; color: var(--muted); }
@@ -145,6 +171,10 @@
     h1 { font-size: 21px; }
     .card .body { padding-left: 16px; }
     .kv, .gwt { grid-template-columns: 1fr; gap: 2px; }
+    .ft-row { grid-template-columns: 22px 1fr auto; }
+    .ft-note { grid-column: 2 / -1; grid-row: 2; padding-bottom: 2px; }
+    .ft-sl { grid-column: 3; grid-row: 1; }
+    .ft-name { white-space: pre-wrap; word-break: break-all; }
   }
   @media print {
     nav.tabs, .layers, .stat { display: none !important; }
@@ -281,7 +311,7 @@ const DATA = {};
     return el('section', { role: 'tabpanel', 'data-id': id }, el('h2', {}, title), el('p', { class: 'lead', html: rich(lead) }), body);
   }
   function card(ref, title, proves, body, open) {
-    return el('details', { class: 'card', open: open ? '' : null },
+    return el('details', { class: 'card', 'data-ref': ref, open: open ? '' : null },
       el('summary', {}, el('span', { class: 'ref' }, ref), el('h3', { html: rich(title) }), proves ? el('span', { class: 'proves' }, proves) : null),
       el('div', { class: 'body' }, body));
   }
@@ -321,15 +351,85 @@ const DATA = {};
     if (!isRun) {
       const L = layers[0] || {};
       return el('div', {}, head, el('div', { class: 'rv' },
-        part('The change', text(r.change)), part('Approach', text(r.approach)), blast, choices(L), risks, works(L, 0), scope));
+        part('The change', text(r.change)), part('Approach', text(r.approach)), blast, part('Files', filesView(L, 0)), choices(L), risks, works(L, 0), scope));
     }
     return el('div', {}, head,
       el('div', { class: 'rv' }, part('The change', text(r.change)), part('Approach', text(r.approach)), blast, risks, scope),
       layers.map((L, i) => [
         el('h3', { class: 'rv-layer' }, `Layer ${i + 1} · `, el('a', { href: L.issue?.url, target: '_blank' }, `#${L.issue?.number ?? ''}`), ` ${L.title || ''}`),
         el('div', { class: 'rv' }, part('This layer adds', text((L.review || {}).change),
-          layerRefs(i + 1).length ? el('p', { style: 'margin-top:6px' }, 'On the map: ', layerRefs(i + 1).map((r) => [el('span', { class: 'ref' }, r), ' '])) : null), choices(L), works(L, i)),
+          layerRefs(i + 1).length ? el('p', { style: 'margin-top:6px' }, 'On the map: ', layerRefs(i + 1).map((r) => [el('span', { class: 'ref' }, r), ' '])) : null), part('Files', filesView(L, i)), choices(L), works(L, i)),
       ]));
+  }
+
+  // Files: the layer's File changes as a shallow tree, each file with its mark, note, and slices.
+  const MARKS = { new: '+', edited: '~', deleted: '\u2212', moved: '\u2192' };
+  // Each layer's filter and generated box survive render(), which rebuilds every panel.
+  const KINDS = [['new', 'new'], ['edited', 'edited'], ['deleted', 'deleted'], ['moved', 'moved']];
+  const fileView = {};
+  function openSlice(i, n) {
+    cur = i; render(); show('slices');
+    const c = panels.querySelector(`section.on [data-ref="S${n}"]`);
+    if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); }
+  }
+  function filesView(L, li) {
+    const files = L.files || [];
+    if (!files.length) return empty('Missing.');
+    const st = fileView[li] || (fileView[li] = { kind: null, gen: true });
+    const box = el('div', {});
+    const draw = () => {
+      box.innerHTML = '';
+      const pool = files.filter((f) => st.gen || !f.generated);
+      const count = (k) => pool.filter((f) => f.change === k).length;
+      const pick = (k) => () => { st.kind = k; draw(); };
+      box.append(el('div', { class: 'ft-head' },
+        el('button', { class: 'ft-f', 'aria-pressed': st.kind == null, onclick: pick(null) }, el('b', {}, pool.length), 'all'),
+        KINDS.map(([k, word]) => el('button', { class: 'ft-f', 'aria-pressed': st.kind === k, disabled: count(k) ? null : '', onclick: pick(k) },
+          el('span', { class: 'mk ' + k }, MARKS[k]), el('b', {}, count(k)), word)),
+        el('span', { class: 'ft-sp' }),
+        el('label', { class: 'ft-gen' }, el('input', { type: 'checkbox', checked: st.gen ? '' : null, onchange: (e) => { st.gen = e.target.checked; draw(); } }), 'show generated files')));
+      const shown = pool.filter((f) => st.kind == null || f.change === st.kind);
+      if (!shown.length) { box.append(empty('No file of this kind.')); return; }
+      const root = { dirs: new Map(), files: [] };
+      for (const f of shown) {
+        const parts = f.path.split('/');
+        let n = root;
+        for (const p of parts.slice(0, -1)) {
+          if (!n.dirs.has(p)) n.dirs.set(p, { dirs: new Map(), files: [] });
+          n = n.dirs.get(p);
+        }
+        n.files.push({ ...f, name: parts[parts.length - 1] });
+      }
+      const rows = [];
+      const walk = (n, pre) => {
+        const kids = [...[...n.dirs].map(([name, d]) => ({ dir: true, name, d })), ...n.files];
+        kids.forEach((k, i) => {
+          const last = i === kids.length - 1;
+          const branch = pre === null ? '' : pre + (last ? '└── ' : '├── ');
+          const next = pre === null ? '' : pre + (last ? '    ' : '│   ');
+          if (k.dir) {
+            // A folder that holds only one folder folds into one row, as src/orders/.
+            let name = k.name, d = k.d;
+            while (!d.files.length && d.dirs.size === 1) { const [[sub, dd]] = [...d.dirs]; name += '/' + sub; d = dd; }
+            rows.push(el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), name + '/'), el('span', {}), el('span', {})));
+            walk(d, next);
+          } else {
+            rows.push(el('div', { class: 'ft-row ' + k.change + (k.generated ? ' gen' : '') },
+              el('span', { class: 'mk ' + k.change, title: k.change }, MARKS[k.change] || '?'),
+              el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), el('span', { class: 'ft-nm' }, k.name)),
+              el('span', { class: 'ft-note' },
+                [k.from ? ['from ', el('span', { class: 'ft-was' }, k.from)] : null, k.note || null, k.generated ? 'generated' : null]
+                  .filter(b => b != null).map((b, j) => j ? [' · ', b] : b)),
+              el('span', { class: 'ft-sl' }, (k.slices || []).map((n, j) => el('button', {
+                class: 'ref' + (j ? '' : ' first'), title: `open slice ${n}`, onclick: () => openSlice(li, n) }, 'S' + n)))));
+          }
+        });
+      };
+      walk(root, null);
+      box.append(el('div', { class: 'ft' }, rows));
+    };
+    draw();
+    return box;
   }
 
   // Change map: a box is a part with a job, an arrow is what moves, a gray area is the app or package.
