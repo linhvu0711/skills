@@ -360,6 +360,48 @@ t_build_at_comma() {
   eq DATA "$(jq -S '.maps[0].parts[0].at = ["src/web/orders,v2.tsx:12", "src/db/orders,v2.ts:4", "src/types.ts:7", "S2"]' "$here/build-page/ticket.json")" "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
+t_build_no_file_changes() {
+  bad_ticket '/^## File changes$/,/^$/d' 'file changes: layer 1 has no `## File changes` block'
+}
+
+t_build_run_no_file_changes() {
+  bad_run '/^## Layer 2/,$ { /^## File changes$/,$d; }' 'file changes: layer 2 has no `## File changes` block'
+}
+
+t_build_file_unknown_change() {
+  bad_ticket 's/| edited | S1 | CSV next to JSON |/| changed | S1 | CSV next to JSON |/' \
+    'file changes: layer 1 `src/README.md` change `changed` is not new, edited, deleted, or moved'
+}
+
+t_build_file_moved_one_path() {
+  bad_ticket 's/| edited | S1 | CSV next to JSON |/| moved | S1 | CSV next to JSON |/' \
+    'file changes: layer 1 `src/README.md` is moved and needs `<old> → <new>`'
+}
+
+t_build_file_arrow_not_moved() {
+  bad_ticket 's/^| `src\/README.md` |/| `src\/docs.md` → `src\/README.md` |/' \
+    'file changes: layer 1 `src/README.md` has `→`, and only a moved row has it'
+}
+
+t_build_file_no_slice() {
+  bad_ticket 's/| edited | S1 | CSV next to JSON |/| edited |  | CSV next to JSON |/' \
+    'file changes: layer 1 `src/README.md` names no slice'
+}
+
+t_build_file_missing_slice() {
+  bad_ticket 's/| edited | S1 | CSV next to JSON |/| edited | S3 | CSV next to JSON |/' \
+    'file changes: layer 1 `src/README.md` names S3; layer 1 has no slice 3'
+}
+
+t_build_file_slice_does_not_name_it() {
+  bad_ticket 's/| edited | S1 | CSV next to JSON |/| edited | S2 | CSV next to JSON |/' \
+    'file changes: layer 1 `src/README.md` names S2, and slice 2 does not name it'
+}
+
+t_build_file_listed_twice() {
+  bad_ticket '/^| `src\/README.md`/p' 'file changes: layer 1 `src/README.md` is listed twice'
+}
+
 bad_run() {
   T="$(mktemp -d)"
   sed "$1" "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
@@ -553,6 +595,7 @@ delete_slice() {
   sed -e 's/^Slice 1, proves #1: export route$/Slice 1, deletes dead code: export route/' \
     -e 's/^  Change: `src\/orders\/export.ts:31`, stream CSV beside JSON\.$/  Change: `src\/orders\/export.ts:12`, delete `exportXml`. No caller: `rg -n exportXml` hits only its definition./' \
     -e '/^  Docs:   `src\/README.md:88`, CSV next to JSON\.$/d' \
+    -e '/^| `src\/README.md`/d' \
     -e 's/^    Given:  three orders, one note with a newline$/    Given:  the base/' \
     -e '1,/^Slice 2/s/^    When:   export CSV$/    When:   `pnpm test export`/' \
     -e 's/^    Then:   all three rows with the note whole$/    Then:   pass, before and after the delete/' \
@@ -566,7 +609,8 @@ t_build_delete_slice() {
   eq exit 0 "$code"
   eq DATA "$(jq -S '.layers[0].slices[0] |= (.proves = [] | .deletes = true | .docs = []
     | .change = ["`src/orders/export.ts:12`, delete `exportXml`. No caller: `rg -n exportXml` hits only its definition."]
-    | .tests[0] += {given: "the base", when: "`pnpm test export`", then: "pass, before and after the delete"})' "$here/build-page/ticket.json")" \
+    | .tests[0] += {given: "the base", when: "`pnpm test export`", then: "pass, before and after the delete"})
+    | .layers[0].files |= map(select(.path != "src/README.md"))' "$here/build-page/ticket.json")" \
     "$(page_data "$T/plan-acme-shop-42.html")"
 }
 
@@ -576,7 +620,9 @@ t_build_delete_slice_number() {
     > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
-  eq stdout 'slices: layer 1 delete slice is headed `Slice 2`; it is `Slice 1`' "$out"
+  eq stdout 'slices: layer 1 delete slice is headed `Slice 2`; it is `Slice 1`
+file changes: layer 1 `src/orders/export.ts` names S1; layer 1 has no slice 1
+file changes: layer 1 `src/orders/export.test.ts` names S1; layer 1 has no slice 1' "$out"
 }
 
 t_build_late_delete_slice() {
@@ -590,6 +636,15 @@ cases=(
   "build-page builds a one-layer run page from its .md|t_build_run_one"
   "build-page builds a None map page|t_build_none_map"
   "build-page reads moved and generated file rows|t_build_files"
+  "build-page refuses a plan with no File changes block|t_build_no_file_changes"
+  "build-page refuses a run layer with no File changes block|t_build_run_no_file_changes"
+  "build-page refuses a file row with an unknown change|t_build_file_unknown_change"
+  "build-page refuses a moved row with one path|t_build_file_moved_one_path"
+  "build-page refuses an arrow on a row that is not moved|t_build_file_arrow_not_moved"
+  "build-page refuses a file row with no slice|t_build_file_no_slice"
+  "build-page refuses a file row that names a missing slice|t_build_file_missing_slice"
+  "build-page refuses a file row whose slice does not name it|t_build_file_slice_does_not_name_it"
+  "build-page refuses a file listed twice|t_build_file_listed_twice"
   "build-page builds a plan whose first slice deletes dead code|t_build_delete_slice"
   "build-page refuses a delete slice that is not slice 1|t_build_late_delete_slice"
   "build-page refuses a first delete slice not headed Slice 1|t_build_delete_slice_number"

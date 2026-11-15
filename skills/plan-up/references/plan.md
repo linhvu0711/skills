@@ -505,6 +505,10 @@ after the slices and before the Review.
 
 A run writes the block in each layer, after the layer's Review. The page
 draws it as a file tree under Blast radius.
+`scripts/build-page.py` refuses a plan with no block, a row with an
+unknown change, a moved row with no `→`, a row with no slice or a slice
+the layer lacks, a row whose slice does not name it (a generated row is
+not checked), and a file listed twice.
 
 ### Facts
 
@@ -925,3 +929,7 @@ facts or forks.
   one has an `At`; every `same` part is touched by a changed flow; every
   flow names what moves; in a run, every part and flow that is not
   `same` names its layer.
+- The File changes block is there, in each layer of a run: one row per
+  file a `Change` or `Docs` line adds, edits, deletes, or moves, never a
+  file a line only copies from; each row names every slice that changes
+  it, and each of those slices names the file.
