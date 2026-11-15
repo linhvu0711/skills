@@ -71,3 +71,9 @@ Task done: full suite green, lint green.
 
 ## Out of scope
 - O1 team creation
+
+## File changes
+| File | Change | Slices | Note |
+|---|---|---|---|
+| `src/switcher.ts` | edited | S1 | the team switcher in the header |
+| `src/switcher.test.ts` | new | S1 | switches teams |

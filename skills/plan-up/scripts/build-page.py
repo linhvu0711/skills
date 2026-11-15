@@ -60,7 +60,8 @@ def page_layer(layer, issue):
             "forks": forks, "seams": layer["seams"], "proof": proof, "slices": plain(layer["slices"]),
             "walks": plain(layer["walks"]), "videos": plain(layer["videos"]),
             "gates": {"slice": gates.get("slice done", ""), "task": gates.get("task done", "")},
-            "decided": layer["decided"], "out": layer["out"]}
+            "decided": layer["decided"], "out": layer["out"],
+            "files": [{k: f[k] for k in ("path", "from", "change", "generated", "slices", "note")} for f in layer["files"]]}
     if layer["perf"] is not None:
         page["perf"] = layer["perf"]
     return page

@@ -213,6 +213,20 @@ def maps(named):
     return got
 
 
+def file_rows(lines):
+    """The File changes table: one record per file row, keyed by the header's names."""
+    got, header = [], None
+    for cells in table_rows(lines):
+        if cells and cells[0] == "File":
+            header = cells
+        elif header and cells and not re.fullmatch(r":?-+:?", cells[0]):
+            row = dict(zip(header, cells))
+            got.append({"path": row.get("File", "").strip("`"), "from": None, "change": row.get("Change", ""),
+                        "generated": False, "slices": [int(n) for n in re.findall(r"S(\d+)", row.get("Slices", ""))],
+                        "note": row.get("Note", "")})
+    return got
+
+
 def map_part(row):
     """One Change map row as its parts: `at` the files, each backtick span whole; `cell` the Grid text."""
     at = [re.sub(r"^`(.*)`$", r"\1", entry.strip())
@@ -333,6 +347,8 @@ def layer(section, n, issue, title, review):
         "gates": key_values(section.get("Gates", []), ["Slice done", "Task done"]),
         "perf": key_values(section["Perf"], PERF) if "Perf" in section else None,
         "slices": records(section.get("Slices", []), "slice"),
+        "files": file_rows(section.get("File changes", [])),
+        "has_files": "File changes" in section,
         "walks": records(section.get("UI walks", []), "walk"),
         "videos": records(section.get("Videos", []), "video"),
         "unread": unread(section),

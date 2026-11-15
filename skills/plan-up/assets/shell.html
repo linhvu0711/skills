@@ -129,6 +129,18 @@
   .rv-list .why { color: var(--muted); font-size: 13.5px; }
   .rv-list button.ref { border: 0; cursor: pointer; }
   .rv-list button.ref:hover { color: var(--accent); }
+  .ft { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .ft-row { display: grid; grid-template-columns: 22px minmax(0, max-content) 1fr auto; gap: 0 12px; align-items: baseline; padding: 3px 10px; font-size: 13.5px; background: var(--panel); }
+  .ft-name { font-family: var(--mono); font-size: 13px; white-space: pre; }
+  .ft-row.dir .ft-name, .ft-br { color: var(--muted); }
+  .ft-note { color: var(--muted); font-size: 13px; min-width: 0; }
+  .ft-sl { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+  .mk { font: 700 12px var(--mono); width: 18px; height: 18px; border-radius: 4px; display: inline-grid; place-items: center; }
+  .mk.new { background: var(--ok-soft); color: var(--ok); }
+  .mk.edited { background: var(--soft); color: var(--accent); }
+  .mk.deleted { background: var(--bad-soft); color: var(--bad); }
+  .mk.moved { background: var(--warn-soft); color: var(--warn); }
+  .ft-row.deleted .ft-name { text-decoration: line-through; text-decoration-color: var(--bad); }
   .map { margin-top: 12px; }
   .map h4 { margin: 0 0 6px; font-size: 13px; }
   .mapkey { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; width: fit-content; max-width: 100%; margin: 0 0 8px auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 12.5px; color: var(--muted); }
@@ -321,15 +333,56 @@ const DATA = {};
     if (!isRun) {
       const L = layers[0] || {};
       return el('div', {}, head, el('div', { class: 'rv' },
-        part('The change', text(r.change)), part('Approach', text(r.approach)), blast, choices(L), risks, works(L, 0), scope));
+        part('The change', text(r.change)), part('Approach', text(r.approach)), blast, part('Files', filesView(L)), choices(L), risks, works(L, 0), scope));
     }
     return el('div', {}, head,
       el('div', { class: 'rv' }, part('The change', text(r.change)), part('Approach', text(r.approach)), blast, risks, scope),
       layers.map((L, i) => [
         el('h3', { class: 'rv-layer' }, `Layer ${i + 1} · `, el('a', { href: L.issue?.url, target: '_blank' }, `#${L.issue?.number ?? ''}`), ` ${L.title || ''}`),
         el('div', { class: 'rv' }, part('This layer adds', text((L.review || {}).change),
-          layerRefs(i + 1).length ? el('p', { style: 'margin-top:6px' }, 'On the map: ', layerRefs(i + 1).map((r) => [el('span', { class: 'ref' }, r), ' '])) : null), choices(L), works(L, i)),
+          layerRefs(i + 1).length ? el('p', { style: 'margin-top:6px' }, 'On the map: ', layerRefs(i + 1).map((r) => [el('span', { class: 'ref' }, r), ' '])) : null), part('Files', filesView(L)), choices(L), works(L, i)),
       ]));
+  }
+
+  // Files: the layer's File changes as a shallow tree, each file with its mark, note, and slices.
+  const MARKS = { new: '+', edited: '~', deleted: '\u2212', moved: '\u2192' };
+  function filesView(L) {
+    const files = L.files || [];
+    if (!files.length) return empty('Missing.');
+    const root = { dirs: new Map(), files: [] };
+    for (const f of files) {
+      const parts = f.path.split('/');
+      let n = root;
+      for (const p of parts.slice(0, -1)) {
+        if (!n.dirs.has(p)) n.dirs.set(p, { dirs: new Map(), files: [] });
+        n = n.dirs.get(p);
+      }
+      n.files.push({ ...f, name: parts[parts.length - 1] });
+    }
+    const rows = [];
+    const walk = (n, pre) => {
+      const kids = [...[...n.dirs].map(([name, d]) => ({ dir: true, name, d })), ...n.files];
+      kids.forEach((k, i) => {
+        const last = i === kids.length - 1;
+        const branch = pre === null ? '' : pre + (last ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ');
+        const next = pre === null ? '' : pre + (last ? '    ' : '\u2502   ');
+        if (k.dir) {
+          // A folder that holds only one folder folds into one row, as src/orders/.
+          let name = k.name, d = k.d;
+          while (!d.files.length && d.dirs.size === 1) { const [[sub, dd]] = [...d.dirs]; name += '/' + sub; d = dd; }
+          rows.push(el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), name + '/'), el('span', {}), el('span', {})));
+          walk(d, next);
+        } else {
+          rows.push(el('div', { class: 'ft-row ' + k.change },
+            el('span', { class: 'mk ' + k.change, title: k.change }, MARKS[k.change] || '?'),
+            el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), k.name),
+            el('span', { class: 'ft-note' }, k.note),
+            el('span', { class: 'ft-sl' }, (k.slices || []).map((n) => el('span', { class: 'ref' }, 'S' + n)))));
+        }
+      });
+    };
+    walk(root, null);
+    return el('div', { class: 'ft' }, rows);
   }
 
   // Change map: a box is a part with a job, an arrow is what moves, a gray area is the app or package.

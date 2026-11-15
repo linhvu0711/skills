@@ -90,3 +90,10 @@ Task done: full suite green, lint green, build green.
 
 ## Out of scope
 - O1 orders export as PDF
+
+## File changes
+| File | Change | Slices | Note |
+|---|---|---|---|
+| `src/orders/export.ts` | edited | S1, S2 | streams CSV beside JSON |
+| `src/orders/export.test.ts` | edited | S1, S2 | + csv and empty cases |
+| `src/README.md` | edited | S1 | CSV next to JSON |

@@ -74,6 +74,12 @@ Task done: full suite green, lint green.
 ## Out of scope
 - O1 invitations
 
+## File changes
+| File | Change | Slices | Note |
+|---|---|---|---|
+| `src/teams.ts` | new | S1 | the team entity |
+| `src/teams.test.ts` | new | S1 | creates a team |
+
 ## Layer 2 · #73 Add a member
 ## Review
 Change:   adds a member to a team
@@ -107,3 +113,9 @@ Task done: full suite green, lint green.
 
 ## Out of scope
 - O1 roles
+
+## File changes
+| File | Change | Slices | Note |
+|---|---|---|---|
+| `src/members.ts` | new | S1 | adds a member to a team |
+| `src/members.test.ts` | new | S1 | joins a team |

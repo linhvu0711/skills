@@ -351,12 +351,13 @@ two match: ask. Then go on with their URLs.
    that text by its rules. The build copies these words, so this is
    where they meet the guides. A `Docs` line copied from the issue's
    `## Docs to write` keeps its agreed words. Then UI walks, videos,
-   gates, decided, out of scope. Last, the Review block and the Change
-   map, from the blocks you just wrote, placed first in the file: the
-   part a person reads to approve the plan. A run: `plan.md` § Run, one
-   Stack block, one stack Review, one Change map, one Facts block, then
-   the blocks above once per layer, each with its small Review, in stack
-   order. `Proved` sits under `Facts`, once.
+   gates, decided, out of scope. Last, the File changes block, then the
+   Review block and the Change map, from the blocks you just wrote,
+   placed first in the file: the part a person reads to approve the
+   plan. A run: `plan.md` § Run, one Stack block, one stack Review, one
+   Change map, one Facts block, then the blocks above once per layer,
+   each with its small Review and its File changes, in stack order.
+   `Proved` sits under `Facts`, once.
 
 7. **Done rule.** Walk `plan.md` § Done, item by item. A miss sends you
    back to step 4 or 5.
