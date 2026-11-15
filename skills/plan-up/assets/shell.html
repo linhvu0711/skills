@@ -418,8 +418,8 @@ const DATA = {};
               el('span', { class: 'mk ' + k.change, title: k.change }, MARKS[k.change] || '?'),
               el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), el('span', { class: 'ft-nm' }, k.name)),
               el('span', { class: 'ft-note' },
-                k.from ? ['from ', el('span', { class: 'ft-was' }, k.from), k.note ? ' · ' : ''] : null,
-                k.note, k.generated ? (k.note ? ' · ' : '') + 'generated' : null),
+                [k.from ? ['from ', el('span', { class: 'ft-was' }, k.from)] : null, k.note || null, k.generated ? 'generated' : null]
+                  .filter(b => b != null).map((b, j) => j ? [' · ', b] : b)),
               el('span', { class: 'ft-sl' }, (k.slices || []).map((n, j) => el('button', {
                 class: 'ref' + (j ? '' : ' first'), title: `open slice ${n}`, onclick: () => openSlice(li, n) }, 'S' + n)))));
           }
