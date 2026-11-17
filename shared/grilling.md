@@ -26,7 +26,7 @@ Options sit on their own lines, labelled A, B, C, D, as many as there are real w
 
 Draw each question before you ask it: an HTML page that shows its options side by side, so the user picks by looking. Each option is one panel, labelled A, B, C as in the text, with A marked as your pick. A panel shows what the user gets under that option, with one real example: the screen they see, the data that moves, the steps that run. Marks that carry a meaning get a key. Skip the picture only when it would repeat the words, such as a yes or no on a list already in the chat.
 
-Write the page outside every checkout, in the session's scratch folder or a temp folder, starting with `<!doctype html>`, so no tree the run must keep clean picks it up. Then show it where the user is, by the first case that holds:
+Write the page outside every checkout, in the session's scratch folder or a temp folder, starting with `<!doctype html>`, so no tree the run must keep clean picks it up. Each question gets its own file, named for it, as `same-shirt.html`, since a browser that reopens a path it already shows can keep the old page. Then show it where the user is, by the first case that holds:
 
 - The host has a tool that draws HTML in the chat, such as T3 Code's `html_preview` and `html_render`: check the page with `html_preview`, then show it with `html_render`. The text question follows under it.
 - `command -v open xdg-open` finds one: open the page in the user's browser with it, and say in one line that it is open.
