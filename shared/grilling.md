@@ -22,6 +22,18 @@ The context and the options are plain words, written for someone who has not rea
 
 Options sit on their own lines, labelled A, B, C, D, as many as there are real ways. Two is the usual case, four is the ceiling. Your pick is always A, and line A starts with the ✅ emoji and ends with `— my pick:` and the reason, so the pick stands out at a glance. Lines B, C, D carry no emoji.
 
+### Picture
+
+Draw each question before you ask it: an HTML page that shows its options side by side, so the user picks by looking. Each option is one panel, labelled A, B, C as in the text, with A marked as your pick. A panel shows what the user gets under that option, with one real example: the screen they see, the data that moves, the steps that run. Marks that carry a meaning get a key. Skip the picture only when it would repeat the words, such as a yes or no on a list already in the chat.
+
+Write the page outside every checkout, in the session's scratch folder or a temp folder, starting with `<!doctype html>`, so no tree the run must keep clean picks it up. Each question gets its own file, named for it, as `same-shirt.html`, since a browser that reopens a path it already shows can keep the old page. Then show it where the user is, by the first case that holds:
+
+- The host has a tool that draws HTML in the chat, such as T3 Code's `html_preview` and `html_render`: check the page with `html_preview`, then show it with `html_render`. The text question follows under it.
+- `command -v open xdg-open` finds one: open the page in the user's browser with it, and say in one line that it is open.
+- Neither: no picture, the text question alone.
+
+The text question stays whole: the settled list and the docs are drawn from it. The picture carries the example, so the context lines can leave theirs out.
+
 ### Your pick
 
 Pick what a careful senior engineer would ship: the option with the cleanest architecture and code, correct, easy to change later, and good for the user. Judge on those four alone; speed of writing is no weight. Ask where the logic belongs, and whether the option also covers the similar cases you found. A reason like "smallest diff", "one file", or "matches nearby code" is a shortcut talking; look again.
