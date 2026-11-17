@@ -26,11 +26,11 @@ Options sit on their own lines, labelled A, B, C, D, as many as there are real w
 
 Draw each question before you ask it: an HTML page that shows its options side by side, so the user picks by looking. Each option is one panel, labelled A, B, C as in the text, with A marked as your pick. A panel shows what the user gets under that option, with one real example: the screen they see, the data that moves, the steps that run. Marks that carry a meaning get a key. Skip the picture only when it would repeat the words, such as a yes or no on a list already in the chat.
 
-Show it where the user is:
+Write the page outside every checkout, in the session's scratch folder or a temp folder, starting with `<!doctype html>`, so no tree the run must keep clean picks it up. Then show it where the user is, by the first case that holds:
 
-- The host has a tool that draws HTML in the chat, such as T3 Code's `html_preview` and `html_render`: write the page to the session's scratch folder, starting with `<!doctype html>`, check it with `html_preview`, then show it with `html_render`. The text question follows under it.
-- No such tool: write the page and open it in the user's browser, `open <file>` on macOS or `xdg-open <file>` on Linux, and say in one line that it is open.
-- Neither: the text question alone.
+- The host has a tool that draws HTML in the chat, such as T3 Code's `html_preview` and `html_render`: check the page with `html_preview`, then show it with `html_render`. The text question follows under it.
+- `command -v open xdg-open` finds one: open the page in the user's browser with it, and say in one line that it is open.
+- Neither: no picture, the text question alone.
 
 The text question stays whole: the settled list and the docs are drawn from it. The picture carries the example, so the context lines can leave theirs out.
 
