@@ -116,10 +116,22 @@ t_kt_project_add_fails() {
   eq stdout "" "$out"
 }
 
+t_kt_runs_by_path() {
+  # Given: #42 size/L, T3CODE_CLI_PATH not set
+  kt_setup found
+  # When: the script runs by path, with no bash in front, as SKILL.md runs it
+  cd "$T"
+  run env -u T3CODE_CLI_PATH "$K" https://github.com/acme/app/issues/42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: not inside T3 Code" "$err"
+}
+
 cases=(
   "the launch line holds the row|t_kt_launch_line"
   "a repo with no project is added once|t_kt_adds_project_once"
   "outside T3 it stops|t_kt_outside_t3"
   "it runs the t3 that T3CODE_CLI_PATH names|t_kt_t3_off_path"
   "a project add that fails stops|t_kt_project_add_fails"
+  "kickoff runs by path|t_kt_runs_by_path"
 )
