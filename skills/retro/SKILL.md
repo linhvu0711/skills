@@ -80,9 +80,20 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    One path per file the cards' fixes name, from the setup map; a file the fix adds is named by the path it will have. Each row gives the card's `home` (`owner/name`) and `file`, its path in the home. A row with `unknown` gives the reason: the card stays in this project's group, marked `home unknown (<reason>)`. A fix with files in two homes becomes one card per home. A home is this project when it matches the step 1 repo, letters in any case. Group the cards by home: this project first, then each other home. Inside a home, one list, most important first, ranked by count and cost, each card with its kind. The first card is the top pick.
 
-   Done when every card has a home or `home unknown`.
+   Then check each home before its cards show. First take its name as GitHub keeps it, so a renamed repo or other letter case still matches: `gh repo view <home> --json nameWithOwner -q .nameWithOwner`. Then, card by card:
 
-9. **Report.** No card left: the report is the line `Nothing worth changing`, then what was read (§ Read line), and the run ends. Otherwise build the report page per `references/pages.md`, show it, print one line per card in chat, as `2. Add a check for unpushed worktrees · linhvu0711/skills · 5 times in 3 of 12 items · 9 user turns`, and ask in chat: `Which cards should become issues? Give their numbers, as 1 3 4, or none.` A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Card text and the chat list use short sentences and plain words, and explain an inside name, such as a tool or a role, the first time it appears, as `to-issue (the skill that writes an issue)`. Wait.
+   ```bash
+   python3 scripts/github.py latest <home> <file>
+   gh issue list --repo <home> --state all --search "<2 or 3 words of the card's problem>" --limit 20 --json number,title,url,state,closedAt
+   ```
+
+   - `latest` gives the file on the home's default branch. The fix is in it already: drop the card, and `What was read` names it as `already fixed in <home>: <title>`. `missing`: the file is not there yet, so the fix is not either.
+   - The search gives the home's issues for the words. An open one that is clearly this card's problem: the card shows `open #<n>`. A closed one whose problem shows again in an item dated after its `closedAt`: the card shows `the fix did not hold #<n>`.
+   - A `stop:` line from `latest`, or a failed `gh` call: show the card, and `What was read` says `<home>: check skipped (<the error line>)`.
+
+   Done when every card has a home or `home unknown`, and each home was checked or named as skipped.
+
+9. **Report.** No card left, or every card dropped as already fixed: the report is the line `Nothing worth changing`, then what was read (§ Read line) with each dropped fix, and the run ends. Otherwise build the report page per `references/pages.md`, show it, print one line per card in chat, as `2. Add a check for unpushed worktrees · linhvu0711/skills · 5 times in 3 of 12 items · 9 user turns`, and ask in chat: `Which cards should become issues? Give their numbers, as 1 3 4, or none.` A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Card text and the chat list use short sentences and plain words, and explain an inside name, such as a tool or a role, the first time it appears, as `to-issue (the skill that writes an issue)`. Wait.
 
 10. **File.** `none` ends the run. A number no card has: name it and ask again. For each card number the user gave, in order, in the repo the card's fix lives in:
    - Say the card in chat: its title, items, quotes, fix, and where. Then invoke the `to-issue` skill with the Skill tool, with the card as the conversation's last word and its repo named.
@@ -122,15 +133,15 @@ Each kind names where its fix lands. The setup map decides the exact file. A fix
 
 ## Unhappy states
 
-- **Error.** An item that cannot render or be read is listed as not read, with the reason. A T3 thread with no log is a session not found. A `stop:` line from `scripts/github.py`: read sessions only, and the report says GitHub was skipped and why.
-- **Empty.** Nothing in scope: say what you searched (window, topic, roots or all projects, sources) and stop. Nothing passes the bar: `Nothing worth changing`, step 9.
+- **Error.** An item that cannot render or be read is listed as not read, with the reason. A T3 thread with no log is a session not found. A `stop:` line from `scripts/github.py`: read sessions only, and the report says GitHub was skipped and why. A home whose check fails: the card still shows, and `What was read` names the home and says its check was skipped.
+- **Empty.** Nothing in scope: say what you searched (window, topic, roots or all projects, sources) and stop. Nothing passes the bar, or every card is already fixed: `Nothing worth changing`, step 9.
 - **Slow.** Many readers: after each batch of ten, one line, `read <k> of <n>`.
 - **Bad input.** A window you cannot turn into dates, a source that is no adapter folder and not `PRs` or `issues`, or a run folder with no `state.json`: say what you could not read, give one example of each form (`today`, `last 3 days`, `from 2026-10-01 to 2026-10-05`, `run <folder>`, a harness name), and stop.
 - **No permission.** `gh` not logged in or with no access to the repo: read sessions only, and the report gives `gh auth login`. A harness with data and no adapter: its scan line, `found <harness> sessions, cannot read them yet`.
 
 ## Read line
 
-The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, and each scan line.
+The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, each scan line, each fix dropped as already in its home, and each home whose check was skipped.
 
 ## Reference
 

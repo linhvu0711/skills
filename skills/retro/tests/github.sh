@@ -177,6 +177,35 @@ t_gh_home_no_remote() {
   has stdout '"unknown": "no GitHub remote"' "$out"
 }
 
+t_gh_latest_prints_file() {
+  # Given: the file on the default branch reads "line one"
+  fake_gh; printf 'line one' > "$FAKE_GH/repo.json"
+  # When
+  run python3 "$G" latest acme/skills skills/plan-up/SKILL.md
+  # Then
+  eq stdout '{"file": "skills/plan-up/SKILL.md", "text": "line one\n"}' "$out"
+}
+
+t_gh_latest_missing() {
+  # Given: the case above, but GitHub has no such file
+  fake_gh; printf 'line one' > "$FAKE_GH/repo.json"
+  printf 'gh: Not Found (HTTP 404)\n' > "$FAKE_GH/repo.fail"
+  # When
+  run python3 "$G" latest acme/skills skills/plan-up/SKILL.md
+  # Then
+  eq stdout '{"file": "skills/plan-up/SKILL.md", "missing": true}' "$out"
+}
+
+t_gh_latest_stops() {
+  # Given: the case above, but gh is not allowed to read it
+  fake_gh; printf 'line one' > "$FAKE_GH/repo.json"
+  printf 'HTTP 401\n' > "$FAKE_GH/repo.fail"
+  # When
+  run python3 "$G" latest acme/skills skills/plan-up/SKILL.md
+  # Then
+  eq stderr "stop: gh could not read skills/plan-up/SKILL.md on acme/skills: HTTP 401" "$err"
+}
+
 cases=(
   "list skips a PR a transcript names|t_gh_list_skips_touched_pr"
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
@@ -191,4 +220,7 @@ cases=(
   "home of a new file is its folder's repo|t_gh_home_new_file"
   "home unknown outside git|t_gh_home_outside_git"
   "home unknown with no GitHub remote|t_gh_home_no_remote"
+  "latest prints the file on the default branch|t_gh_latest_prints_file"
+  "latest says missing for a file not on the default branch|t_gh_latest_missing"
+  "latest stops when gh cannot read|t_gh_latest_stops"
 )

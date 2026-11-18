@@ -11,6 +11,7 @@ only untouched PRs). A PR is touched when a transcript holds its
     github.py pr <owner/repo> <n>
     github.py issues <owner/repo> <n>...
     github.py home <path>...
+    github.py latest <owner/repo> <file>
 
 `list` prints {"read_prs": [...], "read_issues": [...], "touched": [{"kind",
 "number", "by"}], "skipped": [{"url", "why"}]}, a skipped PR being one gh
@@ -18,6 +19,8 @@ could not read. `pr` and `issues` print one markdown bundle for a reader.
 `home` prints [{"path", "home", "file"}] per path, the GitHub repo that holds
 the path's real file (by the shared checkout resolver) and the file's path in
 it, or {"path", "unknown"} with "in no git repo" or "no GitHub remote".
+`latest` prints {"file", "text"}, the file on the repo's default branch, or
+{"file", "missing": true} when it is not there.
 A gh call that fails stops with `stop: gh could not <what>: <gh's last line>`
 on stderr and exit 1.
 """
@@ -226,6 +229,17 @@ def cmd_home(args):
     print(json.dumps(rows))
 
 
+def cmd_latest(args):
+    ok, out = gh_try("api", f"repos/{args.home}/contents/{args.file}", "-H", "Accept: application/vnd.github.raw")
+    if ok:
+        print(json.dumps({"file": args.file, "text": out}))
+    elif "HTTP 404" in out:
+        print(json.dumps({"file": args.file, "missing": True}))
+    else:
+        print(f"stop: gh could not read {args.file} on {args.home}: {out}", file=sys.stderr)
+        raise SystemExit(1)
+
+
 def cmd_issues(args):
     out = []
     for n in args.numbers:
@@ -255,8 +269,11 @@ def main():
     p.add_argument("numbers", nargs="+", type=int)
     p = sub.add_parser("home")
     p.add_argument("paths", nargs="+")
+    p = sub.add_parser("latest")
+    p.add_argument("home")
+    p.add_argument("file")
     args = ap.parse_args()
-    {"list": cmd_list, "pr": cmd_pr, "issues": cmd_issues, "home": cmd_home}[args.cmd](args)
+    {"list": cmd_list, "pr": cmd_pr, "issues": cmd_issues, "home": cmd_home, "latest": cmd_latest}[args.cmd](args)
 
 
 if __name__ == "__main__":
