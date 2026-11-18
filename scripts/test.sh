@@ -681,6 +681,18 @@ t_passes_agents_md_under_limit() {
   eq stdout "check: clean" "$out"
 }
 
+t_flags_shebang_not_executable() {
+  # Given: a file that starts with #! and has no run bit, committed
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf '#!/bin/sh\n' > run.sh; chmod 644 run.sh
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "run.sh: starts with #! but is not executable" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 t_flags_long_name() {
   # Given: a skill whose folder and name are 65 characters
   local n; n="$(times 65 a)"
@@ -903,6 +915,7 @@ cases=(
   "flags a name over 64 characters|t_flags_long_name"
   "flags an AGENTS.md of 200 lines|t_flags_long_agents_md"
   "passes an AGENTS.md of 199 lines|t_passes_agents_md_under_limit"
+  "flags a #! file with no run bit|t_flags_shebang_not_executable"
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"

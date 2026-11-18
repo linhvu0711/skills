@@ -32,7 +32,8 @@
 # its folder, and a `description` that is not empty. Each SKILL.md also stays in
 # Anthropic's limits: a body under 500 lines, a `description` of at most 1024
 # characters, and a `name` of at most 64. The top AGENTS.md stays under 200
-# lines, Anthropic's limit for a CLAUDE.md. Each skill agent,
+# lines, Anthropic's limit for a CLAUDE.md. A tracked file that starts with
+# `#!` has the run bit, mode 100755 in the index. Each skill agent,
 # `skills/<name>/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
 # file name without `.md`, a `description` that is not empty, and a `model` and
 # an `effort`.
@@ -351,6 +352,16 @@ if [ ${#paths[@]} -eq 0 ]; then
     n="$(git show :AGENTS.md | wc -l | tr -d ' ')"
     if [ "$n" -ge 200 ]; then problems+=("AGENTS.md: too long: $n lines (limit: under 200)"); fi
   fi
+
+  # A file that starts with #! is meant to run by path, which needs the run bit.
+  # git grep picks the few files with a #! line, so the hook reads few blobs.
+  while IFS= read -r -d '' f; do
+    read -r mode sha _ < <(git ls-files -s -- "$f")
+    [ "$mode" = 100644 ] || continue
+    if [ "$(git cat-file -p "$sha" | head -c 2)" = '#!' ]; then
+      problems+=("$f: starts with #! but is not executable")
+    fi
+  done < <(git grep --cached -lz -I -e '^#!')
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,
