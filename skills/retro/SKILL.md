@@ -70,7 +70,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    For each candidate, name its one kind, the one that best names its fix, as a repeated correction whose fix is a new lint rule is an automated check; then its fix per § Kinds of finding, and the file it lands in from the setup map. A job mapped to `none` gets "add one" and the skill that writes it: `set-review-rules` for review rules, `set-coding-standards` for standards, `write-for-agents` for a skill or steering text. Before you propose a check, read the repo's own: its check scripts, hooks, CI workflow. A check that exists but is unwired or broken is the finding. Every fix names the moment it would have stopped: the item, its `Where`, and the quote; a fix that stops no moment goes. Every candidate cites items and quotes from the evidence lists; one you cannot trace goes. Count each candidate: its moments (`times`), the items they came from out of all read (`3 of 12 items`), and its cost, the sum of its moments' `Cost` lines in their own units, as `14 tool calls, 3 user turns`. A worth-sharing card has a count and no cost.
 
-   Done when every moment, manual-steps line, and worth-sharing line in every evidence list is in a pattern, a one-time problem, or judged too small.
+   Done when every moment, manual-steps line, and worth-sharing line in every evidence list is in a pattern, a one-time problem, an open question, or judged too small.
 
 8. **Home.** A card's **home** is the repo that holds the file its fix changes. Find it from the file's real place on disk, so a skill linked into this project from another repo has that repo as its home:
 
@@ -78,9 +78,9 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 scripts/github.py home <path>...
    ```
 
-   One path per file the cards' fixes name, from the setup map; a file the fix adds is named by the path it will have. Each row gives the card's `home` (`owner/name`) and `file`, its path in the home. A row with `unknown` gives the reason: the card stays in this project's group, marked `home unknown (<reason>)`. A fix with files in two homes becomes one card per home. A home is this project when it matches the step 1 repo, letters in any case. Group the cards by home: this project first, then each other home. Inside a home, one list, most important first, ranked by count and cost, each card with its kind. The first card is the top pick.
+   One path per file the cards' fixes name, from the setup map; a file the fix adds is named by the path it will have. Each row gives the card's `home` (`owner/name`) and `file`, its path in the home. A row with `unknown` gives the reason: the card stays in this project's group, marked `home unknown (<reason>)`. A fix with files in two homes becomes one card per home. Then take each home's name as GitHub keeps it, so a renamed repo or other letter case still matches: `gh repo view <home> --json nameWithOwner -q .nameWithOwner`; a failed call keeps the name `home` gave. A home is this project when it matches the step 1 repo, letters in any case. Group the cards by home: this project first, then each other home. Inside a home, one list, most important first, ranked by count and cost, each card with its kind. The first card is the top pick.
 
-   Then check each home before its cards show. First take its name as GitHub keeps it, so a renamed repo or other letter case still matches: `gh repo view <home> --json nameWithOwner -q .nameWithOwner`. Then, card by card:
+   Then check each home before its cards show, card by card:
 
    ```bash
    python3 scripts/github.py latest <home> <file>
