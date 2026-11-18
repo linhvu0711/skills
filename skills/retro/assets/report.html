@@ -94,7 +94,7 @@
       </div>
       <div class="flex items-center gap-3">
         <div class="flex gap-1"><span class="dot hit-strong"></span><span class="dot"></span></div>
-        <span class="text-xs muted">{{k}} of {{n}} items · {{item list}}</span>
+        <span class="text-xs muted">{{times}} times in {{k}} of {{n}} items · {{cost}} · {{item list}}</span>
       </div>
       <ul class="font-mono text-sm muted"><li>{{where}}</li></ul>
       <div class="grid md:grid-cols-2 gap-4 items-start">
@@ -130,7 +130,7 @@
       </div>
       <div class="flex items-center gap-3">
         <div class="flex gap-1"><span class="dot hit-amber"></span><span class="dot hit-amber"></span></div>
-        <span class="text-xs muted">{{k}} of {{n}} items · {{item list}}</span>
+        <span class="text-xs muted">{{times}} times in {{k}} of {{n}} items · {{cost}} · {{item list}}</span>
       </div>
       <ul class="font-mono text-sm muted"><li>{{where}}</li></ul>
       <div class="grid md:grid-cols-2 gap-4 items-start">
@@ -145,6 +145,11 @@
       </div>
     </article>
     </div>
+  </section>
+
+  <section id="open-questions" class="space-y-3">
+    <h2 class="font-serif text-2xl">Open questions</h2>
+    <ul class="list-disc pl-5 space-y-1"><li>{{what was seen}} <span class="text-xs muted">{{item}} · {{where in it}}</span></li></ul>
   </section>
 
   <section id="top-pick">

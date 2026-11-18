@@ -20,7 +20,7 @@ The page shows; it takes no pick. The pick comes back in chat, as card numbers (
 
 ## Card text
 
-Card text is HTML. Code, a command, a flag, or a path goes in `<code>`, never a markdown backtick. A quote keeps its words, with `<`, `>`, and `&` escaped.
+Card text is HTML. Code, a command, a flag, or a path goes in `<code>`, never a markdown backtick. A quote keeps its words, with `<`, `>`, and `&` escaped. Short sentences and plain words. An inside name, such as a tool or a role, is explained the first time it appears.
 
 ## Report
 
@@ -29,13 +29,14 @@ Card text is HTML. Code, a command, a flag, or a path goes in `<code>`, never a 
 - **Cards** (`id="cards"`): one group per home that has a card, a `<div id="home-<owner>-<name>">` headed by the home's `owner/name`, with `(this project)` after this project's, as SKILL.md step 8 groups them. This project's group comes first, then each other home. Inside a group, one list, most important first. Patterns, one-time problems, and tips share the list. Cards are numbered from 1 down the whole page, so a number in chat names one card.
 - **Card**: one per pattern, one-time problem, or tip, as the scaffold's example cards show:
   - Title: the fix, short ("Add a check for unpushed worktrees").
-  - Badge: strength, filled: `Strong` (three or more items, or a costly moment), `Worth exploring` (two items), `Speculative` (the fix guess is the reader's, not seen in the repo), or `One-time` for a one-time problem. Beside it, the card's kind as a small outlined tag, and `home unknown (<reason>)` when step 8 found no home.
-  - Item strip: one dot per overview column, filled for the items this card came from, then `<k> of <n> items` and their names.
+  - Badge: strength, filled: `Strong` (three or more items, or a real cost: lost work, a bad change that shipped, or many wasted turns), `Worth exploring` (two items), `Speculative` (the fix guess is the reader's, not seen in the repo), or `One-time` for a one-time problem. Beside it, the card's kind as a small outlined tag, and `home unknown (<reason>)` when step 8 found no home.
+  - Item strip: one dot per overview column, filled for the items this card came from, then `<times> times in <k> of <n> items`, its cost, and the items' names.
   - Where: the file from the setup map, or `none: add one with /<skill>`, and the skill that owns it, as SKILL.md § Kinds of finding names; one line per file, in the mono list.
   - What happened: one blockquote per moment, manual-steps line, or worth-sharing line, each with its item and `Where`. The two that show the moment best come first; the rest go in the closed `<k> more quotes` part.
   - Before and after: a fix that changes text in a file on this machine reads that file and shows, per file, its path and place, the lines the fix changes as they are now, and the same lines after. The `Fix.` sentence follows under the two columns. Any other fix, such as `none: add one with /<skill>` or a file not on this machine, shows the Fix box in that place.
-  - Fix: one sentence; a check also names the mistake it would have failed on, by item and `Where`.
+  - Fix: one sentence that names the moment it would have stopped, by item and `Where`.
 - **Tip**: a card for repeated manual work whose skill the user can already type (SKILL.md § Kinds of finding) has the badge `Tip` in place of a strength, and its Fix box names the skill and its command.
+- **Open questions** (`id="open-questions"`): after the cards, one line per open question: what was seen, then its item and `Where`. None: no section.
 - **Top pick** (`id="top-pick"`): one larger card at the end: the card number, its title linked to its card, why it goes first in one sentence, and the scaffold's question line.
 
 Style: the scaffold's, editorial and plain. No interaction but the folded parts and the links.

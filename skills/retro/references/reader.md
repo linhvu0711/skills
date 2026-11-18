@@ -44,6 +44,8 @@ Read: <characters read> of <total characters>
   Where: <file name and the turn numbers>
   Quote: "<the exact words or command from the file that show it, 200 characters at most>"
 
+  Cost: <what it took: user turns, commands, or time, as the file shows>
+
 ## Worth sharing
 - <the way of working, one sentence>
   Where: <file name and the turn number or section>
