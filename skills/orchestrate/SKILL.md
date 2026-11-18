@@ -157,21 +157,29 @@ turn in it.
 ## Snooze
 
 A snoozed thread leaves the user's thread list until it wakes, so the
-user sees the board, not this thread. At the end of each
-`/orchestrate check` turn, before you post:
+user sees the board, not this thread. T3 unsnoozes it when the user
+sends a message. Every turn in this thread ends with this choice,
+before you post: the watcher's checks, § Start, § Resume, the
+commands, and any talk with the user.
 
-- The turn needs the user: a `stop:` line, an issue at `unlabeled`
+- The run needs the user: a `stop:` line, an issue at `unlabeled`
   with no `answer` (a proposal to make or one not answered yet), an
   issue whose `claim` is `failed`, a start recorded `--failed`, or
   `"done": true`. Each waits on words said only in this thread, so a
   later turn with none of them new still keeps it in view.
   `t3_thread_organize` with `action: unsnooze`, no `threadId`.
+- The talk is still open: this turn asks the user a question or
+  leaves a choice for them, or the user is partway through a request
+  across turns. Judge by reading the talk; no fixed words. For
+  example, "#72 can be archived, or kept for later. Which?" is open.
+  Unsnooze, as above.
 - Any other turn: `t3_thread_organize` with `action: snooze`, no
   `threadId`, and `snoozedUntil` 24 hours from now, in UTC ISO form.
+  A request done and reported in full is such a turn: after "archive
+  #72's thread" is done and said, snooze.
 
-§ Start and § Resume snooze the same way. The other commands leave the
-snooze as it is. T3 still alerts on a turn in a snoozed thread today;
-once it stops, the quiet turns are silent too.
+T3 still alerts on a turn in a snoozed thread today; once it stops,
+the quiet turns are silent too.
 
 ## Propose
 
@@ -226,8 +234,8 @@ Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
 ## Commands
 
 A live run takes these, said in this thread. Each runs one
-`orchestrate.sh` call, posts one line, and changes nothing else; `add` and
-the answers then run § Check.
+`orchestrate.sh` call, posts one line, and changes no other run state; `add`
+and the answers then run § Check. The turn ends per § Snooze.
 
 - `check now`: § Check.
 - `check every <n> min`: `timer <owner/repo> --every <n>`. The watcher
