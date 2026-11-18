@@ -57,6 +57,8 @@ point is speed and low noise. File it and get out.
 
 ### 1. Find the repo
 
+A repo the chat names for this issue, as a caller skill names one: use it. Else:
+
 ```bash
 gh repo view --json nameWithOwner -q .nameWithOwner
 ```
@@ -101,8 +103,8 @@ learn it now, once.
 
 ```bash
 python3 "$CONV" forget owner/repo   # only for --relearn
-gh issue list --state all --limit 30 --json title -q '.[].title'
-gh label list --limit 200 --json name -q '.[].name'
+gh issue list --repo owner/repo --state all --limit 30 --json title -q '.[].title'
+gh label list --repo owner/repo --limit 200 --json name -q '.[].name'
 ```
 
 Prefix shape from the titles:
@@ -144,7 +146,7 @@ has real history.
 One search, 2 or 3 keywords from the idea:
 
 ```bash
-gh issue list --state open --search "<keywords>" --limit 10 --json number,title,url
+gh issue list --repo owner/repo --state open --search "<keywords>" --limit 10 --json number,title,url
 ```
 
 A result that is clearly the same thing: show it to the user and stop.
@@ -224,12 +226,10 @@ in Context.
 f=$(mktemp) && cat > "$f" <<'EOF'
 <body>
 EOF
-gh issue create --title "<title>" --body-file "$f" --assignee @me --label "<seed_label or bug_label>" --label "<priority_label>"
+gh issue create --repo owner/repo --title "<title>" --body-file "$f" --assignee @me --label "<seed_label or bug_label>" --label "<priority_label>"
 # When the user gave no priority, drop the second --label and create with
 # the kind's label alone.
 ```
-
-Use `--repo owner/repo` if the current directory is not the target repo.
 
 When the body references a screenshot or recording, first check that this
 `gh` can upload it: `gh issue create --help` lists `--attach`. It does: run
@@ -248,9 +248,9 @@ once:
   and retry.
 
   ```bash
-  gh label create "seed" --color C5DEF5 --description "Captured idea. Not triaged. May be dropped."
-  gh label create "bug"  --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."
-  gh label create "p1"   --color D93F0B --description "Priority 1"
+  gh label create --repo owner/repo "seed" --color C5DEF5 --description "Captured idea. Not triaged. May be dropped."
+  gh label create --repo owner/repo "bug"  --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."
+  gh label create --repo owner/repo "p1"   --color D93F0B --description "Priority 1"
   ```
 
   Colors: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a

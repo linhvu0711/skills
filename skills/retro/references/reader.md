@@ -38,11 +38,14 @@ Read: <characters read> of <total characters>
 
 ## Repeated corrections
 - "<the user's or reviewer's words, exact>" (<where>)
+  Cost: <what all the times it was given took together: user turns, review rounds, or time, as the file shows>
 
 ## Manual steps
 - <the steps the user did by hand, in order, one line>
   Where: <file name and the turn numbers>
   Quote: "<the exact words or command from the file that show it, 200 characters at most>"
+
+  Cost: <what it took: user turns, commands, or time, as the file shows>
 
 ## Worth sharing
 - <the way of working, one sentence>

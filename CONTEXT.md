@@ -185,7 +185,7 @@ A worktree that is clean, whose PR is merged on GitHub (or whose branch is in th
 _Avoid_: stale, old, abandoned
 
 **Checkout resolver**:
-The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also finds the main checkout alone, and lists a repo's worktrees.
+The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also finds the main checkout alone, lists a repo's worktrees, and names the GitHub repo of a checkout.
 _Avoid_: repo finder, repo lookup
 
 ## Retro
@@ -199,7 +199,7 @@ Two or more moments, from two or more sessions or PRs, that one fix would stop. 
 _Avoid_: trend, theme
 
 **One-time problem**:
-A serious moment from one session that is part of no pattern. The retro report lists it in the group of its kind of finding, with a `One-time` badge.
+A moment from one session that is part of no pattern and cost a lot: lost work, a bad change that shipped, or many wasted turns. The report ranks it in its home repo's list with a `One-time` badge.
 _Avoid_: outlier
 
 **Repeated correction**:
@@ -217,6 +217,14 @@ _Avoid_: best practice, win
 **Setup map**:
 For one repo, the file that does each job for its agents (steering, review rules, coding standards, skills, checks and CI, docs), or none.
 _Avoid_: config list
+
+**Home repo**:
+The repo that holds the file a retro card's fix changes. Retro finds it from that file's real place on disk and files the card there. An issue filed in any repo but the project's own leaves out the project's name.
+_Avoid_: target repo, destination
+
+**Open question**:
+A problem retro's readers saw but no session found the cause of, so retro can name no fix. The report lists it in one line, not as a card.
+_Avoid_: unknown card
 
 **Touched PR**:
 A PR that a session in scope names by number or URL. Retro does not read it.

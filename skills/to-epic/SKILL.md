@@ -55,9 +55,12 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    remember it. It becomes the parent, per the rules file § Origin seed. A
    closed match goes on the parent's Related line.
 
-7. **Create, in phase order.** Each call is one `gh issue create
-   --assignee @me`, the parent and every sub-issue alike, per the rules
-   file § Assignee. Numbers from earlier calls feed later ones.
+7. **Create, in phase order.** Every `gh` call in this step names
+   `--repo owner/repo`, the repo the rules file's gate found, so a run in
+   one checkout files into the repo the chat named. Each call is one
+   `gh issue create --repo owner/repo --assignee @me`, the parent and
+   every sub-issue alike, per the rules file § Assignee. Numbers from
+   earlier calls feed later ones.
 
    1. Parent: title with `epic` in the type slot, priority
       label if named, body per the parent template with the phase list
@@ -79,14 +82,14 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
       of the tickets that gate it, and the `Related` and `Noted for later`
       lines filled with real numbers.
    4. Rewrite the parent body with the numbers filled in:
-      `gh issue edit <P> --body-file "$f"`.
+      `gh issue edit <P> --repo owner/repo --body-file "$f"`.
 
    On any failure: stop. Report what exists (numbers) and what is left
    (titles). When the user says "continue", read what exists and create only
    the rest:
 
    ```bash
-   gh issue view <P> --json subIssues -q '.subIssues.nodes[] | "\(.number)\t\(.title)"'
+   gh issue view <P> --repo owner/repo --json subIssues -q '.subIssues.nodes[] | "\(.number)\t\(.title)"'
    ```
 
    Match by title, skip those, resume the sequence, then finish step 7.4.

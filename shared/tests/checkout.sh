@@ -186,6 +186,28 @@ t_ck_main_no_checkout() {
   eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
 }
 
+t_ck_slug_alias() {
+  # Given: a checkout whose origin is the alias gh:acme/app, rewritten to GitHub
+  ck_setup
+  git init -q -b main "$T/dev/app"
+  git -C "$T/dev/app" remote add origin gh:acme/app
+  git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
+  # When
+  run bash "$C" slug "$T/dev/app"
+  # Then
+  eq stdout "acme/app" "$out"
+}
+
+t_ck_slug_no_remote() {
+  # Given: the case above with no origin added
+  ck_setup
+  git init -q -b main "$T/dev/app"
+  # When
+  run bash "$C" slug "$T/dev/app"
+  # Then
+  eq stderr "stop: $T/dev/app has no GitHub remote" "$err"
+}
+
 cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
@@ -206,4 +228,6 @@ cases=(
   "main finds the one checkout by search|t_ck_main_by_search"
   "main reads the map it wrote|t_ck_main_from_map"
   "main stops when no checkout is found|t_ck_main_no_checkout"
+  "slug names the repo an alias origin points at|t_ck_slug_alias"
+  "slug stops on a checkout with no GitHub remote|t_ck_slug_no_remote"
 )

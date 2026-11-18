@@ -27,6 +27,12 @@ session. Write so that reader can act on the issue alone.
   home folder), and no name of a thing that dies with the session: a VM or
   sandbox ID, a PID, a temp branch, a local port. Say what the thing was
   instead: "a fresh macOS VM", not its ID.
+- **Nothing of the source repo.** An issue or comment filed in a repo other
+  than the one the chat ran in names nothing of that repo: not its name, its
+  `owner/name`, a path in it, or a path in one of its worktrees. In a quote,
+  put what the thing is in its place, as "a web app's cart file". A caller
+  that names the words to leave out, as retro does, has each one checked
+  before the issue is made.
 - **No session words.** "Run 3", "the agent", "my limit", "as we saw above"
   mean nothing to the reader. Name what happened. How it was found is one
   line at most: `Found while <doing what>, YYYY-MM-DD.`
@@ -63,8 +69,9 @@ A ticket can be written only when all three hold, from the conversation alone:
    For `feat` and `fix` that includes the unhappy paths that change what gets
    built (see Unhappy paths). A missing one that the repo has no pattern for
    and that changes the work is a gap.
-3. **Where**: the repo is known (`gh repo view --json nameWithOwner`, or the
-   repo the conversation is clearly about).
+3. **Where**: the repo is known: the one the chat or a caller skill names for this issue,
+   else the current folder's (`gh repo view --json nameWithOwner`), else the
+   repo the conversation is clearly about.
 
 For a `task`, "what" is the thing that must exist at the end, "done" is the
 code ticket being able to use it, and "where" is the platform and account on
@@ -490,6 +497,10 @@ every fact you listed came back or came back as "not found". No second round.
 
 ## Repo convention
 
+`owner/repo` in this file is the repo the gate's Where line found. Every `gh`
+command here names it with `--repo`, so a run in one checkout files into
+another.
+
 Load once per repo:
 
 ```bash
@@ -500,8 +511,8 @@ python3 "$CONV" get owner/repo
 **Hit**: use it. **Miss**, or the user said "relearn": learn now.
 
 ```bash
-gh issue list --state all --limit 30 --json title -q '.[].title'
-gh label list --limit 200 --json name,description -q '.[] | "\(.name)\t\(.description)"'
+gh issue list --repo owner/repo --state all --limit 30 --json title -q '.[].title'
+gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\(.name)\t\(.description)"'
 ```
 
 - `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or
@@ -528,13 +539,13 @@ Label creation, only for labels this file names and only when `gh` fails on
 them:
 
 ```bash
-gh label create "size/XS" --color BFDADC --description "Fits one place, 1-2 files"
-gh label create "size/S"  --color 7FC8CC --description "One thin path, existing seams"
-gh label create "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
-gh label create "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
-gh label create "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
-gh label create "manual" --color 6E7781 --description "Work in a platform outside the repo; /complete-task drives it"
-gh label create "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
+gh label create --repo owner/repo "size/XS" --color BFDADC --description "Fits one place, 1-2 files"
+gh label create --repo owner/repo "size/S"  --color 7FC8CC --description "One thin path, existing seams"
+gh label create --repo owner/repo "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
+gh label create --repo owner/repo "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
+gh label create --repo owner/repo "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
+gh label create --repo owner/repo "manual" --color 6E7781 --description "Work in a platform outside the repo; /complete-task drives it"
+gh label create --repo owner/repo "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
 ```
 
 Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`,
@@ -554,7 +565,7 @@ Before creating, two searches on the same 2 or 3 keywords. First the open
 issues:
 
 ```bash
-gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number,title,labels,url
+gh issue list --repo owner/repo --state open --search "<2 or 3 keywords>" --limit 10 --json number,title,labels,url
 ```
 
 - A result that is clearly the same work and is **not** a seed: show it and
@@ -566,7 +577,7 @@ gh issue list --state open --search "<2 or 3 keywords>" --limit 10 --json number
 Then the closed issues, so work that comes back keeps its history:
 
 ```bash
-gh issue list --state closed --search "<2 or 3 keywords>" --limit 10 --json number,title,url
+gh issue list --repo owner/repo --state closed --search "<2 or 3 keywords>" --limit 10 --json number,title,url
 ```
 
 - A result that is clearly the same work does not stop the run. The new
@@ -582,7 +593,7 @@ A `bug` label, or a bug issue the conversation named, like the one
 the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
-gh issue edit <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
+gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
   --add-label "<size label>" [--add-label "<ready-to-build label>"] \
   [--add-label "<priority label>"] [--type <Name>]
 ```
@@ -601,7 +612,7 @@ and nothing is closed. A ticket: the seed becomes the ticket. An epic: the
 seed or the map becomes the parent, and the sub-issues go under it.
 
 ```bash
-gh issue edit <seed> --title "<title>" --body-file "$f" \
+gh issue edit --repo owner/repo <seed> --title "<title>" --body-file "$f" \
   [--remove-label seed] [--remove-label discovery/map] [--add-label …] [--type <Name>]
 ```
 

@@ -21,7 +21,7 @@ Free to start now: #41
 Yours: #42 Stripe Connect account, #50 live invoice
 ```
 
-Every ticket is written for a stranger with neither the chat nor your machine: code in Context as permalinks, and no local paths or session words.
+Every ticket is written for a stranger with neither the chat nor your machine: code in Context as permalinks, and no local paths or session words. Name another repo in the chat and it searches and files there. The tickets name nothing of the repo you ran it in.
 
 Over 12 tickets, it proposes splitting into several epics first.
 
