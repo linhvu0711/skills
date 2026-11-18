@@ -38,7 +38,7 @@ Read: <characters read> of <total characters>
 
 ## Repeated corrections
 - "<the user's or reviewer's words, exact>" (<where>)
-  Cost: <what each time it was given took: user turns, review rounds, or time, as the file shows>
+  Cost: <what all the times it was given took together: user turns, review rounds, or time, as the file shows>
 
 ## Manual steps
 - <the steps the user did by hand, in order, one line>
