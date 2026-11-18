@@ -17,7 +17,7 @@ for port in $(seq 8765 8784); do
     echo "http://127.0.0.1:$port/$file"; exit 0
   fi
   lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1 && continue
-  (cd "$dir" && nohup python3 -m http.server "$port" --bind 127.0.0.1 >/dev/null 2>&1 &)
+  (cd "$dir" && exec nohup python3 -m http.server "$port" --bind 127.0.0.1 </dev/null >/dev/null 2>&1) &
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     serves "$port" && { echo "http://127.0.0.1:$port/$file"; exit 0; }
     sleep 0.2

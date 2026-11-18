@@ -53,8 +53,30 @@ t_sv_missing_file() {
   no_server
 }
 
+t_sv_returns_while_server_runs() {
+  sv_setup; printf a > "$T/d/report.html"
+  printf '#!/bin/sh\necho "$3 $(pwd -P)" >> "%s/python3.calls"\nln -s "$(pwd -P)" "%s/root.$3"\necho $$ > "%s/python3.pid"\nexec sleep 3\n' "$T" "$T" "$T" > "$T/bin/python3"
+  s=$SECONDS
+  out="$(sh "$here/../serve.sh" "$T/d" report.html)"
+  took=$((SECONDS - s))
+  eq stdout "http://127.0.0.1:8765/report.html" "$out"
+  [ "$took" -lt 2 ] || eq "seconds taken" "under 2" "$took"
+  kill -0 "$(cat "$T/python3.pid")" 2>/dev/null || eq "server" "still running" "gone"
+}
+
+t_sv_new_server_misses_file() {
+  sv_setup; printf a > "$T/d/report.html"
+  printf '#!/bin/sh\necho "$3 $(pwd -P)" >> "%s/python3.calls"\n' "$T" > "$T/bin/python3"
+  run sh "$here/../serve.sh" "$T/d" report.html
+  eq exit 1 "$code"
+  eq stderr "started a server on 8765, but it does not serve report.html" "$err"
+  eq stdout "" "$out"
+}
+
 cases=(
   "serve reuses a server that gives back the file|t_sv_reuses_server"
   "serve skips a port that holds another folder|t_sv_skips_other_folder"
   "serve stops on a missing file|t_sv_missing_file"
+  "serve returns while the server runs|t_sv_returns_while_server_runs"
+  "serve stops when the new server does not serve the file|t_sv_new_server_misses_file"
 )
