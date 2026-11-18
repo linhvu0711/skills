@@ -220,6 +220,16 @@ t_ko_no_dry_run() {
   eq stderr "stop: unexpected argument: --dry-run" "$err"
 }
 
+t_ko_runs_by_path() {
+  # Given: no checkout of acme/app
+  ko_setup; mkdir -p "$T/dev"
+  # When: the script runs by path, with no bash in front, as SKILL.md runs it
+  cd "$T"
+  run env -u HERDR_ENV KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" "$K" https://github.com/acme/app/issues/42
+  # Then
+  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -239,4 +249,5 @@ cases=(
   "a bad effort stops|t_ko_bad_effort"
   "the pane is named by numbers|t_ko_on_name"
   "dry-run is gone|t_ko_no_dry_run"
+  "kickoff runs by path|t_ko_runs_by_path"
 )
