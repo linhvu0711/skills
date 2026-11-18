@@ -206,6 +206,17 @@ t_gh_latest_stops() {
   eq stderr "stop: gh could not read skills/plan-up/SKILL.md on acme/skills: HTTP 401" "$err"
 }
 
+t_gh_list_pr_date() {
+  # Given: PR 44, opened 2026-10-03; no transcript names it
+  gh_dir
+  printf '%s' '[{"number":44,"url":"https://github.com/acme/app/pull/44","title":"B","headRefName":"feat/b","createdAt":"2026-10-03T10:00:00Z","closingIssuesReferences":[]}]' > "$FAKE_GH/pr-list..json"
+  printf '[]' > "$FAKE_GH/issue-list.json"
+  # When
+  run python3 "$G" list acme/app --transcripts "$D" --since 2026-10-01
+  # Then
+  has read_prs '{"number": 44, "url": "https://github.com/acme/app/pull/44", "title": "B", "date": "2026-10-03"}' "$out"
+}
+
 cases=(
   "list skips a PR a transcript names|t_gh_list_skips_touched_pr"
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
@@ -223,4 +234,5 @@ cases=(
   "latest prints the file on the default branch|t_gh_latest_prints_file"
   "latest says missing for a file not on the default branch|t_gh_latest_missing"
   "latest stops when gh cannot read|t_gh_latest_stops"
+  "list gives each read PR its date|t_gh_list_pr_date"
 )

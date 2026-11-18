@@ -13,9 +13,10 @@ only untouched PRs). A PR is touched when a transcript holds its
     github.py home <path>...
     github.py latest <owner/repo> <file>
 
-`list` prints {"read_prs": [...], "read_issues": [...], "touched": [{"kind",
-"number", "by"}], "skipped": [{"url", "why"}]}, a skipped PR being one gh
-could not read. `pr` and `issues` print one markdown bundle for a reader.
+`list` prints {"read_prs": [{"number", "url", "title", "date"}], "read_issues":
+[...], "touched": [{"kind", "number", "by"}], "skipped": [{"url", "why"}]}, a
+skipped PR being one gh could not read, and a date the day the PR was opened.
+`pr` and `issues` print one markdown bundle for a reader.
 `home` prints [{"path", "home", "file"}] per path, the GitHub repo that holds
 the path's real file (by the shared checkout resolver) and the file's path in
 it, or {"path", "unknown"} with "in no git repo" or "no GitHub remote".
@@ -117,7 +118,7 @@ def cmd_list(args):
                 if not ref["url"].startswith(f"https://github.com/{repo}/pull/"):
                     skipped.append({"url": ref["url"], "why": "in another repo"})
                     continue
-                ok, out = gh_try("pr", "view", ref["url"], "--json", "number,url,title,headRefName")
+                ok, out = gh_try("pr", "view", ref["url"], "--json", "number,url,title,headRefName,createdAt")
                 if ok:
                     prs[ref["url"]] = json.loads(out)
                 else:
@@ -129,7 +130,7 @@ def cmd_list(args):
         until = args.until or dt.date.today().isoformat()
         window = f"updated:{args.since}..{until}"
         prs = gh_json(f"list {repo}", "pr", "list", "--repo", repo, "--state", "all", "--search", window,
-                      "--json", "number,url,title,headRefName,closingIssuesReferences", "--limit", "200")
+                      "--json", "number,url,title,headRefName,createdAt,closingIssuesReferences", "--limit", "200")
         issues = gh_json(f"list {repo}", "issue", "list", "--repo", repo, "--state", "all", "--search", window,
                          "--json", "number,url,title", "--limit", "200")
         closed = {i["number"] for pr in prs for i in pr.get("closingIssuesReferences") or []}
@@ -139,7 +140,8 @@ def cmd_list(args):
         if by:
             touched.append({"kind": "pr", "number": pr["number"], "by": by})
         else:
-            read_prs.append({k: pr.get(k) for k in ("number", "url", "title")})
+            read_prs.append({**{k: pr.get(k) for k in ("number", "url", "title")},
+                             "date": (pr.get("createdAt") or "")[:10]})
     for i in issues:
         if i["number"] in closed:
             continue
