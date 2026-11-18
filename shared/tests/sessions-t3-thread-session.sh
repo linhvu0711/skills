@@ -21,6 +21,16 @@ t_t3_maps_claude_thread() {
   eq stdout '{"thread": "t1", "harness": "claude", "session": "cad53cbd-dacd-4191-9903-0b67e9fb883b"}' "$out"
 }
 
+t_t3_maps_launch_thread() {
+  # Given: T3 logs thread mcp:launch:abc as events.mcp-launch-abc.log
+  t3_home
+  printf '[2026-10-30T03:45:32.026Z] NTIVE: {"provider":"claudeAgent","event":{"payload":{"type":"query.open","options":{"sessionId":"cad53cbd-dacd-4191-9903-0b67e9fb883b"}}}}\n' > "$HOME/.t3/userdata/logs/provider/events.mcp-launch-abc.log"
+  # When
+  run python3 "$M" mcp:launch:abc
+  # Then
+  eq stdout '{"thread": "mcp:launch:abc", "harness": "claude", "session": "cad53cbd-dacd-4191-9903-0b67e9fb883b"}' "$out"
+}
+
 t_t3_no_log() {
   # Given: no log for thread t9
   t3_home
@@ -33,5 +43,6 @@ t_t3_no_log() {
 
 cases=(
   "maps a Claude thread to its session|t_t3_maps_claude_thread"
+  "maps a T3 launch thread to its session|t_t3_maps_launch_thread"
   "a thread with no log is a not found row|t_t3_no_log"
 )
