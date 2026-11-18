@@ -68,13 +68,23 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
 7. **Patterns.** Read the evidence lists, never the transcripts or bundles. Group moments by the fix that would stop them: two moments are one pattern only when **one fix** stops both, and a pattern needs two or more sessions or PRs. A moment from one item that cost a lot (lost work, a wrong change shipped, many turns wasted) is a one-time problem; the rest stay out. The same correction from the user or a reviewer in two or more items is a repeated correction. The same steps done by hand in two or more items are repeated manual work. The same way of working that went well in two or more items, from the lists' `Worth sharing`, is a worth-sharing pattern.
 
-   For each candidate, name its one kind, the one that best names its fix, as a repeated correction whose fix is a new lint rule is an automated check; then its fix per § Kinds of finding, and the file it lands in from the setup map. A job mapped to `none` gets "add one" and the skill that writes it: `set-review-rules` for review rules, `set-coding-standards` for standards, `write-for-agents` for a skill or steering text. Before you propose a check, read the repo's own: its check scripts, hooks, CI workflow. A check that exists but is unwired or broken is the finding. A proposed check names the past mistake it would have failed on: the item, its `Where`, and the quote; a check with no such mistake goes. Every candidate cites items and quotes from the evidence lists; one you cannot trace goes. Group the candidates by kind. Order the groups by their most costly card, and inside a group put the most costly card first, by cost to future runs. The first card is the top pick.
+   For each candidate, name its one kind, the one that best names its fix, as a repeated correction whose fix is a new lint rule is an automated check; then its fix per § Kinds of finding, and the file it lands in from the setup map. A job mapped to `none` gets "add one" and the skill that writes it: `set-review-rules` for review rules, `set-coding-standards` for standards, `write-for-agents` for a skill or steering text. Before you propose a check, read the repo's own: its check scripts, hooks, CI workflow. A check that exists but is unwired or broken is the finding. A proposed check names the past mistake it would have failed on: the item, its `Where`, and the quote; a check with no such mistake goes. Every candidate cites items and quotes from the evidence lists; one you cannot trace goes.
 
    Done when every moment, manual-steps line, and worth-sharing line in every evidence list is in a pattern, a one-time problem, or judged too small.
 
-8. **Report.** No card left: the report is the line `Nothing worth changing`, then what was read (§ Read line), and the run ends. Otherwise build the report page per `references/pages.md`, show it, and ask in chat: `Which cards should become issues? Give their numbers, as 1 3 4, or none.` A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Wait.
+8. **Home.** A card's **home** is the repo that holds the file its fix changes. Find it from the file's real place on disk, so a skill linked into this project from another repo has that repo as its home:
 
-9. **File.** `none` ends the run. A number no card has: name it and ask again. For each card number the user gave, in order, in the repo the card's fix lives in:
+   ```bash
+   python3 scripts/github.py home <path>...
+   ```
+
+   One path per file the cards' fixes name, from the setup map; a file the fix adds is named by the path it will have. Each row gives the card's `home` (`owner/name`) and `file`, its path in the home. A row with `unknown` gives the reason: the card stays in this project's group, marked `home unknown (<reason>)`. A fix with files in two homes becomes one card per home. A home is this project when it matches the step 1 repo, letters in any case. Group the cards by home: this project first, then each other home. Inside a home, one list, most important first, by cost to future runs, each card with its kind. The first card is the top pick.
+
+   Done when every card has a home or `home unknown`.
+
+9. **Report.** No card left: the report is the line `Nothing worth changing`, then what was read (§ Read line), and the run ends. Otherwise build the report page per `references/pages.md`, show it, and ask in chat: `Which cards should become issues? Give their numbers, as 1 3 4, or none.` A fix whose text is steering, a skill, or a rule follows `../write-for-agents/SKILL.md`. Wait.
+
+10. **File.** `none` ends the run. A number no card has: name it and ask again. For each card number the user gave, in order, in the repo the card's fix lives in:
    - Say the card in chat: its title, items, quotes, fix, and where. Then invoke the `to-issue` skill with the Skill tool, with the card as the conversation's last word and its repo named.
    - `to-issue`'s gate stops: invoke the `capture` skill with the Skill tool, with the card's title, fix, and quotes as the seed.
    - Neither can create it (no GitHub repo, no access): the card stays as text, with the reason.
@@ -113,7 +123,7 @@ Each kind names where its fix lands. The setup map decides the exact file. A fix
 ## Unhappy states
 
 - **Error.** An item that cannot render or be read is listed as not read, with the reason. A T3 thread with no log is a session not found. A `stop:` line from `scripts/github.py`: read sessions only, and the report says GitHub was skipped and why.
-- **Empty.** Nothing in scope: say what you searched (window, topic, roots or all projects, sources) and stop. Nothing passes the bar: `Nothing worth changing`, step 8.
+- **Empty.** Nothing in scope: say what you searched (window, topic, roots or all projects, sources) and stop. Nothing passes the bar: `Nothing worth changing`, step 9.
 - **Slow.** Many readers: after each batch of ten, one line, `read <k> of <n>`.
 - **Bad input.** A window you cannot turn into dates, a source that is no adapter folder and not `PRs` or `issues`, or a run folder with no `state.json`: say what you could not read, give one example of each form (`today`, `last 3 days`, `from 2026-10-01 to 2026-10-05`, `run <folder>`, a harness name), and stop.
 - **No permission.** `gh` not logged in or with no access to the repo: read sessions only, and the report gives `gh auth login`. A harness with data and no adapter: its scan line, `found <harness> sessions, cannot read them yet`.

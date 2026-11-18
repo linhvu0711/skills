@@ -10,10 +10,14 @@ only untouched PRs). A PR is touched when a transcript holds its
     github.py list <owner/repo> --transcripts DIR (--since D [--until D] | --issues N...)
     github.py pr <owner/repo> <n>
     github.py issues <owner/repo> <n>...
+    github.py home <path>...
 
 `list` prints {"read_prs": [...], "read_issues": [...], "touched": [{"kind",
 "number", "by"}], "skipped": [{"url", "why"}]}, a skipped PR being one gh
 could not read. `pr` and `issues` print one markdown bundle for a reader.
+`home` prints [{"path", "home", "file"}] per path, the GitHub repo that holds
+the path's real file (by the shared checkout resolver) and the file's path in
+it, or {"path", "unknown"} with "in no git repo" or "no GitHub remote".
 A gh call that fails stops with `stop: gh could not <what>: <gh's last line>`
 on stderr and exit 1.
 """
@@ -26,6 +30,7 @@ import re
 import subprocess
 import sys
 
+CHECKOUT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "checkout.sh")
 LOG_TAIL = 80  # the failing assert sits at the end of a failed log
 
 PR_QUERY = """
@@ -200,6 +205,27 @@ def cmd_pr(args):
     print("\n".join(out))
 
 
+def cmd_home(args):
+    rows = []
+    for path in args.paths:
+        real = os.path.realpath(path)
+        d = real if os.path.isdir(real) else os.path.dirname(real)
+        # A file the fix will add is placed by the nearest folder that exists.
+        while not os.path.isdir(d):
+            d = os.path.dirname(d)
+        top = subprocess.run(["git", "-C", d, "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+        if top.returncode != 0:
+            rows.append({"path": path, "unknown": "in no git repo"})
+            continue
+        top = os.path.realpath(top.stdout.strip())
+        slug = subprocess.run(["bash", CHECKOUT, "slug", top], capture_output=True, text=True)
+        if slug.returncode != 0:
+            rows.append({"path": path, "unknown": "no GitHub remote"})
+            continue
+        rows.append({"path": path, "home": slug.stdout.strip(), "file": os.path.relpath(real, top)})
+    print(json.dumps(rows))
+
+
 def cmd_issues(args):
     out = []
     for n in args.numbers:
@@ -227,8 +253,10 @@ def main():
     p = sub.add_parser("issues")
     p.add_argument("repo")
     p.add_argument("numbers", nargs="+", type=int)
+    p = sub.add_parser("home")
+    p.add_argument("paths", nargs="+")
     args = ap.parse_args()
-    {"list": cmd_list, "pr": cmd_pr, "issues": cmd_issues}[args.cmd](args)
+    {"list": cmd_list, "pr": cmd_pr, "issues": cmd_issues, "home": cmd_home}[args.cmd](args)
 
 
 if __name__ == "__main__":

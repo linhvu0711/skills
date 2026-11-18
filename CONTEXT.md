@@ -185,7 +185,7 @@ A worktree that is clean, whose PR is merged on GitHub (or whose branch is in th
 _Avoid_: stale, old, abandoned
 
 **Checkout resolver**:
-The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also finds the main checkout alone, and lists a repo's worktrees.
+The shared core module that finds, for an `owner/repo` and a branch, the main checkout, the worktree, and the default branch. It also finds the main checkout alone, lists a repo's worktrees, and names the GitHub repo of a checkout.
 _Avoid_: repo finder, repo lookup
 
 ## Retro
@@ -217,6 +217,10 @@ _Avoid_: best practice, win
 **Setup map**:
 For one repo, the file that does each job for its agents (steering, review rules, coding standards, skills, checks and CI, docs), or none.
 _Avoid_: config list
+
+**Home repo**:
+The repo that holds the file a retro card's fix changes. Retro finds it from that file's real place on disk and files the card there. An issue filed in any repo but the project's own leaves out the project's name.
+_Avoid_: target repo, destination
 
 **Touched PR**:
 A PR that a session in scope names by number or URL. Retro does not read it.

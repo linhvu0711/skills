@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # checkout.sh: find a repo's main checkout, make or reuse a worktree for a
-# branch, and name the repo's default branch.
+# branch, name the repo's default branch, and name a checkout's GitHub repo
+# (`checkout.sh slug <dir>`).
 #
 #   checkout.sh <owner/repo> <branch> [--base <ref>]
 #
@@ -13,7 +14,8 @@
 # A new worktree goes to
 # ${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>/<branch>,
 # with every `/` in the branch written as `-`. Shared by /ship, /ready-pr,
-# /kickoff-herdr, /kickoff-t3, restack.sh, prune-worktrees.sh, and orchestrate.sh.
+# /kickoff-herdr, /kickoff-t3, restack.sh, prune-worktrees.sh, orchestrate.sh,
+# and retro's github.py.
 #
 # - A worktree of the repo is on the branch, clean, in this shape or the
 #   older <root>/<repo>/<branch>: reused.
@@ -32,6 +34,12 @@
 #
 # Finds only the main checkout, by the order above, with no gh call. Exit 0:
 # one line, `FROM=<map|cwd|search> MAIN=<dir>`, the path last.
+#
+#   checkout.sh slug <dir>
+#
+# Names the GitHub repo of the checkout at <dir> by its origin, as
+# origin_is reads it. Exit 0: one line, `owner/repo`. No GitHub origin:
+# `stop: <dir> has no GitHub remote`.
 #
 #   checkout.sh worktrees <dir>
 #
@@ -79,15 +87,25 @@ github_slug() {
     *github.com[:/]*) printf '%s' "$1" | sed -E 's#\.git$##; s#/$##; s#.*github\.com[:/]##' ;;
   esac
 }
-# origin_is <dir> <owner/repo>: the checkout's origin is that GitHub repo. The
+# origin_slug <dir>: owner/repo of the checkout's origin, or nothing. The
 # URL git uses after insteadOf names it when it is on GitHub, so an alias such
 # as gh:acme/app counts; else the URL as configured does, so a rewrite to a
-# local mirror never hides it. One checkout never names two repos.
-origin_is() {
+# local mirror never hides it. One checkout never names two repos. It always
+# returns 0, since a failing $(...) under set -e would exit before a caller's
+# own stop line.
+origin_slug() {
   local raw eff
-  raw="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 1
-  eff="$(github_slug "$(git -C "$1" remote get-url origin 2>/dev/null)")"
-  if [ -n "$eff" ]; then [ "$eff" = "$2" ]; else [ "$(github_slug "$raw")" = "$2" ]; fi
+  eff="$(github_slug "$(git -C "$1" remote get-url origin 2>/dev/null || true)")"
+  if [ -n "$eff" ]; then printf '%s' "$eff"; return 0; fi
+  raw="$(git -C "$1" config --get remote.origin.url 2>/dev/null || true)"
+  github_slug "$raw"
+  return 0
+}
+# origin_is <dir> <owner/repo>: the checkout's origin is that GitHub repo.
+origin_is() {
+  local s
+  s="$(origin_slug "$1")"
+  [ -n "$s" ] && [ "$s" = "$2" ]
 }
 is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
 
@@ -133,6 +151,11 @@ find_main() {
 
 # The forms that take no branch.
 case "${1:-}" in
+  slug)
+    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh slug <dir>"
+    s="$(origin_slug "$2")"
+    [ -n "$s" ] || die "$2 has no GitHub remote"
+    printf '%s\n' "$s"; exit 0 ;;
   worktrees)
     [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
     worktrees "$2"; exit 0 ;;

@@ -121,6 +121,62 @@ t_gh_list_run_pr_other_repo() {
   has skipped '"skipped": [{"url": "https://github.com/acme/lib/pull/7", "why": "in another repo"}]' "$out"
 }
 
+# home_dirs: in a fresh T, a skills repo and a shop repo, each with an HTTPS
+# GitHub origin, and the shop linking one skill of the skills repo.
+home_dirs() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  git init -q "$T/skills"; git -C "$T/skills" remote add origin https://github.com/acme/skills.git
+  mkdir -p "$T/skills/skills/plan-up"; : > "$T/skills/skills/plan-up/SKILL.md"
+  git init -q "$T/shop"; git -C "$T/shop" remote add origin https://github.com/acme/shop.git
+  : > "$T/shop/AGENTS.md"
+  mkdir -p "$T/shop/.claude/skills"; ln -s "$T/skills/skills/plan-up" "$T/shop/.claude/skills/plan-up"
+}
+
+t_gh_home_linked_skill() {
+  # Given: the shop links plan-up from the skills repo
+  home_dirs
+  # When
+  run python3 "$G" home "$T/shop/.claude/skills/plan-up/SKILL.md"
+  # Then
+  has stdout '"home": "acme/skills", "file": "skills/plan-up/SKILL.md"' "$out"
+}
+
+t_gh_home_project_file() {
+  # Given: a file of the shop itself
+  home_dirs
+  # When
+  run python3 "$G" home "$T/shop/AGENTS.md"
+  # Then
+  has stdout '"home": "acme/shop", "file": "AGENTS.md"' "$out"
+}
+
+t_gh_home_new_file() {
+  # Given: no docs folder in the shop yet
+  home_dirs
+  # When
+  run python3 "$G" home "$T/shop/docs/guide.md"
+  # Then
+  has stdout '"home": "acme/shop", "file": "docs/guide.md"' "$out"
+}
+
+t_gh_home_outside_git() {
+  # Given: a plain folder in no git repo
+  home_dirs; mkdir -p "$T/loose"; : > "$T/loose/notes.md"
+  # When
+  run python3 "$G" home "$T/loose/notes.md"
+  # Then
+  has stdout '"unknown": "in no git repo"' "$out"
+}
+
+t_gh_home_no_remote() {
+  # Given: a git repo with no remote
+  home_dirs; git init -q "$T/local"; : > "$T/local/README.md"
+  # When
+  run python3 "$G" home "$T/local/README.md"
+  # Then
+  has stdout '"unknown": "no GitHub remote"' "$out"
+}
+
 cases=(
   "list skips a PR a transcript names|t_gh_list_skips_touched_pr"
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
@@ -130,4 +186,9 @@ cases=(
   "pr bundle keeps going when a failed log cannot be read|t_gh_pr_bundle_log_unreadable"
   "list skips a run's PR gh cannot read|t_gh_list_run_pr_unreadable"
   "list skips a run's PR from another repo|t_gh_list_run_pr_other_repo"
+  "home of a linked skill file is the skills repo|t_gh_home_linked_skill"
+  "home of a project file is the project|t_gh_home_project_file"
+  "home of a new file is its folder's repo|t_gh_home_new_file"
+  "home unknown outside git|t_gh_home_outside_git"
+  "home unknown with no GitHub remote|t_gh_home_no_remote"
 )
