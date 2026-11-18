@@ -27,7 +27,7 @@ report. This file is the order of operations.
    `task`: no size, no XL check. The lookup round goes to the platform's
    docs instead, per the rules file § Lookup, so Steps can be written.
 
-4. **Duplicate check.** Two searches, open then closed, per the rules file
+4. **Duplicate check.** Two searches, open then closed, in the issue's repo, per the rules file
    § Duplicates and seeds. Same open work, not a seed: show it, stop.
    Origin found: remember its number, and whether it is a bug, a seed, or
    a map. A closed match goes on the Related line.
