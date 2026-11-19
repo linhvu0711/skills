@@ -316,7 +316,8 @@ block above, and the Done rule holds whole.
   crash, or One writer,
   is a choice the issue got wrong, and ends the short path as
   a choice does, below.
-- **Out of scope.** The issue's Scope `Out`, verbatim.
+- **Out of scope.** The issue's Scope `Out`, verbatim, then one line
+  for each list or save case that does not apply, per § Slices.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
   only the `Decided` lines the issue's `Open` lines left, and the
   rebuild line above when there is one.
