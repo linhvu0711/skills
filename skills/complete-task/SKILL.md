@@ -31,7 +31,7 @@ Every other step written in the issue counts as the user's yes. It is the yes th
 
 ## Secret
 
-You read names, never values. While a page shows a secret, take no snapshot, no screenshot, and no page text from it.
+You read names, never values. While a page shows a secret, take no snapshot, no screenshot, and no page text from it, such as `ardia browse snapshot` or `read`.
 
 1. Open the page that shows the secret in your window, and the place it goes with its name filled in. The issue's Hand back says the names. When it names no place, ask one question with your pick, such as `Save X_CLIENT_SECRET as a repo secret? (my pick)`.
 2. Give a your step: copy from the one tab, paste in the other, save, send `done`.
@@ -43,7 +43,7 @@ You read names, never values. While a page shows a secret, take no snapshot, no 
 2. **Read.** `gh issue view <n> --repo <owner/repo> --json number,title,body,labels,comments,state`. A closed issue, or one with no `manual` label: say which, and stop with nothing changed.
 3. **Sort.** List each step from `## Steps`. Mark each one: yours to do, a your step, or ask first. With no steps, work them out from `## What to build` and `## Done when`; when that still leaves a doubt, ask one question with your pick. Tell the user in one line which steps will be theirs.
 4. **Terminal first.** A step a CLI can do or show with a login it has already (`gh`, `wrangler`, `railway`, `vercel`), do there.
-5. **Browser and apps.** The rest through use-mac: § Browser for a web page, in your own window with your tab found by ID; its loop for a Mac app. Prove each step by reading the page or app again. When a page differs from the issue's steps, do what the page needs for the same result, and keep the difference for the result comment.
+5. **Browser and apps.** The rest through use-mac: § Browser for a web page, which picks how to drive the browser and works in a tab of your own; its loop for a Mac app. Prove each step by reading the page or app again. When a page differs from the issue's steps, do what the page needs for the same result, and keep the difference for the result comment.
 6. **Your step and ask first.** As § Your step and § Ask first say, at the point the step comes.
 7. **Secret.** As § Secret says.
 8. **Wrong path.** As § Wrong path says.
@@ -52,7 +52,7 @@ You read names, never values. While a page shows a secret, take no snapshot, no 
     - One result comment on the issue: what exists now and where, each Done when box with its proof, each difference from the steps, and what is left. Names only, never a value.
     - Tick each proved box: write the body with `- [ ]` made `- [x]` on those lines to a temp file, then `gh issue edit <n> --repo <owner/repo> --body-file <file>`.
     - Every box proved: `gh issue close <n> --repo <owner/repo>`. Else leave it open; the comment says what is left.
-    - Close your browser window as use-mac § Browser says, quit the apps you opened, and delete your screenshots and temp files.
+    - Close your browser tab or window as use-mac § Browser says, quit the apps you opened, and delete your screenshots and temp files.
     - A bug in the code seen on the way: log it with the capture skill, one line, and go on.
     - Tell the user in a few lines: done, or what is left.
 
@@ -60,5 +60,5 @@ You read names, never values. While a page shows a secret, take no snapshot, no 
 
 - **A step fails.** Try it once more when that is safe: a read, a page load, a form that saved nothing. Else stop, and give the user numbered steps for what is left, with what you saw.
 - **A long wait**, such as an app review or a DNS change that takes hours. Comment `Waiting for <what>, about <time>. Say resume #<n> to the orchestrator when it is over.`, then `gh issue edit <n> --repo <owner/repo> --add-label waiting`. When `gh` fails because the label is missing, create it with its line in `../../shared/issue-rules.md` § Labels, and add it again. Then end: the task turn moves on to the next task.
-- **No reach to the browser.** A script error about JavaScript from Apple Events, or an Automation pop-up. Give a your step that turns it on: in Brave, View > Developer > Allow JavaScript from Apple Events; for the pop-up, OK, or System Settings > Privacy & Security > Automation, then your terminal app, then the browser.
+- **No reach to the browser.** A script error about JavaScript from Apple Events, or an Automation pop-up. Give a your step that turns it on: in Brave, View > Developer > Allow JavaScript from Apple Events; for the pop-up, OK, or System Settings > Privacy & Security > Automation, then your terminal app, then the browser. With Ardia, `ardia browse` exits 2 when it cannot reach Ardia: give a your step from its message, such as opening Ardia.
 - **No rights.** Name the account you are in and the right it lacks, such as `signed in as <account>, which is not an owner of the Cloudflare account`, and give a your step to switch accounts or get the right.
