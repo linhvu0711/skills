@@ -22,7 +22,7 @@ When a step fails, it tries once more if that is safe, then gives you numbered s
 
 - `gh`, signed in.
 - [use-mac](../use-mac/) and its `agent-desktop`.
-- Brave, Chrome, or Safari with JavaScript from Apple Events turned on (Brave and Chrome: View > Developer).
+- Brave, Chrome, or Safari with JavaScript from Apple Events turned on (Brave and Chrome: View > Developer), or Ardia with its own `ardia` skill.
 
 ## Fits with
 
