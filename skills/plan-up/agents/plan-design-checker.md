@@ -1,7 +1,7 @@
 ---
 name: plan-design-checker
 description: "Checks the code design of a finished /plan-up plan with fresh eyes, before the user sees it: a part it patches but should rebuild, an empty module, a seam with one adapter, logic in the wrong place, tests that reach inside, parts the work does not need. Spawned only by plan-up step 8, beside plan-correctness-checker. Reads the issue, the plan, and the code; changes nothing."
-tools: Agent, Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash
 model: fable
 effort: high
 ---
@@ -41,9 +41,8 @@ planner's view.
      need.
 - A wrong fact, a step that breaks, or a test that cannot pass is the
   correctness checker's job: leave it.
-- Settle each doubt before you report it. Start Explore to read
-  across many files, with the reader lines of that `facts.md` above
-  each brief. Run your own commands only to read.
+- Settle each doubt before you report it, yourself, with Read, Grep,
+  Glob, and read-only Bash, such as a search or a `git log`.
 - Change nothing: no file edits, no commits, no installs, no GitHub
   writes.
 

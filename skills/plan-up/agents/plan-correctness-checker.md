@@ -1,7 +1,7 @@
 ---
 name: plan-correctness-checker
 description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
-tools: Agent, Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
 ---
@@ -35,10 +35,9 @@ start from the code, not from the planner's view.
   the save runs, and one for a second tab that already did it. A case
   that does not apply needs an `Out of scope` line that says why. A
   case with neither is a finding.
-- Settle each doubt before you report it. Start Explore to read
-  across many files, and Runner to run a command and judge it, with the
-  reader and runner lines of that `facts.md` above each brief. Run
-  your own commands only to read.
+- Settle each doubt before you report it, yourself, with Read, Grep,
+  Glob, and read-only Bash: a search, a `git log`, or a test run in a
+  temp folder.
 - Change nothing: no file edits, no commits, no installs outside a temp
   folder, no GitHub writes.
 
