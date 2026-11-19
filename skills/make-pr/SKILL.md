@@ -100,7 +100,8 @@ and stop before step 7.
    `gh pr view <n> --json body -q .body`, and carry every line under
    `Follow-ups` into the new body; those issues are not in the diff.
    A proof folder: `## Proof` is its `proof.md`, pasted whole, with each
-   test case linked on the branch as the shape says; and the body file
+   test case linked at the head commit it just pushed, as the shape
+   says, so each run links at the new head; and the body file
    is `pr-body.md` inside the proof folder, next to the media, not a
    temp file. Then run `../unslop/SKILL.md` on the prose: the title, and
    the text of `Summary`, `Where to look`, and `Breaking changes`. Leave
