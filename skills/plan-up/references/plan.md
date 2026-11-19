@@ -316,7 +316,8 @@ block above, and the Done rule holds whole.
   crash, or One writer,
   is a choice the issue got wrong, and ends the short path as
   a choice does, below.
-- **Out of scope.** The issue's Scope `Out`, verbatim.
+- **Out of scope.** The issue's Scope `Out`, verbatim, then one line
+  for each list or save case that does not apply, per § Slices.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
   only the `Decided` lines the issue's `Open` lines left, and the
   rebuild line above when there is one.
@@ -580,7 +581,18 @@ plain case, and `Decided` says so in one clause. A new dependency is
 never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
 answered before the `Change` names it.
 Unhappy paths are tests like any other, usually in the same slice as the
-happy path of their seam. A case name says what the code does, as in
+happy path of their seam. Two seams miss them most, so name their cases
+as tests. The list cases: each list a screen reads gets a test while it
+loads, one when the load fails, and one when it comes back empty while
+a filter or a pick is still set. The save cases: each save gets two
+tests for a resend after a lost answer, one that sends the same request
+again and ends with one saved result, and one whose resend carries a
+later edit and ends with that edit saved; one for a close or a cancel
+while the save runs; and one for a second tab that already did it, as a
+`not_found` from a record that tab removed. A second tab that edited
+the record first is a race, per § One writer. A case that does not apply
+is an `Out of scope` line that says why, as for any unhappy path. A
+case name says what the code does, as in
 `exports one order as CSV`, never how it does it, as in `calls
 formatRow once`. Mocks only at borders, named in `Given`. A database the
 repo owns is no border when the repo has a test database: the test runs
