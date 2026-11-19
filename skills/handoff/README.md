@@ -4,7 +4,7 @@ Turns the plan that `/plan-up` wrote in this chat into a prompt, starts a Devin 
 
 ## Use it when
 
-You have a plan you said `ok` to and want a cloud agent to build it, with its own machine, browser, and screen recorder.
+You have a plan you said `go` to and want a cloud agent to build it, with its own machine, browser, and screen recorder.
 
 - `/handoff [devin|cursor] <issue-url>`: the first prompt for one ticket. No URL: the plan this chat holds. A plan with no issue (plan-up's chat plan) stops here: a cloud session needs an issue, so make one with [to-issue](../to-issue/) first.
 - `/handoff [devin|cursor] <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
