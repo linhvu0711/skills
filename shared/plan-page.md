@@ -87,7 +87,7 @@ Plan: #42 Export orders as CSV · size/M · base main
 Plan check: correctness 3 found · 2 fixed · 1 asked you; design none found
 http://127.0.0.1:8765/plan-acme-shop-42.html
 $HOME/.agents/artifacts/plan/plan-acme-shop-42.md
-Say ok, or name a ref (S2, W1, D3, #4) and what to change.
+Say go, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
 The `Plan check:` line is the one plan-up step 8 holds: one part per

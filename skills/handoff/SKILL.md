@@ -56,7 +56,7 @@ set's, the first ticket URL. Say the pick in one line, as
 
 ## First prompt
 
-1. **Source.** A plan the user said `ok` to in this chat: read its
+1. **Source.** A plan the user said `go` to in this chat: read its
    `.md` file, the path `/plan-up` gave in its summary
    (`$HOME/.agents/artifacts/plan/plan-<slug>.md`, per
    `../../shared/plan-page.md`). No plan: say

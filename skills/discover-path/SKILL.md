@@ -83,15 +83,15 @@ work already decided. The map comes first.
    origin, the doc entries under `## Docs to write`. Stop.
 
 3. **Propose in chat.** The proposal format in `references/map.md`. End with
-   the three questions, verbatim:
+   the three questions and the go line, verbatim:
 
    > Is every ticket a question, not a job?
    > Are the blocking edges right: does each ticket wait only on what truly gates it?
    > Is anything in the fog sharp enough to be a ticket now, or the other way round?
+   > Say go to create the map, or say what to change.
 
-   A reply that is not an approve word (`approve`, `approved`, `go`,
-   `create`) is a change request: apply it, show the whole proposal again,
-   ask again. Done when the user has said an approve word; GitHub is
+   A reply that is not `go` is a change request: apply it, show the whole
+   proposal again, ask again. Done when the user has said `go`; GitHub is
    untouched until then.
 
 4. **Labels and title style.** The five `discovery/*` labels, per

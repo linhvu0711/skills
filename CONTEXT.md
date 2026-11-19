@@ -237,7 +237,7 @@ _Avoid_: translator, parser
 ## Ship
 
 **Ship mode**:
-How far one /ship run takes a ticket: `review` stops after the plan for the user's ok, `ready` stops at a ready-to-merge PR, `merge` merges it. The user forces it with an option; with none, the agent picks it from the plan.
+How far one /ship run takes a ticket: `review` stops after the plan for the user's `go`, `ready` stops at a ready-to-merge PR, `merge` merges it. The user forces it with an option; with none, the agent picks it from the plan.
 _Avoid_: lane, path, mode (alone), auto
 
 ## Tasks

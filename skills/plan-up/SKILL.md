@@ -1,6 +1,6 @@
 ---
 name: plan-up
-description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, a whole epic, stacked as PRs, or work this chat agreed on with no issue, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for ok, then /handoff."
+description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, a whole epic, stacked as PRs, or work this chat agreed on with no issue, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for go, then /handoff."
 disable-model-invocation: true
 ---
 
@@ -84,7 +84,7 @@ two match: ask. Then go on with their URLs.
    installs. The checkout you start
    in is never read for facts and never changed.
 
-   The copy lives until the run ends, by `ok` or by any stop. Then
+   The copy lives until the run ends, by `go` or by any stop. Then
    `bash scripts/base-copy.sh --remove <BASE_WT>`.
 
    Then prune old plans: `python3 scripts/prune.py`.
@@ -435,9 +435,10 @@ two match: ask. Then go on with their URLs.
    headless host. Chat
    gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An
    edit: change the `.md`, rebuild, bump `v`, show the summary
-   again. `ok`: remove the base copy (step 1), say
+   again. `go`: remove the base copy (step 1), say
    `Ready for /handoff.` (a chat plan: `Ready for /ship.`, since the
-   cloud needs an issue), and stop.
+   cloud needs an issue), and stop. Any other reply, a question too:
+   answer it and wait again.
 
 ## Examples
 

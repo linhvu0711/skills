@@ -407,16 +407,17 @@ When the chat did not settle a state, in this order:
    half the data or none. This is a product decision. The gate fails. Ask.
 
 Ask as one short block, not one question per state. Each line is a state,
-your proposed default, and it wants only a yes or a change:
+your proposed default, and it wants only `go` or a change:
 
 ```
 Unhappy paths, tell me which are wrong:
 - Upload fails: show error, keep nothing. Retry is out.
 - File over 10 MB: reject before upload, show the size limit.
 - Loading: spinner on the button, page stays usable.
+Say go, or edit a line.
 ```
 
-"ok" or an edited line closes it. Then write the issue.
+`go` or an edited line closes it. Then write the issue.
 
 ### Known (when the chat ran something)
 
