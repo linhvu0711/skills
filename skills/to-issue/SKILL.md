@@ -1,6 +1,6 @@
 ---
 name: to-issue
-description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview."
+description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview. A raw idea, or a bug seen with no agreed fix, goes to capture instead."
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
@@ -12,7 +12,16 @@ report. This file is the order of operations.
 ## Steps
 
 1. **Gate.** Apply the readiness gate to what the conversation already holds.
-   Pass: continue. Fail: list the gaps and stop.
+   Pass: continue. Fail: judge what the chat holds, then take one branch.
+   - **Raw**: nobody has decided what to build, or how a broken thing must
+     behave after the fix: a loose idea, or a bug seen with no agreed fix.
+     And the chat names no origin, per the rules file § Duplicates and
+     seeds. Invoke the capture skill with the Skill tool, with the thing in
+     the chat's words. After its `Captured:` line, add one line,
+     `Not a ticket yet: <the gate's first gap>.`, and stop.
+   - **Decided**: anything else, such as agreed work with a missing
+     unhappy path, or a thing whose origin issue is named. List the gaps
+     and stop, per the rules file.
 
 2. **Repo convention.** Load it, or learn it once. Done when `style`, `size`
    labels, and (only if the user named a priority) the priority label are
@@ -98,11 +107,23 @@ title `[FIX] Checkout button does nothing in Safari`, `bug` label off, size
 label on, the old body kept under Original report. One line back with the
 URL of #42.
 
-**User:** `/to-issue` after a chat about a login bug, with no repro steps.
+**User:** `/to-issue` after a chat that noticed the Retry button does nothing
+when the server returns 500, and moved on without deciding what it should do.
 
-Gate fails on "what": the actual behaviour is not stated. Reply lists one gap:
-"What does the user see instead of the dashboard? Error text, blank page, or
-redirect?" Nothing is created.
+Gate fails on "done": nobody said what Retry must do after the fix. Raw: a
+bug seen with no agreed fix, and no bug issue named. The capture skill files
+`[bug] Retry button does nothing on a 500 response`. Two lines back:
+`Captured: <url> (on your clipboard)` and `Not a ticket yet: what must Retry
+do after a 500?`
+
+**User:** `/to-issue` after a chat that settled order export as CSV, but never
+said what an empty orders list exports, and the repo has no empty-state
+pattern to copy.
+
+Gate fails on "done": the empty state changes the work. Decided: the work is
+agreed and one fact is missing. Reply lists one gap: "What does Export give
+for an empty list: a CSV with only the header row, or a message and no
+file?" Nothing is created.
 
 **User:** `/to-issue` after a chat that settled that sign-in with X needs
 an X developer app, and named the code ticket #5 that will read the

@@ -80,7 +80,8 @@ top of the repo. Unhappy paths do not apply.
 Any one missing: stop. List the gaps in one short block, each as the question
 whose answer would close it. Name `/grill` as the way to close many at once,
 or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet
-known. Write nothing on GitHub.
+known. Write nothing on GitHub, except the `capture` issue that `to-issue`
+step 1 files for a raw thing.
 
 ## Types
 

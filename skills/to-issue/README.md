@@ -4,7 +4,7 @@ Turns what the conversation already settled into one typed, sized GitHub issue t
 
 ## Use it when
 
-You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/to-issue` (`$to-issue` in Codex). If the chat is missing who does what, what "done" means, or which repo, it lists those gaps as questions and stops. [grill](../grill/) closes them, or [triage](../triage/) for a bug whose cause is unknown.
+You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/to-issue` (`$to-issue` in Codex). If the chat holds only a loose idea, or a bug nobody has decided how to fix, it files it through [capture](../capture/) as a seed or a bug, and tells you in one line what a real ticket still needs. If the work is agreed but one fact is missing, like what an empty list shows or which repo, it lists the gaps as questions and stops. [grill](../grill/) closes them, or [triage](../triage/) for a bug whose cause is unknown.
 
 ## What you get
 
@@ -14,6 +14,13 @@ You get one line back, with the URL on your clipboard:
 
 ```
 https://github.com/acme/shop/issues/42 · size/M · feat
+```
+
+When it files through capture, you get two lines back instead:
+
+```
+Captured: https://github.com/acme/shop/issues/88 (on your clipboard)
+Not a ticket yet: what must Retry do after a 500?
 ```
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
@@ -32,6 +39,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Turns a `[bug]` or a `seed` from [capture](../capture/), any bug or seed issue the chat names, or a one-ticket map that [discover-path](../discover-path/) cleared, into the ticket in place: same number, new title and body. Nothing new is opened and nothing is closed.
 - Puts doc text that a [grill](../grill/) agreed on (a glossary entry, an ADR) under `## Docs to write`, so it lands in the PR that ships the code.
 - Sends XL work to [to-epic](../to-epic/).
+- Sends a loose idea, or a bug with no agreed fix, to [capture](../capture/).
 - Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff-herdr](../kickoff-herdr/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
 
 ## Credits
