@@ -54,7 +54,7 @@ Plan: #42 Export orders as CSV · size/M · base main
 6 done-when · 6 slices · 1 doc · 1 probe · 3 walks · 2 videos · 1 fork answered (A, stream)
 Plan check: correctness 3 found · 2 fixed · 1 asked you; design none found
 http://127.0.0.1:8765/plan-acme-shop-42.html
-Say ok, or name a ref (S2, W1, D3, #4) and what to change.
+Say go, or name a ref (S2, W1, D3, #4) and what to change.
 ```
 
 A `perf` ticket's plan gets a Perf block (Metric, Command, Before, and a Pass rule with its run count) from the issue's Baseline and Target, read by the shared benchmark checklist.
