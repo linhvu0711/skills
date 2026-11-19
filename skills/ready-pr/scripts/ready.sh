@@ -72,6 +72,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]' >&2; exit 64; }
+# The watch does bash arithmetic on these, which takes whole numbers only and
+# reads a leading 0 as octal, so each is checked here and read in base 10.
+for flag in settle timeout poll; do
+  value="${!flag}"
+  [[ "$value" =~ ^[0-9]+$ ]] || { printf 'stop: --%s-sec takes whole seconds: %s\n' "$flag" "$value" >&2; exit 64; }
+  printf -v "$flag" '%d' "$((10#$value))"
+done
 
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
