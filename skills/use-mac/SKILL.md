@@ -19,7 +19,7 @@ Tell the user which route gave each answer, and say so before you change route. 
 
 ## Stay quiet
 
-The user's mouse and front window stay theirs for the whole task: every route runs headless. Open apps with `open -g -a <App>`, act through `agent-desktop` refs, and read through `osascript` queries. These take the screen: `--headed`, `open -a` without `-g`, `focus-window`, `activate`, and System Events `keystroke`, `key code`, or `click`. Use one only when the user's own message says to use their screen, as in "use my screen", and never offer it. A step that only the front window can do is § Your step. The one exception is § Browser's own window for a browser with no agent skill, after the warning that section gives.
+The user's mouse and front window stay theirs for the whole task: every route runs headless. Open apps with `open -g -a <App>`, act through `agent-desktop` refs, and read through `osascript` queries. These take the screen: `--headed`, `open -a` without `-g`, `focus-window`, `activate`, and System Events `keystroke`, `key code`, or `click`. Use one only when the user's own message says to use their screen, as in "use my screen", and never offer it. A step that only the front window can do is § Your step. The one exception is § Browser for a browser with no agent skill: its own window, after the warning that section gives, and the `activate` that gives the front back to the user's app.
 
 ## Reach
 
