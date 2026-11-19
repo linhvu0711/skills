@@ -115,6 +115,12 @@ scratch folder when you finish; the system clears its temp folders.
   turns `$?` into `0` before proofbox gets it, so the screen or the
   caption shows other text than the step. A `'` in the text is written
   `'\''`.
+- The Sandbox has no terminal window of its own; on linux `xterm` is
+  there only when the repo's setup script added it. Before a video with
+  a command step, check once: `proofbox exec <id> -- sh -c 'command -v
+  xterm'`. Exit 1: record no video, and report each of its walks `FAIL
+  · no terminal in the Sandbox: xterm not found`; the session fixes the
+  setup script.
 - A command in a terminal: one `proofbox type` per command, then
   `proofbox key <id> Return --screenshot <scratch>/look.png`, and Read
   it, so you look at the screen after Enter before the next step. Never
@@ -125,7 +131,16 @@ scratch folder when you finish; the system clears its temp folders.
   and the folder from your brief. It starts the command in its own
   process group, which holds the browser and every process it starts,
   so § Close the browser stops them all. A web page: the browser
-  opens on the URL. A terminal walk: `xterm -geometry <cols>x<rows> -fa
+  opens on the URL. A web walk with a command step opens both windows
+  in one call: `bash <box.sh> open <folder> -- 'xterm -geometry
+  100x8+0-24 -fa Monospace -fs 12 & <the Open command>'`; `box.sh
+  close` ends both. Click the app's window before `box.sh fit`, which
+  measures the window in front. At the step, bring the terminal to the
+  front with `proofbox exec <id> -- sh -c 'xdotool search --class xterm
+  windowactivate'`, click inside it, type the command, and press
+  `Return` with `--screenshot` as above, so the video shows the command
+  and its output; then click the app's window, which comes back to the
+  front, and go on. A terminal walk: `xterm -geometry <cols>x<rows> -fa
   Monospace -fs 12` from the brief, then click inside it before you
   type; an unfocused window drops the keys. The browser or window does
   not start, or shows an error in place of the app:
@@ -191,8 +206,13 @@ One recording per video under `Videos`, in order:
 3. For each numbered step: first `proofbox mark <id> 'step <k>: <the
    step>'`, cut to 60 characters, then do the step. One mark per step,
    so the mark's number is the step's number; a timed run keeps this
-   with its empty marks (§ How you see and act). Waiting for something
-   slow: `proofbox mark <id> '<why you wait>' --wait`.
+   with its empty marks (§ How you see and act). To wait for something
+   slow, as a page that loads for 20 s: first `proofbox mark <id>
+   'wait: <why>' --wait`, which names the wait in the video and does
+   not pause; then one `proofbox exec <id> -- sleep <s>`, at most 60,
+   then look. That is the one way to wait. A Bash call that starts with
+   `sleep` is blocked, and you have no Monitor tool, whatever a block
+   message says. Still not there after two waits: a finding.
 4. `proofbox record stop <id> --out <folder>/video-<n>.mp4`. It writes
    `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox
    takes a step's screenshot when the step ends, at the next mark or at

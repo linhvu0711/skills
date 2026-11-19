@@ -183,7 +183,16 @@ done.
      the install command its lockfile calls for, the tools the plan's
      `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
      commands of its UI walks and videos use, and the browsers its e2e
-     tests need. It runs once
+     tests need. A plan with web walks gets Node, the repo's
+     Playwright, and its Chromium (`npx playwright install chromium`
+     with `PLAYWRIGHT_BROWSERS_PATH` under `/tmp/pb`), with Playwright
+     on `NODE_PATH` when the repo has none, for the browser starter.
+     The Sandbox image has no terminal window: a plan whose walks or
+     videos type a command gets xterm, Debian 12's `xterm` and
+     `libutempter0` packages fetched from deb.debian.org and unpacked
+     with `dpkg-deb -x` into `/tmp/pb/xterm`, since the image has no
+     root and no package lists, and a `/tmp/pb/bin/xterm` wrapper that
+     sets `LD_LIBRARY_PATH` to the unpacked libraries. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. `$HOME` is the Work folder, so the script keeps every
      tool, cache, and store outside it, in `/tmp/pb`. It puts them in

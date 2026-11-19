@@ -53,13 +53,17 @@ while you walk. Its brief, whole:
   of it, for the walker's `box.sh open`, `box.sh fit`, and `box.sh
   close`;
 - how to open the app: the `Open` line, as a command it runs with
-  `box.sh open`. A browser opens on a new, empty profile for each
-  video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
-  or a browser that Playwright launches, which starts empty. So no
-  history from the Sandbox image shows in the address bar.
-  `--no-sandbox` is there because Chromium's own sandbox cannot
-  start in a proofbox Sandbox: without it Chromium stops with `No
-  usable sandbox!`;
+  `box.sh open`. A web walk's browser is the browser starter,
+  `walk-browser <url> --viewport-size=1440,795`, which `box.sh open`
+  puts in the Sandbox. It opens Playwright's Chromium on a new, empty
+  profile at that size, with `--storage <file>` for a saved login and
+  `--clock <time>` for a fixed clock, and logs the page's errors and
+  failed requests for `box.sh close --out`. Not `playwright open`,
+  which logs neither. A new profile for each video means no history
+  from the Sandbox image shows in the address bar. The starter passes
+  `--no-sandbox`, because Chromium's own sandbox cannot start in a
+  proofbox Sandbox: without it Chromium stops with `No usable
+  sandbox!`;
 - the plan's `UI walks` and `Videos` blocks, verbatim, as text
   pasted in the brief itself. Never a `$(cat <file>)` line or a path
   in their place, since
@@ -176,8 +180,9 @@ by the walker's guess:
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A walk that
   failed with `page taller than the screen` is a Wrong walk too: its
-  `Setup` or the `Open` line goes to `--viewport-size=1440,795` at
-  laptop size or `--viewport-size=390,664` at phone size. A change
+  `Setup` or the `Open` line gives the starter
+  `--viewport-size=1440,795` at laptop size or
+  `--viewport-size=390,664` at phone size. A change
   to a failed walk's `See` or `Must not`, or to a number in them
   such as a time limit, or to the step its video's `Shows` names,
   the proof frame, is a Wrong walk fix too, never a pass: it gets a

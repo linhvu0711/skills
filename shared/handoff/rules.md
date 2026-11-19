@@ -300,14 +300,20 @@ test("exports one order as CSV", async () => {
 2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every
    entry under `UI walks`, in order. Do the `Setup`, go to `Where`, do
    the `Steps` with the exact labels given, look for `See`, and check
-   every `Must not`.
+   every `Must not`. A `Setup` or `Open` command `walk-browser <url>
+   [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the
+   local Sandbox's browser starter: open the URL in your own browser at
+   that page size, with that saved login and that clock.
 <!-- /devin -->
 <!-- cursor -->
 2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every
    entry under `UI walks`, in order, in a headless browser (Playwright,
    or what the repo already uses). Do the `Setup`, go to `Where`, do
    the `Steps` with the exact labels given, look for `See`, and check
-   every `Must not`.
+   every `Must not`. A `Setup` or `Open` command `walk-browser <url>
+   [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the
+   local Sandbox's browser starter: open the URL in your own browser at
+   that page size, with that saved login and that clock.
 <!-- /cursor -->
 3. Anything red is work: a test, the typecheck, lint, the build, or a
    walk. Fix it, run the checks again, walk again. Repeat until all

@@ -58,8 +58,10 @@
 # and killall can match the shell that runs them. A Sandbox gone under it has
 # no app to stop: it says so and exits 0.
 #
-# open and close are the walker's: open runs its command, a browser or a
-# terminal window, in its own process group, whose id goes in
+# open and close are the walker's: open writes the browser starter,
+# walk-browser.cjs, to /tmp/pb-walk/walk-browser, then runs its command, a
+# browser or a terminal window, with /tmp/pb-walk first on PATH, in its own
+# process group, whose id goes in
 # /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
 # exits 0 when the window already closed. With --out, close then copies the
 # browser log, /tmp/walk-browser.log, to <file> next to the video: `none`
@@ -336,7 +338,11 @@ case "$verb" in
     [ $# -ge 3 ] && [ "$2" = "--" ] || die "$usage"
     dir="$1"; shift 2
     load
-    group_argv /tmp/walk-open.pid /dev/null "$*"
+    # proofbox runs an argument list with no shell, and the Work folder holds
+    # only the repo, so the starter goes in as text, its path a separate word.
+    bare sh -c 'mkdir -p "${2%/*}" && printf "%s\n" "$1" > "$2" && chmod +x "$2"' sh "$(cat "$here/walk-browser.cjs")" /tmp/pb-walk/walk-browser
+    [ "$rc" -eq 0 ] || exit "$rc"
+    group_argv /tmp/walk-open.pid /dev/null "export PATH=/tmp/pb-walk:\$PATH; $*"
     bare "${gcmd[@]}"
     exit "$rc"
     ;;

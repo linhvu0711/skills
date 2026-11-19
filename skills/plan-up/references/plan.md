@@ -519,8 +519,9 @@ fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk. A web walk on the linux
-Sandbox opens its page with `--viewport-size=1440,795` at laptop size
-and `--viewport-size=390,664` at phone size, the page of an iPhone 13
+Sandbox opens its page with the browser starter, `walk-browser <url>
+--viewport-size=1440,795`, at laptop size, and
+`--viewport-size=390,664` at phone size, the page of an iPhone 13
 or 14. The 900 px screen loses 85 px to the browser bars and 20 px to
 the taskbar, so a taller page runs under the taskbar or off the screen,
 and the video hides its bottom. `scripts/build-page.py` refuses a
@@ -757,9 +758,9 @@ the screen the steps reach, with no scroll or filter the steps do not
 take. A `See` names no value that follows the real clock, such as a date
 the sample data moves to today or a time like `2 days ago`; it names a
 value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of
-day sets the clock in `Setup`, to a named time, with the hook the
-repo's tests use (a fake timer, a seed date, Playwright's
-`clock.install`), so the walk shows the same at any hour and never
+day sets the clock in `Setup`, to a named time: in a web walk the
+starter's `--clock <time>`, else the hook the repo's tests use (a fake
+timer, a seed date), so the walk shows the same at any hour and never
 waits for the real clock. No such hook in the repo: a big fork, ask. A
 `See` state that lasts under about 1 s, such as a loading spinner, a
 flash, or a toast that fades, names in its walk's `Setup` a fake, a
