@@ -56,7 +56,7 @@ When proofbox refuses a video with `nothing changed on screen`, the walker now r
 
 A new worktree now gets the git-ignored files its repo lists in `.worktreeinclude`, copied from the main checkout, such as the `.dev.vars` an app reads to sign in. The file sits at the repo root and uses `.gitignore` patterns. It copies a file only when the file matches a line and git ignores it, the same rule Claude Code, the Codex app, and Conductor use, so one list serves them all. A listed file the main checkout lacks is named and skipped. Nothing else is copied: no `node_modules`, no build output. Before, the worktree held only what git tracks, so the app could not sign in and local e2e runs moved to a Sandbox.
 
-Walks now read the console and the requests. Each video saves the page's errors and failed requests next to it, as `video-<n>-browser.txt`, and the walker marks each console and request `Must not` pass or FAIL from that file. The file says `none` when the page logged nothing, and `missing: /tmp/walk-browser.log` when the browser wrote no log, which fails the walk's console and request checks. Before, the walker wrote `not checked` on every walk, and the session read the app's server log, which never sees the browser. A visible layout fault, such as cut-off text, is now always an app bug, so a walk's `See` line is never changed to fit it.
+Walks now read the console and the requests. Each video saves the page's errors and failed requests next to it, as `video-<n>-browser.txt`, and the walker marks each console and request `Must not` pass or FAIL from that file. The file says `none` when the page logged nothing, and `missing: /tmp/walk-browser.log` when the browser wrote no log, which fails the walk's console and request checks. Before, the walker wrote `not checked` on every walk, and the session read the app's server log, which never sees the browser. A visible layout fault, such as cut-off text, is now always an app bug, so a walk's `See` line is never changed to fit it. Before shots and the perf base now come from `origin/<BASE>`, fetched just before by the shared `base-tree.sh`. Before, they used the local branch, which could lag behind origin and show old code.
 
 ## Needs
 
@@ -65,7 +65,7 @@ Walks now read the console and the requests. Each video saves the page's errors 
 - `ffmpeg` on the local machine, to read frames from each video.
 - `node` on the local machine, for the browser starter's tests.
 - The walker's agent file, `agents/walker.md`, which [link.sh](../../scripts/link.sh) links into Claude Code. Codex has no sub-agents, so the session walks under the same rules.
-- The shared core files `../../shared/facts.md`, `../../shared/checkout.sh`, `../../shared/copy.sh`, `../../shared/pr-shape.md`, `../../shared/benchmark.md`, pasted into the cloud rules and read in its own perf step, and the templates in `../../shared/handoff/`.
+- The shared core files `../../shared/facts.md`, `../../shared/checkout.sh`, `../../shared/base-tree.sh`, `../../shared/copy.sh`, `../../shared/pr-shape.md`, `../../shared/benchmark.md`, pasted into the cloud rules and read in its own perf step, and the templates in `../../shared/handoff/`.
 - A clipboard tool, optional, for the login command, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 
 ## Fits with
