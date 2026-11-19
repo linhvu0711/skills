@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take one issue, a run or set of tickets, a whole epic, a new stack layer, or work this chat agreed on, from plan to PRs in one run. The ship mode sets how far: review waits for your ok on the plan page, ready stops at ready-to-merge PRs, merge merges them. Add --review, --ready, or --merge to set it; with none, the agent picks. Add devin or cursor to build in the cloud."
+description: "Take one issue, a run or set of tickets, a whole epic, a new stack layer, or work this chat agreed on, from plan to PRs in one run. The ship mode sets how far: review waits for your go on the plan page, ready stops at ready-to-merge PRs, merge merges them. Add --review, --ready, or --merge to set it; with none, the agent picks. Add devin or cursor to build in the cloud."
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,7 @@ runs as `cd "$WT" && …` inside one call.
 How far this run takes the ticket. Step 2 sets it, once for the run.
 
 - `review`: the plan opens as a page and the run waits for the user's
-  ok. Then it goes to a ready-to-merge PR, as `ready` does.
+  `go`. Then it goes to a ready-to-merge PR, as `ready` does.
 - `ready`: no wait. The run ends at a ready-to-merge PR.
 - `merge`: no wait. The run ends at a merged PR.
 
@@ -140,23 +140,24 @@ number, or words that point at one. Two words come off first and never reach pla
    The plan, by mode:
    - `ready` or `merge`: remove the base copy (plan-up step 1), leave out
      `Ready for /handoff.`, and print the summary of
-     `../../shared/plan-page.md` § Chat with no URL line and no `Say ok`
+     `../../shared/plan-page.md` § Chat with no URL line and no `Say go`
      line. Go on at once to step 3: nothing waits.
    - `review`: serve the page and open it, or publish it on a headless
      host, per `../../shared/plan-page.md`. Print its § Chat summary
-     with its URL, with one more line above the `Say ok` line,
+     with its URL, with one more line above the `Say go` line,
      `Ship mode: review · <why>`, or `Ship mode: review (set)` when the
      option set it. Nothing is built while it waits. The answer picks the
      next move:
      - An edit, a ref and what to change: change the `.md`, rebuild,
        bump `v`, show the summary again, and wait again.
-     - `ok`: remove the base copy, leave out `Ready for /handoff.`, and
+     - `go`: remove the base copy, leave out `Ready for /handoff.`, and
        go on at once to step 3.
      - `stop`: remove the base copy, say `Stopped: nothing built. Plan:
        <path>`, and end the run.
+     - Any other reply, a question too: answer it and wait again.
 
    Done when the mode is set and held, and either the summary printed
-   with no wait, or the user said `ok`.
+   with no wait, or the user said `go`.
 
 3. **Route.** Cloud when the command named `devin` or `cursor`. Local
    otherwise, with walks or without, one ticket or a stack. One case
@@ -355,15 +356,15 @@ as in § Forms.
    the `.md` and run `build-page.py` on it, with no page and no wait.
    Then step 2 sets the ship mode and removes the base copy, per
    plan-up step 1, unless the mode is `review`. When it is `review`:
-   - The plan got `ok` already, as `/plan-up` alone ends, and no words
+   - The plan got `go` already, as `/plan-up` alone ends, and no words
      came with it: nothing waits. Remove the base copy and go on to
      step 3.
-   - The plan got `ok` already and words came with it, so the edit
-     changed it: show the summary with the page URL and wait for `ok`
+   - The plan got `go` already and words came with it, so the edit
+     changed it: show the summary with the page URL and wait for `go`
      again, as step 2 does.
-   - It has no ok yet: run `../../shared/serve.sh` again for its page,
-     print its summary with the URL and the `Say ok` line, and wait as
-     step 2 does. Its base copy stays until `ok` or `stop`.
+   - It has no go yet: run `../../shared/serve.sh` again for its page,
+     print its summary with the URL and the `Say go` line, and wait as
+     step 2 does. Its base copy stays until `go` or `stop`.
 3. **Work this chat agreed on, with no issue and no plan.** Step 1
    runs plan-up's chat form, `/plan-up <words>`: the brief comes from
    the chat, and its gate stops the run when the chat left a gap. Then

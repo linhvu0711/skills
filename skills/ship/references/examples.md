@@ -31,7 +31,7 @@ plan's Blast radius flags a new auth check on #73.
 
 Step 2: one mode for the run, and #73 needs a look, so `review`. The page
 opens; the summary has `Ship mode: review · #73 adds an auth check` above
-the `Say ok` line. Nothing is built. The user says `ok`. `Route: local
+the `Say go` line. Nothing is built. The user says `go`. `Route: local
 (stack of 2)`. Layer 1: build-and-prove `--layer 1 --base main`,
 make-pr opens PR 72 on `main`. Layer 2: `--layer 2 --base
 feat/71-team-entity`, make-pr opens PR 74 on that branch. ready-pr on
@@ -41,9 +41,9 @@ PR 72, then PR 74. Two report blocks, no merge, each with
 **User:** `/ship --review https://github.com/acme/shop/issues/57`.
 
 The user typed the mode. The page opens; the summary has `Ship mode:
-review (set)` above the `Say ok` line, and the run waits. The user says
+review (set)` above the `Say go` line, and the run waits. The user says
 `S2: keep the JSON export as the default`. The `.md` changes, the page is
-rebuilt with `v=2`, the summary shows again. The user says `ok`: the
+rebuilt with `v=2`, the summary shows again. The user says `go`: the
 base copy is removed, `Route: local (3 walks)`, and the run goes on as
 `ready` does. The report ends `READY https://github.com/acme/shop/pull/43`,
 and its `Ship mode:` line is `Ship mode: review (set) · none`. The merge

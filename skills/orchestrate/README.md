@@ -54,7 +54,7 @@ Say these in the orchestrator thread:
 - `check now`, `check every 10 min` (1 minute at least; the start is 5).
 - `pause`, `resume`, `stop`. Pause stops new starts and lets running threads go on. Pause and stop end the watcher. Stop keeps the run, so `/orchestrate resume` in any thread picks it up again.
 - `add #16`, `remove #14`, `restart #12`.
-- `ship merge #12` or `ship merge all`, and `ship review` and `ship ready` the same way, to set the ship mode: `review` waits for your ok on the plan, `ready` stops at a ready PR, `merge` merges it. With none set, each `/ship` thread picks its own. A change reaches only issues whose ticket thread has not started.
+- `ship merge #12` or `ship merge all`, and `ship review` and `ship ready` the same way, to set the ship mode: `review` waits for your `go` on the plan, `ready` stops at a ready PR, `merge` merges it. With none set, each `/ship` thread picks its own. A change reaches only issues whose ticket thread has not started.
 - `#12 with sonnet xhigh`, or `all with opus high`. This wins over the table, and over the model a proposal named.
 - `all yes`, `#14 grill`, `#14 yes`, `skip #15`: answer the proposals.
 - `skip #16` on a task: take it out of the run, so the next task gets its turn.
