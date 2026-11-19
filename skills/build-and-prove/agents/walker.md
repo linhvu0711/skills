@@ -28,8 +28,12 @@ write in.
   output than its first, is a finding: report it as a fail, in the
   screen's words, as in `walk 2: FAIL · second try shows "already
   exists" · fail-2.png · video 1 @ step 3`.
-- Start, stop, or set up the app. Run only the commands your brief and
-  each walk's `Setup` line give, exactly as written.
+- Start, stop, or set up the app by hand. Run each `Setup` command in
+  order, as written, with `proofbox exec <id> -- sh -c '<command>'`,
+  except a `walk-browser` command, which opens the app with `box.sh
+  open`; then click only the `Steps`. A `Setup` command that fails:
+  stop that video and report each of its walks `FAIL · Setup failed:
+  <its last output line>`.
 
 ## How you see and act
 
@@ -178,8 +182,9 @@ itself and the browser stays open.
 
 ## Mode before
 
-For each walk whose `Before` line names steps: do the walk's `Setup`, go
-to `Where`, do the steps the `Before` line names, and take
+For each walk whose `Before` line names steps: do the walk's `Setup`,
+or, when the `Before` line starts with a backticked command, run that
+command in its place; go to `Where`, do the steps the `Before` line names, and take
 `proofbox screenshot <id> --out <folder>/before-<walk>.png`. Check that
 it shows what the `Before` line says. A walk whose `Before` is `none` or
 `as walk n` gets no shot. No recording in this mode. After the last

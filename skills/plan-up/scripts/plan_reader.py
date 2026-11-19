@@ -624,6 +624,10 @@ def step_problems(layers, terminal):
             for step in walk["steps"]:
                 yield from typed_problems(f"{name}walk {walk['n']} steps", step)
             yield from typed_problems(f"{name}walk {walk['n']} before", walk.get("before", ""))
+            # The walker runs a Setup as commands, so data never comes from clicks in the video.
+            setup = walk.get("setup", "").strip()
+            if "`" not in setup and setup != "none":
+                yield f"{name}walk {walk['n']} setup: names no command; write the seed or fixture command in backticks, or none"
             # A terminal shows stdout and stderr mixed, so a walk can only check text on the screen.
             if terminal and (m := re.search(r"\b(stderr|stdout)\b", walk.get("mustNot", ""), re.I)):
                 yield (f"{name}walk {walk['n']} must not: names `{m.group(1)}`; a terminal shows stdout and stderr"

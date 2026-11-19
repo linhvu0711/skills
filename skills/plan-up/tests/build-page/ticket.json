@@ -29,7 +29,7 @@
       {"seam": "export route", "proves": [1], "change": ["`src/orders/export.ts:31`, stream CSV beside JSON."], "docs": ["`src/README.md:88`, CSV next to JSON."], "tests": [{"file": "src/orders/export.test.ts", "name": "exports csv", "given": "three orders, one note with a newline", "when": "export CSV", "then": "all three rows with the note whole"}]},
       {"seam": "export route", "proves": [2], "change": ["`src/orders/export.ts:31`, keep the header with no orders."], "docs": [], "tests": [{"file": "src/orders/export.test.ts", "name": "exports an empty list", "given": "no orders", "when": "export CSV", "then": "the header alone"}]}
     ],
-    "walks": [{"proves": [1], "setup": "three orders", "where": "`/orders`", "steps": ["click Export, pick CSV"], "see": "three orders in the download", "mustNot": "a console error", "before": "none"}],
+    "walks": [{"proves": [1], "setup": "`pnpm seed:orders`", "where": "`/orders`", "steps": ["click Export, pick CSV"], "see": "three orders in the download", "mustNot": "a console error", "before": "none"}],
     "videos": [{"title": "Setup of walk 1", "setup": "walk 1", "walks": [1], "steps": ["Open `/orders`.", "Click Export, pick CSV."], "shows": "#1 at step 2"}],
     "gates": {"slice": "its test green, typecheck green.", "task": "full suite green, lint green, build green."},
     "decided": [{"what": "file name", "why": "`orders-<date>.csv`"}, {"what": "delimiter", "why": "`,` as the spec says"}],

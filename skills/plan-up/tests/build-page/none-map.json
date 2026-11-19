@@ -126,7 +126,7 @@
           "proves": [
             1
           ],
-          "setup": "three orders",
+          "setup": "`pnpm seed:orders`",
           "where": "`/orders`",
           "steps": [
             "click Export, pick CSV"

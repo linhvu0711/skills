@@ -466,14 +466,31 @@ t_build_quoted_semicolon() {
 
 t_build_viewport_too_tall() {
   # Given: the walk opens a 1440x900 page, as the repro's plan did
-  bad_ticket 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,900 http://localhost:3000/orders`|' \
+  bad_ticket 's|  Setup:    `pnpm seed:orders`|  Setup:    `pnpm seed:orders`, then `walk-browser http://localhost:3000/orders --viewport-size=1440,900`|' \
     'walk 1 setup: `--viewport-size=1440,900` is 900 px tall; the Sandbox shows a page at most 795 px tall under the browser bars and the taskbar, so use 1440,795 or 390,664'
+}
+
+t_build_setup_no_command() {
+  # Given: a walk whose Setup says what to do but names no command
+  bad_ticket 's|  Setup:    `pnpm seed:orders`|  Setup:    add three orders in the shop|' \
+    'walk 1 setup: names no command; write the seed or fixture command in backticks, or none'
+}
+
+t_build_setup_none() {
+  # Given: a walk that needs no data
+  T="$(mktemp -d)"
+  sed 's|  Setup:    `pnpm seed:orders`|  Setup:    none|' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
 }
 
 t_build_viewport_fits() {
   # Given: the walk opens a laptop page and the Open line a phone page, both of a size that fits
   T="$(mktemp -d)"
-  sed 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,795 http://localhost:3000/orders`|;
+  sed 's|  Setup:    `pnpm seed:orders`|  Setup:    `pnpm seed:orders`, then `walk-browser http://localhost:3000/orders --viewport-size=1440,795`|;
     s|^Open: http://localhost:3000/orders|Open: `bunx playwright open --viewport-size=390,664 http://localhost:3000/orders`|' \
     "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
   # When
@@ -486,7 +503,7 @@ t_build_viewport_fits() {
 t_build_viewport_in_note() {
   # Given: a fitting walk, and a Decided line that quotes the old size it replaced
   T="$(mktemp -d)"
-  sed 's|  Setup:    three orders|  Setup:    three orders, then `bunx playwright open --viewport-size=1440,795 http://localhost:3000/orders`|;
+  sed 's|  Setup:    `pnpm seed:orders`|  Setup:    `pnpm seed:orders`, then `walk-browser http://localhost:3000/orders --viewport-size=1440,795`|;
     s|^- D2 delimiter: `,` as the spec says|&\
 - W1 Setup changed after round 2: "`--viewport-size=1440,900`" -> "`--viewport-size=1440,795`". The page ran under the taskbar|' \
     "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
@@ -713,4 +730,6 @@ cases=(
   "build-page refuses a page taller than the Sandbox shows|t_build_viewport_too_tall"
   "build-page passes the laptop and phone sizes that fit|t_build_viewport_fits"
   "build-page passes an old size quoted in a note|t_build_viewport_in_note"
+  "build-page refuses a Setup with no command|t_build_setup_no_command"
+  "build-page passes a Setup of none|t_build_setup_none"
 )

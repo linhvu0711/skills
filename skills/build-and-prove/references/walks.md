@@ -182,7 +182,9 @@ by the walker's guess:
   failed with `page taller than the screen` is a Wrong walk too: its
   `Setup` or the `Open` line gives the starter
   `--viewport-size=1440,795` at laptop size or
-  `--viewport-size=390,664` at phone size. A change
+  `--viewport-size=390,664` at phone size. A walk failed as `Setup failed`
+  whose command is wrong for the repo is a Wrong walk too, fixed in the
+  plan; one whose command fails on the app's own code is an App bug. A change
   to a failed walk's `See` or `Must not`, or to a number in them
   such as a time limit, or to the step its video's `Shows` names,
   the proof frame, is a Wrong walk fix too, never a pass: it gets a
