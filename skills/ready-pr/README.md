@@ -42,7 +42,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Fits with
 
 - Calls [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- Finds the main checkout and the worktree through the shared checkout resolver, and `restack.sh` asks it which worktree holds a branch.
+- Finds the main checkout and the worktree through the shared checkout resolver, which copies the git-ignored files the repo's `.worktreeinclude` lists into a worktree it makes, and `restack.sh` asks it which worktree holds a branch.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.
 - Named by [make-pr](../make-pr/) as the next step once the PR is open.
 

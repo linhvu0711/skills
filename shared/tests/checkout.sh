@@ -208,7 +208,101 @@ t_ck_slug_no_remote() {
   eq stderr "stop: $T/dev/app has no GitHub remote" "$err"
 }
 
+# ck_listed <dir> <ignore> <list>: commit a .gitignore holding <ignore> and a
+# .worktreeinclude holding <list>, one pattern per line, to the main checkout
+# at <dir>, and push them, so a worktree made from origin/main has them too.
+ck_listed() {
+  printf '%s\n' "$2" > "$1/.gitignore"
+  printf '%s\n' "$3" > "$1/.worktreeinclude"
+  git -C "$1" add .gitignore .worktreeinclude
+  git -C "$1" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m list
+  git -C "$1" push -q origin main
+}
+
+t_ck_copies_listed() {
+  # Given: .dev.vars is git-ignored and listed, and only in the main checkout
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" .dev.vars .dev.vars
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq file TOKEN=local "$(cat "$T/root/acme/app/feat-1-x/.dev.vars" 2>/dev/null || true)"
+  eq stderr "worktreeinclude: copied .dev.vars" "$err"
+}
+
+t_ck_names_missing() {
+  # Given: the case above, with .env.local listed too and in no checkout
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" $'.dev.vars\n.env.local' $'.dev.vars\n.env.local'
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq exit 0 "$code"
+  eq stderr $'worktreeinclude: copied .dev.vars\nworktreeinclude: not in the main checkout, skipped: .env.local' "$err"
+}
+
+t_ck_copies_only_listed() {
+  # Given: ignored node_modules and dist, and a listed notes.txt git does not ignore
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" $'.dev.vars\nnode_modules/\ndist/' $'.dev.vars\nnotes.txt'
+  mkdir -p "$T/dev/app/node_modules/x" "$T/dev/app/dist"
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  printf 'deep\n' > "$T/dev/app/node_modules/x/.dev.vars"
+  printf 'js\n' > "$T/dev/app/dist/app.js"
+  printf 'note\n' > "$T/dev/app/notes.txt"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq ignored '!! .dev.vars' "$(git -C "$T/root/acme/app/feat-1-x" status --porcelain --ignored)"
+  eq stderr $'worktreeinclude: copied .dev.vars\nworktreeinclude: not git-ignored, skipped: notes.txt' "$err"
+}
+
+t_ck_copies_in_named_folder() {
+  # Given: vendor/ is ignored whole, and the list names a file inside it
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" vendor/ 'vendor/**/config.json'
+  mkdir -p "$T/dev/app/vendor/a"
+  printf 'v=1\n' > "$T/dev/app/vendor/a/config.json"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq file v=1 "$(cat "$T/root/acme/app/feat-1-x/vendor/a/config.json" 2>/dev/null || true)"
+}
+
+t_ck_second_run_copies_nothing() {
+  # Given: the first copy case, run once
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" .dev.vars .dev.vars
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  resolve acme/app feat/1-x --base main
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq "run 2" "|STATE=reused FROM=existing|TOKEN=local" "$err|${out##* BRANCH=feat/1-x DEFAULT=main }|$(cat "$T/root/acme/app/feat-1-x/.dev.vars" 2>/dev/null || true)"
+}
+
+t_ck_reused_gets_missing() {
+  # Given: the first copy case, run once, then the copy lost, as after a crash
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" .dev.vars .dev.vars
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  resolve acme/app feat/1-x --base main
+  rm -f "$T/root/acme/app/feat-1-x/.dev.vars"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq copy "TOKEN=local|worktreeinclude: copied .dev.vars" "$(cat "$T/root/acme/app/feat-1-x/.dev.vars" 2>/dev/null || true)|$err"
+}
+
 cases=(
+  "copies a listed git-ignored file into a new worktree|t_ck_copies_listed"
+  "names a listed file the main checkout lacks|t_ck_names_missing"
+  "copies nothing the list does not name|t_ck_copies_only_listed"
+  "copies a file in an ignored folder the list names|t_ck_copies_in_named_folder"
+  "a second run copies nothing again|t_ck_second_run_copies_nothing"
+  "a reused worktree gets a listed file it lacks|t_ck_reused_gets_missing"
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
   "stops when no checkout is found|t_ck_no_checkout"

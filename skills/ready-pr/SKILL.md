@@ -54,7 +54,10 @@ same return shapes.
    bash ../../shared/checkout.sh <REPO> <HEAD>
    ```
 
-   `stop:` on stderr: show it, stop. `WT` is its `WORKTREE=`. Done when
+   `stop:` on stderr: show it, stop. A `worktreeinclude:` line names
+   the git-ignored files the repo's `.worktreeinclude` copied into the
+   worktree, or skipped; show it and go on. `WT` is its `WORKTREE=`.
+   Done when
    `git -C "$WT" status --porcelain` is empty and
    `git -C "$WT" rev-parse HEAD` is `SHA`; behind it, `git -C "$WT" pull
    --ff-only` first.

@@ -23,6 +23,19 @@
 # - It exists only on origin: fetched and tracked.
 # - It exists nowhere: made from --base (fetched from origin first).
 #
+# A worktree it makes or reuses gets each file of the main checkout that the
+# main checkout's .worktreeinclude lists and git ignores, such as .dev.vars,
+# when the worktree lacks it. The list is .gitignore patterns at the repo root,
+# the file Claude Code, the Codex app, and Conductor read for the same job. A
+# file inside a folder git ignores whole, as node_modules/, is copied only when
+# a list line starts with that folder. Stderr names the files, never their
+# contents, one line each, only when it has a name:
+#   worktreeinclude: copied <names>
+#   worktreeinclude: not in the main checkout, skipped: <plain list lines>
+#   worktreeinclude: not git-ignored, skipped: <plain list lines>
+#   worktreeinclude: could not copy, skipped: <names>
+# None of them stops it.
+#
 # The default branch is GitHub's; when gh fails, origin/HEAD's; when both
 # fail, it stops and says how to set origin/HEAD.
 #
@@ -199,6 +212,67 @@ done_line() {
   printf 'MAIN=%s WORKTREE=%s BRANCH=%s DEFAULT=%s STATE=%s FROM=%s\n' "$main" "$1" "$branch" "$default" "$2" "$3"
 }
 
+# names <head> <name...>: one stderr line, `worktreeinclude: <head><names>`,
+# the names joined by `, `; nothing when no name is given.
+names() {
+  local head="$1" joined
+  shift
+  [ $# -gt 0 ] || return 0
+  joined="$(printf '%s, ' "$@")"
+  printf 'worktreeinclude: %s%s\n' "$head" "${joined%, }" >&2
+}
+
+# copy_included <worktree>: copy into the worktree each file of the main
+# checkout that its .worktreeinclude lists and git ignores, by the rule Claude
+# Code, the Codex app, and Conductor share for that file, so one list serves
+# every tool. A file inside a folder git ignores whole, as node_modules/, is
+# copied only when a list line starts with that folder. A file the worktree
+# has already is kept. Only names are printed, and nothing here stops the
+# script: the worktree is whole without the copies.
+copy_included() {
+  local wt="$1" list="$main/.worktreeinclude" f d line keep
+  local dirs=() copied=() missing=() unignored=() failed=()
+  [ -f "$list" ] || return 0
+  while IFS= read -r d; do
+    case "$d" in */) if git -C "$main" check-ignore -q -- "$d"; then dirs+=("$d"); fi ;; esac
+  done < <(git -C "$main" ls-files -o -i --exclude-standard --directory)
+  while IFS= read -r -d '' f; do
+    git -C "$main" check-ignore -q -- "$f" || continue
+    keep=1
+    for d in "${dirs[@]}"; do
+      case "$f" in "$d"*)
+        keep=0
+        while IFS= read -r line || [ -n "$line" ]; do
+          case "${line#/}" in "$d"*) keep=1; break ;; esac
+        done < "$list"
+        break ;;
+      esac
+    done
+    [ "$keep" -eq 1 ] || continue
+    [ ! -e "$wt/$f" ] || continue
+    # Written under a temp name and moved, so a cut-off copy never looks whole.
+    if mkdir -p "$(dirname "$wt/$f")" && cp -p "$main/$f" "$wt/$f.tmp.$$" 2>/dev/null && mv "$wt/$f.tmp.$$" "$wt/$f"; then
+      copied+=("$f")
+    else
+      rm -f "$wt/$f.tmp.$$"; failed+=("$f")
+    fi
+  done < <(git -C "$main" ls-files -z -o -i --exclude-from="$list")
+  # A pattern may match nothing on purpose; only a plain path is named.
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|'#'*|'!'*|*'*'*|*'?'*|*'['*) continue ;; esac
+    line="${line#/}"
+    if [ ! -e "$main/$line" ]; then
+      missing+=("$line")
+    elif ! git -C "$main" ls-files --error-unmatch -- "$line" >/dev/null 2>&1 && ! git -C "$main" check-ignore -q -- "$line"; then
+      unignored+=("$line")
+    fi
+  done < "$list"
+  names "copied " "${copied[@]}"
+  names "not in the main checkout, skipped: " "${missing[@]}"
+  names "not git-ignored, skipped: " "${unignored[@]}"
+  names "could not copy, skipped: " "${failed[@]}"
+}
+
 # A worktree on the branch already, in either folder shape: reused. The main
 # checkout, which `worktrees` lists first, is never one.
 listed="$(worktrees "$main")"
@@ -211,6 +285,7 @@ if [ -n "$where" ]; then
   [ "$where" != "$first" ] || die "branch $branch is already checked out at $where"
   dirty="$(git -C "$where" status --porcelain)"
   [ -z "$dirty" ] || die "dirty worktree at $where:"$'\n'"$dirty"
+  copy_included "$where"
   done_line "$where" reused existing
   exit 0
 fi
@@ -242,4 +317,5 @@ case "$from" in
   base:*) git -C "$main" fetch --quiet origin "$base" || die "could not fetch origin/$base"
           git -C "$main" worktree add --quiet -b "$branch" "$dir" "origin/$base" ;;
 esac
+copy_included "$dir"
 done_line "$dir" created "$from"
