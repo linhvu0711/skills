@@ -52,7 +52,7 @@ A web page to check on an iPhone runs on a hidden iPhone: Xcode's iOS Simulator,
 3. **Look.** `xcrun simctl io <udid> screenshot <path>`, then scale it to points with `sips -z <height> <width> <path>` and Read it. The size in points is the `frame` of the root `Application` node in `axe describe-ui --udid <udid>`, as 402 x 874 on an iPhone 17; the pixels are 2 or 3 times that, by model. AXe takes points, so read positions off the scaled picture. `axe describe-ui` lists Safari's own buttons; a page's own fields are often missing from it, so the picture is the guide.
 4. **Act.** `axe tap -x <x> -y <y> --udid <udid>`, then `axe type '<text>' --udid <udid>` into the field that has focus. Look again after each act. `axe --help` lists swipes and keys.
 5. **Photos.** `xcrun simctl addmedia <udid> <file>` puts a photo from the Mac, HEIC too, in the hidden iPhone's library for an upload.
-6. **Sign-in.** A password or a passkey is § Your step: `open -g -a Simulator` puts its window behind the user's. They sign in there and quit Simulator; the hidden iPhone keeps the login.
+6. **Sign-in.** A password or a passkey is § Your step: `open -g -a Simulator --args -CurrentDeviceUDID <udid>` puts this iPhone's window behind the user's. They sign in there and quit Simulator; the hidden iPhone keeps the login.
 7. **End.** `xcrun simctl shutdown <udid>` when this run booted it, and delete your screenshots.
 
 Needs AXe (`brew install cameroncooke/axe/axe`) and Xcode's iOS simulator (`xcodebuild -downloadPlatform iOS`, about 8 GB). One missing: tell the user which, and stop the iPhone route.
