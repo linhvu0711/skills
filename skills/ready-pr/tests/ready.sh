@@ -396,6 +396,17 @@ t_ready_watch_settle_counts() {
   eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
+t_ready_watch_wait_ends_at_limit() {
+  # Given: a real sleep that writes each argument; Devin Review pending on every poll
+  fake_gh
+  printf '#!/usr/bin/env bash\necho "$1" >> "%s/sleep.args"\nexec /bin/sleep "$1"\n' "$T" > "$T/bin/sleep"
+  pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  # When
+  ready --watch abc1234def5678 --settle-sec 0 --poll-sec 10 --timeout-sec 3
+  # Then: the wait after the first poll is the time left, not --poll-sec
+  eq "first wait within the limit" yes "$([ "$(sed -n 2p "$T/sleep.args")" -le 3 ] && echo yes || echo no)"
+}
+
 t_ready_watch_one_failure() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
   printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.1.fail"
@@ -569,6 +580,7 @@ cases=(
   "ready-pr: --watch stops at once on an expired login|t_ready_watch_login_expired"
   "ready-pr: --watch reads the verdict again after a failed read|t_ready_watch_verdict_read_fails"
   "ready-pr: --watch counts the settle time in its limit|t_ready_watch_settle_counts"
+  "ready-pr: --watch waits no longer than the time left|t_ready_watch_wait_ends_at_limit"
   "ready-pr: --watch goes on after one failed call|t_ready_watch_one_failure"
   "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"
   "ready-pr: a required check not posted after a bot's green reads BLOCKED|t_ready_required_missing_after_bot"

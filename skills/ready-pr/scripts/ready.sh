@@ -94,7 +94,14 @@ gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
 failed_poll() {
   [[ "$err" != *"HTTP 401"* ]] || gh_failed "$err"
   [ "$SECONDS" -lt "$deadline" ] || gh_failed "$err; still failing when the watch's $timeout s limit passed"
-  sleep "$poll"
+  nap
+}
+
+# nap: wait --poll-sec, or only the time left when the deadline comes first.
+# A gh call that hangs still runs past it: stock macOS has no `timeout`.
+nap() {
+  local left=$((deadline - SECONDS))
+  sleep "$((left < poll ? left : poll))"
 }
 
 # pr_facts: sets facts, one KEY=value per line, read only through get. Keys:
@@ -231,7 +238,7 @@ if [ -n "$watch_sha" ]; then
       [ "$(get SHA)" = "$watch_sha" ] || break
       [ "$(get CHECKS_PENDING)" != "0" ] || break
       [ "$SECONDS" -lt "$deadline" ] || break
-      sleep "$poll"
+      nap
     else
       failed_poll
     fi
