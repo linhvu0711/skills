@@ -47,7 +47,7 @@ An app that shows only a picture, such as iPhone Mirroring or a game, gives a sn
 
 A web page to check on an iPhone runs on a hidden iPhone: Xcode's iOS Simulator, started with no window, and driven by AXe (`axe`). Its Safari is real iPhone Safari, so iPhone-only bugs show, such as the zoom on a text field under 16px. The user's screen never moves.
 
-1. **Start.** Pick an iPhone from `xcrun simctl list devices available`, then run `xcrun simctl boot <udid>` and `xcrun simctl bootstatus <udid>`. Note whether it was booted already. Leave the Simulator app closed: it shows a window.
+1. **Start.** Pick an iPhone from `xcrun simctl list devices available`. One marked `(Booted)` is ready as it is: a second boot fails. Else run `xcrun simctl boot <udid>` and `xcrun simctl bootstatus <udid>`, and note that this run booted it. Leave the Simulator app closed: it shows a window.
 2. **Open the page.** `xcrun simctl openurl <udid> <url>`. The hidden iPhone reaches the Mac's `localhost`. On its first start Safari can stay blank for about a minute, so open the URL again.
 3. **Look.** `xcrun simctl io <udid> screenshot <path>`, then scale it to points with `sips -z <height> <width> <path>` and Read it. The size in points is the `frame` of the root `Application` node in `axe describe-ui --udid <udid>`, as 402 x 874 on an iPhone 17; the pixels are 2 or 3 times that, by model. AXe takes points, so read positions off the scaled picture. `axe describe-ui` lists Safari's own buttons; a page's own fields are often missing from it, so the picture is the guide.
 4. **Act.** `axe tap -x <x> -y <y> --udid <udid>`, then `axe type '<text>' --udid <udid>` into the field that has focus. Look again after each act. `axe --help` lists swipes and keys.
