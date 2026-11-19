@@ -589,7 +589,8 @@ tests for a resend after a lost answer, one that sends the same request
 again and ends with one saved result, and one whose resend carries a
 later edit and ends with that edit saved; one for a close or a cancel
 while the save runs; and one for a second tab that already did it, as a
-`not_found` from a record that tab removed. A case that does not apply
+`not_found` from a record that tab removed. A second tab that edited
+the record first is a race, per § One writer. A case that does not apply
 is an `Out of scope` line that says why, as for any unhappy path. A
 case name says what the code does, as in
 `exports one order as CSV`, never how it does it, as in `calls
