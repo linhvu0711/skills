@@ -580,7 +580,15 @@ plain case, and `Decided` says so in one clause. A new dependency is
 never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
 answered before the `Change` names it.
 Unhappy paths are tests like any other, usually in the same slice as the
-happy path of their seam. A case name says what the code does, as in
+happy path of their seam. Two seams miss them most, so name their cases
+as tests. The list cases: each list a screen reads gets a test while it
+loads, one when the load fails, and one when it comes back empty while
+a filter or a pick is still set. The save cases: each save gets a test
+for a resend after a lost answer, as a second `POST` with the same `id`
+and a new value; one for a close or a cancel while the save runs; and
+one for a second tab that already did it, as a `not_found` from a
+record that tab removed. A case that does not apply is an `Out of
+scope` line that says why, as for any unhappy path. A case name says what the code does, as in
 `exports one order as CSV`, never how it does it, as in `calls
 formatRow once`. Mocks only at borders, named in `Given`. A database the
 repo owns is no border when the repo has a test database: the test runs
