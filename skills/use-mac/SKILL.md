@@ -19,24 +19,28 @@ Tell the user which route gave each answer, and say so before you change route. 
 
 ## Stay quiet
 
-The default is headless: no pointer movement, no focus change. Keep it that way. Open apps with `open -g -a <App>`. `--headed`, `open -a`, and `focus-window` take the user's mouse or front window, so use them only when the user asks or agrees for this task. The one exception is § Browser's own window for a browser with no agent skill: `make new window` takes the front for a moment, and you give it back at once.
+The user's mouse and front window stay theirs for the whole task: every route runs headless. Open apps with `open -g -a <App>`, act through `agent-desktop` refs, and read through `osascript` queries. These take the screen: `--headed`, `open -a` without `-g`, `focus-window`, `activate`, and System Events `keystroke`, `key code`, or `click`. Use one only when the user's own message says to use their screen, as in "use my screen", and never offer it. A step that only the front window can do is § Your step. The one exception is § Browser's own window for a browser with no agent skill, after the warning that section gives.
 
 ## Reach
 
 The screen route works when the target app shares a Space with the app the user is in. The user keeps apps as normal windows on one desktop for this reason; a full-screen app sits alone on its Space. On another Space most apps give `WINDOW_NOT_FOUND`, and Command shortcuts report ok with no effect. `WINDOW_NOT_FOUND` has three causes: the app is on another Space, it opens no window in the background (Chess, Clock), or it is still opening (System Settings takes about 6 seconds).
+
+## Your step
+
+An app that shows only a picture, such as iPhone Mirroring or a game, gives a snapshot with no refs, and takes clicks only from the real mouse. A Save dialog, a passkey, and a sign-in are the same. Give that step to the user: name the app, the one action, and what they see when it worked, as in "In iPhone Mirroring, tap Save. The closet then shows Test Brand." Wait for their word, then prove the result yourself by the loop or the direct route.
 
 ## The loop
 
 `agent-desktop skills get desktop` and `agent-desktop skills get platform` hold the full guide. Flags live in `<command> --help`.
 
 1. **Arrive.** Run `open -g -a <App>`, then poll `agent-desktop snapshot --app <App> -i --compact` for up to 8 seconds. If it stays `WINDOW_NOT_FOUND`, tell the user which app and why, then offer the direct route.
-2. **Look.** Read the snapshot. It is JSON with a ref for each element. Something counts as absent only after a snapshot without `-i` and a scroll when the view is longer than the window. For a picture, take the id from `list-windows` and run `screenshot --window-id <id> <path>`, then Read the image. Pick the real window: TextEdit also lists an empty `<untitled>` one.
+2. **Look.** Read the snapshot. It is JSON with a ref for each element. Something counts as absent only after a snapshot without `-i` and a scroll when the view is longer than the window. For a picture, take the id from `list-windows` and run `screenshot --window-id <id> <path>`, then Read the image. Pick the real window: TextEdit also lists an empty `<untitled>` one. A snapshot with no refs is a picture-only app: § Your step.
 3. **Act.** Every change makes refs stale, so snapshot again before the next action.
    - **Clicks:** `agent-desktop click @<ref>`.
    - **Typing:** `agent-desktop type @<ref> "<text>"`. It inserts at the caret. In Notes, pick the body field by checking the result.
    - **Single keys:** `agent-desktop press <key> --app <App>`.
    - **Menus:** `snapshot --app <App> --surface menubar -i --compact`, then click the item's ref. File > New works hidden. Select All has no effect, and Save times out.
-   - **Sheets and dialogs:** read them with `--surface sheet`. Opening a Save dialog needs the app in front, so ask the user first.
+   - **Sheets and dialogs:** read them with `--surface sheet`. Opening a Save dialog needs the app in front, so it is § Your step.
 4. **Prove.** Read the app again and name the change you see, or check it with `osascript`. The app decides the result: `ok` can mean nothing happened, so look before any retry.
 
 ## iPhone

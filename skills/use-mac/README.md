@@ -1,6 +1,6 @@
 # use-mac
 
-Works in the desktop apps on your Mac while you keep working in your own: it opens apps, reads them, clicks, types, and carries one task across several apps. It stays in the background and does not take your mouse or your front window.
+Works in the desktop apps on your Mac while you keep working in your own: it opens apps, reads them, clicks, types, and carries one task across several apps. It never takes your mouse or your front window. A step only your screen can do, such as a tap in iPhone Mirroring or a passkey, comes to you as one exact step, and it checks the result itself.
 
 ## Use it when
 
