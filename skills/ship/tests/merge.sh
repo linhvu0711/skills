@@ -37,6 +37,16 @@ t_merge_merge_commit() {
   eq "merge args" "pr merge 43 --repo o/r --merge --match-head-commit $head_sha" "$(cat "$FAKE_GH/pr-merge.args")"
 }
 
+t_merge_gh_hint() {
+  # Given: PR 43 open at head_sha; gh prints a hint on stderr beside each PR view
+  fake_gh; open_then_merged; methods true true true
+  printf '%s\n' 'hint: if you need to wait for this pull request to be reviewed, merged, or closed before continuing, use this instead of polling:' > "$FAKE_GH/pr-view.stderr"
+  # When
+  run bash "$merge" o/r 43 --sha "$head_sha"
+  # Then
+  eq stdout "MERGED https://github.com/o/r/pull/43 merge bbbbbbb" "$out"
+}
+
 t_merge_falls_back_to_squash() {
   # Given: the repo allows no merge commit
   fake_gh; open_then_merged; methods false true true
@@ -100,6 +110,16 @@ t_merge_stops_when_gh_refuses() {
   eq stderr "stop: merge refused: X Pull request o/r#43 is not mergeable: the base branch policy prohibits the merge." "$err"
 }
 
+t_merge_stops_when_gh_cannot_read_pr() {
+  # Given: gh cannot read the PR
+  fake_gh; methods true true true
+  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.fail"
+  # When
+  run bash "$merge" o/r 43 --sha "$head_sha"
+  # Then
+  eq stderr "stop: gh failed: gh: Bad credentials (HTTP 401)" "$err"
+}
+
 t_merge_stops_when_pr_stays_open() {
   # Given: the merge call works, but the PR stays open
   fake_gh; open_then_merged; methods true true true
@@ -133,12 +153,14 @@ t_merge_prints_usage() {
 
 cases=(
   "merge.sh merges with a merge commit|t_merge_merge_commit"
+  "merge.sh merges when gh prints a hint|t_merge_gh_hint"
   "merge.sh falls back to squash|t_merge_falls_back_to_squash"
   "merge.sh falls back to rebase|t_merge_falls_back_to_rebase"
   "merge.sh says already on a second run|t_merge_already_merged_twice"
   "merge.sh stops when the head moved|t_merge_stops_when_head_moved"
   "merge.sh stops on a closed PR|t_merge_stops_on_closed_pr"
   "merge.sh stops when gh refuses|t_merge_stops_when_gh_refuses"
+  "merge.sh stops when gh cannot read the PR|t_merge_stops_when_gh_cannot_read_pr"
   "merge.sh stops when the PR stays open|t_merge_stops_when_pr_stays_open"
   "merge.sh stops on a short SHA|t_merge_stops_on_short_sha"
   "merge.sh prints its usage|t_merge_prints_usage"

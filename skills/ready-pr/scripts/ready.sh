@@ -70,11 +70,14 @@ done
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
 
-# gh_out <args>: gh's answer in `out`; when it fails, its last line in `err`
-# and return 1.
+# gh_out <args>: gh's answer in `out`; when it fails, the last line of its
+# stderr in `err` and return 1. stderr stays out of `out`: gh prints hints
+# there beside a good answer, and jq cannot read them.
+gh_err="$(mktemp)"
+trap 'rm -f "$gh_err"' EXIT
 gh_out() {
-  if out="$(gh "$@" 2>&1)"; then return 0; fi
-  err="$(printf '%s\n' "$out" | tail -1)"; return 1
+  if out="$(gh "$@" 2>"$gh_err")"; then return 0; fi
+  err="$(tail -1 "$gh_err")"; return 1
 }
 
 # gh_failed <err>: the BLOCKED verdict for a gh call that failed.

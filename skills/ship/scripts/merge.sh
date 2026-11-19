@@ -27,11 +27,17 @@ die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
 # A short SHA never equals GitHub's headRefOid, so it would read as a moved head.
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "--sha needs the full 40-character head SHA, got: $sha"
 
+# gh's stderr goes to a file, apart from the JSON: gh prints hints there
+# beside a good answer, and jq cannot read them. A failure's stop line is its
+# last line.
+gh_err="$(mktemp)"
+trap 'rm -f "$gh_err"' EXIT
+
 # view: the PR's url, state, head, and merge commit, one per line.
 view() {
   local json
-  json="$(gh pr view "$number" --repo "$repo" --json url,state,headRefOid,mergeCommit 2>&1)" \
-    || die "gh failed: $(printf '%s\n' "$json" | tail -1)"
+  json="$(gh pr view "$number" --repo "$repo" --json url,state,headRefOid,mergeCommit 2>"$gh_err")" \
+    || die "gh failed: $(tail -1 "$gh_err")"
   jq -r '.url, .state, .headRefOid, (.mergeCommit.oid // "")' <<<"$json"
 }
 
@@ -42,7 +48,7 @@ fi
 [ "$state" = OPEN ] || die "#$number is $state, not open"
 [ "$head" = "$sha" ] || die "head moved to ${head:0:7}; ready it again"
 
-allowed="$(gh api "repos/$repo" 2>&1)" || die "gh failed: $(printf '%s\n' "$allowed" | tail -1)"
+allowed="$(gh api "repos/$repo" 2>"$gh_err")" || die "gh failed: $(tail -1 "$gh_err")"
 method="$(jq -r 'if .allow_merge_commit then "merge" elif .allow_squash_merge then "squash" elif .allow_rebase_merge then "rebase" else "" end' <<<"$allowed")"
 [ -n "$method" ] || die "repos/$repo allows no merge method"
 
