@@ -865,6 +865,33 @@ t_box_close_none() {
   [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
 }
 
+t_box_close_empty() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  : > "$FAKE_PB/tmp/walk-browser.log"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file none "$(cat "$P/video-1-browser.txt")"
+}
+
+t_box_close_missing() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file "missing: /tmp/walk-browser.log" "$(cat "$P/video-1-browser.txt")"
+}
+
 t_box_close_out() {
   # Given
   fake_proofbox
@@ -1025,6 +1052,8 @@ cases=(
   "close waits 10 s for the group, then kills it|t_box_close_limit"
   "close with no browser open exits 0|t_box_close_none"
   "close saves the browser log next to the video|t_box_close_out"
+  "close writes none for an empty browser log|t_box_close_empty"
+  "close names a missing browser log|t_box_close_missing"
   "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
   "fit says FIT when the window ends above the taskbar|t_box_fit_fits"
   "fit says TALL when the window runs under the taskbar|t_box_fit_tall"

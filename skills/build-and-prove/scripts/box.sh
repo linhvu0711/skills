@@ -62,10 +62,10 @@
 # terminal window, in its own process group, whose id goes in
 # /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
 # exits 0 when the window already closed. With --out, close then copies the
-# browser log, /tmp/walk-browser.log, to <file> next to the video. Either way
-# it removes that log, so the next video's log holds only its own lines.
-# Neither uploads or makes a gone
-# Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
+# browser log, /tmp/walk-browser.log, to <file> next to the video: `none`
+# when the log is empty, `missing: /tmp/walk-browser.log` when there is no
+# log. Either way it removes that log, so the next video's log holds only its
+# own lines. Neither uploads or makes a gone Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
 # fit is the walker's check before a recording: does the active window, the
@@ -356,6 +356,13 @@ case "$verb" in
         cat "$errf" >&2; rm -f "$errf" "$out.tmp"; exit 125
       fi
       rm -f "$errf"
+      # The walker fails the walk's console and request checks on this line,
+      # so close still exits 0 and the walk goes on.
+      if [ "$c" -ne 0 ]; then
+        printf 'missing: /tmp/walk-browser.log\n' >"$out.tmp"
+      elif [ ! -s "$out.tmp" ]; then
+        printf 'none\n' >"$out.tmp"
+      fi
       mv "$out.tmp" "$out"
     fi
     # The next video's browser starts a new log, so its file holds only its own lines.
