@@ -1,6 +1,6 @@
 ---
 name: use-mac
-description: "Do tasks in desktop apps on the user's Mac in the background: read apps, open them, click, type, and carry work across several apps with `agent-desktop`, `osascript`, or the browser's own agent CLI in the shell. Use when a task lives in a Mac app (Music, Notes, Finder, System Settings) or a web page that needs the user's sign-in in their own browser, or the user says 'go to my X app', 'on my Mac', or asks what is on screen. Web pages with no sign-in go to browser tools; repo coding work stays out of this skill."
+description: "Do tasks in desktop apps on the user's Mac in the background, never taking their mouse or front window: read apps, open them, click, type, and carry work across several apps with `agent-desktop`, `osascript`, or the browser's own agent CLI, and check web pages on a hidden iPhone with `AXe`. Use when a task lives in a Mac app (Music, Notes, Finder, System Settings), in a web page that needs the user's sign-in in their own browser, or in a web page to check on an iPhone, or the user says 'go to my X app', 'on my Mac', or asks what is on screen. Web pages with no sign-in go to browser tools; repo coding work stays out of this skill."
 ---
 
 # Use Mac
@@ -13,6 +13,7 @@ Pick the route for each step:
 
 - **Screen route** when the user asks to go to an app or look at something, or when the task only exists on screen. Use `agent-desktop`.
 - **Direct route** for the rest: `osascript` or another shell command. It is faster and exact, and it reaches apps on any Space.
+- **iPhone route** for a web page to check on an iPhone: a hidden iPhone, per § iPhone.
 
 Tell the user which route gave each answer, and say so before you change route. A direct answer can confirm a screen task; it finishes that task only if the user agrees.
 
@@ -37,6 +38,20 @@ The screen route works when the target app shares a Space with the app the user 
    - **Menus:** `snapshot --app <App> --surface menubar -i --compact`, then click the item's ref. File > New works hidden. Select All has no effect, and Save times out.
    - **Sheets and dialogs:** read them with `--surface sheet`. Opening a Save dialog needs the app in front, so ask the user first.
 4. **Prove.** Read the app again and name the change you see, or check it with `osascript`. The app decides the result: `ok` can mean nothing happened, so look before any retry.
+
+## iPhone
+
+A web page to check on an iPhone runs on a hidden iPhone: Xcode's iOS Simulator, started with no window, and driven by AXe (`axe`). Its Safari is real iPhone Safari, so iPhone-only bugs show, such as the zoom on a text field under 16px. The user's screen never moves.
+
+1. **Start.** Pick an iPhone from `xcrun simctl list devices available`, then run `xcrun simctl boot <udid>` and `xcrun simctl bootstatus <udid>`. Note whether it was booted already. Leave the Simulator app closed: it shows a window.
+2. **Open the page.** `xcrun simctl openurl <udid> <url>`. The hidden iPhone reaches the Mac's `localhost`. On its first start Safari can stay blank for about a minute, so open the URL again.
+3. **Look.** `xcrun simctl io <udid> screenshot <path>`, then scale it to points, a third of its pixels, with `sips -z <height/3> <width/3> <path>`, and Read it. AXe takes points, so read positions off the scaled picture. `axe describe-ui --udid <udid>` lists Safari's own buttons; a page's own fields are often missing from it, so the picture is the guide.
+4. **Act.** `axe tap -x <x> -y <y> --udid <udid>`, then `axe type '<text>' --udid <udid>` into the field that has focus. Look again after each act. `axe --help` lists swipes and keys.
+5. **Photos.** `xcrun simctl addmedia <udid> <file>` puts a photo from the Mac, HEIC too, in the hidden iPhone's library for an upload.
+6. **Sign-in.** A password or a passkey is § Your step: `open -g -a Simulator` puts its window behind the user's. They sign in there and quit Simulator; the hidden iPhone keeps the login.
+7. **End.** `xcrun simctl shutdown <udid>` when this run booted it, and delete your screenshots.
+
+Needs AXe (`brew install cameroncooke/axe/axe`) and Xcode's iOS simulator (`xcodebuild -downloadPlatform iOS`, about 8 GB). One missing: tell the user which, and stop the iPhone route.
 
 ## Browser
 
