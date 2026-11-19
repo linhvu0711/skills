@@ -44,10 +44,9 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    > Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
    > Should any tickets be merged or split further?
 
-   Any reply that is not an approve word (`approve`, `approved`, `go`,
-   `create`, `ship it`) is a change request: apply it, show the full
-   breakdown again, ask the three questions again. Nothing exists on GitHub
-   before the approve word.
+   Any reply that is not `go` is a change request: apply it, show the
+   full breakdown again, ask the three questions again. Nothing exists on
+   GitHub before `go`.
 
 6. **Duplicate check.** Two searches on the epic's keywords, open then
    closed, per the rules file § Duplicates and seeds. Same open work, not a
