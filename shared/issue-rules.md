@@ -414,6 +414,7 @@ Unhappy paths, tell me which are wrong:
 - Upload fails: show error, keep nothing. Retry is out.
 - File over 10 MB: reject before upload, show the size limit.
 - Loading: spinner on the button, page stays usable.
+Say go, or edit a line.
 ```
 
 `go` or an edited line closes it. Then write the issue.

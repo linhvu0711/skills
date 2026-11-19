@@ -38,11 +38,12 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    the stand-ins it leaves with the ticket that removes each.
 
 5. **Approve in chat.** Show the breakdown in the format below. End with the
-   three questions, verbatim:
+   three questions and the go line, verbatim:
 
    > Does the granularity feel right? (too coarse / too fine)
    > Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
    > Should any tickets be merged or split further?
+   > Say go to create the issues, or say what to change.
 
    Any reply that is not `go` is a change request: apply it, show the
    full breakdown again, ask the three questions again. Nothing exists on
