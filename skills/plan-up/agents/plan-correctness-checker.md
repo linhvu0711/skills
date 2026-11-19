@@ -28,6 +28,13 @@ start from the code, not from the planner's view.
   as two requests through a harness that serves one at a time. The
   shape of the code (where logic lives, what is a module, a simpler
   way) is the design checker's job: leave it.
+- Hunt the list and save cases. Each list a screen reads needs a test
+  while it loads, one when the load fails, and one when it comes back
+  empty while a filter or a pick is still set. Each save needs a test
+  for a resend after a lost answer, one for a close or a cancel while
+  the save runs, and one for a second tab that already did it. A case
+  that does not apply needs an `Out of scope` line that says why. A
+  case with neither is a finding.
 - Settle each doubt before you report it. Start Explore to read
   across many files, and Runner to run a command and judge it, with the
   reader and runner lines of that `facts.md` above each brief. Run
