@@ -164,8 +164,9 @@ nothing.
 
     The bug issue from step 1 is the origin: to-issue rewrites it into the
     ticket, per `../../shared/issue-rules.md` § Origin bug. No
-    new issue, nothing closed. The to-issue gate fails: show its gaps and
-    stop. The report stays in chat.
+    new issue, nothing closed. The to-issue gate fails: show its gaps, or
+    its `Captured:` line when it filed the bug through capture, and stop.
+    The report stays in chat.
 
 ## Blocked
 
