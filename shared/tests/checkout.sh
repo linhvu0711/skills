@@ -296,7 +296,21 @@ t_ck_reused_gets_missing() {
   eq copy "TOKEN=local|worktreeinclude: copied .dev.vars" "$(cat "$T/root/acme/app/feat-1-x/.dev.vars" 2>/dev/null || true)|$err"
 }
 
+t_ck_keeps_worktree_link() {
+  # Given: the first copy case, run once, then the worktree's .dev.vars made a link to no file
+  ck_setup; ck acme/app "$T/dev/app"
+  ck_listed "$T/dev/app" .dev.vars .dev.vars
+  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
+  resolve acme/app feat/1-x --base main
+  ln -sf "$T/nowhere/vars" "$T/root/acme/app/feat-1-x/.dev.vars"
+  # When
+  resolve acme/app feat/1-x --base main
+  # Then
+  eq link "$T/nowhere/vars|" "$(readlink "$T/root/acme/app/feat-1-x/.dev.vars")|$err"
+}
+
 cases=(
+  "keeps a link the worktree has at a listed path|t_ck_keeps_worktree_link"
   "copies a listed git-ignored file into a new worktree|t_ck_copies_listed"
   "names a listed file the main checkout lacks|t_ck_names_missing"
   "copies nothing the list does not name|t_ck_copies_only_listed"

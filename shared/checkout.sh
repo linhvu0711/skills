@@ -251,7 +251,8 @@ copy_included() {
       esac
     done
     [ "$keep" -eq 1 ] || continue
-    [ ! -e "$wt/$f" ] || continue
+    # -e is false for a dangling link; that link is the worktree's own, so keep it.
+    [ ! -e "$wt/$f" ] && [ ! -L "$wt/$f" ] || continue
     # Written under a temp name and moved, so a cut-off copy never looks whole.
     if mkdir -p "$(dirname "$wt/$f")" && cp -p "$main/$f" "$wt/$f.tmp.$$" 2>/dev/null && mv "$wt/$f.tmp.$$" "$wt/$f"; then
       copied+=("$f")
