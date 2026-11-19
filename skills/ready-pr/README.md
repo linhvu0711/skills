@@ -22,7 +22,7 @@ In a round, `ready.sh` watches the head commit: it prints each new red check, wi
 
 It keeps no list of bot names and reads no old PRs, so a new repo, a new bot, a renamed bot, and a bot set to skip a push all need nothing. A repo with no review bot still works: it judges the comments people left.
 
-If `gh` fails five times in a row while it watches the checks (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
+While it watches, a failed `gh` call, as when the network drops, is tried again at each poll until the watch's limit: 28 minutes from its start by default, which ends before Claude Code's Monitor stops it at 30. If `gh` still fails then, or at once on an expired login, the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review. Before, five failed polls in a row stopped it, and a long CI run could outlast the Monitor.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 

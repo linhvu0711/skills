@@ -305,11 +305,17 @@ t_ready_watch_settle_default() {
   eq "first sleep" 60 "$(head -1 "$T/sleep.args")"
 }
 
+# real_sleep: the real sleep in place of fake_gh's no-op one, for a case
+# whose watch must reach its limit, which counts real time.
+real_sleep() { ln -sf /bin/sleep "$T/bin/sleep"; }
+
+net_err='error connecting to api.github.com'
+
 t_ready_watch_timeout() {
   # Given: Devin Review pending on every poll
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  fake_gh; real_sleep; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
   # When
-  ready --watch abc1234def5678 --timeout-sec 2 --poll-sec 1
+  ready --watch abc1234def5678 --settle-sec 0 --timeout-sec 2 --poll-sec 1
   # Then
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
@@ -335,18 +341,64 @@ t_ready_watch_head_moved() {
   eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
-t_ready_watch_gh_fails() {
-  fake_gh; printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.fail"
-  ready --watch abc1234def5678
+t_ready_watch_six_failures() {
+  # Given: one green check, and the first six pr view calls fail on the network
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  for n in 1 2 3 4 5 6; do printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.$n.fail"; done
+  # When
+  ready --watch abc1234def5678 --poll-sec 1
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "READY $url" "$(line 1)"
+}
+
+t_ready_watch_outage_limit() {
+  # Given: every pr view call fails on the network
+  fake_gh; real_sleep; printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.fail"
+  # When
+  ready --watch abc1234def5678 --settle-sec 0 --poll-sec 1 --timeout-sec 2
+  # Then
   eq exit 1 "$code"
   eq "line 1" "BLOCKED $url" "$(line 1)"
+  eq "line 2" "gh failed: $net_err; still failing when the watch's 2 s limit passed" "$(line 2)"
+}
+
+t_ready_watch_login_expired() {
+  # Given: the six-failures case, with every pr view call refused for its login
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.fail"
+  # When
+  ready --watch abc1234def5678 --poll-sec 1
+  # Then
   eq "line 2" "gh failed: gh: Bad credentials (HTTP 401)" "$(line 2)"
-  eq "pr view calls" 5 "$(cat "$FAKE_GH/pr-view.calls")"
+  eq "pr view calls" 1 "$(cat "$FAKE_GH/pr-view.calls")"
+}
+
+t_ready_watch_verdict_read_fails() {
+  # Given: one green check; the first read after the watch fails on the network
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.2.fail"
+  # When
+  ready --watch abc1234def5678 --poll-sec 1
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "READY $url" "$(line 1)"
+  eq "pr view calls" 3 "$(cat "$FAKE_GH/pr-view.calls")"
+}
+
+t_ready_watch_settle_counts() {
+  # Given: Devin Review pending on every poll
+  fake_gh; real_sleep; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
+  # When
+  ready --watch abc1234def5678 --settle-sec 2 --poll-sec 1 --timeout-sec 2
+  # Then: one poll after the settle wait used the limit, then the verdict read
+  eq exit 2 "$code"
+  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_watch_one_failure() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.1.fail"
+  printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.1.fail"
   ready --watch abc1234def5678 --poll-sec 1
   eq exit 0 "$code"
   eq "line 1" "READY $url" "$(line 1)"
@@ -461,15 +513,15 @@ t_ready_watch_status_no_step() {
 
 t_ready_watch_red_when_threads_fail() {
   # Given: test is red while Devin Review runs, and the thread list fails on every poll
-  fake_gh; job_json "Run tests"
+  fake_gh; real_sleep; job_json "Run tests"
   printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/graphql.fail"
   pr_json pr-view.json CLEAN MERGEABLE "" false "[$(check_run test COMPLETED FAILURE "$job22" CI),$devin_pending]"
   # When
-  ready --watch abc1234def5678 --poll-sec 1
+  ready --watch abc1234def5678 --settle-sec 0 --poll-sec 1 --timeout-sec 2
   # Then
   eq "line 1" "RED test · workflow CI · step Run tests · FAILURE · $job22" "$(line 1)"
   eq "line 2" "BLOCKED $url" "$(line 2)"
-  eq "line 3" "gh failed: HTTP 502: Bad Gateway" "$(line 3)"
+  eq "line 3" "gh failed: HTTP 502: Bad Gateway; still failing when the watch's 2 s limit passed" "$(line 3)"
 }
 
 t_ready_wait_flag_gone() {
@@ -512,7 +564,11 @@ cases=(
   "ready-pr: --watch past the timeout names the pending check|t_ready_watch_timeout"
   "ready-pr: --watch with zero checks after the settle reads WAITING|t_ready_watch_zero_checks"
   "ready-pr: --watch names a head that moved|t_ready_watch_head_moved"
-  "ready-pr: --watch stops BLOCKED after 5 failed calls|t_ready_watch_gh_fails"
+  "ready-pr: --watch goes on through six failed calls|t_ready_watch_six_failures"
+  "ready-pr: --watch stops at its limit while gh keeps failing|t_ready_watch_outage_limit"
+  "ready-pr: --watch stops at once on an expired login|t_ready_watch_login_expired"
+  "ready-pr: --watch reads the verdict again after a failed read|t_ready_watch_verdict_read_fails"
+  "ready-pr: --watch counts the settle time in its limit|t_ready_watch_settle_counts"
   "ready-pr: --watch goes on after one failed call|t_ready_watch_one_failure"
   "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"
   "ready-pr: a required check not posted after a bot's green reads BLOCKED|t_ready_required_missing_after_bot"
