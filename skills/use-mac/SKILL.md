@@ -27,14 +27,14 @@ The screen route works when the target app shares a Space with the app the user 
 
 ## Your step
 
-An app that shows only a picture, such as iPhone Mirroring or a game, gives a snapshot with no refs, and takes clicks only from the real mouse. A Save dialog, a passkey, and a sign-in are the same. Give that step to the user: name the app, the one action, and what they see when it worked, as in "In iPhone Mirroring, tap Save. The closet then shows Test Brand." Wait for their word, then prove the result yourself by the loop or the direct route.
+An app that shows only a picture, such as iPhone Mirroring or a game, gives a snapshot with no refs, and takes clicks only from the real mouse. A Save dialog, a passkey, and a sign-in are the same. Give that step to the user: name the app, the one action, and what they see when it worked, as in "In iPhone Mirroring, tap Save. The closet then shows Test Brand." Wait for their word, then prove the result yourself: a `screenshot --window-id` of that window, or the direct route. Each later step in the same app goes to the user the same way, one at a time.
 
 ## The loop
 
 `agent-desktop skills get desktop` and `agent-desktop skills get platform` hold the full guide. Flags live in `<command> --help`.
 
 1. **Arrive.** Run `open -g -a <App>`, then poll `agent-desktop snapshot --app <App> -i --compact` for up to 8 seconds. If it stays `WINDOW_NOT_FOUND`, tell the user which app and why, then offer the direct route.
-2. **Look.** Read the snapshot. It is JSON with a ref for each element. Something counts as absent only after a snapshot without `-i` and a scroll when the view is longer than the window. For a picture, take the id from `list-windows` and run `screenshot --window-id <id> <path>`, then Read the image. Pick the real window: TextEdit also lists an empty `<untitled>` one. A snapshot with no refs is a picture-only app: § Your step.
+2. **Look.** Read the snapshot. It is JSON with a ref for each element. Something counts as absent only after a snapshot without `-i` and a scroll when the view is longer than the window. For a picture, take the id from `list-windows` and run `screenshot --window-id <id> <path>`, then Read the image. Pick the real window: TextEdit also lists an empty `<untitled>` one. A snapshot with no refs is a picture-only app: read it by its screenshot, and each action in it is § Your step.
 3. **Act.** Every change makes refs stale, so snapshot again before the next action.
    - **Clicks:** `agent-desktop click @<ref>`.
    - **Typing:** `agent-desktop type @<ref> "<text>"`. It inserts at the caret. In Notes, pick the body field by checking the result.
