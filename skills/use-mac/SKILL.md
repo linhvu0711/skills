@@ -59,11 +59,11 @@ Needs AXe (`brew install cameroncooke/axe/axe`) and Xcode's iOS simulator (`xcod
 
 ## Browser
 
-A page the user is signed in to lives in their own browser: the one the task names, else the one in front, else the default browser.
+A page the user is signed in to lives in their own browser: the one the task names, else Ardia when `ardia` is on PATH, since it stays off the screen, else the default browser.
 
 **A browser with its own agent skill**, such as Ardia and its `ardia` skill (`ardia browse`): read that skill and drive the browser with it. Work in a background tab of your own: start with `ardia browse open <url>`, which opens one and leaves the user's tab alone, and use the user's own tab only when the task is about the page they have open. Address your tab by its `t<N>` id. At the end, `ardia browse close` closes only your tabs. The steps below are for a browser with no such skill.
 
-**Any other browser**: drive it with `osascript` and JavaScript; the browser needs JavaScript from Apple Events turned on (Brave and Chrome: View > Developer; Safari: Develop menu). The examples use Brave.
+**Any other browser**: drive it with `osascript` and JavaScript. Before step 1, tell the user that its new window takes the front for about 1 second. The browser needs JavaScript from Apple Events turned on (Brave and Chrome: View > Developer; Safari: Develop menu). The examples use Brave.
 
 1. **Own window.** Read the front app first: `osascript -e 'id of application (path to frontmost application as text)'`. When it is the browser itself, also keep the `id` of its front window, the user's. Then `tell application "Brave Browser" to make new window`, and keep its `id` and the `id` of its tab. Wait 1 second and give the screen back: `tell application id "<front app id>" to activate`; when the user was in the browser, also `set index of window id <user's window> to 1`. Prove it: the front app, and in the browser the front window's `id`, are the user's again.
 2. **Address by ID.** `execute (tab id T of window id W) javascript "<js>"`. A position such as `tab 17 of window 1` moves when the user opens or closes a tab. A tab in a window behind the user's still runs scripts.
