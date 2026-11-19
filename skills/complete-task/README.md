@@ -14,7 +14,7 @@ The agent opens its own browser window and finds its tab by ID, so you keep work
 
 It never reads a secret. It opens the page with the secret and the place it goes, with the name filled in; you copy and paste; it checks only that the name is there.
 
-The steps in the issue count as your yes. A step that cannot be undone and touches something this run did not make, such as deleting an old project, waits for your `yes` first.
+The steps in the issue count as your go. A step that cannot be undone and touches something this run did not make, such as deleting an old project, waits for your `go` first.
 
 When a step fails, it tries once more if that is safe, then gives you numbered steps. For a long wait, such as an app review, it comments, adds the `waiting` label, and ends, so orchestrate moves on; say `resume #16` to orchestrate when the wait is over. A bug in the code seen on the way goes to [capture](../capture/).
 
