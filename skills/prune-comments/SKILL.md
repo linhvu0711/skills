@@ -72,8 +72,8 @@ A row's choice is one of:
 4. **Go.** Read the answer any way the user writes it: `go`, `go, but 2 keep`, `go, 1 seed`. A row the answer does not name keeps its suggested choice. An answer that is not a go ends the run with nothing changed. Done when every row has its final choice.
 
 5. **Issues.** Log them before any edit, so the `path:line` of each comment still matches the commit GitHub has. For each `keep + issue` row, in order:
-   - `ticket`: say the row in chat (the comment, its `path:line`, the checkout path, the hack, and its fix), then invoke the `to-issue` skill with the Skill tool, with the row as the conversation's last word. It prints a `Captured:` line: it filed the row as a seed itself, and the row is logged.
-   - `seed`, or `to-issue`'s gate stops with gaps: invoke the `capture` skill with the Skill tool, with the comment, its `path:line`, the checkout path, and why it looks like a hack as the seed.
+   - `ticket`: say the row in chat (the comment, its `path:line`, the checkout path, the hack, and its fix), then invoke the `to-issue` skill with the Skill tool, with the row as the conversation's last word. It files a ticket, or, when it prints a `Captured:` line, it filed the row through capture itself; either way the row is logged, whatever line follows.
+   - `seed`, or `to-issue`'s gate stops with gaps and no `Captured:` line: invoke the `capture` skill with the Skill tool, with the comment, its `path:line`, the checkout path, and why it looks like a hack as the seed.
    - Neither can log it (no GitHub repo, no access): the row becomes `keep`, with the reason.
 
    Done when chat holds one line per row: `row 1 → #123 (ticket)`, `row 2 → #124 (seed)`, or `row 2 → not logged: <reason>`.
