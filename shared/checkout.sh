@@ -231,6 +231,8 @@ names() {
 # script: the worktree is whole without the copies.
 copy_included() {
   local wt="$1" list="$main/.worktreeinclude" f d line keep
+  # Each array is read as ${a[@]+"${a[@]}"}: Bash 3.2, the macOS one, calls
+  # an empty "${a[@]}" unbound under set -u.
   local dirs=() copied=() missing=() unignored=() failed=()
   [ -f "$list" ] || return 0
   while IFS= read -r d; do
@@ -239,7 +241,7 @@ copy_included() {
   while IFS= read -r -d '' f; do
     git -C "$main" check-ignore -q -- "$f" || continue
     keep=1
-    for d in "${dirs[@]}"; do
+    for d in ${dirs[@]+"${dirs[@]}"}; do
       case "$f" in "$d"*)
         keep=0
         while IFS= read -r line || [ -n "$line" ]; do
@@ -267,10 +269,10 @@ copy_included() {
       unignored+=("$line")
     fi
   done < "$list"
-  names "copied " "${copied[@]}"
-  names "not in the main checkout, skipped: " "${missing[@]}"
-  names "not git-ignored, skipped: " "${unignored[@]}"
-  names "could not copy, skipped: " "${failed[@]}"
+  names "copied " ${copied[@]+"${copied[@]}"}
+  names "not in the main checkout, skipped: " ${missing[@]+"${missing[@]}"}
+  names "not git-ignored, skipped: " ${unignored[@]+"${unignored[@]}"}
+  names "could not copy, skipped: " ${failed[@]+"${failed[@]}"}
 }
 
 # A worktree on the branch already, in either folder shape: reused. The main
