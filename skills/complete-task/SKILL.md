@@ -25,7 +25,7 @@ Your step, in the Brave window "Cloudflare | Sign in":
 
 ## Ask first
 
-A step that cannot be undone and touches a thing this run did not make, such as deleting a project that was there before, rotating a live key, or changing DNS on a live domain. Send one message: what you will do, why, and that it cannot be undone. Then wait for `go`.
+A step that cannot be undone and touches a thing this run did not make, such as deleting a project that was there before, rotating a live key, or changing DNS on a live domain. Send one message: what you will do, why, that it cannot be undone, and last `Send go to do it.` Then wait for `go`.
 
 Every other step written in the issue counts as the user's go. It is the yes that use-mac § Guardrails asks for. A thing this run made, you may change or delete.
 
