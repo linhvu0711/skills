@@ -86,6 +86,18 @@ t_walk_browser_options() {
   eq options '{"launch":{"headless":false,"args":["--no-sandbox"]},"context":{"viewport":{"width":390,"height":664},"storageState":"/tmp/login.json"},"clock":"2026-01-02T09:00:00Z","goto":"http://localhost:3000/"}' "$(cat "$T/opts.json")"
 }
 
+t_walk_browser_clean_page() {
+  # Given
+  fake_playwright quiet
+  cd "$T/app"
+  # When
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --log "$T/walk.log"
+  # Then
+  eq exit 0 "$code"
+  [ -f "$T/walk.log" ] || eq log "an empty file" "no file"
+  eq log "" "$(cat "$T/walk.log")"
+}
+
 t_walk_browser_no_playwright() {
   # Given
   T="$(cd "$(mktemp -d)" && pwd -P)"
@@ -112,6 +124,7 @@ t_walk_browser_no_launch() {
 cases=(
   "logs the page's errors and failed requests|t_walk_browser_logs"
   "opens the page at the size, login, and clock it is given|t_walk_browser_options"
+  "leaves an empty log when the page logs nothing|t_walk_browser_clean_page"
   "stops with a line when the repo has no Playwright|t_walk_browser_no_playwright"
   "stops with a line when the browser will not start|t_walk_browser_no_launch"
 )

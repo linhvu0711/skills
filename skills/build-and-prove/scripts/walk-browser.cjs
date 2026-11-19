@@ -99,6 +99,8 @@ function watch(page) {
 }
 
 async function main() {
+  // A clean page logs no line, and close reads a missing log as a fault.
+  fs.appendFileSync(opts.log, '');
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: false, args: ['--no-sandbox'] });
   const closed = new Promise((resolve) => browser.on('disconnected', resolve));
