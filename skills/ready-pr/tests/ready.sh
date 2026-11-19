@@ -60,6 +60,16 @@ t_ready_clean() {
   eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
+t_ready_gh_hint() {
+  # Given: a clean PR; gh prints a hint on stderr beside its answer
+  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
+  printf '%s\n' 'hint: if you need to wait for this pull request to be reviewed, merged, or closed before continuing, use this instead of polling:' > "$FAKE_GH/pr-view.stderr"
+  # When
+  ready
+  # Then
+  eq "line 1" "READY $url" "$(line 1)"
+}
+
 t_ready_behind() {
   fake_gh; pr_json pr-view.json BEHIND MERGEABLE "" false "[$ci_green]"
   ready
@@ -471,6 +481,7 @@ t_ready_wait_flag_gone() {
 
 cases=(
   "ready-pr: CLEAN reads READY|t_ready_clean"
+  "ready-pr: a gh hint on stderr still reads READY|t_ready_gh_hint"
   "ready-pr: BEHIND reads READY|t_ready_behind"
   "ready-pr: DIRTY reads BLOCKED|t_ready_dirty"
   "ready-pr: UNKNOWN then CLEAN reads READY|t_ready_unknown_then_clean"
