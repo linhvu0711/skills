@@ -89,9 +89,9 @@ Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
 same walker). A second miss: `box.sh down`, then stop with
 `Walker report unreadable`.
 It ended with `GONE <id>`: the app died with its Sandbox, so stop
-nothing and go to 9c. Else stop the app (9a, Stop the app). Read `/tmp/app.log` for each walk's `Must not`
-that the screen cannot show (console errors, failed requests):
-one found is a failed walk.
+nothing and go to 9c. Else stop the app (9a, Stop the app). The
+walker judged each console and request `Must not` from
+`video-<n>-browser.txt`, so the app's server log is not read for them.
 
 **Video check.** After mode, when the walker did not end with
 `GONE`, before the sort: for each video under the plan's `Videos`,
@@ -150,7 +150,9 @@ by the walker's guess:
   is a Sandbox fault. Fix the setup script (step 4), run `box.sh
   down`, start again from step 6, and walk the round again. Like
   `GONE`, it does not count as a round, and the other failed walks
-  wait for that round. After three Sandbox faults in one run:
+  wait for that round. A walk line `console and requests not saved:
+  stop: ...` is a Sandbox fault too: the setup script lacks what the
+  line names. After three Sandbox faults in one run:
   `box.sh down`, then stop with the last one.
 - **App bug**: the steps reached the screen the walk names, and
   `See` is not there or a `Must not` is. A follow-up to the
@@ -158,6 +160,10 @@ by the walker's guess:
   names the walk, what it saw, and the screenshot's path; `#
   Check` names the tests to run again. As the builder, you do it
   yourself. Then the Gates again (step 8).
+- **Layout fault**: the screen shows cut-off text, two parts on top
+  of each other, or a page wider than the screen. An App bug, never a
+  Wrong walk: the walk's `See` line does not change, and the builder
+  fixes the layout as for an App bug.
 - **Video cut**: the video check found a hidden step. Not the
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.

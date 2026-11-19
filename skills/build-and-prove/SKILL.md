@@ -376,7 +376,6 @@ done.
     Walks: 3 passed in round 2 · videos: 2 · built by: session
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
-    - walk 1: not checked: no console errors
     - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
     Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
@@ -385,8 +384,7 @@ done.
 
     The `Walk notes:` block copies, word for word: each `FAIL` line of
     every `walk-report-before-<r>.md` and `walk-report-after-<r>.md` in
-    `PROOF`, with its mode and round in front; each `not checked:` part
-    of a walk's line, once per walk; and each `Decided` line this run
+    `PROOF`, with its mode and round in front; and each `Decided` line this run
     added in the `W<w> ... changed after round <r>` shape
     (`references/walks.md` § 9c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.

@@ -37,7 +37,8 @@ Every command takes the Sandbox id as `<id>`.
 
 Your folder is the proof: it holds only the files your report names,
 `video-<n>.mp4` with its `video-<n>-<k>.png`, `before-<walk>.png`,
-`after-<walk>.png`, `fail-<walk>.png`, and the walk report. Every shot
+`after-<walk>.png`, `fail-<walk>.png`, `video-<n>-browser.txt`, and the
+walk report. Every shot
 you take only to look goes in your scratch folder: before your first
 command, run `mktemp -d` once and hold the path it prints as
 `<scratch>`. Write that path out in full in each command, since a shell
@@ -149,9 +150,12 @@ bash <box.sh> close <folder>
 
 It ends the group, waiting up to 10 s before it kills it, and exits 0
 when the browser already quit, as when its last tab was closed, so
-that does not fail the video. Run it after each `record stop`,
-before each new open, and after the last shot of mode before. The next
-video then starts with no old browser.
+that does not fail the video. Run it after each `record stop` as
+`bash <box.sh> close <folder> --out <folder>/video-<n>-browser.txt`,
+which also saves the page's errors and failed requests of that video
+next to it. Run it with no `--out` before each new open and after the
+last shot of mode before. The next video then starts with no old
+browser and an empty log.
 
 Stop it only this way. `pkill` and `killall` match by name, and the
 name also matches the `sh -c` that runs them, so the command kills
@@ -198,9 +202,11 @@ One recording per video under `Videos`, in order:
    `video-<n>-<k>.png` to `after-<walk>.png`; a walk whose `See` is a
    state under about 3 s, or a state a timed run shows before its last
    step: copy `<scratch>/short-<walk>.png` in its place. Read it, and check the
-   walk's `See` is on it and nothing in its `Must not` is. A `Must not`
-   the screen cannot show (a console error, a failed request) is not
-   yours: write it as `not checked` on the walk's line (§ Report).
+   walk's `See` is on it and nothing in its `Must not` is. Then read
+   `video-<n>-browser.txt`. For each walk of the video, a `Must not`
+   about the console fails on any `error:` line, and one about requests
+   on any `request:` line; `none` passes both. A `missing:` or `stop:`
+   line fails both, as `console and requests not saved: <that line>`.
 
 A step breaks the walk (the label is not there, an error shows, the
 screen is not the one `Where` names): take `fail-<walk>.png`, do the
@@ -240,10 +246,12 @@ walk 4: FAIL · page taller than the screen: window bottom 985, screen bottom 88
 walk 5: FAIL · proofbox made no video: "Recording on <id>: nothing changed on screen, so no Proof video was made. ..." · fail-5.png
 ```
 
-A walk with a `Must not` you did not check, one the screen cannot show,
-ends its line with ` · not checked: <that Must not line, word for word>`,
-as in `walk 1: pass · after-1.png · video 1 @ step 4 · not checked: no
-console errors`.
+A walk with a console or request `Must not` ends its line with
+` · console: pass` and ` · requests: pass`, for each one it has. A fail
+is the walk's `FAIL` reason, with the matching line word for word, as in
+`walk 1: FAIL · console: error: Uncaught TypeError: x is undefined ·
+http://localhost:3000/ · after-1.png · video 1 @ step 4`. The screen
+never shows these, so they come only from the browser file.
 
 In mode before, write `<folder>/walk-report-before-<round>.md` and end
 with the same lines, nothing else:

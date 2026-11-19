@@ -25,7 +25,7 @@ On the way:
 - **A follow-up.** It reads what is done from the worktree and the proof folder. It builds any slice not built yet, then the change. Then it does again only what the change reaches: the missing before shots, the videos whose walks the change reaches (a fix on a path no walk takes keeps its video), and the perf measure when the change touches the code the perf command runs. Once the PR is open, it runs only the Gates the PR's CI does not run. It starts a Sandbox only when one of these needs it, and stops it at the end. It never pushes: [make-pr](../make-pr/) updates the PR from the proof folder.
 - **Setup files.** On the first run for a repo it writes `~/.agents/proofbox/<owner>-<repo>/setup-<os>.sh` from the repo, with the tools its checks and its walks need, kept in `/tmp/pb`, outside the Work folder, and put in reach of every command through `$PROOFBOX_ENV`, with a UTF-8 locale, and an `app.env` with an empty line for each secret you fill in, which `box.sh` passes to proofbox as `--secrets`. Later runs reuse them. An optional `size` file there, one line such as `8x16`, sets the Sandbox size for that repo; without it proofbox's default applies.
 
-It stops at once when the repo's install command needs a tool your machine lacks, and, on a plan with walks, when proofbox is missing. On a plan with walks it checks the proofbox login first, before any code is written: a missing or expired login stops the run with the login command on your clipboard. A command in the Sandbox that cannot find a tool, as with a setup script from an older run, gets the script rewritten and a new Sandbox, whether it is a slice test, a Gate, the app, or a walk. Later it stops, with the Sandbox deleted and your commits kept, when a Sandbox will not start or the app will not start. Run it again on the same plan and it picks up at the first slice with no commit. When a walk failed in an earlier round, a Must not went unchecked, or a walk's pass rule changed, the last message lists each one word for word under `Walk notes:`. The last message:
+It stops at once when the repo's install command needs a tool your machine lacks, and, on a plan with walks, when proofbox is missing. On a plan with walks it checks the proofbox login first, before any code is written: a missing or expired login stops the run with the login command on your clipboard. A command in the Sandbox that cannot find a tool, as with a setup script from an older run, gets the script rewritten and a new Sandbox, whether it is a slice test, a Gate, the app, or a walk. Later it stops, with the Sandbox deleted and your commits kept, when a Sandbox will not start or the app will not start. Run it again on the same plan and it picks up at the first slice with no commit. When a walk failed in an earlier round, or a walk's pass rule changed, the last message lists each one word for word under `Walk notes:`. The last message:
 
 ```
 Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
@@ -33,7 +33,6 @@ Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
 Walks: 3 passed in round 2 · videos: 2 · built by: session
 Walk notes:
 - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
-- walk 1: not checked: no console errors
 - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
 Proof: ~/.agents/artifacts/proof/acme-shop-42
 BUILT feat/42-export-orders-csv
@@ -56,6 +55,8 @@ Starting and stopping the app, and opening and closing the walker's browser, are
 When proofbox refuses a video with `nothing changed on screen`, the walker now records it once more, then fails its walks with proofbox's own line, and the next round films it again, within the usual three rounds. Before, the walker had no rule for it and kept trying, six times in one round. The cause is proofbox's screen check, which misses a change as small as a toggle; linhvu0711/proofbox#229 fixes it there.
 
 A new worktree now gets the git-ignored files its repo lists in `.worktreeinclude`, copied from the main checkout, such as the `.dev.vars` an app reads to sign in. The file sits at the repo root and uses `.gitignore` patterns. It copies a file only when the file matches a line and git ignores it, the same rule Claude Code, the Codex app, and Conductor use, so one list serves them all. A listed file the main checkout lacks is named and skipped. Nothing else is copied: no `node_modules`, no build output. Before, the worktree held only what git tracks, so the app could not sign in and local e2e runs moved to a Sandbox.
+
+Walks now read the console and the requests. Each video saves the page's errors and failed requests next to it, as `video-<n>-browser.txt`, and the walker marks each console and request `Must not` pass or FAIL from that file. Before, the walker wrote `not checked` on every walk, and the session read the app's server log, which never sees the browser. A visible layout fault, such as cut-off text, is now always an app bug, so a walk's `See` line is never changed to fit it.
 
 ## Needs
 

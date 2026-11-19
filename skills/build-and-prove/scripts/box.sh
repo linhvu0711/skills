@@ -10,7 +10,7 @@
 #   box.sh start <proof-dir> [--from <folder>] [--url <url>] -- <Run line>
 #   box.sh stop <proof-dir> [--url <url>]
 #   box.sh open <proof-dir> -- <command>...
-#   box.sh close <proof-dir>
+#   box.sh close <proof-dir> [--out <file>]
 #   box.sh fit <proof-dir>
 #   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
@@ -61,7 +61,10 @@
 # open and close are the walker's: open runs its command, a browser or a
 # terminal window, in its own process group, whose id goes in
 # /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
-# exits 0 when the window already closed. Neither uploads or makes a gone
+# exits 0 when the window already closed. With --out, close then copies the
+# browser log, /tmp/walk-browser.log, to <file> next to the video. Either way
+# it removes that log, so the next video's log holds only its own lines.
+# Neither uploads or makes a gone
 # Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
@@ -121,7 +124,7 @@ idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> | fit <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # Only `gates --local` runs without proofbox.
 [ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -338,11 +341,27 @@ case "$verb" in
     exit "$rc"
     ;;
   close)
-    [ $# -eq 1 ] || die "$usage"
-    dir="$1"
+    [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --out ]; } || die "$usage"
+    dir="$1"; out="${3:-}"
     load
     group_stop /tmp/walk-open.pid 10
-    exit "$rc"
+    [ -z "$gone" ] || exit "$rc"
+    stopped="$rc"
+    if [ -n "$out" ]; then
+      errf="$(mktemp)"
+      set +e
+      proofbox exec "$BOX_ID" -- cat /tmp/walk-browser.log >"$out.tmp" 2>"$errf"; c=$?
+      set -e
+      if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then
+        cat "$errf" >&2; rm -f "$errf" "$out.tmp"; exit 125
+      fi
+      rm -f "$errf"
+      mv "$out.tmp" "$out"
+    fi
+    # The next video's browser starts a new log, so its file holds only its own lines.
+    bare rm -f /tmp/walk-browser.log
+    [ -z "$gone" ] || exit "$rc"
+    exit "$stopped"
     ;;
   fit)
     [ $# -eq 1 ] || die "$usage"

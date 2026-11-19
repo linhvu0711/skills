@@ -765,9 +765,10 @@ waits for the real clock. No such hook in the repo: a big fork, ask. A
 flash, or a toast that fades, names in its walk's `Setup` a fake, a
 test scenario, or a delay hook the repo has that keeps it on screen, so
 the walk can stop on it. With no such hook, that line is proved by a
-test, not by a walk. `Must not` is the negative check. In a web or
-desktop walk it is often what the screenshot cannot show (a console
-error, a failed request). In a terminal walk it is text the screen
+test, not by a walk. `Must not` is the negative check. In a web walk
+it is often what the screenshot cannot show: `no console error` and
+`no failed request`, which the walker reads from the browser log each
+video saves. In a terminal walk it is text the screen
 shows or must not show, as in `no line starting Error:`, never `stderr`
 or `stdout`, which a terminal shows mixed; `scripts/build-page.py`
 refuses those words there. One walk per row on a screen, happy and unhappy. No two

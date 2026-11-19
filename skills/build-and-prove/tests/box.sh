@@ -865,6 +865,23 @@ t_box_close_none() {
   [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
 }
 
+t_box_close_out() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  printf '%s\n' 'error: Uncaught TypeError: x is undefined · http://localhost:3000/' \
+    'request: 500 http://localhost:3000/api/wishes' > "$FAKE_PB/tmp/walk-browser.log"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file "error: Uncaught TypeError: x is undefined · http://localhost:3000/
+request: 500 http://localhost:3000/api/wishes" "$(cat "$P/video-1-browser.txt")"
+  [ ! -e "$FAKE_PB/tmp/walk-browser.log" ] || eq log gone "still there"
+}
+
 t_box_open_gone() {
   # Given
   fake_proofbox
@@ -1007,6 +1024,7 @@ cases=(
   "open runs the walker's command in its own group on macos|t_box_open_macos"
   "close waits 10 s for the group, then kills it|t_box_close_limit"
   "close with no browser open exits 0|t_box_close_none"
+  "close saves the browser log next to the video|t_box_close_out"
   "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
   "fit says FIT when the window ends above the taskbar|t_box_fit_fits"
   "fit says TALL when the window runs under the taskbar|t_box_fit_tall"
