@@ -2,7 +2,7 @@
 # ready.sh: the readiness module. One readiness verdict for a PR, with its reason.
 #
 #   ready.sh <owner/repo> <number> [--me <login>]
-#            [--watch <sha>] [--settle-sec 60] [--timeout-sec 1800] [--poll-sec 60]
+#            [--watch <sha>] [--settle-sec 60] [--timeout-sec 1680] [--poll-sec 60]
 #
 # Every check on the head counts the same: a CI check run, a commit status,
 # and a review bot's check (Devin Review, CodeRabbit, Cursor Bugbot, Greptile
@@ -22,8 +22,11 @@
 # comments, and one that finds problems ends grey (neutral), not red. So
 # --watch <sha> first sleeps --settle-sec, for the checks to start, then reads
 # the head's checks and threads every --poll-sec until none is pending, the
-# head is no longer <sha>, or --timeout-sec passed; then the verdict. A red
-# check does not end the watch. Each poll prints one line per red check and
+# head is no longer <sha>, or --timeout-sec passed; then the verdict. The limit
+# counts real time from the start, the settle wait and each gh call too, so
+# the default, 28 minutes, ends before Claude Code's Monitor stops a watch at
+# 30 and still outlasts a 25-minute CI run. A red check does not end the
+# watch. Each poll prints one line per red check and
 # per waiting thread it has not printed yet, in the order they come:
 #   RED <name> · workflow <workflow> · step <failed step> · <state> · <url>
 #   THREAD <thread line, as below>
@@ -49,11 +52,14 @@
 #   WAITING <url>                        2  (no blocked reason among them) red and pending
 #                                           checks are named, as in `1 check(s) red: test`
 # A gh call that fails is BLOCKED with the reason `gh failed: <its last error
-# line>`: in the watch after five fails in a row, anywhere else on the first.
+# line>`, on the first fail outside the watch. In the watch, a read that fails
+# is tried again every --poll-sec until the limit, then BLOCKED with
+# `gh failed: <line>; still failing when the watch's <n> s limit passed`; an
+# `HTTP 401` is BLOCKED at once, since a login does not come back by waiting.
 # A bad flag or argument is `stop: …` on stderr, exit 64. Never merges.
 set -euo pipefail
 
-repo=""; num=""; me=""; watch_sha=""; settle=60; timeout=1800; poll=60
+repo=""; num=""; me=""; watch_sha=""; settle=60; timeout=1680; poll=60
 while [ $# -gt 0 ]; do
   case "$1" in
     --me) me="${2:-}"; shift 2 ;;
@@ -66,6 +72,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]' >&2; exit 64; }
+# The watch does bash arithmetic on these, which takes whole numbers only and
+# reads a leading 0 as octal, so each is checked here and read in base 10.
+for flag in settle timeout poll; do
+  value="${!flag}"
+  [[ "$value" =~ ^[0-9]+$ ]] || { printf 'stop: --%s-sec takes whole seconds: %s\n' "$flag" "$value" >&2; exit 64; }
+  printf -v "$flag" '%d' "$((10#$value))"
+done
 
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
@@ -82,6 +95,21 @@ gh_out() {
 
 # gh_failed <err>: the BLOCKED verdict for a gh call that failed.
 gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
+
+# failed_poll: after a failed read in the watch, the BLOCKED verdict on an
+# expired login or past the watch's deadline; else a wait before the next try.
+failed_poll() {
+  [[ "$err" != *"HTTP 401"* ]] || gh_failed "$err"
+  [ "$SECONDS" -lt "$deadline" ] || gh_failed "$err; still failing when the watch's $timeout s limit passed"
+  nap
+}
+
+# nap: wait --poll-sec, or only the time left when the deadline comes first.
+# A gh call that hangs still runs past it: stock macOS has no `timeout`.
+nap() {
+  local left=$((deadline - SECONDS))
+  sleep "$((left < poll ? left : poll))"
+}
 
 # pr_facts: sets facts, one KEY=value per line, read only through get. Keys:
 # URL STATE DRAFT SHA MERGEABLE MERGE_STATE REVIEW_DECISION CHECKS_RED
@@ -207,33 +235,32 @@ print_threads() {
 if [ -z "$me" ]; then gh_out api user -q .login || gh_failed "$err"; me="$out"; fi
 
 if [ -n "$watch_sha" ]; then
+  deadline=$((SECONDS + timeout))
   sleep "$settle"
-  waited=0; fails=0; seen=""
+  seen=""
   while :; do
     # A failed thread list must not hold back the red checks already read.
     if pr_facts && { print_reds; open_threads; }; then
-      fails=0
       print_threads
       [ "$(get SHA)" = "$watch_sha" ] || break
       [ "$(get CHECKS_PENDING)" != "0" ] || break
-      [ "$waited" -lt "$timeout" ] || break
+      [ "$SECONDS" -lt "$deadline" ] || break
+      nap
     else
-      fails=$((fails + 1))
-      [ "$fails" -lt 5 ] || gh_failed "$err"
+      failed_poll
     fi
-    sleep "$poll"; waited=$((waited + poll))
   done
 fi
 facts=""
 for _ in 1 2 3 4; do
-  pr_facts || gh_failed "$err"
+  until pr_facts; do [ -n "$watch_sha" ] || gh_failed "$err"; failed_poll; done
   grep -q '^MERGE_STATE=UNKNOWN$' <<<"$facts" || break
   sleep 5
 done
 url="$(get URL)"
 sha7="$(get SHA | cut -c1-7)"
 
-open_threads || gh_failed "$err"
+until open_threads; do [ -n "$watch_sha" ] || gh_failed "$err"; failed_poll; done
 open="$(head -1 <<<"$threads" | cut -d= -f2)"
 
 # blocked <reason> / waiting <reason>: add a reason, in check order.

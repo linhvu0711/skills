@@ -22,7 +22,7 @@ In a round, `ready.sh` watches the head commit: it prints each new red check, wi
 
 It keeps no list of bot names and reads no old PRs, so a new repo, a new bot, a renamed bot, and a bot set to skip a push all need nothing. A repo with no review bot still works: it judges the comments people left.
 
-If `gh` fails five times in a row while it watches the checks (an expired login, the network), the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review.
+While it watches, a failed `gh` call, as when the network drops, is tried again at each poll until the watch's limit: 28 minutes from its start by default, which ends before Claude Code's Monitor stops it at 30. If `gh` still fails then, or at once on an expired login, the verdict is `BLOCKED` with the error, and it stops; it never goes on without the review. Before, five failed polls in a row stopped it, and a long CI run could outlast the Monitor.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
@@ -42,7 +42,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Fits with
 
 - Calls [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
-- Finds the main checkout and the worktree through the shared checkout resolver, and `restack.sh` asks it which worktree holds a branch.
+- Finds the main checkout and the worktree through the shared checkout resolver, which copies the git-ignored files the repo's `.worktreeinclude` lists into a worktree it makes, and `restack.sh` asks it which worktree holds a branch.
 - Called by [ship](../ship/), both as its last step and through the build rules it hands the executor.
 - Named by [make-pr](../make-pr/) as the next step once the PR is open.
 

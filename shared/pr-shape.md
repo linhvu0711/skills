@@ -86,10 +86,16 @@ say; with nothing to say, the heading goes too.
      Done-when line, in order. A fix's first row is its Repro, as in the
      plan's Proof table. Columns: `#`, `Behavior`, `Test`.
      `Behavior` is the Done-when line verbatim. `Test` is the case name,
-     linked to the test on the branch; or the command and its output in
-     a fenced block, run on the head commit; or the URL of the CI run on
-     the head commit. The words `see the Actions run` with no URL are
-     not proof.
+     linked to its lines at the head commit the body is written for;
+     or the command and its output in a fenced block, run on the head
+     commit; or the URL of the CI run on the head commit. The words
+     `see the Actions run` with no URL are not proof.
+     A test link is
+     `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`:
+     `<sha>` the full 40-character head SHA, `<a>` to `<b>` the test
+     case's lines at that commit. A link at the branch breaks: a later
+     commit or rebase moves the lines, and the link opens the wrong
+     test. A body written again after a push links at the new head.
    - No Done-when lines: a list of the checks that ran on the head
      commit. Each item is the command, the short SHA, and the result,
      or a test the PR added or changed, linked. The list holds only
@@ -118,7 +124,7 @@ say; with nothing to say, the heading goes too.
 
      | # | Behavior | Test | Screenshot | Video |
      |---|---|---|---|---|
-     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case on the branch) | Screenshot 1 | video 1 @ step 4 |
+     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case at the head commit) | Screenshot 1 | video 1 @ step 4 |
      | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 | video 1 @ step 4 |
      | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 | video 1 @ step 6 |
      | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | | |
@@ -200,7 +206,7 @@ say; with nothing to say, the heading goes too.
 
    | # | Behavior | Test |
    |---|---|---|
-   | 1 | `uninstall` removes the launch agent and says so. | [`apps/cli/src/uninstall.test.ts` "removes the launch agent"](link to the test case on the branch) |
+   | 1 | `uninstall` removes the launch agent and says so. | [`apps/cli/src/uninstall.test.ts` "removes the launch agent"](link to the test case at the head commit) |
    | 2 | `bun test` passes. | `bun test` on `9e18c16`: `116 pass, 0 fail` |
    ```
 
@@ -209,7 +215,7 @@ say; with nothing to say, the heading goes too.
 
    - `scripts/check.sh` on `9e18c16`: `check: clean`
    - `bun test` on `9e18c16`: `116 pass, 0 fail`
-   - Added [`src/export.test.ts` "writes ISO dates"](link to the test case on the branch)
+   - Added [`src/export.test.ts` "writes ISO dates"](link to the test case at the head commit)
    ```
 6. **`## Follow-ups`**: every issue filed during the work or the
    review, one line each, `#<n>: <what it is>`. Each line is an issue

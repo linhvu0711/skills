@@ -55,6 +55,8 @@ Starting and stopping the app, and opening and closing the walker's browser, are
 
 When proofbox refuses a video with `nothing changed on screen`, the walker now records it once more, then fails its walks with proofbox's own line, and the next round films it again, within the usual three rounds. Before, the walker had no rule for it and kept trying, six times in one round. The cause is proofbox's screen check, which misses a change as small as a toggle; linhvu0711/proofbox#229 fixes it there.
 
+A new worktree now gets the git-ignored files its repo lists in `.worktreeinclude`, copied from the main checkout, such as the `.dev.vars` an app reads to sign in. The file sits at the repo root and uses `.gitignore` patterns. It copies a file only when the file matches a line and git ignores it, the same rule Claude Code, the Codex app, and Conductor use, so one list serves them all. A listed file the main checkout lacks is named and skipped. Nothing else is copied: no `node_modules`, no build output. Before, the worktree held only what git tracks, so the app could not sign in and local e2e runs moved to a Sandbox.
+
 ## Needs
 
 - For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.

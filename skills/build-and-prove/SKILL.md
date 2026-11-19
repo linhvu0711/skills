@@ -169,8 +169,10 @@ done.
    bash ../../shared/checkout.sh <REPO> <branch> --base <BASE>
    ```
 
-   `stop:` on stderr: show it, stop. Hold `WT` from the `WORKTREE=`
-   line. The branch has commits ahead of `BASE` already: this is a
+   `stop:` on stderr: show it, stop. A `worktreeinclude:` line names
+   the git-ignored files the repo's `.worktreeinclude` copied into the
+   worktree, or skipped; show it and go on. Hold `WT` from the
+   `WORKTREE=` line. The branch has commits ahead of `BASE` already: this is a
    follow-up (§ Follow-up), with no change when none was named.
 
 4. **Setup files.** `UI: none`: mark it `4. Setup files. skip: no UI`

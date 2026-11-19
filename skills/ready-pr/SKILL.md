@@ -54,7 +54,10 @@ same return shapes.
    bash ../../shared/checkout.sh <REPO> <HEAD>
    ```
 
-   `stop:` on stderr: show it, stop. `WT` is its `WORKTREE=`. Done when
+   `stop:` on stderr: show it, stop. A `worktreeinclude:` line names
+   the git-ignored files the repo's `.worktreeinclude` copied into the
+   worktree, or skipped; show it and go on. `WT` is its `WORKTREE=`.
+   Done when
    `git -C "$WT" status --porcelain` is empty and
    `git -C "$WT" rev-parse HEAD` is `SHA`; behind it, `git -C "$WT" pull
    --ff-only` first.
@@ -71,9 +74,14 @@ same return shapes.
    It waits a minute for the checks to start, then prints one line per
    new red check and per new thread, as they come, in any order, until
    no check on `SHA`, CI or review bot, is pending; then the readiness
-   verdict. In Claude Code run it under a Monitor, so each line wakes
-   you; in Codex, in the foreground. Act on each line as it comes; the
-   watch goes on meanwhile.
+   verdict. In Claude Code run it under a Monitor with `timeout_ms`
+   1800000, its most, so each line wakes you. The watch ends itself
+   within 28 minutes (`--timeout-sec`, 1680 by default, counted from its
+   start), so its verdict comes before the Monitor's 30-minute cap. A
+   Monitor that ends first, as one in a `-p` run does at 10 minutes,
+   ends with no verdict: run the same command again on the same `SHA`;
+   this round's count stays. In Codex, run it in the foreground. Act on
+   each line as it comes; the watch goes on meanwhile.
    - `RED <name> · workflow <workflow> · step <step> · <state> · <url>`:
      a red check. Its CI group is its workflow and its failed step: red
      checks of the same workflow that failed at the same step share one
@@ -98,9 +106,10 @@ same return shapes.
        what this round's helpers and judges return, `git -C "$WT" pull
        --ff-only`, `SHA` is the new head, step 3 again; this round's
        count stays.
-     - `check(s) pending: <names>`: they stayed pending for thirty
-       minutes; say the names and the PR URL, stop.
-     - `gh failed:`: say the error and the PR URL, stop.
+     - `check(s) pending: <names>`: they stayed pending for the
+       watch's 28 minutes; say the names and the PR URL, stop.
+     - `gh failed:`: gh kept failing until the watch's limit, or the
+       login expired; say the error and the PR URL, stop.
      - anything else: step 4.
 
    The CI helper's brief, inline and complete:
