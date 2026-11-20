@@ -56,6 +56,18 @@ t_aga_marks_unreadable() {
   eq unreadable "not an Antigravity chat, project unknown" "$(rows unreadable)"
 }
 
+t_aga_reads_t3_chat() {
+  # Given: a chat T3 started: its first prompt wrapped in T3's instructions,
+  # the attachments folder as a second workspace, and a title
+  ag_home
+  local p="<t3_code_instructions>x</t3_code_instructions>"$'\n'"<user_request>"$'\n'"fix the export"$'\n'"</user_request>"$'\n'"<runtime_info>y</runtime_info>"
+  agy_chat "$HOME/.t3/userdata/providers/antigravity/p1/antigravity-acp/conversations/t1.db" "$HOME/.t3/userdata/attachments,/p/app" "$p" done 0 "Fix the export"
+  # When
+  run python3 "$A" find --root /p/app
+  # Then
+  eq row "t1 /p/app Fix the export | fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["cwd"], r["title"], "|", r["first_prompt"])')"
+}
+
 t_aga_probe_not_installed() {
   # Given: a fresh HOME with no .gemini and no .t3 folder
   T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"; mkdir -p "$HOME"
@@ -70,5 +82,6 @@ cases=(
   "adapter rows carry the score and prompt count|t_aga_rows_carry_query_fields"
   "adapter skips a chat with no steps|t_aga_skips_empty_chat"
   "adapter marks a file it cannot read|t_aga_marks_unreadable"
+  "adapter reads a T3 chat|t_aga_reads_t3_chat"
   "probe says Antigravity is not installed|t_aga_probe_not_installed"
 )

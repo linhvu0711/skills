@@ -148,8 +148,15 @@ def read(path: str) -> Chat | None:
 
 
 def folders() -> list[str]:
-    """Where agy keeps chats: the terminal's app data."""
-    return [os.path.expanduser("~/.gemini/antigravity-cli/conversations")]
+    """Where agy keeps chats: the terminal's app data, then each private home
+    T3 Code runs it in."""
+    t3 = os.path.expanduser("~/.t3/userdata/providers/antigravity")
+    try:
+        homes = sorted(os.listdir(t3))
+    except OSError:
+        homes = []
+    found = [os.path.join(t3, h, "antigravity-acp", "conversations") for h in homes]
+    return [os.path.expanduser("~/.gemini/antigravity-cli/conversations")] + [f for f in found if os.path.isdir(f)]
 
 
 def locate(arg: str) -> str | None:
