@@ -106,6 +106,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | Skill | What it does |
 |---|---|
 | [use-mac](skills/use-mac/) | Works in the desktop apps on your Mac in the background: opens, reads, clicks, and types across apps, and proves each step. |
+| [sync-harnesses](skills/sync-harnesses/) | Checks that every harness on your Mac has the skills, subagents, rules, and gates, remakes missing links, and reports the rest. |
 
 ### Review and standards
 
@@ -157,7 +158,7 @@ Each helper a skill starts, a skill agent or the explorer or the runner, has one
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
@@ -165,7 +166,7 @@ Optional, only for the skills that name them:
 - `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/).
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
-- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/).
+- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2 answer.
 - Cursor: [handoff](skills/handoff/).
 - macOS and `agent-desktop`: [use-mac](skills/use-mac/) and [complete-task](skills/complete-task/).
 - Xcode's iOS simulator and AXe: [use-mac](skills/use-mac/), to check a web page on an iPhone.
