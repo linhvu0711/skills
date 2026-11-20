@@ -148,7 +148,7 @@ git config core.hooksPath scripts/hooks
 bash scripts/link.sh
 ```
 
-`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
+`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. It also links Antigravity's plugins folder, `~/.gemini/config/plugins`, into each private Antigravity folder that T3 Code keeps under `~/.t3/userdata/providers/antigravity/`, so a chat T3 starts sees the same plugins. With no such folder it prints one `skip:` line and makes the other links. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
 
 ## Needs
 

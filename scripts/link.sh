@@ -15,11 +15,17 @@
 # and that now points to nothing, after a rename or delete, is removed. A name
 # already taken by something else stays as it is.
 #
+# Each folder under ${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity},
+# a private Antigravity home T3 Code keeps, gets config/plugins, a link to
+# ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}, made when missing,
+# so a chat T3 starts sees the same plugins as a terminal chat.
+#
 # Run in a linked worktree, it does nothing: the links point to the main
 # checkout, as adopt.sh's do.
 #
 # Exit 0, with `linked <link>`, `unlinked <link>`, or `skip: <why>` per
-# change and nothing when all links are good.
+# change and nothing when all links are good. With no T3 Antigravity folder,
+# `skip: no T3 Antigravity folder in <folder>` on every run.
 set -euo pipefail
 
 repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
@@ -31,6 +37,8 @@ agents="${SKILLS_HOME:-$HOME/.agents/skills}"
 claude="${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}"
 claude_agents="${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}"
 antigravity="${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}"
+plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
+t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
 mkdir -p "$agents" "$claude" "$claude_agents" "$antigravity"
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
@@ -81,4 +89,15 @@ for f in "$repo"/skills/*/agents/*.md; do
   [ -f "$f" ] || continue
   link "$claude_agents" "$(basename "$f")" "$f" || true
 done
+
+# T3 runs Antigravity with a private home, so its chats see no plugin until
+# each private folder's config/plugins points at the real one.
+found=0
+for d in "$t3"/*/; do
+  [ -d "$d" ] || continue
+  found=1; d="${d%/}"
+  mkdir -p "$plugins" "$d/config"
+  link "$d/config" plugins "$plugins" || true
+done
+[ "$found" = 1 ] || printf 'skip: no T3 Antigravity folder in %s\n' "$t3" >&2
 exit 0

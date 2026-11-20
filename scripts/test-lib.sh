@@ -12,11 +12,14 @@
 unset $(git rev-parse --local-env-vars)
 
 # A case's commit or checkout with the hooks on runs link.sh, which links
-# skills and skill agents into these folders; keep it off the real ones.
+# skills, skill agents, and the Antigravity plugins folder into these folders;
+# keep it off the real ones. The one T3 folder keeps its no-folder line quiet.
 SKILLS_HOME="$(mktemp -d)/agents"; CLAUDE_SKILLS_HOME="${SKILLS_HOME%/agents}/claude"
 CLAUDE_AGENTS_HOME="${SKILLS_HOME%/agents}/claude-agents"
 ANTIGRAVITY_SKILLS_HOME="${SKILLS_HOME%/agents}/antigravity-skills"
-export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME
+ANTIGRAVITY_PLUGINS_HOME="${SKILLS_HOME%/agents}/antigravity-plugins"
+T3_ANTIGRAVITY_HOME="${SKILLS_HOME%/agents}/t3"; mkdir -p "$T3_ANTIGRAVITY_HOME/p1"
+export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME ANTIGRAVITY_PLUGINS_HOME T3_ANTIGRAVITY_HOME
 
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
