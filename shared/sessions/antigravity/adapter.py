@@ -7,6 +7,7 @@ extract_session.py, next to this file.
 
 import importlib.util
 import os
+import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -15,6 +16,9 @@ def load(name, path):
     # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
+    # Registered before it runs: dataclasses looks a module up in sys.modules, and
+    # Python 3.11 and older fail on store.py's Chat without it.
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
