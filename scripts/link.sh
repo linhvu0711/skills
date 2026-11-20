@@ -158,9 +158,11 @@ manifest() {
 # merge_json <file> <jq filter> <entry json>: run the filter, with the entry
 # as $e, on a JSON file this script shares with its owner, a missing file being
 # {}. Writes the file only when the result differs, and leaves a file jq
-# cannot read.
+# cannot read. A link is written through to its target, so a settings file
+# kept in a dotfiles folder stays linked.
 merge_json() {
   local f="$1" old new t
+  if [ -L "$f" ] && t="$(realpath "$f" 2>/dev/null)"; then f="$t"; fi
   if [ -e "$f" ]; then
     old="$(jq . "$f" 2>/dev/null)" || { printf 'skip: %s is not JSON\n' "$f" >&2; return 0; }
   else

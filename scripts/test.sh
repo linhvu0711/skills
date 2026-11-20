@@ -475,6 +475,19 @@ t_link_keeps_hook_in_gate_group() {
     "$(jq -c . "$T/claude-settings.json")"
 }
 
+t_link_writes_through_linked_hook_file() {
+  # Given: the settings path is a link to a file in a dotfiles folder
+  linked demo; with_gate; mkdir -p "$T/dot"
+  printf '%s' '{"model":"opus"}' > "$T/dot/settings.json"; ln -s "$T/dot/settings.json" "$T/claude-settings.json"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq link "$T/dot/settings.json" "$(readlink "$T/claude-settings.json")"
+  eq model opus "$(jq -r .model "$T/dot/settings.json")"
+  eq "gate in target" 1 "$(jq '.hooks.PreToolUse | length' "$T/dot/settings.json")"
+}
+
 t_link_leaves_hook_file_not_json() {
   # Given: a settings file that is not JSON
   linked demo; with_gate; printf '{oops' > "$T/claude-settings.json"
@@ -1282,6 +1295,7 @@ cases=(
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
   "link adds the gate to codex hooks once|t_link_adds_gate_to_codex_hooks_once"
   "link keeps a hook that shares the gate's group|t_link_keeps_hook_in_gate_group"
+  "link writes through a linked hook file|t_link_writes_through_linked_hook_file"
   "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
   "link writes the gate into the antigravity plugin|t_link_writes_gate_into_plugin"
   "link updates an old gate entry in the antigravity plugin|t_link_updates_old_gate_in_plugin"
