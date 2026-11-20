@@ -9,10 +9,10 @@
 # model, effort, and command. This script checks it runs inside T3 Code and
 # makes the repo's checkout a T3 project when it is not one yet. The agent
 # starts the thread with T3's t3_thread_launch tool: `t3 thread start` takes
-# no effort and no runtime mode, and a script cannot call T3's tools.
+# no effort, and a script cannot call T3's tools.
 #
 # Exit 0: one JSON line on stdout, the decide line (its message is the
-# thread's first prompt) plus thread_title, runtime_mode, and project
+# thread's first prompt) plus thread_title and project
 # (`found` or `added`).
 # Exit 1: something stopped us; the reason is the last line on stderr, and
 # stdout is empty. A project this run added stays added.
@@ -45,5 +45,5 @@ if ! is_project; then
 fi
 
 jq -c --arg project "$project" \
-  '. + {thread_title: "\(.heading) \(.title)", runtime_mode: "auto", project: $project}' \
+  '. + {thread_title: "\(.heading) \(.title)", project: $project}' \
   <<<"$decided"

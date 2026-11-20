@@ -484,7 +484,7 @@ observe() {
     fi
     if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" \
-        '. + [$l + {stage: $st, thread_title: "\($l.heading) \($l.title)", runtime_mode: "auto"}]' <<<"$starts")"
+        '. + [$l + {stage: $st, thread_title: "\($l.heading) \($l.title)"}]' <<<"$starts")"
       claims="$(jq -c --argjson n "$n" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [{number: $n, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"
@@ -578,7 +578,7 @@ cmd_check() {
       # A run with issues taken out is not the whole work, so it gets no retro yet.
       + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // "opus"),
           effort: ($S.use.all.effort // "high"), path: $S.path,
-          thread_title: "retro: \($S.name)", message: "/retro run \($run)", runtime_mode: "auto"}} else {} end)
+          thread_title: "retro: \($S.name)", message: "/retro run \($run)"}} else {} end)
       else {} end'
 }
 

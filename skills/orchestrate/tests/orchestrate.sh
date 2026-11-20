@@ -93,7 +93,7 @@ t_fs_ticket_starts_ship() {
   eq exit 0 "$code"
   has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
   has stdout '"message":"/ship #42"' "$out"
-  has stdout '"thread_title":"#42 Export orders","runtime_mode":"auto"' "$out"
+  has stdout '"thread_title":"#42 Export orders"' "$out"
 }
 
 t_fs_second_check_starts_nothing() {
@@ -768,7 +768,7 @@ t_fs_done_starts_retro() {
   # When
   fs_go check acme/app
   # Then
-  has retro '"thread_title":"retro: #42","message":"/retro run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'","runtime_mode":"auto"' "$out"
+  has retro '"thread_title":"retro: #42","message":"/retro run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'"' "$out"
 }
 
 t_fs_done_removed_no_retro() {
