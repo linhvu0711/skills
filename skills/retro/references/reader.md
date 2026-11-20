@@ -12,7 +12,7 @@ Send each reader this prompt, verbatim, with the placeholders filled. `<files>` 
 
 `<item>` is `Session: <id> · <harness> · <title, 60 characters at most> · <project folder>`, `PR: #<n> · <title>`, or `Issues: #<n> #<n>...`.
 
-In Claude Code the reader is an Explore agent; in Codex it is one `explorer`. Send the prompt as it is.
+The reader is the explorer, started per `../../shared/facts.md` § Skill agents. Send the prompt as it is.
 
 ```
 Read these files in full, in order, each in parts if it is long. They are <what>.
