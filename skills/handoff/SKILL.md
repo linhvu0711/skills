@@ -134,9 +134,10 @@ set's, the first ticket URL. Say the pick in one line, as
    `Prompt: <file path> (<n> lines)` and
    `Session started: <link> · <executor> · <platform or model>`.
 
-7. **Watch.** In Claude Code, start a Monitor, `persistent: true`,
-   command `bash scripts/handoff.sh watch <executor> <session>`, plus the
-   executor's poll options from § Cursor, description `<Executor> #<n>`.
+7. **Watch.** Watch `bash scripts/handoff.sh watch <executor> <session>`,
+   plus the executor's poll options from § Cursor, line by line, per
+   `../../shared/harness.md`, row Watch a command line by line, as a
+   watch with no end of its own, named `<Executor> #<n>`.
    It prints one line per event and nothing between: `pr <url>`, or
    `<state> <link> :: <message>` for `blocked`, `finished`, `error`,
    `cancelled`, `expired`, or `suspended:<why>`. After three failed polls
@@ -144,10 +145,12 @@ set's, the first ticket URL. Say the pick in one line, as
    and stop. It also prints each warning a working poll gives, such as
    `mac.sh: could not destroy <id> ...`: tell the user that line as it is. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
-   section. Without a Monitor, add `--once`: the watch exits on the first
-   event, and you start it again after you answer. In Codex there is no
-   Monitor: print `bash scripts/handoff.sh status <executor> <session>`
-   as the way to check. Stop.
+   section. When that row says the lines come together at the end, add
+   `--once`: the watch exits on the first event, and you start it again
+   after you answer. When that row says nothing wakes you after your turn
+   ends: print `bash scripts/handoff.sh status <executor> <session>` as
+   the way to check, and start no watch, since the watch never ends on
+   `blocked`. Stop.
 
 8. **Answer.** The executor asked something, or asked what to do next;
    its section says which events mean that. You are the brain that
@@ -159,7 +162,7 @@ set's, the first ticket URL. Say the pick in one line, as
    - **Small fork**: the plan, the issue, or the repo holds the answer,
      a hard-to-undo pick with a clear winner included, a new
      dependency never.
-     Fetch the code with Explore when you need a `file:line`. Decide,
+     Fetch the code with an explorer when you need a `file:line`. Decide,
      shape the answer per `prompt.md` § Answer, `say` it. Under 20
      lines: print it in one fenced block; longer: its file path and one
      line of summary. Then one line: `Answered <link>`. Tell the user in
@@ -212,7 +215,7 @@ set's, the first ticket URL. Say the pick in one line, as
 
 ## Follow-up
 
-1. **Sort the note.** Fetch the code it touches with Explore. A choice
+1. **Sort the note.** Fetch the code it touches with an explorer. A choice
    it leaves open is a fork; sort it as `../plan-up/SKILL.md`
    step 5 sorts a fork. A big fork goes to the user
    first. Anything else: shape it as is. A note that answers a big fork
@@ -342,7 +345,7 @@ start the watch with `--follow`, which does not exit on `finished`.
 it, and makes the agent a My Machines agent on that worker. The Mac
 lives for one run:
 - `start` rents it; the first poll that sees the run end destroys it.
-  So the watch is what frees it; a chat with no watch (Codex) runs
+  So the watch is what frees it; a chat with no running watch, none started or one that stopped, runs
   `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
 - A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
@@ -397,7 +400,7 @@ lives for one run:
 Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-42.md`.
 `route` prints `start devin`: `Executor: devin (new issue)`. Prompt
 assembled and checked. A web app, so Linux. `start devin` with `--issue`, `Session started: <link> · devin ·
-linux`, Monitor on `watch`. Stop. Later the watch prints `pr <url>`,
+linux`, a watch on `watch`. Stop. Later the watch prints `pr <url>`,
 then `finished … :: <finish message>`; each becomes two lines to the
 user.
 
@@ -407,7 +410,7 @@ claude-opus-5` after the same `/plan-up`
 `Executor: cursor (named)`. `cursor.sh repos` lists `acme/shop`,
 `cursor.sh models` lists `claude-opus-5`, the `Author` line comes from
 `git config`. A web app, so no `--platform`. `start cursor` with `--repo acme/shop --base main --model
-claude-opus-5`, Monitor on `watch cursor <agent> --repo acme/shop
+claude-opus-5`, a watch on `watch cursor <agent> --repo acme/shop
 --issue 42`. Stop.
 
 **User:** `/handoff cursor https://github.com/acme/clock/issues/9`; the
@@ -433,7 +436,7 @@ drops those blocks. With no plan in this chat: `Run /plan-up first.`
 builds`; a Cursor agent started #42, the issue of this chat's plan
 
 No executor named. `route https://github.com/acme/shop/issues/42`
-prints `follow cursor bc-1 https://cursor.com/agents/bc-1`. Explore
+prints `follow cursor bc-1 https://cursor.com/agents/bc-1`. An explorer
 fetches the button at `ExportButton.tsx:18` and the loading pattern at
 `SaveButton.tsx:22`; the repo shows the answer, so no question. Note
 shaped per § Follow-up, `say cursor bc-1`, `Sent to <link>`, watch
