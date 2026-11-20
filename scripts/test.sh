@@ -325,16 +325,50 @@ t_link_skips_agent_without_claude_backup() {
   [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
 }
 
-t_link_unlinks_moved_agent() {
-  # Given: an agent linked once
+t_link_writes_antigravity_form() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/gplugins/skills/agents/helper.md" "$out"
+  eq "antigravity form" "$(printf '%s\n' '---' \
+    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
+    'name: helper' 'description: Reviews one "demo" diff.' 'subagent: true' 'mainAgent: false' \
+    'model: inherit' 'tools: [read_file, run_command, manage_task]' '---' 'Review the diff.' \
+    'Match \d+ in "x".')" "$(cat "$T/gplugins/skills/agents/helper.md")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_writes_plugin_manifest() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/gplugins/skills/plugin.json" "$out"
+  eq "manifest" "$(printf '%s\n' '{' '  "name": "skills",' \
+    '  "description": "The skill agents of the skills repo, written by its scripts/link.sh."' '}')" \
+    "$(cat "$T/gplugins/skills/plugin.json")"
+}
+
+t_link_removes_renamed_agent_forms() {
+  # Given: an agent written once into every harness
   linked demo; agent demo helper; link_sh
   # When: it is renamed
-  mv skills/demo/agents/helper.md skills/demo/agents/aide.md; link_sh
+  sed 's/^name: helper$/name: aide/' skills/demo/agents/helper.md > skills/demo/agents/aide.md
+  rm skills/demo/agents/helper.md; link_sh
   # Then
   eq exit 0 "$code"
   has stdout "removed $T/cagents/helper.md" "$out"
-  has stdout "wrote $T/cagents/aide.md" "$out"
+  has stdout "removed $T/codex/helper.toml" "$out"
+  has stdout "removed $T/gplugins/skills/agents/helper.md" "$out"
   eq "ls cagents" aide.md "$(ls "$T/cagents")"
+  eq "ls codex" aide.toml "$(ls "$T/codex")"
+  eq "ls plugin agents" aide.md "$(ls "$T/gplugins/skills/agents")"
 }
 
 t_link_leaves_other_agent() {
@@ -1034,10 +1068,12 @@ cases=(
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
   "link replaces its old agent link with the file|t_link_replaces_old_agent_link"
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
-  "link unlinks a renamed skill agent|t_link_unlinks_moved_agent"
+  "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
+  "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
+  "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"

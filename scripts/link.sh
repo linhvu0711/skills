@@ -11,10 +11,12 @@
 # global skills folder, where each skill links to its link in the first
 # folder. Each skill agent, skills/<name>/agents/<agent>.md, becomes a file per
 # harness, on that harness's backup model, written by scripts/agents.sh:
-# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code, and
-# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex. Only `.md`
-# files in agents/ count, so a Codex openai.yaml stays out. Each file it writes starts
-# with a mark that names its source; a file it wrote whose source is gone, and
+# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code,
+# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex, and
+# ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}/skills/agents/<agent>.md
+# in the "skills" Antigravity plugin, beside the plugin.json it writes when the
+# repo has an agent. Only `.md` files in agents/ count, so a Codex openai.yaml
+# stays out. Each file it writes starts with a mark that names its source; a file it wrote whose source is gone, and
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.
 #
@@ -125,6 +127,23 @@ form() {
   fi
 }
 
+# manifest: write the "skills" plugin's plugin.json when it is missing. It is
+# strict JSON with no mark, since agy warns that `plugin install` cannot read
+# a comment, so this script owns it only when it holds exactly these words.
+manifest() {
+  local p="$plugins/skills/plugin.json" want t
+  want='{
+  "name": "skills",
+  "description": "The skill agents of the skills repo, written by its scripts/link.sh."
+}'
+  if [ ! -e "$p" ] && [ ! -L "$p" ]; then
+    t="$(mktemp "$plugins/skills/.link.XXXXXX")"; printf '%s\n' "$want" > "$t"
+    mv "$t" "$p"; printf 'wrote %s\n' "$p"
+  elif [ "$(cat "$p")" != "$want" ]; then
+    printf 'skip: %s is not this repo'"'"'s plugin.json\n' "$p" >&2
+  fi
+}
+
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
 unlink_dead "$antigravity" "$agents"
@@ -147,9 +166,14 @@ for f in "$repo"/skills/*/agents/*.md; do
   fi
   form claude "$claude_agents/$n.md" "$f" "$src"
   form codex "$codex_agents/$n.toml" "$f" "$src"
+  mkdir -p "$plugins/skills/agents"
+  form antigravity "$plugins/skills/agents/$n.md" "$f" "$src"
+  any=1
 done
 sweep "$claude_agents" '*.md'
 sweep "$codex_agents" '*.toml'
+sweep "$plugins/skills/agents" '*.md'
+[ -z "${any:-}" ] || manifest
 
 # T3 runs Antigravity with a private home, so its chats see no plugin until
 # each private folder's config/plugins points at the real one.

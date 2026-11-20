@@ -35,8 +35,12 @@
 #
 # check: one problem per line on stdout, nothing for a good file. Exit 0.
 # render: the file of <harness> on stdout, <marker> in a comment at its top,
-# exit 0; or the first problem on stderr, exit 1. <harness> is claude or
-# codex. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
+# exit 0; or the first problem on stderr, exit 1. <harness> is claude, codex,
+# or antigravity. The Antigravity form maps the Claude Code tools to
+# Antigravity's, as agy's own migration skill does: Read, Grep, Glob to
+# read_file; Bash to run_command and manage_task; Edit to edit_file; Write
+# to write_file; WebSearch and WebFetch to search_web. No tools line, which
+# means every tool in Claude Code, gives all six. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
 # the description becomes `\"`, and a `"""` in the body becomes `""\"`.
 set -euo pipefail
 
@@ -47,7 +51,7 @@ case "$mode" in
   check) harness=""; marker="" ;;
   render) [ $# -eq 3 ] || { echo "usage: agents.sh render <harness> <marker>" >&2; exit 2; }
           harness="$2"; marker="$3"
-          case "$harness" in claude|codex) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
+          case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
   *) echo "usage: agents.sh check | agents.sh render <harness> <marker>" >&2; exit 2 ;;
 esac
 
@@ -68,6 +72,19 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       else if (c == "\"" && substr(s, i, 3) == "\"\"\"") { o = o "\"\"\\\""; i += 2 }
       else o = o c }
     return o }
+  # agy_tools(t): the Antigravity tool list for the Claude Code tools t.
+  function agy_tools(t,  n, w, i, has, all, out) {
+    if (t == "") t = "Read Bash Edit Write WebSearch"
+    gsub(/,/, " ", t); gsub(/\[/, " ", t); gsub(/\]/, " ", t); n = split(t, w, " ")
+    for (i = 1; i <= n; i++) {
+      if (w[i] == "Read" || w[i] == "Grep" || w[i] == "Glob") has["read_file"] = 1
+      else if (w[i] == "Bash") { has["run_command"] = 1; has["manage_task"] = 1 }
+      else if (w[i] == "Edit") has["edit_file"] = 1
+      else if (w[i] == "Write") has["write_file"] = 1
+      else if (w[i] == "WebSearch" || w[i] == "WebFetch") has["search_web"] = 1 }
+    split("read_file run_command manage_task edit_file write_file search_web", all, " ")
+    for (i = 1; i <= 6; i++) if (all[i] in has) out = out (out == "" ? "" : ", ") all[i]
+    return "[" out "]" }
   function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
   # entry_problems(sec, h): the problems of the entry for harness h in map sec.
   function entry_problems(sec, h,  w, n, place, m, e, want, at) {
@@ -124,6 +141,11 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       print "---"; print "# " marker; print rawname; print rawdesc
       if (rawtools != "") print rawtools
       print "model: " b[1]; print "effort: " b[2]; print "---"
+    }
+    if (harness == "antigravity") {
+      print "---"; print "# " marker; print rawname; print rawdesc
+      print "subagent: true"; print "mainAgent: false"
+      print "model: " b[1]; print "tools: " agy_tools(tools); print "---"
     }
     if (harness == "codex") {
       print "# " marker
