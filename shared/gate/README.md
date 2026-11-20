@@ -15,6 +15,10 @@ The gate is one script, `subagent-gate.sh`, that each harness runs before a suba
 - Codex: a `PreToolUse` hook on `spawn_agent` and `apply_patch`, run as `subagent-gate.sh codex`. Codex runs a new or changed hook only after you trust it: at the next start it shows "Hooks need review"; pick "Trust all and continue".
 - Antigravity: a `PreToolUse` hook in the "skills" plugin's `hooks.json`, run as `subagent-gate.sh antigravity`. Antigravity does not tell a hook which subagent made the call, so the gate reads the subagent's start message, which Antigravity keeps in the chat's own folder. If a new Antigravity version moves that file, the gate reads every call as the main agent's and blocks nothing there.
 
+## How it gets there
+
+`scripts/link.sh` adds the Claude Code and Codex entries on each commit in the main checkout. It changes only an entry that runs this script, so your other hooks stay.
+
 ## Not covered
 
 - A helper that T3 starts, in Claude Code, Codex, Antigravity, or Devin. T3 starts it as a chat of its own, with no agent name the gate can read, so the gate sees it as a main agent and lets every call through. Devin runs no hook of ours at all. Such a helper is read-only by its instructions only.

@@ -21,6 +21,12 @@
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.
 #
+# It also wires the subagent gate, shared/gate/subagent-gate.sh: one
+# PreToolUse entry in ${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json} and
+# one in ${CODEX_HOOKS_FILE:-$HOME/.codex/hooks.json}. It replaces only an entry
+# that runs that script, in its place, and leaves every other key and hook. A
+# file it cannot read as JSON stays as it is, with a skip: line.
+#
 # Each folder under ${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity},
 # a private Antigravity home T3 Code keeps, gets config/plugins, a link to
 # ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}, made when missing,
@@ -47,6 +53,9 @@ codex_agents="${CODEX_AGENTS_HOME:-$HOME/.codex/agents}"
 antigravity="${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}"
 plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
 t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
+claude_settings="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
+codex_hooks="${CODEX_HOOKS_FILE:-$HOME/.codex/hooks.json}"
+gate="$repo/shared/gate/subagent-gate.sh"
 mkdir -p "$agents" "$claude" "$claude_agents" "$codex_agents" "$antigravity"
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
@@ -145,6 +154,40 @@ manifest() {
   fi
 }
 
+# merge_json <file> <jq filter> <entry json>: run the filter, with the entry
+# as $e, on a JSON file this script shares with its owner, a missing file being
+# {}. Writes the file only when the result differs, and leaves a file jq
+# cannot read.
+merge_json() {
+  local f="$1" old new t
+  if [ -e "$f" ]; then
+    old="$(jq . "$f" 2>/dev/null)" || { printf 'skip: %s is not JSON\n' "$f" >&2; return 0; }
+  else
+    old='{}'
+  fi
+  new="$(jq --argjson e "$3" "$2" <<<"$old")"
+  [ "$(jq -S . <<<"$old")" != "$(jq -S . <<<"$new")" ] || return 0
+  mkdir -p "$(dirname "$f")"
+  t="$(mktemp "$(dirname "$f")/.link.XXXXXX")"; printf '%s\n' "$new" > "$t"
+  mv "$t" "$f"; printf 'wrote %s\n' "$f"
+}
+
+# hook_entry <file> <harness>: put the gate's PreToolUse entry in the file. The
+# first group that runs the gate is replaced in its place, since Codex keys its
+# trust on the group's index, and any later one is removed; with none, the
+# entry goes last.
+hook_entry() {
+  local entry
+  entry="$(jq -cn --arg m "$(bash "$gate" "$2" matcher)" --arg c "bash '$gate' $2" \
+    '{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}')"
+  merge_json "$1" '
+    def gate: any(.hooks[]?; (.command // "") | contains("shared/gate/subagent-gate.sh"));
+    (.hooks.PreToolUse // []) as $g
+    | ([$g | to_entries[] | select(.value | gate) | .key] | first) as $i
+    | .hooks.PreToolUse = if $i == null then $g + [$e]
+        else [$g | to_entries[] | if .key == $i then $e elif (.value | gate) then empty else .value end] end' "$entry"
+}
+
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
 unlink_dead "$antigravity" "$agents"
@@ -175,6 +218,10 @@ sweep "$claude_agents" '*.md'
 sweep "$codex_agents" '*.toml'
 sweep "$plugins/skills/agents" '*.md'
 [ -z "${any:-}" ] || manifest
+if [ -f "$gate" ]; then
+  hook_entry "$claude_settings" claude
+  hook_entry "$codex_hooks" codex
+fi
 
 # T3 runs Antigravity with a private home, so its chats see no plugin until
 # each private folder's config/plugins points at the real one.

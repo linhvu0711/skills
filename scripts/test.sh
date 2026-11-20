@@ -187,7 +187,11 @@ linked() {
   mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/codex" "$T/gskills" "$T/t3/p1"
 }
 link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
-  ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
+  ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" \
+  CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash scripts/link.sh; }
+
+# with_gate: this checkout's shared/gate/ in the repo, so link.sh wires it.
+with_gate() { mkdir -p shared && cp -R "$scripts_dir/../shared/gate" shared/; }
 
 # full_agent: the frontmatter lines of a skill agent `helper` with every field.
 full_agent='name: helper
@@ -429,6 +433,45 @@ t_link_leaves_other_agent() {
   eq exit 0 "$code"
   has stderr "skip: $T/cagents/helper.md is not this repo's helper.md" "$err"
   eq "own file" mine "$(cat "$T/cagents/helper.md")"
+}
+
+t_link_adds_gate_to_claude_settings() {
+  # Given: a settings file with a key and a hook of the user's own
+  linked demo; with_gate
+  printf '%s' '{"model":"opus","hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"mine.sh"}]}]}}' > "$T/claude-settings.json"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/claude-settings.json" "$out"
+  eq settings '{"model":"opus","hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"mine.sh"}]},{"matcher":"Agent|Task|Edit|Write|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"bash '"'$R/shared/gate/subagent-gate.sh'"' claude","timeout":5}]}]}}' \
+    "$(jq -c . "$T/claude-settings.json")"
+}
+
+t_link_adds_gate_to_codex_hooks_once() {
+  # Given: no codex hooks file
+  linked demo; with_gate
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq hooks '{"hooks":{"PreToolUse":[{"matcher":"spawn_agent|Agent|apply_patch|Edit|Write","hooks":[{"type":"command","command":"bash '"'$R/shared/gate/subagent-gate.sh'"' codex","timeout":5}]}]}}' \
+    "$(jq -c . "$T/codex-hooks.json")"
+  local before; before="$(cat "$T/codex-hooks.json")"
+  link_sh
+  eq "second run" "" "$out$err"
+  eq "same file" "$before" "$(cat "$T/codex-hooks.json")"
+}
+
+t_link_leaves_hook_file_not_json() {
+  # Given: a settings file that is not JSON
+  linked demo; with_gate; printf '{oops' > "$T/claude-settings.json"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: $T/claude-settings.json is not JSON" "$err"
+  eq "own file" '{oops' "$(cat "$T/claude-settings.json")"
 }
 
 t_link_links_plugins_into_each_t3() {
@@ -1198,6 +1241,9 @@ cases=(
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
+  "link adds the gate to codex hooks once|t_link_adds_gate_to_codex_hooks_once"
+  "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
   "link writes a shared agent's three forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
