@@ -12,7 +12,7 @@ Work moves in two parts. First you settle what to do and write it as a GitHub is
 flowchart LR
   capture -->|seed| grill
   capture -->|bug| triage
-  improve[improve-architecture] --> grill
+  improve[improve-codebase] --> grill
   grill -->|a bug| triage
   grill -->|too big| discover[discover-path]
   discover -->|each question| grill
@@ -27,7 +27,7 @@ flowchart LR
 - Start with [grill](skills/grill/) when you have a plan or a design to settle.
 - [capture](skills/capture/) parks an idea or a bug as an issue for later. A seed grows through grill. A bug goes to [triage](skills/triage/), which finds the cause and writes the fix ticket.
 - [discover-path](skills/discover-path/) takes work too big for one grill and splits it into questions, each one settled by grill.
-- [improve-architecture](skills/improve-architecture/) finds code worth reshaping, then grills you on the part you pick.
+- [improve-codebase](skills/improve-codebase/) finds code worth reshaping, then grills you on the part you pick.
 - [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
 - The work ends as one ticket from [to-issue](skills/to-issue/), or as a phased epic from [to-epic](skills/to-epic/).
 
@@ -76,7 +76,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [capture](skills/capture/) | Files a raw idea or a bug you just saw as a small GitHub issue, so it is not lost. |
 | [discover-path](skills/discover-path/) | Turns an idea too big for one grill into a map on GitHub: a parent issue whose child tickets are the questions to settle. |
 | [triage](skills/triage/) | Finds the root cause of a bug, or the hot spot behind something slow, then turns the bug into a fix ticket. |
-| [improve-architecture](skills/improve-architecture/) | Finds shallow modules worth deepening, shows them in a visual report, then grills you on the one you pick. |
+| [improve-codebase](skills/improve-codebase/) | Finds shallow modules worth deepening, shows them in a visual report, then grills you on the one you pick. |
 | [why](skills/why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
 | [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
 | [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |

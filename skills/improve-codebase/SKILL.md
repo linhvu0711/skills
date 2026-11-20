@@ -1,5 +1,5 @@
 ---
-name: improve-architecture
+name: improve-codebase
 description: "Scan a codebase for shallow modules worth deepening, show the candidates in a visual report, then grill the one the user picks. Use for 'improve architecture', 'where should we deepen', 'find refactor candidates'."
 disable-model-invocation: true
 ---
@@ -111,7 +111,7 @@ Explore agents retrieve, short lookups are yours.
 
 ## Examples
 
-**User:** `/improve-architecture`
+**User:** `/improve-codebase`
 
 Scope from git log: `src/orders/` and `src/pricing/` carry most of the last
 200 commits. Two Explore agents, one per folder. Orders comes back with
@@ -120,7 +120,7 @@ test concentrates. Report has three cards, top recommendation "Collapse the
 Order intake pipeline", badge `Strong`, dependency `local-substitutable`
 (PGLite exists). User picks it. Grill opens with the seam question.
 
-**User:** `/improve-architecture the notification code is a mess`
+**User:** `/improve-codebase the notification code is a mess`
 
 Direction named, no git-log inference. One Explore agent on
 `src/notifications/`. One card, `ports & adapters`, because Twilio and

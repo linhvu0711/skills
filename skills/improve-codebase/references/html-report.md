@@ -1,6 +1,6 @@
 # HTML report
 
-The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/architecture/architecture-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
+The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/codebase/codebase-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
 
 Page rules that shape the file:
 
@@ -14,7 +14,7 @@ Page rules that shape the file:
 Serve the page with the shared serve script, which prints its URL:
 
 ```sh
-URL=$(../../shared/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<owner>-<repo>.html")
+URL=$(../../shared/serve.sh "$HOME/.agents/artifacts/codebase" "codebase-review-<owner>-<repo>.html")
 ```
 
 The script exits with an error (no free port, or the server does not give back the file): chat gets its error line and the `.html` path, and the run stops.
