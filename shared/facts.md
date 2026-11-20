@@ -37,19 +37,21 @@ The runner installs nothing, so before its brief goes out, the lead puts every p
 
 ### Skill agents
 
-A subagent's file names a home and a backup for each main harness. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
+A subagent's file names one or more homes and a backup for each main harness. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
 
-**Start.** In T3, when T3's `delegate_task` is in your tools, read the file's `home:` line for your harness. When its place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup.
+**Start.** In T3, when T3's `delegate_task` is in your tools, read the file's `home:` line for your harness: one home, or several joined by `, `. Try them from left to right. When a home's place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup.
 
 **Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
 
-**Backup.** The home cannot run when T3 lists its place as off, lists no such model, or refuses the start, or when its place is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then start it by name with your own tool, on the backup, and put this line in the skill's report, just above its last line:
+**Next home.** A home cannot run when T3 lists its place as off, lists no such model, or refuses the start, or when its place is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then try the next home on the line. With no home left, start it by name with your own tool, on the backup. The backup is your own harness's model, so it fails only when you fail: there is no try after it.
+
+**Report line.** A helper that did not run on its first home puts one line in the skill's report, just above its last line:
 
 ```
-<agent> ran on backup <model> <effort>: home <place> <model> <effort>, <why>.
+<agent> ran on <where>: <home>, <why>; <home>, <why>.
 ```
 
-as in `logic-reviewer ran on backup claude-opus-5-5 xhigh: home antigravity gemini-4-neon high, Antigravity is off in T3.` The backup is your own harness's model, so it fails only when you fail: there is no third try.
+`<where>` is the home that ran, `<place> <model> <effort>`, or `backup <model> <effort>`. Each `<home>, <why>` pair is a home tried before it, in order, and why it could not run, as in `logic-reviewer ran on devin gemini-4-neon-high high: antigravity gemini-4-neon high, Antigravity needs full-access.` and `logic-reviewer ran on backup claude-opus-5-5 xhigh: antigravity gemini-4-neon high, Antigravity is off in T3; devin gemini-4-neon-high high, Devin lists no such model.`
 
 **Not found.** Your harness says the agent is not found: start the plain subagent, with the backup's model and effort as far as your harness's start call takes them (`harness.md`), and print this line:
 

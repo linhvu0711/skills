@@ -13,15 +13,15 @@ The `shared/` folder: files that two or more skills read. A file read by more th
 _Avoid_: common, utils, lib
 
 **Skill agent**:
-A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names a home model and a backup model for each main harness. `link.sh` installs it into every harness. The explorer and the runner are not skill agents; the shared core owns them.
+A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models and a backup model for each main harness. `link.sh` installs it into every harness. The explorer and the runner are not skill agents; the shared core owns them.
 _Avoid_: subagent config, custom agent, agent file
 
 **Home model**:
-The model a subagent starts on in T3: by the main agent's own tool when that tool runs it as written, else by T3. It depends on the main agent's harness: a checker's home model comes from another company than the main agent's, and every other subagent's is the model its job needs. The subagent's file names one for each main harness.
+A model a subagent tries in T3. Its file lists one or more for each main harness, and T3 tries them from left to right: by the main agent's own tool when that tool runs it as written, else by T3. A checker's home models come from another company than the main agent's. Every other subagent's is the model its job needs.
 _Avoid_: default model
 
 **Backup model**:
-The model a subagent runs on when its home model cannot run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for each harness.
+The model a subagent runs on when none of its home models can run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for each harness.
 _Avoid_: fallback
 
 **Checker**:
