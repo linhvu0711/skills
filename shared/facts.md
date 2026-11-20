@@ -43,7 +43,7 @@ A subagent's file names a home and a backup for each main harness. A skill agent
 
 **Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
 
-**Backup.** The home cannot run when T3 lists its place as off, lists no such model, or refuses the start. Then start it by name with your own tool, on the backup, and put this line in the skill's report, just above its last line:
+**Backup.** The home cannot run when T3 lists its place as off, lists no such model, or refuses the start, or when its place is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then start it by name with your own tool, on the backup, and put this line in the skill's report, just above its last line:
 
 ```
 <agent> ran on backup <model> <effort>: home <place> <model> <effort>, <why>.

@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in.
-- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents: in T3 under a Claude main agent on Gemini 4 Neon, SWE-2, and SWE-2, and outside T3 on Opus (xhigh), Haiku (high), and Sonnet (high), which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity, and readers for the rule search, per the reader job in `../../shared/facts.md`. In Codex, which has none, it runs the three checks one after the other.
+- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents: in T3 under a Claude main agent on Gemini 4 Neon, SWE-2, and SWE-2 (Gemini only when the main agent runs in full access; else the logic reviewer runs on its backup), and outside T3 on Opus (xhigh), Haiku (high), and Sonnet (high), which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity, and readers for the rule search, per the reader job in `../../shared/facts.md`. In Codex, which has none, it runs the three checks one after the other.
 - The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/review/rule-sources.md`.
 
 ## Fits with
