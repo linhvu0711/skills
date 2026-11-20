@@ -24,8 +24,8 @@
 # the head's checks and threads every --poll-sec until none is pending, the
 # head is no longer <sha>, or --timeout-sec passed; then the verdict. The limit
 # counts real time from the start, the settle wait and each gh call too, so
-# the default, 28 minutes, ends before Claude Code's Monitor stops a watch at
-# 30 and still outlasts a 25-minute CI run. A red check does not end the
+# the default, 28 minutes, ends before the 30-minute cap on a line-by-line
+# watch (../../shared/harness.md) and still outlasts a 25-minute CI run. A red check does not end the
 # watch. Each poll prints one line per red check and
 # per waiting thread it has not printed yet, in the order they come:
 #   RED <name> · workflow <workflow> · step <failed step> · <state> · <url>
@@ -33,8 +33,8 @@
 # A check is known by its URL, so a rerun's new attempt prints again; one with
 # no URL is known by its name. The failed step comes from the Actions job the
 # URL names; `-` for a check from outside Actions, an unknown workflow, or a
-# failed lookup. The watch polls an API, so it costs no model tokens; in
-# Claude Code run it under a Monitor, so each line wakes the session.
+# failed lookup. The watch polls an API, so it costs no model tokens; run it
+# as a line-by-line watch, so each line wakes the session.
 #
 # Each reason it is not ready is `waiting` when time alone clears it (a check
 # still pending, no checks yet, GitHub still computing, a required check not
