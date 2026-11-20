@@ -16,10 +16,11 @@ unset $(git rev-parse --local-env-vars)
 # keep it off the real ones. The one T3 folder keeps its no-folder line quiet.
 SKILLS_HOME="$(mktemp -d)/agents"; CLAUDE_SKILLS_HOME="${SKILLS_HOME%/agents}/claude"
 CLAUDE_AGENTS_HOME="${SKILLS_HOME%/agents}/claude-agents"
+CODEX_AGENTS_HOME="${SKILLS_HOME%/agents}/codex-agents"
 ANTIGRAVITY_SKILLS_HOME="${SKILLS_HOME%/agents}/antigravity-skills"
 ANTIGRAVITY_PLUGINS_HOME="${SKILLS_HOME%/agents}/antigravity-plugins"
 T3_ANTIGRAVITY_HOME="${SKILLS_HOME%/agents}/t3"; mkdir -p "$T3_ANTIGRAVITY_HOME/p1"
-export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME ANTIGRAVITY_PLUGINS_HOME T3_ANTIGRAVITY_HOME
+export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME CODEX_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME ANTIGRAVITY_PLUGINS_HOME T3_ANTIGRAVITY_HOME
 
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

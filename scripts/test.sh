@@ -184,13 +184,30 @@ t_adopt_stops_on_bad_name() {
 linked() {
   repo; local n
   for n in "$@"; do mkdir -p "skills/$n"; printf -- '---\nname: %s\n---\n' "$n" > "skills/$n/SKILL.md"; done
-  mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/gskills" "$T/t3/p1"
+  mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/codex" "$T/gskills" "$T/t3/p1"
 }
-link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" ANTIGRAVITY_SKILLS_HOME="$T/gskills" \
-  ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
+link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
+  ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
 
-# agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md.
-agent() { mkdir -p "skills/$1/agents"; printf -- '---\nname: %s\n---\n' "$2" > "skills/$1/agents/$2.md"; }
+# full_agent: the frontmatter lines of a skill agent `helper` with every field.
+full_agent='name: helper
+description: Reviews one "demo" diff.
+tools: Read, Grep, Glob, Bash
+home:
+  claude: devin swe-2-high high
+  codex: claude claude-opus-5-5 xhigh
+  antigravity: claude claude-opus-5-5 xhigh
+backup:
+  claude: claude-haiku-5-5 high
+  codex: gpt-6-luna xhigh
+  antigravity: inherit'
+
+# agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
+# full_agent under that name, with a two-line body.
+agent() {
+  mkdir -p "skills/$1/agents"
+  printf -- '---\n%s\n---\nReview the diff.\nMatch \\d+ in "x".\n' "${full_agent/name: helper/name: $2}" > "skills/$1/agents/$2.md"
+}
 
 t_link_links_new_skill() {
   linked demo; link_sh
@@ -237,30 +254,121 @@ t_link_skips_worktree() {
   eq "ls agents" "" "$(ls "$T/agents")"
 }
 
-t_link_links_agent() {
+t_link_writes_claude_form() {
   # Given: a skill with one agent file and a Codex openai.yaml
   linked demo; agent demo helper; printf 'interface: {}\n' > skills/demo/agents/openai.yaml
   # When
   link_sh
   # Then
   eq exit 0 "$code"
-  has stdout "linked $T/cagents/helper.md" "$out"
-  eq "agent link" "$R/skills/demo/agents/helper.md" "$(readlink "$T/cagents/helper.md")"
+  has stdout "wrote $T/cagents/helper.md" "$out"
+  [ ! -L "$T/cagents/helper.md" ] || eq "cagents/helper.md" "a file" "a link"
+  eq "claude form" "$(printf '%s\n' '---' \
+    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
+    'name: helper' 'description: Reviews one "demo" diff.' 'tools: Read, Grep, Glob, Bash' \
+    'model: claude-haiku-5-5' 'effort: high' '---' 'Review the diff.' 'Match \d+ in "x".')" \
+    "$(cat "$T/cagents/helper.md")"
   eq "ls cagents" helper.md "$(ls "$T/cagents")"
   link_sh
   eq "second run" "" "$out$err"
 }
 
-t_link_unlinks_moved_agent() {
-  # Given: an agent linked once
-  linked demo; agent demo helper; link_sh
-  # When: it is renamed
-  mv skills/demo/agents/helper.md skills/demo/agents/aide.md; link_sh
+t_link_writes_codex_form() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
   # Then
   eq exit 0 "$code"
-  has stdout "unlinked $T/cagents/helper.md" "$out"
-  has stdout "linked $T/cagents/aide.md" "$out"
+  has stdout "wrote $T/codex/helper.toml" "$out"
+  eq "codex form" "$(printf '%s\n' \
+    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
+    'name = "helper"' 'description = "Reviews one \"demo\" diff."' 'model = "gpt-6-luna"' \
+    'model_reasoning_effort = "xhigh"' 'developer_instructions = """' 'Review the diff.' \
+    'Match \\d+ in "x".' '"""')" "$(cat "$T/codex/helper.toml")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_leaves_other_codex_agent() {
+  # Given: a Codex agent file of the user's own holds the agent's name
+  linked demo; agent demo helper; printf 'name = "mine"\n' > "$T/codex/helper.toml"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: $T/codex/helper.toml is not this repo's helper.toml" "$err"
+  eq "own file" 'name = "mine"' "$(cat "$T/codex/helper.toml")"
+}
+
+t_link_replaces_old_agent_link() {
+  # Given: the link an earlier link.sh made for the agent
+  linked demo; agent demo helper; ln -s "$R/skills/demo/agents/helper.md" "$T/cagents/helper.md"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/cagents/helper.md" "$out"
+  [ ! -L "$T/cagents/helper.md" ] || eq "cagents/helper.md" "a file" "a link"
+  eq "line 6" "model: claude-haiku-5-5" "$(sed -n 6p "$T/cagents/helper.md")"
+}
+
+t_link_skips_agent_without_claude_backup() {
+  # Given: an agent file with no Claude Code backup
+  linked demo; agent demo helper
+  grep -v '^  claude: claude-haiku-5-5 high$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: skills/demo/agents/helper.md: missing backup for claude" "$err"
+  [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
+}
+
+t_link_writes_antigravity_form() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/gplugins/skills/agents/helper.md" "$out"
+  eq "antigravity form" "$(printf '%s\n' '---' \
+    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
+    'name: helper' 'description: Reviews one "demo" diff.' 'subagent: true' 'mainAgent: false' \
+    'model: inherit' 'tools: [read_file, run_command, manage_task]' '---' 'Review the diff.' \
+    'Match \d+ in "x".')" "$(cat "$T/gplugins/skills/agents/helper.md")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_writes_plugin_manifest() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/gplugins/skills/plugin.json" "$out"
+  eq "manifest" "$(printf '%s\n' '{' '  "name": "skills",' \
+    '  "description": "The skill agents of the skills repo, written by its scripts/link.sh."' '}')" \
+    "$(cat "$T/gplugins/skills/plugin.json")"
+}
+
+t_link_removes_renamed_agent_forms() {
+  # Given: an agent written once into every harness
+  linked demo; agent demo helper; link_sh
+  # When: it is renamed
+  sed 's/^name: helper$/name: aide/' skills/demo/agents/helper.md > skills/demo/agents/aide.md
+  rm skills/demo/agents/helper.md; link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "removed $T/cagents/helper.md" "$out"
+  has stdout "removed $T/codex/helper.toml" "$out"
+  has stdout "removed $T/gplugins/skills/agents/helper.md" "$out"
   eq "ls cagents" aide.md "$(ls "$T/cagents")"
+  eq "ls codex" aide.toml "$(ls "$T/codex")"
+  eq "ls plugin agents" aide.md "$(ls "$T/gplugins/skills/agents")"
 }
 
 t_link_leaves_other_agent() {
@@ -556,21 +664,94 @@ t_flags_agent_empty_description() {
   has stderr "skills/demo/agents/helper.md: empty description" "$err"
 }
 
-t_flags_agent_no_model() {
-  agent_md "$(printf 'name: helper\ndescription: d\neffort: high')"
+t_flags_agent_no_codex_backup() {
+  # Given: every field but the Codex backup
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^  codex: gpt-6-luna xhigh$')"
+  # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: missing model" "$err"
+  has stderr "skills/demo/agents/helper.md: missing backup for codex" "$err"
 }
 
-t_flags_agent_no_effort() {
-  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet')"
+t_passes_agent_with_blank_and_comment_in_map() {
+  # Given: a blank line, an indented comment, and a comment at the line start inside home:
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | sed 's/^  claude: devin swe-2-high high$/&\
+\
+  # Codex next\
+# then Antigravity/')"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_agent_no_antigravity_home() {
+  # Given: every field but the Antigravity home
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^  antigravity: claude claude-opus-5-5 xhigh$')"
+  # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: missing effort" "$err"
+  has stderr "skills/demo/agents/helper.md: missing home for antigravity" "$err"
+}
+
+t_flags_agent_block_description() {
+  # Given: every field, with the description as a block
+  # When
+  agent_md "${full_agent/description: Reviews one \"demo\" diff./description: |
+  Reviews one diff.}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: description on more than one line" "$err"
+}
+
+t_flags_agent_unknown_harness() {
+  # Given: every field, and a backup for a harness that is not one
+  # When
+  agent_md "$(printf '%s\n  cursor: gpt-6-luna high' "$full_agent")"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: unknown harness: cursor" "$err"
+}
+
+t_flags_backup_model_of_other_harness() {
+  # Given: every field, with a Claude model as the Codex backup
+  # When
+  agent_md "${full_agent/  codex: gpt-6-luna xhigh/  codex: claude-haiku-5-5 high}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: backup for codex: claude-haiku-5-5 is not a model codex takes" "$err"
+}
+
+t_flags_exact_antigravity_backup() {
+  # Given: every field, with an exact model as the Antigravity backup
+  # When
+  agent_md "${full_agent/  antigravity: inherit/  antigravity: gemini-4-neon low}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: backup for antigravity: gemini-4-neon is not a model antigravity takes" "$err"
+}
+
+t_flags_effort_place_cannot_take() {
+  # Given: every field, with an effort Devin has not for the Claude home
+  # When
+  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: devin swe-2-high ultra}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: home for claude: ultra is not an effort devin takes" "$err"
+}
+
+t_flags_home_in_unknown_place() {
+  # Given: every field, with the Codex home in a place T3 does not start
+  # When
+  agent_md "${full_agent/  codex: claude claude-opus-5-5 xhigh/  codex: cursor composer-2 high}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
 }
 
 t_passes_agent_with_all_fields() {
   # Given: a full agent file and a Codex openai.yaml beside it
-  agent_md "$(printf 'name: helper\ndescription: d\nmodel: sonnet\neffort: high')"
+  agent_md "$full_agent"
   printf 'interface: {}\n' > skills/demo/agents/openai.yaml; git add -A; git commit -qm yaml
   # When
   run bash scripts/check.sh
@@ -896,9 +1077,15 @@ cases=(
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"
   "link does nothing in a worktree|t_link_skips_worktree"
-  "link links a skill agent and leaves openai.yaml|t_link_links_agent"
-  "link unlinks a renamed skill agent|t_link_unlinks_moved_agent"
+  "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
+  "link replaces its old agent link with the file|t_link_replaces_old_agent_link"
+  "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
+  "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link writes a skill agent's Codex form|t_link_writes_codex_form"
+  "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
+  "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
+  "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
@@ -953,8 +1140,15 @@ cases=(
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"
-  "flags an agent file with no model|t_flags_agent_no_model"
-  "flags an agent file with no effort|t_flags_agent_no_effort"
+  "flags an agent file with no Codex backup|t_flags_agent_no_codex_backup"
+  "passes an agent file with a blank line and comments in a map|t_passes_agent_with_blank_and_comment_in_map"
+  "flags an agent file with no Antigravity home|t_flags_agent_no_antigravity_home"
+  "flags an agent file with a block description|t_flags_agent_block_description"
+  "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
+  "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
+  "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"
+  "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
+  "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )

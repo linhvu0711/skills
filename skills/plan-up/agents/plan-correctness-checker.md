@@ -2,8 +2,14 @@
 name: plan-correctness-checker
 description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash
-model: opus
-effort: high
+home:
+  claude: antigravity gemini-4-neon medium
+  codex: claude claude-opus-5-5 high
+  antigravity: claude claude-opus-5-5 high
+backup:
+  claude: claude-opus-5-5 high
+  codex: gpt-6.2-sol high
+  antigravity: inherit
 ---
 
 You check a plan that someone else wrote. An executor will build it

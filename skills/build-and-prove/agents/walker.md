@@ -2,8 +2,14 @@
 name: walker
 description: Walks a plan's UI walks on a proofbox Sandbox the way a test user would, films each video, and reports what passed and what broke with screenshots. Spawned only by /build-and-prove, after it started the app. Never reads or changes code.
 tools: Bash, Read
-model: sonnet
-effort: high
+home:
+  claude: devin swe-2-high high
+  codex: devin swe-2-high high
+  antigravity: devin swe-2-high high
+backup:
+  claude: claude-sonnet-5-5 high
+  codex: gpt-6.2-sol medium
+  antigravity: inherit
 ---
 
 You are a test user. Someone else built the app and started it in a

@@ -9,11 +9,16 @@
 # links to skills/<name>/ here, ${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}
 # and ${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}, Antigravity's
 # global skills folder, where each skill links to its link in the first
-# folder, and ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}, where each skill agent
-# skills/<name>/agents/<agent>.md links to its file here. Only `.md` files in
-# agents/ link, so a Codex openai.yaml stays out. A link that one of these made
-# and that now points to nothing, after a rename or delete, is removed. A name
-# already taken by something else stays as it is.
+# folder. Each skill agent, skills/<name>/agents/<agent>.md, becomes a file per
+# harness, on that harness's backup model, written by scripts/agents.sh:
+# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code,
+# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex, and
+# ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}/skills/agents/<agent>.md
+# in the "skills" Antigravity plugin, beside the plugin.json it writes when the
+# repo has an agent. Only `.md` files in agents/ count, so a Codex openai.yaml
+# stays out. Each file it writes starts with a mark that names its source; a file it wrote whose source is gone, and
+# a link it made that now points to nothing, after a rename or delete, is
+# removed. A name already taken by something else stays as it is.
 #
 # Each folder under ${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity},
 # a private Antigravity home T3 Code keeps, gets config/plugins, a link to
@@ -23,9 +28,10 @@
 # Run in a linked worktree, it does nothing: the links point to the main
 # checkout, as adopt.sh's do.
 #
-# Exit 0, with `linked <link>`, `unlinked <link>`, or `skip: <why>` per
-# change and nothing when all links are good. With no T3 Antigravity folder,
-# `skip: no T3 Antigravity folder in <folder>` on every run.
+# Exit 0, with `linked <link>`, `unlinked <link>`, `wrote <file>`,
+# `removed <file>`, or `skip: <why>` per change and nothing when all are good.
+# With no T3 Antigravity folder, `skip: no T3 Antigravity folder in <folder>`
+# on every run.
 set -euo pipefail
 
 repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
@@ -36,10 +42,11 @@ common_dir="$(cd "$(git -C "$repo" rev-parse --git-common-dir)" && pwd -P)"
 agents="${SKILLS_HOME:-$HOME/.agents/skills}"
 claude="${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}"
 claude_agents="${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}"
+codex_agents="${CODEX_AGENTS_HOME:-$HOME/.codex/agents}"
 antigravity="${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}"
 plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
 t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
-mkdir -p "$agents" "$claude" "$claude_agents" "$antigravity"
+mkdir -p "$agents" "$claude" "$claude_agents" "$codex_agents" "$antigravity"
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
 # points to no file and whose target is one of the prefixes plus its name. A
@@ -71,6 +78,72 @@ link() {
   fi
 }
 
+# mark <source>: the words that mark a file as one this script wrote from
+# <source>, a path in the repo.
+mark() { printf 'Made by scripts/link.sh from %s. Edit that file, not this one.' "$1"; }
+
+# made_from <path>: the source a file this script wrote names in its mark, or
+# nothing for any other file or link.
+made_from() {
+  [ -f "$1" ] && [ ! -L "$1" ] || return 0
+  head -n 2 "$1" | sed -n 's/^# Made by scripts\/link\.sh from \(.*\)\. Edit that file, not this one\.$/\1/p'
+}
+
+# put <path> <temp>: move the temp file to the path when the path is free, a
+# file this script wrote, or one of its old links to an agent file, and the
+# content differs. Says why and drops the temp when something else holds it.
+put() {
+  local p="$1" t="$2"
+  if [ -L "$p" ] && [[ "$(readlink "$p")" == "$repo"/skills/*/agents/* ]]; then
+    rm "$p"
+  elif [ -e "$p" ] || [ -L "$p" ]; then
+    if [ -z "$(made_from "$p")" ]; then
+      rm -f "$t"; printf 'skip: %s is not this repo'"'"'s %s\n' "$p" "$(basename "$p")" >&2; return 0
+    fi
+    if cmp -s "$t" "$p"; then rm -f "$t"; return 0; fi
+  fi
+  mv "$t" "$p"; printf 'wrote %s\n' "$p"
+}
+
+# sweep <folder> <glob>: remove each file there that this script wrote from a
+# source the repo no longer has.
+sweep() {
+  local f s
+  for f in "$1"/$2; do
+    s="$(made_from "$f")"
+    [ -n "$s" ] && [ ! -e "$repo/$s" ] || continue
+    rm "$f"; printf 'removed %s\n' "$f"
+  done
+}
+
+# form <harness> <path> <source file> <source path>: write <path> through put,
+# from agents.sh's form of the source for <harness>.
+form() {
+  local t; t="$(mktemp "$(dirname "$2")/.link.XXXXXX")"
+  if bash "$repo/scripts/agents.sh" render "$1" "$(mark "$4")" < "$3" > "$t" 2>/dev/null; then
+    put "$2" "$t"
+  else
+    rm -f "$t"
+  fi
+}
+
+# manifest: write the "skills" plugin's plugin.json when it is missing. It is
+# strict JSON with no mark, since agy warns that `plugin install` cannot read
+# a comment, so this script owns it only when it holds exactly these words.
+manifest() {
+  local p="$plugins/skills/plugin.json" want t
+  want='{
+  "name": "skills",
+  "description": "The skill agents of the skills repo, written by its scripts/link.sh."
+}'
+  if [ ! -e "$p" ] && [ ! -L "$p" ]; then
+    t="$(mktemp "$plugins/skills/.link.XXXXXX")"; printf '%s\n' "$want" > "$t"
+    mv "$t" "$p"; printf 'wrote %s\n' "$p"
+  elif [ "$(cat "$p")" != "$want" ]; then
+    printf 'skip: %s is not this repo'"'"'s plugin.json\n' "$p" >&2
+  fi
+}
+
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
 unlink_dead "$antigravity" "$agents"
@@ -87,8 +160,20 @@ done
 
 for f in "$repo"/skills/*/agents/*.md; do
   [ -f "$f" ] || continue
-  link "$claude_agents" "$(basename "$f")" "$f" || true
+  src="${f#"$repo"/}"; n="$(basename "$f" .md)"
+  if ! why="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
+    printf 'skip: %s: %s\n' "$src" "$why" >&2; continue
+  fi
+  form claude "$claude_agents/$n.md" "$f" "$src"
+  form codex "$codex_agents/$n.toml" "$f" "$src"
+  mkdir -p "$plugins/skills/agents"
+  form antigravity "$plugins/skills/agents/$n.md" "$f" "$src"
+  any=1
 done
+sweep "$claude_agents" '*.md'
+sweep "$codex_agents" '*.toml'
+sweep "$plugins/skills/agents" '*.md'
+[ -z "${any:-}" ] || manifest
 
 # T3 runs Antigravity with a private home, so its chats see no plugin until
 # each private folder's config/plugins points at the real one.

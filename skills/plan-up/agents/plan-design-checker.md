@@ -2,8 +2,14 @@
 name: plan-design-checker
 description: "Checks the code design of a finished /plan-up plan with fresh eyes, before the user sees it: a part it patches but should rebuild, an empty module, a seam with one adapter, logic in the wrong place, tests that reach inside, parts the work does not need. Spawned only by plan-up step 8, beside plan-correctness-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash
-model: fable
-effort: high
+home:
+  claude: antigravity gemini-4-neon high
+  codex: claude claude-fable-5-2 high
+  antigravity: claude claude-fable-5-2 high
+backup:
+  claude: claude-fable-5-2 high
+  codex: gpt-6.2-astra xhigh
+  antigravity: inherit
 ---
 
 You check the design of a plan that someone else wrote. An executor
