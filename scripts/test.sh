@@ -463,6 +463,18 @@ t_link_adds_gate_to_codex_hooks_once() {
   eq "same file" "$before" "$(cat "$T/codex-hooks.json")"
 }
 
+t_link_keeps_hook_in_gate_group() {
+  # Given: an old gate command and a hook of the user's own in one group
+  linked demo; with_gate
+  printf '%s' '{"hooks":{"PreToolUse":[{"matcher":"Agent","hooks":[{"type":"command","command":"bash /old/shared/gate/subagent-gate.sh claude"},{"type":"command","command":"audit.sh"}]}]}}' > "$T/claude-settings.json"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq settings '{"hooks":{"PreToolUse":[{"matcher":"Agent","hooks":[{"type":"command","command":"audit.sh"}]},{"matcher":"Agent|Task|Edit|Write|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"bash '"'$R/shared/gate/subagent-gate.sh'"' claude","timeout":5}]}]}}' \
+    "$(jq -c . "$T/claude-settings.json")"
+}
+
 t_link_leaves_hook_file_not_json() {
   # Given: a settings file that is not JSON
   linked demo; with_gate; printf '{oops' > "$T/claude-settings.json"
@@ -1269,6 +1281,7 @@ cases=(
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
   "link adds the gate to codex hooks once|t_link_adds_gate_to_codex_hooks_once"
+  "link keeps a hook that shares the gate's group|t_link_keeps_hook_in_gate_group"
   "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
   "link writes the gate into the antigravity plugin|t_link_writes_gate_into_plugin"
   "link updates an old gate entry in the antigravity plugin|t_link_updates_old_gate_in_plugin"

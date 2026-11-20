@@ -174,19 +174,24 @@ merge_json() {
 }
 
 # hook_entry <file> <harness>: put the gate's PreToolUse entry in the file. The
-# first group that runs the gate is replaced in its place, since Codex keys its
-# trust on the group's index, and any later one is removed; with none, the
-# entry goes last.
+# first group that runs only the gate is replaced in its place, since Codex
+# keys its trust on the group's index, and any later one is removed; with
+# none, the entry goes last. A group that runs the gate beside other hooks
+# loses only the gate's command.
 hook_entry() {
   local entry
   entry="$(jq -cn --arg m "$(bash "$gate" "$2" matcher)" --arg c "bash '$gate' $2" \
     '{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}')"
   merge_json "$1" '
-    def gate: any(.hooks[]?; (.command // "") | contains("shared/gate/subagent-gate.sh"));
+    def gate: (.command // "") | contains("shared/gate/subagent-gate.sh");
+    def only_gate: (.hooks // []) | length > 0 and all(gate);
     (.hooks.PreToolUse // []) as $g
-    | ([$g | to_entries[] | select(.value | gate) | .key] | first) as $i
-    | .hooks.PreToolUse = if $i == null then $g + [$e]
-        else [$g | to_entries[] | if .key == $i then $e elif (.value | gate) then empty else .value end] end' "$entry"
+    | ([$g | to_entries[] | select(.value | only_gate) | .key] | first) as $i
+    | .hooks.PreToolUse = [$g | to_entries[]
+        | if .key == $i then $e
+          elif (.value | only_gate) then empty
+          elif any(.value.hooks[]?; gate) then .value | .hooks |= map(select(gate | not))
+          else .value end] + (if $i == null then [$e] else [] end)' "$entry"
 }
 
 # plugin_hooks: put the gate's entry in the "skills" plugin's hooks.json,
