@@ -371,6 +371,23 @@ t_link_removes_renamed_agent_forms() {
   eq "ls plugin agents" aide.md "$(ls "$T/gplugins/skills/agents")"
 }
 
+t_link_writes_shared_agent_forms() {
+  # Given: the shared explorer file
+  linked demo; mkdir -p shared/agents
+  printf -- '---\n%s\n---\nFind the fact.\n' "${full_agent/name: helper/name: explorer}" > shared/agents/explorer.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/cagents/explorer.md" "$out"
+  has stdout "wrote $T/codex/explorer.toml" "$out"
+  has stdout "wrote $T/gplugins/skills/agents/explorer.md" "$out"
+  eq "mark" "# Made by scripts/link.sh from shared/agents/explorer.md. Edit that file, not this one." \
+    "$(sed -n 2p "$T/cagents/explorer.md")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
 t_link_leaves_other_agent() {
   # Given: a file of the user's own holds the agent's name
   linked demo; agent demo helper; printf 'mine\n' > "$T/cagents/helper.md"
@@ -1096,6 +1113,7 @@ cases=(
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link writes a shared agent's three forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"

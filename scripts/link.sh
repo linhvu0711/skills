@@ -9,7 +9,8 @@
 # links to skills/<name>/ here, ${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}
 # and ${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}, Antigravity's
 # global skills folder, where each skill links to its link in the first
-# folder. Each skill agent, skills/<name>/agents/<agent>.md, becomes a file per
+# folder. Each skill agent, skills/<name>/agents/<agent>.md, and each shared
+# agent, the explorer and the runner in shared/agents/<agent>.md, becomes a file per
 # harness, on that harness's backup model, written by scripts/agents.sh:
 # ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code,
 # ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex, and
@@ -158,7 +159,7 @@ for f in "$repo"/skills/*/SKILL.md; do
   fi
 done
 
-for f in "$repo"/skills/*/agents/*.md; do
+for f in "$repo"/skills/*/agents/*.md "$repo"/shared/agents/*.md; do
   [ -f "$f" ] || continue
   src="${f#"$repo"/}"; n="$(basename "$f" .md)"
   if ! why="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
