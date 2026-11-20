@@ -342,6 +342,38 @@ t_link_writes_antigravity_form() {
   eq "second run" "" "$out$err"
 }
 
+t_agents_lists_tools() {
+  # Given: an agent whose tools line names the Agent tool
+  repo; agent demo helper
+  sed -i.bak 's/^tools: Read, Grep, Glob, Bash$/tools: Read, Grep, Glob, Bash, Agent/' skills/demo/agents/helper.md
+  # When
+  run bash scripts/agents.sh tools < skills/demo/agents/helper.md
+  # Then
+  eq exit 0 "$code"
+  eq stdout "Read Grep Glob Bash Agent" "$out"
+}
+
+t_agents_lists_every_tool_without_tools_line() {
+  # Given: an agent with no tools line
+  repo; agent demo helper
+  sed -i.bak '/^tools:/d' skills/demo/agents/helper.md
+  # When
+  run bash scripts/agents.sh tools < skills/demo/agents/helper.md
+  # Then
+  eq exit 0 "$code"
+  eq stdout "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent" "$out"
+}
+
+t_link_writes_antigravity_start_tool() {
+  # Given: a skill agent whose tools line names the Agent tool
+  linked demo; agent demo helper
+  sed -i.bak 's/^tools: Read, Grep, Glob, Bash$/tools: Read, Grep, Glob, Bash, Agent/' skills/demo/agents/helper.md
+  # When
+  link_sh
+  # Then
+  eq "tools line" "tools: [read_file, run_command, manage_task, invoke_subagent]" "$(sed -n 8p "$T/gplugins/skills/agents/helper.md")"
+}
+
 t_link_writes_plugin_manifest() {
   # Given: a skill with one agent file
   linked demo; agent demo helper
@@ -1170,6 +1202,9 @@ cases=(
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
+  "agents.sh lists an agent's tools|t_agents_lists_tools"
+  "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
+  "link writes the antigravity start tool|t_link_writes_antigravity_start_tool"
   "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
