@@ -144,6 +144,43 @@ t_sync_second_run_fixes_nothing() {
   eq stdout "$healthy" "$out"
 }
 
+t_sync_names_stale_home_model() {
+  # Given: T3's Antigravity list without the helper's home model
+  mac
+  printf '{"models":[{"slug":"gemini-4-argon"}]}\n' > "$H/.t3/caches/antigravity.json"
+  before="$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has problem 'problem: skills/demo/agents/helper.md: home for antigravity: T3 Antigravity does not offer gemini-4-neon' "$out"
+  eq agent "$before" "$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
+}
+
+t_sync_names_stale_backup_model() {
+  # Given: Codex's own list without the helper's Codex backup
+  mac
+  printf '{"models":[]}' > "$H/.codex/models_cache.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has problem 'problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna' "$out"
+}
+
+t_sync_skips_models_of_place_off() {
+  # Given: Antigravity off in T3, its list empty
+  mac
+  sed -i.bak '/Antigravity/s/true/false/' "$H/.t3/userdata/settings.json"
+  printf '{"models":[]}\n' > "$H/.t3/caches/antigravity.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  has skip 'skip: Antigravity is off in T3, so its home models are not checked' "$out"
+  lacks problem 'problem:' "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -155,4 +192,7 @@ cases=(
   "sync names a hand-made subagent file|t_sync_names_hand_made_subagent"
   "sync names a blocked T3 plugins link|t_sync_names_blocked_plugins_link"
   "sync a second run fixes nothing|t_sync_second_run_fixes_nothing"
+  "sync names a home model T3 no longer offers|t_sync_names_stale_home_model"
+  "sync names a backup model Codex no longer offers|t_sync_names_stale_backup_model"
+  "sync skips the home models of a place that is off|t_sync_skips_models_of_place_off"
 )

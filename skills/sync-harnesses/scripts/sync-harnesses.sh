@@ -7,8 +7,9 @@
 #
 # First it runs the repo's link.sh, which remakes every missing link. Then
 # it prints one line per harness with its counts, one line for Devin in T3,
-# one `fixed:` line per link link.sh made, and one `problem:` line per thing
-# still missing. Exit 1 when a problem line printed, else 0. Every path
+# one `fixed:` line per link link.sh made, one `problem:` line per thing
+# still missing or a model no list offers, and one `skip:` line per check it
+# could not run. Exit 1 when a problem line printed, else 0. Every path
 # comes from HOME.
 set -euo pipefail
 
@@ -156,12 +157,67 @@ for d in "$t3_antigravity"/*/; do
 done
 out_antigravity="skills $s · subagents $a · gates $g · rules $r/$rt"
 
+# Every agent's models, one row each: <agent file> <map> <harness> <place>
+# <model>, as agents.sh's models mode lists them.
+rows=()
+for a in ${agents[@]+"${agents[@]}"}; do
+  while read -r r; do rows+=("$a $r"); done < <(bash "$root/scripts/agents.sh" models < "$root/$a")
+done
+
+notes=()
+# note <line>: add a skip line once.
+note() {
+  local n
+  for n in ${notes[@]+"${notes[@]}"}; do [ "$n" = "$1" ] && return 0; done
+  notes+=("$1")
+}
+
+# t3_id <place>: the T3 provider of a place, and its name in the report.
+t3_id() {
+  case "$1" in
+    claude) id=claudeAgent; name=Claude ;;
+    codex) id=codex; name=Codex ;;
+    antigravity) id=antigravity; name=Antigravity ;;
+    devin) id=acpRegistry_devin; name=Devin ;;
+    *) id=""; name="" ;;
+  esac
+}
+
+# t3_on <id>: whether the provider is on in T3. No `enabled` key means on.
+t3_on() {
+  [ "$(jq -r --arg id "$1" 'if .providerInstances[$id].enabled == false then "off" else "on" end' \
+    "$HOME/.t3/userdata/settings.json" 2>/dev/null)" != off ]
+}
+
+# offers <list file> <model>: whether the list holds the model.
+offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&1; }
+
+# Models: a home against the T3 list of its place, a Claude Code backup
+# against T3's Claude list, a Codex backup against Codex's own list. An
+# Antigravity backup names no exact model, so it has no list.
+for row in ${rows[@]+"${rows[@]}"}; do
+  read -r a map h place model <<< "$row"
+  [ "$model" = inherit ] && continue
+  if [ "$map" = home ]; then
+    t3_id "$place"; [ -n "$id" ] || continue
+    if ! t3_on "$id"; then note "skip: $name is off in T3, so its home models are not checked"; continue; fi
+    list="$HOME/.t3/caches/$id.json"; source="T3 $name"
+  else
+    case "$h" in
+      claude) list="$HOME/.t3/caches/claudeAgent.json"; source="Claude Code" ;;
+      codex) list="$HOME/.codex/models_cache.json"; source=Codex ;;
+      *) continue ;;
+    esac
+  fi
+  if [ ! -f "$list" ]; then note "skip: no model list at $(tilde "$list"), so $source models are not checked"; continue; fi
+  offers "$list" "$model" || problem "$a: $map for $h: $source does not offer $model"
+done
+
 # Devin: one live call per model a home starts on in Devin.
 devin_models=()
-for a in ${agents[@]+"${agents[@]}"}; do
-  while read -r map h place model; do
-    [ "$map" = home ] && [ "$place" = devin ] && devin_models+=("$model")
-  done < <(bash "$root/scripts/agents.sh" models < "$root/$a")
+for row in ${rows[@]+"${rows[@]}"}; do
+  read -r a map h place model <<< "$row"
+  [ "$map" = home ] && [ "$place" = devin ] && devin_models+=("$model")
 done
 devin="on"
 for m in $(printf '%s\n' ${devin_models[@]+"${devin_models[@]}"} | sort -u); do
@@ -176,7 +232,7 @@ line claude "$out_claude"
 line codex "$out_codex"
 line antigravity "$out_antigravity"
 line "devin in T3" "$devin"
-for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"}; do
+for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"} ${notes[@]+"${notes[@]}"}; do
   printf '%s\n' "$p"
 done
 [ ${#problems[@]} -eq 0 ] && [ ${#link_problems[@]} -eq 0 ]

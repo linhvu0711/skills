@@ -35,6 +35,8 @@ problem: antigravity rules: ~/.t3/userdata/providers/antigravity/ac0a… has no 
 
 The check never makes T3's `GEMINI.md` link. T3 makes that link itself each time it starts an Antigravity chat, so one owner keeps it.
 
+It also checks each model a helper's file names. A home model must be in T3's list for its place, `~/.t3/caches/<provider>.json`. A Claude Code backup must be in T3's Claude list, and a Codex backup in Codex's own list, `~/.codex/models_cache.json`. An Antigravity backup names no exact model, so it has no list. A model not in its list gets a line such as `problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna`. The check changes no agent file: you pick the new model. A place that is off in T3 gets `skip: Antigravity is off in T3, so its home models are not checked`, and a skip line does not fail the run.
+
 The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's home names in Devin.
 
 ## Needs
