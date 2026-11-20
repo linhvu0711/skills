@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# subagent-gate.sh: the subagent gate. Each harness runs it before a tool
+# call, with the call's hook payload on stdin.
+#
+#   subagent-gate.sh <claude|codex|antigravity>            < payload
+#   subagent-gate.sh <claude|codex|antigravity> matcher
+#
+# The rules, read from the agent files through scripts/agents.sh tools, so
+# no second list of agent names exists here:
+#   - The main agent is never blocked.
+#   - A subagent may start another only when its agent file lists the Agent
+#     tool, and only a shared agent, one in shared/agents/. Neither of those
+#     lists Agent, so nesting stops at two levels.
+#
+# Prints one deny line in the harness's own shape, or nothing to allow, and
+# exits 0. `matcher` prints the harness's hook matcher: every tool name the
+# gate reads, joined by `|`; scripts/link.sh asks it, so the two never
+# drift. A bad argument: the usage line on stderr, exit 64.
+#
+# No set -e: a payload jq cannot read prints nothing and lets the call
+# through, as the old gate did, so a broken gate never stops the main work.
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo="$here/../.."
+usage() { echo 'usage: subagent-gate.sh <claude|codex|antigravity> [matcher]' >&2; exit 64; }
+
+harness="${1:-}"
+case "$harness" in
+  claude) start_tools="Agent Task"; edit_tools="Edit Write MultiEdit NotebookEdit" ;;
+  *) usage ;;
+esac
+case "${2-}" in
+  matcher) [ $# -eq 2 ] || usage; printf '%s\n' "$start_tools $edit_tools" | tr ' ' '|'; exit 0 ;;
+  '') [ $# -eq 1 ] || usage ;;
+  *) usage ;;
+esac
+
+payload="$(cat)"
+us=$'\x1f'
+
+# read_<harness>: caller, tool name, and target, one unit separator apart.
+# The caller is empty for the main agent.
+read_claude() {
+  jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
+           .tool_name // "", .tool_input.subagent_type // "general-purpose"] | join("\u001f")' <<<"$payload"
+}
+
+fields="$("read_$harness" 2>/dev/null)" || exit 0
+IFS="$us" read -r caller tool target <<<"$fields"
+[ -n "$caller" ] || exit 0
+
+in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
+action=other
+in_list "$tool" "$start_tools" && action=start
+
+# agent_file <name>: the agent's file in this repo, or nothing.
+agent_file() {
+  [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]] || return 0
+  local f
+  for f in "$repo/shared/agents/$1.md" "$repo"/skills/*/agents/"$1".md; do
+    [ -f "$f" ] && { printf '%s\n' "$f"; return 0; }
+  done
+}
+tools_of() { bash "$repo/scripts/agents.sh" tools < "$1" 2>/dev/null; }
+
+deny() {
+  case "$harness" in
+    claude) jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' ;;
+  esac
+  exit 0
+}
+
+if [ "$action" = start ]; then
+  f="$(agent_file "$caller")"
+  if [ -n "$f" ] && in_list Agent "$(tools_of "$f")" \
+     && [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]] && [ -f "$repo/shared/agents/$target.md" ]; then
+    exit 0
+  fi
+  deny "Blocked by the subagent gate: $caller may not start $target. Only an agent whose file lists the Agent tool may start a subagent, and only the explorer or the runner, so nesting stops at two levels."
+fi
+exit 0
