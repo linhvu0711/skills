@@ -17,5 +17,6 @@ T3 Code starts a subagent in any harness it runs, and in Devin, whatever harness
 - `orchestrator_capabilities` lists each place by its display name (Claude, Codex, Antigravity, Devin), with its `providerInstanceId`, its models, and each model's effort option: `effort` for Claude, `thought_level` for Antigravity and Devin.
 - A place is off when its entry has `canRunChildTask: false`, or a constraint such as `Provider instance is disabled.`
 - `delegate_task` takes `target` as `{providerInstanceId, model, options: {<effort option>: <effort>}}`, and the `task` as `facts.md` § Skill agents builds it. Follow the `next` it returns for the answer.
+- A helper started through T3 takes no follow-up message. A step that sends a helper more work, such as a walk again or a look again, starts a new `delegate_task` with the same brief and the new part.
 - T3 cannot limit a child's tools, so a read-only helper stays read-only only by its instructions.
 - `orchestrator_capabilities` gives your own `runtimeMode`. A child gets your mode, or the nearest its place has, and never a broader one. Antigravity has no `auto`, so under an `auto` main its child gets `auto-accept-edits`, which asks the user before each command the helper runs. So a home in Antigravity runs only when your mode is `full-access`. A home in Claude or Devin runs its commands with no asks under `auto` too.
