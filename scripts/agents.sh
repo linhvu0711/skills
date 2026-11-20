@@ -6,6 +6,8 @@
 #   agents.sh check < skills/<name>/agents/<agent>.md
 #   agents.sh render <harness> <marker> < skills/<name>/agents/<agent>.md
 #
+# A shared agent, shared/agents/<agent>.md, is read the same way.
+#
 # After `name`, `description`, and an optional `tools` line, an agent file
 # holds two maps, each key two spaces in, one entry per main harness:
 #

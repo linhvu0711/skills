@@ -749,6 +749,20 @@ t_flags_home_in_unknown_place() {
   has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
 }
 
+t_flags_shared_agent_no_codex_backup() {
+  # Given: a good skill, and the shared explorer with every field but the Codex backup
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  mkdir -p shared/agents
+  printf -- '---\n%s\n---\n' "$(printf '%s\n' "${full_agent/name: helper/name: explorer}" | grep -v '^  codex: gpt-6-luna xhigh$')" > shared/agents/explorer.md
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/agents/explorer.md: missing backup for codex" "$err"
+}
+
 t_passes_agent_with_all_fields() {
   # Given: a full agent file and a Codex openai.yaml beside it
   agent_md "$full_agent"
@@ -1150,6 +1164,7 @@ cases=(
   "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
   "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
+  "flags a shared agent with no Codex backup|t_flags_shared_agent_no_codex_backup"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 

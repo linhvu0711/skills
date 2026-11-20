@@ -34,7 +34,8 @@
 # characters, and a `name` of at most 64. The top AGENTS.md stays under 200
 # lines, Anthropic's limit for a CLAUDE.md. A tracked file that starts with
 # `#!` has the run bit, mode 100755 in the index. Each skill agent,
-# `skills/<name>/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
+# `skills/<name>/agents/<agent>.md`, and each shared agent, the explorer and
+# the runner in `shared/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
 # file name without `.md`, a `description` that is not empty, and a home and a
 # backup entry for each harness in a form that harness takes, as
 # `scripts/agents.sh` says.
@@ -114,8 +115,12 @@ in_index() { git cat-file -e ":$1" 2>/dev/null; }
 # skill_dirs: each `skills/<name>` folder whose SKILL.md is in the index.
 skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1 "/" $2 }'; }
 
-# agent_files: each skill agent file, `skills/<name>/agents/<agent>.md`, in the index.
-agent_files() { git ls-files -- 'skills/*/agents/*.md' | awk -F/ 'NF == 4'; }
+# agent_files: each skill agent file, `skills/<name>/agents/<agent>.md`, and
+# each shared agent file, `shared/agents/<agent>.md`, in the index.
+agent_files() {
+  git ls-files -- 'skills/*/agents/*.md' 'shared/agents/*.md' |
+    awk -F/ '($1 == "skills" && NF == 4) || ($1 == "shared" && NF == 3)'
+}
 
 # frontmatter_problems [--limits] <want> <what>: the problems of the
 # frontmatter on stdin, one per line: no frontmatter, a `name` that is not <want> (the
@@ -354,6 +359,7 @@ if [ ${#paths[@]} -eq 0 ]; then
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,
+  # and each shared agent, shared/agents/<agent>.md,
   # has one whose `name` is its file name, and the home and backup entries
   # agents.sh checks.
   while IFS= read -r skill; do

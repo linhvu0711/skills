@@ -31,24 +31,9 @@ One agent, one small job: a handful of files (about ten or fewer), one grep grou
 
 ### Reader and runner
 
-Two helper jobs. Each brief pastes the lines of its job, word for word, above its own text, so any agent that fits can take the job. A reader has no network, so a brief that needs an issue or a PR pastes its text. A brief that needs the web says so in plain words, as in `Use the web: the csv-stringify docs.`
+Two helper jobs, each with its file next to this one: the explorer, `agents/explorer.md`, fetches facts, and the runner, `agents/runner.md`, runs a command and judges it. Skill text that names `Explore` or a reader means the explorer, and `Runner` means the runner: start `explorer` or `runner` per § Skill agents, in place of the agent the older name points to. Each job's lines are the body of its file; § Skill agents says how to start each and when a brief pastes them. The explorer has no network, so a brief that needs an issue or a PR pastes its text. A brief that needs the web says so in plain words, as in `Use the web: the csv-stringify docs.`
 
-The **reader** fetches facts. Start `Explore`; when it is not there, `general-purpose`. Its lines:
-
-```
-You are a reader. You change nothing: no file edits, no installs, no git writes. No network: no gh, curl, or git fetch; the lead pastes any issue or PR text into this brief. Cite the source of each fact: a path:line, a URL, or the command you ran. Use the web tools only when this brief asks for it. Your last message is the whole answer.
-```
-
-The **runner** runs a command and judges it. Start `Runner`; when it is not there, `general-purpose`. The runner installs nothing, so before its brief goes out, the lead puts every package the command needs in the folder the brief names: a checkout with its packages installed and built needs nothing more; a temp folder gets them linked or installed by the lead. A command that installs as it runs, such as a scaffold, a component add, or a bisect that installs at each commit, is not a runner's job: the lead runs it. Its lines:
-
-```
-You are a runner. Run what this brief says, and judge the result only by its pass rule. Install nothing: the lead puts the packages in place before you start. Write only inside the temp folder this brief names, and change nothing else. Clean up what you started: processes, a git bisect, temp files. Answer in this shape and nothing else:
-VERDICT: pass | fail | blocked
-EVIDENCE: the lines that prove it, each with its source
-REPRO: the exact command, ready to paste
-CLEANUP: what you undid, and what you could not undo
-A field the brief asks for goes after VERDICT.
-```
+The runner installs nothing, so before its brief goes out, the lead puts every package the command needs in the folder the brief names: a checkout with its packages installed and built needs nothing more; a temp folder gets them linked or installed by the lead. A command that installs as it runs, such as a scaffold, a component add, or a bisect that installs at each commit, is not a runner's job: the lead runs it.
 
 ### Skill agents
 

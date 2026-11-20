@@ -27,6 +27,13 @@ _Avoid_: fallback
 **Checker**:
 A subagent that judges work the main agent's model family made: the logic reviewer, the plan-correctness checker, and the plan-design checker.
 
+**Explorer**:
+The read-only subagent that fetches facts for a skill. The repo ships it, with the same name in every harness.
+_Avoid_: reader, Explore
+
+**Runner**:
+The subagent that runs a command and judges the result by a pass rule. The repo ships it, with the same name in every harness.
+
 **PR shape**:
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared/pr-shape.md`.
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
