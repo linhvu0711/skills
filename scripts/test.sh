@@ -474,6 +474,32 @@ t_link_leaves_hook_file_not_json() {
   eq "own file" '{oops' "$(cat "$T/claude-settings.json")"
 }
 
+t_link_writes_gate_into_plugin() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper; with_gate
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq hooks '{"subagent-gate":{"PreToolUse":[{"matcher":"invoke_subagent|edit_file|write_file|write_to_file|replace_file_content|multi_replace_file_content","hooks":[{"type":"command","command":"bash '"'$R/shared/gate/subagent-gate.sh'"' antigravity","timeout":5}]}]}}' \
+    "$(jq -c . "$T/gplugins/skills/hooks.json")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_updates_old_gate_in_plugin() {
+  # Given: a plugin hooks.json with a key of the user's own and an old gate entry
+  linked demo; agent demo helper; with_gate; mkdir -p "$T/gplugins/skills"
+  printf '%s' '{"mine":{},"subagent-gate":{"PreToolUse":[]}}' > "$T/gplugins/skills/hooks.json"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq keys '["mine","subagent-gate"]' "$(jq -c keys "$T/gplugins/skills/hooks.json")"
+  eq command "bash '$R/shared/gate/subagent-gate.sh' antigravity" \
+    "$(jq -r '."subagent-gate".PreToolUse[0].hooks[0].command' "$T/gplugins/skills/hooks.json")"
+}
+
 t_link_links_plugins_into_each_t3() {
   # Given: two T3 Antigravity folders and no plugins folder yet
   linked demo; mkdir -p "$T/t3/p2/config"
@@ -1244,6 +1270,8 @@ cases=(
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
   "link adds the gate to codex hooks once|t_link_adds_gate_to_codex_hooks_once"
   "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
+  "link writes the gate into the antigravity plugin|t_link_writes_gate_into_plugin"
+  "link updates an old gate entry in the antigravity plugin|t_link_updates_old_gate_in_plugin"
   "link writes a shared agent's three forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"

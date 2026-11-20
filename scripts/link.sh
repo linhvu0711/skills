@@ -16,7 +16,8 @@
 # ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex, and
 # ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}/skills/agents/<agent>.md
 # in the "skills" Antigravity plugin, beside the plugin.json it writes when the
-# repo has an agent. Only `.md` files in agents/ count, so a Codex openai.yaml
+# repo has an agent, and the hooks.json that runs the subagent gate, whose
+# subagent-gate key it owns. Only `.md` files in agents/ count, so a Codex openai.yaml
 # stays out. Each file it writes starts with a mark that names its source; a file it wrote whose source is gone, and
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.
@@ -188,6 +189,15 @@ hook_entry() {
         else [$g | to_entries[] | if .key == $i then $e elif (.value | gate) then empty else .value end] end' "$entry"
 }
 
+# plugin_hooks: put the gate's entry in the "skills" plugin's hooks.json,
+# under its own subagent-gate key, so every other key stays.
+plugin_hooks() {
+  local entry
+  entry="$(jq -cn --arg m "$(bash "$gate" antigravity matcher)" --arg c "bash '$gate' antigravity" \
+    '{PreToolUse: [{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}]}')"
+  merge_json "$plugins/skills/hooks.json" '.["subagent-gate"] = $e' "$entry"
+}
+
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
 unlink_dead "$antigravity" "$agents"
@@ -221,6 +231,7 @@ sweep "$plugins/skills/agents" '*.md'
 if [ -f "$gate" ]; then
   hook_entry "$claude_settings" claude
   hook_entry "$codex_hooks" codex
+  [ -z "${any:-}" ] || plugin_hooks
 fi
 
 # T3 runs Antigravity with a private home, so its chats see no plugin until
