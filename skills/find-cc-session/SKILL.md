@@ -9,7 +9,7 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 
 Claude Code keeps each session as a JSONL transcript under `~/.claude/projects/<encoded-cwd>/`. The script does the mechanical part: it lists the current project's sessions, ranks them by the description's words as a search engine does (whole words, a rare word worth more than a common one, a long session no edge for its length), and prints the top candidates. You judge which one the user meant.
 
-Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in Claude Code and in Codex; only the load offer at the end differs.
+Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in every harness; only the load offer at the end differs.
 
 ## Steps
 
@@ -17,11 +17,11 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in C
    `python3 ../../shared/sessions/claude/find_sessions.py "<description>"`
    No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
-2. **Judge the candidates.** The score counts words, not meaning, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. In Claude Code, set the `← current session` line aside unless the description clearly names it; in Codex that line never appears.
+2. **Judge the candidates.** The score counts words, not meaning, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. Set the `← current session` line aside unless the description clearly names it.
 
 3. **Act on the verdict.**
    - One match: `printf "%s" "<id>" | bash ../../shared/copy.sh`, then report the ID with its title, age, and prompt count on one line. Any other exit than 0: the line ends `(clipboard copy skipped)`.
    - Several: list them (title, age, prompts, ID), ask which one, and copy the pick. A tie-breaker in the description ("the most recent") settles it without asking.
    - None: say so, show the closest one or two, and suggest a rephrase, `--all`, or a check that this is the right project folder.
 
-Done when the ID is on the clipboard, or the copy was skipped, or the user knows there is no match. After a copy, offer `/load-cc-session <id>` in Claude Code or `$load-cc-session <id>` in Codex; load only on request.
+Done when the ID is on the clipboard, or the copy was skipped, or the user knows there is no match. After a copy, offer to load it with the load-cc-session skill; load only on request.
