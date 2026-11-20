@@ -258,6 +258,15 @@ t_link_skips_worktree() {
   eq "ls agents" "" "$(ls "$T/agents")"
 }
 
+t_link_runs_from_outside_repo() {
+  linked demo; cd /
+  run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
+    ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" \
+    CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash "$R/scripts/link.sh"
+  eq exit 0 "$code"
+  eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
+}
+
 t_link_writes_claude_form() {
   # Given: a skill with one agent file and a Codex openai.yaml
   linked demo; agent demo helper; printf 'interface: {}\n' > skills/demo/agents/openai.yaml
@@ -1314,6 +1323,7 @@ cases=(
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"
   "link does nothing in a worktree|t_link_skips_worktree"
+  "link.sh runs from outside the repo|t_link_runs_from_outside_repo"
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
   "link replaces its old agent link with the file|t_link_replaces_old_agent_link"
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"

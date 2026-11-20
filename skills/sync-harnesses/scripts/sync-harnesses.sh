@@ -5,9 +5,11 @@
 #
 #   sync-harnesses.sh
 #
-# Prints one line per harness with its counts, one line for Devin in T3,
-# then one `problem:` line per thing missing. Exit 1 when a problem line
-# printed, else 0. Every path comes from HOME.
+# First it runs the repo's link.sh, which remakes every missing link. Then
+# it prints one line per harness with its counts, one line for Devin in T3,
+# one `fixed:` line per link link.sh made, and one `problem:` line per thing
+# still missing. Exit 1 when a problem line printed, else 0. Every path
+# comes from HOME.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -25,7 +27,7 @@ t3_antigravity="$HOME/.t3/userdata/providers/antigravity"
 # chats without the rules file.
 personal_gates="write-for-agents-gate unslop-gate unslop-commit-gate question-gate plain-style"
 
-problems=()
+problems=(); fixed=(); link_problems=(); skipped=()
 
 # tilde <text>: the text with $HOME/ written as ~/.
 tilde() { printf '%s' "${1//"$HOME"\//\~/}"; }
@@ -40,6 +42,28 @@ agents=()
 for f in "$root"/skills/*/agents/*.md "$root"/shared/agents/*.md; do
   [ -f "$f" ] && agents+=("${f#"$root"/}")
 done
+
+# link.sh is the one writer of links. Its stdout names each change, and
+# its `skip:` lines each link or file it found but could not own.
+lout="$(mktemp)"; lerr="$(mktemp)"; trap 'rm -f "$lout" "$lerr"' EXIT
+if bash "$root/scripts/link.sh" >"$lout" 2>"$lerr"; then
+  while IFS= read -r l; do fixed+=("fixed: $(tilde "$l")"); done < "$lout"
+  while IFS= read -r l; do
+    case "$l" in
+      "skip: no T3 Antigravity folder in "*) ;;
+      "skip: "*) link_problems+=("problem: $(tilde "${l#skip: }")"); skipped+=("${l#skip: }") ;;
+    esac
+  done < "$lerr"
+else
+  link_problems+=("problem: link.sh failed: $(tilde "$(tail -n 1 "$lerr")")")
+fi
+
+# skipped_path <file>: whether a link.sh skip line named the file.
+skipped_path() {
+  local s
+  for s in ${skipped[@]+"${skipped[@]}"}; do case "$s" in "$1 "*) return 0 ;; esac; done
+  return 1
+}
 
 # Each count_* sets `got` rather than print it, so its problem lines land in
 # this shell, not in a subshell's copy of the list.
@@ -60,7 +84,8 @@ count_agents() {
   local n=0 a f
   for a in ${agents[@]+"${agents[@]}"}; do
     f="$2/$(basename "$a" .md).$3"
-    if [ -f "$f" ]; then n=$((n + 1))
+    if skipped_path "$f"; then :
+    elif [ -f "$f" ]; then n=$((n + 1))
     else problem "$1 has no subagent $(basename "$a" .md) at $f"; fi
   done
   got="$n/${#agents[@]}"
@@ -151,5 +176,7 @@ line claude "$out_claude"
 line codex "$out_codex"
 line antigravity "$out_antigravity"
 line "devin in T3" "$devin"
-for p in ${problems[@]+"${problems[@]}"}; do printf '%s\n' "$p"; done
-[ ${#problems[@]} -eq 0 ]
+for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"}; do
+  printf '%s\n' "$p"
+done
+[ ${#problems[@]} -eq 0 ] && [ ${#link_problems[@]} -eq 0 ]

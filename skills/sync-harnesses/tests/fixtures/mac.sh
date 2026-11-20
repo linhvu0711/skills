@@ -105,8 +105,7 @@ printf '{"models":[{"slug":"gemini-4-neon"}]}\n' > "$h/.t3/caches/antigravity.js
 printf '{"models":[{"slug":"swe-2-high"}]}\n' > "$h/.t3/caches/acpRegistry_devin.json"
 printf '{"models":[{"slug":"gpt-6-luna"}]}\n' > "$h/.codex/models_cache.json"
 
-# link.sh before its own fix resolved git's .git against the working folder.
-(cd "$r" && env -i HOME="$h" PATH="$h/bin:/usr/bin:/bin" bash "$r/scripts/link.sh" >/dev/null)
+env -i HOME="$h" PATH="$h/bin:/usr/bin:/bin" bash "$r/scripts/link.sh" >/dev/null
 
 cat > "$dir/sync" <<SYNC
 #!/bin/sh
