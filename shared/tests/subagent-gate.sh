@@ -36,6 +36,22 @@ codex_call() {
 }
 codex_spawn='{"agent_type":"explorer","message":"x"}'
 
+# agy_gate <TypeName> <toolCall>: run the antigravity gate, in a fresh temp
+# folder T, on a call of helper chat c2. A TypeName writes the message that
+# started c2 as that agent; an empty one writes no messages folder.
+agy_gate() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  local chat="$T/brain/c2/.system_generated"
+  mkdir -p "$chat/logs"
+  if [ -n "$1" ]; then
+    mkdir -p "$chat/messages"
+    printf '{"id":"m1","recipient":"c2","sender":"c1","content":"x","sourceMetadata":{"tool":{"conversationId":"c1","toolCall":{"id":"k1","name":"invoke_subagent","argumentsJson":"{\\"Prompt\\":\\"x\\",\\"Role\\":\\"check\\",\\"TypeName\\":\\"%s\\"}"}}}}' "$1" > "$chat/messages/m1.json"
+  fi
+  printf '{"conversationId":"c2","transcriptPath":"%s/logs/transcript_full.jsonl","cwd":"/tmp","hookEventName":"PreToolUse","modelName":"m","stepIdx":3,"toolCall":%s}' "$chat" "$2" > "$T/payload.json"
+  run bash "$here/../gate/subagent-gate.sh" antigravity < "$T/payload.json"
+}
+agy_spawn='{"id":"k2","name":"invoke_subagent","args":{"TypeName":"explorer","Role":"facts","Prompt":"x"}}'
+
 edit_rule() {
   printf 'Blocked by the subagent gate: %s may not use a file edit tool, since its agent file lists no Edit or Write tool.' "$1"
 }
@@ -144,6 +160,51 @@ t_gate_codex_blocks_explorer_edit() {
   has stdout '"permissionDecisionReason":"'"$(edit_rule explorer)"'"' "$out"
 }
 
+t_gate_agy_checker_starts_explorer() {
+  # Given: plan-correctness-checker starts the explorer
+  # When
+  agy_gate plan-correctness-checker "$agy_spawn"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_agy_blocks_scope_reviewer_start() {
+  # Given: the scope reviewer starts the explorer
+  # When
+  agy_gate scope-reviewer "$agy_spawn"
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"decision":"deny","reason":"'"$(start_rule scope-reviewer explorer)"'"}' "$out"
+}
+
+t_gate_agy_blocks_explorer_start() {
+  # Given: the explorer, itself started by a checker, starts the explorer
+  # When
+  agy_gate explorer "$agy_spawn"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"reason":"'"$(start_rule explorer explorer)"'"' "$out"
+}
+
+t_gate_agy_blocks_explorer_edit() {
+  # Given: the explorer writes a file
+  # When
+  agy_gate explorer '{"id":"k2","name":"write_file","args":{"TargetFile":"/tmp/x"}}'
+  # Then
+  eq exit 0 "$code"
+  has stdout '"reason":"'"$(edit_rule explorer)"'"' "$out"
+}
+
+t_gate_agy_no_start_message_is_main() {
+  # Given: a chat with no messages folder starts the explorer
+  # When
+  agy_gate '' "$agy_spawn"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
 cases=(
   "gate lets a claude checker start the explorer|t_gate_claude_checker_starts_explorer"
   "gate blocks a claude scope reviewer's start|t_gate_claude_blocks_scope_reviewer_start"
@@ -156,4 +217,9 @@ cases=(
   "gate blocks a codex scope reviewer's start|t_gate_codex_blocks_scope_reviewer_start"
   "gate blocks a codex explorer's start|t_gate_codex_blocks_explorer_start"
   "gate blocks a codex explorer's edit|t_gate_codex_blocks_explorer_edit"
+  "gate lets an antigravity checker start the explorer|t_gate_agy_checker_starts_explorer"
+  "gate blocks an antigravity scope reviewer's start|t_gate_agy_blocks_scope_reviewer_start"
+  "gate blocks an antigravity explorer's start|t_gate_agy_blocks_explorer_start"
+  "gate blocks an antigravity explorer's edit|t_gate_agy_blocks_explorer_edit"
+  "gate reads an antigravity chat with no start message as the main agent|t_gate_agy_no_start_message_is_main"
 )

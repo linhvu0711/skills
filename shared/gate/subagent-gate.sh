@@ -30,6 +30,8 @@ harness="${1:-}"
 case "$harness" in
   claude) start_tools="Agent Task"; edit_tools="Edit Write MultiEdit NotebookEdit" ;;
   codex) start_tools="spawn_agent Agent"; edit_tools="apply_patch Edit Write" ;;
+  antigravity) start_tools="invoke_subagent"
+    edit_tools="edit_file write_file write_to_file replace_file_content multi_replace_file_content" ;;
   *) usage ;;
 esac
 case "${2-}" in
@@ -50,6 +52,23 @@ read_claude() {
 read_codex() {
   jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
            .tool_name // "", .tool_input.agent_type // "default"] | join("\u001f")' <<<"$payload"
+}
+# Antigravity puts no agent name in the payload. A helper chat's own folder
+# keeps the message that started it, and that message names the agent; a chat
+# with no such message is the main agent.
+read_antigravity() {
+  local conv path chat m caller=''
+  IFS="$us" read -r conv path < <(jq -r '[.conversationId // "", .transcriptPath // ""] | join("\u001f")' <<<"$payload") || return 1
+  chat="${path%%/.system_generated/*}"
+  if [ -n "$conv" ] && [ "$chat" != "$path" ]; then
+    for m in "$chat"/.system_generated/messages/*.json; do
+      [ -f "$m" ] || continue
+      caller="$(jq -r --arg c "$conv" 'select(.recipient == $c and .sourceMetadata.tool.toolCall.name == "invoke_subagent")
+        | .sourceMetadata.tool.toolCall.argumentsJson | fromjson | .TypeName // ""' "$m" 2>/dev/null)"
+      [ -z "$caller" ] || break
+    done
+  fi
+  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self"] | join("\u001f")' <<<"$payload"
 }
 
 fields="$("read_$harness" 2>/dev/null)" || exit 0
@@ -74,6 +93,7 @@ tools_of() { bash "$repo/scripts/agents.sh" tools < "$1" 2>/dev/null; }
 deny() {
   case "$harness" in
     claude|codex) jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' ;;
+    antigravity) jq -cn --arg r "$1" '{decision: "deny", reason: $r}' ;;
   esac
   exit 0
 }
