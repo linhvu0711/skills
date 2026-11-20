@@ -50,8 +50,6 @@ One reader per stack part, all in one message, per the reader job in
 `../facts.md` § Reader and runner. Its brief asks for the web and for
 context7; a reader agent that has no context7 (Explore has none) uses
 the web alone.
-In Codex there are no subagents: run each brief yourself, one after
-the other, with the same return shape.
 
 Each brief holds, inline:
 

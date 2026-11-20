@@ -25,7 +25,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - `git`, for the author count and the age of the rules files.
 - `gh`, to read open issues for planned work.
 - Web search or the context7 MCP server, for the research. Without them the code checks still run, the research is marked not done, and the hand-off tells you to run the audit later with web access.
-- An agent that can start subagents, for the research and for sampling the code. In Codex it does both itself, one after the other.
+- An agent that can start subagents, for the research and for sampling the code.
 
 ## Fits with
 

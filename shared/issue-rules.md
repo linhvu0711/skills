@@ -482,8 +482,8 @@ a planning ticket wearing an XS label.
 ## Lookup
 
 Reach for the code only when the chat leaves a size fact or a Context fact
-unknown. One round, read-only. In Claude Code, dispatch Explore agents with
-the brief inline; in Codex, use its read tools. Ask for exactly the missing
+unknown. One round, read-only. Start explorers per `facts.md` § Skill agents,
+with the brief inline. Ask for exactly the missing
 facts: the seam, the files, the tests that cover them, and the file count
 per package whenever the work may touch more than one (a wide refactor, a
 `feat` that spans server and web). For `feat` and `fix`, also ask
