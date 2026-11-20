@@ -68,6 +68,20 @@ t_aga_reads_t3_chat() {
   eq row "t1 /p/app Fix the export | fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["cwd"], r["title"], "|", r["first_prompt"])')"
 }
 
+t_aga_extract() {
+  # Given: one terminal chat of /p/app
+  ag_home; agy_chat "$C/a1.db" /p/app "fix the export" done
+  # When
+  run python3 "$A" extract a1 --summary --after-compact
+  # Then
+  eq exit 0 "$code"
+  eq turns "---
+## 🧑 User
+fix the export
+## 🤖 Antigravity
+done" "$(printf '%s\n' "$out" | sed -n '/^---$/,$p' | grep -v '^$')"
+}
+
 t_aga_probe_not_installed() {
   # Given: a fresh HOME with no .gemini and no .t3 folder
   T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"; mkdir -p "$HOME"
@@ -83,5 +97,6 @@ cases=(
   "adapter skips a chat with no steps|t_aga_skips_empty_chat"
   "adapter marks a file it cannot read|t_aga_marks_unreadable"
   "adapter reads a T3 chat|t_aga_reads_t3_chat"
+  "adapter extract renders the prompts and replies|t_aga_extract"
   "probe says Antigravity is not installed|t_aga_probe_not_installed"
 )

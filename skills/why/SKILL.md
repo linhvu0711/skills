@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Answer why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs and CONTEXT.md, and past Claude Code and Codex sessions. Each reason carries an evidence label and its source."
+description: "Answer why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs and CONTEXT.md, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source."
 disable-model-invocation: true
 ---
 
@@ -95,7 +95,7 @@ written to the repo or to GitHub.
    - Inferred: <reason>. From: <the Seen lines it follows from>. Source: <as above>
    - Guess: <reason>. Searched: <each place looked>
    - Unknown: <what is not known>. Searched: <each place looked>
-   Searched: git (<n> commits), GitHub (<n> PRs, <n> issues), docs/adr and CONTEXT.md, sessions (Claude Code <n>, Codex <n>)
+   Searched: git (<n> commits), GitHub (<n> PRs, <n> issues), docs/adr and CONTEXT.md, sessions (Claude Code <n>, Codex <n>, Antigravity <n>)
    ```
 
    - **Seen**: a source states the reason in words: a commit message, a
