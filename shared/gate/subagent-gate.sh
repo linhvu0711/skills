@@ -11,6 +11,8 @@
 #   - A subagent may start another only when its agent file lists the Agent
 #     tool, and only a shared agent, one in shared/agents/. Neither of those
 #     lists Agent, so nesting stops at two levels.
+#   - A subagent whose agent file lists neither Edit nor Write may not use a
+#     file edit tool. An agent with no file here is not checked.
 #
 # Prints one deny line in the harness's own shape, or nothing to allow, and
 # exits 0. `matcher` prints the harness's hook matcher: every tool name the
@@ -52,6 +54,7 @@ IFS="$us" read -r caller tool target <<<"$fields"
 in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
 action=other
 in_list "$tool" "$start_tools" && action=start
+in_list "$tool" "$edit_tools" && action=edit
 
 # agent_file <name>: the agent's file in this repo, or nothing.
 agent_file() {
@@ -77,5 +80,12 @@ if [ "$action" = start ]; then
     exit 0
   fi
   deny "Blocked by the subagent gate: $caller may not start $target. Only an agent whose file lists the Agent tool may start a subagent, and only the explorer or the runner, so nesting stops at two levels."
+fi
+if [ "$action" = edit ]; then
+  f="$(agent_file "$caller")"
+  [ -n "$f" ] || exit 0
+  t="$(tools_of "$f")"
+  in_list Edit "$t" || in_list Write "$t" || \
+    deny "Blocked by the subagent gate: $caller may not use a file edit tool, since its agent file lists no Edit or Write tool."
 fi
 exit 0

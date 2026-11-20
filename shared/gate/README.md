@@ -6,6 +6,7 @@ The gate is one script, `subagent-gate.sh`, that each harness runs before a suba
 
 - The main agent is never blocked.
 - A subagent may start another one only when its agent file lists the `Agent` tool, and only a shared agent: the explorer or the runner. Today only plan-up's two checkers list it. So a checker can start the explorer, the scope reviewer cannot, and the explorer cannot start a third level.
+- A subagent whose agent file lists neither `Edit` nor `Write` may not use a file edit tool. No agent file in this repo lists them today. The runner and the walker still write their own files through the shell, as their instructions allow. A plain subagent, or an agent the repo does not ship, is not checked.
 - A payload the gate cannot read is let through, so a broken gate never stops the main work.
 
 ## Where it runs

@@ -21,6 +21,18 @@ claude_start() {
   printf '{"session_id":"s1",%s"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"subagent_type":"explorer","prompt":"x"}}' "$who"
 }
 
+# claude_edit <agent_type>: a Claude Code payload in which that subagent
+# edits a file; an empty type is the main agent's call.
+claude_edit() {
+  local who=''
+  [ -z "$1" ] || who='"agent_id":"a1","agent_type":"'"$1"'",'
+  printf '{"session_id":"s1",%s"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"/tmp/x","old_string":"a","new_string":"b"}}' "$who"
+}
+
+edit_rule() {
+  printf 'Blocked by the subagent gate: %s may not use a file edit tool, since its agent file lists no Edit or Write tool.' "$1"
+}
+
 start_rule() {
   printf 'Blocked by the subagent gate: %s may not start %s. Only an agent whose file lists the Agent tool may start a subagent, and only the explorer or the runner, so nesting stops at two levels.' "$1" "$2"
 }
@@ -71,10 +83,30 @@ t_gate_claude_matcher() {
   eq stdout "Agent|Task|Edit|Write|MultiEdit|NotebookEdit" "$out"
 }
 
+t_gate_claude_blocks_explorer_edit() {
+  # Given: the explorer edits a file
+  # When
+  gate claude "$(claude_edit explorer)"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(edit_rule explorer)"'"' "$out"
+}
+
+t_gate_claude_main_edits() {
+  # Given: the main agent edits a file
+  # When
+  gate claude "$(claude_edit '')"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
 cases=(
   "gate lets a claude checker start the explorer|t_gate_claude_checker_starts_explorer"
   "gate blocks a claude scope reviewer's start|t_gate_claude_blocks_scope_reviewer_start"
   "gate blocks a claude explorer's start|t_gate_claude_blocks_explorer_start"
   "gate lets the claude main agent start any agent|t_gate_claude_main_starts_any"
   "gate prints the claude matcher|t_gate_claude_matcher"
+  "gate blocks a claude explorer's edit|t_gate_claude_blocks_explorer_edit"
+  "gate lets the claude main agent edit|t_gate_claude_main_edits"
 )
