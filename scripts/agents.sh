@@ -18,6 +18,7 @@
 #     codex: <model> <effort>
 #     antigravity: <model>
 #
+# A blank line or a `#` comment line is skipped, so it ends no map.
 # A home is the model T3 starts the agent on; its place is where T3 starts
 # it: claude, codex, antigravity, or devin. A backup runs in the harness
 # itself, so its place is its harness. Each place takes models of one form
@@ -106,6 +107,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
   NR == 1 { if ($0 != "---") { bare = 1; exit } next }
   closed { body[++nb] = $0; next }
   $0 == "---" { closed = 1; next }
+  /^[ \t]*(#|$)/ { next }
   /^[ \t]/ {
     if (sec == "") next
     line = $0; sub(/^[ \t]+/, "", line)

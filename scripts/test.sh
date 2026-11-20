@@ -673,6 +673,18 @@ t_flags_agent_no_codex_backup() {
   has stderr "skills/demo/agents/helper.md: missing backup for codex" "$err"
 }
 
+t_passes_agent_with_blank_and_comment_in_map() {
+  # Given: a blank line, an indented comment, and a comment at the line start inside home:
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | sed 's/^  claude: devin swe-2-high high$/&\
+\
+  # Codex next\
+# then Antigravity/')"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 t_flags_agent_no_antigravity_home() {
   # Given: every field but the Antigravity home
   # When
@@ -1129,6 +1141,7 @@ cases=(
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"
   "flags an agent file with no Codex backup|t_flags_agent_no_codex_backup"
+  "passes an agent file with a blank line and comments in a map|t_passes_agent_with_blank_and_comment_in_map"
   "flags an agent file with no Antigravity home|t_flags_agent_no_antigravity_home"
   "flags an agent file with a block description|t_flags_agent_block_description"
   "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
