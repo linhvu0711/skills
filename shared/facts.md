@@ -37,13 +37,25 @@ The runner installs nothing, so before its brief goes out, the lead puts every p
 
 ### Skill agents
 
-A skill that starts a helper for its own job starts its skill agent by name: the file `agents/<agent>.md` in the skill's folder, which sets the model and effort. The Agent call sets neither. When Claude Code says the agent is not found, start `general-purpose` with the agent file's body pasted above the same brief, and the model and effort of its `backup:` `claude:` line on the Agent call. Then print this line:
+A subagent's file names a home and a backup for each main harness. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
+
+**Start.** In T3, when T3's `delegate_task` is in your tools, read the file's `home:` line for your harness. When its place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup.
+
+**Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
+
+**Backup.** The home cannot run when T3 lists its place as off, lists no such model, or refuses the start. Then start it by name with your own tool, on the backup, and put this line in the skill's report, just above its last line:
 
 ```
-<agent> not found, ran on general-purpose. Run scripts/link.sh to fix.
+<agent> ran on backup <model> <effort>: home <place> <model> <effort>, <why>.
 ```
 
-In Codex there are no sub-agents: use the read tools yourself, in the same order, and keep the same notes.
+as in `logic-reviewer ran on backup claude-opus-5-5 xhigh: home antigravity gemini-4-neon high, Antigravity is off in T3.` The backup is your own harness's model, so it fails only when you fail: there is no third try.
+
+**Not found.** Your harness says the agent is not found: start the plain subagent, with the backup's model and effort as far as your harness's start call takes them (`harness.md`), and print this line:
+
+```
+<agent> not found, ran on <plain subagent>. Run scripts/link.sh to fix.
+```
 
 ## Two kinds of fact
 

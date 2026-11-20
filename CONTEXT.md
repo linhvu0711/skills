@@ -17,7 +17,7 @@ A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names
 _Avoid_: subagent config, custom agent, agent file
 
 **Home model**:
-The model T3 starts a subagent on. It depends on the main agent's harness: a checker's home model comes from another company than the main agent's, and every other subagent's is the model its job needs. The subagent's file names one for each main harness.
+The model a subagent starts on in T3: by the main agent's own tool when that tool runs it as written, else by T3. It depends on the main agent's harness: a checker's home model comes from another company than the main agent's, and every other subagent's is the model its job needs. The subagent's file names one for each main harness.
 _Avoid_: default model
 
 **Backup model**:
@@ -33,6 +33,14 @@ _Avoid_: reader, Explore
 
 **Runner**:
 The subagent that runs a command and judges the result by a pass rule. The repo ships it, with the same name in every harness.
+
+**Plain subagent**:
+A harness's default subagent, with no set job: `general-purpose` in Claude Code, `default` in Codex, `self` in Antigravity.
+_Avoid_: general-purpose (in skill text)
+
+**Harness table**:
+The one table in the shared core that says how each harness does a step a skill names, such as starting a subagent or waiting on a long command.
+_Avoid_: per-harness branch
 
 **PR shape**:
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared/pr-shape.md`.
