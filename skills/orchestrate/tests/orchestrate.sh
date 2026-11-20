@@ -94,6 +94,7 @@ t_fs_ticket_starts_ship() {
   has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
   has stdout '"message":"/ship #42"' "$out"
   has stdout '"thread_title":"#42 Export orders"' "$out"
+  lacks stdout '"runtime_mode"' "$out"
 }
 
 t_fs_second_check_starts_nothing() {
@@ -362,6 +363,7 @@ t_fs_task_starts_complete_task() {
   has stdout '"effort":"medium"' "$out"
   has stdout '"message":"/complete-task --ready #42"' "$out"
   has stdout '"thread_title":"#42 Export orders"' "$out"
+  lacks stdout '"runtime_mode"' "$out"
 }
 
 t_fs_second_task_waits() {
@@ -769,6 +771,7 @@ t_fs_done_starts_retro() {
   fs_go check acme/app
   # Then
   has retro '"thread_title":"retro: #42","message":"/retro run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'"' "$out"
+  lacks retro '"runtime_mode"' "$out"
 }
 
 t_fs_done_removed_no_retro() {
