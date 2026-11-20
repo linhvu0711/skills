@@ -62,7 +62,6 @@ INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
-INDEX_PATH = INDEX_PATHS[0]
 INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
