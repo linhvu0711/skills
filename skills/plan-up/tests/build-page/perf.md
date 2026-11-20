@@ -80,7 +80,7 @@ Slice 2, proves #2: export route
 
 ## UI walks
 Walk 1, proves #1
-  Setup:    three orders
+  Setup:    `pnpm seed:orders`
   Where:    `/orders`
   Steps:    click Export, pick CSV
   See:      three orders in the download

@@ -2,9 +2,10 @@
 # base-copy.sh: a fresh copy of the base for /plan-up to read, so the checkout
 # you work in can be on any branch, with edits or not, and is never touched.
 #
-#   base-copy.sh <base>          fetch origin/<base>, add a detached worktree of it, with its
-#                                submodules, in a temp folder, and install the packages its
-#                                lockfile names (pnpm, npm, yarn, bun) with no install scripts
+#   base-copy.sh <base>          fetch origin/<base> and add a detached worktree of it, by
+#                                the shared base-tree.sh, check out its submodules, and
+#                                install the packages its lockfile names (pnpm, npm, yarn,
+#                                bun) with no install scripts
 #   base-copy.sh --remove <dir>  remove that worktree and its temp folder
 #
 # Run it inside a checkout of the repo: any branch, any state.
@@ -17,39 +18,30 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+tree="$here/../../../shared/base-tree.sh"
 
 case "${1:-}" in
   --remove)
     dir="${2:-}"
     [ -n "$dir" ] || die "usage: base-copy.sh --remove <dir>"
-    case "$dir" in */plan-up-base.*/base) ;; *) die "$dir is not a base copy" ;; esac
-    if [ -e "$dir/.git" ]; then
-      common="$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir)" \
-        || die "$dir is a worktree whose repo is gone"
-      git --git-dir="$common" worktree remove --force "$dir"
-    fi
-    rm -rf "$(dirname "$dir")"
-    printf 'removed %s\n' "$dir"
+    "$BASH" "$tree" --remove "$dir"
     ;;
   "" | -*)
     die "usage: base-copy.sh <base> | --remove <dir>"
     ;;
   *)
     base="$1"
-    git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git checkout"
-    git check-ref-format --branch "$base" >/dev/null 2>&1 || die "not a valid branch name: $base"
-    git fetch --quiet origin "+refs/heads/$base:refs/remotes/origin/$base" \
-      || die "could not fetch $base from origin"
-    sha="$(git rev-parse --verify "refs/remotes/origin/$base^{commit}")"
-    tmp="$(mktemp -d "${TMPDIR:-/tmp}/plan-up-base.XXXXXX")"
-    dir="$(cd "$tmp" && pwd -P)/base"
-    git worktree add --quiet --detach "$dir" "$sha" \
-      || { rm -rf "$tmp"; die "could not add a worktree at $dir"; }
+    top="$(git rev-parse --show-toplevel 2>/dev/null)" || die "not inside a git checkout"
+    # $BASH, not PATH's bash: a caller's PATH may hold no bash.
+    line="$("$BASH" "$tree" "$top" "$base")" || exit 1
+    dir="${line#BASE_TREE=}"; dir="${dir% BASE_SHA=*}"; sha="${line##* BASE_SHA=}"
+    tmp="$(dirname "$dir")"
     # A worktree starts with empty submodules; the facts step reads them too.
     # submodule.active=. adds every path, whatever the repo's own filter says.
     if [ -f "$dir/.gitmodules" ]; then
       git -C "$dir" -c submodule.active=. submodule update --quiet --init --recursive \
-        || { git worktree remove --force "$dir"; rm -rf "$tmp"; die "could not check out the submodules of $base"; }
+        || { "$BASH" "$tree" --remove "$dir" >/dev/null; die "could not check out the submodules of $base"; }
     fi
     # Readers look up library code and types in the copy. It is read, never
     # run, so install scripts stay off, and the frozen flags keep its lockfile.

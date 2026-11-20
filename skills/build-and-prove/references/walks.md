@@ -53,13 +53,17 @@ while you walk. Its brief, whole:
   of it, for the walker's `box.sh open`, `box.sh fit`, and `box.sh
   close`;
 - how to open the app: the `Open` line, as a command it runs with
-  `box.sh open`. A browser opens on a new, empty profile for each
-  video: Chromium with `--no-sandbox --user-data-dir=$(mktemp -d)`,
-  or a browser that Playwright launches, which starts empty. So no
-  history from the Sandbox image shows in the address bar.
-  `--no-sandbox` is there because Chromium's own sandbox cannot
-  start in a proofbox Sandbox: without it Chromium stops with `No
-  usable sandbox!`;
+  `box.sh open`. A web walk's browser is the browser starter,
+  `walk-browser <url> --viewport-size=1440,795`, which `box.sh open`
+  puts in the Sandbox. It opens Playwright's Chromium on a new, empty
+  profile at that size, with `--storage <file>` for a saved login and
+  `--clock <time>` for a fixed clock, and logs the page's errors and
+  failed requests for `box.sh close --out`. Not `playwright open`,
+  which logs neither. A new profile for each video means no history
+  from the Sandbox image shows in the address bar. The starter passes
+  `--no-sandbox`, because Chromium's own sandbox cannot start in a
+  proofbox Sandbox: without it Chromium stops with `No usable
+  sandbox!`;
 - the plan's `UI walks` and `Videos` blocks, verbatim, as text
   pasted in the brief itself. Never a `$(cat <file>)` line or a path
   in their place, since
@@ -89,9 +93,9 @@ Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
 same walker). A second miss: `box.sh down`, then stop with
 `Walker report unreadable`.
 It ended with `GONE <id>`: the app died with its Sandbox, so stop
-nothing and go to 9c. Else stop the app (9a, Stop the app). Read `/tmp/app.log` for each walk's `Must not`
-that the screen cannot show (console errors, failed requests):
-one found is a failed walk.
+nothing and go to 9c. Else stop the app (9a, Stop the app). The
+walker judged each console and request `Must not` from
+`video-<n>-browser.txt`, so the app's server log is not read for them.
 
 **Video check.** After mode, when the walker did not end with
 `GONE`, before the sort: for each video under the plan's `Videos`,
@@ -150,7 +154,9 @@ by the walker's guess:
   is a Sandbox fault. Fix the setup script (step 4), run `box.sh
   down`, start again from step 6, and walk the round again. Like
   `GONE`, it does not count as a round, and the other failed walks
-  wait for that round. After three Sandbox faults in one run:
+  wait for that round. A walk line `console and requests not saved:
+  stop: ...` is a Sandbox fault too: the setup script lacks what the
+  line names. After three Sandbox faults in one run:
   `box.sh down`, then stop with the last one.
 - **App bug**: the steps reached the screen the walk names, and
   `See` is not there or a `Must not` is. A follow-up to the
@@ -158,6 +164,10 @@ by the walker's guess:
   names the walk, what it saw, and the screenshot's path; `#
   Check` names the tests to run again. As the builder, you do it
   yourself. Then the Gates again (step 8).
+- **Layout fault**: the screen shows cut-off text, two parts on top
+  of each other, or a page wider than the screen. An App bug, never a
+  Wrong walk: the walk's `See` line does not change, and the builder
+  fixes the layout as for an App bug.
 - **Video cut**: the video check found a hidden step. Not the
   builder's and not the plan's: no follow-up, no plan change; the
   next round films the video again.
@@ -170,8 +180,11 @@ by the walker's guess:
 - **Wrong walk**: a label, route, or step the plan named is not on
   the screen, and the Done-when line still holds there. A walk that
   failed with `page taller than the screen` is a Wrong walk too: its
-  `Setup` or the `Open` line goes to `--viewport-size=1440,795` at
-  laptop size or `--viewport-size=390,664` at phone size. A change
+  `Setup` or the `Open` line gives the starter
+  `--viewport-size=1440,795` at laptop size or
+  `--viewport-size=390,664` at phone size. A walk failed as `Setup failed`
+  whose command is wrong for the repo is a Wrong walk too, fixed in the
+  plan; one whose command fails on the app's own code is an App bug. A change
   to a failed walk's `See` or `Must not`, or to a number in them
   such as a time limit, or to the step its video's `Shows` names,
   the proof frame, is a Wrong walk fix too, never a pass: it gets a

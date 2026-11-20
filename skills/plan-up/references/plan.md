@@ -156,7 +156,7 @@ Slice 1, proves #1 and #2: <seam name>
 
 ## UI walks
 Walk 1, proves #1
-  Setup:    <seed command or fixture, user role, login state>
+  Setup:    <seed or fixture commands in backticks, then `walk-browser <url> --viewport-size=w,h` when the walk opens its own page, or none>
   Where:    <route, window, or screen name>
   Steps:    <click "Export CSV", type ..., press Enter; exact labels>
   See:      <exact text or element>
@@ -519,8 +519,9 @@ fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
 `executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk. A web walk on the linux
-Sandbox opens its page with `--viewport-size=1440,795` at laptop size
-and `--viewport-size=390,664` at phone size, the page of an iPhone 13
+Sandbox opens its page with the browser starter, `walk-browser <url>
+--viewport-size=1440,795`, at laptop size, and
+`--viewport-size=390,664` at phone size, the page of an iPhone 13
 or 14. The 900 px screen loses 85 px to the browser bars and 20 px to
 the taskbar, so a taller page runs under the taskbar or off the screen,
 and the video hides its bottom. `scripts/build-page.py` refuses a
@@ -750,24 +751,34 @@ rule to copy: a big fork, ask.
 ### UI walks
 
 Every step names an exact label, route, key, or element.
-`Setup` puts the app in the state the line assumes, from a command or
-fixture the repo has. Each `See` item is visible at the walk's `Screen`
+`Setup` is the commands that put the app in the state the line
+assumes, each in backticks, run in order, or `none`. Saved data comes
+from the repo's seed or e2e helper, which the walker runs in the
+Sandbox through `proofbox exec`. No such helper: the app's own HTTP
+API, called with `curl` the way its page calls it. Neither: the first
+slice that needs the data adds a seed command beside the repo's e2e
+helpers. A login is a saved session the starter loads with `--storage
+<file>`, made by a Setup command, or the login written as `Steps`. A
+walk that opens its own page puts the `walk-browser` command last.
+`scripts/build-page.py` refuses a `Setup` with no backtick command that
+is not `none`. Each `See` item is visible at the walk's `Screen`
 size in the state its `Setup` makes: a row the seed or fixture holds, on
 the screen the steps reach, with no scroll or filter the steps do not
 take. A `See` names no value that follows the real clock, such as a date
 the sample data moves to today or a time like `2 days ago`; it names a
 value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of
-day sets the clock in `Setup`, to a named time, with the hook the
-repo's tests use (a fake timer, a seed date, Playwright's
-`clock.install`), so the walk shows the same at any hour and never
+day sets the clock in `Setup`, to a named time: in a web walk the
+starter's `--clock <time>`, else the hook the repo's tests use (a fake
+timer, a seed date), so the walk shows the same at any hour and never
 waits for the real clock. No such hook in the repo: a big fork, ask. A
 `See` state that lasts under about 1 s, such as a loading spinner, a
 flash, or a toast that fades, names in its walk's `Setup` a fake, a
 test scenario, or a delay hook the repo has that keeps it on screen, so
 the walk can stop on it. With no such hook, that line is proved by a
-test, not by a walk. `Must not` is the negative check. In a web or
-desktop walk it is often what the screenshot cannot show (a console
-error, a failed request). In a terminal walk it is text the screen
+test, not by a walk. `Must not` is the negative check. In a web walk
+it is often what the screenshot cannot show: `no console error` and
+`no failed request`, which the walker reads from the browser log each
+video saves. In a terminal walk it is text the screen
 shows or must not show, as in `no line starting Error:`, never `stderr`
 or `stdout`, which a terminal shows mixed; `scripts/build-page.py`
 refuses those words there. One walk per row on a screen, happy and unhappy. No two
@@ -806,7 +817,10 @@ a new page, a new dialog, or new output where there was none: there
 is nothing to compare. Two walks whose
 before shots would be the same picture: the first names the steps, the
 rest say `as walk n` and share its shot. The shot uses the walk's `Setup` data and the `Screen`
-size, so the two pictures line up. In a run, a layer's base is the
+size, so the two pictures line up. A Setup command that a slice adds
+is not on the base: the `Before` line starts with the base's own
+command for the same data, in backticks, or is `none` with a `Decided`
+line that says why. In a run, a layer's base is the
 branch of the layer below, so its before shot shows the screen as that
 layer left it.
 
@@ -906,8 +920,8 @@ facts or forks.
 - Every slice on a screen names its mockup frame and the component or
   screen it copies; every open look choice is under `Decided`.
 - Every walk step names an exact label, route, key, or element, and
-  does one action, a typed command alone; every walk has `Setup` and
-  `Must not`; each `See` item is visible at the `Screen` size in the
+  does one action, a typed command alone; every walk has a `Setup` of
+  backticked commands or `none`, and a `Must not`; each `See` item is visible at the `Screen` size in the
   `Setup` state and names no value that follows the real clock; a terminal walk's `Must not` names screen text, never
   `stderr` or `stdout`; no two walks end in the same picture;
   every walk is named in a Proof row, and the row and the walk agree on

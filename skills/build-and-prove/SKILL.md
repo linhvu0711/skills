@@ -172,7 +172,7 @@ done.
    `stop:` on stderr: show it, stop. A `worktreeinclude:` line names
    the git-ignored files the repo's `.worktreeinclude` copied into the
    worktree, or skipped; show it and go on. Hold `WT` from the
-   `WORKTREE=` line. The branch has commits ahead of `BASE` already: this is a
+   `WORKTREE=` line. The branch has commits ahead of `origin/<BASE>` already: this is a
    follow-up (§ Follow-up), with no change when none was named.
 
 4. **Setup files.** `UI: none`: mark it `4. Setup files. skip: no UI`
@@ -183,7 +183,16 @@ done.
      the install command its lockfile calls for, the tools the plan's
      `Test`, `Lint`, `Build`, and `Run` lines need, and the tools the
      commands of its UI walks and videos use, and the browsers its e2e
-     tests need. It runs once
+     tests need. A plan with web walks gets Node, the repo's
+     Playwright, and its Chromium (`npx playwright install chromium`
+     with `PLAYWRIGHT_BROWSERS_PATH` under `/tmp/pb`), with Playwright
+     on `NODE_PATH` when the repo has none, for the browser starter.
+     The Sandbox image has no terminal window: a plan whose walks or
+     videos type a command gets xterm, Debian 12's `xterm` and
+     `libutempter0` packages fetched from deb.debian.org and unpacked
+     with `dpkg-deb -x` into `/tmp/pb/xterm`, since the image has no
+     root and no package lists, and a `/tmp/pb/bin/xterm` wrapper that
+     sets `LD_LIBRARY_PATH` to the unpacked libraries. It runs once
      on proofbox's Base image, as a user with no sudo, before the work
      is built. `$HOME` is the Work folder, so the script keeps every
      tool, cache, and store outside it, in `/tmp/pb`. It puts them in
@@ -265,15 +274,18 @@ done.
    line names steps, and only for a walk with no `before-<walk>.png` in
    `PROOF` yet. Read `references/walks.md` whole first: this step uses
    its three sections, 9a to 9c, which are the whole file. The Sandbox must hold the base, since Coding has
-   committed: add a detached worktree of `BASE` in a temp
-   folder. Every start of the app in this step, the first and each one
-   again below, is `box.sh start "$PROOF" --from <that folder> …`
+   committed: `bash ../../shared/base-tree.sh "$WT" <BASE>`, which
+   fetches `origin/<BASE>` just before and adds a detached worktree of
+   it, never the local branch of the same name, which can lag. `stop:`
+   on stderr: show it, stop. Hold its `BASE_TREE`. Every start of the
+   app in this step, the first and each one again below, is `box.sh
+   start "$PROOF" --from <BASE_TREE> …`
    (step 9a), so the base is what runs; each prints `TREE=base`, and a
    `TREE=branch` is a start without `--from`: stop the app and start it
    again with it. Start the app, send the walker in `before` mode and
    round 1 (step 9b),
    and stop the app (step 9a, Stop the app) unless the walker ended with `GONE <id>`. On `GONE`,
-   start the app again from the same temp worktree and send the walker
+   start the app again from `BASE_TREE` and send the walker
    once more, round 2, as step 9c says. Each `FAIL` line in the
    `BEFORE` report is sorted by step 9c, and its `before-<walk>.png`
    is deleted, so no failed shot stays in `PROOF`:
@@ -281,12 +293,12 @@ done.
      again from step 6.
    - Any other `FAIL`: the `Before` line's steps do not reach the screen
      it names on the base, a Wrong walk. Fix the line in the plan `.md`,
-     add a `Decided` line, start the app again from the same temp
-     worktree (step 9a), send the walker again for that walk, and stop
+     add a `Decided` line, start the app again from `BASE_TREE`
+     (step 9a), send the walker again for that walk, and stop
      the app (step 9a). A second `FAIL` for it: `box.sh down`, then stop with that line.
 
-   Remove the temp worktree only when this step ends, with the shots
-   or with a stop. The next `start`, `run`, or `gates` without
+   Remove it, `bash ../../shared/base-tree.sh --remove <BASE_TREE>`,
+   only when this step ends, with the shots or with a stop. The next `start`, `run`, or `gates` without
    `--from` puts the branch back, and `box.env` notes it. Say
    `Before shots: <n>`.
 
@@ -335,9 +347,10 @@ done.
    `gates` call: each call writes every line of `checks.txt`.
 
    With a `PERF` block, after the Gates, measure per
-   `../../shared/benchmark.md`. Add a detached worktree of
-   `BASE` in a temp folder, as step 7 does. Run the block's `Command` in
-   turns, `box.sh run "$PROOF" --from <that folder> -- <Command>` then
+   `../../shared/benchmark.md`. Add the base tree,
+   `bash ../../shared/base-tree.sh "$WT" <BASE>`, as step 7 does. Run
+   the block's `Command` in turns, `box.sh run "$PROOF" --from
+   <BASE_TREE> -- <Command>` then
    `box.sh run "$PROOF" -- <Command>`, as many times each as the `Pass
    rule` says. Write one line to `checks.txt`: `<Command> · <short SHA>
    · <metric>: <base median> → <head median> <unit>, median of <n> in
@@ -345,7 +358,8 @@ done.
    `Before` spread adds ` (issue Baseline: <Before>)` before
    `(sandbox)`, per `../../shared/pr-shape.md` § Proof. A
    head that misses the `Pass rule` is a red Gate: a follow-up, as
-   above. Remove the temp worktree.
+   above. Remove it, `bash ../../shared/base-tree.sh --remove
+   <BASE_TREE>`.
 
 9. **Walks.** `UI: none`: no walker; say `Walks: none (no UI)` and go
    to step 10. Else read `references/walks.md` whole and follow it,
@@ -376,7 +390,6 @@ done.
     Walks: 3 passed in round 2 · videos: 2 · built by: session
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
-    - walk 1: not checked: no console errors
     - W2 See changed after round 1: "Saved" → "Changes saved". The toast text is the app's
     Sandbox: made again 1 time
     Proof: ~/.agents/artifacts/proof/acme-shop-42
@@ -385,8 +398,7 @@ done.
 
     The `Walk notes:` block copies, word for word: each `FAIL` line of
     every `walk-report-before-<r>.md` and `walk-report-after-<r>.md` in
-    `PROOF`, with its mode and round in front; each `not checked:` part
-    of a walk's line, once per walk; and each `Decided` line this run
+    `PROOF`, with its mode and round in front; and each `Decided` line this run
     added in the `W<w> ... changed after round <r>` shape
     (`references/walks.md` § 9c. Sort). None of them: no notes block, and the
     `Walks:` line says the walks passed, as above.
@@ -406,10 +418,10 @@ More work on the branch a build of this plan made. The change is named
 any way: the user's words, as `the button says Export CSV`, or `review
 fixes are committed` when the fixes are already in commits. A rerun
 after a stop is a follow-up with no change, and so is the plain form
-on a branch with commits ahead of `BASE` (step 3).
+on a branch with commits ahead of `origin/<BASE>` (step 3).
 
 It runs steps 1 to 12 with the rules below. What is done is read from
-disk: the commits ahead of `BASE`, the before shots in `PROOF`,
+disk: the commits ahead of `origin/<BASE>`, the before shots in `PROOF`,
 `videos.txt` with each video's commit, `checks.txt`, and `box.env`. It
 writes the branch's commits and `PROOF`, nothing else: `/make-pr`
 updates the PR from `PROOF`.
@@ -428,8 +440,8 @@ updates the PR from `PROOF`.
   is clean: a slice or a fix cut off before its commit leaves changes,
   and step 3 stops on them with the files named. The user commits or
   drops them, then runs again.
-- **Step 5.** The commits ahead of `BASE` are the first slices, one
-  commit each, in order: `git -C "$WT" rev-list --count <BASE>..HEAD`
+- **Step 5.** The commits ahead of `origin/<BASE>` are the first slices, one
+  commit each, in order: `git -C "$WT" rev-list --count origin/<BASE>..HEAD`
   is the number done, and the prompt starts at the next one. A count at
   or past the number of slices means every slice is in. The change
   comes after the last slice, as one more part shaped by `render.sh

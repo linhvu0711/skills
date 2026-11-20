@@ -825,7 +825,8 @@ t_box_open_linux() {
   box open "$P" -- chromium --no-sandbox http://localhost:3000/
   # Then
   eq exit 0 "$code"
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh chromium --no-sandbox http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+  eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_macos() {
@@ -836,7 +837,22 @@ t_box_open_macos() {
   box open "$P" -- open -a Safari http://localhost:3000/
   # Then
   eq exit 0 "$code"
-  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh open -a Safari http://localhost:3000/' "$(cat "$FAKE_PB/log")"
+  eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
+  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+}
+
+t_box_open_starter() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"
+  # When
+  box open "$P" -- walk-browser http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  cmp -s "$here/../scripts/walk-browser.cjs" "$FAKE_PB/tmp/pb-walk/walk-browser" || eq starter "the lines of walk-browser.cjs" "$(head -n 3 "$FAKE_PB/tmp/pb-walk/walk-browser" 2>&1)"
+  [ -x "$FAKE_PB/tmp/pb-walk/walk-browser" ] || eq "run bit" set none
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_close_limit() {
@@ -865,6 +881,50 @@ t_box_close_none() {
   [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
 }
 
+t_box_close_empty() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  : > "$FAKE_PB/tmp/walk-browser.log"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file none "$(cat "$P/video-1-browser.txt")"
+}
+
+t_box_close_missing() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file "missing: /tmp/walk-browser.log" "$(cat "$P/video-1-browser.txt")"
+}
+
+t_box_close_out() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
+  mkdir -p "$FAKE_PB/tmp"
+  printf '%s\n' 'error: Uncaught TypeError: x is undefined · http://localhost:3000/' \
+    'request: 500 http://localhost:3000/api/wishes' > "$FAKE_PB/tmp/walk-browser.log"
+  # When
+  box close "$P" --out "$P/video-1-browser.txt"
+  # Then
+  eq exit 0 "$code"
+  eq file "error: Uncaught TypeError: x is undefined · http://localhost:3000/
+request: 500 http://localhost:3000/api/wishes" "$(cat "$P/video-1-browser.txt")"
+  [ ! -e "$FAKE_PB/tmp/walk-browser.log" ] || eq log gone "still there"
+}
+
 t_box_open_gone() {
   # Given
   fake_proofbox
@@ -875,7 +935,8 @@ t_box_open_gone() {
   # Then
   eq exit 125 "$code"
   has stderr "Sandbox ns:us:abc is gone" "$err"
-  case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
+  eq calls 1 "$(cat "$FAKE_PB/exec.calls")"
+  ! grep -q "^create " "$FAKE_PB/log" || eq log "no create" "$(grep "^create " "$FAKE_PB/log")"
 }
 
 t_box_fit_fits() {
@@ -1005,8 +1066,12 @@ cases=(
   "stop on a Sandbox gone during the port wait has nothing to stop|t_box_stop_gone_port_wait"
   "open runs the walker's command in its own group on linux|t_box_open_linux"
   "open runs the walker's command in its own group on macos|t_box_open_macos"
+  "open puts the browser starter on the command's PATH|t_box_open_starter"
   "close waits 10 s for the group, then kills it|t_box_close_limit"
   "close with no browser open exits 0|t_box_close_none"
+  "close saves the browser log next to the video|t_box_close_out"
+  "close writes none for an empty browser log|t_box_close_empty"
+  "close names a missing browser log|t_box_close_missing"
   "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
   "fit says FIT when the window ends above the taskbar|t_box_fit_fits"
   "fit says TALL when the window runs under the taskbar|t_box_fit_tall"

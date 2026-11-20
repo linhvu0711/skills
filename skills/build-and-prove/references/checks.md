@@ -44,20 +44,21 @@ run: <why>`, and `/make-pr` names it for CI.
 
 With a `PERF` block, after the Gates, with no other Gate running.
 Measure per `../../shared/benchmark.md`. Put the base in a second
-worktree:
+worktree, from `origin/<BASE>` fetched just before; hold its
+`BASE_TREE`:
 
 ```bash
-git -C "$WT" worktree add --detach <temp folder> origin/<BASE>
+bash ../../shared/base-tree.sh "$WT" <BASE>
 ```
 
-Run the block's `Command` in turns, `cd <temp folder> && <Command>`
+Run the block's `Command` in turns, `cd <BASE_TREE> && <Command>`
 then `cd "$WT" && <Command>`, as many times each as the `Pass rule`
 says. Write one line to `checks.txt`: `<Command> · <short SHA> ·
 <metric>: <base median> → <head median> <unit>, median of <n> in
 turns, spread <low> to <high> (local machine)`. A base median outside
 the `Before` spread adds ` (issue Baseline: <Before>)` before `(local
-machine)`, per `../../shared/pr-shape.md` § Proof. Then `git -C "$WT"
-worktree remove --force <temp folder>`.
+machine)`, per `../../shared/pr-shape.md` § Proof. Then `bash
+../../shared/base-tree.sh --remove <BASE_TREE>`.
 
 ## Red
 
