@@ -9,10 +9,11 @@
 # links to skills/<name>/ here, ${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}
 # and ${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}, Antigravity's
 # global skills folder, where each skill links to its link in the first
-# folder, and ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}, where each skill agent
-# skills/<name>/agents/<agent>.md becomes <agent>.md, a Claude Code agent on its
-# Claude Code backup model, written by scripts/agents.sh. Only `.md` files in
-# agents/ count, so a Codex openai.yaml stays out. Each file it writes starts
+# folder. Each skill agent, skills/<name>/agents/<agent>.md, becomes a file per
+# harness, on that harness's backup model, written by scripts/agents.sh:
+# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code, and
+# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex. Only `.md`
+# files in agents/ count, so a Codex openai.yaml stays out. Each file it writes starts
 # with a mark that names its source; a file it wrote whose source is gone, and
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.
@@ -39,10 +40,11 @@ common_dir="$(cd "$(git -C "$repo" rev-parse --git-common-dir)" && pwd -P)"
 agents="${SKILLS_HOME:-$HOME/.agents/skills}"
 claude="${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}"
 claude_agents="${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}"
+codex_agents="${CODEX_AGENTS_HOME:-$HOME/.codex/agents}"
 antigravity="${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}"
 plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
 t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
-mkdir -p "$agents" "$claude" "$claude_agents" "$antigravity"
+mkdir -p "$agents" "$claude" "$claude_agents" "$codex_agents" "$antigravity"
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
 # points to no file and whose target is one of the prefixes plus its name. A
@@ -144,8 +146,10 @@ for f in "$repo"/skills/*/agents/*.md; do
     printf 'skip: %s: %s\n' "$src" "$why" >&2; continue
   fi
   form claude "$claude_agents/$n.md" "$f" "$src"
+  form codex "$codex_agents/$n.toml" "$f" "$src"
 done
 sweep "$claude_agents" '*.md'
+sweep "$codex_agents" '*.toml'
 
 # T3 runs Antigravity with a private home, so its chats see no plugin until
 # each private folder's config/plugins points at the real one.

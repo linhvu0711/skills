@@ -35,7 +35,9 @@
 #
 # check: one problem per line on stdout, nothing for a good file. Exit 0.
 # render: the file of <harness> on stdout, <marker> in a comment at its top,
-# exit 0; or the first problem on stderr, exit 1. <harness> is claude.
+# exit 0; or the first problem on stderr, exit 1. <harness> is claude or
+# codex. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
+# the description becomes `\"`, and a `"""` in the body becomes `""\"`.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -45,7 +47,7 @@ case "$mode" in
   check) harness=""; marker="" ;;
   render) [ $# -eq 3 ] || { echo "usage: agents.sh render <harness> <marker>" >&2; exit 2; }
           harness="$2"; marker="$3"
-          case "$harness" in claude) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
+          case "$harness" in claude|codex) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
   *) echo "usage: agents.sh check | agents.sh render <harness> <marker>" >&2; exit 2 ;;
 esac
 
@@ -57,6 +59,15 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
     if (place == "antigravity" && sec == "backup") return m ~ /^(inherit|flash|pro|flash_lite)$/
     if (place == "antigravity") return m ~ /^gemini-[0-9]+(\.[0-9]+)?-[a-z]+$/
     return m ~ /^[a-z0-9][a-z0-9.-]*$/ }
+  # toml(s, body): s as the inside of a TOML basic string, or of a multi-line
+  # one when body is set.
+  function toml(s, body,  i, c, o) {
+    for (i = 1; i <= length(s); i++) { c = substr(s, i, 1)
+      if (c == "\\") o = o "\\\\"
+      else if (c == "\"" && !body) o = o "\\\""
+      else if (c == "\"" && substr(s, i, 3) == "\"\"\"") { o = o "\"\"\\\""; i += 2 }
+      else o = o c }
+    return o }
   function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
   # entry_problems(sec, h): the problems of the entry for harness h in map sec.
   function entry_problems(sec, h,  w, n, place, m, e, want, at) {
@@ -113,6 +124,17 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       print "---"; print "# " marker; print rawname; print rawdesc
       if (rawtools != "") print rawtools
       print "model: " b[1]; print "effort: " b[2]; print "---"
+    }
+    if (harness == "codex") {
+      print "# " marker
+      print "name = \"" toml(name) "\""
+      print "description = \"" toml(desc) "\""
+      print "model = \"" b[1] "\""
+      print "model_reasoning_effort = \"" b[2] "\""
+      print "developer_instructions = \"\"\""
+      for (i = 1; i <= nb; i++) print toml(body[i], 1)
+      print "\"\"\""
+      exit 0
     }
     for (i = 1; i <= nb; i++) print body[i]
   }

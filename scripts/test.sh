@@ -184,10 +184,10 @@ t_adopt_stops_on_bad_name() {
 linked() {
   repo; local n
   for n in "$@"; do mkdir -p "skills/$n"; printf -- '---\nname: %s\n---\n' "$n" > "skills/$n/SKILL.md"; done
-  mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/gskills" "$T/t3/p1"
+  mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/codex" "$T/gskills" "$T/t3/p1"
 }
-link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" ANTIGRAVITY_SKILLS_HOME="$T/gskills" \
-  ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
+link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
+  ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
 
 # full_agent: the frontmatter lines of a skill agent `helper` with every field.
 full_agent='name: helper
@@ -271,6 +271,34 @@ t_link_writes_claude_form() {
   eq "ls cagents" helper.md "$(ls "$T/cagents")"
   link_sh
   eq "second run" "" "$out$err"
+}
+
+t_link_writes_codex_form() {
+  # Given: a skill with one agent file
+  linked demo; agent demo helper
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/codex/helper.toml" "$out"
+  eq "codex form" "$(printf '%s\n' \
+    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
+    'name = "helper"' 'description = "Reviews one \"demo\" diff."' 'model = "gpt-6-luna"' \
+    'model_reasoning_effort = "xhigh"' 'developer_instructions = """' 'Review the diff.' \
+    'Match \\d+ in "x".' '"""')" "$(cat "$T/codex/helper.toml")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_leaves_other_codex_agent() {
+  # Given: a Codex agent file of the user's own holds the agent's name
+  linked demo; agent demo helper; printf 'name = "mine"\n' > "$T/codex/helper.toml"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: $T/codex/helper.toml is not this repo's helper.toml" "$err"
+  eq "own file" 'name = "mine"' "$(cat "$T/codex/helper.toml")"
 }
 
 t_link_replaces_old_agent_link() {
@@ -1008,6 +1036,8 @@ cases=(
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
   "link unlinks a renamed skill agent|t_link_unlinks_moved_agent"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link writes a skill agent's Codex form|t_link_writes_codex_form"
+  "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
