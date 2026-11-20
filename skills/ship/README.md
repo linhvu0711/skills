@@ -74,6 +74,7 @@ Each fact it states carries an evidence label (Seen, Inferred, Guess, or Unknown
 - The skills it chains: [plan-up](../plan-up/), [build-and-prove](../build-and-prove/), [make-pr](../make-pr/), [review-pr](../review-pr/), [ready-pr](../ready-pr/), and [handoff](../handoff/) for the cloud, and what they need. build-and-prove needs proofbox.
 - [prune-worktrees](../prune-worktrees/) and [fix-conflicts](../fix-conflicts/) for ship mode `merge`.
 - The shared core files `../../shared/facts.md`, `../../shared/plan-page.md`, and `../../shared/review/reviewers.sh`, with its list `reviewers.tsv`.
+- The harness table, `../../shared/harness.md`, for the todo list and the watches it runs.
 - For `review`: a browser on this machine for the plan page. With none, plan-up publishes the page as an artifact.
 - For the cloud route: a Devin or Cursor account, as [handoff](../handoff/) describes.
 

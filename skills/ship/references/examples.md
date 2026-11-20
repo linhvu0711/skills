@@ -98,7 +98,7 @@ https://github.com/acme/shop/pull/43: waits for approval`. No prune.
 **User:** `/ship https://github.com/acme/shop/issues/42 devin`.
 
 `Route: cloud (devin, named)`. Handoff § First prompt whole with Devin,
-Monitor on the watch. Later `finished` with PR 44; finish check passes;
+a line-by-line watch on it. Later `finished` with PR 44; finish check passes;
 Ready step says `READY`. Report with `session: <url>`.
 
 **User:** `/ship https://github.com/acme/shop/issues/88`; the plan says

@@ -41,11 +41,8 @@ walk; the run never waits for the real clock to reach a time.
 
 ## 9b. Walker
 
-In Claude Code, the skill agent `walker`
-(`agents/walker.md`, started per
-`../../shared/facts.md` § Skill agents); in Codex, no sub-agent, so
-you read `agents/walker.md` and follow it yourself, reading no code
-while you walk. Its brief, whole:
+The skill agent `walker` (`agents/walker.md`, started per
+`../../shared/facts.md` § Skill agents). Its brief, whole:
 - the mode, `before` or `after`, and the round;
 - the Sandbox id (`BOX_ID` in `$PROOF/box.env`), the OS, and the
   screen size (1440x900 on linux, 1280x800 on macos);
@@ -67,7 +64,7 @@ while you walk. Its brief, whole:
 - the plan's `UI walks` and `Videos` blocks, verbatim, as text
   pasted in the brief itself. Never a `$(cat <file>)` line or a path
   in their place, since
-  the Agent tool runs no shell, so the walker gets that line, not the file.
+  no shell runs a brief, so the walker gets that line, not the file.
   In mode after, a later round or a follow-up gets only the videos 9c
   films again and their walks, so the walker never overwrites a kept
   video. Mode before gets the walks step 7 names. A round run again
@@ -89,8 +86,8 @@ one line per walk and writes `walk-report-<mode>-<round>.md` in
 `walk-report-after-<round>.md`, so neither overwrites the other.
 Its reply must end with its `WALKS` lines, its `BEFORE` lines, or
 `GONE <id>`. It does not: send it back once with § Report of
-`agents/walker.md` pasted whole (in Claude Code, a message to the
-same walker). A second miss: `box.sh down`, then stop with
+`agents/walker.md` pasted whole (per `../../shared/harness.md`, row
+Send a helper more work). A second miss: `box.sh down`, then stop with
 `Walker report unreadable`.
 It ended with `GONE <id>`: the app died with its Sandbox, so stop
 nothing and go to 9c. Else stop the app (9a, Stop the app). The

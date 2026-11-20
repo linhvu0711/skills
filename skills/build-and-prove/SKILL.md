@@ -11,8 +11,9 @@ from reading, per `../../shared/facts.md`. Big forks go to
 the user; everything else you decide, write down, and go on. You never
 push and never open a PR: `/make-pr` does that with the proof folder.
 
-In Claude Code every Bash call starts in the session's directory. Every
-git command in the worktree is `git -C "$WT" …`.
+Each shell command names its folder, since one shell call's folder may
+not carry to the next. Every git command in the worktree is
+`git -C "$WT" …`.
 
 ## Sandbox
 
@@ -101,9 +102,9 @@ one.
 
 ## Todo list
 
-Before step 1, open a todo list with the todo tool your host gives:
-TaskCreate and TaskUpdate, or TodoWrite, in Claude Code; `update_plan`
-in Codex. No such tool: print the list in chat once, then one line as
+Before step 1, open a todo list with your harness's tool, per
+`../../shared/harness.md`, row Keep a todo list. No such tool: print
+the list in chat once, then one line as
 each item starts, as `5. Coding.` It holds one item per step of
 § Steps, its number and bold title word for word, as in `5. Coding.`
 Run by `/ship`, open no list of your own: ship's list already holds
