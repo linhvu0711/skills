@@ -6,9 +6,10 @@
 #   link.sh
 #
 # The folders are ${SKILLS_HOME:-$HOME/.agents/skills}, where each skill
-# links to skills/<name>/ here, ${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills},
-# where each skill links to its link in the first folder, and
-# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}, where each skill agent
+# links to skills/<name>/ here, ${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}
+# and ${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}, Antigravity's
+# global skills folder, where each skill links to its link in the first
+# folder, and ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}, where each skill agent
 # skills/<name>/agents/<agent>.md links to its file here. Only `.md` files in
 # agents/ link, so a Codex openai.yaml stays out. A link that one of these made
 # and that now points to nothing, after a rename or delete, is removed. A name
@@ -29,7 +30,8 @@ common_dir="$(cd "$(git -C "$repo" rev-parse --git-common-dir)" && pwd -P)"
 agents="${SKILLS_HOME:-$HOME/.agents/skills}"
 claude="${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}"
 claude_agents="${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}"
-mkdir -p "$agents" "$claude" "$claude_agents"
+antigravity="${ANTIGRAVITY_SKILLS_HOME:-$HOME/.gemini/config/skills}"
+mkdir -p "$agents" "$claude" "$claude_agents" "$antigravity"
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
 # points to no file and whose target is one of the prefixes plus its name. A
@@ -63,12 +65,16 @@ link() {
 
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
+unlink_dead "$antigravity" "$agents"
 unlink_dead "$claude_agents" "$repo/skills/*/agents"
 
 for f in "$repo"/skills/*/SKILL.md; do
   [ -f "$f" ] || continue
   n="$(basename "$(dirname "$f")")"
-  link "$agents" "$n" "$repo/skills/$n" && link "$claude" "$n" "$agents/$n" || true
+  if link "$agents" "$n" "$repo/skills/$n"; then
+    link "$claude" "$n" "$agents/$n" || true
+    link "$antigravity" "$n" "$agents/$n" || true
+  fi
 done
 
 for f in "$repo"/skills/*/agents/*.md; do

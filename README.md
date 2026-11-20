@@ -1,6 +1,6 @@
 # skills
 
-Agent skills for Claude Code and Codex, from planning an issue to a pull request that is ready to merge. The repo is for reading and borrowing: open a skill, read how it works, and take what helps you. There is no install support yet ([why](docs/adr/0002-read-and-borrow-only.md)). Each skill's README says what it needs.
+Agent skills for Claude Code, Codex, and Antigravity, from planning an issue to a pull request that is ready to merge. The repo is for reading and borrowing: open a skill, read how it works, and take what helps you. There is no install support yet ([why](docs/adr/0002-read-and-borrow-only.md)). Each skill's README says what it needs.
 
 ## The flow
 
@@ -148,7 +148,7 @@ git config core.hooksPath scripts/hooks
 bash scripts/link.sh
 ```
 
-`scripts/link.sh` links each skill into `~/.agents/skills` and `~/.claude/skills` (Claude Code), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
+`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
 
 ## Needs
 

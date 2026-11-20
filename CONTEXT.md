@@ -1,8 +1,12 @@
 # Skills
 
-Agent skills for Claude Code and Codex.
+Agent skills for Claude Code, Codex, and Antigravity.
 
 ## Skills
+
+**Harness**:
+The app that runs an agent: Claude Code, Codex, or Antigravity. T3 Code is not a harness. It is the app that starts harnesses, and it can start a subagent in any of them, or in Devin, which we use only for its models.
+_Avoid_: provider, runtime, tool
 
 **Shared core**:
 The `shared/` folder: files that two or more skills read. A file read by more than one skill lives here, not inside one of the skills.
