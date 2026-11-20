@@ -35,13 +35,16 @@ import json
 import os
 import re
 import sys
-import time
 
 # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
 _spec = importlib.util.spec_from_file_location(
     "rank", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rank.py"))
 rank = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rank)
+_spec = importlib.util.spec_from_file_location(
+    "adapter_lib", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "adapter_lib.py"))
+adapter_lib = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(adapter_lib)
 
 WRAP_PREFIXES = (
     "<local-command-caveat>",
@@ -277,20 +280,6 @@ def best_snippet(sess, query):
     return snippet[:SNIPPET_LEN] + ("…" if len(snippet) > SNIPPET_LEN else "")
 
 
-def humanize_age(mtime):
-    delta = max(0, time.time() - mtime)
-    mins = delta / 60
-    if mins < 60:
-        return f"{int(mins)}m ago"
-    hours = mins / 60
-    if hours < 24:
-        return f"{int(hours)}h ago"
-    days = hours / 24
-    if days < 14:
-        return f"{int(days)}d ago"
-    return f"{int(days / 7)}w ago"
-
-
 def main():
     ap = argparse.ArgumentParser(description="Find Claude Code sessions in a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
@@ -328,19 +317,11 @@ def main():
     sessions = [s for s in (parse_session(p) for p in files)
                 if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
 
-    use_query = bool(rank.terms(args.query)) and not args.all
-    marks = rank.scores(sessions, args.query, WEIGHTS) if use_query else [0] * len(sessions)
+    ranked, use_query = rank.pick(sessions, sessions, args.query, WEIGHTS, args.all)
 
-    for s, mark in zip(sessions, marks):
+    for s in sessions:
         s["is_current"] = (s["id"] == current_id)
-        s["score"] = mark
         s["snippet"] = best_snippet(s, args.query if use_query else "")
-
-    if use_query:
-        ranked = [s for s in sessions if s["score"] > 0]
-        ranked.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
-    else:
-        ranked = sorted(sessions, key=lambda s: s["modified"], reverse=True)
 
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
@@ -356,7 +337,7 @@ def main():
                 {k: s[k] for k in ("id", "title", "first_prompt", "last_prompt",
                                    "n_prompts", "score", "snippet", "is_current",
                                    "path", "size", "cwd", "subagents")}
-                | {"age": humanize_age(s["modified"]), "modified": s["modified"]}
+                | {"age": adapter_lib.age(s["modified"]), "modified": s["modified"]}
                 for s in shown
             ],
         }
@@ -380,7 +361,7 @@ def main():
         flag = "  ← current session" if s["is_current"] else ""
         score = f"  [score {s['score']}]" if use_query else ""
         print(f"{i}. {s['id']}{flag}")
-        print(f"   {humanize_age(s['modified'])} · {s['n_prompts']} prompts{score}")
+        print(f"   {adapter_lib.age(s['modified'])} · {s['n_prompts']} prompts{score}")
         if s["title"]:
             print(f"   title:  {s['title']}")
         if s["first_prompt"]:

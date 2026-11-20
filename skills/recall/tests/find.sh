@@ -4,13 +4,13 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 F="$here/../scripts/find.py"
 
-# rc_home: a fresh temp folder T with HOME at $T/home, holding both tools'
+# rc_home: a fresh temp folder T with HOME at $T/home, holding every tool's
 # session folders, and a project folder P that the case runs from. No session
 # is this one.
 rc_home() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   export HOME="$T/home"
-  mkdir -p "$HOME/.claude/projects" "$HOME/.codex/sessions"
+  mkdir -p "$HOME/.claude/projects" "$HOME/.codex/sessions" "$HOME/.gemini/antigravity-cli/conversations"
   P="$T/app"; mkdir -p "$P"; cd "$P"
   unset CLAUDE_CODE_SESSION_ID
 }
@@ -37,6 +37,10 @@ rc_codex() {
   rc_age "$f" "${3:-0}"
 }
 
+# rc_agy <id> <prompt> [<days ago>]: an Antigravity terminal chat of P, with
+# one prompt and one reply, last active <days ago> days back (default 0).
+rc_agy() { agy_chat "$HOME/.gemini/antigravity-cli/conversations/$1.db" "$P" "$2" done "${3:-0}"; }
+
 # rc_age <file> <days>: set the file's mtime to <days> days ago.
 rc_age() { python3 -c 'import os,sys,time; t=time.time()-int(sys.argv[2])*86400; os.utime(sys.argv[1],(t,t))' "$1" "$2"; }
 
@@ -51,6 +55,19 @@ t_rc_both_tools() {
   run python3 "$F" export
   eq exit 0 "$code"
   eq sessions "codex c1
+claude s1" "$(heads)"
+}
+
+t_rc_antigravity() {
+  # Given: a Claude Code session and a newer Antigravity chat on the export
+  rc_home
+  rc_claude s1 "fix the export" 1
+  rc_agy a1 "export button"
+  # When
+  run python3 "$F" export
+  # Then
+  eq exit 0 "$code"
+  eq sessions "antigravity a1
 claude s1" "$(heads)"
 }
 
@@ -108,7 +125,7 @@ t_rc_no_codex() {
   run python3 "$F" export
   eq exit 0 "$code"
   eq first "claude s1" "$(printf '%s\n' "$out" | head -1 | cut -d' ' -f1,2)"
-  eq last "Codex is not installed: Claude Code sessions only." "$(printf '%s\n' "$out" | sed -n '2,$p')"
+  eq last "Codex is not installed: Antigravity and Claude Code sessions only." "$(printf '%s\n' "$out" | sed -n '2,$p')"
 }
 
 t_rc_leaves_out_exec() {
@@ -125,6 +142,7 @@ t_rc_leaves_out_exec() {
 
 cases=(
   "finds a topic in Claude Code and Codex sessions, newest first|t_rc_both_tools"
+  "finds a topic in Antigravity sessions|t_rc_antigravity"
   "leaves out this session and earlier recall runs|t_rc_leaves_out_recall"
   "no session matches|t_rc_no_match"
   "a topic of only common words matches nothing|t_rc_common_words"

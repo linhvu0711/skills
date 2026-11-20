@@ -1,6 +1,6 @@
 # why
 
-Answers why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs, `CONTEXT.md`, and past Claude Code and Codex sessions. Each reason carries an evidence label and its source.
+Answers why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs, `CONTEXT.md`, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source.
 
 ## Use it when
 
@@ -16,8 +16,8 @@ Code: src/app.py:40-40
 - Seen: lookups in the ids list were slow with 50k entries. Source: https://github.com/acme/app/issues/7
 - Seen: the order of the ids does not matter. Source: commit 1a2b3c4
 - Inferred: a set was picked because the code only asks whether an id is there. From: the two Seen lines. Source: https://github.com/acme/app/pull/12
-- Unknown: why 50k ids are loaded at once. Searched: git (2 commits), PR #12 and its reviews, issue #7, docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0)
-Searched: git (2 commits), GitHub (1 PR, 1 issue), docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0)
+- Unknown: why 50k ids are loaded at once. Searched: git (2 commits), PR #12 and its reviews, issue #7, docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0, Antigravity 0)
+Searched: git (2 commits), GitHub (1 PR, 1 issue), docs/adr and CONTEXT.md, sessions (Claude Code 1, Codex 0, Antigravity 0)
 ```
 
 A long history shows the 9 newest commits and the oldest one, which made the lines.

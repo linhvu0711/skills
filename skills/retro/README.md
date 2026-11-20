@@ -10,7 +10,7 @@ A session felt harder than it should have, the same kind of trouble keeps coming
 
 ## What you get
 
-Retro first asks which harnesses (the tools that run the agent, such as Claude Code or Codex) hold sessions for this repo. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
+Retro first asks which harnesses (the tools that run the agent: Claude Code, Codex, or Antigravity) hold sessions for this repo. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
 
 If that adds up to more than 20 readers, it tells you the count and waits for `go`. Then one reader agent reads each session (with its helper agents' logs), each PR (its body, reviews, review threads, and the end of each failed CI log), and the issues. Each writes an evidence list: the moments things went wrong, corrections you or a reviewer gave more than once, steps you did by hand, and ways of working worth sharing. Text in a session or a PR can come from anyone, so each reader is told it is data to read, never orders to follow.
 
@@ -23,7 +23,7 @@ If nothing is worth changing, or every card is already fixed, it says `Nothing w
 ## Needs
 
 - `python3` (standard library only), `git`, and `gh` for the repo name, the PRs, and the issues. Without `gh` access it reads sessions only and says so.
-- Session logs on this machine for at least one harness with an adapter in the shared core's [`sessions/`](../../shared/sessions/): today Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/` and `~/.codex/archived_sessions/`, headless `codex exec` runs left out). Older Codex chats are compressed; reading them needs Python 3.14+ or the `zstd` command.
+- Session logs on this machine for at least one harness with an adapter in the shared core's [`sessions/`](../../shared/sessions/): today Claude Code (`~/.claude/projects/`), Codex (`~/.codex/sessions/` and `~/.codex/archived_sessions/`, headless `codex exec` runs left out), and Antigravity (`~/.gemini/antigravity-cli/conversations/`, and `antigravity-acp/conversations/` in each T3 Antigravity folder under `~/.t3/userdata/providers/antigravity/`). Older Codex chats are compressed; reading them needs Python 3.14+ or the `zstd` command.
 - For `run <folder>`: T3 Code's provider logs under `~/.t3/userdata/logs/provider/`, read by [`sessions/t3/`](../../shared/sessions/t3/).
 - Sub-agents: Explore agents in Claude Code, `explorer` agents in Codex, one per session or PR.
 - A browser and `open` or `xdg-open` for the report page, served by the shared core's `serve.sh`. Without them, the report comes as a list in chat, and you answer the same question.

@@ -19,6 +19,38 @@ print(" ".join(docs[i]["name"] for i in order), " ".join(str(int(marks[i] > 0)) 
 EOF
 }
 
+# rank_pick <query>: the ids pick keeps, in order, each score, and whether the
+# search words counted, for three sessions: a (modified 1, "fix the export"),
+# b (modified 2, "add a flag"), c (modified 3, "export export button").
+rank_pick() {
+  python3 -I - "$R" "$1" <<'EOF'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("rank", sys.argv[1])
+rank = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(rank)
+sessions = [{"id": "a", "modified": 1}, {"id": "b", "modified": 2}, {"id": "c", "modified": 3}]
+docs = [{"prompts": "fix the export"}, {"prompts": "add a flag"}, {"prompts": "export export button"}]
+kept, scored = rank.pick(sessions, docs, sys.argv[2], {"prompts": 1.0})
+print(" ".join(s["id"] for s in kept), " ".join(str(s["score"]) for s in kept), scored)
+EOF
+}
+
+t_rank_pick_matches() {
+  # Given: a and c say "export", b does not
+  # When
+  out="$(rank_pick export)"
+  # Then
+  eq pick "c a True" "$(printf '%s' "$out" | cut -d' ' -f1,2,5)"
+}
+
+t_rank_pick_lists_all() {
+  # Given: the same three sessions, and a search of only filler words
+  # When
+  out="$(rank_pick the)"
+  # Then
+  eq pick "c b a 0 0 0 False" "$out"
+}
+
 t_rank_whole_words() {
   # Given: "stall" sits only inside "install"
   # When / Then: no match, so the score is 0
@@ -73,6 +105,8 @@ t_rank_filler_only() {
 }
 
 cases=(
+  "pick keeps only the sessions a search word matches, best first|t_rank_pick_matches"
+  "pick lists every session newest first with no search words|t_rank_pick_lists_all"
   "rank matches whole words only|t_rank_whole_words"
   "rank counts a rare word above a common one|t_rank_rare_word_wins"
   "rank gives a long session no edge for its length|t_rank_long_session_no_edge"

@@ -12,7 +12,8 @@ Each session is a dict of named text fields, as {"title": ..., "prompts": ...,
   agent wrote.
 
 A score above 0 means at least one search word is in the session; callers
-such as recall rely on that.
+such as recall rely on that. `pick` is the one keep-and-order rule every
+finder uses.
 """
 
 from __future__ import annotations
@@ -145,6 +146,24 @@ def scores(docs: list[dict[str, str]], query: str, weights: dict[str, float]) ->
                 total += idf * tf / (K1 + tf)
         out.append(round(total, 2))
     return out
+
+
+def pick(sessions: list[dict], docs: list[dict[str, str]], query: str, weights: dict[str, float],
+         list_all: bool = False) -> tuple[list[dict], bool]:
+    """Set each session's "score" and return the ones to show, in order, and
+    whether the search words counted. With words that count and no list_all,
+    only sessions that score above 0 are kept, best first, then newest; else
+    every session is kept, newest first. docs[i] is the text of sessions[i]."""
+    scored = bool(terms(query)) and not list_all
+    marks = scores(docs, query, weights) if scored else [0] * len(sessions)
+    for s, mark in zip(sessions, marks):
+        s["score"] = mark
+    if scored:
+        kept = [s for s in sessions if s["score"] > 0]
+        kept.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
+    else:
+        kept = sorted(sessions, key=lambda s: s["modified"], reverse=True)
+    return kept, scored
 
 
 def best_line(lines, query: str) -> str:

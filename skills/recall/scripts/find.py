@@ -10,7 +10,7 @@ topic of only common words (`the`) matches nothing:
 
     <tool> <id> <age> · <n> prompts · <title or first prompt>
 
-`<tool>` is the adapter's folder, as `claude` or `codex`. This session, every
+`<tool>` is the adapter's folder, as `claude`, `codex`, or `antigravity`. This session, every
 earlier `/recall` or `$recall` run, and Codex runs a script started
 (`codex exec`) are left out. Only the 10 newest are printed; with more, a
 last line says `Skipped <k> older sessions.` A tool whose probe says it is

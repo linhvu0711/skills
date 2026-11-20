@@ -1,6 +1,6 @@
 # skills
 
-Agent skills for Claude Code and Codex, from planning an issue to a pull request that is ready to merge. The repo is for reading and borrowing: open a skill, read how it works, and take what helps you. There is no install support yet ([why](docs/adr/0002-read-and-borrow-only.md)). Each skill's README says what it needs.
+Agent skills for Claude Code, Codex, and Antigravity, from planning an issue to a pull request that is ready to merge. The repo is for reading and borrowing: open a skill, read how it works, and take what helps you. There is no install support yet ([why](docs/adr/0002-read-and-borrow-only.md)). Each skill's README says what it needs.
 
 ## The flow
 
@@ -127,7 +127,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [find-co-session](skills/find-co-session/) | Finds a past Codex CLI session in this project from a rough description. |
 | [load-cc-session](skills/load-cc-session/) | Pulls an earlier Claude Code session into this chat as a short state brief. |
 | [load-co-session](skills/load-co-session/) | Pulls an earlier Codex CLI session into this chat as a short state brief. |
-| [recall](skills/recall/) | Rebuilds where you left off on a topic from recent Claude Code and Codex sessions, with the live state of each PR. |
+| [recall](skills/recall/) | Rebuilds where you left off on a topic from recent Claude Code, Codex, and Antigravity sessions, with the live state of each PR. |
 
 ### Writing and search
 
@@ -148,7 +148,7 @@ git config core.hooksPath scripts/hooks
 bash scripts/link.sh
 ```
 
-`scripts/link.sh` links each skill into `~/.agents/skills` and `~/.claude/skills` (Claude Code), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
+`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and each skill agent, `skills/<name>/agents/<agent>.md`, into `~/.claude/agents/`. It also links Antigravity's plugins folder, `~/.gemini/config/plugins`, into each private Antigravity folder that T3 Code keeps under `~/.t3/userdata/providers/antigravity/`, so a chat T3 starts sees the same plugins. With no such folder it prints one `skip:` line and makes the other links. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
 
 ## Needs
 

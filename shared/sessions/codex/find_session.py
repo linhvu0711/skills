@@ -47,7 +47,6 @@ import json
 import os
 import re
 import sys
-import time
 from pathlib import Path
 
 # Loaded by path: `python3 -I` leaves this folder off sys.path.
@@ -57,12 +56,14 @@ _spec.loader.exec_module(rollout_io)
 _spec = importlib.util.spec_from_file_location("rank", Path(__file__).parent.parent / "rank.py")
 rank = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rank)
+_spec = importlib.util.spec_from_file_location("adapter_lib", Path(__file__).parent.parent / "adapter_lib.py")
+adapter_lib = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(adapter_lib)
 
 INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
     Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
 )
-INDEX_PATH = INDEX_PATHS[0]
 INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
@@ -348,18 +349,6 @@ def best_snippet(s: dict, query: str) -> str:
     return snip[:SNIPPET_LEN] + ("…" if len(snip) > SNIPPET_LEN else "")
 
 
-def humanize_age(mtime: float) -> str:
-    mins = max(0.0, time.time() - mtime) / 60
-    if mins < 60:
-        return f"{int(mins)}m ago"
-    if mins < 60 * 24:
-        return f"{int(mins / 60)}h ago"
-    days = mins / 60 / 24
-    if days < 14:
-        return f"{int(days)}d ago"
-    return f"{int(days / 7)}w ago"
-
-
 # ---------------------------------------------------------------- cli
 
 def resolve_day(value: str | None) -> dt.date | None:
@@ -458,17 +447,10 @@ def main() -> int:
                        args.include_subdirs, args.include_subagents, idx,
                        interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
-    use_query = bool(rank.terms(args.query)) and not args.all
     docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]
-    marks = rank.scores(docs, args.query, WEIGHTS) if use_query else [0] * len(sessions)
-    for s, mark in zip(sessions, marks):
-        s["score"] = mark
+    ranked, use_query = rank.pick(sessions, docs, args.query, WEIGHTS, args.all)
+    for s in sessions:
         s["snippet"] = best_snippet(s, args.query if use_query else "")
-    if use_query:
-        ranked = [s for s in sessions if s["score"] > 0]
-        ranked.sort(key=lambda s: (s["score"], s["modified"]), reverse=True)
-    else:
-        ranked = sorted(sessions, key=lambda s: s["modified"], reverse=True)
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:
@@ -477,7 +459,7 @@ def main() -> int:
             "cwd": target, "query": args.query,
             "total_sessions": len(sessions), "matched": len(ranked), "skipped_exec": skipped.get("exec", 0),
             "unreadable": skipped.get("unreadable", []),
-            "sessions": [{k: s.get(k) for k in keys} | {"age": humanize_age(s["modified"])} for s in shown],
+            "sessions": [{k: s.get(k) for k in keys} | {"age": adapter_lib.age(s["modified"])} for s in shown],
         }, indent=2, ensure_ascii=False))
         return 0
 
@@ -494,7 +476,7 @@ def main() -> int:
     for i, s in enumerate(shown, 1):
         score = f"  [score {s['score']}]" if use_query else ""
         print(f"{i}. {s['id']}")
-        print(f"   {humanize_age(s['modified'])} · {s['n_prompts']} prompts{score}")
+        print(f"   {adapter_lib.age(s['modified'])} · {s['n_prompts']} prompts{score}")
         if args.include_subdirs or args.all_projects or len(roots) > 1:
             print(f"   cwd:    {s.get('cwd')}")
         if s.get("first_prompt"):

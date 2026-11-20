@@ -1,6 +1,6 @@
 ---
 name: recall
-description: "Rebuild where you left off on a topic: the recent Claude Code and Codex sessions on it, one brief of what is done, open, and decided, the live state of each PR, and one next step."
+description: "Rebuild where you left off on a topic: the recent Claude Code, Codex, and Antigravity sessions on it, one brief of what is done, open, and decided, the live state of each PR, and one next step."
 disable-model-invocation: true
 ---
 
@@ -9,8 +9,8 @@ disable-model-invocation: true
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 The user comes back to a topic after some days. This skill finds the
-sessions of this project on that topic, in Claude Code and in Codex,
-and merges what they did into one brief. It reads; it writes nothing and
+sessions of this project on that topic, in Claude Code, Codex, and
+Antigravity, and merges what they did into one brief. It reads; it writes nothing and
 starts no work.
 
 ## Steps
@@ -25,12 +25,13 @@ starts no work.
    ```
 
    One line per session, newest first: `<tool> <id> <age> · <n> prompts
-   · <title>`, with `<tool>` `claude` or `codex`. At most 10; a
-   `Skipped <k> older sessions.` line says how many more matched. A
-   `Codex is not installed: Claude Code sessions only.` line means only
-   Claude Code was searched. Both go on the brief's `Sessions:` line in
-   step 5, as in `Sessions: 10 (Claude Code 10, Codex 0) · skipped 2 older
-   · Codex is not installed`.
+   · <title>`, with `<tool>` `claude`, `codex`, or `antigravity`. At most
+   10; a `Skipped <k> older sessions.` line says how many more matched. A
+   `<Tool> is not installed: <the others> sessions only.` line, as in
+   `Codex is not installed: Antigravity and Claude Code sessions only.`,
+   means that tool was not searched. Both go on the brief's `Sessions:`
+   line in step 5, as in `Sessions: 10 (Claude Code 10, Codex 0,
+   Antigravity 0) · skipped 2 older · Codex is not installed`.
 
    Exit 1: no session is on the topic. Show its last line, `No sessions
    on <topic>.`, and stop.
@@ -48,7 +49,7 @@ starts no work.
 
 4. **Brief writers.** One per session, all in one message. Build each
    prompt from `../../shared/session-brief.md` § Dispatch,
-   with its transcript path and its tool (`Claude Code` or `Codex CLI`)
+   with its transcript path and its tool (`Claude Code`, `Codex CLI`, or `Antigravity`)
    filled in. In Claude Code, send each to an Explore agent. In Codex,
    spawn one `explorer` agent per prompt (`fork_turns = "none"`) and
    `wait_agent` on all. Take each brief as `session-brief.md` § Return
@@ -59,7 +60,7 @@ starts no work.
 
    ```
    # Recall: <topic>
-   Sessions: <n> (Claude Code <a>, Codex <b>)
+   Sessions: <n> (Claude Code <a>, Codex <b>, Antigravity <c>)
    **Done:**
    **Decisions:**
    **Open:**

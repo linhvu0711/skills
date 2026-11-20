@@ -179,13 +179,15 @@ t_adopt_stops_on_bad_name() {
 }
 
 # linked [<skill>...]: repo with skills/<skill>/SKILL.md for each, and empty
-# local skills folders at $T/agents and $T/claude.
+# local skills folders at $T/agents, $T/claude, and $T/gskills (Antigravity),
+# and one T3 Antigravity folder, $T/t3/p1.
 linked() {
   repo; local n
   for n in "$@"; do mkdir -p "skills/$n"; printf -- '---\nname: %s\n---\n' "$n" > "skills/$n/SKILL.md"; done
-  mkdir -p "$T/agents" "$T/claude" "$T/cagents"
+  mkdir -p "$T/agents" "$T/claude" "$T/cagents" "$T/gskills" "$T/t3/p1"
 }
-link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" bash scripts/link.sh; }
+link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" ANTIGRAVITY_SKILLS_HOME="$T/gskills" \
+  ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" bash scripts/link.sh; }
 
 # agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md.
 agent() { mkdir -p "skills/$1/agents"; printf -- '---\nname: %s\n---\n' "$2" > "skills/$1/agents/$2.md"; }
@@ -193,9 +195,10 @@ agent() { mkdir -p "skills/$1/agents"; printf -- '---\nname: %s\n---\n' "$2" > "
 t_link_links_new_skill() {
   linked demo; link_sh
   eq exit 0 "$code"
-  eq stdout "$(printf 'linked %s\nlinked %s' "$T/agents/demo" "$T/claude/demo")" "$out"
+  eq stdout "$(printf 'linked %s\nlinked %s\nlinked %s\nlinked %s' "$T/agents/demo" "$T/claude/demo" "$T/gskills/demo" "$T/t3/p1/config/plugins")" "$out"
   eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
   eq "claude link" "$T/agents/demo" "$(readlink "$T/claude/demo")"
+  eq "antigravity link" "$T/agents/demo" "$(readlink "$T/gskills/demo")"
   link_sh
   eq "second run" "" "$out$err"
 }
@@ -208,8 +211,11 @@ t_link_follows_rename() {
   has stdout "unlinked $T/agents/old" "$out"
   has stdout "unlinked $T/claude/old" "$out"
   has stdout "linked $T/claude/new" "$out"
+  has stdout "unlinked $T/gskills/old" "$out"
+  has stdout "linked $T/gskills/new" "$out"
   eq "ls agents" new "$(ls "$T/agents")"
   eq "ls claude" new "$(ls "$T/claude")"
+  eq "ls gskills" new "$(ls "$T/gskills")"
 }
 
 t_link_leaves_other_names() {
@@ -268,8 +274,34 @@ t_link_leaves_other_agent() {
   eq "own file" mine "$(cat "$T/cagents/helper.md")"
 }
 
+t_link_links_plugins_into_each_t3() {
+  # Given: two T3 Antigravity folders and no plugins folder yet
+  linked demo; mkdir -p "$T/t3/p2/config"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq "p1 plugins" "$T/gplugins" "$(readlink "$T/t3/p1/config/plugins")"
+  eq "p2 plugins" "$T/gplugins" "$(readlink "$T/t3/p2/config/plugins")"
+  [ -d "$T/gplugins" ] || eq "gplugins" "a folder" "missing"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
+t_link_skips_t3_when_none() {
+  # Given: no T3 Antigravity folder
+  linked demo; rm -r "$T/t3"
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  eq stderr "skip: no T3 Antigravity folder in $T/t3" "$err"
+  eq "ls gskills" demo "$(ls "$T/gskills")"
+}
+
 t_hooks_link_committed_skill() {
-  linked; git config core.hooksPath scripts/hooks; export SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents"
+  linked; git config core.hooksPath scripts/hooks; export SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" ANTIGRAVITY_SKILLS_HOME="$T/gskills" \
+    ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3"
   local main; main="$(git branch --show-current)"
   mkdir -p skills/demo; printf -- '---\nname: demo\ndescription: d\n---\n' > skills/demo/SKILL.md
   printf '# demo\n## Use it when\n## What you get\n## Needs\n## Fits with\n' > skills/demo/README.md
@@ -860,13 +892,15 @@ cases=(
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
   "stops on a missing path|t_stops_on_missing_path"
   "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
-  "link links a new skill into both folders|t_link_links_new_skill"
+  "link links a new skill into every folder|t_link_links_new_skill"
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"
   "link does nothing in a worktree|t_link_skips_worktree"
   "link links a skill agent and leaves openai.yaml|t_link_links_agent"
   "link unlinks a renamed skill agent|t_link_unlinks_moved_agent"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
+  "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
   "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
