@@ -630,6 +630,51 @@ t_flags_agent_block_description() {
   has stderr "skills/demo/agents/helper.md: description on more than one line" "$err"
 }
 
+t_flags_agent_unknown_harness() {
+  # Given: every field, and a backup for a harness that is not one
+  # When
+  agent_md "$(printf '%s\n  cursor: gpt-6-luna high' "$full_agent")"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: unknown harness: cursor" "$err"
+}
+
+t_flags_backup_model_of_other_harness() {
+  # Given: every field, with a Claude model as the Codex backup
+  # When
+  agent_md "${full_agent/  codex: gpt-6-luna xhigh/  codex: claude-haiku-5-5 high}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: backup for codex: claude-haiku-5-5 is not a model codex takes" "$err"
+}
+
+t_flags_exact_antigravity_backup() {
+  # Given: every field, with an exact model as the Antigravity backup
+  # When
+  agent_md "${full_agent/  antigravity: inherit/  antigravity: gemini-4-neon low}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: backup for antigravity: gemini-4-neon is not a model antigravity takes" "$err"
+}
+
+t_flags_effort_place_cannot_take() {
+  # Given: every field, with an effort Devin has not for the Claude home
+  # When
+  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: devin swe-2-high ultra}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: home for claude: ultra is not an effort devin takes" "$err"
+}
+
+t_flags_home_in_unknown_place() {
+  # Given: every field, with the Codex home in a place T3 does not start
+  # When
+  agent_md "${full_agent/  codex: claude claude-opus-5-5 xhigh/  codex: cursor composer-2 high}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
+}
+
 t_passes_agent_with_all_fields() {
   # Given: a full agent file and a Codex openai.yaml beside it
   agent_md "$full_agent"
@@ -1020,6 +1065,11 @@ cases=(
   "flags an agent file with no Codex backup|t_flags_agent_no_codex_backup"
   "flags an agent file with no Antigravity home|t_flags_agent_no_antigravity_home"
   "flags an agent file with a block description|t_flags_agent_block_description"
+  "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
+  "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
+  "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"
+  "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
+  "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
