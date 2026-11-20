@@ -511,6 +511,59 @@ t_hook_stops_missing_path() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+t_flags_harness_branch_in_skill() {
+  # Given: a skill line that branches on one harness
+  repo; skill demo 'In Codex, run it twice.'; git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/SKILL.md:6: harness branch: In Codex" "$err"
+}
+
+t_flags_harness_branch_in_shared() {
+  # Given: a shared core file that branches on one harness
+  repo; mkdir shared; printf 'Run it in Claude Code only.\n' > shared/notes.md; git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/notes.md:1: harness branch: in Claude Code" "$err"
+}
+
+t_passes_harness_in_description() {
+  # Given: a description that names each harness's command form
+  repo; skill demo
+  printf -- '---\nname: demo\ndescription: Run /demo in Claude Code or $demo in Codex.\n---\n# demo\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_passes_harness_in_readme() {
+  # Given: a README, for people, that names a harness's command form
+  repo; skill demo; printf 'Type /demo in Claude Code.\n' >> skills/demo/README.md; git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_hook_stops_harness_branch() {
+  # Given: the hook on, and a staged skill line that branches on one harness
+  hooked; skill demo 'In Codex, run it twice.'; git add skills
+  # When
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/SKILL.md:6: harness branch: In Codex" "$err"
+  eq commits 1 "$(git rev-list --count HEAD)"
+}
+
 # skill_md <name>: skills/<name>/SKILL.md with a frontmatter whose name is
 # the folder and whose description is not empty.
 skill_md() {
@@ -1130,6 +1183,11 @@ cases=(
   "flags a missing path after \$here in a script|t_flags_missing_here_path"
   "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
+  "flags a harness branch in a skill file|t_flags_harness_branch_in_skill"
+  "flags a harness branch in a shared core file|t_flags_harness_branch_in_shared"
+  "passes a harness command form in a description|t_passes_harness_in_description"
+  "passes a harness command form in a README|t_passes_harness_in_readme"
+  "hook stops a commit that adds a harness branch|t_hook_stops_harness_branch"
   "render puts the box.sh path in local rules|t_render_names_box"
   "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
   "flags a listed copy with no license|t_flags_copy_without_license"
