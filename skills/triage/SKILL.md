@@ -27,10 +27,9 @@ this one closely.
 | Read a long log and pull the matching lines | Write expected, actual, repro, cause |
 | Diff two envs, versions, or configs | |
 
-In Claude Code, reading goes to the reader job and running to the runner
-job, per `../../shared/facts.md` § Reader and runner. Both are cheap
-agents; they carry out a brief, they do not think for you. In Codex there are no sub-agents: use the read tools,
-run the loop yourself, send long output to a file and read its tail.
+Reading goes to the explorer and running to the runner, per
+`../../shared/facts.md` § Reader and runner. Both carry out a brief;
+they do not think for you.
 
 A runner brief pastes the runner job's lines, then holds four things, always:
 
@@ -137,13 +136,13 @@ nothing.
 
 10. **Grill.** Test the report against § When grill fits. It fits: write
     the seed block in the same message, right after the report, and invoke
-    the grill skill with the Skill tool. The seed is the report, and the bug
+    read `../grill/SKILL.md` and follow it. The seed is the report, and the bug
     issue when there is one; the open decisions are the choices you found;
     `Close out: text.`, since step 11 files the ticket. After `Grill done.`,
     go to step 11 with the doc entries it handed back. It does not fit: go
     to step 11, with no question to the user. The report is the agreement.
 
-11. **File.** Invoke the to-issue skill with the Skill tool, in the same
+11. **File.** Read `../to-issue/SKILL.md` and follow it, in the same
     turn. Do not ask first, and do not end with `Ready for /to-issue`.
 
     - Cause found: the ticket is the Exit of the category in
@@ -214,7 +213,7 @@ chat or an agent brief. Never paste a token, a key, or a signed URL.
 
 **User:** `/triage the CSV export shows dates as big numbers`
 
-Gate passes. Explore fetches `src/orders/export.ts`, the date helper, its
+Gate passes. An explorer fetches `src/orders/export.ts`, the date helper, its
 callers, the export test. Reading shows `export.ts:57` writes the raw
 `createdAt` and never calls `formatDate`, unlike line 49. One probe: the
 existing test with an ISO assertion fails on that field. Report with

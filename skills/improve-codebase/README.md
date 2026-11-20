@@ -4,7 +4,7 @@ Scans a codebase for two kinds of candidate: shallow modules worth deepening, an
 
 ## Use it when
 
-The code has become hard to change or hard to test, or has grown parts nobody needs, and you want to know where a refactor or a cut would pay off most. Type `/improve-codebase` (`$improve-codebase` in Codex), or add a direction: `/improve-codebase the notification code is a mess`. With no direction it looks where the last 200 commits landed.
+The code has become hard to change or hard to test, or has grown parts nobody needs, and you want to know where a refactor or a cut would pay off most. Type `/improve-codebase`, or add a direction: `/improve-codebase the notification code is a mess`. With no direction it looks where the last 200 commits landed.
 
 ## What you get
 
@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git`, for the recent history.
-- Sub-agents: readers for the code, per the reader job in `../../shared/facts.md`, and for the design-it-twice step the `interface-designer` agent in `agents/` (Fable, high in Claude Code), started per `../../shared/facts.md` § Skill agents, which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity; in Codex, its normal sub-agent.
+- Sub-agents: explorers for the code, per the reader job in `../../shared/facts.md`, and for the design-it-twice step the `interface-designer` agent in `agents/`, each started per `../../shared/facts.md` § Skill agents on the model its file names for your harness. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent file into Claude Code, Codex, and Antigravity.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the candidates.
 - From the shared core: [facts.md](../../shared/facts.md), [codebase-design.md](../../shared/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared/serve.sh) to serve the report.

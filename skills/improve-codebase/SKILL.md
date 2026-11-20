@@ -32,7 +32,7 @@ report, a grill, and the issues the grill files.
 ## Facts
 
 Read `../../shared/facts.md` first: you are the brain,
-Explore agents retrieve, short lookups are yours.
+explorers retrieve, short lookups are yours.
 
 ## Steps
 
@@ -52,7 +52,7 @@ Explore agents retrieve, short lookups are yours.
    their text is decided, not built, and counts like an ADR. Done when you
    can name the paths in scope and the decisions already made about them.
 
-2. **Explore.** Dispatch Explore agents per `facts.md`, one per hot spot
+2. **Explore.** Start explorers per `facts.md`, one per hot spot
    or subsystem. A brief holds:
    the paths in scope, the glossary from `../../shared/codebase-design.md`
    pasted in, the domain terms from `CONTEXT.md`, and these questions.
@@ -135,7 +135,7 @@ Explore agents retrieve, short lookups are yours.
    run ends with no grill. Else say how many candidates, big and small,
    and ask the user to say `go` when they have read it. Stop and wait.
 
-4. **Grill.** On `go`, invoke the `grill` skill with the Skill tool. Seed:
+4. **Grill.** On `go`, read `../grill/SKILL.md` and follow it. Seed:
    the report. Open decisions, in this order: each big candidate, the
    strongest first, then each small topic group as one decision. For a
    deepening: the constraints on the deepened module; which dependencies
@@ -160,7 +160,7 @@ Explore agents retrieve, short lookups are yours.
 **User:** `/improve-codebase`
 
 Scope from git log: `src/orders/` and `src/pricing/` carry most of the last
-200 commits. Two Explore agents, one per folder. Orders comes back with
+200 commits. Two explorers, one per folder. Orders comes back with
 five wrapper modules that each pass through to `OrderRepo`; the deletion
 test concentrates. Pricing comes back with `formatLegacy()` (no caller,
 searched by name and in config, Seen) and `parseDate()` copied in two
@@ -171,7 +171,7 @@ the seam question, then asks about the Dates group as one question.
 
 **User:** `/improve-codebase the notification code is a mess`
 
-Direction named, no git-log inference. One Explore agent on
+Direction named, no git-log inference. One explorer on
 `src/notifications/`. One big card, `ports & adapters`, because Twilio and
 an internal mailer both sit behind it. The card notes it contradicts
 ADR-0004 (one channel per module) and says why that ADR is worth

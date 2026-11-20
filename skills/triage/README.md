@@ -4,7 +4,7 @@ Finds the root cause of a bug, or the hot spot behind something slow, then files
 
 ## Use it when
 
-Something is broken or slow, and you don't know why yet. Type `/triage` with what you see (`$triage` in Codex), as in `/triage the CSV export shows dates as big numbers`. You can also name an issue, as in `/triage #42` or its URL; it reads the issue and its comments. It needs the symptom and nothing else; "something is off" gets one question back.
+Something is broken or slow, and you don't know why yet. Type `/triage` with what you see, as in `/triage the CSV export shows dates as big numbers`. You can also name an issue, as in `/triage #42` or its URL; it reads the issue and its comments. It needs the symptom and nothing else; "something is off" gets one question back.
 
 ## What you get
 
@@ -32,7 +32,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - `git`, for the log and for `git bisect`.
 - `gh`, signed in, to read the issue you name and to file the ticket.
-- Sub-agents in Claude Code: readers and runners, per the reader and runner jobs in `../../shared/facts.md`, for repro loops and bisects. In Codex it does both itself.
+- Sub-agents: explorers and runners, per the reader and runner jobs in `../../shared/facts.md`, for repro loops and bisects, started as the harness table, `../../shared/harness.md`, says for your harness.
 - A clipboard tool, optional, for the fix command on a local-env bug, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [benchmark.md](../../shared/benchmark.md) from the shared core: the checks a speed number must pass.
 - [grill](../grill/), when a decision is open.
