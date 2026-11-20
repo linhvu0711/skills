@@ -1,6 +1,6 @@
 # recall
 
-Rebuilds where you left off on a topic, from the recent Claude Code and Codex sessions in this project.
+Rebuilds where you left off on a topic, from the recent Claude Code, Codex, and Antigravity sessions in this project.
 
 ## Use it when
 
@@ -12,7 +12,7 @@ One brief over every session on the topic, newest first:
 
 ```
 # Recall: export feature
-Sessions: 2 (Claude Code 1, Codex 1)
+Sessions: 2 (Claude Code 1, Codex 1, Antigravity 0)
 **Done:**
 - export endpoint and its tests (3f2a9c1e)
 **Decisions:**
@@ -29,7 +29,7 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 
 - No session on the topic, or a topic of only common words such as `the`: `No sessions on <topic>.`, and it stops.
 - More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
-- No Codex on this machine: Claude Code sessions only, and the `Sessions:` line says so.
+- No Codex on this machine: the other tools' sessions only, and the `Sessions:` line says so.
 
 ## Needs
 

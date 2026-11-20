@@ -7,7 +7,7 @@ main agent tags its PRs and branches with their live state, shows it, and waits.
 
 Send the research agent this prompt, verbatim, with the two placeholders
 filled. `<transcript>` is the file the extractor wrote in summary mode.
-`<tool>` is `Claude Code` or `Codex CLI`.
+`<tool>` is `Claude Code`, `Codex CLI`, or `Antigravity`.
 
 In Claude Code the agent is Explore; in Codex it is one `explorer`. Send the
 prompt as it is.

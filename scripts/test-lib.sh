@@ -183,3 +183,53 @@ EOF
   export FAKE_NSC="$T/nsc"
   printf 'gho_secret\n' > "$FAKE_GH/auth-token.json"
 }
+
+# agy_chat <file> <cwd> <prompt> <reply> [<days ago>] [<title>]: an Antigravity
+# chat file, in the shape agy 1.5.12 writes: SQLite with protobuf blobs, its
+# id the file's stem, one prompt and one reply <days ago> days back (default
+# 0). <cwd> is one path or several joined by `,`. An empty prompt writes a chat
+# with no steps. A title also goes in conversation_summaries.db beside the
+# conversations folder. Shared, since the session adapter's tests and recall's
+# both build chats.
+agy_chat() {
+  mkdir -p "$(dirname "$1")"
+  python3 -I - "$@" <<'EOF'
+import os, sqlite3, sys, time
+
+def varint(n):
+    out = b""
+    while True:
+        b = n & 0x7F; n >>= 7
+        out += bytes([b | (0x80 if n else 0)])
+        if not n:
+            return out
+
+def field(num, value):
+    if isinstance(value, int):
+        return varint(num << 3) + varint(value)
+    data = value.encode() if isinstance(value, str) else value
+    return varint(num << 3 | 2) + varint(len(data)) + data
+
+path, cwd, prompt, reply = sys.argv[1:5]
+days = int(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] else 0
+title = sys.argv[6] if len(sys.argv) > 6 else ""
+cid = os.path.splitext(os.path.basename(path))[0]
+when = field(1, field(1, int(time.time()) - days * 86400))
+spaces = b"".join(field(12, "file://" + p) for p in cwd.split(","))
+db = sqlite3.connect(path)
+db.execute("create table trajectory_meta (trajectory_id text, cascade_id text)")
+db.execute("create table steps (idx integer, step_type integer, metadata blob, step_payload blob)")
+db.execute("insert into trajectory_meta values ('t-' || ?, ?)", (cid, cid))
+if prompt:
+    ask = field(1, 14) + field(19, field(2, prompt) + field(12, spaces))
+    answer = field(1, 15) + field(20, field(1, reply))
+    db.execute("insert into steps values (0, 14, ?, ?)", (when, ask))
+    db.execute("insert into steps values (1, 15, ?, ?)", (when, answer))
+db.commit()
+if title:
+    summary = sqlite3.connect(os.path.join(os.path.dirname(path), "..", "conversation_summaries.db"))
+    summary.execute("create table if not exists conversation_summaries (conversation_id text, title text)")
+    summary.execute("insert into conversation_summaries values (?, ?)", (cid, title))
+    summary.commit()
+EOF
+}
