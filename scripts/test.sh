@@ -371,6 +371,23 @@ t_link_removes_renamed_agent_forms() {
   eq "ls plugin agents" aide.md "$(ls "$T/gplugins/skills/agents")"
 }
 
+t_link_writes_shared_agent_forms() {
+  # Given: the shared explorer file
+  linked demo; mkdir -p shared/agents
+  printf -- '---\n%s\n---\nFind the fact.\n' "${full_agent/name: helper/name: explorer}" > shared/agents/explorer.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stdout "wrote $T/cagents/explorer.md" "$out"
+  has stdout "wrote $T/codex/explorer.toml" "$out"
+  has stdout "wrote $T/gplugins/skills/agents/explorer.md" "$out"
+  eq "mark" "# Made by scripts/link.sh from shared/agents/explorer.md. Edit that file, not this one." \
+    "$(sed -n 2p "$T/cagents/explorer.md")"
+  link_sh
+  eq "second run" "" "$out$err"
+}
+
 t_link_leaves_other_agent() {
   # Given: a file of the user's own holds the agent's name
   linked demo; agent demo helper; printf 'mine\n' > "$T/cagents/helper.md"
@@ -749,6 +766,20 @@ t_flags_home_in_unknown_place() {
   has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
 }
 
+t_flags_shared_agent_no_codex_backup() {
+  # Given: a good skill, and the shared explorer with every field but the Codex backup
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
+  mkdir -p shared/agents
+  printf -- '---\n%s\n---\n' "$(printf '%s\n' "${full_agent/name: helper/name: explorer}" | grep -v '^  codex: gpt-6-luna xhigh$')" > shared/agents/explorer.md
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/agents/explorer.md: missing backup for codex" "$err"
+}
+
 t_passes_agent_with_all_fields() {
   # Given: a full agent file and a Codex openai.yaml beside it
   agent_md "$full_agent"
@@ -1082,6 +1113,7 @@ cases=(
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
+  "link writes a shared agent's three forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
@@ -1150,6 +1182,7 @@ cases=(
   "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
   "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
+  "flags a shared agent with no Codex backup|t_flags_shared_agent_no_codex_backup"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 

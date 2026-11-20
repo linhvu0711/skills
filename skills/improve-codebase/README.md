@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git`, for the recent history.
-- Sub-agents: readers for the code, per the reader job in `../../shared/facts.md`, and for the design-it-twice step the `interface-designer` agent in `agents/` (Fable, high in Claude Code), which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity; in Codex, its normal sub-agent.
+- Sub-agents: readers for the code, per the reader job in `../../shared/facts.md`, and for the design-it-twice step the `interface-designer` agent in `agents/` (Fable, high in Claude Code), started per `../../shared/facts.md` § Skill agents, which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity; in Codex, its normal sub-agent.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the candidates.
 - From the shared core: [facts.md](../../shared/facts.md), [codebase-design.md](../../shared/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared/serve.sh) to serve the report.

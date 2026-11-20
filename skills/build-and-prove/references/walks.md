@@ -42,7 +42,7 @@ walk; the run never waits for the real clock to reach a time.
 ## 9b. Walker
 
 In Claude Code, the skill agent `walker`
-(`agents/walker.md`, which sets its model and effort; not found:
+(`agents/walker.md`, started per
 `../../shared/facts.md` § Skill agents); in Codex, no sub-agent, so
 you read `agents/walker.md` and follow it yourself, reading no code
 while you walk. Its brief, whole:

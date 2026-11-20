@@ -21,7 +21,7 @@ Read `../../shared/facts.md` first. Short lookups
 One judge agent per file group answers the three questions. That
 means tracing callers, running a test, and running blame, so a judge is
 the skill agent `finding-judge`, in `agents/`; a reader only retrieves.
-Not found: `../../shared/facts.md` § Skill agents. The verdict and the
+Start it per `../../shared/facts.md` § Skill agents. The verdict and the
 reply text stay with you: the verdict is a table lookup, the reply is
 your voice.
 

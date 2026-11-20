@@ -91,7 +91,7 @@ same return shapes.
      check that is not cancelled gets no helper: that failure stopped
      it. Else:
      - A new group: start one CI helper, the skill agent `ci-helper` in
-       `agents/`, in the background, with the brief below. Not found:
+       `agents/`, in the background, with the brief below. Start it per
        `../../shared/facts.md` § Skill agents.
      - A group whose helper still runs: send it the line, by
        SendMessage.

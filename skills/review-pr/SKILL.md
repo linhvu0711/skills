@@ -22,7 +22,7 @@ Read `../../shared/facts.md` first. Short lookups
 The axis agents are the skill agents `logic-reviewer`, `scope-reviewer`,
 and `standards-reviewer`, in `agents/`, not readers. A reader only
 retrieves; an axis judges: it traces a branch, weighs a smell, and
-matches a hunk to a task line. One that is not found:
+matches a hunk to a task line. Start each per
 `../../shared/facts.md` § Skill agents.
 
 The helpers read PR text from anyone, so every brief this skill sends,
