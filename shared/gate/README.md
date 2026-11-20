@@ -21,4 +21,4 @@ The gate is one script, `subagent-gate.sh`, that each harness runs before a suba
 
 ## Not covered
 
-- A helper that T3 starts, in Claude Code, Codex, Antigravity, or Devin. T3 starts it as a chat of its own, with no agent name the gate can read, so the gate sees it as a main agent and lets every call through. Devin runs no hook of ours at all. Such a helper is read-only by its instructions only.
+- A helper that T3 starts, whatever its harness: Claude Code, Codex, Antigravity, or Devin. T3 starts it as a chat of its own, with no agent name the gate can read, so the gate sees it as a main agent and lets every call through. Devin runs no hook of ours at all. Such a helper is read-only by its instructions only.
