@@ -945,6 +945,24 @@ t_flags_home_in_unknown_place() {
   has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
 }
 
+t_passes_agent_with_two_homes() {
+  # Given: every field, with Antigravity Neon then Devin Neon as the Claude home
+  # When
+  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high}"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_bad_second_home() {
+  # Given: two Claude homes, the second with an effort Devin has not
+  # When
+  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high ultra}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: home 2 for claude: ultra is not an effort devin takes" "$err"
+}
+
 t_flags_shared_agent_no_codex_backup() {
   # Given: a good skill, and the shared explorer with every field but the Codex backup
   repo; readme "Use it when" "What you get" "Needs" "Fits with"
@@ -1375,6 +1393,8 @@ cases=(
   "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"
   "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
   "flags a home in an unknown place|t_flags_home_in_unknown_place"
+  "passes an agent file with two homes|t_passes_agent_with_two_homes"
+  "flags a bad second home by its place|t_flags_bad_second_home"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
   "flags a shared agent with no Codex backup|t_flags_shared_agent_no_codex_backup"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"

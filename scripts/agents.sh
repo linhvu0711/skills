@@ -12,7 +12,7 @@
 # holds two maps, each key two spaces in, one entry per main harness:
 #
 #   home:
-#     claude: <place> <model> <effort>
+#     claude: <place> <model> <effort>[, <place> <model> <effort>]...
 #     codex: <place> <model> <effort>
 #     antigravity: <place> <model> <effort>
 #   backup:
@@ -21,8 +21,11 @@
 #     antigravity: <model>
 #
 # A blank line or a `#` comment line is skipped, so it ends no map.
-# A home is the model T3 starts the agent on; its place is where T3 starts
-# it: claude, codex, antigravity, or devin. A backup runs in the harness
+# A home is a model T3 starts the agent on; its place is where T3 starts
+# it: claude, codex, antigravity, or devin. A home entry may list more homes
+# after the first, joined by `, `, and T3 tries them from left to right.
+# check names a problem in the n-th home, from the second, as
+# `home <n> for <harness>:`. A backup runs in the harness
 # itself, so its place is its harness. Each place takes models of one form
 # and a set of efforts, as T3 and each harness list them on 2026-11-20:
 #
@@ -100,9 +103,17 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
     return "[" out "]" }
   function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
   # entry_problems(sec, h): the problems of the entry for harness h in map sec.
-  function entry_problems(sec, h,  w, n, place, m, e, want, at) {
-    at = sec " for " h ": "
-    n = split(entry[sec, h], w, " ")
+  # A home entry is a list joined by `,`; its n-th home, from the second, is
+  # named `home <n>`.
+  function entry_problems(sec, h,  items, k, i) {
+    if (sec != "home") { item_problems(sec, h, entry[sec, h], sec " for " h ": "); return }
+    k = split(entry[sec, h], items, ",")
+    for (i = 1; i <= k; i++) item_problems(sec, h, items[i], (i == 1 ? "home" : "home " i) " for " h ": ")
+  }
+  # item_problems(sec, h, v, at): the problems of one home or backup v, each
+  # line starting with at.
+  function item_problems(sec, h, v, at,  w, n, place, m, e, want) {
+    n = split(v, w, " ")
     if (sec == "home") { place = w[1]; m = w[2]; e = w[3]; want = 3
       if (!(place in efforts)) { problem(at "unknown place: " place); return } }
     else { place = h; m = w[1]; e = w[2]; want = (h == "antigravity") ? 1 : 2 }
