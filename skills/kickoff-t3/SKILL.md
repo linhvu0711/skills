@@ -24,7 +24,7 @@ the table, and how to turn the user's words into a target.
    stop. Nothing started. Exit 0: hold the one JSON line it prints. Its
    keys: `number`, `title`, `command`, `command_from`, `mode`, `model`,
    `model_from`, `effort`, `effort_from`, `reason`, `base`, `path`,
-   `thread_title`, `message`, `runtime_mode`, `project`.
+   `thread_title`, `message`, `project`.
 3. **Launch.** Follow `../../shared/kickoff/launch-t3.md` with the
    line from step 2. Its stop lines are yours. Hold the model id it
    picked and the thread's `link`.

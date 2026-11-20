@@ -46,6 +46,7 @@ run() {
 
 eq() { [ "$2" = "$3" ] || { printf '%s: expected [%s], got [%s]\n' "$1" "$2" "$3" >&2; exit 1; }; }
 has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3" >&2; exit 1 ;; esac; }
+lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; exit 1 ;; esac; }
 
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in

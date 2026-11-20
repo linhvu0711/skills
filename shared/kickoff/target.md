@@ -93,7 +93,7 @@ So you can answer questions about it:
   the thread gets the open PR that closes the issue, as `/ready-pr #43`,
   in place of the issue. An issue with no open PR, or with two or more,
   stops.
-- Permission mode is `auto`.
+- Permission mode: kickoff-herdr starts Claude in `auto`. A kickoff-t3 thread takes the mode of the chat that starts it, so a chat in full access starts threads in full access, where helpers in Antigravity run their commands without asking the user at each one.
 - Repo path: found by the checkout resolver,
   `../checkout.sh main <owner/repo>`, whose header says where it looks.
   A find is written to the map. None or several: it stops and says so.
