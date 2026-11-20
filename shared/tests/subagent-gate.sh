@@ -29,6 +29,13 @@ claude_edit() {
   printf '{"session_id":"s1",%s"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"/tmp/x","old_string":"a","new_string":"b"}}' "$who"
 }
 
+# codex_call <agent_type> <tool_name> <tool_input>: a Codex payload for a call
+# by that subagent.
+codex_call() {
+  printf '{"session_id":"s1","turn_id":"t1","cwd":"/tmp","model":"m","permission_mode":"default","transcript_path":"/tmp/t","tool_use_id":"u1","hook_event_name":"PreToolUse","agent_id":"a1","agent_type":"%s","tool_name":"%s","tool_input":%s}' "$1" "$2" "$3"
+}
+codex_spawn='{"agent_type":"explorer","message":"x"}'
+
 edit_rule() {
   printf 'Blocked by the subagent gate: %s may not use a file edit tool, since its agent file lists no Edit or Write tool.' "$1"
 }
@@ -101,6 +108,42 @@ t_gate_claude_main_edits() {
   eq stdout "" "$out"
 }
 
+t_gate_codex_checker_starts_explorer() {
+  # Given: plan-correctness-checker starts the explorer
+  # When
+  gate codex "$(codex_call plan-correctness-checker spawn_agent "$codex_spawn")"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_codex_blocks_scope_reviewer_start() {
+  # Given: the scope reviewer starts the explorer
+  # When
+  gate codex "$(codex_call scope-reviewer spawn_agent "$codex_spawn")"
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"'"$(start_rule scope-reviewer explorer)"'"}}' "$out"
+}
+
+t_gate_codex_blocks_explorer_start() {
+  # Given: the explorer, itself started by a checker, starts the explorer
+  # When
+  gate codex "$(codex_call explorer spawn_agent "$codex_spawn")"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(start_rule explorer explorer)"'"' "$out"
+}
+
+t_gate_codex_blocks_explorer_edit() {
+  # Given: the explorer adds a file with apply_patch
+  # When
+  gate codex "$(codex_call explorer apply_patch '{"command":"*** Begin Patch\n*** Add File: x\n+hi\n*** End Patch"}')"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(edit_rule explorer)"'"' "$out"
+}
+
 cases=(
   "gate lets a claude checker start the explorer|t_gate_claude_checker_starts_explorer"
   "gate blocks a claude scope reviewer's start|t_gate_claude_blocks_scope_reviewer_start"
@@ -109,4 +152,8 @@ cases=(
   "gate prints the claude matcher|t_gate_claude_matcher"
   "gate blocks a claude explorer's edit|t_gate_claude_blocks_explorer_edit"
   "gate lets the claude main agent edit|t_gate_claude_main_edits"
+  "gate lets a codex checker start the explorer|t_gate_codex_checker_starts_explorer"
+  "gate blocks a codex scope reviewer's start|t_gate_codex_blocks_scope_reviewer_start"
+  "gate blocks a codex explorer's start|t_gate_codex_blocks_explorer_start"
+  "gate blocks a codex explorer's edit|t_gate_codex_blocks_explorer_edit"
 )

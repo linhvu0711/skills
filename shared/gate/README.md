@@ -12,6 +12,7 @@ The gate is one script, `subagent-gate.sh`, that each harness runs before a suba
 ## Where it runs
 
 - Claude Code: a `PreToolUse` hook on `Agent`, `Task`, `Edit`, `Write`, `MultiEdit`, and `NotebookEdit`, run as `subagent-gate.sh claude`.
+- Codex: a `PreToolUse` hook on `spawn_agent` and `apply_patch`, run as `subagent-gate.sh codex`. Codex runs a new or changed hook only after you trust it: at the next start it shows "Hooks need review"; pick "Trust all and continue".
 
 ## Not covered
 

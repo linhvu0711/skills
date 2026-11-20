@@ -29,6 +29,7 @@ usage() { echo 'usage: subagent-gate.sh <claude|codex|antigravity> [matcher]' >&
 harness="${1:-}"
 case "$harness" in
   claude) start_tools="Agent Task"; edit_tools="Edit Write MultiEdit NotebookEdit" ;;
+  codex) start_tools="spawn_agent Agent"; edit_tools="apply_patch Edit Write" ;;
   *) usage ;;
 esac
 case "${2-}" in
@@ -45,6 +46,10 @@ us=$'\x1f'
 read_claude() {
   jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
            .tool_name // "", .tool_input.subagent_type // "general-purpose"] | join("\u001f")' <<<"$payload"
+}
+read_codex() {
+  jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
+           .tool_name // "", .tool_input.agent_type // "default"] | join("\u001f")' <<<"$payload"
 }
 
 fields="$("read_$harness" 2>/dev/null)" || exit 0
@@ -68,7 +73,7 @@ tools_of() { bash "$repo/scripts/agents.sh" tools < "$1" 2>/dev/null; }
 
 deny() {
   case "$harness" in
-    claude) jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' ;;
+    claude|codex) jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' ;;
   esac
   exit 0
 }
