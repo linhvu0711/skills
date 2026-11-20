@@ -32,6 +32,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from typing import Callable
 
 
@@ -48,6 +49,19 @@ class Harness:
         self.name, self.label, self.data = name, label, data
         self.finder, self.extractor, self.flags, self.title = finder, extractor, flags, title
         self.current, self.extract_flags = current, extract_flags
+
+
+def age(mtime: float) -> str:
+    """The row's "age": how long ago mtime was, as "3h ago"."""
+    mins = max(0.0, time.time() - mtime) / 60
+    if mins < 60:
+        return f"{int(mins)}m ago"
+    if mins < 60 * 24:
+        return f"{int(mins / 60)}h ago"
+    days = mins / 60 / 24
+    if days < 14:
+        return f"{int(days)}d ago"
+    return f"{int(days / 7)}w ago"
 
 
 def _day(value: str) -> dt.date:
