@@ -127,7 +127,8 @@ Explore agents retrieve, short lookups are yours.
    *"contradicts ADR-0007, but worth reopening because..."*. Refactors an
    ADR forbids for a reason that still holds stay out.
 
-   End with a **Top recommendation**: which big candidate first, and why.
+   End with a **Top recommendation**: which big candidate first, and why;
+   with no big candidate, which small topic group first.
 
    Serve and open it per `references/html-report.md` § Serve and open,
    and give the user the URL. No candidate: the report says so, and the

@@ -50,7 +50,7 @@ A diagram that needs a paragraph to be understood gets redrawn.
 
 ## Small candidates
 
-After the cards, in `<section id="small">`: one `<h2>` per topic group, named for what its rows share ("Dates", "Export"), and under it one table, `w-full text-sm`, with these columns:
+After the cards, in `<section id="small">`: one `<h2 id="small-<topic>">` per topic group, named for what its rows share ("Dates", "Export"), and under it one table, `w-full text-sm`, with these columns:
 
 - **What**: the cut in a few words. "`formatLegacy()` has no caller".
 - **Where**: `path:line`, `font-mono`.
@@ -106,7 +106,7 @@ Before: a tree of calls as nested boxes. After: the same tree inside one box, th
 
 ## Top recommendation
 
-One larger card. The big candidate to do first, one sentence on why, an anchor link to its card.
+One larger card. The big candidate to do first, one sentence on why, an anchor link to its card. A report with no big candidate names the small topic group to do first, linked to its `<h2>`, which carries an `id`.
 
 ## Tone
 
