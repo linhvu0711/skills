@@ -35,8 +35,9 @@
 # lines, Anthropic's limit for a CLAUDE.md. A tracked file that starts with
 # `#!` has the run bit, mode 100755 in the index. Each skill agent,
 # `skills/<name>/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
-# file name without `.md`, a `description` that is not empty, and a `model` and
-# an `effort`.
+# file name without `.md`, a `description` that is not empty, and a home and a
+# backup entry for each harness in a form that harness takes, as
+# `scripts/agents.sh` says.
 #
 # The README check runs only with --commit-msg: a commit that changes a file
 # under `skills/<name>/` needs `skills/<name>/README.md` in it too, unless a line
@@ -55,6 +56,7 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # report: print the problems and exit 1, or print `check: clean` and exit 0.
 report() {
@@ -115,35 +117,22 @@ skill_dirs() { git ls-files -- 'skills/*/SKILL.md' | awk -F/ 'NF == 3 { print $1
 # agent_files: each skill agent file, `skills/<name>/agents/<agent>.md`, in the index.
 agent_files() { git ls-files -- 'skills/*/agents/*.md' | awk -F/ 'NF == 4'; }
 
-# frontmatter_problems [--limits] <want> <what> [<key>...]: the problems of the
+# frontmatter_problems [--limits] <want> <what>: the problems of the
 # frontmatter on stdin, one per line: no frontmatter, a `name` that is not <want> (the
-# <what> it should match), an empty `description`, or an empty <key>. A quoted
-# value is what the quotes hold, with `''` read as `'` and a `\`-escaped char
-# kept; an unquoted one loses its `#` comment, and `null` or `~` is empty. A
-# block scalar is its indented lines, less the first line's indent, joined by
-# newlines, as YAML reads it.
+# <what> it should match), or an empty `description`. A value is read by `val`
+# in frontmatter.awk. A block scalar is its indented lines, less the first
+# line's indent, joined by newlines, as YAML reads it.
 # With --limits, also Anthropic's SKILL.md limits: `body too long` at 500 lines
 # or more under the frontmatter, `description too long` over 1024 characters,
 # and `name too long` over 64.
 frontmatter_problems() {
   local limits=0
   if [ "$1" = --limits ]; then limits=1; shift; fi
-  local want="$1" what="$2"; shift 2
-  LC_ALL=C awk -v want="$want" -v what="$what" -v keys="$*" -v q="'" -v limits="$limits" '
-    function val(s,  c, i, ch, v) { sub(/^[^:]*:[ \t]*/, "", s); c = substr(s, 1, 1)
-      if (c == "\"" || c == q) {
-        for (i = 2; i <= length(s); i++) { ch = substr(s, i, 1)
-          if (c == q && ch == q && substr(s, i + 1, 1) == q) { v = v q; i++; continue }
-          if (c == "\"" && ch == "\\") { v = v substr(s, i, 2); i++; continue }
-          if (ch == c) return v
-          v = v ch }
-        return s }
-      sub(/(^|[ \t]+)#.*$/, "", s); sub(/[ \t]+$/, "", s)
-      return (s == "~" || tolower(s) == "null") ? "" : s }
+  local want="$1" what="$2"
+  LC_ALL=C awk -v want="$want" -v what="$what" -v limits="$limits" -f "$scripts/frontmatter.awk" -f <(cat <<'AWK'
     # chars: the characters of s. Under LC_ALL=C awk counts bytes, so the
     # UTF-8 continuation bytes come off.
     function chars(s,  t) { t = s; return length(s) - gsub(/[\200-\277]/, "", t) }
-    BEGIN            { nk = split(keys, k, " ") }
     NR == 1          { if ($0 != "---") exit; next }
     closed           { body++; next }
     blk && /^[ \t]*$/ { if (desc != "") gap = gap "\n"; next }
@@ -153,16 +142,16 @@ frontmatter_problems() {
     blk              { blk = 0 }
     $0 == "---"      { closed = 1; next }
     /^name:/         { name = val($0) }
-                     { for (i = 1; i <= nk; i++) if (index($0, k[i] ":") == 1) got[i] = val($0) }
     /^description:/  { desc = val($0); if (desc ~ /^[|>][-+]?$/) { desc = ""; blk = 1 } }
     END { if (!closed) { print "missing frontmatter"; exit }
           if (name != want) print "name does not match " what ": " (name == "" ? "(none)" : name)
           if (desc == "") print "empty description"
-          for (i = 1; i <= nk; i++) if (got[i] == "") print "missing " k[i]
           if (!limits) exit
           if (body >= 500) print "body too long: " body " lines (limit: under 500)"
           if (chars(desc) > 1024) print "description too long: " chars(desc) " characters (limit: 1024)"
-          if (chars(name) > 64) print "name too long: " chars(name) " characters (limit: 64)" }'
+          if (chars(name) > 64) print "name too long: " chars(name) " characters (limit: 64)" }
+AWK
+)
 }
 
 # refs <file> <text>: each relative path that <file> names, read from the file
@@ -365,13 +354,14 @@ if [ ${#paths[@]} -eq 0 ]; then
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,
-  # has one whose `name` is its file name and that also sets `model` and
-  # `effort`.
+  # has one whose `name` is its file name, and the home and backup entries
+  # agents.sh checks.
   while IFS= read -r skill; do
     while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | frontmatter_problems --limits "${skill#skills/}" folder)
   done < <(skill_dirs)
   while IFS= read -r f; do
-    while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | frontmatter_problems "$(basename "$f" .md)" file model effort)
+    while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | frontmatter_problems "$(basename "$f" .md)" file)
+    while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | bash "$scripts/agents.sh" check)
   done < <(agent_files)
 fi
 if [ -n "$words" ]; then

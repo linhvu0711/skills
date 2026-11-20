@@ -13,8 +13,19 @@ The `shared/` folder: files that two or more skills read. A file read by more th
 _Avoid_: common, utils, lib
 
 **Skill agent**:
-A Claude Code subagent that one skill owns. Its file is in `skills/<name>/agents/` and sets its model and effort, and `link.sh` links it into `~/.claude/agents/`. `Explore` and `Runner` are not skill agents; `~/.claude/delegation` owns them.
+A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names a home model and a backup model for each main harness. `link.sh` installs it into every harness. The explorer and the runner are not skill agents; the shared core owns them.
 _Avoid_: subagent config, custom agent, agent file
+
+**Home model**:
+The model T3 starts a subagent on. It depends on the main agent's harness: a checker's home model comes from another company than the main agent's, and every other subagent's is the model its job needs. The subagent's file names one for each main harness.
+_Avoid_: default model
+
+**Backup model**:
+The model a subagent runs on when its home model cannot run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for each harness.
+_Avoid_: fallback
+
+**Checker**:
+A subagent that judges work the main agent's model family made: the logic reviewer, the plan-correctness checker, and the plan-design checker.
 
 **PR shape**:
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared/pr-shape.md`.

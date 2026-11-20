@@ -2,8 +2,14 @@
 name: standards-reviewer
 description: "Reviews one PR diff on the Standards axis for /review-pr, whether the change follows the repo's rules and the code next to it. Spawned only by review-pr, beside the other two axis reviewers. Read-only."
 tools: Read, Grep, Glob, Bash
-model: sonnet
-effort: high
+home:
+  claude: devin swe-2-high high
+  codex: devin swe-2-high high
+  antigravity: devin swe-2-high high
+backup:
+  claude: claude-sonnet-5-5 high
+  codex: gpt-6.2-sol medium
+  antigravity: inherit
 ---
 
 You review one axis of one pull request: Standards.

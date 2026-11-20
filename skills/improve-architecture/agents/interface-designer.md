@@ -2,8 +2,14 @@
 name: interface-designer
 description: Designs one interface for a module that /improve-architecture wants to deepen. Spawned only by that skill's design-it-twice step, three or more in parallel, each under a different design constraint. Read-only.
 tools: Read, Grep, Glob
-model: fable
-effort: high
+home:
+  claude: claude claude-fable-5-2 high
+  codex: codex gpt-6.2-astra xhigh
+  antigravity: antigravity gemini-4-neon high
+backup:
+  claude: claude-fable-5-2 high
+  codex: gpt-6.2-astra xhigh
+  antigravity: inherit
 ---
 
 You design one interface for a module the caller wants to deepen. Your prompt is the brief: the files in scope, the coupling, the dependency category, what sits behind the seam, the architecture glossary, the project's domain terms, one design constraint, and the sections to return.

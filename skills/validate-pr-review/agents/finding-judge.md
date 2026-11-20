@@ -2,8 +2,14 @@
 name: finding-judge
 description: "Judges one group of review findings for /validate-pr-review, each against three questions: is it true, is it this PR's, is it worth fixing. Spawned only by validate-pr-review, one per file group. Read-only."
 tools: Read, Grep, Glob, Bash
-model: opus
-effort: medium
+home:
+  claude: claude claude-opus-5-5 high
+  codex: codex gpt-6.2-sol medium
+  antigravity: antigravity gemini-4-neon medium
+backup:
+  claude: claude-opus-5-5 high
+  codex: gpt-6.2-sol medium
+  antigravity: inherit
 ---
 
 You judge the review findings of one group of files.
