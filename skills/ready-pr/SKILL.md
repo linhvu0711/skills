@@ -18,12 +18,9 @@ and followed. Facts per `../../shared/facts.md`. Never merge.
 
 `scripts/` holds two: `ready.sh`, the readiness module, and
 `restack.sh`; each prints its usage with no arguments.
-In Claude Code every Bash call starts in the session's directory: git
-runs as `git -C "$WT" …`, and `gh` or a test as `cd "$WT" && …`.
-In Codex there are no background helpers: run the watch in the
-foreground, so its lines come together when it ends; then each CI
-helper's brief and each judge are yours, one after the other, with the
-same return shapes.
+Each shell command names its folder, since one shell call's folder may
+not carry to the next: git runs as `git -C "$WT" …`, and `gh` or a test
+as `cd "$WT" && …`.
 
 ## Forms
 
@@ -74,14 +71,14 @@ same return shapes.
    It waits a minute for the checks to start, then prints one line per
    new red check and per new thread, as they come, in any order, until
    no check on `SHA`, CI or review bot, is pending; then the readiness
-   verdict. In Claude Code run it under a Monitor with `timeout_ms`
-   1800000, its most, so each line wakes you. The watch ends itself
-   within 28 minutes (`--timeout-sec`, 1680 by default, counted from its
-   start), so its verdict comes before the Monitor's 30-minute cap. A
-   Monitor that ends first, as one in a `-p` run does at 10 minutes,
-   ends with no verdict: run the same command again on the same `SHA`;
-   this round's count stays. In Codex, run it in the foreground. Act on
-   each line as it comes; the watch goes on meanwhile.
+   verdict. Watch it line by line, per `../../shared/harness.md`, row
+   Watch a command line by line. The watch ends itself within 28 minutes
+   (`--timeout-sec`, 1680 by default, counted from its start), so its
+   verdict comes before that row's 30-minute cap. A watch the harness
+   ends first ends with no verdict: run the same command again on the
+   same `SHA`; this round's count stays. Act on each line as it comes;
+   the watch goes on meanwhile. When the row says the lines come
+   together at the end, act on them then, in order.
    - `RED <name> · workflow <workflow> · step <step> · <state> · <url>`:
      a red check. Its CI group is its workflow and its failed step: red
      checks of the same workflow that failed at the same step share one
@@ -91,16 +88,18 @@ same return shapes.
      check that is not cancelled gets no helper: that failure stopped
      it. Else:
      - A new group: start one CI helper, the skill agent `ci-helper` in
-       `agents/`, in the background, with the brief below. Start it per
-       `../../shared/facts.md` § Skill agents.
-     - A group whose helper still runs: send it the line, by
-       SendMessage.
+       `agents/`, in the background, per `../../shared/harness.md`, row
+       Start a subagent in the background, with the brief below. Start
+       it per `../../shared/facts.md` § Skill agents.
+     - A group whose helper still runs: send it the line, per
+       `../../shared/harness.md`, row Send a helper more work.
      - A group whose helper is back: start a new helper for the late
        check, with the group's cause in its brief, to say whether it is
        the same.
    - `THREAD <thread line>`: a new thread. Judge it at once, per
      `../validate-pr-review/SKILL.md` § One finding early, one judge in
-     the background, and hold its return with its thread node id.
+     the background, per the row Start a subagent in the background, and
+     hold its return with its thread node id.
    - The verdict, after the last event line. By its reason line:
      - `head moved to <sha7>`: someone pushed during the watch. Drop
        what this round's helpers and judges return, `git -C "$WT" pull
@@ -163,9 +162,7 @@ same return shapes.
 5. **Judge and apply.** Read `../validate-pr-review/SKILL.md`.
    Follow its steps 1 to 6 with `NUMBER` as the argument, in `$WT`, and
    hand over the CI findings and the early judge returns per its § From
-   a caller, so its step 4 judges only what has no return yet. No
-   subagent tool here (Codex): each judge brief is yours, one after the
-   other, same return shape, as validate-pr-review says for Codex.
+   a caller, so its step 4 judges only what has no return yet.
 
    Then every question in one message, numbered: each row under
    `## Unclear`, each CI question from step 4, and each stop point
@@ -273,7 +270,7 @@ same return shapes.
 **User:** `/ready-pr 43` in the app checkout, on `feat/42-login`.
 
 The PR is open, not a fork, head `d6221e2`. Tree clean on the branch,
-so `WT` is here. `ready.sh --watch` runs under a Monitor. Minute 3:
+so `WT` is here. `ready.sh --watch` runs as a line-by-line watch. Minute 3:
 `RED test · workflow CI · step Run tests · FAILURE · …/runs/11/job/22`,
 a new group, one CI helper. Minute 5: a `THREAD` line, a Devin finding
 at `src/auth/login.ts:212`, one early judge. Minute 6: the helper

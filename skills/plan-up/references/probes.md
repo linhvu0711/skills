@@ -2,7 +2,7 @@
 
 A probe runs something to settle a fact that reading cannot: does the
 tool do what we need, what does the API really return, where is the
-limit. It is part of the facts step, like an Explore round. A change
+limit. It is part of the facts step, like an explorer round. A change
 found in the build costs more than a fact found here, so a probe that
 settles a real doubt is cheap.
 
@@ -93,8 +93,7 @@ beside any reader round still open. An install probe (§ Where) goes to
 no runner: the lead runs it, with the same question, rule, time box,
 and cleanup as a brief. Each brief pastes the runner job's
 lines from `../../shared/facts.md` § Reader and runner, and the temp
-folder they name is the probe's folder (§ Where). In Codex, run them
-yourself, one after another.
+folder they name is the probe's folder (§ Where).
 
 Each brief, inline, after the runner job's lines:
 

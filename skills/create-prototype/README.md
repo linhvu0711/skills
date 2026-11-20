@@ -4,7 +4,7 @@ Builds a clickable HTML prototype of a UI change, inside your app's real shell a
 
 ## Use it when
 
-You've agreed on a UI change and want to see and click it first. It only runs when you call it: `/create-prototype billing page` in Claude Code, `$create-prototype ...` in Codex.
+You've agreed on a UI change and want to see and click it first. It only runs when you call it: `/create-prototype billing page`.
 
 If all you have is an intent ("a better billing page"), it stops and lists what it still needs to know. Settle that with [grill](../grill/) first.
 
@@ -20,7 +20,7 @@ Everything lives under `~/.codex/artifacts/prototype/<slug>/` (or `$CODEX_HOME` 
 
 - `python3`, to serve the page on `127.0.0.1`.
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
-- Optional: playwright-cli in Claude Code, run by `npx @playwright/cli` (or the Codex in-app browser), so the agent can click through the prototype itself in a hidden browser. Ask to watch and it opens a window. Also a clipboard tool, through [copy.sh](../../shared/copy.sh), to copy the URL; the `impeccable` skill for the visual design; a tool with screens and flows from real apps, such as the Mobbin MCP, for references.
+- Optional: a hidden browser the agent can drive, playwright-cli run by `npx @playwright/cli` or your harness's own, per `../../shared/harness.md`, so the agent can click through the prototype itself. Ask to watch and it opens a window. Also a clipboard tool, through [copy.sh](../../shared/copy.sh), to copy the URL; the `impeccable` skill for the visual design; a tool with screens and flows from real apps, such as the Mobbin MCP, for references.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.
 
 ## Fits with

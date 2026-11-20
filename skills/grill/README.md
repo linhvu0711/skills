@@ -4,7 +4,7 @@ An interview that sharpens a plan or a design, one question at a time, and settl
 
 ## Use it when
 
-You have a plan with decisions still open, and you want them found and settled before anyone builds. Type `/grill` (`$grill` in Codex) or say "grill me on this". `/grill #12` starts from a GitHub issue, most often a seed that [capture](../capture/) filed. A plain design chat does not start it; you have to ask.
+You have a plan with decisions still open, and you want them found and settled before anyone builds. Type `/grill` or say "grill me on this". `/grill #12` starts from a GitHub issue, most often a seed that [capture](../capture/) filed. A plain design chat does not start it; you have to ask.
 
 ## What you get
 

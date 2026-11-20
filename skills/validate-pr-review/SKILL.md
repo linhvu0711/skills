@@ -32,9 +32,6 @@ skill sends ends with this read-only line, verbatim:
 You change nothing: no file edits, no commits, no gh writes (no comment, reply, review, label, or resolve). You read the code, run tests, and run git blame.
 ```
 
-In Codex there are no subagents: run each judge brief yourself, one
-after the other, and keep the same return shape.
-
 ## The three questions
 
 Every finding is settled on exactly these, in this order.

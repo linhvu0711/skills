@@ -52,7 +52,7 @@ walk report. Every shot
 you take only to look goes in your scratch folder: before your first
 command, run `mktemp -d` once and hold the path it prints as
 `<scratch>`. Write that path out in full in each command, since a shell
-variable does not live from one Bash call to the next. Leave the
+variable does not live from one shell call to the next. Leave the
 scratch folder when you finish; the system clears its temp folders.
 
 - See: `proofbox screenshot <id> --out <scratch>/look.png`, then Read the
@@ -221,8 +221,8 @@ One recording per video under `Videos`, in order:
    slow, as a page that loads for 20 s: first `proofbox mark <id>
    'wait: <why>' --wait`, which names the wait in the video and does
    not pause; then one `proofbox exec <id> -- sleep <s>`, at most 60,
-   then look. That is the one way to wait. A Bash call that starts with
-   `sleep` is blocked, and you have no Monitor tool, whatever a block
+   then look. That is the one way to wait. A shell call that starts with
+   `sleep` is blocked, and you have no watch tool, whatever a block
    message says. Still not there after two waits: a finding.
 4. `proofbox record stop <id> --out <folder>/video-<n>.mp4`. It writes
    `video-<n>.mp4` and one `video-<n>-<k>.png` per step mark. proofbox

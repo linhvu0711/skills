@@ -7,14 +7,15 @@ disable-model-invocation: true
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 A chain of skills, run as one. You read each skill's `SKILL.md` and
-follow it step by step, gates and forks as written; the Skill tool
-cannot fire them. Facts come from reading, per
+follow it step by step, gates and forks as written; no tool fires
+them for you. Facts come from reading, per
 `../../shared/facts.md`. Big forks go to the user.
 Everything else you decide, write down, and go on.
 
-In Claude Code every Bash call starts in the session's directory. Every
-git command in a worktree is `git -C "$WT" …`, and every `gh` command
-runs as `cd "$WT" && …` inside one call.
+Each shell command names its folder, since one shell call's folder may
+not carry to the next. Every git command in a worktree is
+`git -C "$WT" …`, and every `gh` command runs as `cd "$WT" && …` inside
+one call.
 
 ## Ship mode
 
@@ -45,9 +46,9 @@ comment, or an executor says:
 
 ## Todo list
 
-Before step 1, open a todo list with the todo tool your host gives:
-TaskCreate and TaskUpdate, or TodoWrite, in Claude Code; `update_plan`
-in Codex. No such tool: print the list in chat once, then one line as
+Before step 1, open a todo list with your harness's tool, per
+`../../shared/harness.md`, row Keep a todo list. No such tool: print
+the list in chat once, then one line as
 each item starts, as `5.3 Worktree.` It holds one item per step of
 § Steps, its number and bold title word for word, as in `1. Plan.` A
 step that reads another skill
