@@ -297,7 +297,7 @@ applies. No summary of the body, no next steps.
 
 ## Examples
 
-**User:** `$capture p2: ...` in Codex or `/capture p2: ...` in Claude Code, followed by `the settings page re-fetches the whole user object on every tab switch`.
+**User:** `/capture p2: ...`, followed by `the settings page re-fetches the whole user object on every tab switch`.
 
 Title: `[seed] Settings page re-fetches user object on every tab switch`.
 Labels: `seed`, `p2`. Body `## Seed`: their sentence. `## Context`: only if a

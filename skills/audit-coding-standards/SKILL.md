@@ -95,7 +95,7 @@ report is already in chat.
 
 Say there is no Standard yet, and to run `/set-coding-standards`. Stop.
 
-**User:** `/audit-coding-standards` in Codex with no web search.
+**User:** `/audit-coding-standards` with no web search.
 
 The research dispatches nothing. Every due stack part is `not
 researched: no web access`. Drift and gaps still run on the code.

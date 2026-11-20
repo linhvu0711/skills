@@ -19,6 +19,10 @@
 # it starts with `../` or its first folder exists there; a path that starts
 # with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
 # skipped.
+# A .md file under skills/<name>/, other than the skill's README.md, or under
+# shared/ must not say "in Claude Code" or "in Codex": a skill says each step
+# once, and shared/harness.md holds each harness's tool. A line that starts
+# with description: is skipped.
 #
 # In tree and --staged mode, two whole-repo checks read the index, so the hook
 # sees what the commit holds. Each `copy` or `heavy adaptation` row in
@@ -303,6 +307,22 @@ for f in ${files[@]+"${files[@]}"}; do
   while IFS=$'\t' read -r line p path; do
     [ -e "$path" ] || problems+=("$f:$line: missing path: $p")
   done < <(refs "$f" "$root/$f")
+done
+
+# A skill says each step once, for every harness; shared/harness.md holds each
+# harness's tool. A README, for people, and a description: line, which names
+# each harness's command form, may name a harness.
+for f in ${files[@]+"${files[@]}"}; do
+  case "$f" in skills/*/*.md|shared/*.md) ;; *) continue ;; esac
+  [[ $f =~ ^skills/[^/]+/README\.md$ ]] && continue
+  while IFS=$'\t' read -r line phrase; do
+    problems+=("$f:$line: harness branch: $phrase")
+  done < <(awk '
+    /^description:/ { next }
+    match($0, /(^|[^[:alpha:]])[Ii]n (Claude Code|Codex)([^[:alpha:]]|$)/) {
+      s = substr($0, RSTART, RLENGTH); sub(/^[^[:alpha:]]/, "", s); sub(/[^[:alpha:]]$/, "", s)
+      print FNR "\t" s
+    }' "$root/$f")
 done
 
 if [ ${#paths[@]} -eq 0 ]; then

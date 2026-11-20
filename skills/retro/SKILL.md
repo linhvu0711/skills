@@ -22,7 +22,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    A window or a source you cannot read stops the run (§ Unhappy states, Bad input). Done when you hold the session flags, the roots or `--all-projects`, the sources, and the repo.
 
-2. **Find.** The current session alone: its ID is the harness's own (in Claude Code, `$CLAUDE_CODE_SESSION_ID`); find its row with the adapter of the harness you run in, `find --root <root> --id <id>`, and go to step 3. Otherwise ask which harnesses hold sessions:
+2. **Find.** The current session alone: run the adapter of the harness you run in, `find --root <root>`, and take the row whose `current` is true; go to step 3. No row is current: say `This harness gives a command no session ID; name the session by topic or ID.` and stop. Otherwise ask which harnesses hold sessions:
 
    ```bash
    python3 ../../shared/sessions/scan.py --root <root> [--root <root>...] [--since D] [--until D]
@@ -103,8 +103,6 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    - `home unknown`: `card <n> → not filed: home unknown (<reason>)`.
 
    Done when the chat holds one line per pick: `cards 2, 5 → #123 (to-issue)`, `card 7 → comment on #88`, `card 4 → #124 seed (capture: <the gate's gap>)`, or `card 5 → not filed: <reason>`, the number taken from the URL to-issue or capture prints. A filing that fails for any other reason: `card <n> → not filed: <reason>`, the card's text stays in chat. The run ends there. Retro makes no code change, runs no `git pull`, no install, and no build, and starts no other skill's build; the issues carry the work.
-
-In Codex, readers are `explorer` sub-agents.
 
 ## Run scope
 

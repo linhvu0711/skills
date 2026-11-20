@@ -9,14 +9,14 @@ disable-model-invocation: true
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
 The user comes back to a topic after some days. This skill finds the
-sessions of this project on that topic, in Claude Code, Codex, and
+sessions of this project on that topic, from Claude Code, Codex, and
 Antigravity, and merges what they did into one brief. It reads; it writes nothing and
 starts no work.
 
 ## Steps
 
-1. **Topic.** The words after `/recall` (`$recall` in Codex). None: ask
-   for one and wait.
+1. **Topic.** The words after the skill's command. None: ask for one
+   and wait.
 
 2. **Find.**
 
@@ -38,8 +38,8 @@ starts no work.
 
 3. **Render** each session's transcript for its brief writer, in summary
    mode, through its tool's adapter. `<tool>` is the line's first word.
-   `<out>` is `<scratchpad>/recall-<id8>.md` in Claude Code and
-   `/tmp/recall/<id8>.md` in Codex (`mkdir -p` the folder first).
+   `<out>` is `<scratch>/recall-<id8>.md`, where `<scratch>` is the scratch
+   folder that `../../shared/harness.md` names for your harness.
 
    ```bash
    python3 ../../shared/sessions/<tool>/adapter.py extract <id> --summary --after-compact > <out>
@@ -50,9 +50,9 @@ starts no work.
 4. **Brief writers.** One per session, all in one message. Build each
    prompt from `../../shared/session-brief.md` § Dispatch,
    with its transcript path and its tool (`Claude Code`, `Codex CLI`, or `Antigravity`)
-   filled in. In Claude Code, send each to an Explore agent. In Codex,
-   spawn one `explorer` agent per prompt (`fork_turns = "none"`) and
-   `wait_agent` on all. Take each brief as `session-brief.md` § Return
+   filled in. Start one explorer per prompt, all in one message, per
+   `../../shared/facts.md` § Skill agents, and wait for every brief.
+   Take each brief as `session-brief.md` § Return
    says. A writer that fails is left out, and the brief says so on a
    line `Left out: <id8> (brief writer failed)`.
 
@@ -75,8 +75,8 @@ starts no work.
    one. A section with nothing: `none`. Under `**PRs and branches:**`,
    one line per PR or branch, with the newest session's `<what it is>`.
 
-6. **Live tags.** Write the brief to `<scratchpad>/recall-brief.md`
-   (`/tmp/recall/brief.md` in Codex) and tag it with
+6. **Live tags.** Write the brief to `<scratch>/recall-brief.md` and
+   tag it with
    `../../shared/sessions/live_tags.py` as
    `../../shared/session-brief.md` § Live tags says, with
    `--cwd` the project folder that step 2 ran in, never this skill's

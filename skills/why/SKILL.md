@@ -16,7 +16,7 @@ written to the repo or to GitHub.
 
 ## Steps
 
-1. **Code.** The words after `/why` (`$why` in Codex) name the code:
+1. **Code.** The words after the skill's command name the code:
    - `<file>:<line>` or `<file>:<start>-<end>`: that range.
    - A file named alone, or a question about a whole file: the whole file,
      and step 2 runs `python3 scripts/trail.py <file>`.
@@ -81,8 +81,8 @@ written to the repo or to GitHub.
    whose `first_prompt` starts with `/why` or `$why`, then keep the first
    3 of each tool, in the adapter's order. Render each one kept with
    `python3 ../../shared/sessions/<tool>/adapter.py extract <path> --summary > <out>`.
-   `<out>` is `<scratchpad>/why-<id8>.md` in Claude Code and
-   `/tmp/why/<id8>.md` in Codex (`mkdir -p` the folder first). Run
+   `<out>` is `<scratch>/why-<id8>.md`, where `<scratch>` is the scratch
+   folder that `../../shared/harness.md` names for your harness. Run
    `grep -n -i` on each `<out>` for the words and read the lines around
    each hit.
 

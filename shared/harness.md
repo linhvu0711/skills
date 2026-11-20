@@ -13,6 +13,7 @@ How each harness does a step a skill names. The rule for when to take a step is 
 | Watch a command line by line | Monitor with the command and `timeout_ms` at most 1800000, 30 minutes; `persistent: true` for a watch with no end of its own. Each line it prints wakes you. In a `-p` run a Monitor ends at 10 minutes. | `exec_command` with `yield_time_ms`, then `write_stdin` with empty `chars` and a `yield_time_ms`; each result holds the lines printed since the last. Poll until a result carries an exit code. Only while your turn stays open: nothing wakes you after it ends. | None: `run_command` runs it as a background task, and its lines come together when it ends. |
 | Send a helper more work | SendMessage to the agent its start named. | `followup_task` to the agent, then `wait_agent`. | `send_message` to the conversation id `invoke_subagent` returned. The answer comes as a message, so end the turn with no tool call. |
 | Keep a todo list | TaskCreate and TaskUpdate, or TodoWrite. | `update_plan`. | None. |
+| Pick a scratch folder | The scratchpad folder the system prompt names. | A folder from `mktemp -d`, once per run. | A folder from `mktemp -d`, once per run. |
 | Check a page in a hidden browser | playwright-cli, § Hidden browser. | The in-app browser. | playwright-cli, § Hidden browser, by `run_command`. |
 
 ## T3
