@@ -108,6 +108,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
   function entry_problems(sec, h,  items, k, i) {
     if (sec != "home") { item_problems(sec, h, entry[sec, h], sec " for " h ": "); return }
     k = split(entry[sec, h], items, ",")
+    if (k == 0) { items[1] = ""; k = 1 }
     for (i = 1; i <= k; i++) item_problems(sec, h, items[i], (i == 1 ? "home" : "home " i) " for " h ": ")
   }
   # item_problems(sec, h, v, at): the problems of one home or backup v, each
