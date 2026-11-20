@@ -1,6 +1,6 @@
 # HTML report
 
-The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/architecture/architecture-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, and the empty top recommendation.
+The candidate report is one full HTML page, a copy of `assets/report.html`. Write it to `$HOME/.agents/artifacts/codebase/codebase-review-<owner>-<repo>.html`, keyed by owner and repo as the plan pages are, so two repos of the same name keep their own report. `<owner>` and `<repo>` come from the `origin` remote URL; a repo with no `origin` uses `local` and its folder name. Create the folder when needed. It never goes into the repo it reviews. In the copy, replace the `{{…}}` placeholders, the example card, the empty small-candidates section, and the empty top recommendation.
 
 Page rules that shape the file:
 
@@ -14,7 +14,7 @@ Page rules that shape the file:
 Serve the page with the shared serve script, which prints its URL:
 
 ```sh
-URL=$(../../shared/serve.sh "$HOME/.agents/artifacts/architecture" "architecture-review-<owner>-<repo>.html")
+URL=$(../../shared/serve.sh "$HOME/.agents/artifacts/codebase" "codebase-review-<owner>-<repo>.html")
 ```
 
 The script exits with an error (no free port, or the server does not give back the file): chat gets its error line and the `.html` path, and the run stops.
@@ -25,7 +25,7 @@ Then open it in the user's browser: `open "$URL?v=$(date +%s)"` on macOS, `xdg-o
 
 ## Scaffold
 
-`assets/report.html` holds the head, the tokens, the Mermaid loader, and the `<main>` with its `header`, `#candidates`, and `#top-recommendation` sections.
+`assets/report.html` holds the head, the tokens, the Mermaid loader, and the `<main>` with its `header`, `#candidates`, `#small`, and `#top-recommendation` sections.
 
 ## Header
 
@@ -35,10 +35,10 @@ Repo name, branch, commit, date, and a compact legend: solid box = module, dashe
 
 The diagrams carry the weight. Prose is sparse and uses the glossary terms from `codebase-design.md` without ceremony.
 
-Each candidate is one `<article class="card rounded-xl border p-6">`:
+Each big candidate is one `<article class="card rounded-xl border p-6">`:
 
-- **Title**: short, names the deepening ("Collapse the Order intake pipeline").
-- **Badge row**: strength (`Strong` = emerald, `Worth exploring` = amber, `Speculative` = slate) plus the dependency category from `deepening.md` (`in-process`, `local-substitutable`, `ports & adapters`, `mock`).
+- **Title**: short, names the change ("Collapse the Order intake pipeline", "Drop the retry queue").
+- **Badge row**: strength (`Strong` = emerald, `Worth exploring` = amber, `Speculative` = slate), then for a deepening the dependency category from `deepening.md` (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), for a simplification its kind (`dead code`, `copied code`, `hand-made`, `unused option`, `twisted logic`, `package for one thing`).
 - **Files**: monospaced list, `font-mono text-sm`.
 - **Before / After diagram**: the centrepiece. Two columns, side by side. Patterns below.
 - **Problem**: one sentence. What hurts.
@@ -47,6 +47,17 @@ Each candidate is one `<article class="card rounded-xl border p-6">`:
 - **ADR callout** (when it applies): one line in an amber-tinted box.
 
 A diagram that needs a paragraph to be understood gets redrawn.
+
+## Small candidates
+
+After the cards, in `<section id="small">`: one `<h2 id="small-<topic>">` per topic group, named for what its rows share ("Dates", "Export"), and under it one table, `w-full text-sm`, with these columns:
+
+- **What**: the cut in a few words. "`formatLegacy()` has no caller".
+- **Where**: `path:line`, `font-mono`.
+- **Kind**: one of the six simplification kinds, as on a card's badge.
+- **Evidence**: the label from `facts.md` and its proof, as `Seen: 0 hits, also by name and in config`. A `Guess` row names what was tried.
+
+No badge, no diagram. The grill asks about each table as one group, so a row belongs to the table of the cuts a reader would make in the same sitting. No small candidate: leave the section out.
 
 ## Diagram patterns
 
@@ -95,7 +106,7 @@ Before: a tree of calls as nested boxes. After: the same tree inside one box, th
 
 ## Top recommendation
 
-One larger card. Candidate name, one sentence on why, an anchor link to its card.
+One larger card. The big candidate to do first, one sentence on why, an anchor link to its card. A report with no big candidate names the small topic group to do first, linked to its `<h2>`, which carries an `id`.
 
 ## Tone
 
@@ -112,6 +123,6 @@ Plain English, concise, with the architectural nouns and verbs straight from `co
 - "Deepen: one interface, one place to test."
 - "Two adapters justify the seam: HTTP in prod, in-memory in tests."
 
-**Wins** name the gain in glossary terms: *"locality: bugs concentrate in one module"*, *"leverage: one interface, N call sites"*, *"interface shrinks; implementation absorbs the wrappers"*. "Easier to maintain" and "cleaner code" are not glossary terms and earn no place.
+**Wins** name the gain in glossary terms: *"locality: bugs concentrate in one module"*, *"leverage: one interface, N call sites"*, *"interface shrinks; implementation absorbs the wrappers"*. "Easier to maintain" and "cleaner code" are not glossary terms and earn no place. A simplification's wins name what goes away, with a count: *"delete 2 copies of parseDate"*, *"drop the left-pad package"*.
 
 If a sentence could be a bullet, make it a bullet. If a bullet could be cut, cut it. If a term is not in the glossary, reach for one that is before inventing a new one.

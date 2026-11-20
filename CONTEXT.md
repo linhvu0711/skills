@@ -47,6 +47,18 @@ _Avoid_: parent seed, source issue
 How sure a stated fact is: Seen (read in a source, or run and observed), Inferred (follows from what was seen), Guess (no direct sign), Unknown (looked and found nothing). Guess and Unknown come only after tries to see it, and they name the tries.
 _Avoid_: confidence level, certainty
 
+**Candidate**:
+One find in the improve-codebase report: a deepening or a simplification, small or big. A big candidate gets a card with a before and after diagram and its own grill questions. Small candidates sit in topic tables, and the grill asks about each table as one group.
+_Avoid_: finding, suggestion, card (the card is how a big one is shown)
+
+**Deepening**:
+A candidate that merges shallow modules into one deep module, per `shared/codebase-design.md`.
+_Avoid_: refactor (too broad), restructure
+
+**Simplification**:
+A candidate that makes code smaller or plainer while behavior stays the same: dead code, copied code, a hand-made version of something the language or a package already has, an unused option or mode, twisted logic, or a package used for one small thing.
+_Avoid_: cleanup, tidy-up, quick win
+
 ## Plans
 
 **Review view**:

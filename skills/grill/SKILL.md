@@ -41,7 +41,12 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
 
 **No line**, the default:
 
-- Work follows, code to build: invoke the to-issue skill with the Skill tool, or to-epic when the work is over one ticket. The seed issue, when there is one, is the origin: it becomes the ticket or the parent, per `../../shared/issue-rules.md` § Origin seed, and is never closed. Every doc entry goes under `## Docs to write`, word for word, per the same file § Docs to write; one that is true already rides on the first code ticket. No docs PR.
+- Work follows, code to build: file it in the shape the work takes, with as few tickets as the work allows:
+  - One ticket: invoke the to-issue skill with the Skill tool.
+  - A few tickets that do not depend on each other: invoke to-issue once per ticket.
+  - Tickets that depend on each other, or more than one ticket from a seed issue: invoke to-epic.
+
+  With more than one ticket, the message that asks the user to confirm shared understanding (`../../shared/grilling.md` § Done) names the shape, as `3 issues` or `an epic with 4 children`. The seed issue, when there is one, is the origin: it becomes the ticket or the parent, per `../../shared/issue-rules.md` § Origin seed, and is never closed. Every doc entry goes under `## Docs to write`, word for word, per the same file § Docs to write; one that is true already rides on the first code ticket. No docs PR.
 - No work follows (the answer was "we will not build X", or a term for code that exists): the docs are true now, so they ship now. Write them, then:
   1. Check the tree. `git status --short` on the files you wrote. Nothing changed: say so and stop. No PR.
   2. Invoke the make-pr skill with the Skill tool, with its four caller settings:
