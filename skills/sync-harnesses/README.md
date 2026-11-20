@@ -26,6 +26,8 @@ Each count is what the harness has out of what it should have:
 - `gates` counts the gates a hook command runs: your five personal gates (write-for-agents, the two unslop gates, the question gate, and the plain-style reminder) and the repo's subagent gate. Antigravity has a seventh, the start-of-chat gate that loads your rules, since T3 starts its chats without them.
 - `rules` counts the files that load `~/.agents/rules/shared.md`. Claude Code's `CLAUDE.md` imports it. Codex's `AGENTS.md` holds a copy of it. Antigravity's `GEMINI.md` includes it, and each private Antigravity folder T3 keeps adds one more: its `GEMINI.md` link.
 
+A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, and the run does not fail for it.
+
 Anything missing gets its own `problem:` line, and the run exits 1:
 
 ```

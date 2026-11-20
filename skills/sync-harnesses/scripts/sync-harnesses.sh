@@ -126,36 +126,52 @@ imports_rules() { [ -f "$1" ] && grep -q '^@.*\.agents/rules/shared\.md' "$1"; }
 
 line() { printf '%-12s %s\n' "$1" "$2"; }
 
-# Claude Code
-count_skills claude "$HOME/.claude/skills"; s="$got"
-count_agents claude "$HOME/.claude/agents" md; a="$got"
-count_gates claude "$HOME/.claude/settings.json" "$(commands "$HOME/.claude/settings.json")" $personal_gates subagent-gate; g="$got"
-r=0
-if imports_rules "$claude_md"; then r=1; else problem "claude rules: $claude_md does not import $shared_rules"; fi
-out_claude="skills $s · subagents $a · gates $g · rules $r/1"
+# check_<harness>: set `got` to the harness's counts.
+check_claude() {
+  count_skills claude "$HOME/.claude/skills"; s="$got"
+  count_agents claude "$HOME/.claude/agents" md; a="$got"
+  count_gates claude "$HOME/.claude/settings.json" "$(commands "$HOME/.claude/settings.json")" $personal_gates subagent-gate; g="$got"
+  r=0
+  if imports_rules "$claude_md"; then r=1; else problem "claude rules: $claude_md does not import $shared_rules"; fi
+  got="skills $s · subagents $a · gates $g · rules $r/1"
+}
 
-# Codex
-count_skills codex "$HOME/.agents/skills"; s="$got"
-count_agents codex "$HOME/.codex/agents" toml; a="$got"
-count_gates codex "$HOME/.codex/hooks.json" "$(commands "$HOME/.codex/hooks.json")" $personal_gates subagent-gate; g="$got"
-r=0
-if [ -f "$codex_md" ] && [ -f "$shared_rules" ] && case "$(cat "$codex_md")" in *"$(cat "$shared_rules")"*) true ;; *) false ;; esac; then r=1
-else problem "codex rules: $codex_md does not hold $shared_rules: start Codex once to rebuild it"; fi
-out_codex="skills $s · subagents $a · gates $g · rules $r/1"
+check_codex() {
+  count_skills codex "$HOME/.agents/skills"; s="$got"
+  count_agents codex "$HOME/.codex/agents" toml; a="$got"
+  count_gates codex "$HOME/.codex/hooks.json" "$(commands "$HOME/.codex/hooks.json")" $personal_gates subagent-gate; g="$got"
+  r=0
+  if [ -f "$codex_md" ] && [ -f "$shared_rules" ] && case "$(cat "$codex_md")" in *"$(cat "$shared_rules")"*) true ;; *) false ;; esac; then r=1
+  else problem "codex rules: $codex_md does not hold $shared_rules: start Codex once to rebuild it"; fi
+  got="skills $s · subagents $a · gates $g · rules $r/1"
+}
 
-# Antigravity, and each private folder T3 runs it from
-count_skills antigravity "$HOME/.gemini/config/skills"; s="$got"
-count_agents antigravity "$plugins/skills/agents" md; a="$got"
-count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" $personal_gates subagent-gate session-rules; g="$got"
-r=0; rt=1
-if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
-for d in "$t3_antigravity"/*/; do
-  [ -d "$d" ] || continue
-  d="${d%/}"; rt=$((rt + 1))
-  if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then r=$((r + 1))
-  else problem "antigravity rules: $d has no GEMINI.md link: T3 makes it at the next Antigravity chat"; fi
-done
-out_antigravity="skills $s · subagents $a · gates $g · rules $r/$rt"
+# Antigravity, and each private folder T3 runs it from.
+check_antigravity() {
+  count_skills antigravity "$HOME/.gemini/config/skills"; s="$got"
+  count_agents antigravity "$plugins/skills/agents" md; a="$got"
+  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" $personal_gates subagent-gate session-rules; g="$got"
+  r=0; rt=1
+  if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
+  for d in "$t3_antigravity"/*/; do
+    [ -d "$d" ] || continue
+    d="${d%/}"; rt=$((rt + 1))
+    if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then r=$((r + 1))
+    else problem "antigravity rules: $d has no GEMINI.md link: T3 makes it at the next Antigravity chat"; fi
+  done
+  got="skills $s · subagents $a · gates $g · rules $r/$rt"
+}
+
+# harness <name> <cli>: the harness's report line, or skipped when its CLI is
+# not on PATH, since a harness the Mac lacks is no failure.
+report=()
+harness() {
+  if command -v "$2" >/dev/null 2>&1; then "check_$1"; else got="skipped: not installed"; fi
+  report+=("$(line "$1" "$got")")
+}
+harness claude claude
+harness codex codex
+harness antigravity agy
 
 # Every agent's models, one row each: <agent file> <map> <harness> <place>
 # <model>, as agents.sh's models mode lists them.
@@ -250,9 +266,7 @@ else
   done
 fi
 
-line claude "$out_claude"
-line codex "$out_codex"
-line antigravity "$out_antigravity"
+printf '%s\n' "${report[@]}"
 line "devin in T3" "$devin"
 for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"} ${notes[@]+"${notes[@]}"} ${warns[@]+"${warns[@]}"}; do
   printf '%s\n' "$p"
