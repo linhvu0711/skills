@@ -4,7 +4,7 @@ Draws a diagram of your code as an interactive HTML page, built only from facts 
 
 ## Use it when
 
-You want to see how something fits together: "diagram the checkout flow", "map how auth works", "draw the data model for orders", "what will this look like after the refactor?". `/create-diagram` in Claude Code, `$create-diagram` in Codex, or just ask. It picks the type from your question: flowchart, sequence, state machine, class, ERD, data flow, component, deployment, C4, use case, activity, UI component tree, or dependency graph.
+You want to see how something fits together: "diagram the checkout flow", "map how auth works", "draw the data model for orders", "what will this look like after the refactor?". `/create-diagram`, or just ask. It picks the type from your question: flowchart, sequence, state machine, class, ERD, data flow, component, deployment, C4, use case, activity, UI component tree, or dependency graph.
 
 ## What you get
 
@@ -21,7 +21,7 @@ Ask about a planned change and the page gets a switch between the current code, 
 
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
 - A way to serve a folder on `127.0.0.1`, such as `python3 -m http.server`.
-- Optional: playwright-cli in Claude Code, run by `npx @playwright/cli` (or the Codex in-app browser), so the agent can check the page itself in a hidden browser. Ask to watch and it opens a window. Also the `impeccable` skill to match your design system.
+- Optional: a hidden browser the agent can drive, playwright-cli run by `npx @playwright/cli` or your harness's own, per `../../shared/harness.md`, so the agent can check the page itself. Ask to watch and it opens a window. Also the `impeccable` skill to match your design system.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.
 
 ## Fits with
