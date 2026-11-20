@@ -78,7 +78,7 @@ two match: ask. Then go on with their URLs.
    it, stop. A `warn:` line on stderr: show it and go on; that copy has
    no packages. Hold `BASE_WT` and
    `BASE_SHA` from its line. Every repo fact comes from `BASE_WT`: each
-   Explore brief names it as the folder to read, every command that
+   explorer brief names it as the folder to read, every command that
    reads the code runs there, and a `file:line` is a line there, written
    from the repo root. Nothing is written in it but what the script
    installs. The checkout you start
@@ -186,7 +186,7 @@ two match: ask. Then go on with their URLs.
 
 4. **Facts.** First read `plan.md` § Slices with its `####` rules: the
    asks below feed them, and step 5 sorts forks by them. Round 1 is one
-   message, one Explore agent per concern, and in a run per ticket and
+   message, one explorer per concern, and in a run per ticket and
    concern:
    - the code each Done-when line touches, with tests, and every caller
      with what it assumes: the shape it reads, the error it expects, the
@@ -259,7 +259,7 @@ two match: ask. Then go on with their URLs.
    since a probe uses every part of it, from When to What it leaves:
    does the tool do it, what does the
    API return, where is the limit. Probe only what changes the plan;
-   never to be thorough. Probes fan out like Explore agents, one
+   never to be thorough. Probes fan out like explorers, one
    sub-agent each, in one message, beside any round still open. A free
    probe runs without asking; one that costs money, needs a credential,
    or touches anything shared waits for a yes. Each answer is a
@@ -377,8 +377,7 @@ two match: ask. Then go on with their URLs.
      while you run on Fable: no design checker, since one model mostly
      agrees with itself, and its part of the line is
      `design skipped · made by Fable`; judge the correctness checker
-     below. In Codex: neither, and the
-     line is `Plan check: skipped · not in Claude Code`. Else judge
+     below. Else judge
      each checker by its own signs, never by a fixed list:
      - **Correctness**: run it when you can name what a wrong plan
        would break and that fix costs real work. Weigh the Risks
@@ -416,7 +415,8 @@ two match: ask. Then go on with their URLs.
      a rebuild, or a rebuild into a patch, is a big fork (step 5).
    - **Look again.** A fix that changed the `Approach` line or a
      `Decided` line: send each checker that ran the changed blocks,
-     by SendMessage, once, and sort its answer the same way.
+     once, per `../../shared/harness.md`, row Send a helper more work,
+     and sort its answer the same way.
    - **Record.** A `## Plan check` block, last in the `.md`, per
      `references/plan.md` § Plan check. The line has one part per
      checker, correctness first, joined by `; `. Each part is

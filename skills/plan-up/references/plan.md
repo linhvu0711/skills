@@ -276,7 +276,7 @@ block above, and the Done rule holds whole.
 - **Tests.** The last step names the test file, the case, and the
   command. `Given`, `When`, `Then` come from the Done-when line the case
   proves; `Then` is the literal the issue gives (`116 pass`, the ISO
-  date). No literal in the issue: the Explore round reads the test file
+  date). No literal in the issue: the explorer round reads the test file
   and the code, and the plan writes one.
 - **Proof.** One row per Done-when line, as always, and one `Race:`
   row per interleaving § One writer asks. A line the named
@@ -287,7 +287,7 @@ block above, and the Done rule holds whole.
 - **UI.** A Done-when line on a screen gets a walk and a video, written
   here as for any plan. The label does not say the ticket has no screen;
   XS rarely does.
-- **Facts.** One Explore round, and only this: the commands from CI,
+- **Facts.** One explorer round, and only this: the commands from CI,
   scripts, or README; the seam each changed line sits behind; the tests
   that already cover those seams; the standards files; the docs the
   Steps make stale; the UI kind and how it opens when a line is on a
@@ -321,7 +321,7 @@ block above, and the Done rule holds whole.
 - **Review.** As for any plan, from the blocks above. `Choices` holds
   only the `Decided` lines the issue's `Open` lines left, and the
   rebuild line above when there is one.
-- **Change map.** As for any plan. The Explore round adds one ask: the
+- **Change map.** As for any plan. The explorer round adds one ask: the
   parts and flows around each seam the Steps touch.
 
 Two things end the short path:

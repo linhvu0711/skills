@@ -48,7 +48,7 @@ remove the base copy. Stop.
 **User:** `/plan-up https://github.com/acme/shop/issues/57` (size/XS fix,
 `ready-to-build`, three Steps, two Done-when lines)
 
-Step 2 sees the label: short path. One Explore round: `pnpm test` and
+Step 2 sees the label: short path. One explorer round: `pnpm test` and
 `pnpm typecheck` from `package.json`, the seam of `export.ts:57` is
 `exportOrders()` and `export.test.ts` already tests it, `CODING_STANDARDS.md`
 exists, no screen, `docs/export.md:12` shows the old date format. Steps 1 and 2 become slice 1 (`Change` at
