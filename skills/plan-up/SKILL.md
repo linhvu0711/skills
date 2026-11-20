@@ -384,16 +384,19 @@ two match: ask. Then go on with their URLs.
        marked `not proved`, and a table, an API, or a data migration
        in the Blast radius: a plan that adds a column to the orders
        table gets it.
-     - **Design**: run it when the plan adds or moves a part (a new
-       module, a new seam, logic that moves from one file to
-       another), or touches a part where the facts round found a sign
-       of a wrong design, per `references/plan.md` § Slices, Right
-       design first, whether the plan patches that part or rebuilds
-       it. A plan that adds a helper module gets it; a plan that fixes
-       a date inside one function does not.
+     - **Design**: run it when the plan introduces a new shape or a
+       design trade-off (a new abstraction, a new seam, or logic moved
+       across boundaries), or touches a part where the facts round found
+       a sign of a wrong design, per `references/plan.md` § Slices, Right
+       design first, whether the plan patches that part or rebuilds it.
+       Skip it when a new or moved file only copies an existing pattern
+       in the repo with no design choice to make. A plan that invents a
+       new helper module gets it; a plan that adds one command file in
+       the shape of five others, or fixes a date inside one function,
+       does not.
 
      Unsure: skip that checker. A skipped checker's part of the line
-     gives the reason, as `design skipped · no new or moved part, no
+     gives the reason, as `design skipped · copies existing pattern, no
      sign of a wrong design`.
    - **Start them.** Each checker due, per `../../shared/facts.md`
      § Skill agents, both in one message when both are due. Each
