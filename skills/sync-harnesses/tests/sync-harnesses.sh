@@ -181,6 +181,31 @@ t_sync_skips_models_of_place_off() {
   lacks problem 'problem:' "$out"
 }
 
+t_sync_warns_devin_off() {
+  # Given: Devin off in T3
+  mac
+  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  has devin 'devin in T3  off' "$out"
+  has warn 'warn: Devin is off in T3, so these run on their backup: helper' "$out"
+  [ ! -e "$T/mac/devin.calls" ] || eq devin.calls absent there
+}
+
+t_sync_warns_swe2_refused() {
+  # Given: Devin refuses every model
+  mac
+  touch "$H/.devin-refuse"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  has devin 'devin in T3  on · swe-2-high refused' "$out"
+  has warn "warn: swe-2-high refused (Error: Unknown model: 'swe-2-high'), so these run on their backup: helper" "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -195,4 +220,6 @@ cases=(
   "sync names a home model T3 no longer offers|t_sync_names_stale_home_model"
   "sync names a backup model Codex no longer offers|t_sync_names_stale_backup_model"
   "sync skips the home models of a place that is off|t_sync_skips_models_of_place_off"
+  "sync warns when Devin is off in T3|t_sync_warns_devin_off"
+  "sync warns when SWE-2 is refused|t_sync_warns_swe2_refused"
 )

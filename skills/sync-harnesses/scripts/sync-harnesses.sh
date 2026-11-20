@@ -213,26 +213,48 @@ for row in ${rows[@]+"${rows[@]}"}; do
   offers "$list" "$model" || problem "$a: $map for $h: $source does not offer $model"
 done
 
-# Devin: one live call per model a home starts on in Devin.
-devin_models=()
-for row in ${rows[@]+"${rows[@]}"}; do
-  read -r a map h place model <<< "$row"
-  [ "$map" = home ] && [ "$place" = devin ] && devin_models+=("$model")
-done
-devin="on"
-for m in $(printf '%s\n' ${devin_models[@]+"${devin_models[@]}"} | sort -u); do
-  if (cd "$root" && perl -e 'alarm 60; exec @ARGV' devin --model "$m" --print "Reply with exactly the word: ok") >/dev/null 2>&1; then
-    devin="$devin · $m answers"
-  else
-    devin="$devin · $m refused"
-  fi
-done
+# on_devin [model]: the agents whose home starts them in Devin, on the model
+# when one is named, by file name, sorted, joined by ", ".
+on_devin() {
+  local row a map h place model
+  for row in ${rows[@]+"${rows[@]}"}; do
+    read -r a map h place model <<< "$row"
+    if [ "$map" = home ] && [ "$place" = devin ] && { [ -z "${1:-}" ] || [ "$model" = "$1" ]; }; then basename "$a" .md; fi
+  done | sort -u | paste -sd, - | sed 's/,/, /g'
+}
+
+# Devin: one live call per model a home starts on in Devin. A helper whose
+# home Devin cannot run runs on its backup, so each such case is a warning.
+warns=()
+if ! t3_on acpRegistry_devin; then
+  devin="off"
+  warns+=("warn: Devin is off in T3, so these run on their backup: $(on_devin)")
+else
+  devin="on"
+  for m in $(for row in ${rows[@]+"${rows[@]}"}; do
+      read -r a map h place model <<< "$row"
+      if [ "$map" = home ] && [ "$place" = devin ]; then printf '%s\n' "$model"; fi
+    done | sort -u); do
+    if ! command -v devin >/dev/null 2>&1; then
+      reply="devin not installed"; ok=1
+    else
+      ok=0
+      reply="$(cd "$root" && perl -e 'alarm 60; exec @ARGV' devin --model "$m" --print "Reply with exactly the word: ok" 2>&1)" || ok=1
+    fi
+    if [ "$ok" -eq 0 ]; then
+      devin="$devin · $m answers"
+    else
+      devin="$devin · $m refused"
+      warns+=("warn: $m refused ($(printf '%s\n' "$reply" | head -n 1)), so these run on their backup: $(on_devin "$m")")
+    fi
+  done
+fi
 
 line claude "$out_claude"
 line codex "$out_codex"
 line antigravity "$out_antigravity"
 line "devin in T3" "$devin"
-for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"} ${notes[@]+"${notes[@]}"}; do
+for p in ${fixed[@]+"${fixed[@]}"} ${problems[@]+"${problems[@]}"} ${link_problems[@]+"${link_problems[@]}"} ${notes[@]+"${notes[@]}"} ${warns[@]+"${warns[@]}"}; do
   printf '%s\n' "$p"
 done
 [ ${#problems[@]} -eq 0 ] && [ ${#link_problems[@]} -eq 0 ]

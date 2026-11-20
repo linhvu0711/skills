@@ -65,7 +65,7 @@ cat > "$h/bin/devin" <<DEVIN
 printf '%s\n' "\$*" >> '$dir/devin.calls'
 m=""; prev=""
 for a in "\$@"; do [ "\$prev" != --model ] || m="\$a"; prev="\$a"; done
-if [ "\$m" = swe-2-high ]; then echo ok; exit 0; fi
+if [ "\$m" = swe-2-high ] && [ ! -e '$h/.devin-refuse' ]; then echo ok; exit 0; fi
 echo "Error: Unknown model: '\$m'"; exit 1
 DEVIN
 chmod 755 "$h/bin/devin"
