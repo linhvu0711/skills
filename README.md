@@ -148,7 +148,7 @@ git config core.hooksPath scripts/hooks
 bash scripts/link.sh
 ```
 
-`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and writes each skill agent, `skills/<name>/agents/<agent>.md`, and the explorer and the runner, `shared/agents/<agent>.md`, as a Claude Code agent in `~/.claude/agents/`, a Codex agent in `~/.codex/agents/`, and an agent of the "skills" Antigravity plugin in `~/.gemini/config/plugins/skills/agents/`, each on that harness's backup model. It also links Antigravity's plugins folder, `~/.gemini/config/plugins`, into each private Antigravity folder that T3 Code keeps under `~/.t3/userdata/providers/antigravity/`, so a chat T3 starts sees the same plugins. With no such folder it prints one `skip:` line and makes the other links. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
+`scripts/link.sh` links each skill into `~/.agents/skills`, `~/.claude/skills` (Claude Code), and `~/.gemini/config/skills` (Antigravity), and writes each skill agent, `skills/<name>/agents/<agent>.md`, and the explorer and the runner, `shared/agents/<agent>.md`, as a Claude Code agent in `~/.claude/agents/`, a Codex agent in `~/.codex/agents/`, and an agent of the "skills" Antigravity plugin in `~/.gemini/config/plugins/skills/agents/`, each on that harness's backup model. It also adds the [subagent gate](shared/gate/) to the hooks of Claude Code (`~/.claude/settings.json`) and Codex (`~/.codex/hooks.json`), and to the "skills" Antigravity plugin's `hooks.json`. Codex asks you once to trust it at its next start. It links Antigravity's plugins folder, `~/.gemini/config/plugins`, into each private Antigravity folder that T3 Code keeps under `~/.t3/userdata/providers/antigravity/`, so a chat T3 starts sees the same plugins. With no such folder it prints one `skip:` line and makes the other links. After that, the hooks run it on each commit, checkout, pull, and rebase in the main checkout, so a new or renamed skill or skill agent is found with no step by hand.
 
 ## Helper models
 
@@ -157,7 +157,7 @@ Each helper a skill starts, a skill agent or the explorer or the runner, has a h
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:

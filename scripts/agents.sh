@@ -39,11 +39,14 @@
 # check: one problem per line on stdout, nothing for a good file. Exit 0.
 # render: the file of <harness> on stdout, <marker> in a comment at its top,
 # exit 0; or the first problem on stderr, exit 1. <harness> is claude, codex,
-# or antigravity. The Antigravity form maps the Claude Code tools to
+# or antigravity. tools: the agent's Claude Code tools on one line, every one
+# of them for a file with no tools line, exit 0. The subagent gate reads it.
+# The Antigravity form maps the Claude Code tools to
 # Antigravity's, as agy's own migration skill does: Read, Grep, Glob to
 # read_file; Bash to run_command and manage_task; Edit to edit_file; Write
-# to write_file; WebSearch and WebFetch to search_web. No tools line, which
-# means every tool in Claude Code, gives all six. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
+# to write_file; WebSearch and WebFetch to search_web; Agent to
+# invoke_subagent. No tools line, which means every tool in Claude Code,
+# gives all seven. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
 # the description becomes `\"`, and a `"""` in the body becomes `""\"`.
 set -euo pipefail
 
@@ -51,11 +54,11 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 mode="${1:-}"
 case "$mode" in
-  check) harness=""; marker="" ;;
+  check|tools) harness=""; marker="" ;;
   render) [ $# -eq 3 ] || { echo "usage: agents.sh render <harness> <marker>" >&2; exit 2; }
           harness="$2"; marker="$3"
           case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
-  *) echo "usage: agents.sh check | agents.sh render <harness> <marker>" >&2; exit 2 ;;
+  *) echo "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools" >&2; exit 2 ;;
 esac
 
 LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
@@ -75,18 +78,25 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       else if (c == "\"" && substr(s, i, 3) == "\"\"\"") { o = o "\"\"\\\""; i += 2 }
       else o = o c }
     return o }
+  # claude_tools(t): the Claude Code tools of the tools value t, one space
+  # between them; an empty t is every tool.
+  function claude_tools(t,  n, w, i, out) {
+    if (t == "") t = "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent"
+    gsub(/,/, " ", t); gsub(/\[/, " ", t); gsub(/\]/, " ", t); n = split(t, w, " ")
+    for (i = 1; i <= n; i++) out = out (out == "" ? "" : " ") w[i]
+    return out }
   # agy_tools(t): the Antigravity tool list for the Claude Code tools t.
   function agy_tools(t,  n, w, i, has, all, out) {
-    if (t == "") t = "Read Bash Edit Write WebSearch"
-    gsub(/,/, " ", t); gsub(/\[/, " ", t); gsub(/\]/, " ", t); n = split(t, w, " ")
+    n = split(claude_tools(t), w, " ")
     for (i = 1; i <= n; i++) {
       if (w[i] == "Read" || w[i] == "Grep" || w[i] == "Glob") has["read_file"] = 1
       else if (w[i] == "Bash") { has["run_command"] = 1; has["manage_task"] = 1 }
       else if (w[i] == "Edit") has["edit_file"] = 1
       else if (w[i] == "Write") has["write_file"] = 1
-      else if (w[i] == "WebSearch" || w[i] == "WebFetch") has["search_web"] = 1 }
-    split("read_file run_command manage_task edit_file write_file search_web", all, " ")
-    for (i = 1; i <= 6; i++) if (all[i] in has) out = out (out == "" ? "" : ", ") all[i]
+      else if (w[i] == "WebSearch" || w[i] == "WebFetch") has["search_web"] = 1
+      else if (w[i] == "Agent") has["invoke_subagent"] = 1 }
+    split("read_file run_command manage_task edit_file write_file search_web invoke_subagent", all, " ")
+    for (i = 1; i <= 7; i++) if (all[i] in has) out = out (out == "" ? "" : ", ") all[i]
     return "[" out "]" }
   function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
   # entry_problems(sec, h): the problems of the entry for harness h in map sec.
@@ -128,9 +138,10 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
   /^tools:/ { rawtools = $0; tools = val($0) }
   END {
     if (bare || !closed) {
-      if (mode == "render") { print "missing frontmatter" > "/dev/stderr"; exit 1 }
+      if (mode == "render" || mode == "tools") { print "missing frontmatter" > "/dev/stderr"; exit 1 }
       exit 0
     }
+    if (mode == "tools") { print claude_tools(tools); exit 0 }
     split("claude codex antigravity", hs, " ")
     for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
     for (i = 1; i <= 3; i++) if (!seen["backup", hs[i]]) problem("missing backup for " hs[i])
