@@ -188,7 +188,7 @@ linked() {
 }
 link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
   ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" \
-  CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash scripts/link.sh; }
+  CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash "${1:-scripts/link.sh}"; }
 
 # with_gate: this checkout's shared/gate/ in the repo, so link.sh wires it.
 with_gate() { mkdir -p shared && cp -R "$scripts_dir/../shared/gate" shared/; }
@@ -260,9 +260,7 @@ t_link_skips_worktree() {
 
 t_link_runs_from_outside_repo() {
   linked demo; cd /
-  run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
-    ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" \
-    CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash "$R/scripts/link.sh"
+  link_sh "$R/scripts/link.sh"
   eq exit 0 "$code"
   eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
 }
