@@ -13,7 +13,8 @@ Rollout entries have a top-level `type` (session_meta | turn_context | event_msg
 (Codex < 0.150) or event_msg/item_completed with item.type == "UserMessage"
 (Codex >= 0.150, Aug 2026); response_item/message role=user is the last-resort
 fallback. Assistant text + tool activity live in response_item. Reasoning blocks
-are encrypted on disk, so only their count is surfaced.
+are encrypted on disk, so only their count is surfaced. The rollout is read
+into a list of messages, and ../printer.py prints them.
 
 Usage:
     extract_session.py <session-id | path> [--full] [--summary] [--tail N]
@@ -37,7 +38,6 @@ import json
 import os
 import re
 import sys
-from datetime import datetime
 
 
 # Loaded by path: `python3 -I` leaves this folder off sys.path.
@@ -45,6 +45,22 @@ _spec = importlib.util.spec_from_file_location(
     "rollout_io", os.path.join(os.path.dirname(os.path.abspath(__file__)), "rollout_io.py"))
 rollout_io = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rollout_io)
+_spec = importlib.util.spec_from_file_location(
+    "printer", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "printer.py"))
+printer = importlib.util.module_from_spec(_spec)
+# Registered before it runs: dataclasses looks a module up in sys.modules, and
+# Python 3.11 and older fail on printer.py's dataclasses without it.
+sys.modules["printer"] = printer
+_spec.loader.exec_module(printer)
+
+WORDS = printer.Words(
+    transcript="Loaded Codex session transcript",
+    skeleton="Codex session skeleton (deterministic, from the rollout)",
+    assistant="Codex",
+    last_reply="Last Codex reply",
+    edits="Files patched (apply_patch)",
+    cli="Codex CLI",
+)
 
 # Prefixes that mark injected context (AGENTS.md, environment, instructions)
 # rather than a real human turn — used only in the response_item fallback path.
@@ -93,15 +109,6 @@ def load(path):
             except json.JSONDecodeError:
                 continue
     return rows
-
-
-def fmt_ts(ts):
-    if not ts:
-        return ""
-    try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return ts
 
 
 def text_blocks(content):
@@ -246,7 +253,8 @@ def clean_output(out):
     return out, failed
 
 
-def render(rows, mode, tail, max_result_chars, header=True):
+def read(rows):
+    """The rollout as a printer.Chat: every block in order, and the chat's facts."""
     meta = {}
     turn_ctx = {}
     timestamps = []
@@ -262,8 +270,7 @@ def render(rows, mode, tail, max_result_chars, header=True):
 
     have_event_users = any(user_message_of(r) for r in rows)
 
-    blocks = []  # (kind, text)
-    first_user = None
+    messages = []
     for r in rows:
         t = r.get("type")
         p = r.get("payload", {})
@@ -274,9 +281,7 @@ def render(rows, mode, tail, max_result_chars, header=True):
         if t == "event_msg":
             msg = user_message_of(r)
             if msg and have_event_users:
-                blocks.append(("user", msg))
-                if first_user is None:
-                    first_user = msg
+                messages.append(printer.Message("user", msg))
             continue
 
         if t == "response_item":
@@ -286,22 +291,18 @@ def render(rows, mode, tail, max_result_chars, header=True):
                 if not txt:
                     continue
                 if role == "assistant":
-                    blocks.append(("assistant", txt))
+                    messages.append(printer.Message("assistant", txt))
                 elif role == "user" and not have_event_users:
                     if not txt.lstrip().startswith(INJECTION_MARKERS):
-                        blocks.append(("user", txt))
-                        if first_user is None:
-                            first_user = txt
+                        messages.append(printer.Message("user", txt))
                 # developer/system roles are skipped
             elif pt == "reasoning":
                 n_reasoning += 1
             elif pt == "function_call":
-                if mode == "summary":
-                    continue
-                blocks.append(("tool", f"→ {p.get('name')}({summarize_call(p.get('name'), p.get('arguments'))})"))
+                messages.append(printer.Message(
+                    "call", f"{p.get('name')}({summarize_call(p.get('name'), p.get('arguments'))})",
+                    files=tuple(patched_files(p))))
             elif pt == "custom_tool_call":
-                if mode == "summary":
-                    continue
                 name = p.get("name")
                 if name == "apply_patch":
                     arg = summarize_patch(p.get("input"))
@@ -309,64 +310,43 @@ def render(rows, mode, tail, max_result_chars, header=True):
                     arg = summarize_exec_input(p.get("input"))
                 else:
                     arg = str(p.get("input"))[:200]
-                blocks.append(("tool", f"→ {name}({arg})"))
+                messages.append(printer.Message("call", f"{name}({arg})", files=tuple(patched_files(p))))
             elif pt in ("function_call_output", "custom_tool_call_output"):
-                if mode == "summary":
-                    continue
                 res, failed = clean_output(p.get("output"))
                 res = res.strip()
-                if mode != "full" and len(res) > max_result_chars:
-                    res = res[:max_result_chars] + f"\n… [+{len(res) - max_result_chars} chars truncated]"
                 if res:
-                    blocks.append(("result", f"[{'tool error' if failed else 'tool result'}] {res}"))
+                    messages.append(printer.Message("result", res, error=failed))
 
-    n_user = sum(1 for k, _ in blocks if k == "user")
-    n_asst = sum(1 for k, _ in blocks if k == "assistant")
-    n_tools = sum(1 for k, _ in blocks if k == "tool")
-
-    if tail:
-        idxs = [i for i, (k, _) in enumerate(blocks) if k == "user"]
-        if len(idxs) > tail:
-            blocks = blocks[idxs[-tail]:]
-
-    title = (first_user.splitlines()[0][:80] + "…") if first_user else None
     git = meta.get("git") or {}
-
-    out = []
-    if not header:
-        out.append(f"## Last {tail} user turns (verbatim, summary mode)" if tail else "## Transcript (summary mode)")
-        out.append("")
+    first_user = next((m for m in (user_message_of(r) for r in rows) if m), None)
+    if first_user is None:
+        for r in rows:
+            p = r.get("payload") or {}
+            if r.get("type") == "response_item" and p.get("type") == "message" and p.get("role") == "user":
+                txt = text_blocks(p.get("content")).strip()
+                if txt and not txt.startswith(INJECTION_MARKERS):
+                    first_user = txt
+                    break
+    src = meta.get("source")
+    spawn = (src.get("subagent") or {}).get("thread_spawn") if isinstance(src, dict) else None
+    if spawn:
+        thread = f"subagent '{spawn.get('agent_nickname')}' ({spawn.get('agent_role')}) of parent {spawn.get('parent_thread_id')}"
     else:
-        out.append("# Loaded Codex session transcript")
-        if title:
-            out.append(f"**First prompt:** {title}")
-        out.append(f"**Session ID:** `{meta.get('id', '?')}`")
-        if meta.get("cwd"):
-            out.append(f"**Project (cwd):** `{meta['cwd']}`")
-        if git.get("branch"):
-            repo = git.get("repository_url", "")
-            out.append(f"**Git branch:** `{git['branch']}`" + (f" · {repo}" if repo else ""))
-        model = turn_ctx.get("model") or meta.get("model")
-        if model:
-            eff = turn_ctx.get("collaboration_mode", {}).get("settings", {}).get("reasoning_effort")
-            out.append(f"**Model:** {model}" + (f" (reasoning: {eff})" if eff else ""))
-        if meta.get("cli_version"):
-            out.append(f"**Codex CLI:** {meta['cli_version']}")
-        if timestamps:
-            out.append(f"**Span:** {fmt_ts(min(timestamps))} → {fmt_ts(max(timestamps))}")
-        out.append(f"**Activity:** {n_user} user prompts · {n_asst} assistant replies · {n_tools} tool calls · {n_reasoning} reasoning blocks (encrypted)")
-        out.append(f"**Render mode:** {mode}" + (f" · tail {tail}" if tail else ""))
-        out.append("\n---\n")
-
-    label = {"user": "## 🧑 User", "assistant": "## 🤖 Codex"}
-    for kind, text in blocks:
-        if kind in ("tool", "result"):
-            out.append(text)
-        else:
-            out.append(label[kind])
-            out.append(text)
-        out.append("")
-    return "\n".join(out)
+        thread = f"{meta.get('thread_source') or 'user'} via {meta.get('originator') or src}"
+    facts = [("id", meta.get("id")), ("cwd", meta.get("cwd"))]
+    if git.get("branch"):
+        facts.append(("branch", git.get("branch")))
+    facts += [("thread", thread), ("prompt", first_user.splitlines()[0][:100] if first_user else "")]
+    return printer.Chat(
+        messages=messages, words=WORDS,
+        session_id=meta.get("id", "?"), cwd=meta.get("cwd"), branch=git.get("branch"),
+        repo=git.get("repository_url") or None,
+        model=turn_ctx.get("model") or meta.get("model"),
+        effort=turn_ctx.get("collaboration_mode", {}).get("settings", {}).get("reasoning_effort"),
+        cli=meta.get("cli_version"),
+        span=(min(timestamps), max(timestamps)) if timestamps else None,
+        reasoning=n_reasoning, facts=tuple(facts), lines=len(rows),
+    )
 
 
 def patched_files(p):
@@ -377,70 +357,6 @@ def patched_files(p):
         files = re.findall(r"\*\*\* (?:Add|Update|Delete|Move to) File: ([^\\\n\"]+)", src)
         return list(dict.fromkeys(f.strip() for f in files))
     return []
-
-
-def render_skeleton(rows, tail, max_result_chars):
-    meta = {}
-    turn_ctx = {}
-    timestamps = []
-    first_user = None
-    last_asst = None
-    edited = []
-    have_event_users = any(user_message_of(r) for r in rows)
-    for r in rows:
-        t = r.get("type")
-        p = r.get("payload") or {}
-        if r.get("timestamp"):
-            timestamps.append(r["timestamp"])
-        if t == "session_meta" and not meta:
-            meta = p
-        elif t == "turn_context" and not turn_ctx:
-            turn_ctx = p
-        elif t == "event_msg":
-            msg = user_message_of(r)
-            if msg and have_event_users and first_user is None:
-                first_user = msg
-        elif t == "response_item":
-            pt = p.get("type")
-            if pt == "message":
-                txt = text_blocks(p.get("content")).strip()
-                if p.get("role") == "assistant" and txt:
-                    last_asst = txt
-                elif p.get("role") == "user" and not have_event_users and first_user is None \
-                        and txt and not txt.lstrip().startswith(INJECTION_MARKERS):
-                    first_user = txt
-            elif pt in ("custom_tool_call", "function_call"):
-                for fp in patched_files(p):
-                    if fp not in edited:
-                        edited.append(fp)
-
-    git = meta.get("git") or {}
-    out = ["# Codex session skeleton (deterministic, from the rollout)"]
-    out.append(f"**Session ID:** `{meta.get('id', '?')}`")
-    if meta.get("cwd"):
-        out.append(f"**Project (cwd):** `{meta['cwd']}`")
-    if git.get("branch"):
-        out.append(f"**Git branch:** `{git['branch']}`")
-    model = turn_ctx.get("model") or meta.get("model")
-    if model:
-        out.append(f"**Model:** {model}")
-    if timestamps:
-        out.append(f"**Span:** {fmt_ts(min(timestamps))} → {fmt_ts(max(timestamps))}")
-    out.append("")
-    out.append("**First prompt:**")
-    out.append((first_user or "(none)")[:1500])
-    out.append("")
-    out.append("**Files patched (apply_patch):**")
-    out.extend(f"- `{fp}`" for fp in edited) if edited else out.append("- none")
-    out.append("")
-    out.append("**Last Codex reply:**")
-    la = last_asst or "(none)"
-    out.append(la[:2000] + (f"\n… [+{len(la) - 2000} chars truncated]" if len(la) > 2000 else ""))
-    out.append("")
-    out.append("---")
-    out.append("")
-    out.append(render(rows, "summary", tail or 3, max_result_chars, header=False))
-    return "\n".join(out)
 
 
 def main():
@@ -460,59 +376,25 @@ def main():
         print("Tip: pass the full UUID, or a unique prefix. Recent sessions:", file=sys.stderr)
         print("  ls -t ~/.codex/sessions/*/*/*/rollout-*.jsonl | head", file=sys.stderr)
         sys.exit(1)
-    if len(matches) > 1:
-        print(f"Ambiguous id '{args.session_id}' — {len(matches)} matches:", file=sys.stderr)
-        for m in matches:
-            print(f"  {m}", file=sys.stderr)
-        print("Pass the full UUID to disambiguate.", file=sys.stderr)
-        sys.exit(2)
-
-    path = matches[0]
+    path = printer.only_match(matches, args.session_id)
     try:
         rows = load(path)
     except rollout_io.NoZstd as e:
         print(f"stop: {path} {e}", file=sys.stderr)
         sys.exit(1)
 
+    chat = read(rows)
+
     if args.list:
-        meta = next((r.get("payload", {}) for r in rows if r.get("type") == "session_meta"), {})
-        first_user = next((m for m in (user_message_of(r) for r in rows) if m), None)
-        if first_user is None:
-            for r in rows:
-                p = r.get("payload") or {}
-                if r.get("type") == "response_item" and p.get("type") == "message" and p.get("role") == "user":
-                    txt = text_blocks(p.get("content")).strip()
-                    if txt and not txt.startswith(INJECTION_MARKERS):
-                        first_user = txt
-                        break
-        src = meta.get("source")
-        spawn = (src.get("subagent") or {}).get("thread_spawn") if isinstance(src, dict) else None
-        print(f"path:   {path}")
-        print(f"id:     {meta.get('id')}")
-        print(f"cwd:    {meta.get('cwd')}")
-        branch = (meta.get("git") or {}).get("branch")
-        if branch:
-            print(f"branch: {branch}")
-        if spawn:
-            print(f"thread: subagent '{spawn.get('agent_nickname')}' ({spawn.get('agent_role')}) of parent {spawn.get('parent_thread_id')}")
-        else:
-            print(f"thread: {meta.get('thread_source') or 'user'} via {meta.get('originator') or src}")
-        print(f"prompt: {(first_user or '').splitlines()[0][:100] if first_user else ''}")
-        print(f"lines:  {len(rows)}")
-        n_users = sum(1 for r in rows if user_message_of(r))
-        print(f"turns:  {n_users} user prompts")
-        print("size (chars / ~tokens at 4 chars per token):")
-        for m in ("summary", "balanced", "full"):
-            n = len(render(rows, m, 0, args.max_result_chars))
-            print(f"  {m:<9} {n:>10,} chars  ~{n // 4:>8,} tokens")
+        print(printer.listing(chat, path, args.max_result_chars))
         return
 
     if args.skeleton:
-        print(render_skeleton(rows, args.tail, args.max_result_chars))
+        print(printer.skeleton(chat, args.tail))
         return
 
     mode = "summary" if args.summary else "full" if args.full else "balanced"
-    print(render(rows, mode, args.tail, args.max_result_chars))
+    print(printer.transcript(chat, mode, args.tail, args.max_result_chars))
 
 
 if __name__ == "__main__":
