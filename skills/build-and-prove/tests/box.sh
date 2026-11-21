@@ -329,7 +329,7 @@ t_box_state_not_run() {
 
 t_box_auth_not_logged_in() {
   fake_proofbox
-  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
@@ -337,7 +337,7 @@ t_box_auth_not_logged_in() {
 
 t_box_auth_expired() {
   fake_proofbox
-  echo "namespace  expired 2026-10-01T00:00:00Z. Run: proofbox auth login namespace" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"expired","from":"saved","expires":"2026-10-01T00:00:00Z"}]' > "$FAKE_PB/auth.out"
   box auth macos
   eq exit 1 "$code"
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
@@ -345,7 +345,7 @@ t_box_auth_expired() {
 
 t_box_auth_rejected() {
   fake_proofbox
-  echo "namespace  PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"rejected","from":"env","env":"PROOFBOX_NAMESPACE_TOKEN"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
   has stderr "stop: PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" "$err"
@@ -353,17 +353,18 @@ t_box_auth_rejected() {
 
 t_box_auth_ok() {
   fake_proofbox
-  echo "namespace  logged in as Personal, region us, expires 2026-10-31T02:02:57Z, saved login" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 0 "$code"
   eq stdout "PROVIDER=namespace" "$out"
+  eq log "auth status --json" "$(cat "$FAKE_PB/log")"
 }
 
 t_box_auth_config() {
   fake_proofbox
   mkdir -p "$HOME/.config/proofbox"
   echo '{ "linux": "docker", "macos": "namespace" }' > "$HOME/.config/proofbox/config"
-  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 0 "$code"
   eq stdout "PROVIDER=docker" "$out"

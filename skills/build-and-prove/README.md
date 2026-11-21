@@ -61,6 +61,7 @@ Walks now read the console and the requests. Each video saves the page's errors 
 ## Needs
 
 - For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
+- `jq` on the local machine, for a plan with UI walks: `box.sh auth` reads proofbox's login list as JSON with it.
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.
 - `node` on the local machine, for the browser starter's tests.

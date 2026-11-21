@@ -17,7 +17,7 @@
 #   box.sh down <proof-dir>
 #
 # auth checks the login of the Provider that ~/.config/proofbox/config picks
-# for the OS (namespace when it names none), from `proofbox auth status`, so a
+# for the OS (namespace when it names none), from `proofbox auth status --json`, so a
 # run can stop before any work. Logged in, or no login needed: it prints
 # PROVIDER=<name>.
 #
@@ -500,16 +500,17 @@ case "$verb" in
     conf="$HOME/.config/proofbox/config"; provider=""
     [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
     provider="${provider:-namespace}"
-    pb keep keep auth status
+    pb keep keep auth status --json
     [ "$rc" -eq 0 ] || die "proofbox auth status failed"
-    status="$got"
-    line="$(grep -m 1 "^$provider " <<<"$status" || true)"
-    [ -n "$line" ] || die "proofbox auth status has no line for $provider"
-    state="$(sed 's/^[^ ]*  *//' <<<"$line")"
-    case "$state" in
-      "logged in"*|"no login needed"*) printf 'PROVIDER=%s\n' "$provider" ;;
-      "not logged in"*|expired*) die "log in first: proofbox auth login $provider" ;;
-      *) die "$state" ;;
+    item="$(jq -r --arg p "$provider" 'map(select(.provider == $p))[0] // empty | [.login, (.env // "")] | @tsv' <<<"$got")" \
+      || die "proofbox auth status --json printed no JSON"
+    [ -n "$item" ] || die "proofbox auth status has no line for $provider"
+    IFS=$'\t' read -r login env <<<"$item"
+    case "$login" in
+      ok|not-needed) printf 'PROVIDER=%s\n' "$provider" ;;
+      none|expired) die "log in first: proofbox auth login $provider" ;;
+      rejected) die "$env is set, but $provider did not accept it" ;;
+      *) die "proofbox auth status: $provider login is $login" ;;
     esac
     ;;
   *) die "$usage" ;;
