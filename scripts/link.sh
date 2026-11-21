@@ -43,8 +43,8 @@
 set -euo pipefail
 
 repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
-git_dir="$(cd "$(git -C "$repo" rev-parse --git-dir)" && pwd -P)"
-common_dir="$(cd "$(git -C "$repo" rev-parse --git-common-dir)" && pwd -P)"
+git_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-dir)" && pwd -P)"
+common_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)" && pwd -P)"
 [ "$git_dir" = "$common_dir" ] || exit 0
 
 agents="${SKILLS_HOME:-$HOME/.agents/skills}"
