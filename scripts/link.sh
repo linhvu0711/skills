@@ -100,14 +100,12 @@ made_from() {
   head -n 2 "$1" | sed -n 's/^# Made by scripts\/link\.sh from \(.*\)\. Edit that file, not this one\.$/\1/p'
 }
 
-# put <path> <temp>: move the temp file to the path when the path is free, a
-# file this script wrote, or one of its old links to an agent file, and the
-# content differs. Says why and drops the temp when something else holds it.
+# put <path> <temp>: move the temp file to the path when the path is free, or
+# a file this script wrote, and the content differs. Says why and drops the
+# temp when something else holds it.
 put() {
   local p="$1" t="$2"
-  if [ -L "$p" ] && [[ "$(readlink "$p")" == "$repo"/skills/*/agents/* ]]; then
-    rm "$p"
-  elif [ -e "$p" ] || [ -L "$p" ]; then
+  if [ -e "$p" ] || [ -L "$p" ]; then
     if [ -z "$(made_from "$p")" ]; then
       rm -f "$t"; printf 'skip: %s is not this repo'"'"'s %s\n' "$p" "$(basename "$p")" >&2; return 0
     fi
@@ -208,7 +206,6 @@ plugin_hooks() {
 unlink_dead "$agents" "$repo/skills"
 unlink_dead "$claude" "$agents" "../../.agents/skills"
 unlink_dead "$antigravity" "$agents"
-unlink_dead "$claude_agents" "$repo/skills/*/agents"
 
 for f in "$repo"/skills/*/SKILL.md; do
   [ -f "$f" ] || continue

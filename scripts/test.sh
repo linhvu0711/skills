@@ -312,18 +312,6 @@ t_link_leaves_other_codex_agent() {
   eq "own file" 'name = "mine"' "$(cat "$T/codex/helper.toml")"
 }
 
-t_link_replaces_old_agent_link() {
-  # Given: the link an earlier link.sh made for the agent
-  linked demo; agent demo helper; ln -s "$R/skills/demo/agents/helper.md" "$T/cagents/helper.md"
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  has stdout "wrote $T/cagents/helper.md" "$out"
-  [ ! -L "$T/cagents/helper.md" ] || eq "cagents/helper.md" "a file" "a link"
-  eq "line 6" "model: claude-haiku-5-5" "$(sed -n 6p "$T/cagents/helper.md")"
-}
-
 t_link_skips_agent_without_claude_backup() {
   # Given: an agent file with no Claude Code backup
   linked demo; agent demo helper
@@ -1360,7 +1348,6 @@ cases=(
   "link does nothing in a worktree|t_link_skips_worktree"
   "link.sh runs from outside the repo|t_link_runs_from_outside_repo"
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
-  "link replaces its old agent link with the file|t_link_replaces_old_agent_link"
   "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
