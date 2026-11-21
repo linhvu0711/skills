@@ -28,6 +28,7 @@ is nearest rank, so each one is a real run's time. Skipped and cancelled
 jobs and skipped steps are left out. With no PR runs, `pr_result` is
 {"commits": 0}; with no runs, `runs` is 0 and `jobs` and `reruns` are [].
 A re-run's `failed_first` names the jobs that failed on its first attempt.
+A run's jobs come in pages of 100; every page is read.
 
 A gh call that fails stops with `stop: gh could not <what>: <gh's last
 line>` on stderr and exit 1.
@@ -44,6 +45,7 @@ RUN_FIELDS = "databaseId,attempt,createdAt,updatedAt,event,headSha,workflowName,
 LEFT_OUT = {"skipped", "cancelled"}
 SETUP_NAMES = {"Set up job", "Complete job"}
 SETUP_STARTS = ("Post ", "Run actions/checkout", "Run actions/setup-", "Run actions/cache")
+PAGE = 100
 
 
 def gh(what, *args):
@@ -73,7 +75,13 @@ def spread(values):
 
 
 def jobs_of(repo, path, what):
-    return gh(what, "api", f"repos/{repo}/actions/runs/{path}/jobs?per_page=100")["jobs"]
+    jobs, page = [], 1
+    while True:
+        found = gh(what, "api", f"repos/{repo}/actions/runs/{path}/jobs?per_page={PAGE}&page={page}")["jobs"]
+        jobs += found
+        if len(found) < PAGE:
+            return jobs
+        page += 1
 
 
 def is_setup(name, named):

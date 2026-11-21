@@ -133,11 +133,25 @@ t_ci_times_no_rerun() {
   eq reruns '[]' "$(field 'j["reruns"]')"
   eq attempt_calls no "$([ -e "$FAKE_GH/attempt-jobs.calls" ] && echo yes || echo no)"
 }
+t_ci_times_jobs_past_one_page() {
+  # Given: run 1 of CI with 101 jobs, 100 on page 1 and `last` on page 2
+  fake_gh
+  printf '[%s]' "$(run_row 1 CI 1 push a1 10:00:00 10:03:25)" > "$FAKE_GH/run-list.json"
+  one='{"name":"job","conclusion":"success","created_at":"2026-11-20T10:00:00Z","started_at":"2026-11-20T10:00:01Z","completed_at":"2026-11-20T10:00:11Z","steps":[]}'
+  printf '{"jobs":[%s]}' "$(for i in $(seq 100); do printf '%s,' "$one"; done | sed 's/,$//')" > "$FAKE_GH/run-jobs.1.json"
+  jobs 2 last success 10:00:00 10:00:02 10:00:22 ""
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq names '["job", "last"]' "$(field '[r["job"] for r in j["jobs"]]')"
+  eq pages 'api repos/acme/app/actions/runs/1/jobs?per_page=100&page=2' "$(sed -n 2p "$FAKE_GH/run-jobs.args")"
+}
 
 cases=(
   "ci-times splits a job into wait, steps, and total|t_ci_times_splits_a_job"
   "ci-times counts a named step as setup|t_ci_times_named_setup_step"
   "ci-times skips skipped and cancelled jobs|t_ci_times_skips_skipped_jobs"
+  "ci-times reads a run's jobs past the first page|t_ci_times_jobs_past_one_page"
   "ci-times reports fewer runs than asked|t_ci_times_fewer_runs_than_asked"
   "ci-times prints zero runs on a repo with none|t_ci_times_no_runs"
   "ci-times stops when gh fails|t_ci_times_gh_fails"
