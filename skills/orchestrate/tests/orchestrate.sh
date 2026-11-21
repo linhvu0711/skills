@@ -879,6 +879,40 @@ t_fs_sync_edits_in_the_way() {
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
+t_fs_sync_edits_in_the_way_autostash() {
+  # Given: as in the edits-in-the-way case, with merge.autoStash on in the checkout
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  fs_go sync acme/app
+  local one; one="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt two
+  printf 'mine\n' > "$T/dev/app/a.txt"
+  git -C "$T/dev/app" config merge.autoStash true
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_ignored_file_in_the_way() {
+  # Given: a run of #42; the checkout ignores b.txt and holds its own b.txt,
+  # and origin's main starts tracking a b.txt
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  echo b.txt >> "$T/dev/app/.git/info/exclude"
+  printf 'mine\n' > "$T/dev/app/b.txt"
+  local was; was="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push b.txt theirs
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout "main not updated: " "$out"
+  eq file mine "$(cat "$T/dev/app/b.txt")"
+  eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
 t_fs_sync_other_branch() {
   # Given: a run of #42; the checkout is on feat/x, and origin's main is one commit ahead
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
@@ -2239,6 +2273,8 @@ cases=(
   "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
   "sync leaves a default branch whose edits are in the way|t_fs_sync_edits_in_the_way"
   "sync moves the default branch under another checked-out branch|t_fs_sync_other_branch"
+  "sync leaves edits in the way with merge.autoStash on|t_fs_sync_edits_in_the_way_autostash"
+  "sync leaves an ignored file in the way|t_fs_sync_ignored_file_in_the_way"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"

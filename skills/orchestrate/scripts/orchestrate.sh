@@ -824,7 +824,9 @@ cmd_sync() {
     [ "$b" = "BRANCH=$def" ] && { where="${w#WORKTREE=}"; break; }
   done < <(bash "$core/checkout.sh" worktrees "$path")
   if [ -n "$where" ]; then
-    git -C "$where" merge --ff-only --quiet "$new" 2>"$errf" \
+    # Git's defaults overwrite an ignored file in the way, and a user's
+    # merge.autoStash carries edits across the move into a conflict.
+    git -C "$where" merge --ff-only --no-autostash --no-overwrite-ignore --quiet "$new" 2>"$errf" \
       || { printf '%s not updated: %s\n' "$def" "$(head -1 "$errf")"; return 0; }
   else
     # The old value makes git refuse a ref that moved since it was read.
