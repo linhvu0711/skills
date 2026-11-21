@@ -106,6 +106,11 @@ nap() {
   sleep "$((left < poll ? left : poll))"
 }
 
+# Both jq programs below read a check's state by this one rule.
+states='def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
+  def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
+  def green: ["SUCCESS","NEUTRAL","SKIPPED"];'
+
 # pr_facts: sets facts, one KEY=value per line, read only through get. Keys:
 # URL STATE DRAFT SHA MERGEABLE MERGE_STATE REVIEW_DECISION CHECKS_RED
 # CHECKS_PENDING CHECKS_GREEN RED_NAMES PENDING_NAMES REQUIRED_MISSING. The
@@ -134,11 +139,8 @@ pr_facts() {
   else
     return 1
   fi
-  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" '
-    def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
+  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" "$states"'
     def all: [.statusCheckRollup[]?];
-    def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
-    def green: ["SUCCESS","NEUTRAL","SKIPPED"];
     def is_red: st as $s | red | index($s);
     def is_pending: st as $s | (red + green) | index($s) | not;
     "URL=\(.url)",
@@ -156,9 +158,7 @@ pr_facts() {
     "REQUIRED_MISSING=" + ([.statusCheckRollup[]? | .context // .name] as $have
       | ($prot + $rules) | unique | map(select(. as $c | $have | index($c) | not)) | join(","))
   ' <<<"$json")"
-  reds="$(jq -r '
-    def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
-    def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
+  reds="$(jq -r "$states"'
     .statusCheckRollup[]? | st as $s | select(red | index($s))
     | (.detailsUrl // .targetUrl // "" | if . == "" then "-" else . end) as $u
     | (.context // .name) as $n
@@ -259,7 +259,7 @@ until open_threads; do [ -n "$watch_sha" ] || gh_failed "$err"; failed_poll; don
 open="$(head -1 <<<"$threads" | cut -d= -f2)"
 
 # blocked <reason> / waiting <reason>: add a reason, in check order.
-why=(); has_blocked=0; has_waiting=0; approval=0
+why=(); has_blocked=0; has_waiting=0; merge_blocked=0; approval=0
 blocked() { why+=("$1"); has_blocked=1; }
 waiting() { why+=("$1"); has_waiting=1; }
 
@@ -279,7 +279,7 @@ esac
 case "$(get MERGE_STATE)" in
   CLEAN|HAS_HOOKS|BEHIND) ;;
   DRAFT) ;;  # the draft line says it
-  BLOCKED) approval=1 ;;
+  BLOCKED) merge_blocked=1 ;;
   UNKNOWN) waiting "merge state is UNKNOWN" ;;
   *) blocked "merge state is $(get MERGE_STATE)" ;;
 esac
@@ -299,8 +299,8 @@ fi
 
 # BLOCKED with no other reason: a missing approval is the one thing a person
 # still owes, so that is ready; anything else blocks unseen.
-if [ "${#why[@]}" -eq 0 ] && [ "$approval" -eq 1 ] && [ "$(get REVIEW_DECISION)" != "REVIEW_REQUIRED" ]; then
-  blocked "merge state is BLOCKED"
+if [ "$merge_blocked" -eq 1 ] && [ "${#why[@]}" -eq 0 ]; then
+  if [ "$(get REVIEW_DECISION)" = "REVIEW_REQUIRED" ]; then approval=1; else blocked "merge state is BLOCKED"; fi
 fi
 
 if [ "$has_blocked" -eq 1 ]; then verdict="BLOCKED $url"; code=1
