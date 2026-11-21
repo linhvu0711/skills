@@ -161,7 +161,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
     for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
     for (i = 1; i <= 3; i++) if (!seen["backup", hs[i]]) problem("missing backup for " hs[i])
     if (mode == "models") {
-      for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP); n = split(entry[k[1], k[2]], w, " ")
+      for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP); split(entry[k[1], k[2]], w, " ")
         if (k[1] == "home") print k[1], k[2], w[1], w[2]; else print k[1], k[2], k[2], w[1] }
       exit 0 }
     if (blockdesc) problem("description on more than one line")
