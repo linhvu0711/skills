@@ -217,6 +217,9 @@ answer_skill() {
   esac
 }
 
+# routes: the words a proposal or an answer names a route by.
+routes='grill|triage|ship|ready-pr|task|close'
+
 # decide_for <n> <skill>: decide.sh's line for #n's thread, with the
 # ship mode the user set for a /ship thread and
 # run's model and effort picks, so a proposal and its launch read the same
@@ -631,8 +634,8 @@ cmd_settled() {
 # and effort the thread would get; a decide stop keeps the proposal and
 # prints its reason as `why`.
 cmd_proposed() {
-  local pusage="usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]"
-  [ $# -ge 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^(grill|triage|ship|ready-pr|task|close|unsure)$ ]] || die "$pusage"
+  local pusage="usage: orchestrate.sh proposed <owner/repo> <n> $routes|unsure [--size XS|S|M|L|XL]"
+  [ $# -ge 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^($routes|unsure)$ ]] || die "$pusage"
   local n="${1#\#}" route="$2" size="" sk line why=""
   shift 2
   if [ $# -gt 0 ]; then
@@ -727,8 +730,8 @@ cmd_change() {
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
     answer)
-      local ausage="usage: orchestrate.sh change <owner/repo> answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close"
-      [ $# -eq 3 ] && [[ "$2" =~ ^(all|#?[0-9]+)$ ]] && [[ "$3" =~ ^(yes|skip|grill|triage|ship|ready-pr|task|close)$ ]] || die "$ausage"
+      local ausage="usage: orchestrate.sh change <owner/repo> answer <n>|all yes|skip|$routes"
+      [ $# -eq 3 ] && [[ "$2" =~ ^(all|#?[0-9]+)$ ]] && [[ "$3" =~ ^(yes|skip|$routes)$ ]] || die "$ausage"
       local who="${2#\#}" word="$3"
       if [ "$who" = all ]; then
         case "$word" in yes|skip) ;; *) die "$ausage" ;; esac
