@@ -188,7 +188,7 @@ linked() {
 }
 link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUDE_AGENTS_HOME="$T/cagents" CODEX_AGENTS_HOME="$T/codex" \
   ANTIGRAVITY_SKILLS_HOME="$T/gskills" ANTIGRAVITY_PLUGINS_HOME="$T/gplugins" T3_ANTIGRAVITY_HOME="$T/t3" \
-  CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash "${1:-scripts/link.sh}"; }
+  CLAUDE_SETTINGS_FILE="$T/claude-settings.json" CODEX_HOOKS_FILE="$T/codex-hooks.json" bash "${1:-scripts/link.sh}" "${@:2}"; }
 
 # with_gate: this checkout's shared/gate/ in the repo, so link.sh wires it.
 with_gate() { mkdir -p shared && cp -R "$scripts_dir/../shared/gate" shared/; }
@@ -558,6 +558,58 @@ t_link_skips_t3_when_none() {
   eq exit 0 "$code"
   eq stderr "skip: no T3 Antigravity folder in $T/t3" "$err"
   eq "ls gskills" demo "$(ls "$T/gskills")"
+}
+
+# status_lines <line>...: the lines, each with its spaces read as tabs.
+status_lines() { printf '%s\n' "$@" | tr ' ' '\t'; }
+
+t_link_status_names_every_target_ok() {
+  # Given: a skill, an agent, and the gate, all linked
+  linked demo; agent demo helper; with_gate; link_sh
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
+  eq stdout "$(status_lines "ok skill shared demo $T/agents/demo" "ok skill claude demo $T/claude/demo" \
+    "ok skill antigravity demo $T/gskills/demo" "ok agent claude helper $T/cagents/helper.md" \
+    "ok agent codex helper $T/codex/helper.toml" "ok agent antigravity helper $T/gplugins/skills/agents/helper.md" \
+    "ok gate claude subagent-gate $T/claude-settings.json" "ok gate codex subagent-gate $T/codex-hooks.json" \
+    "ok gate antigravity subagent-gate $T/gplugins/skills/hooks.json" "ok plugins antigravity plugins $T/t3/p1/config/plugins")" "$out"
+}
+
+t_link_status_names_missing_and_held() {
+  # Given: everything linked, then Claude Code's skill link gone, a Codex
+  # agent file of the user's own, and Claude Code settings that are not JSON
+  linked demo; agent demo helper; with_gate; link_sh
+  rm "$T/claude/demo"; printf 'mine\n' > "$T/codex/helper.toml"; printf 'not json\n' > "$T/claude-settings.json"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq "lines 2, 5, 7" "$(printf 'missing\tskill\tclaude\tdemo\t%s\n' "$T/claude/demo"
+    printf 'stale\tagent\tcodex\thelper\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex/helper.toml is not this repo's helper.toml"
+    printf 'stale\tgate\tclaude\tsubagent-gate\t%s\t%s\n' "$T/claude-settings.json" "$T/claude-settings.json is not JSON")" \
+    "$(sed -n '2p;5p;7p' <<<"$out")"
+}
+
+t_link_status_writes_nothing() {
+  # Given: everything linked, then Claude Code's skill link gone
+  linked demo; agent demo helper; with_gate; link_sh
+  rm "$T/claude/demo"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  [ ! -e "$T/claude/demo" ] && [ ! -L "$T/claude/demo" ] || eq "claude/demo" "absent" "present"
+}
+
+t_link_refuses_unknown_argument() {
+  # Given: everything linked
+  linked demo; agent demo helper; with_gate; link_sh
+  # When
+  link_sh scripts/link.sh --nope
+  # Then
+  eq exit 2 "$code"
+  eq stderr "usage: link.sh [--status]" "$err"
 }
 
 t_hooks_link_committed_skill() {
@@ -1369,6 +1421,10 @@ cases=(
   "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
+  "link status names every target ok|t_link_status_names_every_target_ok"
+  "link status names missing and held targets|t_link_status_names_missing_and_held"
+  "link status writes nothing|t_link_status_writes_nothing"
+  "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
   "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
