@@ -9,7 +9,7 @@ Reads the last N completed runs (default 150) with `gh`, then each run's
 jobs. Prints one JSON object:
 
     {"repo", "asked", "runs", "from", "to",
-     "pr_result": {"commits", "p50", "p95"},
+     "pr_result": {"results", "p50", "p95"},
      "jobs": [{"workflow", "workflow_id", "job", "runs", "wait": {"p50", "p95"},
                "setup": {"p50", "p95"}, "work": {"p50", "p95"},
                "total": {"p50", "p95"}, "slowest",
@@ -22,12 +22,14 @@ time it sat in the queue for a machine. Setup is the sum of a run's setup
 steps: `Set up job`, `Complete job`, a step whose name starts with `Post `,
 `Run actions/checkout`, `Run actions/setup-`, or `Run actions/cache`, and
 each step a `--setup` names. Work is the job's total minus its setup, taken
-per run before any percentile, since percentiles do not add. A PR commit's
-time runs from the creation of its first run to the last update of its last
-run. A percentile
+per run before any percentile, since percentiles do not add. A PR result is
+one batch of pull_request runs on one commit: it runs from the creation of
+its first run to the last update of its last run. A run on the same commit
+that starts after the batch ends, as when a draft is marked ready, starts a
+new result. A percentile
 is nearest rank, so each one is a real run's time. Skipped and cancelled
 jobs and skipped steps are left out. With no PR runs, `pr_result` is
-{"commits": 0}; with no runs, `runs` is 0 and `jobs` and `reruns` are [].
+{"results": 0}; with no runs, `runs` is 0 and `jobs` and `reruns` are [].
 A re-run's `failed_first` names the jobs that failed on its first attempt.
 A run's jobs come in pages of 100; every page is read.
 
@@ -129,15 +131,26 @@ def time_jobs(runs, jobs_by_run, named):
 
 
 
-def time_pr_commits(runs):
-    commits = {}
+def time_pr_results(runs):
+    by_commit = {}
     for run in runs:
         if run["event"] == "pull_request":
-            first, last = commits.get(run["headSha"], (run["createdAt"], run["updatedAt"]))
-            commits[run["headSha"]] = (min(first, run["createdAt"], key=when), max(last, run["updatedAt"], key=when))
-    if not commits:
-        return {"commits": 0}
-    return {"commits": len(commits), **spread([seconds(a, b) for a, b in commits.values()])}
+            by_commit.setdefault(run["headSha"], []).append(run)
+    spans = []
+    for same in by_commit.values():
+        start = end = None
+        for run in sorted(same, key=lambda r: when(r["createdAt"])):
+            if end and when(run["createdAt"]) > when(end):
+                spans.append(seconds(start, end))
+                start = None
+            if start is None:
+                start, end = run["createdAt"], run["updatedAt"]
+            else:
+                end = max(end, run["updatedAt"], key=when)
+        spans.append(seconds(start, end))
+    if not spans:
+        return {"results": 0}
+    return {"results": len(spans), **spread(spans)}
 
 
 def list_reruns(repo, runs):
@@ -171,7 +184,7 @@ def main():
         "runs": len(runs),
         "from": dates[0] if dates else None,
         "to": dates[-1] if dates else None,
-        "pr_result": time_pr_commits(runs),
+        "pr_result": time_pr_results(runs),
         "jobs": time_jobs(runs, jobs_by_run, set(args.setup)),
         "reruns": list_reruns(args.repo, runs),
     }, indent=2))

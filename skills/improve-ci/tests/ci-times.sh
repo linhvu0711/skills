@@ -112,7 +112,19 @@ t_ci_times_pr_commit() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq pr_result '{"commits": 1, "p50": 210, "p95": 210}' "$(field 'j["pr_result"]')"
+  eq pr_result '{"results": 1, "p50": 210, "p95": 210}' "$(field 'j["pr_result"]')"
+}
+
+t_ci_times_ready_after_draft() {
+  # Given: on head abc, a draft's CI from 10:00:00 to 10:03:30, then CI again from 12:00:00 to 12:02:00 when marked ready
+  fake_gh
+  printf '[%s,%s]' "$(run_row 1 CI 1 pull_request abc 10:00:00 10:03:30)" "$(run_row 2 CI 1 pull_request abc 12:00:00 12:02:00)" > "$FAKE_GH/run-list.json"
+  jobs 1 test success 10:00:00 10:00:04 10:03:24 ""
+  jobs 2 test success 12:00:00 12:00:04 12:01:54 ""
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq pr_result '{"results": 2, "p50": 120, "p95": 210}' "$(field 'j["pr_result"]')"
 }
 
 t_ci_times_rerun() {
@@ -171,6 +183,7 @@ cases=(
   "ci-times prints zero runs on a repo with none|t_ci_times_no_runs"
   "ci-times stops when gh fails|t_ci_times_gh_fails"
   "ci-times times a PR commit from its first run to its last|t_ci_times_pr_commit"
+  "ci-times times a draft's later checks as their own result|t_ci_times_ready_after_draft"
   "ci-times lists a re-run with the jobs that failed first|t_ci_times_rerun"
   "ci-times lists no re-run when every run is a first attempt|t_ci_times_no_rerun"
 )
