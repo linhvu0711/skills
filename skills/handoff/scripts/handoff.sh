@@ -16,9 +16,6 @@
 # --mode, cursor --repo, --base, --model, and --platform.
 # The handoff ledger, ~/.config/dispatch/handoff.tsv, holds a row per session:
 # time, executor, session, link, issue, title, tab separated.
-# Each command first moves in the rows of the old ledgers, sessions.tsv
-# (devin) and cursor-sessions.tsv (cursor) in the same folder, and renames
-# each to .migrated; a row it cannot read is skipped with a warning.
 # route reads it: the issue's newest session, of the named executor when one
 # is named, is a follow-up; no session starts on the named executor, else
 # devin. status asks the adapter's poll, one line of state, event key, PRs,
@@ -47,54 +44,6 @@ executor() {
     devin|cursor) printf %s "$1" ;;
     *) die "executor must be devin or cursor" ;;
   esac
-}
-
-# migrate -> moves each old per-tool ledger into the ledger, sorted by time, and
-# renames it to .migrated, or appends it to a .migrated already there (a
-# copy of an old skill outside this repo can still write one). Each old file is
-# renamed aside, to a new <file>.taking.<suffix>, before it is read, so a row
-# an old skill appends meanwhile lands in a new old file, which the next run
-# moves in. A .taking file a stopped run left behind is moved in too, and a
-# row the ledger already holds is not written twice.
-migrate() {
-  local dir old pair tmp t taken=()
-  dir=$(dirname "$LEDGER")
-  for pair in devin:sessions.tsv cursor:cursor-sessions.tsv; do
-    old="$dir/${pair#*:}"
-    # mktemp makes a name no other file has, so a .taking file a stopped run
-    # left behind is never overwritten.
-    if [[ -f "$old" ]]; then
-      t=$(mktemp "$old.taking.XXXXXX")
-      mv "$old" "$t" 2>/dev/null || rm -f "$t"
-    fi
-    for t in "$old".taking.*; do
-      [[ -f "$t" ]] && taken+=("${pair%%:*}:$t")
-    done
-  done
-  [[ ${#taken[@]} -gt 0 ]] || return 0
-  tmp=$(mktemp "$dir/.handoff.XXXXXX")
-  {
-    [[ -f "$LEDGER" ]] && cat "$LEDGER"
-    for pair in "${taken[@]}"; do
-      t="${pair#*:}"
-      # No {n} intervals: mawk, the awk on Ubuntu, may not read them.
-      awk -F'\t' -v e="${pair%%:*}" -v f="$(basename "${t%.taking.*}")" '
-        NF == 0 { next }
-        NF == 5 && $2 != "" && $1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/ {
-          print $1 "\t" e "\t" $2 "\t" $3 "\t" $4 "\t" $5; next }
-        { printf "handoff.sh: skipped line %d of %s: not a session row\n", FNR, f > "/dev/stderr" }' "$t"
-    done
-  } | awk '!seen[$0]++' | sort -s -t "$(printf '\t')" -k1,1 >"$tmp"
-  mv "$tmp" "$LEDGER"
-  for pair in "${taken[@]}"; do
-    t="${pair#*:}"; old="${t%.taking.*}"
-    [[ -f "$t" ]] || continue
-    if [[ -f "$old.migrated" ]]; then
-      cat "$t" >>"$old.migrated" && rm "$t"
-    else
-      mv "$t" "$old.migrated"
-    fi
-  done
 }
 
 # newest ISSUE [EXECUTOR] -> the ledger's newest row for that issue, of that executor when given
@@ -232,7 +181,6 @@ cmd_route() {
   fi
 }
 
-migrate
 case "${1:-}" in
   route) shift; cmd_route "$@" ;;
   start) shift; cmd_start "$@" ;;
