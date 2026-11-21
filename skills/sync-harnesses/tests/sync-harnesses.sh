@@ -385,6 +385,19 @@ t_sync_warns_third_home_when_second_off() {
   eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
+t_sync_follows_link_env() {
+  # Given: Claude Code's skills folder moved, and link.sh's env setting naming
+  # the new folder
+  mac
+  mv "$H/.claude/skills" "$H/claude-skills"
+  # When
+  run env -i HOME="$H" PATH="$H/bin:/usr/bin:/bin" CLAUDE_SKILLS_HOME="$H/claude-skills" \
+    bash "$T/mac/repo/skills/sync-harnesses/scripts/sync-harnesses.sh"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$healthy" "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -415,4 +428,5 @@ cases=(
   "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
   "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
+  "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
 )
