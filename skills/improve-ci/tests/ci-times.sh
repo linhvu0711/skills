@@ -100,6 +100,18 @@ t_ci_times_gh_fails() {
 
 
 
+t_ci_times_pr_commit() {
+  # Given: two pull_request runs on head abc, CI from 10:00:00 to 10:03:30 and Lint from 10:00:02 to 10:01:00
+  fake_gh
+  printf '[%s,%s]' "$(run_row 1 CI 1 pull_request abc 10:00:00 10:03:30)" "$(run_row 2 Lint 1 pull_request abc 10:00:02 10:01:00)" > "$FAKE_GH/run-list.json"
+  jobs 1 test success 10:00:00 10:00:04 10:03:24 "$(step 1 'Run tests' 10:00:04 10:03:24)"
+  jobs 2 lint success 10:00:02 10:00:04 10:00:58 "$(step 1 'Run lint' 10:00:04 10:00:58)"
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq pr_result '{"commits": 1, "p50": 210, "p95": 210}' "$(field 'j["pr_result"]')"
+}
+
 cases=(
   "ci-times splits a job into wait, steps, and total|t_ci_times_splits_a_job"
   "ci-times counts a named step as setup|t_ci_times_named_setup_step"
@@ -107,4 +119,5 @@ cases=(
   "ci-times reports fewer runs than asked|t_ci_times_fewer_runs_than_asked"
   "ci-times prints zero runs on a repo with none|t_ci_times_no_runs"
   "ci-times stops when gh fails|t_ci_times_gh_fails"
+  "ci-times times a PR commit from its first run to its last|t_ci_times_pr_commit"
 )

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Time a repo's GitHub Actions runs: how long each job waits for a machine,
-and how long its setup, its work, each step, and the whole job take.
+how long its setup, its work, each step, and the whole job take, and how
+long a PR commit waits for its last result.
 
     ci-times.py <owner/repo> [--runs N] [--setup <step name>]...
 
@@ -8,6 +9,7 @@ Reads the last N completed runs (default 150) with `gh`, then each run's
 jobs. Prints one JSON object:
 
     {"repo", "asked", "runs", "from", "to",
+     "pr_result": {"commits", "p50", "p95"},
      "jobs": [{"workflow", "job", "runs", "wait": {"p50", "p95"},
                "setup": {"p50", "p95"}, "work": {"p50", "p95"},
                "total": {"p50", "p95"}, "slowest",
@@ -18,10 +20,12 @@ time it sat in the queue for a machine. Setup is the sum of a run's setup
 steps: `Set up job`, `Complete job`, a step whose name starts with `Post `,
 `Run actions/checkout`, `Run actions/setup-`, or `Run actions/cache`, and
 each step a `--setup` names. Work is the job's total minus its setup, taken
-per run before any percentile, since percentiles do not add. A percentile
+per run before any percentile, since percentiles do not add. A PR commit's
+time runs from the creation of its first run to the last update of its last
+run. A percentile
 is nearest rank, so each one is a real run's time. Skipped and cancelled
-jobs and skipped steps are left out. With no runs, `runs` is 0 and `jobs`
-is [].
+jobs and skipped steps are left out. With no PR runs, `pr_result` is
+{"commits": 0}; with no runs, `runs` is 0 and `jobs` is [].
 
 A gh call that fails stops with `stop: gh could not <what>: <gh's last
 line>` on stderr and exit 1.
@@ -113,6 +117,17 @@ def time_jobs(runs, jobs_by_run, named):
 
 
 
+def time_pr_commits(runs):
+    commits = {}
+    for run in runs:
+        if run["event"] == "pull_request":
+            first, last = commits.get(run["headSha"], (run["createdAt"], run["updatedAt"]))
+            commits[run["headSha"]] = (min(first, run["createdAt"], key=when), max(last, run["updatedAt"], key=when))
+    if not commits:
+        return {"commits": 0}
+    return {"commits": len(commits), **spread([seconds(a, b) for a, b in commits.values()])}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Time a repo's GitHub Actions runs.")
     parser.add_argument("repo")
@@ -129,6 +144,7 @@ def main():
         "runs": len(runs),
         "from": dates[0] if dates else None,
         "to": dates[-1] if dates else None,
+        "pr_result": time_pr_commits(runs),
         "jobs": time_jobs(runs, jobs_by_run, set(args.setup))
     }, indent=2))
 
