@@ -369,6 +369,7 @@ def read(path):
     run = "Stack" in top
     got = reviews(named, run)
     kind = re.match(r"\[([^]]+)\]", h1.group(2)) if h1 else None
+    stack = [stack_row(r) for r in stack_rows(top.get("Stack", []))]
     plan = {
         "title": h1.group(2) if h1 else "",
         "kind": kind.group(1) if kind else None,
@@ -379,9 +380,9 @@ def read(path):
         # A chat plan has no issue: its `# Plan:` line has a title and no `#<n>`.
         "chat": not run and bool(h1) and not h1.group(1) and h1.group(2)[:1] not in ("", "#"),
         "facts": key_values(top.get("Facts", []), FACTS),
-        "stack": [stack_row(r) for r in stack_rows(top.get("Stack", []))],
-        "stack_issues": [int(m.group(1)) for r in stack_rows(top.get("Stack", []))
-                         if len(r) > 1 and r[0].isdecimal() and (m := re.match(r"#(\d+)", r[1]))],
+        "stack": stack,
+        "stack_issues": [int(m.group(1)) for r in stack
+                         if r["n"].isdecimal() and (m := re.match(r"#(\d+)", r["issue"] or ""))],
         "points": key_values(top.get("Stack", []), ["Points"]).get("points", ""),
         "reviews": got,
         "maps": maps(named),
