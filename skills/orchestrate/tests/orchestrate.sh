@@ -73,6 +73,27 @@ fs_run() { ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's#/$##'; 
 # fs_board [jq flags] <jq>: the jq filter on the newest run's board.json.
 fs_board() { jq -c "$@" "$(fs_run)/board.json"; }
 
+# fs_remote: a bare repo $T/remote.git made from the checkout, which the
+# checkout's GitHub origin URL now reaches, and a second clone $T/other to
+# push from.
+fs_remote() {
+  git clone -q --bare "$T/dev/app" "$T/remote.git"
+  git -C "$T/dev/app" config url."$T/remote.git".insteadOf https://github.com/acme/app.git
+  git -C "$T/dev/app" fetch -q origin
+  git clone -q "$T/remote.git" "$T/other"
+}
+
+# fs_push <file> <text>: a commit in $T/other that writes the file, pushed to main.
+fs_push() {
+  printf '%s\n' "$2" > "$T/other/$1"
+  git -C "$T/other" add "$1"
+  git -C "$T/other" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m "$2"
+  git -C "$T/other" push -q origin main
+}
+
+# fs_short <dir> <rev>: the 7-character SHA of the rev.
+fs_short() { git -C "$1" rev-parse --short=7 "$2"; }
+
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
@@ -786,6 +807,34 @@ t_fs_done_removed_no_retro() {
   has stdout '"done":true' "$out"
   has stdout '"removed":[44]' "$out"
   eq line false "$(jq -c 'has("retro")' <<<"$out")"
+}
+
+t_fs_sync_fast_forwards() {
+  # Given: a run of #42; origin's main is one commit ahead of the checked-out main
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_fetch_fails() {
+  # Given: as above, and origin's URL now reaches no repo
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  local was; was="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt one
+  git -C "$T/dev/app" config --unset url."$T/remote.git".insteadOf
+  git -C "$T/dev/app" config url."$T/gone.git".insteadOf https://github.com/acme/app.git
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout "main not updated: fetch failed: " "$out"
+  eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
 t_fs_epic_done() {
@@ -2127,6 +2176,8 @@ cases=(
   "an epic with closed sub-issues is done|t_fs_epic_done"
   "a done run prints the retro thread line|t_fs_done_starts_retro"
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
+  "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
+  "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
