@@ -604,6 +604,18 @@ t_link_status_names_agent_it_cannot_render() {
     "$(grep helper2 <<<"$out")"
 }
 
+t_link_status_names_installed_agent_it_cannot_render() {
+  # Given: everything linked, then the agent's Codex backup taken out
+  linked demo; agent demo helper; with_gate; link_sh
+  grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq "helper lines" "$(for p in "claude $T/cagents/helper.md" "codex $T/codex/helper.toml" "antigravity $T/gplugins/skills/agents/helper.md"; do
+      printf 'stale\tagent\t%s\thelper\t%s\tskills/demo/agents/helper.md: missing backup for codex\n' "${p%% *}" "${p#* }"; done)" \
+    "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
+}
+
 t_link_status_names_foreign_manifest() {
   # Given: everything linked, then a plugin.json of the user's own
   linked demo; agent demo helper; with_gate; link_sh
@@ -1459,6 +1471,7 @@ cases=(
   "link status writes nothing|t_link_status_writes_nothing"
   "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
   "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
+  "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
