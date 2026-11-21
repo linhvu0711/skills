@@ -808,7 +808,7 @@ cmd_resume() {
 cmd_sync() {
   [ $# -eq 0 ] || die "usage: orchestrate.sh sync <owner/repo>"
   newest_run
-  local path def new old where b w
+  local path def new old where
   path="$(jq -r .path <<<"$S")"
   def="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
     || { printf '%s not updated: gh could not name the default branch: %s\n' "$slug" "$(tail -1 "$errf")"; return 0; }
@@ -822,10 +822,7 @@ cmd_sync() {
     || { printf '%s up to date at %s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$new")"; return 0; }
   git -C "$path" merge-base --is-ancestor "$old" "$new" \
     || { printf '%s not updated: it has commits origin/%s lacks\n' "$def" "$def"; return 0; }
-  where=""
-  while read -r b _ _ w; do
-    [ "$b" = "BRANCH=$def" ] && { where="${w#WORKTREE=}"; break; }
-  done < <(bash "$core/checkout.sh" worktrees "$path")
+  where="$(bash "$core/checkout.sh" holder "$path" "$def")"
   if [ -n "$where" ]; then
     # Git's defaults overwrite an ignored file in the way, and a user's
     # merge.autoStash carries edits across the move into a conflict.
