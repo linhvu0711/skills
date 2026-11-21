@@ -28,7 +28,7 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 ## Fits with
 
 - [ship](../ship/) ends with `After merge: /prune-worktrees` for the worktree it built in, and runs it after its merges in ship mode `merge`.
-- It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list through it.
+- It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list and GitHub repo through it, so an origin set through a git `insteadOf` alias, such as `gh:acme/app`, counts as GitHub.
 - Nothing calls this skill; you run it.
 
 ## Tests
