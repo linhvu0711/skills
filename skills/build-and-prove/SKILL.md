@@ -69,7 +69,8 @@ prints its usage with no arguments.
   -- '<command>'…` runs each command as `run` does, keeps each one's own
   exit code and full output in a temp file, and writes every line of
   `<proof-dir>/checks.txt` (step 8). `--pr-open` leaves to CI each Gate
-  the open PR's CI runs (§ Follow-up).
+  after `--` that the open PR's CI runs; an `--on-local` Gate still runs
+  on the local machine (§ Follow-up).
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
   times it was made again.
 
