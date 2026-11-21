@@ -25,8 +25,8 @@ each step a `--setup` names. Work is the job's total minus its setup, taken
 per run before any percentile, since percentiles do not add. A PR result is
 one batch of pull_request runs on one commit: it runs from the creation of
 its first run to the last update of its last run. A run on the same commit
-that starts after the batch ends, as when a draft is marked ready, starts a
-new result. A percentile
+that starts after the batch ends, or a second run of a workflow the batch
+already holds, as when a draft is marked ready, starts a new result. A percentile
 is nearest rank, so each one is a real run's time. Skipped and cancelled
 jobs and skipped steps are left out. With no PR runs, `pr_result` is
 {"results": 0}; with no runs, `runs` is 0 and `jobs` and `reruns` are [].
@@ -139,10 +139,12 @@ def time_pr_results(runs):
     spans = []
     for same in by_commit.values():
         start = end = None
+        seen = set()
         for run in sorted(same, key=lambda r: when(r["createdAt"])):
-            if end and when(run["createdAt"]) > when(end):
+            if end and (when(run["createdAt"]) > when(end) or run["workflowDatabaseId"] in seen):
                 spans.append(seconds(start, end))
-                start = None
+                start, seen = None, set()
+            seen.add(run["workflowDatabaseId"])
             if start is None:
                 start, end = run["createdAt"], run["updatedAt"]
             else:
