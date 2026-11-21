@@ -24,7 +24,7 @@ Usage:
     find_sessions.py "..." --project-dir A --project-dir B --include-subdirs
                                                         # several roots, worktrees under them
     find_sessions.py --all-projects --days 3 --all      # every project, last 3 days
-    find_sessions.py "..." --date yesterday | --days 30 # narrow by last activity
+    find_sessions.py "..." --days 30                     # narrow by last activity
     find_sessions.py "..." --limit 40                   # show more candidates (0: all)
 """
 import argparse
@@ -115,23 +115,10 @@ def in_scope(sess, project_dirs, include_subdirs, all_projects):
     return False
 
 
-def resolve_day(value):
-    if not value:
-        return None
-    v = value.lower()
-    if v == "today":
-        return dt.date.today()
-    if v == "yesterday":
-        return dt.date.today() - dt.timedelta(days=1)
-    return dt.date.fromisoformat(value)
-
-
-def in_window(mtime, day, days):
-    """By last activity, in local time: on one day, or within the last N days
-    counting today as the first."""
+def in_window(mtime, days):
+    """By last activity, in local time: within the last N days counting today
+    as the first."""
     when = dt.date.fromtimestamp(mtime)
-    if day:
-        return when == day
     if days:
         return when >= dt.date.today() - dt.timedelta(days=days - 1)
     return True
@@ -182,7 +169,6 @@ def parse_session(path):
     sid = os.path.basename(path)[: -len(".jsonl")]
     title = None
     cwd = None
-    created = None
     first_prompt = None      # first prompt of any kind (may be a bare slash command)
     first_substantive = None  # first prompt with real prose, for display
     last_prompt = None
@@ -214,9 +200,6 @@ def parse_session(path):
                     if isinstance(lp, str) and lp.strip():
                         last_prompt = strip_wrappers(lp) or last_prompt
                     continue
-                ts = d.get("timestamp")
-                if ts and created is None:
-                    created = ts
                 if cwd is None and d.get("cwd"):
                     cwd = d["cwd"]
                 if t == "user":
@@ -257,7 +240,6 @@ def parse_session(path):
         "last_prompt": cap(last_prompt),
         "n_prompts": n_prompts,
         "modified": os.path.getmtime(path),
-        "created": created,
         "path": path,
         "size": os.path.getsize(path),
         "cwd": cwd,
@@ -288,7 +270,6 @@ def main():
     ap.add_argument("--include-subdirs", action="store_true",
                     help="also sessions started below a --project-dir, such as its worktrees")
     ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
-    ap.add_argument("--date", help="one local calendar day of last activity: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only sessions active in the last N days (default: all time)")
     ap.add_argument("--all", action="store_true", help="list every session (newest first), ignore scoring")
     # The caller judges the list by meaning, and judges well once the session is
@@ -311,9 +292,8 @@ def main():
         return
 
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
-    day = resolve_day(args.date)
     files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
-    files = [p for p in files if in_window(os.path.getmtime(p), day, args.days)]
+    files = [p for p in files if in_window(os.path.getmtime(p), args.days)]
     sessions = [s for s in (parse_session(p) for p in files)
                 if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
 

@@ -263,11 +263,11 @@ def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -
     return False
 
 
-def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict,
+def collect(paths, targets: list[str] | None, include_subdirs: bool, idx: dict,
             interactive_only: bool = False, skipped: dict | None = None, in_window=None) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
-    Subagent threads (spawned by another session) are skipped by default: the
+    Subagent threads (spawned by another session) are skipped: the
     user never typed into them, so they only add noise. With interactive_only,
     headless `codex exec` runs are skipped too and counted in skipped["exec"].
     in_window(key, stat) picks the sessions returned; every path still feeds the
@@ -305,7 +305,7 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
             continue
         if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
-        if ent.get("subagent") and not include_subagents:
+        if ent.get("subagent"):
             continue
         if interactive_only and ent.get("source") == "exec":
             if skipped is not None:
@@ -390,7 +390,6 @@ def main() -> int:
     ap.add_argument("--cwd", action="append", help="project working dir (default: cwd); repeat for several roots")
     ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
-    ap.add_argument("--include-subagents", action="store_true", help="also list subagent threads spawned by other sessions")
     ap.add_argument("--interactive", action="store_true", help="leave out headless `codex exec` runs")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
@@ -444,7 +443,7 @@ def main() -> int:
 
     skipped = {}
     sessions = collect(paths, None if args.all_projects else roots,
-                       args.include_subdirs, args.include_subagents, idx,
+                       args.include_subdirs, idx,
                        interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
     docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]

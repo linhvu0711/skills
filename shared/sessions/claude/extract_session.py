@@ -154,7 +154,7 @@ def render(rows, mode, tail, max_result_chars, after_compact=False, header=True)
     meta = {}
     title = None
     timestamps = []
-    n_user = n_asst = n_thinking = n_tools = 0
+    n_thinking = n_tools = 0
     for r in rows:
         t = r.get("type")
         if t == "ai-title":
