@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Render one Antigravity chat as text, for ../adapter_lib.py's `extract`.
 
-    extract_session.py <path, id, or id prefix> [--max-result-chars N]
+    extract_session.py <path, id, or id prefix>
 
 Prints a header, then each prompt and reply in order. The store reads only
-prompts and replies, so there is one mode and nothing to cut;
---max-result-chars is taken because the adapter always passes it. No chat
+prompts and replies, so there is one mode and nothing to cut. No chat
 found: `stop: no Antigravity chat <session>` on stderr, exit 1.
 """
 
@@ -52,7 +51,6 @@ def render(chat):
 def main():
     ap = argparse.ArgumentParser(description="Render one Antigravity chat.")
     ap.add_argument("session")
-    ap.add_argument("--max-result-chars", type=int, default=300)
     args = ap.parse_args()
     path = store.locate(args.session)
     try:
