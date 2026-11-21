@@ -306,8 +306,10 @@ A check printed `"done": true`.
 
 3. `scripts/orchestrate.sh sync <owner/repo>`, and post its line as it
    is. It fast-forwards the default branch of the run's main checkout to
-   origin's, so prune-worktrees and the retro see the merged work. A
-   `not updated` line leaves the branch as it was; go on.
+   origin's, so prune-worktrees judges by the merged work. The retro reads
+   the files of the branch that is checked out, so it sees the merged
+   work only when that branch is the default one. A `not updated` line
+   leaves the branch as it was; go on.
 4. From the run's `path` (the main checkout), run
    `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
    lines as they are, as `/ship` does after its merges.
