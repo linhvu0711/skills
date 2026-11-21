@@ -65,11 +65,9 @@ owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"
 home="${ORCHESTRATE_HOME:-$HOME/.agents/orchestrate}"
 runs="$home/$owner-$repo"
 
-# in_t3: T3 Code sets T3CODE_CLI_PATH to its own t3 command in every chat.
-in_t3() {
-  t3="${T3CODE_CLI_PATH:-}"
-  [ -n "$t3" ] && [ -x "$t3" ] || die "not inside T3 Code"
-}
+# in_t3: t3, the chat's t3 command, from the shared T3 lookup, which stops
+# outside T3.
+in_t3() { t3="$(bash "$core/t3-cli.sh")" || exit 1; }
 
 # ---------- state ----------
 # The run-id is the UTC start time, so the newest run sorts last.

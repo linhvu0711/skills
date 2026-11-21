@@ -66,7 +66,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Needs
 
-- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, and the agent uses T3's tools for threads and the snooze. The watcher is a background process on this machine.
+- A T3 Code chat. The script runs the `t3` command that T3 names in `T3CODE_CLI_PATH`, found by the shared T3 lookup, [t3-cli.sh](../../shared/t3-cli.sh), and the agent uses T3's tools for threads and the snooze. The watcher is a background process on this machine.
 - `gh` (signed in), `git`, and `jq`.
 - `python3`, for [serve.sh](../../shared/serve.sh), which serves the board on 127.0.0.1.
 - A main checkout the shared checkout resolver can find, as for [kickoff-t3](../kickoff-t3/).
