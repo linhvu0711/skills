@@ -375,6 +375,21 @@ t_agents_lists_every_tool_without_tools_line() {
   eq stdout "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent" "$out"
 }
 
+t_agents_lists_models_in_order() {
+  # Given: an agent with two Claude homes, and a comment and a blank line in
+  # its home map
+  repo; agent demo helper
+  sed -i.bak -e 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, codex gpt-6-luna high\
+  # a note\
+/' skills/demo/agents/helper.md
+  # When
+  run bash scripts/agents.sh models < skills/demo/agents/helper.md
+  # Then
+  eq stdout "$(printf '%s\n' 'home claude devin swe-2-high' 'home2 claude codex gpt-6-luna' 'home codex claude claude-opus-5-5' \
+    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna' \
+    'backup antigravity antigravity inherit')" "$out"
+}
+
 t_link_writes_antigravity_start_tool() {
   # Given: a skill agent whose tools line names the Agent tool
   linked demo; agent demo helper
@@ -1104,6 +1119,28 @@ description: |
   eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_counts_folded_block_description() {
+  # Given: a folded block description of 1025 characters. When: check.sh
+  header "name: demo
+description: >-
+  $(times 1025 a)"
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
+t_flags_unclosed_frontmatter() {
+  # Given: a SKILL.md whose frontmatter has no closing line
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  printf -- '---\nname: demo\ndescription: A demo skill.\n' > skills/demo/SKILL.md
+  git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  eq "stderr line 1" "skills/demo/SKILL.md: missing frontmatter" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 t_counts_description_characters() {
   # Given: a description of 1024 two-byte characters, 2048 bytes. When: check.sh
   header "name: demo
@@ -1340,6 +1377,7 @@ cases=(
   "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
   "agents.sh lists an agent's tools|t_agents_lists_tools"
   "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
+  "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
   "link writes the antigravity start tool|t_link_writes_antigravity_start_tool"
   "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
@@ -1394,6 +1432,8 @@ cases=(
   "flags a block description over 1024 characters|t_flags_long_block_description"
   "counts a description by characters, not bytes|t_counts_description_characters"
   "counts the nested indent of a block description|t_counts_block_nested_indent"
+  "counts a folded block description|t_counts_folded_block_description"
+  "flags a frontmatter that never closes|t_flags_unclosed_frontmatter"
   "flags a name over 64 characters|t_flags_long_name"
   "flags an AGENTS.md of 200 lines|t_flags_long_agents_md"
   "passes an AGENTS.md of 199 lines|t_passes_agents_md_under_limit"
