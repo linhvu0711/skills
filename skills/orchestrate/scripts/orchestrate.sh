@@ -810,7 +810,8 @@ cmd_sync() {
   path="$(jq -r .path <<<"$S")"
   def="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
     || { printf '%s not updated: gh could not name the default branch: %s\n' "$slug" "$(tail -1 "$errf")"; return 0; }
-  git -C "$path" fetch --quiet origin "$def" 2>"$errf" \
+  # The refspec is named, since the clone's own fetch refspec may leave the default branch out.
+  git -C "$path" fetch --quiet origin "+refs/heads/$def:refs/remotes/origin/$def" 2>"$errf" \
     || { printf '%s not updated: fetch failed: %s\n' "$def" "$(tail -1 "$errf")"; return 0; }
   new="$(git -C "$path" rev-parse --verify --quiet "refs/remotes/origin/$def")"
   old="$(git -C "$path" rev-parse --verify --quiet "refs/heads/$def")" \

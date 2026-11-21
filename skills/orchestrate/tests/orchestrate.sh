@@ -913,6 +913,20 @@ t_fs_sync_ignored_file_in_the_way() {
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
+t_fs_sync_narrow_fetch_refspec() {
+  # Given: a run of #42; the checkout's fetch refspec names only another
+  # branch, and origin's main is one commit ahead
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git -C "$T/dev/app" config remote.origin.fetch '+refs/heads/release:refs/remotes/origin/release'
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+}
+
 t_fs_sync_other_branch() {
   # Given: a run of #42; the checkout is on feat/x, and origin's main is one commit ahead
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
@@ -2275,6 +2289,7 @@ cases=(
   "sync moves the default branch under another checked-out branch|t_fs_sync_other_branch"
   "sync leaves edits in the way with merge.autoStash on|t_fs_sync_edits_in_the_way_autostash"
   "sync leaves an ignored file in the way|t_fs_sync_ignored_file_in_the_way"
+  "sync moves main when the fetch refspec leaves it out|t_fs_sync_narrow_fetch_refspec"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
