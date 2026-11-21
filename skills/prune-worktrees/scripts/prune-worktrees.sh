@@ -57,6 +57,7 @@ set -euo pipefail
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
+. "$here/../../../shared/gh.sh"
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -66,27 +67,13 @@ common_dir() {
 # show <path>: the path, with $HOME written as ~.
 show() { case "$1" in "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
 
-# github_repo <main>: owner/name when origin is on GitHub, else nothing. The
-# raw config value, so an insteadOf rewrite never hides it.
-github_repo() {
-  local url
-  url="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 0
-  case "$url" in
-    *github.com[:/]*) printf '%s' "$url" | sed -E 's#\.git$##; s#/$##; s#.*github\.com[:/]##' ;;
-  esac
-}
-
 # pr_of <owner/repo> <branch>: `<number> <STATE> <headRefOid>` of the
-# branch's newest PR, or nothing when it has none. gh fails: the stop line on
-# stderr, and return 1.
+# branch's newest PR, or nothing when it has none. gh fails: the stop line,
+# with gh's last error line, on stderr, and exit 1.
 pr_of() {
-  local out err
-  err="$(mktemp)"
-  if out="$(gh pr list -R "$1" --head "$2" --state all --limit 1 \
-      --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"' 2>"$err")"; then
-    rm -f "$err"; printf '%s' "$out"; return 0
-  fi
-  printf 'stop: gh failed: %s\n' "$(head -1 "$err")" >&2; rm -f "$err"; return 1
+  gh_or_stop pr list -R "$1" --head "$2" --state all --limit 1 \
+    --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"'
+  printf '%s' "$out"
 }
 
 # default_ref <main>: the default branch to test a tip against: origin/HEAD,
@@ -236,7 +223,7 @@ sort_one() {
 # (`prunable`) is only counted, for `git worktree prune`.
 sort_repo() {
   local main="$1" slug path branch locked gone b l g w n=0 stale_n=0
-  slug="$(github_repo "$main")"
+  slug="$(bash "$checkout" slug "$main" 2>/dev/null)" || slug=""
   if named "$main"; then die "$(show "$main") is the main checkout"; fi
   while read -r b l g w; do
     n=$((n + 1)); [ "$n" -gt 1 ] || continue

@@ -23,12 +23,12 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 - `git`.
 - `du`, for each worktree's size.
 - For the in-use check, `/proc` on Linux or `lsof` on macOS; both come with the system.
-- `gh`, signed in, for the PR of each branch: one call per branch. When `gh` fails (not signed in, no network), it removes nothing and says so.
+- `gh`, signed in, for the PR of each branch: one call per branch. When `gh` fails (not signed in, no network), it removes nothing and says so, with gh's last error line.
 
 ## Fits with
 
 - [ship](../ship/) ends with `After merge: /prune-worktrees` for the worktree it built in, and runs it after its merges in ship mode `merge`.
-- It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list through it.
+- It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list and GitHub repo through it, so an origin set through a git `insteadOf` alias, such as `gh:acme/app`, counts as GitHub.
 - Nothing calls this skill; you run it.
 
 ## Tests

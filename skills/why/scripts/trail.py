@@ -34,11 +34,17 @@ yet.` and exits 0, with no gh call. The first gh call that fails ends the gh
 calls: that commit and the later ones get no PR lines, and the last line is
 `GitHub: not reached: <gh's error line>. Commits from <sha7> on are git only.`
 """
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
+
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 CUT = 400
 KEEP = 10
@@ -119,18 +125,6 @@ def spans(lines):
     return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in runs(lines))
 
 
-def gh(*args):
-    """gh's stdout, or raise RuntimeError with gh's last error line."""
-    try:
-        r = subprocess.run(["gh", *args], capture_output=True, text=True)
-    except FileNotFoundError:
-        raise RuntimeError("gh: command not found")
-    if r.returncode != 0:
-        lines = [l for l in r.stderr.splitlines() if l.strip()]
-        raise RuntimeError(lines[-1] if lines else f"gh exited {r.returncode}")
-    return r.stdout
-
-
 def commits(path, runs):
     """Each commit that changed the runs of HEAD lines, or the whole file when
     runs is None, newest first, as (sha, day, author, subject, body)."""
@@ -172,8 +166,8 @@ def pr_lines(pr, path):
 
 def pr_of(owner, name, sha):
     """The PR GitHub ties to the commit, or None."""
-    data = json.loads(gh("api", "graphql", "-F", f"owner={owner}", "-F", f"name={name}",
-                         "-F", f"oid={sha}", "-f", f"query={QUERY}"))["data"]
+    data = json.loads(GH.run("api", "graphql", "-F", f"owner={owner}", "-F", f"name={name}",
+                            "-F", f"oid={sha}", "-f", f"query={QUERY}"))["data"]
     obj = (data.get("repository") or {}).get("object") or {}
     nodes = (obj.get("associatedPullRequests") or {}).get("nodes") or []
     return nodes[0] if nodes else None
@@ -229,9 +223,9 @@ def main():
         if failed:
             continue
         try:
-            repo = repo or gh("repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner").strip().split("/", 1)
+            repo = repo or GH.run("repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner").strip().split("/", 1)
             pr = pr_of(*repo, sha)
-        except RuntimeError as e:
+        except GH.GhError as e:
             failed = (str(e), sha[:7])
             continue
         if not pr:

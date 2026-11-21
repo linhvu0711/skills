@@ -25,11 +25,17 @@ folder counts as `gh` down. Every other line comes out as it went in; a
 brief with no such section comes out unchanged. Exits 0.
 """
 import argparse
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
+
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 SECTION = "**PRs and branches:**"
 BULLET = re.compile(r"^- (PR|branch) (\S+)")
@@ -60,16 +66,17 @@ class Tagger:
     def gh(self, *args):
         if self.gh_down:
             raise GhDown
-        r = self.run("gh", *args)
-        if r.returncode == 0:
-            return json.loads(r.stdout)
-        lines = [l for l in r.stderr.splitlines() if l.strip()]
-        error = lines[-1] if lines else f"gh exited {r.returncode}"
-        if self.run("gh", "api", "user", "--jq", ".login").returncode == 0:
-            raise LookupFailed(error)
-        self.gh_down = True
-        print(f"live tags: gh failed: {error}", file=sys.stderr)
-        raise GhDown
+        try:
+            return json.loads(GH.run(*args, cwd=self.cwd))
+        except GH.GhError as e:
+            error = str(e)
+        try:
+            GH.run("api", "user", "--jq", ".login", cwd=self.cwd)
+        except GH.GhError:
+            self.gh_down = True
+            print(f"live tags: gh failed: {error}", file=sys.stderr)
+            raise GhDown
+        raise LookupFailed(error)
 
     def branch_tag(self, branch):
         if self.run("git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}").returncode == 0:

@@ -100,6 +100,39 @@ t_ck_no_default() {
   eq stderr "stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$err"
 }
 
+t_ck_default_form() {
+  # Given: GitHub names main as the default branch
+  ck_setup; ck acme/app "$T/dev/app"
+  # When
+  resolve default acme/app
+  # Then
+  eq default "0|main" "$code|$out"
+}
+
+t_ck_default_form_origin_head() {
+  # Given: gh fails, and origin/HEAD points at trunk
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" push -q origin main:trunk
+  git -C "$T/dev/app" fetch -q origin
+  git -C "$T/dev/app" remote set-head origin trunk >/dev/null
+  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
+  # When
+  resolve default acme/app
+  # Then
+  eq default "0|trunk" "$code|$out"
+}
+
+t_ck_default_form_gh_fails() {
+  # Given: gh fails, and origin/HEAD is not set
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" remote set-head origin -d
+  printf 'HTTP 502\n' > "$FAKE_GH/repo-view.fail"
+  # When
+  resolve default acme/app
+  # Then
+  eq default "2|stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$code|$err"
+}
+
 t_ck_reuses_spaced_path() {
   ck_setup; ck acme/app "$T/dev/app"
   git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/my wt/feat-2-y" main
@@ -348,6 +381,9 @@ cases=(
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
   "default branch falls back to origin/HEAD|t_ck_default_from_origin_head"
   "stops when gh and origin/HEAD both fail|t_ck_no_default"
+  "default prints GitHub's default branch|t_ck_default_form"
+  "default falls back to origin/HEAD|t_ck_default_form_origin_head"
+  "default exits 2 when gh and origin/HEAD both fail|t_ck_default_form_gh_fails"
   "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
   "stops when --base has no value|t_ck_base_without_value"
   "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"

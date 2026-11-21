@@ -32,7 +32,7 @@ It changes no code and no workflow file. It never proposes a retry, a wider time
 - Sub-agents: explorers for the workflow files, the PR history, and the stack, per the reader job in `../../shared/facts.md`, and one with the web for the tip check.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - [grill](../grill/), for the finds.
-- From the shared core: [facts.md](../../shared/facts.md) and [serve.sh](../../shared/serve.sh).
+- From the shared core: [facts.md](../../shared/facts.md), [serve.sh](../../shared/serve.sh), and [gh.py](../../shared/gh.py), which runs `gh` and reads its error.
 
 ## Fits with
 

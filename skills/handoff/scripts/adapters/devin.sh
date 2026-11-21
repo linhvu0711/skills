@@ -6,8 +6,6 @@
 #                                                             -> "<session_id>\t<url>"
 #   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<prs>\t<url>\t<message>"
 #   devin.sh say <session> <note-file>                        -> sends a follow-up
-#   devin.sh archive <session>                                -> archives the session
-#   devin.sh upload <file>                                    -> attachment URL
 #
 # <session> is the id with or without the "devin-" prefix, or the app URL.
 # --platform picks the VM: linux (default), macos, windows, or an outpost
@@ -25,8 +23,6 @@
 # a stale value in a running shell). Optional `export DEVIN_USER_ID=`
 # makes a service-user key create sessions as that user. Never printed.
 set -euo pipefail
-
-MSG_CHARS="${MSG_CHARS:-600}"
 
 die() { echo "devin.sh: $*" >&2; exit 1; }
 
@@ -109,7 +105,7 @@ last_devin() {
       break
     fi
   done
-  printf %s "$msg" | tr '\t\r\n' '   ' | head -c "$MSG_CHARS"
+  printf %s "$msg" | tr '\t\r\n' '   ' | head -c 600  # one short poll line, as cursor.sh cuts it
 }
 
 # summary ID -> "state<TAB>prs, comma joined<TAB>url<TAB>last devin message"
@@ -157,8 +153,6 @@ pointer() {
   }
 }
 
-cmd_upload() { upload "${1:-}"; echo; }
-
 cmd_start() {
   local file="${1:-}"; shift || true
   local title="" platform="" mode=""
@@ -172,7 +166,7 @@ cmd_start() {
   done
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
   [[ -z "$title" ]] && title=$(head -c 100 "$file" | head -1)
-  case "$platform" in ""|linux|default) platform="" ;; esac
+  case "$platform" in ""|linux) platform="" ;; esac
   local url body res id surl user
   url=$(upload "$file")
   user=$(zvar DEVIN_USER_ID)
@@ -206,19 +200,11 @@ cmd_say() {
   echo "sent to $id"
 }
 
-cmd_archive() {
-  local id; id=$(sid "${1:-}")
-  api POST "/sessions/$id/archive" '{}' >/dev/null
-  echo "archived $id"
-}
-
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|archive|upload) key >/dev/null; org >/dev/null ;; esac
+case "${1:-}" in start|poll|say) key >/dev/null; org >/dev/null ;; esac
 case "${1:-}" in
   start)   shift; cmd_start "$@" ;;
   poll)    shift; cmd_poll "$@" ;;
   say)     shift; cmd_say "$@" ;;
-  archive) shift; cmd_archive "$@" ;;
-  upload)  shift; cmd_upload "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

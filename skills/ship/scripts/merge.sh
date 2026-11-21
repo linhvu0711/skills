@@ -27,18 +27,13 @@ die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
 # A short SHA never equals GitHub's headRefOid, so it would read as a moved head.
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "--sha needs the full 40-character head SHA, got: $sha"
 
-# gh's stderr goes to a file, apart from the JSON: gh prints hints there
-# beside a good answer, and jq cannot read them. A failure's stop line is its
-# last line.
-gh_err="$(mktemp)"
-trap 'rm -f "$gh_err"' EXIT
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/gh.sh"
 
 # view: the PR's url, state, head, and merge commit, one per line.
 view() {
-  local json
-  json="$(gh pr view "$number" --repo "$repo" --json url,state,headRefOid,mergeCommit 2>"$gh_err")" \
-    || die "gh failed: $(tail -1 "$gh_err")"
-  jq -r '.url, .state, .headRefOid, (.mergeCommit.oid // "")' <<<"$json"
+  gh_or_stop pr view "$number" --repo "$repo" --json url,state,headRefOid,mergeCommit
+  jq -r '.url, .state, .headRefOid, (.mergeCommit.oid // "")' <<<"$out"
 }
 
 { read -r url; read -r state; read -r head; read -r merged; } < <(view)
@@ -48,13 +43,11 @@ fi
 [ "$state" = OPEN ] || die "#$number is $state, not open"
 [ "$head" = "$sha" ] || die "head moved to ${head:0:7}; ready it again"
 
-allowed="$(gh api "repos/$repo" 2>"$gh_err")" || die "gh failed: $(tail -1 "$gh_err")"
-method="$(jq -r 'if .allow_merge_commit then "merge" elif .allow_squash_merge then "squash" elif .allow_rebase_merge then "rebase" else "" end' <<<"$allowed")"
+gh_or_stop api "repos/$repo"
+method="$(jq -r 'if .allow_merge_commit then "merge" elif .allow_squash_merge then "squash" elif .allow_rebase_merge then "rebase" else "" end' <<<"$out")"
 [ -n "$method" ] || die "repos/$repo allows no merge method"
 
-if ! err="$(gh pr merge "$number" --repo "$repo" "--$method" --match-head-commit "$sha" 2>&1)"; then
-  die "merge refused: $(printf '%s\n' "$err" | tail -1)"
-fi
+gh_out pr merge "$number" --repo "$repo" "--$method" --match-head-commit "$sha" || die "merge refused: $err"
 
 { read -r url; read -r state; read -r _; read -r merged; } < <(view)
 [ "$state" = MERGED ] || die "#$number is still open after the merge; a merge queue or a rule holds it"

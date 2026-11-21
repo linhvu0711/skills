@@ -83,15 +83,10 @@ done
 owner="${repo%%/*}"; name="${repo##*/}"
 url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once read
 
-# gh_out <args>: gh's answer in `out`; when it fails, the last line of its
-# stderr in `err` and return 1. stderr stays out of `out`: gh prints hints
-# there beside a good answer, and jq cannot read them.
-gh_err="$(mktemp)"
-trap 'rm -f "$gh_err"' EXIT
-gh_out() {
-  if out="$(gh "$@" 2>"$gh_err")"; then return 0; fi
-  err="$(tail -1 "$gh_err")"; return 1
-}
+# gh_out <args>, the shared one: gh's answer in `out`; when it fails, its
+# last error line in `err` and return 1.
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/gh.sh"
 
 # gh_failed <err>: the BLOCKED verdict for a gh call that failed.
 gh_failed() { printf 'BLOCKED %s\ngh failed: %s\n' "$url" "$1"; exit 1; }
@@ -110,6 +105,11 @@ nap() {
   local left=$((deadline - SECONDS))
   sleep "$((left < poll ? left : poll))"
 }
+
+# Both jq programs below read a check's state by this one rule.
+states='def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
+  def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
+  def green: ["SUCCESS","NEUTRAL","SKIPPED"];'
 
 # pr_facts: sets facts, one KEY=value per line, read only through get. Keys:
 # URL STATE DRAFT SHA MERGEABLE MERGE_STATE REVIEW_DECISION CHECKS_RED
@@ -139,11 +139,8 @@ pr_facts() {
   else
     return 1
   fi
-  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" '
-    def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
+  facts="$(jq -r --argjson prot "$prot" --argjson rules "$rules" "$states"'
     def all: [.statusCheckRollup[]?];
-    def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
-    def green: ["SUCCESS","NEUTRAL","SKIPPED"];
     def is_red: st as $s | red | index($s);
     def is_pending: st as $s | (red + green) | index($s) | not;
     "URL=\(.url)",
@@ -161,9 +158,7 @@ pr_facts() {
     "REQUIRED_MISSING=" + ([.statusCheckRollup[]? | .context // .name] as $have
       | ($prot + $rules) | unique | map(select(. as $c | $have | index($c) | not)) | join(","))
   ' <<<"$json")"
-  reds="$(jq -r '
-    def st: (.state // .conclusion // .status // "UNKNOWN") | ascii_upcase;
-    def red: ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"];
+  reds="$(jq -r "$states"'
     .statusCheckRollup[]? | st as $s | select(red | index($s))
     | (.detailsUrl // .targetUrl // "" | if . == "" then "-" else . end) as $u
     | (.context // .name) as $n
@@ -264,7 +259,7 @@ until open_threads; do [ -n "$watch_sha" ] || gh_failed "$err"; failed_poll; don
 open="$(head -1 <<<"$threads" | cut -d= -f2)"
 
 # blocked <reason> / waiting <reason>: add a reason, in check order.
-why=(); has_blocked=0; has_waiting=0; approval=0
+why=(); has_blocked=0; has_waiting=0; merge_blocked=0; approval=0
 blocked() { why+=("$1"); has_blocked=1; }
 waiting() { why+=("$1"); has_waiting=1; }
 
@@ -284,7 +279,7 @@ esac
 case "$(get MERGE_STATE)" in
   CLEAN|HAS_HOOKS|BEHIND) ;;
   DRAFT) ;;  # the draft line says it
-  BLOCKED) approval=1 ;;
+  BLOCKED) merge_blocked=1 ;;
   UNKNOWN) waiting "merge state is UNKNOWN" ;;
   *) blocked "merge state is $(get MERGE_STATE)" ;;
 esac
@@ -304,8 +299,8 @@ fi
 
 # BLOCKED with no other reason: a missing approval is the one thing a person
 # still owes, so that is ready; anything else blocks unseen.
-if [ "${#why[@]}" -eq 0 ] && [ "$approval" -eq 1 ] && [ "$(get REVIEW_DECISION)" != "REVIEW_REQUIRED" ]; then
-  blocked "merge state is BLOCKED"
+if [ "$merge_blocked" -eq 1 ] && [ "${#why[@]}" -eq 0 ]; then
+  if [ "$(get REVIEW_DECISION)" = "REVIEW_REQUIRED" ]; then approval=1; else blocked "merge state is BLOCKED"; fi
 fi
 
 if [ "$has_blocked" -eq 1 ]; then verdict="BLOCKED $url"; code=1

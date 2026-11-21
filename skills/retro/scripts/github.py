@@ -28,6 +28,7 @@ on stderr and exit 1.
 
 import argparse
 import datetime as dt
+import importlib.util
 import json
 import os
 import re
@@ -36,6 +37,10 @@ import sys
 
 CHECKOUT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "checkout.sh")
 LOG_TAIL = 80  # the failing assert sits at the end of a failed log
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 PR_QUERY = """
 query($owner: String!, $name: String!, $n: Int!) {
@@ -57,24 +62,8 @@ query($owner: String!, $name: String!, $n: Int!) {
 """
 
 
-def gh_try(*args):
-    """(True, stdout), or (False, gh's last error line)."""
-    done = subprocess.run(["gh", *args], capture_output=True, text=True)
-    if done.returncode != 0:
-        return False, (done.stderr.strip().splitlines() or [f"exit {done.returncode}"])[-1]
-    return True, done.stdout
-
-
-def gh(what, *args):
-    ok, out = gh_try(*args)
-    if not ok:
-        print(f"stop: gh could not {what}: {out}", file=sys.stderr)
-        raise SystemExit(1)
-    return out
-
-
 def gh_json(what, *args):
-    return json.loads(gh(what, *args))
+    return json.loads(GH.stop(what, *args))
 
 
 def transcripts(folder):
@@ -118,11 +107,10 @@ def cmd_list(args):
                 if not ref["url"].startswith(f"https://github.com/{repo}/pull/"):
                     skipped.append({"url": ref["url"], "why": "in another repo"})
                     continue
-                ok, out = gh_try("pr", "view", ref["url"], "--json", "number,url,title,headRefName,createdAt")
-                if ok:
-                    prs[ref["url"]] = json.loads(out)
-                else:
-                    skipped.append({"url": ref["url"], "why": out})
+                try:
+                    prs[ref["url"]] = json.loads(GH.run("pr", "view", ref["url"], "--json", "number,url,title,headRefName,createdAt"))
+                except GH.GhError as e:
+                    skipped.append({"url": ref["url"], "why": str(e)})
             issues.append(i)
         closed = set(args.issues)
         prs = list(prs.values())
@@ -198,11 +186,11 @@ def cmd_pr(args):
             out.append(f"no log here: {url or 'no link'}")
         elif rid not in seen:
             seen.add(rid)
-            ok, log = gh_try("run", "view", rid, "--repo", args.repo, "--log-failed")
-            if ok:
+            try:
+                log = GH.run("run", "view", rid, "--repo", args.repo, "--log-failed")
                 out += ["```", *log.rstrip("\n").splitlines()[-LOG_TAIL:], "```"]
-            else:
-                out.append(f"log not readable: {log}")
+            except GH.GhError as e:
+                out.append(f"log not readable: {e}")
         else:
             out.append(f"same run as above: {rid}")
     if not failed:
@@ -232,14 +220,15 @@ def cmd_home(args):
 
 
 def cmd_latest(args):
-    ok, out = gh_try("api", f"repos/{args.home}/contents/{args.file}", "-H", "Accept: application/vnd.github.raw")
-    if ok:
-        print(json.dumps({"file": args.file, "text": out}))
-    elif "HTTP 404" in out:
+    try:
+        text = GH.run("api", f"repos/{args.home}/contents/{args.file}", "-H", "Accept: application/vnd.github.raw")
+    except GH.GhError as e:
+        if "HTTP 404" not in str(e):
+            print(f"stop: gh could not read {args.file} on {args.home}: {e}", file=sys.stderr)
+            raise SystemExit(1)
         print(json.dumps({"file": args.file, "missing": True}))
-    else:
-        print(f"stop: gh could not read {args.file} on {args.home}: {out}", file=sys.stderr)
-        raise SystemExit(1)
+        return
+    print(json.dumps({"file": args.file, "text": text}))
 
 
 def cmd_issues(args):
