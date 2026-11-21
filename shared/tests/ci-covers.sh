@@ -101,6 +101,43 @@ t_cc_on_map() {
   eq stdout "ci ci.yml · pnpm test" "$out"
 }
 
+t_cc_job_if_repro() {
+  # Given: the issue's repro
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' "    if: github.base_ref == 'release'" \
+    '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq stdout "here · pnpm test" "$out"
+}
+
+t_cc_job_if_each_step() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    runs-on: ubuntu-latest' \
+    "    if: github.event_name == 'push'" '    steps:' '      - run: pnpm lint' '      - run: pnpm test' \
+    '  build:' '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm build'
+  # When
+  covers 'pnpm lint' 'pnpm test' 'pnpm build'
+  # Then
+  eq stdout "here · pnpm lint
+here · pnpm test
+ci ci.yml · pnpm build" "$out"
+}
+
+t_cc_if_always() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    if: always()' '    runs-on: ubuntu-latest' \
+    '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
 t_cc_usage() {
   # Given
   T=""; ci_yml 'on: pull_request' '      - run: pnpm test'
@@ -120,5 +157,8 @@ cases=(
   "no workflows folder covers nothing|t_cc_no_workflows"
   "the list form of on counts|t_cc_on_list"
   "the map form of on counts|t_cc_on_map"
+  "the issue's repro: a job if makes the Gate run here|t_cc_job_if_repro"
+  "a job if sends each Gate of its steps here|t_cc_job_if_each_step"
+  "if: always() counts like any if|t_cc_if_always"
   "no command after -- is a usage stop|t_cc_usage"
 )

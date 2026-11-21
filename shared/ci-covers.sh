@@ -5,7 +5,7 @@
 #
 # It reads each <worktree>/.github/workflows/*.yml and *.yaml file, the top of
 # that folder only as GitHub does, as plain text lines. A workflow covers a
-# Gate only when both hold:
+# Gate only when all three hold:
 #   - its top-level `on:` names `pull_request`: `on: pull_request`, a list
 #     such as `on: [push, pull_request]`, or a `pull_request:` key or
 #     `- pull_request` item under `on:`. Filters under it are not read.
@@ -13,6 +13,9 @@
 #     one line, trimmed, of a `run: |` block. A longer command, a comment, a
 #     line of a folded `run: >` block, or a run line with more on it is not
 #     the Gate.
+#   - the job of that run line has no `if:` line. Any `if:` counts,
+#     `if: always()` too: the script does not read what a condition means,
+#     and an `if:` can skip the job on the PR.
 # When it is not sure, the Gate runs here: no workflows folder, a file it
 # cannot read, another CI, a wrapped script.
 #
@@ -35,13 +38,13 @@ prog='
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
-BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1 }
+BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0 }
 {
   sub(/\r$/, "")
   line = $0
   if (blk >= 0) {
     if (line ~ /^[ \t]*$/) next
-    if (indent(line) > blk) { runs[++n] = trim(line); next }
+    if (indent(line) > blk) { runs[++n] = trim(line); rj[n] = job; next }
     blk = -1
   }
   if (in_on) {
@@ -66,17 +69,27 @@ BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1 }
     } else if (v == "pull_request") pr = 1
     next
   }
-  if (line ~ /^[ \t]*#/) next
+  if (line ~ /^[ \t]*#/ || line ~ /^[ \t]*$/) next
   match(line, /^ *(- +)?/); col = RLENGTH
   t = substr(line, col + 1)
+  ind = indent(line); dash = (col > ind)
+  if (ind == 0) { injobs = (line ~ /^jobs:/); jind = -1; next }
+  if (injobs) {
+    if (jind < 0) jind = ind
+    if (ind <= jind) { job++; jk = -1 }
+    else {
+      if (jk < 0) jk = ind
+      if (ind == jk && !dash && t ~ /^if:([ \t]|$)/) jif[job] = 1
+    }
+  }
   if (t !~ /^run:([ \t]|$)/) next
   v = trim(substr(t, 5))
   if (v ~ /^\|[-+]?$/) blk = col
-  else if (v != "" && v !~ /^>/) runs[++n] = v
+  else if (v != "" && v !~ /^>/) { runs[++n] = v; rj[n] = job }
 }
 END {
   print (pr ? "PR" : "NOPR")
-  for (i = 1; i <= n; i++) print runs[i]
+  for (i = 1; i <= n; i++) if (!jif[rj[i]]) print runs[i]
 }'
 
 tmp="$(mktemp -d)"
