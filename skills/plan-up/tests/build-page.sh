@@ -162,7 +162,7 @@ t_build_no_proved_date() {
 }
 
 t_build_odd_tick() {
-  bad_ticket 's/- O1 orders export as PDF/&`/' 'DATA.layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
+  bad_ticket 's/- O1 orders export as PDF/&`/' 'layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
 }
 
 t_build_no_date() {
@@ -256,7 +256,7 @@ t_build_preserves_old() {
 
 t_build_all_problems() {
   bad_ticket '/^  Schema:/d; s/- O1 orders export as PDF/&`/' 'review: `Blast radius` has no `Schema` line
-DATA.layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
+layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
 }
 
 t_build_wrapped_text() {

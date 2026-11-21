@@ -44,7 +44,7 @@ def page_maps(maps):
         parts = [{"ref": p["ref"], "name": p["name"], "job": p["job"], "change": p["change"], "group": p["group"],
                   "kind": p["kind"], "at": p["at"], "x": p["x"] or 0, "y": p["y"] or 0, "layer": p["layer"]}
                  for p in m["parts"]]
-        got.append({"area": m["area"], "parts": parts, "flows": [f for f in m["flows"] if "bad" not in f]})
+        got.append({"area": m["area"], "parts": parts, "flows": m["flows"]})
     return got
 
 
@@ -102,17 +102,6 @@ def page_data(plan):
     return data
 
 
-def strings(node, path="DATA"):
-    if isinstance(node, str):
-        yield path, node
-    elif isinstance(node, dict):
-        for k, v in node.items():
-            yield from strings(v, f"{path}.{k}")
-    elif isinstance(node, list):
-        for i, v in enumerate(node):
-            yield from strings(v, f"{path}[{i}]")
-
-
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__.strip().splitlines()[2].strip())
@@ -122,12 +111,10 @@ def main():
         print(f"not a plan-up .md: {path.name}")
         sys.exit(1)
     problems = list(plan_reader.problems(plan))
-    data = page_data(plan)
-    problems.extend(f"{p}: odd number of backticks, one shows raw: {s[:80]}"
-                    for p, s in strings(data) if s.count("`") % 2)
     if problems:
         print("\n".join(problems))
         sys.exit(1)
+    data = page_data(plan)
     shell = (Path(__file__).resolve().parent.parent / "assets/shell.html").read_text(encoding="utf-8")
     output = path.with_suffix(".html")
     tmp = output.with_suffix(".html.tmp")
