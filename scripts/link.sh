@@ -300,8 +300,10 @@ for f in "$repo"/skills/*/agents/*.md "$repo"/shared/agents/*.md; do
     done
     continue
   fi
+  form claude "$(agent_path claude "$n")" "$f" "$src"
+  form codex "$(agent_path codex "$n")" "$f" "$src"
   [ "$status" = 1 ] || mkdir -p "$plugins/skills/agents"
-  for h in claude codex antigravity; do form "$h" "$(agent_path "$h" "$n")" "$f" "$src"; done
+  form antigravity "$(agent_path antigravity "$n")" "$f" "$src"
   any=1
 done
 if [ "$status" = 0 ]; then
