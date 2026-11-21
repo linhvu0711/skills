@@ -44,9 +44,10 @@
 #
 # --status writes nothing and prints one line per target, its fields joined
 # by a tab: `<state> <kind> <harness> <name> <path>`, the state `ok`,
-# `missing`, or `stale`, the kind `skill`, `agent`, `gate`, or `plugins`, and
-# the harness `shared` for the first skills folder. A target something else
-# holds adds, as a sixth field, the words its `skip:` line gives. Any other
+# `missing`, or `stale`, the kind `skill`, `agent`, `manifest`, `gate`, or
+# `plugins`, and the harness `shared` for the first skills folder. A target
+# something else holds, and each file of an agent that agents.sh cannot
+# render, adds, as a sixth field, the words its `skip:` line gives. Any other
 # argument: the usage line on stderr, exit 2.
 set -euo pipefail
 
@@ -157,6 +158,15 @@ sweep() {
   done
 }
 
+# agent_path <harness> <name>: the harness's file for the agent.
+agent_path() {
+  case "$1" in
+    claude) printf '%s/%s.md' "$claude_agents" "$2" ;;
+    codex) printf '%s/%s.toml' "$codex_agents" "$2" ;;
+    antigravity) printf '%s/skills/agents/%s.md' "$plugins" "$2" ;;
+  esac
+}
+
 # form <harness> <path> <source file> <source path>: write <path> through put,
 # from agents.sh's form of the source for <harness>. With --status, print its
 # line instead; the temp file then sits outside the folder, which may not
@@ -175,20 +185,27 @@ form() {
   fi
 }
 
-# manifest: write the "skills" plugin's plugin.json when it is missing. It is
-# strict JSON with no mark, since agy warns that `plugin install` cannot read
-# a comment, so this script owns it only when it holds exactly these words.
+# manifest: write the "skills" plugin's plugin.json when it is missing, or
+# with --status print its line. It is strict JSON with no mark, since agy
+# warns that `plugin install` cannot read a comment, so this script owns it
+# only when it holds exactly these words.
 manifest() {
   local p="$plugins/skills/plugin.json" want t
   want='{
   "name": "skills",
   "description": "The skill agents of the skills repo, written by its scripts/link.sh."
 }'
-  if [ ! -e "$p" ] && [ ! -L "$p" ]; then
+  why=""
+  if [ ! -e "$p" ] && [ ! -L "$p" ]; then st=missing
+  elif [ "$(cat "$p")" != "$want" ]; then st=stale; why="$p is not this repo's plugin.json"
+  else st=ok; fi
+  if [ "$status" = 1 ]; then
+    record "$st" manifest antigravity plugin.json "$p" ${why:+"$why"}
+  elif [ "$st" = missing ]; then
     t="$(mktemp "$plugins/skills/.link.XXXXXX")"; printf '%s\n' "$want" > "$t"
     mv "$t" "$p"; printf 'wrote %s\n' "$p"
-  elif [ "$(cat "$p")" != "$want" ]; then
-    printf 'skip: %s is not this repo'"'"'s plugin.json\n' "$p" >&2
+  elif [ -n "$why" ]; then
+    printf 'skip: %s\n' "$why" >&2
   fi
 }
 
@@ -275,21 +292,24 @@ for f in "$repo"/skills/*/agents/*.md "$repo"/shared/agents/*.md; do
   [ -f "$f" ] || continue
   src="${f#"$repo"/}"; n="$(basename "$f" .md)"
   if ! why="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
-    [ "$status" = 1 ] || printf 'skip: %s: %s\n' "$src" "$why" >&2
+    if [ "$status" = 0 ]; then printf 'skip: %s: %s\n' "$src" "$why" >&2; continue; fi
+    for h in claude codex antigravity; do
+      p="$(agent_path "$h" "$n")"
+      if [ -e "$p" ] || [ -L "$p" ]; then st=stale; else st=missing; fi
+      record "$st" agent "$h" "$n" "$p" "$src: $why"
+    done
     continue
   fi
-  form claude "$claude_agents/$n.md" "$f" "$src"
-  form codex "$codex_agents/$n.toml" "$f" "$src"
   [ "$status" = 1 ] || mkdir -p "$plugins/skills/agents"
-  form antigravity "$plugins/skills/agents/$n.md" "$f" "$src"
+  for h in claude codex antigravity; do form "$h" "$(agent_path "$h" "$n")" "$f" "$src"; done
   any=1
 done
 if [ "$status" = 0 ]; then
   sweep "$claude_agents" '*.md'
   sweep "$codex_agents" '*.toml'
   sweep "$plugins/skills/agents" '*.md'
-  [ -z "${any:-}" ] || manifest
 fi
+[ -z "${any:-}" ] || manifest
 if [ -f "$gate" ]; then
   hook_entry "$claude_settings" claude
   [ "$status" = 0 ] || record "$st" gate claude subagent-gate "$claude_settings" ${why:+"$why"}

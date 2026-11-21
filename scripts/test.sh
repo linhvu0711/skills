@@ -574,7 +574,7 @@ t_link_status_names_every_target_ok() {
   eq stdout "$(status_lines "ok skill shared demo $T/agents/demo" "ok skill claude demo $T/claude/demo" \
     "ok skill antigravity demo $T/gskills/demo" "ok agent claude helper $T/cagents/helper.md" \
     "ok agent codex helper $T/codex/helper.toml" "ok agent antigravity helper $T/gplugins/skills/agents/helper.md" \
-    "ok gate claude subagent-gate $T/claude-settings.json" "ok gate codex subagent-gate $T/codex-hooks.json" \
+    "ok manifest antigravity plugin.json $T/gplugins/skills/plugin.json" "ok gate claude subagent-gate $T/claude-settings.json" "ok gate codex subagent-gate $T/codex-hooks.json" \
     "ok gate antigravity subagent-gate $T/gplugins/skills/hooks.json" "ok plugins antigravity plugins $T/t3/p1/config/plugins")" "$out"
 }
 
@@ -586,10 +586,33 @@ t_link_status_names_missing_and_held() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "lines 2, 5, 7" "$(printf 'missing\tskill\tclaude\tdemo\t%s\n' "$T/claude/demo"
+  eq "lines 2, 5, 8" "$(printf 'missing\tskill\tclaude\tdemo\t%s\n' "$T/claude/demo"
     printf 'stale\tagent\tcodex\thelper\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex/helper.toml is not this repo's helper.toml"
     printf 'stale\tgate\tclaude\tsubagent-gate\t%s\t%s\n' "$T/claude-settings.json" "$T/claude-settings.json is not JSON")" \
-    "$(sed -n '2p;5p;7p' <<<"$out")"
+    "$(sed -n '2p;5p;8p' <<<"$out")"
+}
+
+t_link_status_names_agent_it_cannot_render() {
+  # Given: everything linked, then a second agent with no Codex backup
+  linked demo; agent demo helper; with_gate; link_sh
+  agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq "helper2 lines" "$(for p in "claude $T/cagents/helper2.md" "codex $T/codex/helper2.toml" "antigravity $T/gplugins/skills/agents/helper2.md"; do
+      printf 'missing\tagent\t%s\thelper2\t%s\tskills/demo/agents/helper2.md: missing backup for codex\n' "${p%% *}" "${p#* }"; done)" \
+    "$(grep helper2 <<<"$out")"
+}
+
+t_link_status_names_foreign_manifest() {
+  # Given: everything linked, then a plugin.json of the user's own
+  linked demo; agent demo helper; with_gate; link_sh
+  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq manifest "$(printf 'stale\tmanifest\tantigravity\tplugin.json\t%s\t%s' "$T/gplugins/skills/plugin.json" "$T/gplugins/skills/plugin.json is not this repo's plugin.json")" \
+    "$(grep manifest <<<"$out")"
 }
 
 t_link_status_writes_nothing() {
@@ -1434,6 +1457,8 @@ cases=(
   "link status names every target ok|t_link_status_names_every_target_ok"
   "link status names missing and held targets|t_link_status_names_missing_and_held"
   "link status writes nothing|t_link_status_writes_nothing"
+  "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
+  "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"

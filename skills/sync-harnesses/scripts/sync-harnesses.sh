@@ -190,10 +190,14 @@ is_absent() {
 
 # Each target link.sh could not own is a problem, unless it belongs to a
 # harness this Mac does not have. No harness owns the shared skills folder.
+# An agent link.sh cannot render gives the same why for each harness, so a
+# why already named is not named again.
 for t in ${targets[@]+"${targets[@]}"}; do
   IFS=$'\t' read -r st kind h name path why <<< "$t"
-  [ -n "$why" ] || continue
-  is_absent "$h" || link_problems+=("problem: $(tilde "$why")")
+  [ -n "$why" ] && ! is_absent "$h" || continue
+  l="problem: $(tilde "$why")"
+  for x in ${link_problems[@]+"${link_problems[@]}"}; do [ "$x" = "$l" ] && continue 2; done
+  link_problems+=("$l")
 done
 
 # Every agent's models, one row each: <agent file> <map> <harness> <place>
