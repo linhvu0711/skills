@@ -307,7 +307,9 @@ def read(rows):
                     first_user = txt
                     break
     src = meta.get("source")
-    spawn = (src.get("subagent") or {}).get("thread_spawn") if isinstance(src, dict) else None
+    sub = src.get("subagent") if isinstance(src, dict) else None
+    # An older rollout names its helper kind as a plain string, with no spawn record.
+    spawn = sub.get("thread_spawn") if isinstance(sub, dict) else None
     if spawn:
         thread = f"subagent '{spawn.get('agent_nickname')}' ({spawn.get('agent_role')}) of parent {spawn.get('parent_thread_id')}"
     else:
