@@ -58,9 +58,12 @@ A new worktree now gets the git-ignored files its repo lists in `.worktreeinclud
 
 Walks now read the console and the requests. Each video saves the page's errors and failed requests next to it, as `video-<n>-browser.txt`, and the walker marks each console and request `Must not` pass or FAIL from that file. The file says `none` when the page logged nothing, and `missing: /tmp/walk-browser.log` when the browser wrote no log, which fails the walk's console and request checks. Before, the walker wrote `not checked` on every walk, and the session read the app's server log, which never sees the browser. A visible layout fault, such as cut-off text, is now always an app bug, so a walk's `See` line is never changed to fit it. Before shots and the perf base now come from `origin/<BASE>`, fetched just before by the shared `base-tree.sh`. Before, they used the local branch, which could lag behind origin and show old code.
 
+A fix round after the PR opens now passes `--pr-open` to `box.sh gates`. The script reads the PR's workflows through `ci-covers.sh` and writes `not run: CI runs it` for each Gate CI runs. Before, the agent ran `ci-covers.sh` itself and typed each of those Gates as a `--not-run` option. When CI runs every Gate, the fix round still starts no Sandbox. A Gate sent to your machine with `--on-local` still runs there, since `ci-covers.sh` reads no `if:` and cannot tell whether CI skips that job on this PR. Every proofbox call in `box.sh` now goes through one helper, with one test for a gone Sandbox: exit code 125 and the line `Sandbox <id> is gone`.
+
 ## Needs
 
 - For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
+- `jq` on the local machine, for a plan with UI walks: `box.sh auth` reads proofbox's login list as JSON with it.
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.
 - `node` on the local machine, for the browser starter's tests.

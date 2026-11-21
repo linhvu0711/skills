@@ -329,7 +329,7 @@ t_box_state_not_run() {
 
 t_box_auth_not_logged_in() {
   fake_proofbox
-  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
@@ -337,7 +337,7 @@ t_box_auth_not_logged_in() {
 
 t_box_auth_expired() {
   fake_proofbox
-  echo "namespace  expired 2026-10-01T00:00:00Z. Run: proofbox auth login namespace" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"expired","from":"saved","expires":"2026-10-01T00:00:00Z"}]' > "$FAKE_PB/auth.out"
   box auth macos
   eq exit 1 "$code"
   has stderr "stop: log in first: proofbox auth login namespace" "$err"
@@ -345,7 +345,7 @@ t_box_auth_expired() {
 
 t_box_auth_rejected() {
   fake_proofbox
-  echo "namespace  PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"rejected","from":"env","env":"PROOFBOX_NAMESPACE_TOKEN"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
   has stderr "stop: PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" "$err"
@@ -353,17 +353,32 @@ t_box_auth_rejected() {
 
 t_box_auth_ok() {
   fake_proofbox
-  echo "namespace  logged in as Personal, region us, expires 2026-10-31T02:02:57Z, saved login" > "$FAKE_PB/auth.out"
+  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 0 "$code"
   eq stdout "PROVIDER=namespace" "$out"
+  eq log "auth status --json" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_auth_no_jq() {
+  # Given: the logged-in case, on a PATH with every tool auth uses but jq
+  fake_proofbox
+  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
+  mkdir -p "$T/nojq"
+  for t in bash dirname sed head mktemp tail cat rm grep; do ln -s "$(command -v "$t")" "$T/nojq/$t"; done
+  export PATH="$T/bin:$T/nojq"
+  # When
+  box auth linux
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: jq is not installed: box.sh auth reads proofbox's login JSON with it" "$err"
 }
 
 t_box_auth_config() {
   fake_proofbox
   mkdir -p "$HOME/.config/proofbox"
   echo '{ "linux": "docker", "macos": "namespace" }' > "$HOME/.config/proofbox/config"
-  printf 'docker  no login needed\nnamespace  not logged in\n' > "$FAKE_PB/auth.out"
+  echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 0 "$code"
   eq stdout "PROVIDER=docker" "$out"
@@ -432,7 +447,7 @@ t_box_gates_usage() {
   box gates "$P" --
   # Then
   eq exit 1 "$code"
-  has stderr "gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
+  has stderr "gates <proof-dir> [--local <worktree> | --pr-open <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
 }
@@ -622,6 +637,73 @@ t_box_gates_local_only_not_run() {
   # Then
   eq exit 0 "$code"
   eq checks "pnpm test:docker · $sha · not run: no Docker here" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_pr_open() {
+  # Given
+  special_fixture
+  mkdir -p "$R/.github/workflows"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm lint' > "$R/.github/workflows/ci.yml"
+  # When
+  box gates "$P" --pr-open "$R" -- 'pnpm test' 'pnpm lint'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pnpm lint · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+  eq execs 1 "$(grep -c '^exec ' "$FAKE_PB/log")"
+}
+
+# ci_only_fixture: no Sandbox up, and a workflow that runs pnpm test and pwd
+# on pull requests.
+ci_only_fixture() {
+  fake_proofbox
+  mkdir -p "$R/.github/workflows"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pwd' > "$R/.github/workflows/ci.yml"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+}
+
+t_box_gates_pr_open_no_sandbox() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_gates_pr_open_no_proofbox() {
+  # Given
+  ci_only_fixture
+  export PATH="/usr/bin:/bin"
+  # When
+  box gates "$P" --pr-open "$R" -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_pr_open_on_local() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" --on-local 'pwd' -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)
+pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_pr_open_needs_sandbox() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" --on-local 'pwd' -- 'pnpm lint'
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: no Sandbox for $P; run box.sh up first" "$err"
+  [ ! -e "$P/checks.txt" ] || eq checks.txt "none" "$(cat "$P/checks.txt")"
 }
 
 t_box_gates_upload_fails() {
@@ -826,7 +908,7 @@ t_box_open_linux() {
   # Then
   eq exit 0 "$code"
   eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_macos() {
@@ -838,7 +920,7 @@ t_box_open_macos() {
   # Then
   eq exit 0 "$code"
   eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_starter() {
@@ -852,7 +934,7 @@ t_box_open_starter() {
   eq exit 0 "$code"
   cmp -s "$here/../scripts/walk-browser.cjs" "$FAKE_PB/tmp/pb-walk/walk-browser" || eq starter "the lines of walk-browser.cjs" "$(head -n 3 "$FAKE_PB/tmp/pb-walk/walk-browser" 2>&1)"
   [ -x "$FAKE_PB/tmp/pb-walk/walk-browser" ] || eq "run bit" set none
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_close_limit() {
@@ -1012,6 +1094,11 @@ cases=(
   "gates refuses --on-local with --local|t_box_gates_on_local_with_local"
   "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
+  "gates --pr-open leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_pr_open"
+  "gates --pr-open needs no Sandbox when CI runs every Gate|t_box_gates_pr_open_no_sandbox"
+  "gates --pr-open needs no proofbox when CI runs every Gate|t_box_gates_pr_open_no_proofbox"
+  "gates --pr-open runs an --on-local Gate on the local machine though CI names it|t_box_gates_pr_open_on_local"
+  "gates --pr-open stops when a Gate needs a Sandbox that is not up|t_box_gates_pr_open_needs_sandbox"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
   "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"
@@ -1051,6 +1138,7 @@ cases=(
   "auth stops with the login command when the login expired|t_box_auth_expired"
   "auth stops when an env token is not accepted|t_box_auth_rejected"
   "auth passes a logged-in Provider|t_box_auth_ok"
+  "auth names jq when jq is missing|t_box_auth_no_jq"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
   "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
   "up notes the branch|t_box_up_notes_branch"

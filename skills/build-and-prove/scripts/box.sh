@@ -12,12 +12,13 @@
 #   box.sh open <proof-dir> -- <command>...
 #   box.sh close <proof-dir> [--out <file>]
 #   box.sh fit <proof-dir>
-#   box.sh gates <proof-dir> [--local <worktree>] [--on-local <command>]...
+#   box.sh gates <proof-dir> [--local <worktree> | --pr-open <worktree>]
+#                [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
 #
 # auth checks the login of the Provider that ~/.config/proofbox/config picks
-# for the OS (namespace when it names none), from `proofbox auth status`, so a
+# for the OS (namespace when it names none), from `proofbox auth status --json`, so a
 # run can stop before any work. Logged in, or no login needed: it prints
 # PROVIDER=<name>.
 #
@@ -60,13 +61,13 @@
 #
 # open and close are the walker's: open writes the browser starter,
 # walk-browser.cjs, to /tmp/pb-walk/walk-browser, then runs its command, a
-# browser or a terminal window, with /tmp/pb-walk first on PATH, in its own
-# process group, whose id goes in
+# browser or a terminal window, with /tmp/pb-walk first on PATH and
+# WALK_BROWSER_LOG set to the browser log, walk_log below, in its own process
+# group, whose id goes in
 # /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
 # exits 0 when the window already closed. With --out, close then copies the
-# browser log, /tmp/walk-browser.log, to <file> next to the video: `none`
-# when the log is empty, `missing: /tmp/walk-browser.log` when there is no
-# log. Either way it removes that log, so the next video's log holds only its
+# browser log to <file> next to the video: `none` when the log is empty,
+# `missing: <the log's path>` when there is no log. Either way it removes that log, so the next video's log holds only its
 # own lines. Neither uploads or makes a gone Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
@@ -110,6 +111,13 @@
 # there. Its lines end `(local machine)` in place of `(sandbox)`; the rest is
 # the same, so checks.txt keeps one writer and one line shape.
 #
+# gates --pr-open <worktree> says the PR is open, so its CI runs: each Gate
+# after -- that ci-covers.sh finds in <worktree>'s workflows gets the same
+# `not run: CI runs it` line, and the rest run as above; --on-local Gates still
+# run on the local machine. It needs proofbox and loads the Sandbox only when a
+# Gate after -- is left for it; with no Sandbox up, that is a stop that names
+# `box.sh up`. The short SHA comes from <worktree>.
+#
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
 #
@@ -124,33 +132,28 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+walk_log=/tmp/walk-browser.log
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree> | --pr-open <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
-# Only `gates --local` runs without proofbox.
-[ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
+# gates checks for proofbox itself, when it loads the Sandbox.
+[ "$verb" = gates ] || command -v proofbox >/dev/null || die "proofbox is not installed"
 
 # create: make a Sandbox from the BOX_* values and write the state. proofbox's
 # stderr reaches the caller live; a copy is kept for its last line.
 create() {
-  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") id errf c=0
+  local args=(create --os "$BOX_OS" --work "$BOX_WORK" --setup "$BOX_SETUP") login
   [ -z "$BOX_ENV" ] || args+=(--secrets "$BOX_ENV")
   [ -z "$BOX_SIZE" ] || args+=(--size "$BOX_SIZE")
   args+=(--idle "$(idle "$BOX_OS")")
-  errf="$(mktemp)"
-  set +e
-  id="$( { proofbox "${args[@]}" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; exit "${PIPESTATUS[0]}"; } 3>&1 )"; c=$?
-  set -e
-  if [ "$c" -ne 0 ]; then
-    local why login
-    why="$(tail -n 1 "$errf")"; rm -f "$errf"
+  pb keep show "${args[@]}"
+  if [ "$rc" -ne 0 ]; then
     login="$(grep -o 'proofbox auth login [a-z]*' <<<"$why" || true)"
     [ -z "$login" ] || die "log in first: $login"
     die "${why:-proofbox create failed}"
   fi
-  rm -f "$errf"
-  BOX_ID="$(tail -n 1 <<<"$id")"
+  BOX_ID="$(tail -n 1 <<<"$got")"
   # create uploads --work, the worktree.
   BOX_TREE=branch
   save
@@ -178,40 +181,61 @@ load() {
   done < "$dir/box.env"
 }
 
-# attempt <command>...: upload, then exec. Sets `gone` when proofbox says the
-# Sandbox is gone, at either step; otherwise sets `rc` to the command's code.
-# With `log` empty, exec's stderr still reaches the caller live, and a copy is
-# kept to tell a gone Sandbox (125 and its line) from the command's own exit
-# code. With `log` set, exec's stdout and stderr go to that file with no pipe,
-# so nothing can stand in for the command's own code.
-attempt() {
-  local errf src c=0
-  errf="$(mktemp)"
-  gone=""; rc=0
-  proofbox upload "$BOX_ID" "${from:-$BOX_WORK}" >/dev/null 2>"$errf" || c=$?
-  if [ "$c" -ne 0 ]; then
-    if grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; rm -f "$errf"; return; fi
-    local why; why="$(tail -n 1 "$errf")"
-    cat "$errf" >&2; rm -f "$errf"; die "${why:-proofbox upload failed}"
-  fi
-  if [ -n "${from:-}" ]; then BOX_TREE=base; else BOX_TREE=branch; fi
-  save
+# pb <out> <err> <proofbox args>...: the one place box.sh runs proofbox, so a
+# gone Sandbox is told from a failed command by one rule: exit 125 and the line
+# `Sandbox <id> is gone`. <out> takes proofbox's stdout: stdout, stderr, null,
+# keep (read into `got`), or a file the caller keeps. <err> takes its stderr:
+# show (live on box.sh's stderr, a copy kept), keep (the copy only, read into
+# `said`), or out (into the <out> file with no pipe, so nothing can stand in
+# for proofbox's own code). Sets `rc`, `why` (the last stderr line), `gone`
+# (that line when the Sandbox is gone, else empty), `said`, and `got`.
+pb() {
+  local out="$1" err="$2" copy keepf="" src
+  shift 2
+  copy="$(mktemp)"; src="$copy"
+  case "$out" in
+    stdout) exec 3>&1 ;;
+    stderr) exec 3>&2 ;;
+    null) exec 3>/dev/null ;;
+    keep) keepf="$(mktemp)"; exec 3>"$keepf" ;;
+    *) exec 3>"$out" ;;
+  esac
   set +e
-  if [ -n "${log:-}" ]; then
-    proofbox exec "$BOX_ID" -- "$@" >"$log" 2>&1; c=$?
-    src="$log"
-  else
-    { proofbox exec "$BOX_ID" -- "$@" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; c=${PIPESTATUS[0]}; } 3>&1
-    src="$errf"
-  fi
+  case "$err" in
+    show) { proofbox "$@" 2>&1 1>&3 3>&- | tee "$copy" 1>&2; rc=${PIPESTATUS[0]}; } ;;
+    keep) proofbox "$@" 2>"$copy" 1>&3 3>&-; rc=$? ;;
+    out) proofbox "$@" 1>&3 2>&1 3>&-; rc=$?; src="$out" ;;
+  esac
   set -e
-  if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$src"; then gone="$(tail -n 1 "$src")"; rm -f "$errf"; return; fi
-  rm -f "$errf"
-  rc="$c"
+  exec 3>&-
+  why="$(tail -n 1 "$src")"; said=""; got=""; gone=""
+  [ "$err" != keep ] || said="$(cat "$copy")"
+  [ -z "$keepf" ] || { got="$(cat "$keepf")"; rm -f "$keepf"; }
+  if [ -n "${BOX_ID:-}" ] && [ "$rc" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$src"; then gone="$why"; fi
+  rm -f "$copy"
 }
 
-# in_box <command>...: attempt, and when the Sandbox is gone make it again once
-# and attempt again. Sets `rc`; a Sandbox gone twice is a stop.
+# attempt <from> <log> <command>...: upload <from>, or the worktree when it is
+# empty, then exec. Sets `gone` when the Sandbox is gone at either step;
+# otherwise sets `rc` to the command's code. With <log> empty, the command's
+# output reaches the caller live; with <log>, both its streams go to that file.
+attempt() {
+  local from="$1" log="$2"
+  shift 2
+  pb null keep upload "$BOX_ID" "${from:-$BOX_WORK}"
+  [ -z "$gone" ] || return 0
+  if [ "$rc" -ne 0 ]; then
+    [ -z "$said" ] || printf '%s\n' "$said" >&2
+    die "${why:-proofbox upload failed}"
+  fi
+  if [ -n "$from" ]; then BOX_TREE=base; else BOX_TREE=branch; fi
+  save
+  if [ -n "$log" ]; then pb "$log" out exec "$BOX_ID" -- "$@"
+  else pb stdout show exec "$BOX_ID" -- "$@"; fi
+}
+
+# in_box <from> <log> <command>...: attempt, and when the Sandbox is gone make
+# it again once and attempt again. Sets `rc`; a Sandbox gone twice is a stop.
 in_box() {
   local old was
   attempt "$@"
@@ -230,15 +254,7 @@ in_box() {
 # to wait for or stop. The output goes to stderr, so stdout keeps only
 # box.sh's own KEY=value lines. Sets `rc`, and `gone` when proofbox says the
 # Sandbox is gone.
-bare() {
-  local errf
-  errf="$(mktemp)"; gone=""
-  set +e
-  { proofbox exec "$BOX_ID" -- "$@" 2>&1 1>&3 3>&- | tee "$errf" 1>&2; rc=${PIPESTATUS[0]}; } 3>&2
-  set -e
-  if [ "$rc" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then gone="$(tail -n 1 "$errf")"; fi
-  rm -f "$errf"
-}
+bare() { pb stderr show exec "$BOX_ID" -- "$@"; }
 
 # group_argv <pid file> <log file> <command>: set `gcmd` to a launch of the
 # command in its own process group, with the group's id in <pid file>. A Run
@@ -288,7 +304,7 @@ case "$verb" in
     [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
     shift
     load
-    in_box "$@"
+    in_box "$from" "" "$@"
     exit "$rc"
     ;;
   start)
@@ -305,7 +321,7 @@ case "$verb" in
     shift
     load
     group_argv /tmp/app.pid /tmp/app.log "$*"
-    in_box "${gcmd[@]}"
+    in_box "$from" "" "${gcmd[@]}"
     [ "$rc" -eq 0 ] || die "the app did not start: exit $rc"
     printf 'TREE=%s\n' "$BOX_TREE"
     [ -n "$url" ] || exit 0
@@ -342,7 +358,7 @@ case "$verb" in
     # only the repo, so the starter goes in as text, its path a separate word.
     bare sh -c 'mkdir -p "${2%/*}" && printf "%s\n" "$1" > "$2" && chmod +x "$2"' sh "$(cat "$here/walk-browser.cjs")" /tmp/pb-walk/walk-browser
     [ "$rc" -eq 0 ] || exit "$rc"
-    group_argv /tmp/walk-open.pid /dev/null "export PATH=/tmp/pb-walk:\$PATH; $*"
+    group_argv /tmp/walk-open.pid /dev/null "export PATH=/tmp/pb-walk:\$PATH WALK_BROWSER_LOG=$walk_log; $*"
     bare "${gcmd[@]}"
     exit "$rc"
     ;;
@@ -354,25 +370,22 @@ case "$verb" in
     [ -z "$gone" ] || exit "$rc"
     stopped="$rc"
     if [ -n "$out" ]; then
-      errf="$(mktemp)"
-      set +e
-      proofbox exec "$BOX_ID" -- cat /tmp/walk-browser.log >"$out.tmp" 2>"$errf"; c=$?
-      set -e
-      if [ "$c" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then
-        cat "$errf" >&2; rm -f "$errf" "$out.tmp"; exit 125
+      pb "$out.tmp" keep exec "$BOX_ID" -- cat "$walk_log"
+      if [ -n "$gone" ]; then
+        [ -z "$said" ] || printf '%s\n' "$said" >&2
+        rm -f "$out.tmp"; exit 125
       fi
-      rm -f "$errf"
       # The walker fails the walk's console and request checks on this line,
       # so close still exits 0 and the walk goes on.
-      if [ "$c" -ne 0 ]; then
-        printf 'missing: /tmp/walk-browser.log\n' >"$out.tmp"
+      if [ "$rc" -ne 0 ]; then
+        printf 'missing: %s\n' "$walk_log" >"$out.tmp"
       elif [ ! -s "$out.tmp" ]; then
         printf 'none\n' >"$out.tmp"
       fi
       mv "$out.tmp" "$out"
     fi
     # The next video's browser starts a new log, so its file holds only its own lines.
-    bare rm -f /tmp/walk-browser.log
+    bare rm -f "$walk_log"
     [ -z "$gone" ] || exit "$rc"
     exit "$stopped"
     ;;
@@ -384,13 +397,9 @@ case "$verb" in
     # The geometry goes in a variable first: eval of a failed command's empty
     # output succeeds, and an unset Y reads as 0, a window that seems to fit.
     measure='g=$(xdotool getactivewindow getwindowgeometry --shell) && eval "$g" && set -- $(xprop -root _NET_WORKAREA | sed "s/.*= //; s/,//g") && echo "$((Y + HEIGHT)) $(($2 + $4))"'
-    outf="$(mktemp)"; errf="$(mktemp)"
-    set +e
-    { proofbox exec "$BOX_ID" -- sh -c "$measure" 2>&1 >"$outf" | tee "$errf" 1>&2; rc=${PIPESTATUS[0]}; }
-    set -e
-    if [ "$rc" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$errf"; then rm -f "$outf" "$errf"; exit 125; fi
-    read -r bottom area < "$outf" || true
-    why="$(tail -n 1 "$errf")"; rm -f "$outf" "$errf"
+    pb keep show exec "$BOX_ID" -- sh -c "$measure"
+    [ -z "$gone" ] || exit 125
+    read -r bottom area <<<"$got" || true
     if [ "$rc" -ne 0 ] || ! [[ "${bottom:-}" =~ ^[0-9]+$ && "${area:-}" =~ ^[0-9]+$ ]]; then
       die "cannot measure the window: ${why:-no output}"
     fi
@@ -402,12 +411,13 @@ case "$verb" in
     ;;
   gates)
     [ $# -ge 1 ] || die "$usage"
-    dir="$1"; shift; local_wt=""; on_local=(); not_run=()
-    # --local stays first, so the proofbox check above sees it.
-    if [ "${1:-}" = "--local" ]; then
-      [ -d "${2:-}" ] || die "--local needs a worktree"
-      local_wt="$2"; shift 2
-    fi
+    dir="$1"; shift; local_wt=""; ci_wt=""; on_local=(); not_run=()
+    # Both options leave to CI each Gate after -- that the PR's CI runs, read
+    # from ci_wt.
+    case "${1:-}" in
+      --local) [ -d "${2:-}" ] || die "--local needs a worktree"; local_wt="$2"; ci_wt="$2"; shift 2 ;;
+      --pr-open) [ -d "${2:-}" ] || die "--pr-open needs a worktree"; ci_wt="$2"; shift 2 ;;
+    esac
     while [ $# -gt 0 ] && [ "$1" != -- ]; do
       case "$1" in
         --on-local) [ $# -ge 2 ] || die "$usage"; on_local+=("$2"); shift 2 ;;
@@ -420,36 +430,46 @@ case "$verb" in
     [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ] || [ ${#not_run[@]} -ge 1 ] || die "$usage"
     [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
       || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
-    if [ -n "$local_wt" ]; then mode=local; work="$local_wt"
-    else load; mode=sandbox; work="$BOX_WORK"; fi
-    mkdir -p "$dir"
-    tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
-    sha="$(git -C "$work" rev-parse --short HEAD)"
-    # checks.txt is moved into place whole, so a stop leaves the old one.
-    tmp="$dir/checks.txt.tmp"
-    trap 'rm -f "$tmp"' EXIT
-    # With --local, a Gate the PR's CI runs is left to CI: covered[i] is its
-    # workflow file, or empty.
+    # covered[i] is the workflow file that runs that Gate on the PR, or
+    # empty. An --on-local Gate always runs here: ci-covers reads no `if:`, so
+    # a CI job it finds may skip this PR, and nothing else would run the Gate.
     covered=()
-    if [ -n "$local_wt" ] && [ $# -ge 1 ]; then
+    if [ -n "$ci_wt" ] && [ $# -ge 1 ]; then
       cerr="$(mktemp)"
-      cover_out="$(bash "$cover" "$local_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
+      cover_out="$(bash "$cover" "$ci_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
       rm -f "$cerr"
       while IFS= read -r v; do
         v="${v%% · *}"
         case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
       done <<<"$cover_out"
     fi
+    # With --pr-open, a fix round where CI runs every Gate needs no Sandbox.
+    sandbox_gates=0; i=0
+    for cmd in "$@"; do [ -n "${covered[$i]:-}" ] || sandbox_gates=1; i=$((i + 1)); done
+    if [ -n "$local_wt" ]; then mode=local; work="$local_wt"
+    else
+      mode=sandbox; work="$ci_wt"
+      if [ -z "$ci_wt" ] || [ "$sandbox_gates" -eq 1 ]; then
+        command -v proofbox >/dev/null || die "proofbox is not installed"
+        load; work="${ci_wt:-$BOX_WORK}"
+      fi
+    fi
+    mkdir -p "$dir"
+    tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
+    sha="$(git -C "$work" rev-parse --short HEAD)"
+    # checks.txt is moved into place whole, so a stop leaves the old one.
+    tmp="$dir/checks.txt.tmp"
+    trap 'rm -f "$tmp"' EXIT
     : > "$tmp"
     n=0; red=0
 
     # gate <command> <local|sandbox>: run it there, write its line, and name
     # it on stderr when it is red.
     gate() {
-      local cmd="$1" where last miss
+      local cmd="$1" where last miss log
       n=$((n + 1)); log="$logs/$n.log"
       if [ "$2" = sandbox ]; then
-        where="sandbox"; in_box sh -c "$cmd"
+        where="sandbox"; in_box "" "$log" sh -c "$cmd"
       else
         where="local machine"; rc=0; (cd "$work" && sh -c "$cmd") >"$log" 2>&1 || rc=$?
       fi
@@ -489,7 +509,8 @@ case "$verb" in
     [ $# -eq 1 ] || die "$usage"
     dir="$1"
     load
-    proofbox delete "$BOX_ID" >/dev/null
+    pb null show delete "$BOX_ID"
+    [ "$rc" -eq 0 ] || exit "$rc"
     rm -f "$dir/box.env"
     printf 'REMADE=%s\n' "$BOX_REMADE"
     ;;
@@ -499,14 +520,18 @@ case "$verb" in
     conf="$HOME/.config/proofbox/config"; provider=""
     [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
     provider="${provider:-namespace}"
-    status="$(proofbox auth status 2>/dev/null)" || die "proofbox auth status failed"
-    line="$(grep -m 1 "^$provider " <<<"$status" || true)"
-    [ -n "$line" ] || die "proofbox auth status has no line for $provider"
-    state="$(sed 's/^[^ ]*  *//' <<<"$line")"
-    case "$state" in
-      "logged in"*|"no login needed"*) printf 'PROVIDER=%s\n' "$provider" ;;
-      "not logged in"*|expired*) die "log in first: proofbox auth login $provider" ;;
-      *) die "$state" ;;
+    command -v jq >/dev/null || die "jq is not installed: box.sh auth reads proofbox's login JSON with it"
+    pb keep keep auth status --json
+    [ "$rc" -eq 0 ] || die "proofbox auth status failed"
+    item="$(jq -r --arg p "$provider" 'map(select(.provider == $p))[0] // empty | [.login, (.env // "")] | @tsv' <<<"$got")" \
+      || die "proofbox auth status --json printed no JSON"
+    [ -n "$item" ] || die "proofbox auth status has no line for $provider"
+    IFS=$'\t' read -r login env <<<"$item"
+    case "$login" in
+      ok|not-needed) printf 'PROVIDER=%s\n' "$provider" ;;
+      none|expired) die "log in first: proofbox auth login $provider" ;;
+      rejected) die "$env is set, but $provider did not accept it" ;;
+      *) die "proofbox auth status: $provider login is $login" ;;
     esac
     ;;
   *) die "$usage" ;;

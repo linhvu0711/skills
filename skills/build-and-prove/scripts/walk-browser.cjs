@@ -6,8 +6,9 @@
 // It opens Playwright's Chromium, headed, on a new, empty profile at the page
 // size (1440,795 by default), with the saved login of --storage and a fixed
 // clock at --clock, then waits until the browser closes. It appends one line
-// per page error and failed request to the log, /tmp/walk-browser.log by
-// default, which `box.sh close --out` copies next to the video:
+// per page error and failed request to the log, --log or else
+// WALK_BROWSER_LOG, which `box.sh open` sets and `box.sh close --out` copies
+// next to the video:
 //
 //   error: <console error text> · <its location url>
 //   error: Uncaught <name>: <message> · <page url>
@@ -28,7 +29,7 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 
 const usage = 'usage: walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>] [--log <file>]';
-const opts = { size: '1440,795', storage: undefined, clock: undefined, log: '/tmp/walk-browser.log' };
+const opts = { size: '1440,795', storage: undefined, clock: undefined, log: process.env.WALK_BROWSER_LOG || undefined };
 const flags = { '--viewport-size': 'size', '--storage': 'storage', '--clock': 'clock', '--log': 'log' };
 
 const oneLine = (text) => String(text).replace(/\s*\n\s*/g, ' ');
@@ -54,6 +55,11 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 const size = /^(\d+),(\d+)$/.exec(opts.size);
+// stop() writes to the log, so with no log it can only use stderr.
+if (opts.log === undefined) {
+  process.stderr.write('stop: no log: pass --log <file> or set WALK_BROWSER_LOG\n');
+  process.exit(1);
+}
 if (bad || url === undefined || !size) stop(usage);
 const viewport = { width: Number(size[1]), height: Number(size[2]) };
 

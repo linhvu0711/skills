@@ -121,10 +121,39 @@ t_walk_browser_no_launch() {
   eq log "stop: browserType.launch: Executable doesn't exist at /tmp/pb/ms-playwright/chrome" "$(cat "$T/walk.log")"
 }
 
+t_walk_browser_env_log() {
+  # Given
+  fake_playwright events
+  cd "$T/app"
+  export WALK_BROWSER_LOG="$T/walk.log"
+  # When
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
+  # Then
+  eq exit 0 "$code"
+  eq log "error: boom · http://localhost:3000/app.js
+error: Uncaught TypeError: x is undefined · http://localhost:3000/
+request: 500 http://localhost:3000/api/wishes
+request: net::ERR_CONNECTION_REFUSED http://localhost:4000/feed" "$(cat "$T/walk.log")"
+}
+
+t_walk_browser_no_log() {
+  # Given
+  fake_playwright events
+  cd "$T/app"
+  unset WALK_BROWSER_LOG
+  # When
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: no log: pass --log <file> or set WALK_BROWSER_LOG" "$err"
+}
+
 cases=(
   "logs the page's errors and failed requests|t_walk_browser_logs"
   "opens the page at the size, login, and clock it is given|t_walk_browser_options"
   "leaves an empty log when the page logs nothing|t_walk_browser_clean_page"
   "stops with a line when the repo has no Playwright|t_walk_browser_no_playwright"
   "stops with a line when the browser will not start|t_walk_browser_no_launch"
+  "takes its log from WALK_BROWSER_LOG|t_walk_browser_env_log"
+  "stops when no log is named|t_walk_browser_no_log"
 )
