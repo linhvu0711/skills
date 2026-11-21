@@ -385,6 +385,60 @@ t_sync_warns_third_home_when_second_off() {
   eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
+t_sync_follows_link_env() {
+  # Given: Claude Code's skills folder moved, and link.sh's env setting naming
+  # the new folder
+  mac
+  mv "$H/.claude/skills" "$H/claude-skills"
+  # When
+  run env -i HOME="$H" PATH="$H/bin:/usr/bin:/bin" CLAUDE_SKILLS_HOME="$H/claude-skills" \
+    bash "$T/mac/repo/skills/sync-harnesses/scripts/sync-harnesses.sh"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$healthy" "$out"
+}
+
+t_sync_names_agent_link_cannot_render() {
+  # Given: a second agent with no Codex backup
+  mac
+  sed -e 's/^name: helper$/name: helper2/' -e '/^  codex: gpt-6-luna high$/d' \
+    "$T/mac/repo/skills/demo/agents/helper.md" > "$T/mac/repo/skills/demo/agents/helper2.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has claude 'claude       skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
+  has codex 'codex        skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
+  has antigravity 'antigravity  skills 2/2 · subagents 1/2 · gates 7/7 · rules 2/2' "$out"
+  eq problems 'problem: skills/demo/agents/helper2.md: missing backup for codex' "$(grep '^problem:' <<<"$out")"
+}
+
+t_sync_names_foreign_plugin_manifest() {
+  # Given: the skills plugin's plugin.json that is not this repo's
+  mac
+  printf 'not json\n' > "$H/.gemini/config/plugins/skills/plugin.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  eq problems "problem: ~/.gemini/config/plugins/skills/plugin.json is not this repo's plugin.json" "$(grep '^problem:' <<<"$out")"
+}
+
+t_sync_names_gates_beside_unread_plugin_hooks() {
+  # Given: the skills plugin's hooks.json that is not JSON, and the personal
+  # plugin with the question gate taken out
+  mac
+  printf 'not json\n' > "$H/.gemini/config/plugins/skills/hooks.json"
+  json "$H/.gemini/config/plugins/personal/hooks.json" '.personal.PreToolUse[0].hooks |= map(select(.command | contains("question-gate") | not))'
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 5/7 · rules 2/2' "$out"
+  has "question gate" 'problem: antigravity gate question-gate is not wired in ~/.gemini/config/plugins' "$out"
+  has "unread file" 'problem: ~/.gemini/config/plugins/skills/hooks.json is not JSON' "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -415,4 +469,8 @@ cases=(
   "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
   "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
+  "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
+  "sync names an agent link.sh cannot render once|t_sync_names_agent_link_cannot_render"
+  "sync names a plugin.json that is not this repo's|t_sync_names_foreign_plugin_manifest"
+  "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"
 )

@@ -132,31 +132,16 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
           efforts["codex"] = "low medium high xhigh max ultra"
           efforts["antigravity"] = "low medium high xhigh"
           efforts["devin"] = "none low medium high xhigh max" }
-  NR == 1 { if ($0 != "---") { bare = 1; exit } next }
-  closed { body[++nb] = $0; next }
-  $0 == "---" { closed = 1; next }
-  /^[ \t]*(#|$)/ { next }
-  /^[ \t]/ {
-    if (sec == "") next
-    line = $0; sub(/^[ \t]+/, "", line)
-    key = line; sub(/:.*$/, "", key)
-    v = val(line)
-    entry[sec, key] = v
-    seen[sec, key] = 1
-    order[++ne] = sec SUBSEP key
-    next
-  }
-  { sec = "" }
-  /^home:[ \t]*$/ { sec = "home"; next }
-  /^backup:[ \t]*$/ { sec = "backup"; next }
-  /^name:/ { rawname = $0; name = val($0) }
-  /^description:/ { rawdesc = $0; desc = val($0); if (desc ~ /^[|>][-+]?$/) blockdesc = 1 }
-  /^tools:/ { rawtools = $0; tools = val($0) }
   END {
-    if (bare || !closed) {
+    if (!fm_closed) {
       if (mode == "render" || mode == "tools") { print "missing frontmatter" > "/dev/stderr"; exit 1 }
       exit 0
     }
+    name = fm["name"]; desc = fm["description"]; tools = fm["tools"]
+    rawname = fm_raw["name"]; rawdesc = fm_raw["description"]; rawtools = fm_raw["tools"]
+    for (i = 1; i <= fm_nkeys; i++) { split(fm_keys[i], k, SUBSEP)
+      if (k[1] != "home" && k[1] != "backup") continue
+      entry[k[1], k[2]] = fm_map[k[1], k[2]]; seen[k[1], k[2]] = 1; order[++ne] = fm_keys[i] }
     if (mode == "tools") { print claude_tools(tools); exit 0 }
     split("claude codex antigravity", hs, " ")
     for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
@@ -167,7 +152,8 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
           for (j = 1; j <= nh; j++) { split(items[j], w, " "); print (j == 1 ? "home" : "home" j), k[2], w[1], w[2] } }
         else { split(entry[k[1], k[2]], w, " "); print k[1], k[2], k[2], w[1] } }
       exit 0 }
-    if (blockdesc) problem("description on more than one line")
+    if (fm_block["name"]) problem("name on more than one line")
+    if (fm_block["description"]) problem("description on more than one line")
     for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP)
       if (k[2] != "claude" && k[2] != "codex" && k[2] != "antigravity") problem("unknown harness: " k[2])
       else entry_problems(k[1], k[2]) }
@@ -191,11 +177,11 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       print "model = \"" b[1] "\""
       print "model_reasoning_effort = \"" b[2] "\""
       print "developer_instructions = \"\"\""
-      for (i = 1; i <= nb; i++) print toml(body[i], 1)
+      for (i = 1; i <= fm_nbody; i++) print toml(fm_body[i], 1)
       print "\"\"\""
       exit 0
     }
-    for (i = 1; i <= nb; i++) print body[i]
+    for (i = 1; i <= fm_nbody; i++) print fm_body[i]
   }
 AWK
 )

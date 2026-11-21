@@ -28,8 +28,10 @@ usage() { echo 'usage: subagent-gate.sh <claude|codex|antigravity> [matcher]' >&
 
 harness="${1:-}"
 case "$harness" in
-  claude) start_tools="Agent Task"; edit_tools="Edit Write MultiEdit NotebookEdit" ;;
-  codex) start_tools="spawn_agent Agent"; edit_tools="apply_patch Edit Write" ;;
+  claude) start_tools="Agent Task"; edit_tools="Edit Write MultiEdit NotebookEdit"
+    target_field=subagent_type; default_target=general-purpose ;;
+  codex) start_tools="spawn_agent Agent"; edit_tools="apply_patch Edit Write"
+    target_field=agent_type; default_target=default ;;
   antigravity) start_tools="invoke_subagent"
     edit_tools="edit_file write_file write_to_file replace_file_content multi_replace_file_content" ;;
   *) usage ;;
@@ -43,15 +45,13 @@ esac
 payload="$(cat)"
 us=$'\x1f'
 
-# read_<harness>: caller, tool name, and target, one unit separator apart.
-# The caller is empty for the main agent.
-read_claude() {
-  jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
-           .tool_name // "", .tool_input.subagent_type // "general-purpose"] | join("\u001f")' <<<"$payload"
-}
-read_codex() {
-  jq -r '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
-           .tool_name // "", .tool_input.agent_type // "default"] | join("\u001f")' <<<"$payload"
+# read_hook, for Claude Code and Codex, and read_antigravity: caller, tool
+# name, and target, one unit separator apart. The caller is empty for the
+# main agent.
+read_hook() {
+  jq -r --arg f "$target_field" --arg d "$default_target" \
+    '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
+      .tool_name // "", .tool_input[$f] // $d] | join("\u001f")' <<<"$payload"
 }
 # Antigravity puts no agent name in the payload. A helper chat's own folder
 # keeps the message that started it, and that message names the agent; a chat
@@ -71,7 +71,8 @@ read_antigravity() {
   jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self"] | join("\u001f")' <<<"$payload"
 }
 
-fields="$("read_$harness" 2>/dev/null)" || exit 0
+reader=read_hook; [ "$harness" != antigravity ] || reader=read_antigravity
+fields="$("$reader" 2>/dev/null)" || exit 0
 IFS="$us" read -r caller tool target <<<"$fields"
 [ -n "$caller" ] || exit 0
 

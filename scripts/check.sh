@@ -128,9 +128,8 @@ agent_files() {
 
 # frontmatter_problems [--limits] <want> <what>: the problems of the
 # frontmatter on stdin, one per line: no frontmatter, a `name` that is not <want> (the
-# <what> it should match), or an empty `description`. A value is read by `val`
-# in frontmatter.awk. A block scalar is its indented lines, less the first
-# line's indent, joined by newlines, as YAML reads it.
+# <what> it should match), or an empty `description`. frontmatter.awk reads
+# the header.
 # With --limits, also Anthropic's SKILL.md limits: `body too long` at 500 lines
 # or more under the frontmatter, `description too long` over 1024 characters,
 # and `name too long` over 64.
@@ -142,17 +141,8 @@ frontmatter_problems() {
     # chars: the characters of s. Under LC_ALL=C awk counts bytes, so the
     # UTF-8 continuation bytes come off.
     function chars(s,  t) { t = s; return length(s) - gsub(/[\200-\277]/, "", t) }
-    NR == 1          { if ($0 != "---") exit; next }
-    closed           { body++; next }
-    blk && /^[ \t]*$/ { if (desc != "") gap = gap "\n"; next }
-    blk && /^[ \t]/  { match($0, /^[ \t]*/); if (desc == "") ind = RLENGTH
-                       line = substr($0, (RLENGTH < ind ? RLENGTH : ind) + 1)
-                       desc = (desc == "") ? line : desc "\n" gap line; gap = ""; next }
-    blk              { blk = 0 }
-    $0 == "---"      { closed = 1; next }
-    /^name:/         { name = val($0) }
-    /^description:/  { desc = val($0); if (desc ~ /^[|>][-+]?$/) { desc = ""; blk = 1 } }
-    END { if (!closed) { print "missing frontmatter"; exit }
+    END { if (!fm_closed) { print "missing frontmatter"; exit }
+          name = fm["name"]; desc = fm["description"]; body = fm_nbody
           if (name != want) print "name does not match " what ": " (name == "" ? "(none)" : name)
           if (desc == "") print "empty description"
           if (!limits) exit

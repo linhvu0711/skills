@@ -5,12 +5,14 @@
 #
 #   sync-harnesses.sh
 #
-# First it runs the repo's link.sh, which remakes every missing link. Then
+# First it runs the repo's link.sh, which remakes every missing link, then
+# `link.sh --status`, which names each link and file and where it is. Then
 # it prints one line per harness with its counts, one line for Devin in T3,
 # one `fixed:` line per link link.sh made, one `problem:` line per thing
 # still missing or a model no list offers, and one `skip:` line per check it
-# could not run. Exit 1 when a problem line printed, else 0. Every path
-# comes from HOME.
+# could not run. Exit 1 when a problem line printed, else 0. Every install
+# path comes from link.sh's status lines, so its env settings hold; the
+# rules files and the model lists come from HOME.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -20,15 +22,13 @@ shared_rules="$HOME/.agents/rules/shared.md"
 claude_md="$HOME/.claude/CLAUDE.md"
 codex_md="$HOME/.codex/AGENTS.md"
 gemini_md="$HOME/.gemini/GEMINI.md"
-plugins="$HOME/.gemini/config/plugins"
-t3_antigravity="$HOME/.t3/userdata/providers/antigravity"
 
 # The owner's personal gates, wired in every harness, and the repo's
 # subagent gate. Antigravity also runs session-rules, since T3 starts its
 # chats without the rules file.
 personal_gates="write-for-agents-gate unslop-gate unslop-commit-gate question-gate plain-style"
 
-problems=(); fixed=(); link_problems=(); skipped=()
+problems=(); fixed=(); link_problems=()
 
 # tilde <text>: the text with $HOME/ written as ~/. The ~/ sits in a
 # variable, since Bash 3.2 keeps the backslash of a literal \~/.
@@ -36,69 +36,55 @@ tilde() { local t='~/'; printf '%s' "${1//"$HOME"\//$t}"; }
 
 problem() { problems+=("problem: $(tilde "$1")"); }
 
-skills=()
-for f in "$root"/skills/*/SKILL.md; do
-  [ -f "$f" ] && skills+=("$(basename "$(dirname "$f")")")
-done
 agents=()
 for f in "$root"/skills/*/agents/*.md "$root"/shared/agents/*.md; do
   [ -f "$f" ] && agents+=("${f#"$root"/}")
 done
 
-# link.sh is the one writer of links. Its stdout names each change, and
-# its `skip:` lines each link or file it found but could not own.
+# link.sh is the one writer of links, and the one that knows where each
+# goes. Its stdout names each change; --status names each target's state.
 lout="$(mktemp)"; lerr="$(mktemp)"; trap 'rm -f "$lout" "$lerr"' EXIT
+targets=()
 if bash "$root/scripts/link.sh" >"$lout" 2>"$lerr"; then
   while IFS= read -r l; do fixed+=("fixed: $(tilde "$l")"); done < "$lout"
-  while IFS= read -r l; do
-    case "$l" in
-      "skip: no T3 Antigravity folder in "*) ;;
-      "skip: "*) skipped+=("${l#skip: }") ;;
-    esac
-  done < "$lerr"
+  if bash "$root/scripts/link.sh" --status >"$lout" 2>"$lerr"; then
+    while IFS= read -r l; do targets+=("$l"); done < "$lout"
+  else
+    link_problems+=("problem: link.sh failed: $(tilde "$(tail -n 1 "$lerr")")")
+  fi
 else
   link_problems+=("problem: link.sh failed: $(tilde "$(tail -n 1 "$lerr")")")
 fi
 
-# skipped_path <file>: whether a link.sh skip line named the file. link.sh
-# names a linked file by its target.
-# A skip a count leans on is kept, so its line prints even when the file it
-# names sits in the folders of a harness this Mac lacks.
-kept=()
-skipped_path() {
-  local s r
-  r="$(realpath "$1" 2>/dev/null || true)"
-  for s in ${skipped[@]+"${skipped[@]}"}; do
-    case "$s" in "$1 "*|"${r:-$1} "*) kept+=("$s"); return 0 ;; esac
-  done
-  return 1
-}
-
 # Each count_* sets `got` rather than print it, so its problem lines land in
 # this shell, not in a subshell's copy of the list.
 
-# count_skills <harness> <folder>: how many repo skills the folder links to.
-count_skills() {
-  local n=0 s
-  for s in ${skills[@]+"${skills[@]}"}; do
-    if [ "$(realpath "$2/$s" 2>/dev/null)" = "$root/skills/$s" ]; then n=$((n + 1))
-    elif skipped_path "$2/$s"; then :
-    else problem "$1 has no skill $s at $2/$s"; fi
+# count_targets <harness> <kind> <noun> [<status harness>]: how many of
+# link.sh's targets of that kind and status harness, the harness when not
+# given, are ok. A target with no why gets a problem line here; one with a
+# why gets its own below.
+count_targets() {
+  local n=0 total=0 t st kind h name path why
+  for t in ${targets[@]+"${targets[@]}"}; do
+    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    [ "$kind" = "$2" ] && [ "$h" = "${4:-$1}" ] || continue
+    total=$((total + 1))
+    if [ "$st" = ok ]; then n=$((n + 1))
+    elif [ -z "$why" ]; then problem "$1 has no $3 $name at $path"; fi
   done
-  got="$n/${#skills[@]}"
+  got="$n/$total"
 }
 
-# count_agents <harness> <folder> <extension>: how many repo agents have
-# their file in the folder.
-count_agents() {
-  local n=0 a f
-  for a in ${agents[@]+"${agents[@]}"}; do
-    f="$2/$(basename "$a" .md).$3"
-    if skipped_path "$f"; then :
-    elif [ -f "$f" ]; then n=$((n + 1))
-    else problem "$1 has no subagent $(basename "$a" .md) at $f"; fi
+# target <kind> <harness>: set path and why to those of the first target of
+# that kind and harness, or empty.
+target() {
+  local t st kind h name
+  path=""; why=""
+  for t in ${targets[@]+"${targets[@]}"}; do
+    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    [ "$kind" = "$1" ] && [ "$h" = "$2" ] && return 0
   done
-  got="$n/${#agents[@]}"
+  path=""; why=""
 }
 
 # commands <file>...: every hook command in the files, one per line.
@@ -117,15 +103,15 @@ wired() {
     END { exit !f }'
 }
 
-# count_gates <harness> <where> <commands> <gate>...: how many gates the
-# hook commands wire. A hook file link.sh could not read already has its
-# problem line, so its gates get none.
+# count_gates <harness> <where> <commands> <unread> <gate>...: how many gates
+# the hook commands wire. A hook file link.sh could not read, <unread> not
+# empty, already has its problem line, so its gates get none.
 count_gates() {
-  local h="$1" where="$2" cmds="$3" n=0 total=0 g; shift 3
+  local h="$1" where="$2" cmds="$3" unread="$4" n=0 total=0 g; shift 4
   for g in "$@"; do
     total=$((total + 1))
     if printf '%s\n' "$cmds" | wired "$g"; then n=$((n + 1))
-    elif skipped_path "$where"; then :
+    elif [ -n "$unread" ]; then :
     else problem "$h gate $g is not wired in $where"; fi
   done
   got="$n/$total"
@@ -139,34 +125,43 @@ line() { printf '%-12s %s\n' "$1" "$2"; }
 
 # check_<harness>: set `got` to the harness's counts.
 check_claude() {
-  count_skills claude "$HOME/.claude/skills"; s="$got"
-  count_agents claude "$HOME/.claude/agents" md; a="$got"
-  count_gates claude "$HOME/.claude/settings.json" "$(commands "$HOME/.claude/settings.json")" $personal_gates subagent-gate; g="$got"
+  count_targets claude skill skill; s="$got"
+  count_targets claude agent subagent; a="$got"
+  target gate claude
+  count_gates claude "$path" "$(commands "$path")" "$why" $personal_gates subagent-gate; g="$got"
   r=0
   if imports_rules "$claude_md"; then r=1; else problem "claude rules: $claude_md does not import $shared_rules"; fi
   got="skills $s · subagents $a · gates $g · rules $r/1"
 }
 
 check_codex() {
-  count_skills codex "$HOME/.agents/skills"; s="$got"
-  count_agents codex "$HOME/.codex/agents" toml; a="$got"
-  count_gates codex "$HOME/.codex/hooks.json" "$(commands "$HOME/.codex/hooks.json")" $personal_gates subagent-gate; g="$got"
+  count_targets codex skill skill shared; s="$got"
+  count_targets codex agent subagent; a="$got"
+  target gate codex
+  count_gates codex "$path" "$(commands "$path")" "$why" $personal_gates subagent-gate; g="$got"
   r=0
   if [ -f "$codex_md" ] && [ -s "$shared_rules" ] && case "$(cat "$codex_md")" in *"$(cat "$shared_rules")"*) true ;; *) false ;; esac; then r=1
   else problem "codex rules: $codex_md does not hold $shared_rules: start Codex once to rebuild it"; fi
   got="skills $s · subagents $a · gates $g · rules $r/1"
 }
 
-# Antigravity, and each private folder T3 runs it from.
+# Antigravity, and each private folder T3 runs it from. Antigravity reads the
+# hooks.json of every plugin in its plugins folder, two levels above the
+# skills plugin's, and T3 keeps its plugins link at <folder>/config/plugins.
 check_antigravity() {
-  count_skills antigravity "$HOME/.gemini/config/skills"; s="$got"
-  count_agents antigravity "$plugins/skills/agents" md; a="$got"
-  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" $personal_gates subagent-gate session-rules; g="$got"
+  local t st kind h name
+  count_targets antigravity skill skill; s="$got"
+  count_targets antigravity agent subagent; a="$got"
+  target gate antigravity; plugins="${path%/skills/hooks.json}"
+  # The gates sit in many plugins' hooks.json, so one file link.sh could not
+  # read hides no gate's line.
+  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates subagent-gate session-rules; g="$got"
   r=0; rt=1
   if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
-  for d in "$t3_antigravity"/*/; do
-    [ -d "$d" ] || continue
-    d="${d%/}"; rt=$((rt + 1))
+  for t in ${targets[@]+"${targets[@]}"}; do
+    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    [ "$kind" = plugins ] || continue
+    d="${path%/config/plugins}"; rt=$((rt + 1))
     # A T3 link loads the rules only through GEMINI.md, whose problem is named above.
     if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then
       if imports_rules "$gemini_md"; then r=$((r + 1)); fi
@@ -193,22 +188,16 @@ is_absent() {
   return 1
 }
 
-# owner <path>: the harness whose folders hold the path. None owns
-# ~/.agents/skills: link.sh links a skill there before any harness's own link.
-owner() {
-  case "$1" in
-    "$HOME/.claude/"*) echo claude ;;
-    "$HOME/.codex/"*) echo codex ;;
-    "$HOME/.gemini/"*|"$t3_antigravity/"*) echo antigravity ;;
-  esac
-}
-
-# Each link link.sh could not own is a problem, unless it sits in the
-# folders of a harness this Mac does not have.
-for s in ${skipped[@]+"${skipped[@]}"}; do
-  keep=1
-  for k in ${kept[@]+"${kept[@]}"}; do [ "$k" != "$s" ] || keep=0; done
-  if [ "$keep" -eq 0 ] || ! is_absent "$(owner "$s")"; then link_problems+=("problem: $(tilde "$s")"); fi
+# Each target link.sh could not own is a problem, unless it belongs to a
+# harness this Mac does not have. No harness owns the shared skills folder.
+# An agent link.sh cannot render gives the same why for each harness, so a
+# why already named is not named again.
+for t in ${targets[@]+"${targets[@]}"}; do
+  IFS=$'\t' read -r st kind h name path why <<< "$t"
+  [ -n "$why" ] && ! is_absent "$h" || continue
+  l="problem: $(tilde "$why")"
+  for x in ${link_problems[@]+"${link_problems[@]}"}; do [ "$x" = "$l" ] && continue 2; done
+  link_problems+=("$l")
 done
 
 # Every agent's models, one row each: <agent file> <map> <harness> <place>
