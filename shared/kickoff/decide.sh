@@ -209,7 +209,7 @@ fi
 if [ -n "$pr_url" ]; then
   base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || gh_die "gh could not read $pr_url"
 else
-  base="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name)" || gh_die "gh could not read repo $slug"
+  base="$(bash "$here/../checkout.sh" default "$slug")" || exit 1
 fi
 
 # ---------- repo path ----------

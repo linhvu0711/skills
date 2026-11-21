@@ -48,6 +48,11 @@
 # Finds only the main checkout, by the order above, with no gh call. Exit 0:
 # one line, `FROM=<map|cwd|search> MAIN=<dir>`, the path last.
 #
+#   checkout.sh default <owner/repo>
+#
+# Names the repo's default branch by the rule above, from the main checkout
+# the order above finds. Exit 0: one line, the branch.
+#
 #   checkout.sh slug <dir>
 #
 # Names the GitHub repo of the checkout at <dir> by its origin, as
@@ -162,6 +167,17 @@ find_main() {
   fi
 }
 
+# default_branch <owner/repo> <main>: sets default to GitHub's default branch;
+# when gh fails, origin/HEAD's, with no fetch. Stops when both fail.
+default_branch() {
+  default="$(gh repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
+  if [ -z "$default" ]; then
+    default="$(git -C "$2" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
+    default="${default#origin/}"
+  fi
+  [ -n "$default" ] || die "could not find the default branch of $1: gh failed and origin/HEAD is not set. Set it with: git -C $2 remote set-head origin --auto"
+}
+
 # The forms that take no branch.
 case "${1:-}" in
   slug)
@@ -176,6 +192,11 @@ case "${1:-}" in
     [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh main <owner/repo>"
     find_main "$2"
     printf 'FROM=%s MAIN=%s\n' "$main_from" "$main"; exit 0 ;;
+  default)
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh default <owner/repo>"
+    find_main "$2"
+    default_branch "$2" "$main"
+    printf '%s\n' "$default"; exit 0 ;;
 esac
 
 usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
@@ -194,14 +215,7 @@ find_main "$slug"
 
 git -C "$main" check-ref-format --branch "$branch" >/dev/null 2>&1 || die "not a valid branch name: $branch"
 
-# ---------- default branch ----------
-# GitHub's; when gh fails, origin/HEAD's, with no fetch.
-default="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
-if [ -z "$default" ]; then
-  default="$(git -C "$main" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
-  default="${default#origin/}"
-fi
-[ -n "$default" ] || die "could not find the default branch of $slug: gh failed and origin/HEAD is not set. Set it with: git -C $main remote set-head origin --auto"
+default_branch "$slug" "$main"
 
 # ---------- worktree ----------
 root="${WORKTREES_ROOT:-$HOME/development/worktrees}"
