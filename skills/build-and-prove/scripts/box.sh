@@ -431,8 +431,9 @@ case "$verb" in
     [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
       || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
     # covered[i] is the workflow file that runs that Gate on the PR, or
-    # empty. An --on-local Gate always runs here: ci-covers reads no `if:`, so
-    # a CI job it finds may skip this PR, and nothing else would run the Gate.
+    # empty. An --on-local Gate always runs here: ci-covers does not follow
+    # `needs:`, so a CI job it finds may still skip this PR, and nothing else
+    # would run the Gate.
     covered=()
     if [ -n "$ci_wt" ] && [ $# -ge 1 ]; then
       cerr="$(mktemp)"

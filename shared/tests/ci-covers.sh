@@ -93,12 +93,78 @@ t_cc_on_list() {
 t_cc_on_map() {
   # Given
   T=""
-  wf ci.yml 'on:' '  push:' '  pull_request:' '    branches: [main]' 'jobs:' '  test:' \
+  wf ci.yml 'on:' '  push:' '    branches: [main]' '  pull_request:' 'jobs:' '  test:' \
     '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm test'
   # When
   covers 'pnpm test'
   # Then
   eq stdout "ci ci.yml · pnpm test" "$out"
+}
+
+t_cc_job_if_repro() {
+  # Given: the issue's repro
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' "    if: github.base_ref == 'release'" \
+    '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq stdout "here · pnpm test" "$out"
+}
+
+t_cc_job_if_each_step() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    runs-on: ubuntu-latest' \
+    "    if: github.event_name == 'push'" '    steps:' '      - run: pnpm lint' '      - run: pnpm test' \
+    '  build:' '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm build'
+  # When
+  covers 'pnpm lint' 'pnpm test' 'pnpm build'
+  # Then
+  eq stdout "here · pnpm lint
+here · pnpm test
+ci ci.yml · pnpm build" "$out"
+}
+
+t_cc_if_always() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    if: always()' '    runs-on: ubuntu-latest' \
+    '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
+t_cc_step_if() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    runs-on: ubuntu-latest' '    steps:' \
+    "      - if: github.event_name == 'push'" '        run: pnpm lint' \
+    '      - run: pnpm test' "        if: github.event_name == 'push'" '      - run: pnpm build'
+  # When
+  covers 'pnpm lint' 'pnpm test' 'pnpm build'
+  # Then
+  eq stdout "here · pnpm lint
+here · pnpm test
+ci ci.yml · pnpm build" "$out"
+}
+
+t_cc_pr_filter() {
+  local k
+  for k in branches branches-ignore paths paths-ignore types; do
+    # Given
+    T=""
+    wf ci.yml 'on:' '  pull_request:' "    $k: [release]" 'jobs:' '  test:' '    runs-on: ubuntu-latest' \
+      '    steps:' '      - run: pnpm lint' '      - run: pnpm test'
+    # When
+    covers 'pnpm lint' 'pnpm test'
+    # Then
+    eq "stdout ($k)" "here · pnpm lint
+here · pnpm test" "$out"
+  done
 }
 
 t_cc_usage() {
@@ -120,5 +186,10 @@ cases=(
   "no workflows folder covers nothing|t_cc_no_workflows"
   "the list form of on counts|t_cc_on_list"
   "the map form of on counts|t_cc_on_map"
+  "the issue's repro: a job if makes the Gate run here|t_cc_job_if_repro"
+  "a job if sends each Gate of its steps here|t_cc_job_if_each_step"
+  "if: always() counts like any if|t_cc_if_always"
+  "a step if, before or after its run, sends only that step here|t_cc_step_if"
+  "a filter under pull_request sends every Gate here|t_cc_pr_filter"
   "no command after -- is a usage stop|t_cc_usage"
 )

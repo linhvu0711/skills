@@ -5,14 +5,18 @@
 #
 # It reads each <worktree>/.github/workflows/*.yml and *.yaml file, the top of
 # that folder only as GitHub does, as plain text lines. A workflow covers a
-# Gate only when both hold:
+# Gate only when all three hold:
 #   - its top-level `on:` names `pull_request`: `on: pull_request`, a list
 #     such as `on: [push, pull_request]`, or a `pull_request:` key or
-#     `- pull_request` item under `on:`. Filters under it are not read.
+#     `- pull_request` item under `on:`. A filter under that key, such as
+#     `branches:` or `paths:`, can skip the PR, so the Gate runs here.
 #   - the Gate is exactly a run command: the value of a one-line `run:`, or
 #     one line, trimmed, of a `run: |` block. A longer command, a comment, a
 #     line of a folded `run: >` block, or a run line with more on it is not
 #     the Gate.
+#   - neither the job nor the step of that run line has an `if:` line. Any
+#     `if:` counts, `if: always()` too: the script does not read what a
+#     condition means, and an `if:` can skip the run on the PR.
 # When it is not sure, the Gate runs here: no workflows folder, a file it
 # cannot read, another CI, a wrapped script.
 #
@@ -35,13 +39,14 @@ prog='
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
-BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1 }
+BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0
+  insteps = 0; sind = -1; step = 0; cur = 0; scol = -1 }
 {
   sub(/\r$/, "")
   line = $0
   if (blk >= 0) {
     if (line ~ /^[ \t]*$/) next
-    if (indent(line) > blk) { runs[++n] = trim(line); next }
+    if (indent(line) > blk) { runs[++n] = trim(line); rj[n] = job; rs[n] = cur; next }
     blk = -1
   }
   if (in_on) {
@@ -51,8 +56,9 @@ BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1 }
       if (child < 0) child = ind
       if (ind == child) {
         k = trim(line); sub(/^-[ \t]*/, "", k); k = nocomment(k); sub(/:.*$/, "", k)
-        if (trim(k) == "pull_request") pr = 1
-      }
+        prk = (trim(k) == "pull_request")
+        if (prk) pr = 1
+      } else if (prk) filt = 1
       next
     }
     in_on = 0
@@ -66,17 +72,36 @@ BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1 }
     } else if (v == "pull_request") pr = 1
     next
   }
-  if (line ~ /^[ \t]*#/) next
+  if (line ~ /^[ \t]*#/ || line ~ /^[ \t]*$/) next
   match(line, /^ *(- +)?/); col = RLENGTH
   t = substr(line, col + 1)
+  ind = indent(line); dash = (col > ind)
+  if (ind == 0) { injobs = (line ~ /^jobs:/); jind = -1; cur = 0; next }
+  if (injobs) {
+    if (jind < 0) jind = ind
+    if (ind <= jind) { job++; jk = -1; insteps = 0; cur = 0 }
+    else {
+      if (jk < 0) jk = ind
+      if (ind == jk && !dash) {
+        cur = 0; insteps = (t ~ /^steps:/); sind = -1
+        if (t ~ /^if:([ \t]|$)/) jif[job] = 1
+      } else if (insteps) {
+        # The keys of a step sit at the column right after its dash; a
+        # deeper `if:`, as under `with:`, belongs to something else.
+        if (dash && sind < 0) sind = ind
+        if (dash && ind == sind) { cur = ++step; scol = col }
+        if (cur && col == scol && t ~ /^if:([ \t]|$)/) sif[cur] = 1
+      }
+    }
+  }
   if (t !~ /^run:([ \t]|$)/) next
   v = trim(substr(t, 5))
   if (v ~ /^\|[-+]?$/) blk = col
-  else if (v != "" && v !~ /^>/) runs[++n] = v
+  else if (v != "" && v !~ /^>/) { runs[++n] = v; rj[n] = job; rs[n] = cur }
 }
 END {
-  print (pr ? "PR" : "NOPR")
-  for (i = 1; i <= n; i++) print runs[i]
+  print (pr && !filt ? "PR" : "NOPR")
+  for (i = 1; i <= n; i++) if (!jif[rj[i]] && !sif[rs[i]]) print runs[i]
 }'
 
 tmp="$(mktemp -d)"
