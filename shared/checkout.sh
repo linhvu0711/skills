@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # checkout.sh: find a repo's main checkout, make or reuse a worktree for a
-# branch, name the repo's default branch, and name a checkout's GitHub repo
-# (`checkout.sh slug <dir>`).
+# branch, name the repo's default branch, name a checkout's GitHub repo
+# (`checkout.sh slug <dir>`), and name the worktree that holds a branch
+# (`checkout.sh holder <dir> <branch>`).
 #
 #   checkout.sh <owner/repo> <branch> [--base <ref>]
 #
@@ -61,6 +62,12 @@
 # `BRANCH=<b> LOCKED=<0|1> PRUNABLE=<0|1> WORKTREE=<path>`. BRANCH is empty on
 # a detached HEAD and on the bare repo; PRUNABLE=1 is a worktree whose folder is gone. The path
 # comes last, so `read` keeps a space in it.
+#
+#   checkout.sh holder <dir> <branch>
+#
+# Names the worktree of the repo <dir> is in that has <branch> checked out,
+# from the `worktrees` lines. Exit 0: its path, one line, or nothing when no
+# worktree holds the branch.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -172,6 +179,13 @@ case "${1:-}" in
   worktrees)
     [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
     worktrees "$2"; exit 0 ;;
+  holder)
+    [ $# -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] || die "usage: checkout.sh holder <dir> <branch>"
+    listed="$(worktrees "$2")" || exit 1
+    while read -r b _ _ w; do
+      if [ "$b" = "BRANCH=$3" ]; then printf '%s\n' "${w#WORKTREE=}"; break; fi
+    done <<<"$listed"
+    exit 0 ;;
   main)
     [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh main <owner/repo>"
     find_main "$2"

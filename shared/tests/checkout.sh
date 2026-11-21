@@ -309,6 +309,28 @@ t_ck_keeps_worktree_link() {
   eq link "$T/nowhere/vars|" "$(readlink "$T/root/acme/app/feat-1-x/.dev.vars")|$err"
 }
 
+t_ck_holder_names_worktree() {
+  # Given: app with feat/1-a checked out in a worktree whose path has a space
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/1-a "$T/w/feat 1" main
+  # When
+  resolve holder "$T/dev/app" feat/1-a
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$T/w/feat 1" "$out"
+}
+
+t_ck_holder_none() {
+  # Given: app with feat/1-a checked out in a worktree whose path has a space
+  ck_setup; ck acme/app "$T/dev/app"
+  git -C "$T/dev/app" worktree add -q -b feat/1-a "$T/w/feat 1" main
+  # When
+  resolve holder "$T/dev/app" feat/9-z
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
 cases=(
   "keeps a link the worktree has at a listed path|t_ck_keeps_worktree_link"
   "copies a listed git-ignored file into a new worktree|t_ck_copies_listed"
@@ -333,6 +355,8 @@ cases=(
   "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"
   "worktrees stops on a folder outside git|t_ck_worktrees_outside_git"
   "worktrees lists a bare repo first, as git does|t_ck_worktrees_bare_first"
+  "holder names the worktree on a branch|t_ck_holder_names_worktree"
+  "holder names nothing for a free branch|t_ck_holder_none"
   "main finds the one checkout by search|t_ck_main_by_search"
   "main reads the map it wrote|t_ck_main_from_map"
   "main stops when no checkout is found|t_ck_main_no_checkout"

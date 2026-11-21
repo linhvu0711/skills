@@ -23,10 +23,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # ---------- T3 ----------
-# T3 Code sets T3CODE_CLI_PATH to its own t3 command in every chat, so that
-# is the t3 to run, whether or not one is on PATH.
-t3="${T3CODE_CLI_PATH:-}"
-[ -n "$t3" ] && [ -x "$t3" ] || die "not inside T3 Code"
+# The shared T3 lookup names the chat's t3 command, or stops outside T3.
+t3="$(bash "$here/../../../shared/t3-cli.sh")" || exit 1
 
 # ---------- decide ----------
 # The shared decide script reads the target and flags; its stop line is ours.

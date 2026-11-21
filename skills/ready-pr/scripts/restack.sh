@@ -69,16 +69,6 @@ old_of() {
   return 1
 }
 
-# holder <branch>: the worktree that has <branch> checked out, if any, as the
-# checkout resolver lists them.
-holder() {
-  local listed b w
-  listed="$(bash "$checkout" worktrees "$wt")"
-  while read -r b _ _ w; do
-    if [ "$b" = "BRANCH=$1" ]; then printf '%s' "${w#WORKTREE=}"; return 0; fi
-  done <<<"$listed"
-}
-
 drop_tmp() { g worktree remove --force "$tmp/wt" >/dev/null 2>&1 || true; }
 
 # move_one: move the PR in base, head, url, fork. Sets `result`; 1 is a stop.
@@ -92,7 +82,7 @@ move_one() {
     n="$(g rev-list --count "origin/$head..$head")"
     [ "$n" -eq 0 ] || { result="SKIP $url: $head has $n commit(s) not on origin"; return 1; }
   fi
-  hold="$(holder "$head")"
+  hold="$(bash "$checkout" holder "$wt" "$head")"
   if [ -n "$hold" ] && [ -n "$(git -C "$hold" status --porcelain)" ]; then
     result="SKIP $url: worktree $hold has uncommitted changes"; return 1
   fi

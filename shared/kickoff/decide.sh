@@ -47,23 +47,23 @@ while [ $# -gt 0 ]; do
     --label) label="$2"; shift 2 ;;
     --model) [ -n "${2:-}" ] || die "--model needs a name"; set_model="$2"; shift 2 ;;
     --effort)
-      case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
+      one_of "$effort_list" "${2:-}" || die "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
       set_effort="$2"; shift 2 ;;
     --command)
       case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --mode)
-      case "${2:-}" in review|ready|merge) ;; *) die "--mode must be review, ready, or merge, got: ${2:-nothing}" ;; esac
+      one_of "$ship_mode_list" "${2:-}" || die "--mode must be $(spelled "$ship_mode_list"), got: ${2:-nothing}"
       mode="$2"; shift 2 ;;
     --size)
-      [[ "${2:-}" =~ ^[0-9]+=([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "--size takes <n>=XS|S|M|L|XL, got: ${2:-nothing}"
+      [[ "$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')" =~ ^[0-9]+=($size_list)$ ]] || die "--size takes <n>=$size_list, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
     -*) die "unexpected argument: $1" ;;
     *) args+=("$1"); shift ;;
   esac
 done
 [ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
@@ -174,7 +174,7 @@ else
   if [ "$top" -eq 9 ]; then reason="no size"; else reason="size $top_size"; fi
 fi
 case "$set_command" in
-  triage|grill) model=opus; effort=high; reason="command $set_command" ;;
+  triage|grill) model="$analysis_model"; effort="$analysis_effort"; reason="command $set_command" ;;
   ready-pr|complete-task) model=opus; effort=medium; reason="command $set_command" ;;
 esac
 if [ "$counted" -gt 1 ]; then

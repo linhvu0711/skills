@@ -29,7 +29,7 @@
   ],
   "ship": {
     "default": "ready",
-    "77": "full"
+    "77": "merge"
   },
   "use": {},
   "threads": [],

@@ -283,13 +283,10 @@ and the answers then run § Check. The turn ends per § Snooze.
 1. Rename this thread to `🧭 resume` and hold its `threadId`
    and the `environmentId`, as § Start step 2.
 2. `scripts/orchestrate.sh resume <owner/repo> --thread <threadId> --env <environmentId>`.
-   It prints the run's `run`, `name`, `old_task`, and `every`, and puts
+   It prints the run's `run`, `name`, and `every`, and puts
    the newest board page in the run folder. Rename this thread to
    `🧭 <name>`.
-3. `old_task` set: the run is from before the watcher, and has a T3
-   scheduled task; `delete_scheduled_task` on it. `null`: nothing to
-   delete.
-4. Every run: the watcher as § Start step 4, then serve, post, and
+3. Every run: the watcher as § Start step 4, then serve, post, and
    open the board, § Check, and § Snooze, as § Start step 5.
 
 ## Done
