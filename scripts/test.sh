@@ -962,6 +962,16 @@ t_flags_agent_block_description() {
   has stderr "skills/demo/agents/helper.md: description on more than one line" "$err"
 }
 
+t_flags_agent_block_name() {
+  # Given: every field, with the name as a block
+  # When
+  agent_md "${full_agent/name: helper/name: |-
+  helper}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md: name on more than one line" "$err"
+}
+
 t_flags_agent_unknown_harness() {
   # Given: every field, and a backup for a harness that is not one
   # When
@@ -1488,6 +1498,7 @@ cases=(
   "passes an agent file with a blank line and comments in a map|t_passes_agent_with_blank_and_comment_in_map"
   "flags an agent file with no Antigravity home|t_flags_agent_no_antigravity_home"
   "flags an agent file with a block description|t_flags_agent_block_description"
+  "flags an agent file with a block name|t_flags_agent_block_name"
   "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
   "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
   "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"

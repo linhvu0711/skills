@@ -152,6 +152,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
           for (j = 1; j <= nh; j++) { split(items[j], w, " "); print (j == 1 ? "home" : "home" j), k[2], w[1], w[2] } }
         else { split(entry[k[1], k[2]], w, " "); print k[1], k[2], k[2], w[1] } }
       exit 0 }
+    if (fm_block["name"]) problem("name on more than one line")
     if (fm_block["description"]) problem("description on more than one line")
     for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP)
       if (k[2] != "claude" && k[2] != "codex" && k[2] != "antigravity") problem("unknown harness: " k[2])
