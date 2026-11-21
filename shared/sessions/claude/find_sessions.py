@@ -59,9 +59,7 @@ WRAP_PREFIXES = (
     "<local-command-stdout>",
     "<task-notification>",  # harness re-invocation when background work finishes — not a human prompt
 )
-PROMPT_DISPLAY_CAP = 500  # cap stored first/last prompt so a pasted wall-of-text can't flood output
 BODY_CAP = 200_000  # cap chars indexed per session for scoring (keeps big files fast)
-SNIPPET_LEN = 180
 # A word in the title or a prompt says what the user steered toward; the
 # agent's replies still count, since a chat another skill started (a lone
 # "/ship 237") holds its topic only there.
@@ -209,18 +207,12 @@ def parse_session(path):
     except OSError:
         return None
 
-    def cap(text):
-        if not text:
-            return text
-        text = text.strip()
-        return text[:PROMPT_DISPLAY_CAP] + ("…" if len(text) > PROMPT_DISPLAY_CAP else "")
-
     return {
         "id": sid,
         "title": title,
         # Display fields are capped; the full text still lives in ``prompts`` for scoring.
-        "first_prompt": cap(first_substantive or first_prompt),
-        "last_prompt": cap(last_prompt),
+        "first_prompt": rank.cap(first_substantive or first_prompt),
+        "last_prompt": rank.cap(last_prompt),
         "n_prompts": n_prompts,
         "modified": os.path.getmtime(path),
         "path": path,
@@ -231,18 +223,6 @@ def parse_session(path):
         "prompts": "\n".join(prompt_parts),
         "body": "\n".join(body_parts),
     }
-
-
-def best_snippet(sess, query):
-    """The line holding the most search words, from the title, prompts, and replies."""
-    lines = [sess["title"]] if sess["title"] else []
-    for key in ("first_prompt", "last_prompt"):
-        if sess[key]:
-            lines.extend(sess[key].splitlines())
-    lines.extend(sess["body"].splitlines())
-    snippet = rank.best_line(lines, query) if query else ""
-    snippet = re.sub(r"\s+", " ", snippet or sess["first_prompt"] or sess["title"] or "").strip()
-    return snippet[:SNIPPET_LEN] + ("…" if len(snippet) > SNIPPET_LEN else "")
 
 
 def main():
@@ -284,7 +264,7 @@ def main():
 
     for s in sessions:
         s["is_current"] = (s["id"] == current_id)
-        s["snippet"] = best_snippet(s, args.query if use_query else "")
+        s["snippet"] = rank.best_snippet(s, args.query if use_query else "")
 
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 

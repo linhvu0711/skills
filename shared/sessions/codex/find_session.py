@@ -69,10 +69,8 @@ INDEX_PATHS = (
 )
 INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
-PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
-SNIPPET_LEN = 180
 
 # Injected context, not a human prompt.
 BLOB_MARKERS = (
@@ -159,14 +157,9 @@ def parse_content(path: Path) -> dict:
     except OSError:
         pass
 
-    def cap(t):
-        if not t:
-            return t
-        return t[:PROMPT_DISPLAY_CAP] + ("…" if len(t) > PROMPT_DISPLAY_CAP else "")
-
     return {
-        "first_prompt": cap(first),
-        "last_prompt": cap(last),
+        "first_prompt": rank.cap(first),
+        "last_prompt": rank.cap(last),
         "n_prompts": n_user,
         "prompts": prompts,
         "body": "\n".join(body),
@@ -320,20 +313,6 @@ def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
     return sorted(found)
 
 
-# ---------------------------------------------------------------- scoring
-
-def best_snippet(s: dict, query: str) -> str:
-    """The line holding the most search words, from the prompts and replies."""
-    lines = []
-    for key in ("first_prompt", "last_prompt"):
-        if s.get(key):
-            lines.extend(s[key].splitlines())
-    lines.extend(s["body"].splitlines())
-    snip = rank.best_line(lines, query) if query else ""
-    snip = re.sub(r"\s+", " ", snip or s.get("first_prompt") or "").strip()
-    return snip[:SNIPPET_LEN] + ("…" if len(snip) > SNIPPET_LEN else "")
-
-
 # ---------------------------------------------------------------- cli
 
 def resolve_day(value: str | None) -> dt.date | None:
@@ -434,7 +413,7 @@ def main() -> int:
     docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]
     ranked, use_query = rank.pick(sessions, docs, args.query, WEIGHTS, args.all)
     for s in sessions:
-        s["snippet"] = best_snippet(s, args.query if use_query else "")
+        s["snippet"] = rank.best_snippet(s, args.query if use_query else "")
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:

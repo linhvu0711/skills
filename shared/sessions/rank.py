@@ -13,7 +13,7 @@ Each session is a dict of named text fields, as {"title": ..., "prompts": ...,
 
 A score above 0 means at least one search word is in the session; callers
 such as recall rely on that. `pick` is the one keep-and-order rule every
-finder uses.
+finder uses, and `best_snippet` and `cap` are how every finder shows a hit.
 """
 
 from __future__ import annotations
@@ -180,3 +180,27 @@ def best_line(lines, query: str) -> str:
             if hits == len(want):
                 break
     return best
+
+
+SNIPPET_LEN = 180
+PROMPT_CAP = 500  # a pasted wall of text must not flood a finder's output
+
+
+def best_snippet(session: dict, query: str) -> str:
+    """The line holding the most search words, from the title, prompts, and replies."""
+    lines = [session["title"]] if session.get("title") else []
+    for key in ("first_prompt", "last_prompt"):
+        if session.get(key):
+            lines.extend(session[key].splitlines())
+    lines.extend(session["body"].splitlines())
+    snippet = best_line(lines, query) if query else ""
+    snippet = re.sub(r"\s+", " ", snippet or session.get("first_prompt") or session.get("title") or "").strip()
+    return snippet[:SNIPPET_LEN] + ("…" if len(snippet) > SNIPPET_LEN else "")
+
+
+def cap(text: str | None) -> str | None:
+    """A prompt cut to PROMPT_CAP characters for display."""
+    if not text:
+        return text
+    text = text.strip()
+    return text[:PROMPT_CAP] + ("…" if len(text) > PROMPT_CAP else "")
