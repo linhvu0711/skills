@@ -153,7 +153,9 @@ check_antigravity() {
   count_targets antigravity skill skill; s="$got"
   count_targets antigravity agent subagent; a="$got"
   target gate antigravity; plugins="${path%/skills/hooks.json}"
-  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "$why" $personal_gates subagent-gate session-rules; g="$got"
+  # The gates sit in many plugins' hooks.json, so one file link.sh could not
+  # read hides no gate's line.
+  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates subagent-gate session-rules; g="$got"
   r=0; rt=1
   if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
   for t in ${targets[@]+"${targets[@]}"}; do

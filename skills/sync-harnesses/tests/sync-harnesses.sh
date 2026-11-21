@@ -398,6 +398,21 @@ t_sync_follows_link_env() {
   eq stdout "$healthy" "$out"
 }
 
+t_sync_names_gates_beside_unread_plugin_hooks() {
+  # Given: the skills plugin's hooks.json that is not JSON, and the personal
+  # plugin with the question gate taken out
+  mac
+  printf 'not json\n' > "$H/.gemini/config/plugins/skills/hooks.json"
+  json "$H/.gemini/config/plugins/personal/hooks.json" '.personal.PreToolUse[0].hooks |= map(select(.command | contains("question-gate") | not))'
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 5/7 · rules 2/2' "$out"
+  has "question gate" 'problem: antigravity gate question-gate is not wired in ~/.gemini/config/plugins' "$out"
+  has "unread file" 'problem: ~/.gemini/config/plugins/skills/hooks.json is not JSON' "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -429,4 +444,5 @@ cases=(
   "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
   "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
+  "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"
 )
