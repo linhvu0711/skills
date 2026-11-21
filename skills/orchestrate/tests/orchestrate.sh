@@ -73,6 +73,27 @@ fs_run() { ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's#/$##'; 
 # fs_board [jq flags] <jq>: the jq filter on the newest run's board.json.
 fs_board() { jq -c "$@" "$(fs_run)/board.json"; }
 
+# fs_remote: a bare repo $T/remote.git made from the checkout, which the
+# checkout's GitHub origin URL now reaches, and a second clone $T/other to
+# push from.
+fs_remote() {
+  git clone -q --bare "$T/dev/app" "$T/remote.git"
+  git -C "$T/dev/app" config url."$T/remote.git".insteadOf https://github.com/acme/app.git
+  git -C "$T/dev/app" fetch -q origin
+  git clone -q "$T/remote.git" "$T/other"
+}
+
+# fs_push <file> <text>: a commit in $T/other that writes the file, pushed to main.
+fs_push() {
+  printf '%s\n' "$2" > "$T/other/$1"
+  git -C "$T/other" add "$1"
+  git -C "$T/other" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m "$2"
+  git -C "$T/other" push -q origin main
+}
+
+# fs_short <dir> <rev>: the 7-character SHA of the rev.
+fs_short() { git -C "$1" rev-parse --short=7 "$2"; }
+
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
@@ -786,6 +807,139 @@ t_fs_done_removed_no_retro() {
   has stdout '"done":true' "$out"
   has stdout '"removed":[44]' "$out"
   eq line false "$(jq -c 'has("retro")' <<<"$out")"
+}
+
+t_fs_sync_fast_forwards() {
+  # Given: a run of #42; origin's main is one commit ahead of the checked-out main
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_fetch_fails() {
+  # Given: as above, and origin's URL now reaches no repo
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  local was; was="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt one
+  git -C "$T/dev/app" config --unset url."$T/remote.git".insteadOf
+  git -C "$T/dev/app" config url."$T/gone.git".insteadOf https://github.com/acme/app.git
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout "main not updated: fetch failed: " "$out"
+  eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_up_to_date() {
+  # Given: a run of #42; origin's main is the checked-out main
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main up to date at $(fs_short "$T/dev/app" main)" "$out"
+}
+
+t_fs_sync_own_commits() {
+  # Given: a run of #42; origin's main has a.txt, and the local main has its own commit mine
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m mine
+  local mine; mine="$(git -C "$T/dev/app" rev-parse main)"
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: it has commits origin/main lacks" "$out"
+  eq main "$mine" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_edits_in_the_way() {
+  # Given: a run of #42 synced to origin's a.txt "one"; origin then writes "two",
+  # and the checkout has an edit "mine" to a.txt, not committed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  fs_go sync acme/app
+  local one; one="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt two
+  printf 'mine\n' > "$T/dev/app/a.txt"
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq edit mine "$(cat "$T/dev/app/a.txt")"
+  eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_edits_in_the_way_autostash() {
+  # Given: as in the edits-in-the-way case, with merge.autoStash on in the checkout
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  fs_go sync acme/app
+  local one; one="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt two
+  printf 'mine\n' > "$T/dev/app/a.txt"
+  git -C "$T/dev/app" config merge.autoStash true
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_ignored_file_in_the_way() {
+  # Given: a run of #42; the checkout ignores b.txt and holds its own b.txt,
+  # and origin's main starts tracking a b.txt
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  echo b.txt >> "$T/dev/app/.git/info/exclude"
+  printf 'mine\n' > "$T/dev/app/b.txt"
+  local was; was="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push b.txt theirs
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout "main not updated: " "$out"
+  eq file mine "$(cat "$T/dev/app/b.txt")"
+  eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_narrow_fetch_refspec() {
+  # Given: a run of #42; the checkout's fetch refspec names only another
+  # branch, and origin's main is one commit ahead
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git -C "$T/dev/app" config remote.origin.fetch '+refs/heads/release:refs/remotes/origin/release'
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+}
+
+t_fs_sync_other_branch() {
+  # Given: a run of #42; the checkout is on feat/x, and origin's main is one commit ahead
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git -C "$T/dev/app" switch -q -c feat/x
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq branch feat/x "$(git -C "$T/dev/app" branch --show-current)"
+  eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
 t_fs_epic_done() {
@@ -2127,6 +2281,15 @@ cases=(
   "an epic with closed sub-issues is done|t_fs_epic_done"
   "a done run prints the retro thread line|t_fs_done_starts_retro"
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
+  "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
+  "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
+  "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
+  "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
+  "sync leaves a default branch whose edits are in the way|t_fs_sync_edits_in_the_way"
+  "sync moves the default branch under another checked-out branch|t_fs_sync_other_branch"
+  "sync leaves edits in the way with merge.autoStash on|t_fs_sync_edits_in_the_way_autostash"
+  "sync leaves an ignored file in the way|t_fs_sync_ignored_file_in_the_way"
+  "sync moves main when the fetch refspec leaves it out|t_fs_sync_narrow_fetch_refspec"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"

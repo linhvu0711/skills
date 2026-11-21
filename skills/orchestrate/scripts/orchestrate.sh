@@ -12,6 +12,7 @@
 #                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
+#        orchestrate.sh sync <owner/repo>
 #        orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]
 #
 # A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
@@ -46,7 +47,7 @@
 # on with resume; a done run is over.
 #
 # Exit 0: one JSON line on stdout for start, check, proposed, timer, and
-# resume; nothing for started and change.
+# resume; one line of text for sync; nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -56,7 +57,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|watch <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|watch <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -796,6 +797,46 @@ cmd_resume() {
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: ($S.timer.task // null), every: $S.timer.every}'
 }
 
+# ---------- sync ----------
+# sync: the default branch of the newest run's main checkout, fast-forwarded
+# to origin's, so prune-worktrees judges, and the retro reads, the merged
+# work. It only fast-forwards: the checkout is the user's, so their branch,
+# commits, and edits stay. A branch that cannot move exits 0 with a
+# `not updated` line, since the done run goes on to prune and retro anyway.
+cmd_sync() {
+  [ $# -eq 0 ] || die "usage: orchestrate.sh sync <owner/repo>"
+  newest_run
+  local path def new old where b w
+  path="$(jq -r .path <<<"$S")"
+  def="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
+    || { printf '%s not updated: gh could not name the default branch: %s\n' "$slug" "$(tail -1 "$errf")"; return 0; }
+  # The refspec is named, since the clone's own fetch refspec may leave the default branch out.
+  git -C "$path" fetch --quiet origin "+refs/heads/$def:refs/remotes/origin/$def" 2>"$errf" \
+    || { printf '%s not updated: fetch failed: %s\n' "$def" "$(tail -1 "$errf")"; return 0; }
+  new="$(git -C "$path" rev-parse --verify --quiet "refs/remotes/origin/$def")"
+  old="$(git -C "$path" rev-parse --verify --quiet "refs/heads/$def")" \
+    || { printf '%s not updated: no local %s branch\n' "$def" "$def"; return 0; }
+  [ "$old" != "$new" ] \
+    || { printf '%s up to date at %s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$new")"; return 0; }
+  git -C "$path" merge-base --is-ancestor "$old" "$new" \
+    || { printf '%s not updated: it has commits origin/%s lacks\n' "$def" "$def"; return 0; }
+  where=""
+  while read -r b _ _ w; do
+    [ "$b" = "BRANCH=$def" ] && { where="${w#WORKTREE=}"; break; }
+  done < <(bash "$core/checkout.sh" worktrees "$path")
+  if [ -n "$where" ]; then
+    # Git's defaults overwrite an ignored file in the way, and a user's
+    # merge.autoStash carries edits across the move into a conflict.
+    git -C "$where" merge --ff-only --no-autostash --no-overwrite-ignore --quiet "$new" 2>"$errf" \
+      || { printf '%s not updated: %s\n' "$def" "$(head -1 "$errf")"; return 0; }
+  else
+    # The old value makes git refuse a ref that moved since it was read.
+    git -C "$path" update-ref "refs/heads/$def" "$new" "$old" 2>"$errf" \
+      || { printf '%s not updated: %s\n' "$def" "$(head -1 "$errf")"; return 0; }
+  fi
+  printf '%s fast-forwarded %s..%s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$old")" "$(git -C "$path" rev-parse --short=7 "$new")"
+}
+
 # ---------- watch ----------
 # watch_fail <line>: a watcher check that read too little. It counts the
 # failure as fail_check does; at 3 in a row it wakes the orchestrator thread,
@@ -933,6 +974,7 @@ case "$cmd" in
   change) cmd_change "$@" ;;
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;
+  sync) cmd_sync "$@" ;;
   watch) cmd_watch "$@" ;;
   *) die "$usage" ;;
 esac
