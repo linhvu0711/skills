@@ -29,9 +29,9 @@ retrieve, short lookups are yours. An explorer has no network, so every
 
 ## Steps
 
-1. **Preflight.** Hold `REPO` and `isInOrganization` from
-   `gh repo view --json nameWithOwner,isInOrganization`: the playbook's
-   full-suite rule reads it.
+1. **Preflight.** Hold `REPO`, `isInOrganization`, and `visibility` from
+   `gh repo view --json nameWithOwner,isInOrganization,visibility`: the
+   playbook's full-suite rule reads them.
    - `gh auth status` fails: say `gh is not logged in. Run: gh auth login`
      and stop.
    - The repo has a `.github/workflows/*.yml` or
@@ -44,7 +44,8 @@ retrieve, short lookups are yours. An explorer has no network, so every
      for the stack alone, and the report and the grill hold one find:
      the first CI, built from the playbook and the stack tips.
 
-   Done when you hold `REPO`, `isInOrganization`, and the path.
+   Done when you hold `REPO`, `isInOrganization`, `visibility`, and the
+   path.
 
 2. **Measure.**
 
