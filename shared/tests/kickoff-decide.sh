@@ -150,6 +150,17 @@ t_kd_base_from_origin_head() {
   eq base "0|trunk" "$code|$(jq -r .base <<<"$out")"
 }
 
+t_kd_base_gh_fails_exit_2() {
+  # Given: gh cannot read the repo, and origin/HEAD is not set
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  git -C "$T/dev/app" symbolic-ref --delete refs/remotes/origin/HEAD 2>/dev/null || true
+  printf 'HTTP 502\n' > "$FAKE_GH/repo-view.fail"
+  # When
+  kd_run https://github.com/acme/app/issues/42
+  # Then
+  eq exit 2 "$code"
+}
+
 t_kd_stops_no_checkout() {
   # Given: #42 size/S, no checkout under $T/dev
   kd_setup '[{"name":"size/S"}]'; mkdir -p "$T/dev"
@@ -436,6 +447,7 @@ cases=(
   "decide stops before any launch|t_kd_stops_no_checkout"
   "every gh failure exits 2|t_kd_gh_fails_exit_2"
   "base falls back to origin/HEAD when gh fails|t_kd_base_from_origin_head"
+  "base exits 2 when gh fails and origin/HEAD is not set|t_kd_base_gh_fails_exit_2"
   "triage takes the opus high row|t_kd_triage_row"
   "grill takes the opus high row|t_kd_grill_row"
   "a bad command names the five values|t_kd_bad_command"

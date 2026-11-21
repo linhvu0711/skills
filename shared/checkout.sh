@@ -51,7 +51,9 @@
 #   checkout.sh default <owner/repo>
 #
 # Names the repo's default branch by the rule above, from the main checkout
-# the order above finds. Exit 0: one line, the branch.
+# the order above finds. Exit 0: one line, the branch. Exit 2: gh failed and
+# origin/HEAD is not set, so a caller can tell a GitHub outage from a missing
+# checkout, which stays exit 1.
 #
 #   checkout.sh slug <dir>
 #
@@ -167,15 +169,18 @@ find_main() {
   fi
 }
 
-# default_branch <owner/repo> <main>: sets default to GitHub's default branch;
-# when gh fails, origin/HEAD's, with no fetch. Stops when both fail.
+# default_branch <owner/repo> <main> [<code>]: sets default to GitHub's
+# default branch; when gh fails, origin/HEAD's, with no fetch. When both fail,
+# the stop line and exit <code>, 1 when not given.
 default_branch() {
   default="$(gh repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
   if [ -z "$default" ]; then
     default="$(git -C "$2" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
     default="${default#origin/}"
   fi
-  [ -n "$default" ] || die "could not find the default branch of $1: gh failed and origin/HEAD is not set. Set it with: git -C $2 remote set-head origin --auto"
+  [ -n "$default" ] && return 0
+  printf 'stop: could not find the default branch of %s: gh failed and origin/HEAD is not set. Set it with: git -C %s remote set-head origin --auto\n' "$1" "$2" >&2
+  exit "${3:-1}"
 }
 
 # The forms that take no branch.
@@ -195,7 +200,7 @@ case "${1:-}" in
   default)
     [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh default <owner/repo>"
     find_main "$2"
-    default_branch "$2" "$main"
+    default_branch "$2" "$main" 2
     printf '%s\n' "$default"; exit 0 ;;
 esac
 
