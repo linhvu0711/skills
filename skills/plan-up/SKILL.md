@@ -365,15 +365,16 @@ two match: ask. Then go on with their URLs.
 8. **Check.** Write the plan to its `.md`, per
    `../../shared/plan-page.md` § Files. Then decide which second
    models check it, with fresh eyes, before the user sees it (ADR
-   0020, ADR 0021, ADR 0023, ADR 0025). Two checkers can run, side by side,
+   0020, ADR 0021, ADR 0023, ADR 0025, ADR 0031). Two checkers can run, side by side,
    each on its own signs: `plan-correctness-checker` looks for what
    would make the build fail or ship the wrong thing, and
    `plan-design-checker` looks for a code shape the plan should not
    build. Hold one `Plan check:` line for the summary.
 
    - **Who gets them.** Size the plan as `../../shared/size.md` sizes
-     a ticket, from its Blast radius and its slices. XS: neither, and
-     the line is `Plan check: skipped · size XS`. A plan you wrote
+     a ticket, from its Blast radius and its slices. XS or S: neither,
+     and the line is `Plan check: skipped · size <size>`, as
+     `Plan check: skipped · size S`. A plan you wrote
      while you run on Fable: no design checker, since one model mostly
      agrees with itself, and its part of the line is
      `design skipped · made by Fable`; judge the correctness checker
