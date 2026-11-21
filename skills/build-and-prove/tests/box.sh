@@ -433,7 +433,7 @@ t_box_gates_usage() {
   box gates "$P" --
   # Then
   eq exit 1 "$code"
-  has stderr "gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
+  has stderr "gates <proof-dir> [--local <worktree> | --pr-open <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
 }
@@ -623,6 +623,52 @@ t_box_gates_local_only_not_run() {
   # Then
   eq exit 0 "$code"
   eq checks "pnpm test:docker · $sha · not run: no Docker here" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_pr_open() {
+  # Given
+  special_fixture
+  mkdir -p "$R/.github/workflows"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm lint' > "$R/.github/workflows/ci.yml"
+  # When
+  box gates "$P" --pr-open "$R" -- 'pnpm test' 'pnpm lint'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
+pnpm lint · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+  eq execs 1 "$(grep -c '^exec ' "$FAKE_PB/log")"
+}
+
+# ci_only_fixture: no Sandbox up, and a workflow that runs pnpm test and
+# pnpm test:docker on pull requests.
+ci_only_fixture() {
+  fake_proofbox
+  mkdir -p "$R/.github/workflows"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pnpm test:docker' > "$R/.github/workflows/ci.yml"
+  sha="$(git -C "$R" rev-parse --short HEAD)"
+}
+
+t_box_gates_pr_open_no_sandbox() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" --on-local 'pnpm test:docker' -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)
+pnpm test:docker · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_gates_pr_open_needs_sandbox() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" --on-local 'pnpm test:docker' -- 'pnpm lint'
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: no Sandbox for $P; run box.sh up first" "$err"
+  [ ! -e "$P/checks.txt" ] || eq checks.txt "none" "$(cat "$P/checks.txt")"
 }
 
 t_box_gates_upload_fails() {
@@ -1013,6 +1059,9 @@ cases=(
   "gates refuses --on-local with --local|t_box_gates_on_local_with_local"
   "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
+  "gates --pr-open leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_pr_open"
+  "gates --pr-open needs no Sandbox when CI runs every Gate|t_box_gates_pr_open_no_sandbox"
+  "gates --pr-open stops when a Gate needs a Sandbox that is not up|t_box_gates_pr_open_needs_sandbox"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
   "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"

@@ -64,11 +64,12 @@ prints its usage with no arguments.
   recording, that the browser window ends above the taskbar: `FIT`,
   `TALL` with exit 3, or `FIT not checked on macos`. Like `open`, it
   neither uploads nor makes a gone Sandbox again.
-- `box.sh gates <proof-dir> [--local <worktree>] [--on-local
-  '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs
-  each command as `run` does, keeps each one's own exit code and full
-  output in a temp file, and writes every line of
-  `<proof-dir>/checks.txt` (step 8).
+- `box.sh gates <proof-dir> [--local <worktree> | --pr-open
+  <worktree>] [--on-local '<command>']… [--not-run '<command>' '<why>']…
+  -- '<command>'…` runs each command as `run` does, keeps each one's own
+  exit code and full output in a temp file, and writes every line of
+  `<proof-dir>/checks.txt` (step 8). `--pr-open` leaves to CI each Gate
+  the open PR's CI runs (§ Follow-up).
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
   times it was made again.
 
@@ -462,16 +463,13 @@ updates the PR from `PROOF`.
   with no open PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
   --head <branch> --state open --json url -q '.[0].url'` prints a URL;
   then only the Gates CI does not run run here. `UI: none`: step 8 as
-  written, since `gates --local` already asks. A plan with walks asks
-  `bash ../../shared/ci-covers.sh "$WT" -- '<Gate>'…`. A Sandbox Gate
-  is a `here` one the build ran neither `--on-local` nor `--not-run`.
-  No Sandbox Gate: `box.sh gates "$PROOF" --local "$WT"`, with the
-  `ci` and `--on-local` Gates after `--` and the `--not-run` ones as
-  before; it writes each `ci` one's `not run: CI runs it` line, runs
-  the rest on the local machine, and needs no Sandbox. Else the Sandbox
-  `gates` call with the Sandbox Gates after `--`, each `ci <file>` Gate
-  as `--not-run '<Gate>' 'CI runs it (<file>)'`, and the build's
-  `--on-local` and `--not-run` Gates passed as before.
+  written, since `gates --local` already leaves CI's Gates to CI. A
+  plan with walks: step 8's `gates` call with `--pr-open "$WT"` first,
+  and the build's `--on-local` and `--not-run` Gates as before. It
+  leaves each Gate the PR's CI runs to CI, runs the rest in the
+  Sandbox, and needs no Sandbox when none is left. A stop `no Sandbox
+  for <PROOF>; run box.sh up first`: `box.sh up` (step 6), then the
+  call again.
   With a `PERF` block, the measure runs again only when `git -C "$WT"
   diff --name-only <its line's SHA> HEAD` names a file its `Command`
   runs. Else copy its line out of `checks.txt` before the `gates` call
