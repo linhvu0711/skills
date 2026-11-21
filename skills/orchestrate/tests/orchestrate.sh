@@ -1500,6 +1500,47 @@ t_fs_proposed_task_no_size() {
   eq stderr "stop: a task proposal takes no --size" "$err"
 }
 
+t_fs_proposed_bad_size() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 ship --size huge
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+}
+
+t_fs_use_bad_effort() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go change acme/app use 42 --effort huge
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge" "$err"
+}
+
+t_fs_ship_bad_mode() {
+  # Given: a run of #42
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  # When
+  fs_go change acme/app ship full 42
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <n>|all" "$err"
+}
+
+t_fs_done_retro_row() {
+  # Given: a run of #42, closed by merged PR 43, with no use pick
+  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
+  # When
+  fs_go check acme/app
+  # Then
+  has retro '"retro":{"model":"opus","effort":"high","path":' "$out"
+}
+
 t_fs_proposed_no_model() {
   # Given: a run of unlabeled #42
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -2267,6 +2308,8 @@ cases=(
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"
   "ship merge for one issue|t_fs_ship_merge_one"
+  "change ship refuses a bad mode|t_fs_ship_bad_mode"
+  "change use refuses a bad effort|t_fs_use_bad_effort"
   "an old run's full starts ship merge|t_fs_old_run_full_merges"
   "ship merge for all leaves started issues|t_fs_ship_merge_all"
   "a started issue keeps its ship mode|t_fs_ship_started"
@@ -2280,6 +2323,7 @@ cases=(
   "all closed ends the run with a summary|t_fs_all_closed_done"
   "an epic with closed sub-issues is done|t_fs_epic_done"
   "a done run prints the retro thread line|t_fs_done_starts_retro"
+  "the retro gets the analysis row|t_fs_done_retro_row"
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
@@ -2337,6 +2381,7 @@ cases=(
   "proposed prints the model and effort|t_fs_proposed_prints_row"
   "proposed takes the use pick|t_fs_proposed_use_wins"
   "a ship proposal needs a size|t_fs_proposed_ship_needs_size"
+  "proposed refuses a bad size|t_fs_proposed_bad_size"
   "a task proposal takes no size|t_fs_proposed_task_no_size"
   "a close proposal has no model|t_fs_proposed_no_model"
   "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
