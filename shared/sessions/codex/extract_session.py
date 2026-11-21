@@ -170,9 +170,9 @@ def summarize_exec_input(input_text):
                     break
     if name == "apply_patch":
         # the patch usually sits in a JS string const; read the file headers straight from the JS
-        files = re.findall(r"\*\*\* (?:Add|Update|Delete|Move to) File: ([^\\\n\"]+)", input_text)
+        files = patch_files(input_text)
         if files:
-            return "apply_patch: " + "; ".join(dict.fromkeys(files))[:300]
+            return "apply_patch: " + "; ".join(files)[:300]
     if arg is None:
         return f"{name}: {input_text[start:start + 160].strip()}"
     return f"{name}: {summarize_call(name, arg)}"
@@ -328,13 +328,18 @@ def read(rows):
     )
 
 
+def patch_files(text):
+    """The files an apply_patch names in its headers, once each, in order."""
+    files = re.findall(r"\*\*\* (?:Add|Update|Delete|Move to) File: ([^\\\n\"]+)", text)
+    return list(dict.fromkeys(f.strip() for f in files))
+
+
 def patched_files(p):
     """File paths an apply_patch touched, whether direct or wrapped in an exec JS call."""
     name = p.get("name")
     src = p.get("input") if isinstance(p.get("input"), str) else ""
     if name == "apply_patch" or (name == "exec" and "apply_patch" in src):
-        files = re.findall(r"\*\*\* (?:Add|Update|Delete|Move to) File: ([^\\\n\"]+)", src)
-        return list(dict.fromkeys(f.strip() for f in files))
+        return patch_files(src)
     return []
 
 
