@@ -27,7 +27,7 @@ rollout_io = load("rollout_io", os.path.join(here, "rollout_io.py"))
 
 def flags(roots, days):
     where = ["--all-projects"] if roots is None else [f for r in roots for f in ("--cwd", r)] + ["--include-subdirs"]
-    return where + ["--interactive"] + (["--active-days", str(days)] if days else [])
+    return where + ["--interactive"] + (["--active-days", str(days)] if days else []) + ["--json", "--limit", "0"]
 
 
 if __name__ == "__main__":
@@ -40,5 +40,5 @@ if __name__ == "__main__":
         flags=flags,
         title=lambda s: s.get("first_prompt") or "",
         current="CODEX_THREAD_ID",
-        extract_flags=("--summary",),
+        extract_flags=("--summary", "--max-result-chars"),
     )))

@@ -17,7 +17,7 @@ spec.loader.exec_module(lib)
 
 def flags(roots, days):
     where = ["--all-projects"] if roots is None else [f for r in roots for f in ("--project-dir", r)] + ["--include-subdirs"]
-    return where + (["--days", str(days)] if days else [])
+    return where + (["--days", str(days)] if days else []) + ["--json", "--limit", "0"]
 
 
 if __name__ == "__main__":
@@ -30,5 +30,5 @@ if __name__ == "__main__":
         flags=flags,
         title=lambda s: s.get("title") or s.get("first_prompt") or "",
         current="CLAUDE_CODE_SESSION_ID",
-        extract_flags=("--summary", "--after-compact"),
+        extract_flags=("--summary", "--after-compact", "--max-result-chars"),
     )))

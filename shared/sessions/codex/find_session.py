@@ -59,6 +59,9 @@ _spec.loader.exec_module(rank)
 _spec = importlib.util.spec_from_file_location("adapter_lib", Path(__file__).parent.parent / "adapter_lib.py")
 adapter_lib = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(adapter_lib)
+_spec = importlib.util.spec_from_file_location("chat_log", Path(__file__).parent.parent / "chat_log.py")
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
@@ -66,10 +69,8 @@ INDEX_PATHS = (
 )
 INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
-PROMPT_DISPLAY_CAP = 500   # first/last prompt shown in output
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
-SNIPPET_LEN = 180
 
 # Injected context, not a human prompt.
 BLOB_MARKERS = (
@@ -88,20 +89,6 @@ WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
 # ---------------------------------------------------------------- parsing
-
-def content_text(content) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        out = []
-        for block in content:
-            if isinstance(block, dict):
-                t = block.get("text") or block.get("input_text") or block.get("output_text")
-                if isinstance(t, str):
-                    out.append(t)
-        return "\n".join(out)
-    return ""
-
 
 def is_blob(text: str) -> bool:
     return len(text) > BLOB_LEN or any(m in text for m in BLOB_MARKERS)
@@ -139,18 +126,14 @@ def parse_content(path: Path) -> dict:
     body, blen = [], 0
     try:
         with rollout_io.open_rollout(path) as h:
-            for line in h:
-                try:
-                    o = json.loads(line)
-                except ValueError:
-                    continue
+            for o in chat_log.rows(h):
                 if o.get("type") != "response_item":
                     continue
                 item = o.get("payload") or {}
                 kind = item.get("type")
                 if kind == "message":
                     role = item.get("role")
-                    text = content_text(item.get("content")).strip()
+                    text = chat_log.text_of(item.get("content")).strip()
                     if not text:
                         continue
                     if role == "user":
@@ -167,21 +150,16 @@ def parse_content(path: Path) -> dict:
                         body.append(text)
                         blen += len(text)
                 elif kind == "agent_message" and blen < BODY_CAP:
-                    text = content_text(item.get("content")) or str(item.get("message") or "")
+                    text = chat_log.text_of(item.get("content")) or str(item.get("message") or "")
                     if text.strip():
                         body.append(text)
                         blen += len(text)
     except OSError:
         pass
 
-    def cap(t):
-        if not t:
-            return t
-        return t[:PROMPT_DISPLAY_CAP] + ("…" if len(t) > PROMPT_DISPLAY_CAP else "")
-
     return {
-        "first_prompt": cap(first),
-        "last_prompt": cap(last),
+        "first_prompt": rank.cap(first),
+        "last_prompt": rank.cap(last),
         "n_prompts": n_user,
         "prompts": prompts,
         "body": "\n".join(body),
@@ -263,11 +241,11 @@ def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -
     return False
 
 
-def collect(paths, targets: list[str] | None, include_subdirs: bool, include_subagents: bool, idx: dict,
+def collect(paths, targets: list[str] | None, include_subdirs: bool, idx: dict,
             interactive_only: bool = False, skipped: dict | None = None, in_window=None) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
-    Subagent threads (spawned by another session) are skipped by default: the
+    Subagent threads (spawned by another session) are skipped: the
     user never typed into them, so they only add noise. With interactive_only,
     headless `codex exec` runs are skipped too and counted in skipped["exec"].
     in_window(key, stat) picks the sessions returned; every path still feeds the
@@ -305,7 +283,7 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, include_sub
             continue
         if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
             continue
-        if ent.get("subagent") and not include_subagents:
+        if ent.get("subagent"):
             continue
         if interactive_only and ent.get("source") == "exec":
             if skipped is not None:
@@ -333,20 +311,6 @@ def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
                 seen.add(hid)
                 todo.append(hid)
     return sorted(found)
-
-
-# ---------------------------------------------------------------- scoring
-
-def best_snippet(s: dict, query: str) -> str:
-    """The line holding the most search words, from the prompts and replies."""
-    lines = []
-    for key in ("first_prompt", "last_prompt"):
-        if s.get(key):
-            lines.extend(s[key].splitlines())
-    lines.extend(s["body"].splitlines())
-    snip = rank.best_line(lines, query) if query else ""
-    snip = re.sub(r"\s+", " ", snip or s.get("first_prompt") or "").strip()
-    return snip[:SNIPPET_LEN] + ("…" if len(snip) > SNIPPET_LEN else "")
 
 
 # ---------------------------------------------------------------- cli
@@ -390,7 +354,6 @@ def main() -> int:
     ap.add_argument("--cwd", action="append", help="project working dir (default: cwd); repeat for several roots")
     ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
-    ap.add_argument("--include-subagents", action="store_true", help="also list subagent threads spawned by other sessions")
     ap.add_argument("--interactive", action="store_true", help="leave out headless `codex exec` runs")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
     ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
@@ -444,13 +407,13 @@ def main() -> int:
 
     skipped = {}
     sessions = collect(paths, None if args.all_projects else roots,
-                       args.include_subdirs, args.include_subagents, idx,
+                       args.include_subdirs, idx,
                        interactive_only=args.interactive, skipped=skipped, in_window=in_window)
 
     docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]
     ranked, use_query = rank.pick(sessions, docs, args.query, WEIGHTS, args.all)
     for s in sessions:
-        s["snippet"] = best_snippet(s, args.query if use_query else "")
+        s["snippet"] = rank.best_snippet(s, args.query if use_query else "")
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
     if args.json:

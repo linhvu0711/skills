@@ -3,8 +3,8 @@
 
 Session transcripts live at ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl.
 This walks every project dir, finds the matching file (exact id, then unique
-prefix), and prints a markdown transcript suitable for loading into another
-Claude Code conversation.
+prefix), reads it into a list of messages, and ../printer.py prints them as a
+markdown transcript suitable for loading into another Claude Code conversation.
 
 Usage:
     extract_session.py <session-id | path> [--full] [--summary] [--tail N]
@@ -27,13 +27,34 @@ one-liners, tool results truncated, thinking omitted):
 """
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import re
 import sys
-from datetime import datetime
+
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "printer", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "printer.py"))
+printer = importlib.util.module_from_spec(_spec)
+# Registered before it runs: dataclasses looks a module up in sys.modules, and
+# Python 3.11 and older fail on printer.py's dataclasses without it.
+sys.modules["printer"] = printer
+_spec.loader.exec_module(printer)
+_spec = importlib.util.spec_from_file_location(
+    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
+WORDS = printer.Words(
+    transcript="Loaded session transcript",
+    skeleton="Session skeleton (deterministic, from the log)",
+    assistant="Assistant",
+    last_reply="Last assistant reply",
+    edits="Files edited (Edit/Write)",
+    cli="",
+)
 
 
 def locate(session_id):
@@ -55,24 +76,8 @@ def locate(session_id):
 def load(path):
     rows = []
     with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        rows.extend(chat_log.rows(fh))
     return rows
-
-
-def fmt_ts(ts):
-    if not ts:
-        return ""
-    try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return ts
 
 
 def is_noise_string(s):
@@ -132,64 +137,45 @@ def summarize_tool_input(name, inp):
     return v[:200] + ("…" if len(v) > 200 else "")
 
 
-def extract_text_from_result(content):
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for b in content:
-            if isinstance(b, dict):
-                if b.get("type") == "text":
-                    parts.append(b.get("text", ""))
-                elif b.get("type") == "image":
-                    parts.append("[image]")
-            elif isinstance(b, str):
-                parts.append(b)
-        return "\n".join(parts)
-    return str(content)
-
-
-def render(rows, mode, tail, max_result_chars, after_compact=False, header=True):
-    # Metadata
+def read(rows):
+    """The log as a printer.Chat: every block in order, and the chat's facts."""
     meta = {}
-    title = None
+    title = pr = away = None
     timestamps = []
-    n_user = n_asst = n_thinking = n_tools = 0
-    for r in rows:
-        t = r.get("type")
-        if t == "ai-title":
-            title = r.get("aiTitle") or title
-        if r.get("timestamp"):
-            timestamps.append(r["timestamp"])
-        for k in ("cwd", "gitBranch", "version", "sessionId"):
-            if r.get(k) and k not in meta:
-                meta[k] = r[k]
-
-    # Build ordered transcript blocks
-    blocks = []  # list of (kind, text)
-    n_compact = 0
+    messages = []
 
     def add_user_text(txt, is_compact):
-        nonlocal n_compact
         if not txt or is_noise_string(txt):
             return
         if is_compact:
-            n_compact += 1
-            blocks.append(("compact", txt.strip()))
+            messages.append(printer.Message("compact", txt.strip()))
             return
         note = parse_task_notification(txt)
         if note:
-            blocks.append(("tool", note))
+            messages.append(printer.Message("note", note))
             return
         slash = parse_slash_command(txt)
         if slash and not slash.split(None, 3)[3:]:
-            blocks.append(("tool", slash))   # bare slash command: plumbing, not a turn
+            messages.append(printer.Message("note", slash))   # bare slash command: plumbing, not a turn
+        elif slash:
+            messages.append(printer.Message("user", slash, command=True))
         else:
-            blocks.append(("user", slash or txt.strip()))
+            messages.append(printer.Message("user", txt.strip()))
 
     for r in rows:
         t = r.get("type")
-        if t == "user":
+        if r.get("timestamp"):
+            timestamps.append(r["timestamp"])
+        for k in ("cwd", "gitBranch", "sessionId"):
+            if r.get(k) and k not in meta:
+                meta[k] = r[k]
+        if t == "ai-title":
+            title = r.get("aiTitle") or title
+        elif t == "pr-link":
+            pr = r.get("prUrl") or pr
+        elif t == "system" and r.get("subtype") == "away_summary":
+            away = r.get("content") or away
+        elif t == "user":
             if r.get("isMeta"):
                 continue
             is_compact = bool(r.get("isCompactSummary"))
@@ -204,19 +190,13 @@ def render(rows, mode, tail, max_result_chars, after_compact=False, header=True)
                     if bt == "text":
                         add_user_text(b.get("text", ""), is_compact)
                     elif bt == "tool_result":
-                        if mode == "summary":
-                            continue
-                        res = extract_text_from_result(b.get("content"))
-                        is_err = b.get("is_error")
-                        if mode != "full" and len(res) > max_result_chars:
-                            res = res[:max_result_chars] + f"\n… [+{len(res) - max_result_chars} chars truncated]"
-                        prefix = "tool error" if is_err else "tool result"
-                        blocks.append(("result", f"[{prefix}] {res.strip()}"))
+                        messages.append(printer.Message(
+                            "result", chat_log.text_of(b.get("content"), "[image]"), error=bool(b.get("is_error"))))
         elif t == "assistant":
             content = r.get("message", {}).get("content")
             if not isinstance(content, list):
                 if isinstance(content, str) and content.strip():
-                    blocks.append(("assistant", content.strip()))
+                    messages.append(printer.Message("assistant", content.strip()))
                 continue
             for b in content:
                 if not isinstance(b, dict):
@@ -225,68 +205,28 @@ def render(rows, mode, tail, max_result_chars, after_compact=False, header=True)
                 if bt == "text":
                     txt = b.get("text", "").strip()
                     if txt:
-                        blocks.append(("assistant", txt))
+                        messages.append(printer.Message("assistant", txt))
                 elif bt == "thinking":
-                    n_thinking += 1
-                    if mode == "full":
-                        blocks.append(("thinking", b.get("thinking", "").strip()))
+                    messages.append(printer.Message("thinking", b.get("thinking", "").strip()))
                 elif bt == "tool_use":
-                    n_tools += 1
-                    if mode == "summary":
-                        continue
-                    blocks.append(("tool", f"→ {b.get('name')}({summarize_tool_input(b.get('name'), b.get('input'))})"))
+                    files = ()
+                    if b.get("name") in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
+                        fp = (b.get("input") or {}).get("file_path") or (b.get("input") or {}).get("notebook_path")
+                        files = (fp,) if fp else ()
+                    messages.append(printer.Message(
+                        "call", f"{b.get('name')}({summarize_tool_input(b.get('name'), b.get('input'))})", files=files))
 
-    n_user = sum(1 for k, _ in blocks if k == "user")
-    n_asst = sum(1 for k, _ in blocks if k == "assistant")
-
-    # after-compact: the last compaction summary already covers everything before it
-    if after_compact:
-        idxs = [i for i, (k, _) in enumerate(blocks) if k == "compact"]
-        if idxs:
-            blocks = blocks[idxs[-1]:]
-
-    # tail: keep blocks from the last N user turns onward
-    if tail:
-        idxs = [i for i, (k, _) in enumerate(blocks) if k == "user"]
-        if len(idxs) > tail:
-            blocks = blocks[idxs[-tail]:]
-    if not header:
-        blocks = [b for b in blocks if b[0] != "compact"]
-
-    out = []
-    if not header:
-        out.append(f"## Last {tail} user turns (verbatim, summary mode)" if tail else "## Transcript (summary mode)")
-        out.append("")
-    if header:
-        out.append("# Loaded session transcript")
-    if header and title:
-        out.append(f"**Title:** {title}")
-    if header:
-        out.append(f"**Session ID:** `{meta.get('sessionId', '?')}`")
-        if meta.get("cwd"):
-            out.append(f"**Project (cwd):** `{meta['cwd']}`")
-        if meta.get("gitBranch"):
-            out.append(f"**Git branch:** `{meta['gitBranch']}`")
-        if timestamps:
-            out.append(f"**Span:** {fmt_ts(min(timestamps))} → {fmt_ts(max(timestamps))}")
-        counts = f"**Activity:** {n_user} user prompts · {n_asst} assistant replies · {n_tools} tool calls · {n_thinking} thinking blocks"
-        if n_compact:
-            counts += f" · {n_compact} compaction summar{'y' if n_compact == 1 else 'ies'}"
-        out.append(counts)
-        out.append(f"**Render mode:** {mode}" + (f" · tail {tail}" if tail else "") + (" · after last compaction" if after_compact else ""))
-        out.append("\n---\n")
-
-    label = {"user": "## 🧑 User", "assistant": "## 🤖 Assistant",
-             "tool": "", "result": "", "thinking": "## 💭 Thinking",
-             "compact": "## 📦 Compaction summary (auto-generated recap of everything above it)"}
-    for kind, text in blocks:
-        if kind in ("tool", "result"):
-            out.append(text)
-        else:
-            out.append(label[kind])
-            out.append(text)
-        out.append("")
-    return "\n".join(out)
+    compacts = [m.text for m in messages if m.kind == "compact"]
+    return printer.Chat(
+        messages=messages, words=WORDS,
+        session_id=meta.get("sessionId"), cwd=meta.get("cwd"), branch=meta.get("gitBranch"),
+        pr=pr, title=title, away=away,
+        recap=compact_recap(compacts[-1]) if compacts else None,
+        span=(min(timestamps), max(timestamps)) if timestamps else None,
+        facts=(("title", next((r.get("aiTitle") for r in reversed(rows) if r.get("type") == "ai-title"), None)),
+               ("cwd", next((r.get("cwd") for r in rows if r.get("cwd")), None))),
+        lines=len(rows),
+    )
 
 
 COMPACT_SECTIONS = ("Pending Tasks", "Current Work", "Optional Next Step")
@@ -303,89 +243,6 @@ def compact_recap(text):
             part = re.split(r"^\s*(?:If you need specific details|Continue the conversation)", part, flags=re.M)[0]
             keep.append(part.strip())
     return "\n".join(keep) if keep else text[:1500].strip()
-
-
-def render_skeleton(rows, tail, max_result_chars):
-    meta = {}
-    title = None
-    timestamps = []
-    pr = None
-    away = None
-    compact = None
-    first_user = None
-    last_asst = None
-    edited = []
-    for r in rows:
-        t = r.get("type")
-        if r.get("timestamp"):
-            timestamps.append(r["timestamp"])
-        for k in ("cwd", "gitBranch", "sessionId"):
-            if r.get(k) and k not in meta:
-                meta[k] = r[k]
-        if t == "ai-title":
-            title = r.get("aiTitle") or title
-        elif t == "pr-link":
-            pr = r.get("prUrl") or pr
-        elif t == "system" and r.get("subtype") == "away_summary":
-            away = r.get("content") or away
-        elif t == "user" and not r.get("isMeta"):
-            content = r.get("message", {}).get("content")
-            texts = [content] if isinstance(content, str) else [
-                b.get("text", "") for b in (content or []) if isinstance(b, dict) and b.get("type") == "text"]
-            for txt in texts:
-                txt = (txt or "").strip()
-                if not txt or is_noise_string(txt) or parse_task_notification(txt):
-                    continue
-                if r.get("isCompactSummary"):
-                    compact = txt
-                elif first_user is None and not parse_slash_command(txt):
-                    first_user = txt
-        elif t == "assistant":
-            for b in r.get("message", {}).get("content", []) or []:
-                if not isinstance(b, dict):
-                    continue
-                if b.get("type") == "text" and b.get("text", "").strip():
-                    last_asst = b["text"].strip()
-                elif b.get("type") == "tool_use" and b.get("name") in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
-                    fp = (b.get("input") or {}).get("file_path") or (b.get("input") or {}).get("notebook_path")
-                    if fp and fp not in edited:
-                        edited.append(fp)
-
-    out = ["# Session skeleton (deterministic, from the log)"]
-    if title:
-        out.append(f"**Title:** {title}")
-    out.append(f"**Session ID:** `{meta.get('sessionId', '?')}`")
-    if meta.get("cwd"):
-        out.append(f"**Project (cwd):** `{meta['cwd']}`")
-    if meta.get("gitBranch"):
-        out.append(f"**Git branch:** `{meta['gitBranch']}`")
-    if pr:
-        out.append(f"**PR:** {pr}")
-    if timestamps:
-        out.append(f"**Span:** {fmt_ts(min(timestamps))} → {fmt_ts(max(timestamps))}")
-    out.append("")
-    out.append("**First prompt:**")
-    out.append((first_user or "(none)")[:1500])
-    out.append("")
-    if away:
-        out.append("**Last away recap (written by the assistant when the user stepped away):**")
-        out.append(away.strip())
-        out.append("")
-    if compact:
-        out.append("**From the last compaction summary:**")
-        out.append(compact_recap(compact))
-        out.append("")
-    out.append("**Files edited (Edit/Write):**")
-    out.extend(f"- `{fp}`" for fp in edited) if edited else out.append("- none")
-    out.append("")
-    out.append("**Last assistant reply:**")
-    la = last_asst or "(none)"
-    out.append(la[:2000] + (f"\n… [+{len(la) - 2000} chars truncated]" if len(la) > 2000 else ""))
-    out.append("")
-    out.append("---")
-    out.append("")
-    out.append(render(rows, "summary", tail or 3, max_result_chars, after_compact=True, header=False))
-    return "\n".join(out)
 
 
 def main():
@@ -406,42 +263,20 @@ def main():
         print("Tip: pass the full UUID, or a unique prefix. List sessions with:", file=sys.stderr)
         print("  ls ~/.claude/projects/*/*.jsonl", file=sys.stderr)
         sys.exit(1)
-    if len(matches) > 1:
-        print(f"Ambiguous id '{args.session_id}' — {len(matches)} matches:", file=sys.stderr)
-        for m in matches:
-            print(f"  {m}", file=sys.stderr)
-        print("Pass the full UUID to disambiguate.", file=sys.stderr)
-        sys.exit(2)
-
-    path = matches[0]
+    path = printer.only_match(matches, args.session_id)
     rows = load(path)
+    chat = read(rows)
 
     if args.list:
-        title = next((r.get("aiTitle") for r in reversed(rows) if r.get("type") == "ai-title"), None)
-        cwd = next((r.get("cwd") for r in rows if r.get("cwd")), None)
-        n_users = render(rows, "summary", 0, args.max_result_chars).count("\n## 🧑 User\n")
-        n_compact = sum(1 for r in rows if r.get("type") == "user" and r.get("isCompactSummary"))
-        print(f"path:    {path}")
-        print(f"title:   {title}")
-        print(f"cwd:     {cwd}")
-        print(f"lines:   {len(rows)}")
-        print(f"turns:   {n_users} user prompts" + (f" · {n_compact} compaction summar{'y' if n_compact == 1 else 'ies'} (use --after-compact to skip the pre-compact history)" if n_compact else ""))
-        print("size (chars / ~tokens at 4 chars per token):")
-        for m in ("summary", "balanced", "full"):
-            n = len(render(rows, m, 0, args.max_result_chars))
-            line = f"  {m:<9} {n:>10,} chars  ~{n // 4:>8,} tokens"
-            if n_compact:
-                n2 = len(render(rows, m, 0, args.max_result_chars, after_compact=True))
-                line += f"   (after-compact: {n2:,} chars ~{n2 // 4:,} tokens)"
-            print(line)
+        print(printer.listing(chat, path, args.max_result_chars))
         return
 
     if args.skeleton:
-        print(render_skeleton(rows, args.tail, args.max_result_chars))
+        print(printer.skeleton(chat, args.tail))
         return
 
     mode = "summary" if args.summary else "full" if args.full else "balanced"
-    print(render(rows, mode, args.tail, args.max_result_chars, args.after_compact))
+    print(printer.transcript(chat, mode, args.tail, args.max_result_chars, args.after_compact))
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 """Find Antigravity chats for ../adapter_lib.py's `find`.
 
     find_session.py <query> (--cwd R... [--include-subdirs] | --all-projects)
-                    [--active-days N] [--all] [--limit N] [--json]
+                    [--active-days N] [--all]
 
 Prints {"sessions": [...], "unreadable": [...]} and nothing else, since only
 the adapter calls it. A row holds id, cwd, title, first_prompt, n_prompts,
@@ -52,8 +52,6 @@ def main():
     ap.add_argument("--include-subdirs", action="store_true")
     ap.add_argument("--active-days", type=int)
     ap.add_argument("--all", action="store_true")
-    ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
     roots = None if args.all_projects else [os.path.abspath(r) for r in args.cwd]
@@ -86,10 +84,9 @@ def main():
             docs.append({"prompts": "\n".join(prompts), "body": "\n".join(replies)})
 
     kept, _ = rank.pick(rows, docs, args.query, WEIGHTS, args.all)
-    shown = kept[: args.limit] if args.limit > 0 else kept
-    for r in shown:
+    for r in kept:
         r["age"] = adapter_lib.age(r["modified"])
-    print(json.dumps({"sessions": shown, "unreadable": unreadable}, indent=2, ensure_ascii=False))
+    print(json.dumps({"sessions": kept, "unreadable": unreadable}, indent=2, ensure_ascii=False))
     return 0
 
 

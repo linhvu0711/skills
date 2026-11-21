@@ -38,10 +38,11 @@ from typing import Callable
 
 class Harness:
     """One harness: its name and its name for people, the folders it keeps
-    sessions in, its finder and extractor scripts, the finder flags for (roots,
-    or None for every project; days, or None for all time), the finder row's
-    title, the environment variable that holds the id of the session a command
-    runs in, and the extractor flags it takes."""
+    sessions in, its finder and extractor scripts, every flag its finder takes
+    for (roots, or None for every project; days, or None for all time), the
+    output flags too, the finder row's title, the environment variable that
+    holds the id of the session a command runs in, and the extract flags its
+    extractor takes, --max-result-chars among them."""
 
     def __init__(self, name: str, label: str, data: list, finder: str, extractor: str,
                  flags: Callable[[list | None, int | None], list], title: Callable[[dict], str],
@@ -100,7 +101,7 @@ def _find(h: Harness, args) -> list[dict]:
         return []
     query = getattr(args, "query", "")
     ids = getattr(args, "id", [])
-    cmd = [sys.executable, h.finder, query, *h.flags(roots, days), "--json", "--limit", "0"]
+    cmd = [sys.executable, h.finder, query, *h.flags(roots, days)]
     if not query:
         cmd.append("--all")
     done = subprocess.run(cmd, capture_output=True, text=True)
@@ -144,9 +145,11 @@ def main(h: Harness) -> int:
     args = _parser().parse_args()
     if args.cmd == "extract":
         # A flag this harness's extractor lacks is dropped, so one call fits every harness.
-        asked = [f for f, on in (("--summary", args.summary), ("--after-compact", args.after_compact)) if on]
-        return subprocess.run([sys.executable, h.extractor, args.path, *(f for f in asked if f in h.extract_flags),
-                               "--max-result-chars", str(args.max_result_chars)]).returncode
+        asked = [f for f, on in (("--summary", args.summary), ("--after-compact", args.after_compact))
+                 if on and f in h.extract_flags]
+        if "--max-result-chars" in h.extract_flags:
+            asked += ["--max-result-chars", str(args.max_result_chars)]
+        return subprocess.run([sys.executable, h.extractor, args.path, *asked]).returncode
     # With none of its folders here the harness is not installed, and its finder is not run.
     installed = any(os.path.isdir(d) for d in h.data)
     rows = _find(h, args) if installed else []

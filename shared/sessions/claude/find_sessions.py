@@ -24,7 +24,7 @@ Usage:
     find_sessions.py "..." --project-dir A --project-dir B --include-subdirs
                                                         # several roots, worktrees under them
     find_sessions.py --all-projects --days 3 --all      # every project, last 3 days
-    find_sessions.py "..." --date yesterday | --days 30 # narrow by last activity
+    find_sessions.py "..." --days 30                     # narrow by last activity
     find_sessions.py "..." --limit 40                   # show more candidates (0: all)
 """
 import argparse
@@ -45,6 +45,10 @@ _spec = importlib.util.spec_from_file_location(
     "adapter_lib", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "adapter_lib.py"))
 adapter_lib = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(adapter_lib)
+_spec = importlib.util.spec_from_file_location(
+    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 WRAP_PREFIXES = (
     "<local-command-caveat>",
@@ -55,9 +59,7 @@ WRAP_PREFIXES = (
     "<local-command-stdout>",
     "<task-notification>",  # harness re-invocation when background work finishes — not a human prompt
 )
-PROMPT_DISPLAY_CAP = 500  # cap stored first/last prompt so a pasted wall-of-text can't flood output
 BODY_CAP = 200_000  # cap chars indexed per session for scoring (keeps big files fast)
-SNIPPET_LEN = 180
 # A word in the title or a prompt says what the user steered toward; the
 # agent's replies still count, since a chat another skill started (a lone
 # "/ship 237") holds its topic only there.
@@ -115,40 +117,13 @@ def in_scope(sess, project_dirs, include_subdirs, all_projects):
     return False
 
 
-def resolve_day(value):
-    if not value:
-        return None
-    v = value.lower()
-    if v == "today":
-        return dt.date.today()
-    if v == "yesterday":
-        return dt.date.today() - dt.timedelta(days=1)
-    return dt.date.fromisoformat(value)
-
-
-def in_window(mtime, day, days):
-    """By last activity, in local time: on one day, or within the last N days
-    counting today as the first."""
+def in_window(mtime, days):
+    """By last activity, in local time: within the last N days counting today
+    as the first."""
     when = dt.date.fromtimestamp(mtime)
-    if day:
-        return when == day
     if days:
         return when >= dt.date.today() - dt.timedelta(days=days - 1)
     return True
-
-
-def text_of(message):
-    """Extract human-readable text from a message's content (str or block list)."""
-    content = message.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(block.get("text", ""))
-        return "\n".join(parts)
-    return ""
 
 
 def strip_wrappers(text):
@@ -182,7 +157,6 @@ def parse_session(path):
     sid = os.path.basename(path)[: -len(".jsonl")]
     title = None
     cwd = None
-    created = None
     first_prompt = None      # first prompt of any kind (may be a bare slash command)
     first_substantive = None  # first prompt with real prose, for display
     last_prompt = None
@@ -193,14 +167,7 @@ def parse_session(path):
     body_len = 0
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    d = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
+            for d in chat_log.rows(f):
                 t = d.get("type")
                 if t in ("ai-title", "summary"):
                     # Current Claude Code writes {"type":"ai-title","aiTitle":...};
@@ -214,15 +181,12 @@ def parse_session(path):
                     if isinstance(lp, str) and lp.strip():
                         last_prompt = strip_wrappers(lp) or last_prompt
                     continue
-                ts = d.get("timestamp")
-                if ts and created is None:
-                    created = ts
                 if cwd is None and d.get("cwd"):
                     cwd = d["cwd"]
                 if t == "user":
                     if d.get("isMeta") or d.get("isSidechain"):
                         continue
-                    human = strip_wrappers(text_of(d.get("message", {})))
+                    human = strip_wrappers(chat_log.text_of(d.get("message", {}).get("content")))
                     if human:
                         n_prompts += 1
                         if first_prompt is None:
@@ -236,28 +200,21 @@ def parse_session(path):
                 elif t == "assistant":
                     if d.get("isSidechain"):
                         continue
-                    txt = text_of(d.get("message", {}))
+                    txt = chat_log.text_of(d.get("message", {}).get("content"))
                     if txt and body_len < BODY_CAP:
                         body_parts.append(txt)
                         body_len += len(txt)
     except OSError:
         return None
 
-    def cap(text):
-        if not text:
-            return text
-        text = text.strip()
-        return text[:PROMPT_DISPLAY_CAP] + ("…" if len(text) > PROMPT_DISPLAY_CAP else "")
-
     return {
         "id": sid,
         "title": title,
         # Display fields are capped; the full text still lives in ``prompts`` for scoring.
-        "first_prompt": cap(first_substantive or first_prompt),
-        "last_prompt": cap(last_prompt),
+        "first_prompt": rank.cap(first_substantive or first_prompt),
+        "last_prompt": rank.cap(last_prompt),
         "n_prompts": n_prompts,
         "modified": os.path.getmtime(path),
-        "created": created,
         "path": path,
         "size": os.path.getsize(path),
         "cwd": cwd,
@@ -268,18 +225,6 @@ def parse_session(path):
     }
 
 
-def best_snippet(sess, query):
-    """The line holding the most search words, from the title, prompts, and replies."""
-    lines = [sess["title"]] if sess["title"] else []
-    for key in ("first_prompt", "last_prompt"):
-        if sess[key]:
-            lines.extend(sess[key].splitlines())
-    lines.extend(sess["body"].splitlines())
-    snippet = rank.best_line(lines, query) if query else ""
-    snippet = re.sub(r"\s+", " ", snippet or sess["first_prompt"] or sess["title"] or "").strip()
-    return snippet[:SNIPPET_LEN] + ("…" if len(snippet) > SNIPPET_LEN else "")
-
-
 def main():
     ap = argparse.ArgumentParser(description="Find Claude Code sessions in a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
@@ -288,7 +233,6 @@ def main():
     ap.add_argument("--include-subdirs", action="store_true",
                     help="also sessions started below a --project-dir, such as its worktrees")
     ap.add_argument("--all-projects", action="store_true", help="every project on this machine")
-    ap.add_argument("--date", help="one local calendar day of last activity: today, yesterday, or YYYY-MM-DD")
     ap.add_argument("--days", type=int, help="only sessions active in the last N days (default: all time)")
     ap.add_argument("--all", action="store_true", help="list every session (newest first), ignore scoring")
     # The caller judges the list by meaning, and judges well once the session is
@@ -311,9 +255,8 @@ def main():
         return
 
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
-    day = resolve_day(args.date)
     files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
-    files = [p for p in files if in_window(os.path.getmtime(p), day, args.days)]
+    files = [p for p in files if in_window(os.path.getmtime(p), args.days)]
     sessions = [s for s in (parse_session(p) for p in files)
                 if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
 
@@ -321,7 +264,7 @@ def main():
 
     for s in sessions:
         s["is_current"] = (s["id"] == current_id)
-        s["snippet"] = best_snippet(s, args.query if use_query else "")
+        s["snippet"] = rank.best_snippet(s, args.query if use_query else "")
 
     shown = ranked[: args.limit] if args.limit > 0 else ranked
 
