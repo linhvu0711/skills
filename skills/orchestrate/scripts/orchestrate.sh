@@ -204,11 +204,9 @@ skill() {
   esac
 }
 
-# The ship mode the user set for issue $n, or "" when the /ship thread picks
-# it. A run started before /ship holds `full` or `ready`; `full` reads as
-# merge, so a live run never starts a skill that is gone.
+# The ship mode the user set for issue $n, or "" when the /ship thread picks it.
 # shellcheck disable=SC2016 # the $ names are jq variables
-ship_mode_jq='def ship_mode($n): (.ship[$n] // .ship.default // "") | if . == "full" then "merge" else . end;'
+ship_mode_jq='def ship_mode($n): .ship[$n] // .ship.default // "";'
 ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 
 # answer_skill <word>: the skill an answer or a proposed route names, or
@@ -776,8 +774,7 @@ cmd_timer() {
 # ---------- resume ----------
 # resume --thread <id> --env <id>: the newest run of the repo that is not done goes on
 # from that thread. Prints the run's name, which the thread takes as its
-# title, and the old timer's task, which the agent deletes before it starts
-# a new one, so a run has one timer.
+# title, and the check interval.
 cmd_resume() {
   [ "${1:-}" = --thread ] && [ -n "${2:-}" ] && [ "${3:-}" = --env ] && [ -n "${4:-}" ] \
     || die "usage: orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
@@ -794,7 +791,7 @@ cmd_resume() {
     '.thread = $thread | .link = $l | .env = $env | .status = "running" | .timer.fails = 0 | .timer.alerted = false' <<<"$S")"
   save
   copy_page
-  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, old_task: ($S.timer.task // null), every: $S.timer.every}'
+  jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, every: $S.timer.every}'
 }
 
 # ---------- sync ----------

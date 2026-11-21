@@ -653,17 +653,6 @@ t_fs_ship_merge_one() {
   has stdout '"message":"/ship --merge #42"' "$out"
 }
 
-t_fs_old_run_full_merges() {
-  # Given: a run started before /ship, its state .ship {"default":"ready","43":"full"}
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43
-  fs_set_state '.ship = {"default":"ready","43":"full"}'
-  # When
-  fs_go check acme/app
-  # Then
-  has stdout '"message":"/ship --ready #42"' "$out"
-  has stdout '"message":"/ship --merge #43"' "$out"
-}
-
 t_fs_ship_merge_all() {
   # Given: a run of #42 and #43; #42's ticket thread t42 started with no mode
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'; fs_start 42 43; fs_record 42 ticket t42
@@ -1383,14 +1372,14 @@ t_fs_live_run_stops_start() {
 }
 
 t_fs_resume_newest() {
-  # Given: a stopped run of #42 whose timer was task s1
+  # Given: a stopped run of #42
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop
+  fs_go timer acme/app stop
   # When
   fs_go resume acme/app --thread f2 --env e1
   # Then
   eq exit 0 "$code"
-  has stdout '"name":"#42","old_task":"s1","every":5' "$out"
+  has stdout '"name":"#42","every":5}' "$out"
   eq state '{"status":"running","link":"[🧭 #42](t3-thread://v1/f2)"}' "$(fs_state '{status, link}')"
 }
 
@@ -1675,7 +1664,7 @@ t_fs_close_answer() {
 t_fs_answers_survive_resume() {
   # Given: #42 proposed task and answered yes; the run stopped and resumed
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task; fs_go change acme/app answer 42 yes
-  fs_set_state '.timer.task = "s1"'; fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
+  fs_go timer acme/app stop; fs_go resume acme/app --thread f2 --env e1
   # When
   fs_go check acme/app
   # Then
@@ -2310,7 +2299,6 @@ cases=(
   "ship merge for one issue|t_fs_ship_merge_one"
   "change ship refuses a bad mode|t_fs_ship_bad_mode"
   "change use refuses a bad effort|t_fs_use_bad_effort"
-  "an old run's full starts ship merge|t_fs_old_run_full_merges"
   "ship merge for all leaves started issues|t_fs_ship_merge_all"
   "a started issue keeps its ship mode|t_fs_ship_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
