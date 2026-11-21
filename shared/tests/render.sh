@@ -6,9 +6,6 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 render() { T="$(cd "$(mktemp -d)" && pwd -P)"; run bash "$here/../handoff/render.sh" "$@"; }
 
-# lacks <name> <needle> <haystack>: fail when the needle is in the haystack.
-lacks() { case "$3" in *"$2"*) printf '%s: [%s] found\n' "$1" "$2" >&2; exit 1 ;; esac; }
-
 t_render_local_box() {
   render local rules
   eq exit 0 "$code"
