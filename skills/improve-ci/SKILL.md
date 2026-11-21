@@ -75,21 +75,28 @@ retrieve, short lookups are yours. An explorer has no network, so every
 
    ```bash
    gh pr list --state merged -L 100 --json number,title,files,changedFiles,commits > <tmp>/prs.json
-   gh api repos/<REPO>/rules/branches/<BRANCH> > <tmp>/rules.json
+   gh api --paginate repos/<REPO>/rules/branches/<BRANCH> --jq '.[]' > <tmp>/rules.jsonl
    gh api repos/<REPO>/branches/<BRANCH>/protection > <tmp>/protection.json
    ```
 
-   The protection call fails with `Branch not protected` when the branch
-   has no classic rule: save `{}`. It fails another way (a token with no
-   admin access gets 403): save `{}`, and the report says the classic
-   branch rules were not read.
+   `rules.jsonl` holds one ruleset rule per line, every page read.
+   - The rules call fails with `make this repository public to enable
+     this feature`: a private repo on a free plan has no rulesets, so an
+     empty file is the answer. It fails another way: the report says
+     the rulesets were not read.
+   - The protection call fails with `Branch not protected`: the branch
+     has no classic rule, so save `{}`. It fails another way (a token
+     with no admin access gets 403): save the part read access can see,
+     `gh api repos/<REPO>/branches/<BRANCH> --jq .protection`, which
+     names the required checks. The report says the rest of the classic
+     rules were not read.
 
    Then start explorers per `facts.md`, one per concern, in one message.
    Each brief names the repo's checkout, the playbook's find kinds for
    its concern pasted in, and the files it reads:
 
    - **Workflows**: every workflow file, the repo's hook files and
-     hook tool config, `AGENTS.md`, and `rules.json` and
+     hook tool config, `AGENTS.md`, and `rules.jsonl` and
      `protection.json` for the checks a rule requires. Ask for each
      honesty, security, and other find, with `path:line`.
    - **History**: `prs.json` and the re-runs from step 2. Ask for the
