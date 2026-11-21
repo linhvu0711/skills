@@ -722,20 +722,20 @@ def viewport_problems(plan):
 
 
 # Raw text the page never shows: lines kept for other checks, and values a problem line already names.
-RAW = {"prose", "brief", "row", "line", "cell", "unread", "bad"}
+RAW = {"prose", "brief", "row", "cell", "unread", "bad"}
 TEXT_PARTS = {"Change", "Approach", "In", "Out"}
 
 
-def texts(node, path):
+def texts(node, path, raw=RAW):
     if isinstance(node, str):
         yield path, node
     elif isinstance(node, dict):
         for k, v in node.items():
-            if k not in RAW:
-                yield from texts(v, f"{path}.{k}" if path else k)
+            if k not in raw:
+                yield from texts(v, f"{path}.{k}" if path else k, raw)
     elif isinstance(node, (list, tuple)):
         for i, v in enumerate(node):
-            yield from texts(v, f"{path}[{i}]")
+            yield from texts(v, f"{path}[{i}]", raw)
 
 
 def page_texts(plan):
@@ -750,7 +750,8 @@ def page_texts(plan):
                         continue
                     where, part = f"reviews[{i}].parts.{name}", r["parts"][name]
                     # The page joins a part's lines, so a span cut across two lines shows whole.
-                    yield from [(where, " ".join(part))] if name in TEXT_PARTS else texts(part, where)
+                    # A Review item's `line` is the source the page shows cut into its parts.
+                    yield from [(where, " ".join(part))] if name in TEXT_PARTS else texts(part, where, RAW | {"line"})
         elif key == "layers":
             for i, layer in enumerate(value):
                 for k, v in layer.items():
@@ -759,6 +760,10 @@ def page_texts(plan):
                         yield f"layers[{i}].summary", " ".join(v)
                     elif k != "review":
                         yield from texts(v, f"layers[{i}].{k}")
+        elif key == "maps":
+            for i, m in enumerate(value):
+                # The page shows a None map as its `None:` line alone.
+                yield from [(f"maps[{i}].none", m["none"])] if m["none"] else texts(m, f"maps[{i}]")
         else:
             yield from texts(value, key)
 

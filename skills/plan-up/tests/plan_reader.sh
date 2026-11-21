@@ -76,6 +76,22 @@ t_reader_odd_tick() {
   bad_line 's/- O1 orders export as PDF/&`/' 'layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
 }
 
+t_reader_proof_tick() {
+  bad_line 's/^| 1 | orders export as CSV |/| 1 | orders export as `CSV |/' \
+    'layers[0].proof[0].line: odd number of backticks, one shows raw: orders export as `CSV'
+}
+
+t_reader_none_map_area_tick() {
+  # Given: a None map whose heading names an area with one backtick; the page never shows that area
+  T="$(mktemp -d)"
+  sed 's/^## Change map$/## Change map · `api/' "$here/build-page/none-map.md" > "$T/plan.md"
+  # When
+  problems "$T/plan.md"
+  # Then
+  eq exit 0 "$code"
+  eq problems "" "$out"
+}
+
 t_reader_wrapped_tick() {
   # Given: one backtick span cut across the two lines of the Approach part
   ticket 's/^Approach: stream CSV through/Approach: stream `CSV\
@@ -177,5 +193,7 @@ cases=(
   "plan_reader names a Works when line out of order|t_reader_works_order"
   "plan_reader names a Proof row short of a cell|t_reader_proof_cells"
   "plan_reader names an odd number of backticks|t_reader_odd_tick"
+  "plan_reader names an odd number of backticks in a Proof cell|t_reader_proof_tick"
+  "plan_reader passes a backtick in the area of a None map|t_reader_none_map_area_tick"
   "plan_reader reads a backtick span cut across two lines as whole|t_reader_wrapped_tick"
 )
