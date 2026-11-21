@@ -837,6 +837,16 @@ t_fs_sync_fetch_fails() {
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
+t_fs_sync_up_to_date() {
+  # Given: a run of #42; origin's main is the checked-out main
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main up to date at $(fs_short "$T/dev/app" main)" "$out"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2178,6 +2188,7 @@ cases=(
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
+  "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
