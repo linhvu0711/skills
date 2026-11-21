@@ -60,10 +60,12 @@ else
   link_problems+=("problem: link.sh failed: $(tilde "$(tail -n 1 "$lerr")")")
 fi
 
-# skipped_path <file>: whether a link.sh skip line named the file.
+# skipped_path <file>: whether a link.sh skip line named the file. link.sh
+# names a linked file by its target.
 skipped_path() {
-  local s
-  for s in ${skipped[@]+"${skipped[@]}"}; do case "$s" in "$1 "*) return 0 ;; esac; done
+  local s r
+  r="$(realpath "$1" 2>/dev/null || true)"
+  for s in ${skipped[@]+"${skipped[@]}"}; do case "$s" in "$1 "*|"${r:-$1} "*) return 0 ;; esac; done
   return 1
 }
 
@@ -160,7 +162,9 @@ check_antigravity() {
   for d in "$t3_antigravity"/*/; do
     [ -d "$d" ] || continue
     d="${d%/}"; rt=$((rt + 1))
-    if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then r=$((r + 1))
+    # A T3 link loads the rules only through GEMINI.md, whose problem is named above.
+    if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then
+      if imports_rules "$gemini_md"; then r=$((r + 1)); fi
     else problem "antigravity rules: $d has no GEMINI.md link: T3 makes it at the next Antigravity chat"; fi
   done
   got="skills $s · subagents $a · gates $g · rules $r/$rt"
@@ -184,11 +188,12 @@ is_absent() {
   return 1
 }
 
-# owner <path>: the harness whose folders hold the path.
+# owner <path>: the harness whose folders hold the path. None owns
+# ~/.agents/skills: link.sh links a skill there before any harness's own link.
 owner() {
   case "$1" in
     "$HOME/.claude/"*) echo claude ;;
-    "$HOME/.codex/"*|"$HOME/.agents/skills/"*) echo codex ;;
+    "$HOME/.codex/"*) echo codex ;;
     "$HOME/.gemini/"*|"$t3_antigravity/"*) echo antigravity ;;
   esac
 }

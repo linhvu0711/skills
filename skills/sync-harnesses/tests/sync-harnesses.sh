@@ -280,6 +280,41 @@ t_sync_absent_harness_skips_backups() {
   lacks problem 'problem:' "$out"
 }
 
+t_sync_names_shared_skill_blocker() {
+  # Given: no Codex CLI, and a folder where the shared demo skill link should be
+  mac
+  rm "$H/bin/codex" "$H/.agents/skills/demo" "$H/.claude/skills/demo"
+  mkdir "$H/.agents/skills/demo"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has problem "problem: ~/.agents/skills/demo is not this repo's demo" "$out"
+}
+
+t_sync_t3_rules_links_need_shared_file() {
+  # Given: no shared rules file, and T3's GEMINI.md link in place
+  mac
+  rm "$H/.agents/rules/shared.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 7/7 · rules 0/2' "$out"
+}
+
+t_sync_linked_settings_not_json_once() {
+  # Given: Claude Code's settings, a link to a file that is not JSON
+  mac
+  printf 'not json\n' > "$H/real-settings.json"
+  ln -sf "$H/real-settings.json" "$H/.claude/settings.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  eq problems 'problem: ~/real-settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -302,4 +337,7 @@ cases=(
   "sync names settings that are not JSON once|t_sync_settings_not_json_once"
   "sync counts rules only with the shared file|t_sync_rules_need_shared_file"
   "sync skips the backups of a harness not installed|t_sync_absent_harness_skips_backups"
+  "sync names a blocked shared skill link without Codex|t_sync_names_shared_skill_blocker"
+  "sync counts T3 rules links only with the shared file|t_sync_t3_rules_links_need_shared_file"
+  "sync names linked settings that are not JSON once|t_sync_linked_settings_not_json_once"
 )
