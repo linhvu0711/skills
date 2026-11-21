@@ -100,6 +100,17 @@ t_prune_gh_fails() {
   [ -d "$T/w/feat-1-a" ] || eq "$T/w/feat-1-a" "a folder" "missing"
 }
 
+t_prune_gh_fails_last_line() {
+  # Given: gh fails with a hint first and the error last
+  wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  printf 'A new release of gh is available\nerror connecting to api.github.com\n' > "$FAKE_GH/pr-list.fail"
+  # When
+  run bash "$P"
+  # Then
+  eq stop "1||stop: gh failed: error connecting to api.github.com" "$code|$out|$err"
+}
+
 t_prune_skips_session() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
@@ -234,6 +245,7 @@ cases=(
   "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
   "prune uses only git with no GitHub remote|t_prune_git_only"
   "prune stops and removes nothing when gh fails|t_prune_gh_fails"
+  "prune shows gh's last error line|t_prune_gh_fails_last_line"
   "prune skips the session's worktree|t_prune_skips_session"
   "prune clears a stale entry|t_prune_clears_stale"
   "prune all goes through every repo under the root|t_prune_all"

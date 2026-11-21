@@ -23,7 +23,7 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 - `git`.
 - `du`, for each worktree's size.
 - For the in-use check, `/proc` on Linux or `lsof` on macOS; both come with the system.
-- `gh`, signed in, for the PR of each branch: one call per branch. When `gh` fails (not signed in, no network), it removes nothing and says so.
+- `gh`, signed in, for the PR of each branch: one call per branch. When `gh` fails (not signed in, no network), it removes nothing and says so, with gh's last error line.
 
 ## Fits with
 

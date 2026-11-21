@@ -57,6 +57,7 @@ set -euo pipefail
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
+. "$here/../../../shared/gh.sh"
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -77,16 +78,12 @@ github_repo() {
 }
 
 # pr_of <owner/repo> <branch>: `<number> <STATE> <headRefOid>` of the
-# branch's newest PR, or nothing when it has none. gh fails: the stop line on
-# stderr, and return 1.
+# branch's newest PR, or nothing when it has none. gh fails: the stop line,
+# with gh's last error line, on stderr, and exit 1.
 pr_of() {
-  local out err
-  err="$(mktemp)"
-  if out="$(gh pr list -R "$1" --head "$2" --state all --limit 1 \
-      --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"' 2>"$err")"; then
-    rm -f "$err"; printf '%s' "$out"; return 0
-  fi
-  printf 'stop: gh failed: %s\n' "$(head -1 "$err")" >&2; rm -f "$err"; return 1
+  gh_or_stop pr list -R "$1" --head "$2" --state all --limit 1 \
+    --json number,state,headRefOid --jq '.[] | "\(.number) \(.state) \(.headRefOid)"'
+  printf '%s' "$out"
 }
 
 # default_ref <main>: the default branch to test a tip against: origin/HEAD,
