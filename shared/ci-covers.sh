@@ -8,7 +8,8 @@
 # Gate only when all three hold:
 #   - its top-level `on:` names `pull_request`: `on: pull_request`, a list
 #     such as `on: [push, pull_request]`, or a `pull_request:` key or
-#     `- pull_request` item under `on:`. Filters under it are not read.
+#     `- pull_request` item under `on:`. A filter under that key, such as
+#     `branches:` or `paths:`, can skip the PR, so the Gate runs here.
 #   - the Gate is exactly a run command: the value of a one-line `run:`, or
 #     one line, trimmed, of a `run: |` block. A longer command, a comment, a
 #     line of a folded `run: >` block, or a run line with more on it is not
@@ -38,7 +39,7 @@ prog='
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
-BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0
+BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0
   insteps = 0; sind = -1; step = 0; cur = 0; scol = -1 }
 {
   sub(/\r$/, "")
@@ -55,8 +56,9 @@ BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; j
       if (child < 0) child = ind
       if (ind == child) {
         k = trim(line); sub(/^-[ \t]*/, "", k); k = nocomment(k); sub(/:.*$/, "", k)
-        if (trim(k) == "pull_request") pr = 1
-      }
+        prk = (trim(k) == "pull_request")
+        if (prk) pr = 1
+      } else if (prk) filt = 1
       next
     }
     in_on = 0
@@ -98,7 +100,7 @@ BEGIN { pr = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; j
   else if (v != "" && v !~ /^>/) { runs[++n] = v; rj[n] = job; rs[n] = cur }
 }
 END {
-  print (pr ? "PR" : "NOPR")
+  print (pr && !filt ? "PR" : "NOPR")
   for (i = 1; i <= n; i++) if (!jif[rj[i]] && !sif[rs[i]]) print runs[i]
 }'
 
