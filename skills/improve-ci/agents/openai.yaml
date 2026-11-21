@@ -1,0 +1,6 @@
+interface:
+  display_name: "Improve CI"
+  short_description: "Time a repo's CI runs, report what is slow, dishonest, or unsafe, grill every find"
+  default_prompt: "$improve-ci"
+policy:
+  allow_implicit_invocation: false
