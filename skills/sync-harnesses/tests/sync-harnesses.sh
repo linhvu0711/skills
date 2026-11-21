@@ -218,6 +218,68 @@ t_sync_skips_harness_not_installed() {
   lacks problem 'problem: antigravity' "$out"
 }
 
+t_sync_devin_missing_from_t3() {
+  # Given: T3 with no Devin entry at all
+  mac
+  json "$H/.t3/userdata/settings.json" '.providerInstances |= del(.acpRegistry_devin)'
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  has devin 'devin in T3  off' "$out"
+  has warn 'warn: Devin is off in T3, so these run on their backup: helper' "$out"
+  [ ! -e "$T/mac/devin.calls" ] || eq devin.calls absent there
+}
+
+t_sync_blocked_skill_link_once() {
+  # Given: a folder where Claude Code's demo skill link should be
+  mac
+  rm "$H/.claude/skills/demo"
+  mkdir "$H/.claude/skills/demo"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has claude 'claude       skills 1/2 · subagents 1/1 · gates 6/6 · rules 1/1' "$out"
+  eq problems "problem: ~/.claude/skills/demo is not this repo's demo" "$(grep '^problem:' <<<"$out")"
+}
+
+t_sync_settings_not_json_once() {
+  # Given: Claude Code's settings that are not JSON
+  mac
+  printf 'not json\n' > "$H/.claude/settings.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  eq problems 'problem: ~/.claude/settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
+}
+
+t_sync_rules_need_shared_file() {
+  # Given: no shared rules file
+  mac
+  rm "$H/.agents/rules/shared.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has claude 'claude       skills 2/2 · subagents 1/1 · gates 6/6 · rules 0/1' "$out"
+  has codex 'codex        skills 2/2 · subagents 1/1 · gates 6/6 · rules 0/1' "$out"
+}
+
+t_sync_absent_harness_skips_backups() {
+  # Given: no Codex CLI, and a Codex model list without the helper's backup
+  mac
+  rm "$H/bin/codex"
+  printf '{"models":[]}' > "$H/.codex/models_cache.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  has codex 'codex        skipped: not installed' "$out"
+  lacks problem 'problem:' "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -235,4 +297,9 @@ cases=(
   "sync warns when Devin is off in T3|t_sync_warns_devin_off"
   "sync warns when SWE-2 is refused|t_sync_warns_swe2_refused"
   "sync skips a harness that is not installed|t_sync_skips_harness_not_installed"
+  "sync takes Devin missing from T3 as off|t_sync_devin_missing_from_t3"
+  "sync names a blocked skill link once|t_sync_blocked_skill_link_once"
+  "sync names settings that are not JSON once|t_sync_settings_not_json_once"
+  "sync counts rules only with the shared file|t_sync_rules_need_shared_file"
+  "sync skips the backups of a harness not installed|t_sync_absent_harness_skips_backups"
 )

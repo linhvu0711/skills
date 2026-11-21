@@ -24,9 +24,9 @@ Each count is what the harness has out of what it should have:
 - `skills` counts the repo's skills linked into the harness's skills folder: `~/.claude/skills`, `~/.agents/skills` for Codex, and `~/.gemini/config/skills` for Antigravity.
 - `subagents` counts the repo's skill agents, and the explorer and the runner, that have their file in the harness's agents folder.
 - `gates` counts the gates a hook command runs: your five personal gates (write-for-agents, the two unslop gates, the question gate, and the plain-style reminder) and the repo's subagent gate. Antigravity has a seventh, the start-of-chat gate that loads your rules, since T3 starts its chats without them.
-- `rules` counts the files that load `~/.agents/rules/shared.md`. Claude Code's `CLAUDE.md` imports it. Codex's `AGENTS.md` holds a copy of it. Antigravity's `GEMINI.md` includes it, and each private Antigravity folder T3 keeps adds one more: its `GEMINI.md` link.
+- `rules` counts the files that load `~/.agents/rules/shared.md`, and is 0 while that file is missing or empty. Claude Code's `CLAUDE.md` imports it. Codex's `AGENTS.md` holds a copy of it. Antigravity's `GEMINI.md` includes it, and each private Antigravity folder T3 keeps adds one more: its `GEMINI.md` link.
 
-A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, and the run does not fail for it.
+A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, with its backup models and the links under its own folders, and the run does not fail for it.
 
 Anything missing gets its own `problem:` line, and the run exits 1:
 
@@ -39,7 +39,7 @@ The check never makes T3's `GEMINI.md` link. T3 makes that link itself each time
 
 It also checks each model a helper's file names. A home model must be in T3's list for its place, `~/.t3/caches/<provider>.json`. A Claude Code backup must be in T3's Claude list, and a Codex backup in Codex's own list, `~/.codex/models_cache.json`. An Antigravity backup names no exact model, so it has no list. A model not in its list gets a line such as `problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna`. The check changes no agent file: you pick the new model. A place that is off in T3 gets `skip: Antigravity is off in T3, so its home models are not checked`, and a skip line does not fail the run.
 
-The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's home names in Devin. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3, or it refuses the model, the helpers whose home is Devin run on their backup, and a `warn:` line names them:
+The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's home names in Devin. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose home is Devin run on their backup, and a `warn:` line names them:
 
 ```
 warn: Devin is off in T3, so these run on their backup: scope-reviewer, standards-reviewer, walker

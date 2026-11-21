@@ -30,8 +30,9 @@ personal_gates="write-for-agents-gate unslop-gate unslop-commit-gate question-ga
 
 problems=(); fixed=(); link_problems=(); skipped=()
 
-# tilde <text>: the text with $HOME/ written as ~/.
-tilde() { printf '%s' "${1//"$HOME"\//\~/}"; }
+# tilde <text>: the text with $HOME/ written as ~/. The ~/ sits in a
+# variable, since Bash 3.2 keeps the backslash of a literal \~/.
+tilde() { local t='~/'; printf '%s' "${1//"$HOME"\//$t}"; }
 
 problem() { problems+=("problem: $(tilde "$1")"); }
 
@@ -52,7 +53,7 @@ if bash "$root/scripts/link.sh" >"$lout" 2>"$lerr"; then
   while IFS= read -r l; do
     case "$l" in
       "skip: no T3 Antigravity folder in "*) ;;
-      "skip: "*) link_problems+=("problem: $(tilde "${l#skip: }")"); skipped+=("${l#skip: }") ;;
+      "skip: "*) skipped+=("${l#skip: }") ;;
     esac
   done < "$lerr"
 else
@@ -74,6 +75,7 @@ count_skills() {
   local n=0 s
   for s in ${skills[@]+"${skills[@]}"}; do
     if [ "$(realpath "$2/$s" 2>/dev/null)" = "$root/skills/$s" ]; then n=$((n + 1))
+    elif skipped_path "$2/$s"; then :
     else problem "$1 has no skill $s at $2/$s"; fi
   done
   got="$n/${#skills[@]}"
@@ -109,20 +111,22 @@ wired() {
 }
 
 # count_gates <harness> <where> <commands> <gate>...: how many gates the
-# hook commands wire.
+# hook commands wire. A hook file link.sh could not read already has its
+# problem line, so its gates get none.
 count_gates() {
   local h="$1" where="$2" cmds="$3" n=0 total=0 g; shift 3
   for g in "$@"; do
     total=$((total + 1))
     if printf '%s\n' "$cmds" | wired "$g"; then n=$((n + 1))
+    elif skipped_path "$where"; then :
     else problem "$h gate $g is not wired in $where"; fi
   done
   got="$n/$total"
 }
 
-# imports_rules <file>: whether a line of the file starts with @ and names
-# the shared rules file.
-imports_rules() { [ -f "$1" ] && grep -q '^@.*\.agents/rules/shared\.md' "$1"; }
+# imports_rules <file>: whether the shared rules file has text and a line of
+# the file starts with @ and names it.
+imports_rules() { [ -s "$shared_rules" ] && [ -f "$1" ] && grep -q '^@.*\.agents/rules/shared\.md' "$1"; }
 
 line() { printf '%-12s %s\n' "$1" "$2"; }
 
@@ -141,7 +145,7 @@ check_codex() {
   count_agents codex "$HOME/.codex/agents" toml; a="$got"
   count_gates codex "$HOME/.codex/hooks.json" "$(commands "$HOME/.codex/hooks.json")" $personal_gates subagent-gate; g="$got"
   r=0
-  if [ -f "$codex_md" ] && [ -f "$shared_rules" ] && case "$(cat "$codex_md")" in *"$(cat "$shared_rules")"*) true ;; *) false ;; esac; then r=1
+  if [ -f "$codex_md" ] && [ -s "$shared_rules" ] && case "$(cat "$codex_md")" in *"$(cat "$shared_rules")"*) true ;; *) false ;; esac; then r=1
   else problem "codex rules: $codex_md does not hold $shared_rules: start Codex once to rebuild it"; fi
   got="skills $s · subagents $a · gates $g · rules $r/1"
 }
@@ -164,14 +168,36 @@ check_antigravity() {
 
 # harness <name> <cli>: the harness's report line, or skipped when its CLI is
 # not on PATH, since a harness the Mac lacks is no failure.
-report=()
+report=(); absent=()
 harness() {
-  if command -v "$2" >/dev/null 2>&1; then "check_$1"; else got="skipped: not installed"; fi
+  if command -v "$2" >/dev/null 2>&1; then "check_$1"
+  else got="skipped: not installed"; absent+=("$1"); fi
   report+=("$(line "$1" "$got")")
 }
 harness claude claude
 harness codex codex
 harness antigravity agy
+
+is_absent() {
+  local x
+  for x in ${absent[@]+"${absent[@]}"}; do [ "$x" = "$1" ] && return 0; done
+  return 1
+}
+
+# owner <path>: the harness whose folders hold the path.
+owner() {
+  case "$1" in
+    "$HOME/.claude/"*) echo claude ;;
+    "$HOME/.codex/"*|"$HOME/.agents/skills/"*) echo codex ;;
+    "$HOME/.gemini/"*|"$t3_antigravity/"*) echo antigravity ;;
+  esac
+}
+
+# Each link link.sh could not own is a problem, unless it sits in the
+# folders of a harness this Mac does not have.
+for s in ${skipped[@]+"${skipped[@]}"}; do
+  is_absent "$(owner "$s")" || link_problems+=("problem: $(tilde "$s")")
+done
 
 # Every agent's models, one row each: <agent file> <map> <harness> <place>
 # <model>, as agents.sh's models mode lists them.
@@ -199,10 +225,11 @@ t3_id() {
   esac
 }
 
-# t3_on <id>: whether the provider is on in T3. No `enabled` key means on.
+# t3_on <id>: whether T3 has the provider and it is on. No `enabled` key
+# means on.
 t3_on() {
-  [ "$(jq -r --arg id "$1" 'if .providerInstances[$id].enabled == false then "off" else "on" end' \
-    "$HOME/.t3/userdata/settings.json" 2>/dev/null)" != off ]
+  [ "$(jq -r --arg id "$1" '.providerInstances[$id] | if . != null and .enabled != false then "on" else "off" end' \
+    "$HOME/.t3/userdata/settings.json" 2>/dev/null)" = on ]
 }
 
 # offers <list file> <model>: whether the list holds the model.
@@ -210,7 +237,8 @@ offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&
 
 # Models: a home against the T3 list of its place, a Claude Code backup
 # against T3's Claude list, a Codex backup against Codex's own list. An
-# Antigravity backup names no exact model, so it has no list.
+# Antigravity backup names no exact model, so it has no list. A backup of a
+# harness the Mac lacks never runs, so it is not checked.
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
   [ "$model" = inherit ] && continue
@@ -219,8 +247,9 @@ for row in ${rows[@]+"${rows[@]}"}; do
     if ! t3_on "$id"; then note "skip: $name is off in T3, so its home models are not checked"; continue; fi
     list="$HOME/.t3/caches/$id.json"; source="T3 $name"
   else
+    is_absent "$h" && continue
     case "$h" in
-      claude) list="$HOME/.t3/caches/claudeAgent.json"; source="Claude Code" ;;
+      claude) t3_id claude; list="$HOME/.t3/caches/$id.json"; source="Claude Code" ;;
       codex) list="$HOME/.codex/models_cache.json"; source=Codex ;;
       *) continue ;;
     esac
@@ -229,28 +258,30 @@ for row in ${rows[@]+"${rows[@]}"}; do
   offers "$list" "$model" || problem "$a: $map for $h: $source does not offer $model"
 done
 
-# on_devin [model]: the agents whose home starts them in Devin, on the model
-# when one is named, by file name, sorted, joined by ", ".
+# The agents whose home starts them in Devin, one `<agent> <model>` line each.
+devin_homes=()
+for row in ${rows[@]+"${rows[@]}"}; do
+  read -r a map h place model <<< "$row"
+  if [ "$map" = home ] && [ "$place" = devin ]; then devin_homes+=("$(basename "$a" .md) $model"); fi
+done
+
+# on_devin [model]: those agents, on the model when one is named, sorted,
+# joined by ", ".
 on_devin() {
-  local row a map h place model
-  for row in ${rows[@]+"${rows[@]}"}; do
-    read -r a map h place model <<< "$row"
-    if [ "$map" = home ] && [ "$place" = devin ] && { [ -z "${1:-}" ] || [ "$model" = "$1" ]; }; then basename "$a" .md; fi
-  done | sort -u | paste -sd, - | sed 's/,/, /g'
+  printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk -v m="${1:-}" 'NF && (m == "" || $2 == m) { print $1 }' \
+    | sort -u | paste -sd, - | sed 's/,/, /g'
 }
 
 # Devin: one live call per model a home starts on in Devin. A helper whose
 # home Devin cannot run runs on its backup, so each such case is a warning.
 warns=()
-if ! t3_on acpRegistry_devin; then
+t3_id devin
+if ! t3_on "$id"; then
   devin="off"
-  warns+=("warn: Devin is off in T3, so these run on their backup: $(on_devin)")
+  [ ${#devin_homes[@]} -eq 0 ] || warns+=("warn: Devin is off in T3, so these run on their backup: $(on_devin)")
 else
   devin="on"
-  for m in $(for row in ${rows[@]+"${rows[@]}"}; do
-      read -r a map h place model <<< "$row"
-      if [ "$map" = home ] && [ "$place" = devin ]; then printf '%s\n' "$model"; fi
-    done | sort -u); do
+  for m in $(printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk 'NF { print $2 }' | sort -u); do
     if ! command -v devin >/dev/null 2>&1; then
       reply="devin not installed"; ok=1
     else
