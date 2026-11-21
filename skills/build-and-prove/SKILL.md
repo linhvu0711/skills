@@ -466,8 +466,9 @@ updates the PR from `PROOF`.
   written, since `gates --local` already leaves CI's Gates to CI. A
   plan with walks: step 8's `gates` call with `--pr-open "$WT"` first,
   and the build's `--on-local` and `--not-run` Gates as before. It
-  leaves each Gate the PR's CI runs to CI, runs the rest in the
-  Sandbox, and needs no Sandbox when none is left. A stop `no Sandbox
+  leaves to CI each Gate after `--` that the PR's CI runs, runs the
+  rest in the Sandbox, and needs no Sandbox when none is left. The
+  `--on-local` Gates still run on the local machine. A stop `no Sandbox
   for <PROOF>; run box.sh up first`: `box.sh up` (step 6), then the
   call again.
   With a `PERF` block, the measure runs again only when `git -C "$WT"

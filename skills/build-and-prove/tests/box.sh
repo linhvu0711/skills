@@ -360,6 +360,20 @@ t_box_auth_ok() {
   eq log "auth status --json" "$(cat "$FAKE_PB/log")"
 }
 
+t_box_auth_no_jq() {
+  # Given: the logged-in case, on a PATH with every tool auth uses but jq
+  fake_proofbox
+  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
+  mkdir -p "$T/nojq"
+  for t in bash dirname sed head mktemp tail cat rm grep; do ln -s "$(command -v "$t")" "$T/nojq/$t"; done
+  export PATH="$T/bin:$T/nojq"
+  # When
+  box auth linux
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: jq is not installed: box.sh auth reads proofbox's login JSON with it" "$err"
+}
+
 t_box_auth_config() {
   fake_proofbox
   mkdir -p "$HOME/.config/proofbox"
@@ -639,12 +653,12 @@ pnpm lint · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
   eq execs 1 "$(grep -c '^exec ' "$FAKE_PB/log")"
 }
 
-# ci_only_fixture: no Sandbox up, and a workflow that runs pnpm test and
-# pnpm test:docker on pull requests.
+# ci_only_fixture: no Sandbox up, and a workflow that runs pnpm test and pwd
+# on pull requests.
 ci_only_fixture() {
   fake_proofbox
   mkdir -p "$R/.github/workflows"
-  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pnpm test:docker' > "$R/.github/workflows/ci.yml"
+  printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pwd' > "$R/.github/workflows/ci.yml"
   sha="$(git -C "$R" rev-parse --short HEAD)"
 }
 
@@ -652,19 +666,40 @@ t_box_gates_pr_open_no_sandbox() {
   # Given
   ci_only_fixture
   # When
-  box gates "$P" --pr-open "$R" --on-local 'pnpm test:docker' -- 'pnpm test'
+  box gates "$P" --pr-open "$R" -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_gates_pr_open_no_proofbox() {
+  # Given
+  ci_only_fixture
+  export PATH="/usr/bin:/bin"
+  # When
+  box gates "$P" --pr-open "$R" -- 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
+}
+
+t_box_gates_pr_open_on_local() {
+  # Given
+  ci_only_fixture
+  # When
+  box gates "$P" --pr-open "$R" --on-local 'pwd' -- 'pnpm test'
   # Then
   eq exit 0 "$code"
   eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)
-pnpm test:docker · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
-  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
+pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
 }
 
 t_box_gates_pr_open_needs_sandbox() {
   # Given
   ci_only_fixture
   # When
-  box gates "$P" --pr-open "$R" --on-local 'pnpm test:docker' -- 'pnpm lint'
+  box gates "$P" --pr-open "$R" --on-local 'pwd' -- 'pnpm lint'
   # Then
   eq exit 1 "$code"
   has stderr "stop: no Sandbox for $P; run box.sh up first" "$err"
@@ -1061,6 +1096,8 @@ cases=(
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --pr-open leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_pr_open"
   "gates --pr-open needs no Sandbox when CI runs every Gate|t_box_gates_pr_open_no_sandbox"
+  "gates --pr-open needs no proofbox when CI runs every Gate|t_box_gates_pr_open_no_proofbox"
+  "gates --pr-open runs an --on-local Gate on the local machine though CI names it|t_box_gates_pr_open_on_local"
   "gates --pr-open stops when a Gate needs a Sandbox that is not up|t_box_gates_pr_open_needs_sandbox"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
@@ -1101,6 +1138,7 @@ cases=(
   "auth stops with the login command when the login expired|t_box_auth_expired"
   "auth stops when an env token is not accepted|t_box_auth_rejected"
   "auth passes a logged-in Provider|t_box_auth_ok"
+  "auth names jq when jq is missing|t_box_auth_no_jq"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
   "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
   "up notes the branch|t_box_up_notes_branch"

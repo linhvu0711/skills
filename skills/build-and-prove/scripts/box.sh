@@ -111,11 +111,12 @@
 # there. Its lines end `(local machine)` in place of `(sandbox)`; the rest is
 # the same, so checks.txt keeps one writer and one line shape.
 #
-# gates --pr-open <worktree> says the PR is open, so its CI runs: each Gate,
-# --on-local ones too, that ci-covers.sh finds in <worktree>'s workflows gets
-# the same `not run: CI runs it` line, and the rest run as above. It loads the
-# Sandbox only when a Gate after -- is left for it; with no Sandbox up, that is
-# a stop that names `box.sh up`. The short SHA comes from <worktree>.
+# gates --pr-open <worktree> says the PR is open, so its CI runs: each Gate
+# after -- that ci-covers.sh finds in <worktree>'s workflows gets the same
+# `not run: CI runs it` line, and the rest run as above; --on-local Gates still
+# run on the local machine. It needs proofbox and loads the Sandbox only when a
+# Gate after -- is left for it; with no Sandbox up, that is a stop that names
+# `box.sh up`. The short SHA comes from <worktree>.
 #
 # up with a box.env already in <proof-dir> reuses that Sandbox and prints its
 # id; it creates nothing.
@@ -136,8 +137,8 @@ cover="$here/../../../shared/ci-covers.sh"
 
 usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree> | --pr-open <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
-# Only `gates --local` runs without proofbox.
-[ "$verb" = gates ] && [ "${2:-}" = --local ] || command -v proofbox >/dev/null || die "proofbox is not installed"
+# gates checks for proofbox itself, when it loads the Sandbox.
+[ "$verb" = gates ] || command -v proofbox >/dev/null || die "proofbox is not installed"
 
 # create: make a Sandbox from the BOX_* values and write the state. proofbox's
 # stderr reaches the caller live; a copy is kept for its last line.
@@ -411,8 +412,8 @@ case "$verb" in
   gates)
     [ $# -ge 1 ] || die "$usage"
     dir="$1"; shift; local_wt=""; ci_wt=""; on_local=(); not_run=()
-    # --local stays first, so the proofbox check above sees it. Both options
-    # leave to CI each Gate the PR's CI runs, read from ci_wt.
+    # Both options leave to CI each Gate after -- that the PR's CI runs, read
+    # from ci_wt.
     case "${1:-}" in
       --local) [ -d "${2:-}" ] || die "--local needs a worktree"; local_wt="$2"; ci_wt="$2"; shift 2 ;;
       --pr-open) [ -d "${2:-}" ] || die "--pr-open needs a worktree"; ci_wt="$2"; shift 2 ;;
@@ -429,20 +430,17 @@ case "$verb" in
     [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ] || [ ${#not_run[@]} -ge 1 ] || die "$usage"
     [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
       || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
-    # covered[i] and on_covered[i] are the workflow file that runs that Gate
-    # on the PR, or empty.
-    covered=(); on_covered=()
-    all=("$@" ${on_local[@]+"${on_local[@]}"})
-    if [ -n "$ci_wt" ] && [ ${#all[@]} -ge 1 ]; then
+    # covered[i] is the workflow file that runs that Gate on the PR, or
+    # empty. An --on-local Gate always runs here: ci-covers reads no `if:`, so
+    # a CI job it finds may skip this PR, and nothing else would run the Gate.
+    covered=()
+    if [ -n "$ci_wt" ] && [ $# -ge 1 ]; then
       cerr="$(mktemp)"
-      cover_out="$(bash "$cover" "$ci_wt" -- "${all[@]}" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
+      cover_out="$(bash "$cover" "$ci_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
       rm -f "$cerr"
-      j=0
       while IFS= read -r v; do
         v="${v%% · *}"
-        case "$v" in "ci "*) f="${v#ci }" ;; *) f="" ;; esac
-        if [ "$j" -lt $# ]; then covered+=("$f"); else on_covered+=("$f"); fi
-        j=$((j + 1))
+        case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
       done <<<"$cover_out"
     fi
     # With --pr-open, a fix round where CI runs every Gate needs no Sandbox.
@@ -451,7 +449,10 @@ case "$verb" in
     if [ -n "$local_wt" ]; then mode=local; work="$local_wt"
     else
       mode=sandbox; work="$ci_wt"
-      if [ -z "$ci_wt" ] || [ "$sandbox_gates" -eq 1 ]; then load; work="${ci_wt:-$BOX_WORK}"; fi
+      if [ -z "$ci_wt" ] || [ "$sandbox_gates" -eq 1 ]; then
+        command -v proofbox >/dev/null || die "proofbox is not installed"
+        load; work="${ci_wt:-$BOX_WORK}"
+      fi
     fi
     mkdir -p "$dir"
     tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
@@ -495,15 +496,7 @@ case "$verb" in
         gate "$cmd" "$mode"
       fi
     done
-    i=0
-    for cmd in ${on_local[@]+"${on_local[@]}"}; do
-      if [ -n "${on_covered[$i]:-}" ]; then
-        printf '%s · %s · not run: CI runs it (%s)\n' "$cmd" "$sha" "${on_covered[$i]}" >> "$tmp"
-      else
-        gate "$cmd" local
-      fi
-      i=$((i + 1))
-    done
+    for cmd in ${on_local[@]+"${on_local[@]}"}; do gate "$cmd" local; done
     set -- ${not_run[@]+"${not_run[@]}"}
     while [ $# -ge 2 ]; do
       printf '%s · %s · not run: %s\n' "$1" "$sha" "$2" >> "$tmp"; shift 2
@@ -527,6 +520,7 @@ case "$verb" in
     conf="$HOME/.config/proofbox/config"; provider=""
     [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
     provider="${provider:-namespace}"
+    command -v jq >/dev/null || die "jq is not installed: box.sh auth reads proofbox's login JSON with it"
     pb keep keep auth status --json
     [ "$rc" -eq 0 ] || die "proofbox auth status failed"
     item="$(jq -r --arg p "$provider" 'map(select(.provider == $p))[0] // empty | [.login, (.env // "")] | @tsv' <<<"$got")" \
