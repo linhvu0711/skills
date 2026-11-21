@@ -209,6 +209,10 @@ skill() {
 # The ship mode the user set for issue $n, or "" when the /ship thread picks it.
 # shellcheck disable=SC2016 # the $ names are jq variables
 ship_mode_jq='def ship_mode($n): .ship[$n] // .ship.default // "";'
+
+# A check that read the run ends the failure streak and keeps its time.
+# shellcheck disable=SC2016 # the $ names are jq variables
+good_check_jq='def good_check($at): .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at;'
 ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 
 # answer_skill <word>: the skill an answer or a proposed route names, or
@@ -556,7 +560,7 @@ cmd_check() {
   # timer whether anything moved. A run from before it has none: all changed.
   S="$(jq -c --argjson c "$claims" --argjson done "$done" --argjson rows "$rows" --argjson tt "$task_turn" \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '.threads += $c | .task_turn = $tt | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at
+    "$good_check_jq"'.threads += $c | .task_turn = $tt | good_check($at)
      | if $done then .status = "done" else . end
      | .seen = {status: .status, issues: ($rows | map({key: (.number | tostring), value: .}) | from_entries)}' <<<"$S")"
   save
@@ -944,12 +948,12 @@ cmd_watch() {
   observe
   local at view reasons woke=false
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  view="$(jq -c --arg at "$at" '.timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S")"
+  view="$(jq -c --arg at "$at" "$good_check_jq"'good_check($at)' <<<"$S")"
   # A conflict is claimed before it is sent, so a failed send is never tried
   # again. The task turn keeps only its holders: a watcher claims no start,
   # but a task that closed frees the turn for the other runs now.
   S="$(jq -c --arg at "$at" --argjson sent "$sent" --argjson tt "$holders" \
-    '.conflicts = ((.conflicts // []) + $sent) | .task_turn = $tt | .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at' <<<"$S0")"
+    "$good_check_jq"'.conflicts = ((.conflicts // []) + $sent) | .task_turn = $tt | good_check($at)' <<<"$S0")"
   save
   S="$view"
   write_board "$(jq -c --argjson g "$gone_rows" '. + $g' <<<"$rows")" "$cards" "$statuses"
