@@ -98,24 +98,26 @@ lock_run() {
   die "the run of $slug is busy: another orchestrate.sh holds its lock"
 }
 
-# save: the whole state, under a temp name, then renamed into place, so a
-# crash never leaves half a file.
-save() {
-  local tmp
-  tmp="$(mktemp "$run/.state.XXXXXX")"
-  jq . <<<"$S" > "$tmp"
-  mv "$tmp" "$run/state.json"
+# put <file> <command>...: the command's output as <file>, written under a
+# temp name next to it, then renamed into place, so a crash never leaves half
+# a file.
+put() {
+  local file="$1" tmp
+  shift
+  tmp="$(mktemp "$(dirname "$file")/.$(basename "$file").XXXXXX")"
+  "$@" > "$tmp"
+  mv "$tmp" "$file"
 }
 
-# copy_page: the board page into the run folder, the same way, so a resume
+# save: the whole state.
+save() { put "$run/state.json" jq . <<<"$S"; }
+
+# copy_page: the board page into the run folder, by put, so a resume
 # brings a newer page to an old run. The page names its run: serve.sh reuses
 # a server that gives back the same bytes, so two runs' pages, of any repo, must differ.
 copy_page() {
-  local tmp
-  tmp="$(mktemp "$run/.board.XXXXXX")"
-  sed "s#<meta name=\"orchestrate-run\" content=\"\">#<meta name=\"orchestrate-run\" content=\"$slug/$(basename "$run")\">#" \
-    "$here/../assets/board.html" > "$tmp"
-  mv "$tmp" "$run/board.html"
+  put "$run/board.html" sed "s#<meta name=\"orchestrate-run\" content=\"\">#<meta name=\"orchestrate-run\" content=\"$slug/$(basename "$run")\">#" \
+    "$here/../assets/board.html"
 }
 
 # ---------- GitHub ----------
@@ -324,14 +326,11 @@ board='
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
    | map(del(.order))}'
 
-# write_board <rows> <cards> <threads>: board.json in the run folder, under a temp name, then
-# renamed into place, as save writes the state. Only a good check calls it,
+# write_board <rows> <cards> <threads>: board.json in the run folder, by put,
+# as save writes the state. Only a good check calls it,
 # so a failed one leaves the last good board.
 write_board() {
-  local tmp
-  tmp="$(mktemp "$run/.board.XXXXXX")"
-  jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" --argjson ts "$3" "$ship_mode_jq$board" > "$tmp"
-  mv "$tmp" "$run/board.json"
+  put "$run/board.json" jq -n --argjson S "$S" --argjson rows "$1" --argjson cards "$2" --argjson ts "$3" "$ship_mode_jq$board"
 }
 
 # ---------- start ----------
