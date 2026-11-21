@@ -19,6 +19,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../gh.sh"
 [ $# -eq 2 ] || { echo 'usage: reviewers.sh <owner/repo> <number>' >&2; exit 64; }
 repo="$1"; num="$2"
 case "$repo" in */*) ;; *) printf 'stop: %s is not owner/repo\n' "$repo" >&2; exit 64 ;; esac
@@ -29,10 +30,7 @@ known="$(grep -v '^#' "$here/reviewers.tsv" | jq -R -s -c '
 
 # shellcheck disable=SC2016 # the $ names are GraphQL variables
 q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviews(first:100){nodes{author{login}}}comments(first:100){nodes{author{login}}}commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{__typename ... on StatusContext{creator{login}}... on CheckRun{checkSuite{app{slug}}}}}}}}}}}}'
-errf="$(mktemp)"; trap 'rm -f "$errf"' EXIT
-if ! out="$(gh api graphql -f query="$q" -F o="${repo%%/*}" -F r="${repo##*/}" -F n="$num" 2>"$errf")"; then
-  printf 'stop: gh failed: %s\n' "$(tail -1 "$errf")" >&2; exit 1
-fi
+gh_or_stop api graphql -f query="$q" -F o="${repo%%/*}" -F r="${repo##*/}" -F n="$num"
 
 jq -r --argjson known "$known" '
   def bare: sub("\\[bot\\]$"; "");

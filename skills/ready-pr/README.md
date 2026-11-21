@@ -37,7 +37,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 - The skills it runs: [validate-pr-review](../validate-pr-review/), [fix-conflicts](../fix-conflicts/), [commit](../commit/), and [capture](../capture/).
 - The CI helper `ci-helper`, started per `../../shared/facts.md` § Skill agents on the model its file names for your harness, in `agents/`, which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity.
 - The harness table, `../../shared/harness.md`, for how your harness watches the checks line by line and starts helpers in the background.
-- The shared core files `../../shared/facts.md`, `../../shared/checkout.sh` (the checkout resolver), `../../shared/grilling.md` (question format and how to pick), and `../../shared/pr-shape.md`.
+- The shared core files `../../shared/facts.md`, `../../shared/checkout.sh` (the checkout resolver), `../../shared/gh.sh` (how it runs `gh` and reads its error), `../../shared/grilling.md` (question format and how to pick), and `../../shared/pr-shape.md`.
 - For a PR with no local checkout: a main checkout the checkout resolver can find, from the repo map at `~/.config/kickoff/repos.tsv`, the current folder, or a clone under `~/development`.
 
 ## Fits with
