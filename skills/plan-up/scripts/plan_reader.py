@@ -164,8 +164,7 @@ def risk(line):
 
 
 def works(line):
-    m = re.match(r"#(\d+)\s", line)
-    return {"line": line, "n": int(m.group(1)) if m else None, "text": re.sub(r"^#\d+\s+", "", line)}
+    return {"line": line, "text": re.sub(r"^#\d+\s+", "", line)}
 
 
 def review_part(name, raw):
