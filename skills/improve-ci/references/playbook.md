@@ -76,8 +76,10 @@ or its numbers, and its size.
   added after a failure.
 - Skipped tests: `.skip`, `xit`, `@skip`, a test filter in CI.
 - A required check that no job reports, or a job no rule requires.
-- **Flaky runs**: each re-run from the timing script, with the job that
-  failed first. Two or more on one job is a big find.
+- **Flaky runs**: each re-run from the timing script whose `conclusion`
+  is `success`, with the job that failed first. A re-run that failed
+  again is a real failure, not a flaky run. Two or more flaky runs on
+  one job is a big find.
 - **Change detectors**: tests whose fixes in merged PRs changed only the
   test, never the code, such as a snapshot rewritten on every menu
   change. Tests of login, privacy, data migrations, or parallel work
