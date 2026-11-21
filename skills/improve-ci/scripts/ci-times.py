@@ -39,10 +39,15 @@ line>` on stderr and exit 1.
 
 import argparse
 import datetime as dt
+import importlib.util
 import json
 import math
-import subprocess
-import sys
+import os
+
+# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 RUN_FIELDS = "databaseId,attempt,createdAt,updatedAt,event,headSha,workflowName,workflowDatabaseId,conclusion"
 LEFT_OUT = {"skipped", "cancelled"}
@@ -52,12 +57,7 @@ PAGE = 100
 
 
 def gh(what, *args):
-    done = subprocess.run(["gh", *args], capture_output=True, text=True)
-    if done.returncode != 0:
-        lines = done.stderr.strip().splitlines() or ["no output"]
-        print(f"stop: gh could not {what}: {lines[-1]}", file=sys.stderr)
-        sys.exit(1)
-    return json.loads(done.stdout or "null")
+    return json.loads(GH.stop(what, *args) or "null")
 
 
 def when(stamp):

@@ -38,6 +38,7 @@ It only reads: no change to the repo, no comment on GitHub.
 - `python3` (standard library only). Codex keeps older chats compressed (`.jsonl.zst`); reading those needs Python 3.14+ or the `zstd` command. Without either, they are listed as not read.
 - The session adapters in [`sessions/`](../../shared/sessions/), for past sessions. Each tool's `adapter.py` finds and reads that tool's sessions.
 - The evidence labels in [`facts.md`](../../shared/facts.md).
+- [`gh.py`](../../shared/gh.py), which runs `gh` and reads its error.
 
 ## Fits with
 
