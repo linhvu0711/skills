@@ -173,15 +173,18 @@ merge_json() {
   mv "$t" "$f"; printf 'wrote %s\n' "$f"
 }
 
+# gate_entry <harness>: the gate's PreToolUse group for the harness.
+gate_entry() {
+  jq -cn --arg m "$(bash "$gate" "$1" matcher)" --arg c "bash '$gate' $1" \
+    '{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}'
+}
+
 # hook_entry <file> <harness>: put the gate's PreToolUse entry in the file. The
 # first group that runs only the gate is replaced in its place, since Codex
 # keys its trust on the group's index, and any later one is removed; with
 # none, the entry goes last. A group that runs the gate beside other hooks
 # loses only the gate's command.
 hook_entry() {
-  local entry
-  entry="$(jq -cn --arg m "$(bash "$gate" "$2" matcher)" --arg c "bash '$gate' $2" \
-    '{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}')"
   merge_json "$1" '
     def gate: (.command // "") | contains("shared/gate/subagent-gate.sh");
     def only_gate: (.hooks // []) | length > 0 and all(gate);
@@ -191,16 +194,13 @@ hook_entry() {
         | if .key == $i then $e
           elif (.value | only_gate) then empty
           elif any(.value.hooks[]?; gate) then .value | .hooks |= map(select(gate | not))
-          else .value end] + (if $i == null then [$e] else [] end)' "$entry"
+          else .value end] + (if $i == null then [$e] else [] end)' "$(gate_entry "$2")"
 }
 
 # plugin_hooks: put the gate's entry in the "skills" plugin's hooks.json,
 # under its own subagent-gate key, so every other key stays.
 plugin_hooks() {
-  local entry
-  entry="$(jq -cn --arg m "$(bash "$gate" antigravity matcher)" --arg c "bash '$gate' antigravity" \
-    '{PreToolUse: [{matcher: $m, hooks: [{type: "command", command: $c, timeout: 5}]}]}')"
-  merge_json "$plugins/skills/hooks.json" '.["subagent-gate"] = $e' "$entry"
+  merge_json "$plugins/skills/hooks.json" '.["subagent-gate"] = {PreToolUse: [$e]}' "$(gate_entry antigravity)"
 }
 
 unlink_dead "$agents" "$repo/skills"
