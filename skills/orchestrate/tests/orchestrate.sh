@@ -847,6 +847,38 @@ t_fs_sync_up_to_date() {
   eq stdout "main up to date at $(fs_short "$T/dev/app" main)" "$out"
 }
 
+t_fs_sync_own_commits() {
+  # Given: a run of #42; origin's main has a.txt, and the local main has its own commit mine
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m mine
+  local mine; mine="$(git -C "$T/dev/app" rev-parse main)"
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: it has commits origin/main lacks" "$out"
+  eq main "$mine" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_edits_in_the_way() {
+  # Given: a run of #42 synced to origin's a.txt "one"; origin then writes "two",
+  # and the checkout has an edit "mine" to a.txt, not committed
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_push a.txt one
+  fs_go sync acme/app
+  local one; one="$(git -C "$T/dev/app" rev-parse main)"
+  fs_push a.txt two
+  printf 'mine\n' > "$T/dev/app/a.txt"
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq edit mine "$(cat "$T/dev/app/a.txt")"
+  eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2189,6 +2221,8 @@ cases=(
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
   "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
+  "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
+  "sync leaves a default branch whose edits are in the way|t_fs_sync_edits_in_the_way"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
