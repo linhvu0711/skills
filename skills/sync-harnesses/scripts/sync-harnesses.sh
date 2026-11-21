@@ -281,10 +281,11 @@ for row in ${rows[@]+"${rows[@]}"}; do
   if [ "$map" = home ] && [ "$place" = devin ]; then
     then=backup
     for r in ${rows[@]+"${rows[@]}"}; do
-      case "$r" in "$a home2 $h "*)
-        read -r _ _ _ next _ <<< "$r"; t3_id "$next"
-        if [ -n "$id" ] && t3_on "$id"; then then=next; fi ;;
-      esac
+      read -r ra rmap rh next _ <<< "$r"
+      case "$rmap" in home[0-9]*) ;; *) continue ;; esac
+      [ "$ra" = "$a" ] && [ "$rh" = "$h" ] || continue
+      t3_id "$next"
+      if [ -n "$id" ] && t3_on "$id"; then then=next; fi
     done
     devin_homes+=("$(basename "$a" .md) $model $then")
   fi
