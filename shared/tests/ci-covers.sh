@@ -138,6 +138,20 @@ t_cc_if_always() {
   eq stdout "here · pnpm test" "$out"
 }
 
+t_cc_step_if() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    runs-on: ubuntu-latest' '    steps:' \
+    "      - if: github.event_name == 'push'" '        run: pnpm lint' \
+    '      - run: pnpm test' "        if: github.event_name == 'push'" '      - run: pnpm build'
+  # When
+  covers 'pnpm lint' 'pnpm test' 'pnpm build'
+  # Then
+  eq stdout "here · pnpm lint
+here · pnpm test
+ci ci.yml · pnpm build" "$out"
+}
+
 t_cc_usage() {
   # Given
   T=""; ci_yml 'on: pull_request' '      - run: pnpm test'
@@ -160,5 +174,6 @@ cases=(
   "the issue's repro: a job if makes the Gate run here|t_cc_job_if_repro"
   "a job if sends each Gate of its steps here|t_cc_job_if_each_step"
   "if: always() counts like any if|t_cc_if_always"
+  "a step if, before or after its run, sends only that step here|t_cc_step_if"
   "no command after -- is a usage stop|t_cc_usage"
 )
