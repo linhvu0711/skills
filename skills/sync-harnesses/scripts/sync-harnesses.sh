@@ -281,7 +281,7 @@ for row in ${rows[@]+"${rows[@]}"}; do
   if [ "$map" = home ] && [ "$place" = devin ]; then
     then=backup
     for r in ${rows[@]+"${rows[@]}"}; do
-      case "$r" in "$a home2 $h "*)
+      case "$r" in "$a home"[2-9]" $h "*)
         read -r _ _ _ next _ <<< "$r"; t3_id "$next"
         if [ -n "$id" ] && t3_on "$id"; then then=next; fi ;;
       esac
