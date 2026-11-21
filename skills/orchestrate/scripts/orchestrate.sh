@@ -826,6 +826,10 @@ cmd_sync() {
   if [ -n "$where" ]; then
     git -C "$where" merge --ff-only --quiet "$new" 2>"$errf" \
       || { printf '%s not updated: %s\n' "$def" "$(head -1 "$errf")"; return 0; }
+  else
+    # The old value makes git refuse a ref that moved since it was read.
+    git -C "$path" update-ref "refs/heads/$def" "$new" "$old" 2>"$errf" \
+      || { printf '%s not updated: %s\n' "$def" "$(head -1 "$errf")"; return 0; }
   fi
   printf '%s fast-forwarded %s..%s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$old")" "$(git -C "$path" rev-parse --short=7 "$new")"
 }

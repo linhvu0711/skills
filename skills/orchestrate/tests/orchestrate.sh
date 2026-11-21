@@ -879,6 +879,21 @@ t_fs_sync_edits_in_the_way() {
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
+t_fs_sync_other_branch() {
+  # Given: a run of #42; the checkout is on feat/x, and origin's main is one commit ahead
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git -C "$T/dev/app" switch -q -c feat/x
+  local was; was="$(fs_short "$T/dev/app" main)"
+  fs_push a.txt one
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq branch feat/x "$(git -C "$T/dev/app" branch --show-current)"
+  eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2223,6 +2238,7 @@ cases=(
   "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
   "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
   "sync leaves a default branch whose edits are in the way|t_fs_sync_edits_in_the_way"
+  "sync moves the default branch under another checked-out branch|t_fs_sync_other_branch"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
