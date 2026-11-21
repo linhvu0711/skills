@@ -85,8 +85,13 @@ def _cut(text: str, limit: int) -> str:
     return text
 
 
+def _first_at(chat: Chat) -> int | None:
+    return next((i for i, m in enumerate(chat.messages) if m.kind == "user" and not m.command and m.text), None)
+
+
 def _first_prompt(chat: Chat) -> str | None:
-    return next((m.text for m in chat.messages if m.kind == "user" and not m.command and m.text), None)
+    at = _first_at(chat)
+    return chat.messages[at].text if at is not None else None
 
 
 def _count(chat: Chat, kind: str) -> int:
@@ -132,7 +137,12 @@ def _lines(chat: Chat, blocks: list[Message], mode: str, max_result_chars: int) 
 def transcript(chat: Chat, mode: str, tail: int = 0, max_result_chars: int = 500,
                after_compact: bool = False) -> str:
     """The chat as markdown: a header, then its blocks in this mode."""
-    first = _first_prompt(chat)
+    at = _first_at(chat)
+    compacts = [i for i, m in enumerate(chat.messages) if m.kind == "compact"]
+    # --after-compact promises nothing from before the last compaction, the header too.
+    if after_compact and compacts and at is not None and at < compacts[-1]:
+        at = None
+    first = chat.messages[at].text if at is not None else None
     out = [f"# {chat.words.transcript}"]
     if chat.title:
         out.append(f"**Title:** {chat.title}")
