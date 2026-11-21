@@ -64,12 +64,12 @@ or its numbers, and its size.
 - **Test selection**: on a PR, run only the tests the diff can reach,
   and list the inputs that rerun everything (a lockfile, a shared
   config). Rule 1 holds by what the repo can use. GitHub gives a merge
-  queue to an org repo that is public, or private on Enterprise Cloud:
-  there the queue runs the full suite. Any other repo: a draft PR runs
+  queue to an org repo that is public, or private on Enterprise Cloud
+  or Enterprise Server: there the queue runs the full suite. Any other repo: a draft PR runs
   the selected tests and a PR marked ready runs the full suite as a
   required check, with the branch up to date with main. A private org
   repo: propose the queue only when the user says the org has
-  Enterprise Cloud; the grill asks.
+  Enterprise Cloud or Enterprise Server; the grill asks.
 
 ### Honesty
 
