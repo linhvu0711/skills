@@ -23,7 +23,8 @@ Then open it in the user's browser: `open "$URL?v=$(date +%s)"` on macOS, `xdg-o
 
 Repo name, the runs read (`112 of 150 runs`, `from` to `to`), the date,
 and the PR result at p50 and p95. A line under it says when the stack
-tips were not checked on the web, or when there is no run history.
+tips were not checked on the web, when the classic branch rules were
+not read, or when there is no run history.
 
 ## Timing table
 

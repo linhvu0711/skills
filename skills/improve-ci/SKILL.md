@@ -29,9 +29,10 @@ retrieve, short lookups are yours. An explorer has no network, so every
 
 ## Steps
 
-1. **Preflight.** Hold `REPO`, `isInOrganization`, and `visibility` from
-   `gh repo view --json nameWithOwner,isInOrganization,visibility`: the
-   playbook's full-suite rule reads them.
+1. **Preflight.** Hold `REPO`, `isInOrganization`, `visibility`, and
+   the default branch `BRANCH` from `gh repo view --json
+   nameWithOwner,isInOrganization,visibility,defaultBranchRef`: the
+   playbook's full-suite rule reads the first three.
    - `gh auth status` fails: say `gh is not logged in. Run: gh auth login`
      and stop.
    - The repo has a `.github/workflows/*.yml` or
@@ -44,8 +45,8 @@ retrieve, short lookups are yours. An explorer has no network, so every
      for the stack alone, and the report and the grill hold one find:
      the first CI, built from the playbook and the stack tips.
 
-   Done when you hold `REPO`, `isInOrganization`, `visibility`, and the
-   path.
+   Done when you hold `REPO`, `isInOrganization`, `visibility`,
+   `BRANCH`, and the path.
 
 2. **Measure.**
 
@@ -69,19 +70,28 @@ retrieve, short lookups are yours. An explorer has no network, so every
    Done when every job's setup holds every step that prepares the
    machine and none that checks the code.
 
-3. **Research.** First save the merged PRs to a temp file:
+3. **Research.** First save the merged PRs and the branch rules to
+   temp files:
 
    ```bash
    gh pr list --state merged -L 100 --json number,title,files,changedFiles,commits > <tmp>/prs.json
+   gh api repos/<REPO>/rules/branches/<BRANCH> > <tmp>/rules.json
+   gh api repos/<REPO>/branches/<BRANCH>/protection > <tmp>/protection.json
    ```
+
+   The protection call fails with `Branch not protected` when the branch
+   has no classic rule: save `{}`. It fails another way (a token with no
+   admin access gets 403): save `{}`, and the report says the classic
+   branch rules were not read.
 
    Then start explorers per `facts.md`, one per concern, in one message.
    Each brief names the repo's checkout, the playbook's find kinds for
    its concern pasted in, and the files it reads:
 
    - **Workflows**: every workflow file, the repo's hook files and
-     hook tool config, and `AGENTS.md`. Ask for each honesty, security,
-     and other find, with `path:line`.
+     hook tool config, `AGENTS.md`, and `rules.json` and
+     `protection.json` for the checks a rule requires. Ask for each
+     honesty, security, and other find, with `path:line`.
    - **History**: `prs.json` and the re-runs from step 2. Ask for the
      share of PRs that changed only files no check reads, with the
      checks that read each such file. `gh` lists at most 100 files per

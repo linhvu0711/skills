@@ -27,7 +27,7 @@ It changes no code and no workflow file. It never proposes a retry, a wider time
 
 ## Needs
 
-- `gh`, logged in, with read access to the repo's Actions runs and PRs.
+- `gh`, logged in, with read access to the repo's Actions runs, PRs, and branch rules. Classic branch protection needs admin access; without it the report says those rules were not read.
 - `python3`, for the timing script.
 - Sub-agents: explorers for the workflow files, the PR history, and the stack, per the reader job in `../../shared/facts.md`, and one with the web for the tip check.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
