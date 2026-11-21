@@ -827,7 +827,7 @@ t_box_open_linux() {
   # Then
   eq exit 0 "$code"
   eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_macos() {
@@ -839,7 +839,7 @@ t_box_open_macos() {
   # Then
   eq exit 0 "$code"
   eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_starter() {
@@ -853,7 +853,7 @@ t_box_open_starter() {
   eq exit 0 "$code"
   cmp -s "$here/../scripts/walk-browser.cjs" "$FAKE_PB/tmp/pb-walk/walk-browser" || eq starter "the lines of walk-browser.cjs" "$(head -n 3 "$FAKE_PB/tmp/pb-walk/walk-browser" 2>&1)"
   [ -x "$FAKE_PB/tmp/pb-walk/walk-browser" ] || eq "run bit" set none
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
+  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_close_limit() {

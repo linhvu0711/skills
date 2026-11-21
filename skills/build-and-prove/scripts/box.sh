@@ -60,13 +60,13 @@
 #
 # open and close are the walker's: open writes the browser starter,
 # walk-browser.cjs, to /tmp/pb-walk/walk-browser, then runs its command, a
-# browser or a terminal window, with /tmp/pb-walk first on PATH, in its own
-# process group, whose id goes in
+# browser or a terminal window, with /tmp/pb-walk first on PATH and
+# WALK_BROWSER_LOG set to the browser log, walk_log below, in its own process
+# group, whose id goes in
 # /tmp/walk-open.pid; close ends that group as stop does, with a 10 s wait, and
 # exits 0 when the window already closed. With --out, close then copies the
-# browser log, /tmp/walk-browser.log, to <file> next to the video: `none`
-# when the log is empty, `missing: /tmp/walk-browser.log` when there is no
-# log. Either way it removes that log, so the next video's log holds only its
+# browser log to <file> next to the video: `none` when the log is empty,
+# `missing: <the log's path>` when there is no log. Either way it removes that log, so the next video's log holds only its
 # own lines. Neither uploads or makes a gone Sandbox again: proofbox's `Sandbox <id> is gone` line reaches stderr and the
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
@@ -124,6 +124,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+walk_log=/tmp/walk-browser.log
 cover="$here/../../../shared/ci-covers.sh"
 
 usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
@@ -349,7 +350,7 @@ case "$verb" in
     # only the repo, so the starter goes in as text, its path a separate word.
     bare sh -c 'mkdir -p "${2%/*}" && printf "%s\n" "$1" > "$2" && chmod +x "$2"' sh "$(cat "$here/walk-browser.cjs")" /tmp/pb-walk/walk-browser
     [ "$rc" -eq 0 ] || exit "$rc"
-    group_argv /tmp/walk-open.pid /dev/null "export PATH=/tmp/pb-walk:\$PATH; $*"
+    group_argv /tmp/walk-open.pid /dev/null "export PATH=/tmp/pb-walk:\$PATH WALK_BROWSER_LOG=$walk_log; $*"
     bare "${gcmd[@]}"
     exit "$rc"
     ;;
@@ -361,7 +362,7 @@ case "$verb" in
     [ -z "$gone" ] || exit "$rc"
     stopped="$rc"
     if [ -n "$out" ]; then
-      pb "$out.tmp" keep exec "$BOX_ID" -- cat /tmp/walk-browser.log
+      pb "$out.tmp" keep exec "$BOX_ID" -- cat "$walk_log"
       if [ -n "$gone" ]; then
         [ -z "$said" ] || printf '%s\n' "$said" >&2
         rm -f "$out.tmp"; exit 125
@@ -369,14 +370,14 @@ case "$verb" in
       # The walker fails the walk's console and request checks on this line,
       # so close still exits 0 and the walk goes on.
       if [ "$rc" -ne 0 ]; then
-        printf 'missing: /tmp/walk-browser.log\n' >"$out.tmp"
+        printf 'missing: %s\n' "$walk_log" >"$out.tmp"
       elif [ ! -s "$out.tmp" ]; then
         printf 'none\n' >"$out.tmp"
       fi
       mv "$out.tmp" "$out"
     fi
     # The next video's browser starts a new log, so its file holds only its own lines.
-    bare rm -f /tmp/walk-browser.log
+    bare rm -f "$walk_log"
     [ -z "$gone" ] || exit "$rc"
     exit "$stopped"
     ;;
