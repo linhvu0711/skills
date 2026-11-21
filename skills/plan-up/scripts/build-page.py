@@ -44,7 +44,7 @@ def page_maps(maps):
         parts = [{"ref": p["ref"], "name": p["name"], "job": p["job"], "change": p["change"], "group": p["group"],
                   "kind": p["kind"], "at": p["at"], "x": p["x"] or 0, "y": p["y"] or 0, "layer": p["layer"]}
                  for p in m["parts"]]
-        got.append({"area": m["area"], "parts": parts, "flows": [f for f in m["flows"] if "bad" not in f]})
+        got.append({"area": m["area"], "parts": parts, "flows": m["flows"]})
     return got
 
 
