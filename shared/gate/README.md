@@ -17,7 +17,7 @@ The gate is one script, `subagent-gate.sh`, that each harness runs before a suba
 
 ## How it gets there
 
-`scripts/link.sh` adds the Claude Code and Codex entries, and the plugin's `hooks.json` entry, on each commit in the main checkout. It changes only an entry that runs this script, so your other hooks stay. T3 gives its Antigravity chats the same plugin folder.
+`scripts/link.sh` adds the Claude Code and Codex entries, and the plugin's `hooks.json` entry, on each commit, checkout, merge, and rebase in the main checkout. It changes only an entry that runs this script, so your other hooks stay. T3 gives its Antigravity chats the same plugin folder.
 
 ## Not covered
 

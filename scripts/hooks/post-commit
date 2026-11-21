@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
-# post-commit: link a new or renamed skill into the local skills folders. Installed by
+# post-commit, post-checkout, post-merge, post-rewrite: run scripts/link.sh,
+# which links the repo's skills, skill agents, and subagent gate into each
+# harness. The other three are links to this file. Installed by
 # `git config core.hooksPath scripts/hooks`. It never fails the git command.
 bash "$(git rev-parse --show-toplevel)/scripts/link.sh" || true
