@@ -358,6 +358,19 @@ t_sync_warns_next_home_when_devin_off() {
   eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
+t_sync_warns_backup_when_next_home_off() {
+  # Given: Devin and Antigravity off in T3, and the helper's Claude home lists
+  # Antigravity after Devin
+  mac
+  sed -i.bak -e '/Devin/s/true/false/' -e '/Antigravity/s/true/false/' "$H/.t3/userdata/settings.json"
+  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, antigravity gemini-4-neon high/' \
+    "$T/mac/repo/skills/demo/agents/helper.md"
+  # When
+  sync_mac
+  # Then
+  eq warns 'warn: Devin is off in T3, so these run on their backup: helper' "$(grep '^warn:' <<<"$out")"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -386,4 +399,5 @@ cases=(
   "sync names a second home model T3 no longer offers|t_sync_names_stale_second_home"
   "sync names linked settings under a harness not installed|t_sync_linked_settings_into_absent_harness"
   "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
+  "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
 )

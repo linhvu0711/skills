@@ -273,14 +273,19 @@ done
 
 # The agents whose first home starts them in Devin, one `<agent> <model> <then>`
 # line each, <then> being where a Devin failure sends it: next when the entry
-# lists another home, else backup. A later home on Devin is only a fallback,
+# lists another home whose place is on in T3, else backup. A later home on Devin is only a fallback,
 # so its loss sends no one on.
 devin_homes=()
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
   if [ "$map" = home ] && [ "$place" = devin ]; then
     then=backup
-    for r in ${rows[@]+"${rows[@]}"}; do case "$r" in "$a home2 $h "*) then=next ;; esac; done
+    for r in ${rows[@]+"${rows[@]}"}; do
+      case "$r" in "$a home2 $h "*)
+        read -r _ _ _ next _ <<< "$r"; t3_id "$next"
+        if [ -n "$id" ] && t3_on "$id"; then then=next; fi ;;
+      esac
+    done
     devin_homes+=("$(basename "$a" .md) $model $then")
   fi
 done
