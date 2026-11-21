@@ -247,7 +247,8 @@ offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
   [ "$model" = inherit ] && continue
-  if [ "$map" = home ]; then
+  label="$map"; case "$map" in home?*) label="home ${map#home}" ;; esac
+  if [ "${map#home}" != "$map" ]; then
     t3_id "$place"; [ -n "$id" ] || continue
     if ! t3_on "$id"; then note "skip: $name is off in T3, so its home models are not checked"; continue; fi
     list="$HOME/.t3/caches/$id.json"; source="T3 $name"
@@ -260,10 +261,12 @@ for row in ${rows[@]+"${rows[@]}"}; do
     esac
   fi
   if [ ! -f "$list" ]; then note "skip: no model list at $(tilde "$list"), so $source models are not checked"; continue; fi
-  offers "$list" "$model" || problem "$a: $map for $h: $source does not offer $model"
+  offers "$list" "$model" || problem "$a: $label for $h: $source does not offer $model"
 done
 
-# The agents whose home starts them in Devin, one `<agent> <model>` line each.
+# The agents whose first home starts them in Devin, one `<agent> <model>` line
+# each. A later home on Devin is only a fallback, so its loss sends no one to
+# the backup.
 devin_homes=()
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"

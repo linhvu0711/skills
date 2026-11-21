@@ -315,6 +315,20 @@ t_sync_linked_settings_not_json_once() {
   eq problems 'problem: ~/real-settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
 }
 
+t_sync_names_stale_second_home() {
+  # Given: the helper's Claude home lists Devin Neon second, a model T3's Devin
+  # list lacks
+  mac
+  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, devin gemini-4-neon-high high/' \
+    "$T/mac/repo/skills/demo/agents/helper.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  has problem 'problem: skills/demo/agents/helper.md: home 2 for claude: T3 Devin does not offer gemini-4-neon-high' "$out"
+  has devin 'devin in T3  on · swe-2-high answers' "$out"
+}
+
 cases=(
   "sync reports every harness green on a healthy Mac|t_sync_healthy"
   "sync names a gate that is not wired|t_sync_gate_not_wired"
@@ -340,4 +354,5 @@ cases=(
   "sync names a blocked shared skill link without Codex|t_sync_names_shared_skill_blocker"
   "sync counts T3 rules links only with the shared file|t_sync_t3_rules_links_need_shared_file"
   "sync names linked settings that are not JSON once|t_sync_linked_settings_not_json_once"
+  "sync names a second home model T3 no longer offers|t_sync_names_stale_second_home"
 )
