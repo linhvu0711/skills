@@ -18,7 +18,7 @@ How each harness does a step a skill names. The rule for when to take a step is 
 
 ## T3
 
-T3 Code starts a subagent in any harness it runs, and in Devin, whatever harness you run in. You are in T3 when `delegate_task` is in your tools.
+T3 Code starts a subagent in any harness it runs, and in Devin, whatever harness you run in. You are in T3 when T3's `delegate_task` is in your tools, under any name that ends in `delegate_task`: a harness puts its server's name in front, as Antigravity lists `mcp_t3-code_delegate_task`. A tool your harness loads late counts too: look it up by that name once before you decide it is not there.
 
 - `orchestrator_capabilities` lists each place by its display name (Claude, Codex, Antigravity, Devin), with its `providerInstanceId`, its models, and each model's effort option: `effort` for Claude, `thought_level` for Antigravity and Devin.
 - A place is off when its entry has `canRunChildTask: false`, or a constraint such as `Provider instance is disabled.`
