@@ -326,7 +326,36 @@ t_sync_names_stale_second_home() {
   # Then
   eq exit 1 "$code"
   has problem 'problem: skills/demo/agents/helper.md: home 2 for claude: T3 Devin does not offer gemini-4-neon-high' "$out"
-  has devin 'devin in T3  on · swe-2-high answers' "$out"
+  eq devin 'devin in T3  on · swe-2-high answers' "$(grep '^devin in T3' <<<"$out")"
+  lacks calls gemini-4-neon-high "$(cat "$T/mac/devin.calls")"
+}
+
+t_sync_linked_settings_into_absent_harness() {
+  # Given: no Codex CLI, and Claude Code's settings a link to a file under
+  # ~/.codex that is not JSON
+  mac
+  rm "$H/bin/codex"
+  printf 'not json\n' > "$H/.codex/shared-settings.json"
+  ln -sf "$H/.codex/shared-settings.json" "$H/.claude/settings.json"
+  # When
+  sync_mac
+  # Then
+  eq exit 1 "$code"
+  eq problems 'problem: ~/.codex/shared-settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
+}
+
+t_sync_warns_next_home_when_devin_off() {
+  # Given: Devin off in T3, and the helper's Claude home lists Antigravity after
+  # Devin
+  mac
+  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
+  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, antigravity gemini-4-neon high/' \
+    "$T/mac/repo/skills/demo/agents/helper.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
 cases=(
@@ -355,4 +384,6 @@ cases=(
   "sync counts T3 rules links only with the shared file|t_sync_t3_rules_links_need_shared_file"
   "sync names linked settings that are not JSON once|t_sync_linked_settings_not_json_once"
   "sync names a second home model T3 no longer offers|t_sync_names_stale_second_home"
+  "sync names linked settings under a harness not installed|t_sync_linked_settings_into_absent_harness"
+  "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
 )

@@ -62,10 +62,15 @@ fi
 
 # skipped_path <file>: whether a link.sh skip line named the file. link.sh
 # names a linked file by its target.
+# A skip a count leans on is kept, so its line prints even when the file it
+# names sits in the folders of a harness this Mac lacks.
+kept=()
 skipped_path() {
   local s r
   r="$(realpath "$1" 2>/dev/null || true)"
-  for s in ${skipped[@]+"${skipped[@]}"}; do case "$s" in "$1 "*|"${r:-$1} "*) return 0 ;; esac; done
+  for s in ${skipped[@]+"${skipped[@]}"}; do
+    case "$s" in "$1 "*|"${r:-$1} "*) kept+=("$s"); return 0 ;; esac
+  done
   return 1
 }
 
@@ -201,7 +206,9 @@ owner() {
 # Each link link.sh could not own is a problem, unless it sits in the
 # folders of a harness this Mac does not have.
 for s in ${skipped[@]+"${skipped[@]}"}; do
-  is_absent "$(owner "$s")" || link_problems+=("problem: $(tilde "$s")")
+  keep=1
+  for k in ${kept[@]+"${kept[@]}"}; do [ "$k" != "$s" ] || keep=0; done
+  if [ "$keep" -eq 0 ] || ! is_absent "$(owner "$s")"; then link_problems+=("problem: $(tilde "$s")"); fi
 done
 
 # Every agent's models, one row each: <agent file> <map> <harness> <place>
@@ -264,29 +271,42 @@ for row in ${rows[@]+"${rows[@]}"}; do
   offers "$list" "$model" || problem "$a: $label for $h: $source does not offer $model"
 done
 
-# The agents whose first home starts them in Devin, one `<agent> <model>` line
-# each. A later home on Devin is only a fallback, so its loss sends no one to
-# the backup.
+# The agents whose first home starts them in Devin, one `<agent> <model> <then>`
+# line each, <then> being where a Devin failure sends it: next when the entry
+# lists another home, else backup. A later home on Devin is only a fallback,
+# so its loss sends no one on.
 devin_homes=()
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
-  if [ "$map" = home ] && [ "$place" = devin ]; then devin_homes+=("$(basename "$a" .md) $model"); fi
+  if [ "$map" = home ] && [ "$place" = devin ]; then
+    then=backup
+    for r in ${rows[@]+"${rows[@]}"}; do case "$r" in "$a home2 $h "*) then=next ;; esac; done
+    devin_homes+=("$(basename "$a" .md) $model $then")
+  fi
 done
 
-# on_devin [model]: those agents, on the model when one is named, sorted,
-# joined by ", ".
+# on_devin <then> [model]: those agents a failure sends to <then>, on the
+# model when one is named, sorted, joined by ", ".
 on_devin() {
-  printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk -v m="${1:-}" 'NF && (m == "" || $2 == m) { print $1 }' \
+  printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk -v t="$1" -v m="${2:-}" 'NF && $3 == t && (m == "" || $2 == m) { print $1 }' \
     | sort -u | paste -sd, - | sed 's/,/, /g'
 }
 
-# Devin: one live call per model a home starts on in Devin. A helper whose
-# home Devin cannot run runs on its backup, so each such case is a warning.
+# devin_warn <cause> [model]: a warning per place a Devin failure sends agents.
+devin_warn() {
+  local b n
+  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"
+  [ -z "$b" ] || warns+=("warn: $1, so these run on their backup: $b")
+  [ -z "$n" ] || warns+=("warn: $1, so these move to their next home: $n")
+}
+
+# Devin: one live call per model a first home starts on in Devin. A helper
+# whose home Devin cannot run moves on, so each such case is a warning.
 warns=()
 t3_id devin
 if ! t3_on "$id"; then
   devin="off"
-  [ ${#devin_homes[@]} -eq 0 ] || warns+=("warn: Devin is off in T3, so these run on their backup: $(on_devin)")
+  devin_warn "Devin is off in T3"
 else
   devin="on"
   for m in $(printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk 'NF { print $2 }' | sort -u); do
@@ -300,7 +320,7 @@ else
       devin="$devin · $m answers"
     else
       devin="$devin · $m refused"
-      warns+=("warn: $m refused ($(printf '%s\n' "$reply" | head -n 1)), so these run on their backup: $(on_devin "$m")")
+      devin_warn "$m refused ($(printf '%s\n' "$reply" | head -n 1))" "$m"
     fi
   done
 fi
