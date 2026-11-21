@@ -10,13 +10,14 @@ jobs. Prints one JSON object:
 
     {"repo", "asked", "runs", "from", "to",
      "pr_result": {"commits", "p50", "p95"},
-     "jobs": [{"workflow", "job", "runs", "wait": {"p50", "p95"},
+     "jobs": [{"workflow", "workflow_id", "job", "runs", "wait": {"p50", "p95"},
                "setup": {"p50", "p95"}, "work": {"p50", "p95"},
                "total": {"p50", "p95"}, "slowest",
                "steps": [{"name", "p50", "p95"}]}],
      "reruns": [{"run", "workflow", "attempts", "conclusion", "failed_first"}]}
 
-Times are whole seconds. A job's wait is its start minus its creation, the
+A job is keyed by its workflow's id, so two workflow files that share a
+name keep apart; `workflow_id` tells them apart. Times are whole seconds. A job's wait is its start minus its creation, the
 time it sat in the queue for a machine. Setup is the sum of a run's setup
 steps: `Set up job`, `Complete job`, a step whose name starts with `Post `,
 `Run actions/checkout`, `Run actions/setup-`, or `Run actions/cache`, and
@@ -41,7 +42,7 @@ import math
 import subprocess
 import sys
 
-RUN_FIELDS = "databaseId,attempt,createdAt,updatedAt,event,headSha,workflowName,conclusion"
+RUN_FIELDS = "databaseId,attempt,createdAt,updatedAt,event,headSha,workflowName,workflowDatabaseId,conclusion"
 LEFT_OUT = {"skipped", "cancelled"}
 SETUP_NAMES = {"Set up job", "Complete job"}
 SETUP_STARTS = ("Post ", "Run actions/checkout", "Run actions/setup-", "Run actions/cache")
@@ -94,7 +95,7 @@ def time_jobs(runs, jobs_by_run, named):
         for job in jobs_by_run[run["databaseId"]]:
             if job.get("conclusion") in LEFT_OUT or not job.get("started_at") or not job.get("completed_at"):
                 continue
-            key = (run["workflowName"], job["name"])
+            key = (run["workflowDatabaseId"], run["workflowName"], job["name"])
             row = table.setdefault(key, {"wait": [], "setup": [], "work": [], "total": [], "steps": {}})
             total = seconds(job["started_at"], job["completed_at"])
             setup = 0
@@ -112,6 +113,7 @@ def time_jobs(runs, jobs_by_run, named):
     return [
         {
             "workflow": workflow,
+            "workflow_id": workflow_id,
             "job": job,
             "runs": len(row["total"]),
             "wait": spread(row["wait"]),
@@ -121,7 +123,7 @@ def time_jobs(runs, jobs_by_run, named):
             "slowest": max(row["total"]),
             "steps": [{"name": name, **spread(times)} for name, times in row["steps"].items()],
         }
-        for (workflow, job), row in table.items()
+        for (workflow_id, workflow, job), row in table.items()
     ]
 
 

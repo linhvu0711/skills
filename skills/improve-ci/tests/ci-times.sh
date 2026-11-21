@@ -4,10 +4,13 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 G="$here/../scripts/ci-times.py"
 
-# run_row <id> <workflow> <attempt> <event> <sha> <created> <updated> [conclusion]: one run of run-list.
+# run_row <id> <workflow> <attempt> <event> <sha> <created> <updated> [conclusion] [workflow id]: one run
+# of run-list. The workflow id is 11 for CI, 12 for Lint, and 10 for any other name, unless given.
 run_row() {
-  printf '{"databaseId":%s,"workflowName":"%s","attempt":%s,"event":"%s","headSha":"%s","createdAt":"2026-11-20T%sZ","updatedAt":"2026-11-20T%sZ","conclusion":"%s"}' \
-    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "${8:-success}"
+  local wid
+  case "$2" in CI) wid=11 ;; Lint) wid=12 ;; *) wid=10 ;; esac
+  printf '{"databaseId":%s,"workflowName":"%s","workflowDatabaseId":%s,"attempt":%s,"event":"%s","headSha":"%s","createdAt":"2026-11-20T%sZ","updatedAt":"2026-11-20T%sZ","conclusion":"%s"}' \
+    "$1" "$2" "${9:-$wid}" "$3" "$4" "$5" "$6" "$7" "${8:-success}"
 }
 
 # step <number> <name> <start> <end>: one step of a job.
@@ -39,7 +42,7 @@ t_ci_times_splits_a_job() {
   run python3 "$G" acme/app
   # Then
   eq exit 0 "$code"
-  eq job '{"workflow": "CI", "job": "test", "runs": 2, "wait": {"p50": 4, "p95": 10}, "setup": {"p50": 2, "p95": 3}, "work": {"p50": 198, "p95": 237}, "total": {"p50": 200, "p95": 240}, "slowest": 240, "steps": [{"name": "Set up job", "p50": 2, "p95": 3}, {"name": "Run tests", "p50": 198, "p95": 237}]}' "$(field 'j["jobs"][0]')"
+  eq job '{"workflow": "CI", "workflow_id": 11, "job": "test", "runs": 2, "wait": {"p50": 4, "p95": 10}, "setup": {"p50": 2, "p95": 3}, "work": {"p50": 198, "p95": 237}, "total": {"p50": 200, "p95": 240}, "slowest": 240, "steps": [{"name": "Set up job", "p50": 2, "p95": 3}, {"name": "Run tests", "p50": 198, "p95": 237}]}' "$(field 'j["jobs"][0]')"
 }
 
 t_ci_times_named_setup_step() {
@@ -146,12 +149,24 @@ t_ci_times_jobs_past_one_page() {
   eq names '["job", "last"]' "$(field '[r["job"] for r in j["jobs"]]')"
   eq pages 'api repos/acme/app/actions/runs/1/jobs?per_page=100&page=2' "$(sed -n 2p "$FAKE_GH/run-jobs.args")"
 }
+t_ci_times_same_named_workflows() {
+  # Given: run 1 of workflow 11 and run 2 of workflow 21, both named CI, each with job `test`
+  fake_gh
+  printf '[%s,%s]' "$(run_row 1 CI 1 push a1 10:00:00 10:03:25)" "$(run_row 2 CI 1 push a2 11:00:00 11:04:11 success 21)" > "$FAKE_GH/run-list.json"
+  jobs 1 test success 10:00:00 10:00:04 10:03:24 ""
+  jobs 2 test success 11:00:00 11:00:10 11:04:10 ""
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq rows '[[11, 1, 200], [21, 1, 240]]' "$(field '[[r["workflow_id"], r["runs"], r["slowest"]] for r in j["jobs"]]')"
+}
 
 cases=(
   "ci-times splits a job into wait, steps, and total|t_ci_times_splits_a_job"
   "ci-times counts a named step as setup|t_ci_times_named_setup_step"
   "ci-times skips skipped and cancelled jobs|t_ci_times_skips_skipped_jobs"
   "ci-times reads a run's jobs past the first page|t_ci_times_jobs_past_one_page"
+  "ci-times keeps same-named workflows apart|t_ci_times_same_named_workflows"
   "ci-times reports fewer runs than asked|t_ci_times_fewer_runs_than_asked"
   "ci-times prints zero runs on a repo with none|t_ci_times_no_runs"
   "ci-times stops when gh fails|t_ci_times_gh_fails"

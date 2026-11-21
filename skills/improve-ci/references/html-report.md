@@ -29,8 +29,9 @@ tips were not checked on the web, or when there is no run history.
 
 In `<section id="timing">`: one row per job, `w-full text-sm`, with the
 columns Workflow, Job, Runs, Wait, Setup, Work, Total (each as
-`p50 / p95`), and Slowest. Sort by Total p95, slowest first. The first
-CI path leaves the section out.
+`p50 / p95`), and Slowest. Sort by Total p95, slowest first. Two
+workflows that share a name: put each one's `workflow_id` after it, as
+`CI (21)`. The first CI path leaves the section out.
 
 ## Find card
 
