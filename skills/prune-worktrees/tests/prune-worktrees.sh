@@ -56,6 +56,21 @@ t_prune_alias_origin() {
   eq stdout "$(printf 'removed %s (<1M), branch feat/1-a deleted (-D)\nfreed <1M' "$T/w/feat-1-a")" "$out"
 }
 
+t_prune_rewrite_asks_push_repo() {
+  # Given: origin's URL is acme/app, an insteadOf rewrite sends it to fork/app, where git pushes
+  wt_repo; fake_gh
+  git remote add origin https://github.com/acme/app.git
+  git config url.https://github.com/fork/app.git.insteadOf https://github.com/acme/app.git
+  git update-ref refs/remotes/origin/main main
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+  wt "$T/w/feat-1-a" feat/1-a
+  head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
+  # When
+  run bash "$P"
+  # Then: the PR is looked up in fork/app
+  eq "pr list repo" "-R fork/app" "$(grep -o -- '-R [^ ]*' "$FAKE_GH/pr-list.args")"
+}
+
 t_prune_keeps_no_pr() {
   wt_repo; gh_remote; fake_gh; wt "$T/w/feat-1-a" feat/1-a
   git update-ref refs/remotes/origin/feat/1-a feat/1-a
@@ -260,6 +275,7 @@ cases=(
   "prune keeps a merged PR whose tip moved|t_prune_keeps_moved_tip"
   "prune uses only git with no GitHub remote|t_prune_git_only"
   "prune counts an insteadOf alias origin as GitHub|t_prune_alias_origin"
+  "prune asks for PRs in the repo an insteadOf rewrite pushes to|t_prune_rewrite_asks_push_repo"
   "prune stops and removes nothing when gh fails|t_prune_gh_fails"
   "prune shows gh's last error line|t_prune_gh_fails_last_line"
   "prune skips the session's worktree|t_prune_skips_session"
