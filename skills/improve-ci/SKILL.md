@@ -72,7 +72,7 @@ retrieve, short lookups are yours. An explorer has no network, so every
 3. **Research.** First save the merged PRs to a temp file:
 
    ```bash
-   gh pr list --state merged -L 100 --json number,title,files,commits > <tmp>/prs.json
+   gh pr list --state merged -L 100 --json number,title,files,changedFiles,commits > <tmp>/prs.json
    ```
 
    Then start explorers per `facts.md`, one per concern, in one message.
@@ -84,7 +84,9 @@ retrieve, short lookups are yours. An explorer has no network, so every
      and other find, with `path:line`.
    - **History**: `prs.json` and the re-runs from step 2. Ask for the
      share of PRs that changed only files no check reads, with the
-     checks that read each such file; the tests whose fixes changed
+     checks that read each such file. `gh` lists at most 100 files per
+     PR: a PR whose `changedFiles` is more than its `files` holds counts
+     as one that changed code. Ask also for the tests whose fixes changed
      only the test file; and each re-run's failed job.
    - **Stack**: the lockfiles, manifests, and tool configs. Ask for the
      languages, package manager, test runner, linter, formatter, and
