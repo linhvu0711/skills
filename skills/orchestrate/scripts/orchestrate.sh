@@ -565,7 +565,7 @@ cmd_check() {
   # A start counts as a change even on a row that did not move, as after a
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
-  jq -cn --arg run "$run" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
+  jq -cn --arg run "$run" --arg am "$analysis_model" --arg ae "$analysis_effort" --argjson S "$S" --argjson starts "$starts" --argjson rows "$rows" \
     --argjson joined "$joined" --argjson done "$done" --argjson propose "$propose" --argjson settles "$settles" --argjson seen "$(jq -c '.seen // {}' <<<"$S0")" '
     ($rows | map(. as $r | . + {changed: (($starts | any(.number == $r.number))
       or (($seen.issues // {})[$r.number | tostring] != $r))})) as $marked
@@ -578,8 +578,8 @@ cmd_check() {
         removed: $S.removed}
       # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
       # A run with issues taken out is not the whole work, so it gets no retro yet.
-      + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // "opus"),
-          effort: ($S.use.all.effort // "high"), path: $S.path,
+      + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
+          effort: ($S.use.all.effort // $ae), path: $S.path,
           thread_title: "retro: \($S.name)", message: "/retro run \($run)"}} else {} end)
       else {} end'
 }
@@ -634,16 +634,17 @@ cmd_settled() {
 # and effort the thread would get; a decide stop keeps the proposal and
 # prints its reason as `why`.
 cmd_proposed() {
-  local pusage="usage: orchestrate.sh proposed <owner/repo> <n> $routes|unsure [--size XS|S|M|L|XL]"
+  local pusage="usage: orchestrate.sh proposed <owner/repo> <n> $routes|unsure [--size $size_list]"
   [ $# -ge 2 ] && [[ "$1" =~ ^#?([0-9]+)$ ]] && [[ "$2" =~ ^($routes|unsure)$ ]] || die "$pusage"
   local n="${1#\#}" route="$2" size="" sk line why=""
   shift 2
   if [ $# -gt 0 ]; then
-    [ $# -eq 2 ] && [ "$1" = --size ] && [[ "$2" =~ ^([Xx][Ss]|[SsMmLl]|[Xx][Ll])$ ]] || die "$pusage"
+    [ $# -eq 2 ] && [ "$1" = --size ] || die "$pusage"
     size="$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"
+    one_of "$size_list" "$size" || die "$pusage"
   fi
   case "$route" in
-    ship) [ -n "$size" ] || die "a ship proposal needs --size XS|S|M|L|XL" ;;
+    ship) [ -n "$size" ] || die "a ship proposal needs --size $size_list" ;;
     task|close) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
   esac
   newest_run
@@ -698,8 +699,8 @@ cmd_change() {
       S="$(jq -c --argjson n "$n" '(.threads | map(.number == $n) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
     ship)
-      [[ "${2:-}" =~ ^(review|ready|merge)$ ]] && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
-        || die "usage: orchestrate.sh change <owner/repo> ship review|ready|merge <n>|all"
+      one_of "$ship_mode_list" "${2:-}" && [[ "${3:-}" =~ ^(all|#?[0-9]+)$ ]] \
+        || die "usage: orchestrate.sh change <owner/repo> ship $ship_mode_list <n>|all"
       local mode="$2" who="${3#\#}"
       # shellcheck disable=SC2016 # the $ names are jq variables
       local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.number | tostring].answer == "ship"))'
@@ -722,7 +723,7 @@ cmd_change() {
         case "$1" in
           --model) [ -n "${2:-}" ] || die "--model needs a name"; pick="$(jq -c --arg v "$2" '.model = $v' <<<"$pick")"; shift 2 ;;
           --effort)
-            case "${2:-}" in low|medium|high|xhigh|max) ;; *) die "--effort must be low, medium, high, xhigh, or max, got: ${2:-nothing}" ;; esac
+            one_of "$effort_list" "${2:-}" || die "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
             pick="$(jq -c --arg v "$2" '.effort = $v' <<<"$pick")"; shift 2 ;;
           *) die "unexpected argument: $1" ;;
         esac
