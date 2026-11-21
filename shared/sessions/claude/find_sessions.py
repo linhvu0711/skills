@@ -45,6 +45,10 @@ _spec = importlib.util.spec_from_file_location(
     "adapter_lib", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "adapter_lib.py"))
 adapter_lib = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(adapter_lib)
+_spec = importlib.util.spec_from_file_location(
+    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 WRAP_PREFIXES = (
     "<local-command-caveat>",
@@ -124,20 +128,6 @@ def in_window(mtime, days):
     return True
 
 
-def text_of(message):
-    """Extract human-readable text from a message's content (str or block list)."""
-    content = message.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(block.get("text", ""))
-        return "\n".join(parts)
-    return ""
-
-
 def strip_wrappers(text):
     """Drop slash-command/caveat/system-reminder scaffolding, return real text or ''."""
     if not text:
@@ -179,14 +169,7 @@ def parse_session(path):
     body_len = 0
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    d = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
+            for d in chat_log.rows(f):
                 t = d.get("type")
                 if t in ("ai-title", "summary"):
                     # Current Claude Code writes {"type":"ai-title","aiTitle":...};
@@ -205,7 +188,7 @@ def parse_session(path):
                 if t == "user":
                     if d.get("isMeta") or d.get("isSidechain"):
                         continue
-                    human = strip_wrappers(text_of(d.get("message", {})))
+                    human = strip_wrappers(chat_log.text_of(d.get("message", {}).get("content")))
                     if human:
                         n_prompts += 1
                         if first_prompt is None:
@@ -219,7 +202,7 @@ def parse_session(path):
                 elif t == "assistant":
                     if d.get("isSidechain"):
                         continue
-                    txt = text_of(d.get("message", {}))
+                    txt = chat_log.text_of(d.get("message", {}).get("content"))
                     if txt and body_len < BODY_CAP:
                         body_parts.append(txt)
                         body_len += len(txt)

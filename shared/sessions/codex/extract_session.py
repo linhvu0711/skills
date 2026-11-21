@@ -52,6 +52,10 @@ printer = importlib.util.module_from_spec(_spec)
 # Python 3.11 and older fail on printer.py's dataclasses without it.
 sys.modules["printer"] = printer
 _spec.loader.exec_module(printer)
+_spec = importlib.util.spec_from_file_location(
+    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 WORDS = printer.Words(
     transcript="Loaded Codex session transcript",
@@ -100,33 +104,8 @@ def locate(session_id):
 def load(path):
     rows = []
     with rollout_io.open_rollout(path) as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        rows.extend(chat_log.rows(fh))
     return rows
-
-
-def text_blocks(content):
-    """Join input_text / output_text / text blocks from a message content list."""
-    if isinstance(content, str):
-        return content
-    if not isinstance(content, list):
-        return ""
-    parts = []
-    for b in content:
-        if isinstance(b, dict):
-            if b.get("type") in ("input_text", "output_text", "text"):
-                parts.append(b.get("text", ""))
-            elif b.get("type") in ("input_image", "output_image", "image"):
-                parts.append("[image]")
-        elif isinstance(b, str):
-            parts.append(b)
-    return "\n".join(p for p in parts if p)
 
 
 def user_message_of(row):
@@ -145,7 +124,7 @@ def user_message_of(row):
     if pt == "item_completed":
         item = p.get("item") or {}
         if item.get("type") == "UserMessage":
-            return text_blocks(item.get("content")).strip() or None
+            return chat_log.text_of(item.get("content"), "[image]").strip() or None
     return None
 
 
@@ -242,7 +221,7 @@ def clean_output(out):
     if isinstance(out, dict):
         out = out.get("content") or out.get("output") or json.dumps(out)
     if isinstance(out, list):
-        out = text_blocks(out)
+        out = chat_log.text_of(out, "[image]")
     if not isinstance(out, str):
         out = str(out)
     failed = out.lstrip().startswith("Script failed")
@@ -287,7 +266,7 @@ def read(rows):
         if t == "response_item":
             if pt == "message":
                 role = p.get("role")
-                txt = text_blocks(p.get("content")).strip()
+                txt = chat_log.text_of(p.get("content"), "[image]").strip()
                 if not txt:
                     continue
                 if role == "assistant":
@@ -323,7 +302,7 @@ def read(rows):
         for r in rows:
             p = r.get("payload") or {}
             if r.get("type") == "response_item" and p.get("type") == "message" and p.get("role") == "user":
-                txt = text_blocks(p.get("content")).strip()
+                txt = chat_log.text_of(p.get("content"), "[image]").strip()
                 if txt and not txt.startswith(INJECTION_MARKERS):
                     first_user = txt
                     break

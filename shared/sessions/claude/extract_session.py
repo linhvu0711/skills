@@ -41,6 +41,10 @@ printer = importlib.util.module_from_spec(_spec)
 # Python 3.11 and older fail on printer.py's dataclasses without it.
 sys.modules["printer"] = printer
 _spec.loader.exec_module(printer)
+_spec = importlib.util.spec_from_file_location(
+    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
 WORDS = printer.Words(
@@ -72,14 +76,7 @@ def locate(session_id):
 def load(path):
     rows = []
     with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        rows.extend(chat_log.rows(fh))
     return rows
 
 
@@ -140,23 +137,6 @@ def summarize_tool_input(name, inp):
     return v[:200] + ("…" if len(v) > 200 else "")
 
 
-def extract_text_from_result(content):
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for b in content:
-            if isinstance(b, dict):
-                if b.get("type") == "text":
-                    parts.append(b.get("text", ""))
-                elif b.get("type") == "image":
-                    parts.append("[image]")
-            elif isinstance(b, str):
-                parts.append(b)
-        return "\n".join(parts)
-    return str(content)
-
-
 def read(rows):
     """The log as a printer.Chat: every block in order, and the chat's facts."""
     meta = {}
@@ -211,7 +191,7 @@ def read(rows):
                         add_user_text(b.get("text", ""), is_compact)
                     elif bt == "tool_result":
                         messages.append(printer.Message(
-                            "result", extract_text_from_result(b.get("content")), error=bool(b.get("is_error"))))
+                            "result", chat_log.text_of(b.get("content"), "[image]"), error=bool(b.get("is_error"))))
         elif t == "assistant":
             content = r.get("message", {}).get("content")
             if not isinstance(content, list):

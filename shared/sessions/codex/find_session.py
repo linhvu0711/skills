@@ -59,6 +59,9 @@ _spec.loader.exec_module(rank)
 _spec = importlib.util.spec_from_file_location("adapter_lib", Path(__file__).parent.parent / "adapter_lib.py")
 adapter_lib = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(adapter_lib)
+_spec = importlib.util.spec_from_file_location("chat_log", Path(__file__).parent.parent / "chat_log.py")
+chat_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(chat_log)
 
 INDEX_PATHS = (
     Path.home() / ".cache" / "find-co-session" / "codex-index.json",
@@ -88,20 +91,6 @@ WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
 # ---------------------------------------------------------------- parsing
-
-def content_text(content) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        out = []
-        for block in content:
-            if isinstance(block, dict):
-                t = block.get("text") or block.get("input_text") or block.get("output_text")
-                if isinstance(t, str):
-                    out.append(t)
-        return "\n".join(out)
-    return ""
-
 
 def is_blob(text: str) -> bool:
     return len(text) > BLOB_LEN or any(m in text for m in BLOB_MARKERS)
@@ -139,18 +128,14 @@ def parse_content(path: Path) -> dict:
     body, blen = [], 0
     try:
         with rollout_io.open_rollout(path) as h:
-            for line in h:
-                try:
-                    o = json.loads(line)
-                except ValueError:
-                    continue
+            for o in chat_log.rows(h):
                 if o.get("type") != "response_item":
                     continue
                 item = o.get("payload") or {}
                 kind = item.get("type")
                 if kind == "message":
                     role = item.get("role")
-                    text = content_text(item.get("content")).strip()
+                    text = chat_log.text_of(item.get("content")).strip()
                     if not text:
                         continue
                     if role == "user":
@@ -167,7 +152,7 @@ def parse_content(path: Path) -> dict:
                         body.append(text)
                         blen += len(text)
                 elif kind == "agent_message" and blen < BODY_CAP:
-                    text = content_text(item.get("content")) or str(item.get("message") or "")
+                    text = chat_log.text_of(item.get("content")) or str(item.get("message") or "")
                     if text.strip():
                         body.append(text)
                         blen += len(text)
