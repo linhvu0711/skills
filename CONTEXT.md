@@ -195,6 +195,32 @@ _Avoid_: inspired by
 The GitHub Action that checks every push and pull request: each skill has its README and license files, and every relative path points to a file that exists.
 _Avoid_: CI lint
 
+## CI audit
+
+**Run part**:
+One of the three parts of a CI job's time that improve-ci measures: waiting for a machine, setup (clone, install, caches), and work (the checks themselves).
+_Avoid_: bucket, phase
+
+**Target**:
+The time a run part, or a whole PR result, should reach after a fix. improve-ci proposes it from measured runs and the repo's stack, and the user settles it in the grill. An issue's Done when names it.
+_Avoid_: budget, goal
+
+**Time limit**:
+The run time past which a CI job fails, set per job from that job's own past runs, just above its slowest normal run.
+_Avoid_: timeout, budget
+
+**Skip list**:
+The files a repo's PRs may change without running a given check, built per repo from which checks read which files. The skip happens inside the job, so a required check still reports.
+_Avoid_: paths filter, ignore list
+
+**Change detector**:
+A test that fails on any change to the code it covers, even a correct one, so its fixes change only the test. improve-ci finds them in the fixes of merged PRs.
+_Avoid_: brittle test
+
+**Flaky run**:
+A CI run that failed and then passed on the same commit, with no code change between.
+_Avoid_: flake, intermittent failure
+
 ## Coding standards
 
 **Level 1 source**:
