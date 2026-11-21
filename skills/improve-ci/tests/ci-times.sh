@@ -112,6 +112,28 @@ t_ci_times_pr_commit() {
   eq pr_result '{"commits": 1, "p50": 210, "p95": 210}' "$(field 'j["pr_result"]')"
 }
 
+t_ci_times_rerun() {
+  # Given: run 7 of CI on its second attempt; on attempt 1 `test` failed and `lint` passed
+  fake_gh
+  printf '[%s]' "$(run_row 7 CI 2 push a7 10:00:00 10:09:00)" > "$FAKE_GH/run-list.json"
+  jobs 1 test success 10:05:00 10:05:02 10:08:58 "$(step 1 'Run tests' 10:05:02 10:08:58)"
+  printf '{"jobs":[{"name":"test","conclusion":"failure"},{"name":"lint","conclusion":"success"}]}' > "$FAKE_GH/attempt-jobs.json"
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq reruns '[{"run": 7, "workflow": "CI", "attempts": 2, "conclusion": "success", "failed_first": ["test"]}]' "$(field 'j["reruns"]')"
+}
+
+t_ci_times_no_rerun() {
+  # Given: the two runs, each a first attempt
+  two_runs
+  # When
+  run python3 "$G" acme/app
+  # Then
+  eq reruns '[]' "$(field 'j["reruns"]')"
+  eq attempt_calls no "$([ -e "$FAKE_GH/attempt-jobs.calls" ] && echo yes || echo no)"
+}
+
 cases=(
   "ci-times splits a job into wait, steps, and total|t_ci_times_splits_a_job"
   "ci-times counts a named step as setup|t_ci_times_named_setup_step"
@@ -120,4 +142,6 @@ cases=(
   "ci-times prints zero runs on a repo with none|t_ci_times_no_runs"
   "ci-times stops when gh fails|t_ci_times_gh_fails"
   "ci-times times a PR commit from its first run to its last|t_ci_times_pr_commit"
+  "ci-times lists a re-run with the jobs that failed first|t_ci_times_rerun"
+  "ci-times lists no re-run when every run is a first attempt|t_ci_times_no_rerun"
 )

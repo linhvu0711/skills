@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Time a repo's GitHub Actions runs: how long each job waits for a machine,
-how long its setup, its work, each step, and the whole job take, and how
-long a PR commit waits for its last result.
+how long its setup, its work, each step, and the whole job take, how long
+a PR commit waits for its last result, and which runs needed a re-run.
 
     ci-times.py <owner/repo> [--runs N] [--setup <step name>]...
 
@@ -13,7 +13,8 @@ jobs. Prints one JSON object:
      "jobs": [{"workflow", "job", "runs", "wait": {"p50", "p95"},
                "setup": {"p50", "p95"}, "work": {"p50", "p95"},
                "total": {"p50", "p95"}, "slowest",
-               "steps": [{"name", "p50", "p95"}]}]}
+               "steps": [{"name", "p50", "p95"}]}],
+     "reruns": [{"run", "workflow", "attempts", "conclusion", "failed_first"}]}
 
 Times are whole seconds. A job's wait is its start minus its creation, the
 time it sat in the queue for a machine. Setup is the sum of a run's setup
@@ -25,7 +26,8 @@ time runs from the creation of its first run to the last update of its last
 run. A percentile
 is nearest rank, so each one is a real run's time. Skipped and cancelled
 jobs and skipped steps are left out. With no PR runs, `pr_result` is
-{"commits": 0}; with no runs, `runs` is 0 and `jobs` is [].
+{"commits": 0}; with no runs, `runs` is 0 and `jobs` and `reruns` are [].
+A re-run's `failed_first` names the jobs that failed on its first attempt.
 
 A gh call that fails stops with `stop: gh could not <what>: <gh's last
 line>` on stderr and exit 1.
@@ -128,6 +130,21 @@ def time_pr_commits(runs):
     return {"commits": len(commits), **spread([seconds(a, b) for a, b in commits.values()])}
 
 
+def list_reruns(repo, runs):
+    reruns = []
+    for run in runs:
+        if run["attempt"] > 1:
+            first = jobs_of(repo, f"{run['databaseId']}/attempts/1", f"list the first attempt of run {run['databaseId']}")
+            reruns.append({
+                "run": run["databaseId"],
+                "workflow": run["workflowName"],
+                "attempts": run["attempt"],
+                "conclusion": run["conclusion"],
+                "failed_first": [job["name"] for job in first if job.get("conclusion") == "failure"],
+            })
+    return reruns
+
+
 def main():
     parser = argparse.ArgumentParser(description="Time a repo's GitHub Actions runs.")
     parser.add_argument("repo")
@@ -145,7 +162,8 @@ def main():
         "from": dates[0] if dates else None,
         "to": dates[-1] if dates else None,
         "pr_result": time_pr_commits(runs),
-        "jobs": time_jobs(runs, jobs_by_run, set(args.setup))
+        "jobs": time_jobs(runs, jobs_by_run, set(args.setup)),
+        "reruns": list_reruns(args.repo, runs),
     }, indent=2))
 
 
