@@ -75,21 +75,23 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
   if (line ~ /^[ \t]*#/ || line ~ /^[ \t]*$/) next
   match(line, /^ *(- +)?/); col = RLENGTH
   t = substr(line, col + 1)
-  ind = indent(line); dash = (col > ind)
+  ind = indent(line); dash = (col > ind); bare = (line ~ /^ *-[ \t]*$/)
   if (ind == 0) { injobs = (line ~ /^jobs:/); jind = -1; cur = 0; next }
   if (injobs) {
     if (jind < 0) jind = ind
     if (ind <= jind) { job++; jk = -1; insteps = 0; cur = 0 }
     else {
       if (jk < 0) jk = ind
-      if (ind == jk && !dash) {
+      if (ind == jk && !dash && !bare) {
         cur = 0; insteps = (t ~ /^steps:/); sind = -1
         if (t ~ /^if:([ \t]|$)/) jif[job] = 1
       } else if (insteps) {
         # The keys of a step sit at the column right after its dash; a
-        # deeper `if:`, as under `with:`, belongs to something else.
-        if (dash && sind < 0) sind = ind
-        if (dash && ind == sind) { cur = ++step; scol = col }
+        # deeper `if:`, as under `with:`, belongs to something else. A bare
+        # dash puts the first key on the next line, so that line sets it.
+        if ((dash || bare) && sind < 0) sind = ind
+        if ((dash || bare) && ind == sind) { cur = ++step; scol = (bare ? -1 : col) }
+        else if (cur && scol < 0) scol = col
         if (cur && col == scol && t ~ /^if:([ \t]|$)/) sif[cur] = 1
       }
     }
