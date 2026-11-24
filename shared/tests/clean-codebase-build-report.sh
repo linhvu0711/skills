@@ -31,6 +31,16 @@ t_cb_nothing_found() {
   eq DATA '"I found nothing to change." []' "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -c '.summary, .rows' | tr '\n' ' ' | sed 's/ $//')"
 }
 
+t_cb_nothing_to_fix() {
+  # Given: no rows, with the fixture's three changes kept
+  cb_rows '.rows = []'
+  # When
+  cb_build "$T/clean-prune-codebase-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq summary "I found nothing to fix." "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -r .summary)"
+}
+
 t_cb_refuses_advice() {
   # Given: R2 with an advice the report does not know
   cb_rows '(.rows[] | select(.id == "R2") | .advice) = "delete"'
@@ -114,6 +124,7 @@ t_cb_row_with_no_state() {
 cases=(
   "builds the report page with its counts|t_cb_builds_report"
   "says nothing found for no rows|t_cb_nothing_found"
+  "says nothing to fix for no rows with a change|t_cb_nothing_to_fix"
   "refuses an advice it does not know|t_cb_refuses_advice"
   "refuses a place label that is not Seen or Inferred|t_cb_refuses_label"
   "refuses a Known row with no ticket|t_cb_refuses_known_no_ticket"
