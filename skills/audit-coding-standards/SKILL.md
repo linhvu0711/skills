@@ -14,7 +14,7 @@ Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the 
 
 ## Search
 
-1. **Rules and size.** Run `checks.md` § Find the rules and § Size the repo, under its § Secrets. No `CODING_STANDARDS.md` at the root: the Standard is empty, and every rule found is scattered. Empty bucket: say what its table says and end the run; nothing is written.
+1. **Rules and size.** Run `checks.md` § Find the rules and § Size the repo, under its § Secrets. No `CODING_STANDARDS.md` at the root: the Standard is empty, and every rule found is scattered. Empty bucket: say what its table says and end the run; nothing is written. Then run `checks.md` § Folders that break most.
 2. **Research.** Start it per `research.md`, beside the judges. With a Sources table, research only the stack parts its § Re-check calls due; with none, every part.
 3. **Files.** From the repo root, the files in scope are `git ls-files` minus what the run leaves out, and minus the rule files step 1 found. Tests stay in: they are code. Every file in scope has places, since any line can break a rule or show how the code does a job.
 4. **Packages.** Every dependency the repo's manifests name, with its version: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `Gemfile`, and the like. way-judge's brief holds this list.
@@ -42,6 +42,7 @@ One report kind: id `standards`, title `Standard`. Before you group the judges' 
 - **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way. In a folder scan, the reason says the count covers that folder only.
 - **Two ways**: each job of `checks.md` § Two ways. One row per job. Its places are the way-judges' places for every way; its reason names each way with its count, as `date-fns 40, moment 12, own code 3 (src/utils/date.ts)`, and in a folder scan says the counts cover that folder only. Advice `fix`, naming the winner of `checks.md` § Two ways and why, as `use date-fns: 40 of 55 places, and the repo installs it`. `choice` is true: the user picks the one way, and every other way becomes its Old way.
 - **Old API use**: each API of `checks.md` § Old API use. One row per API. Its places are the lines that use it; its reason names the source that marks it old, the version, and what replaces it, as `componentWillMount: old since React 16.3 (react-docs), use componentDidMount`. Advice `fix`: a ticket moves the uses to the replacement, a `chore` when it is a sweep. `choice` is false.
+- **Folders that break most**: each folder of `checks.md` § Folders that break most. One row per folder. Each place is one commit: `at` is `<folder> <short SHA>`, `text` its subject, `new` when the commit is after the span start. The reason gives the count and the span, as `9 fix or revert commits in the last 6 months, about 30 commits a week`. Advice `fix`: one rule for the folder from what its commits fixed, as "`billing/`: each change is checked against the invoice tests.", its source the repo's own history. `choice` is true: the user keeps, changes, or drops the rule.
 
 A stack part the user names as planned during the talk is researched per `research.md` before its area's rows get an answer.
 
@@ -58,7 +59,7 @@ A stack part the user names as planned during the talk is researched per `resear
   - `CLAUDE.md` and `AGENTS.md`, where they exist and lack it, get one line: `Read CODING_STANDARDS.md before you write or review code.`
   - `.editorconfig` is written or updated to match the Formatting rules;
   - the Sources table, per `standard.md` § Sources table: a row for every source a rule of this run cites and every source the research read, with its version and today's date. A stack part not researched keeps its rows, so the next run checks it again.
-- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above. A Two ways row's rule is a One way for each job line, `<job>: <way picked>. Old way: <every other way> (#<n>).`, as `Dates: date-fns. Old way: moment (#61).`, `<n>` the ticket filed above. An Outdated `Old way:` mark loses its `Old way:` part, and the line keeps the job and its way.
+- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above. A Two ways row's rule is a One way for each job line, `<job>: <way picked>. Old way: <every other way> (#<n>).`, as `Dates: date-fns. Old way: moment (#61).`, `<n>` the ticket filed above. An Outdated `Old way:` mark loses its `Old way:` part, and the line keeps the job and its way. A Folders that break most rule goes in By folder.
 
 ## Examples
 

@@ -121,6 +121,32 @@ a stack part the research skipped as not due (`research.md`
 Done when every `old` line is searched, and each case not checked is
 named with why.
 
+## Folders that break most
+
+Pick the span from the pace of the repo, as the run picks its span:
+`git log --since=<date> --oneline | wc -l` shows the pace. Take a span
+that holds enough fix commits to rank folders, with no fixed number,
+and hold it as a phrase, as `the last 6 months, about 30 commits a
+week`. Then list each fix or revert commit once per folder it touches,
+where a folder is the first two parts of a path and `.` holds the files
+at the root, and hold the lines:
+
+```bash
+git log --since=<date> --no-merges -i -E --grep='^(fix|revert)' --format='@%h %ad %s' --date=short --name-only -- <scope> | awk '/^@/{c=substr($0,2);next} NF{n=split($0,p,"/"); f=(n>2?p[1]"/"p[2]:(n==2?p[1]:".")); if(!seen[c"\t"f]++) print f"\t"c}'
+```
+
+Each line is `<folder>` and a tab, then `<short SHA> <date> <subject>`.
+`<scope>` is `.`, or the folder the user named. Count per folder with
+`cut -f1 | sort | uniq -c | sort -rn | head -5`. Each folder whose count
+stands clear of the rest is a row, five at most, unless the Standard's
+By folder area already has a rule for it. No line, or no count that
+stands out: no row. A row's places are that folder's lines, so the
+count and the places agree; read their subjects to name what breaks
+there.
+
+Done when the span phrase is held and each folder is a row or left out
+with why.
+
 ## Secrets
 
 Configs and `.env` files carry secrets. Redact before they enter the chat
