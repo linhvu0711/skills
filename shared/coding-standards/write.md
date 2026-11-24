@@ -42,15 +42,16 @@ itself (a `CONTEXT.md` term, an ADR); those are the grill's. Stop.
 Files in the working tree, nothing else:
 
 - `CODING_STANDARDS.md` at the root, in the shape of `standard.md`
-  § Shape. Every settled rule is in it. Rules folded in from other
-  files are removed from those files.
+  § Shape. Each settled rule is added by `standard.md` § Add one rule.
+  Rules folded in from other files are removed from those files.
 - `docs/standards/<topic>.md` for a topic past about 40 rules, per
   `standard.md` § Shape.
 - `docs/standards/sources.md`, the Sources table, per `standard.md`
   § Sources table.
 - `.editorconfig`, written or updated to match.
-- Configs of the tools the project already has, so each rule a tool can
-  check is checked. New tools and CI changes become issues in Hand off.
+- Configs of the tools the project already has: each lint setting
+  `standard.md` § Lint settings allows. New tools and CI changes become
+  issues in Hand off.
 - `CLAUDE.md` and `AGENTS.md`, where they exist: add one line, "Read
   `CODING_STANDARDS.md` before you write or review code." The rest of
   each file stays, except the rules the grill folded in.
@@ -61,8 +62,9 @@ grill, per `standard.md` § Sources table.
 
 Done when every settled rule is in `CODING_STANDARDS.md` or one topic
 file exactly once, every rule from a source names a row of the Sources
-table, every tool-checkable rule is in a config, and `git status` lists
-only the files above and any the grill wrote itself.
+table, every lint setting `standard.md` § Lint settings allows is in a
+config and each one it holds back is named under Hand off, and
+`git status` lists only the files above and any the grill wrote itself.
 
 ## Hand off
 
@@ -71,7 +73,8 @@ In chat:
 - Files changed, one line each, the grill's among them.
 - Drift kept as code problems: one line per rule with count and the
   issue you recommend for it (`fix` ticket, or a `chore` when it is a
-  sweep). Name `/to-issue` for one, `/capture` for a seed.
+  sweep), and the lint setting that issue turns on, per `standard.md`
+  § Lint settings. Name `/to-issue` for one, `/capture` for a seed.
 - New tools or CI the rules need: one recommended issue each.
 - Agent-ready sources the research found: one line each, "you can
   install <name> as an extra: <URL>".

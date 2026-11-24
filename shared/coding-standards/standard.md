@@ -95,3 +95,47 @@ table to know which stack parts are due.
 Each source gets a new row, or the version and date of its row already
 there. A row that no rule cites any more and no stack part in use or
 planned needs goes.
+
+## Add one rule
+
+Every rule enters the Standard by these steps, whichever skill adds it.
+
+0. **Shape.** The Standard is in an older shape: bring it up to date
+   per § Older shape.
+1. **Look first.** Search `CODING_STANDARDS.md` and its topic files for
+   a rule that already says the lesson, or part of it. One found:
+   change that rule, and add no second one.
+2. **Sort the lesson.** A lesson about one place is a fix (a ticket)
+   or an ADR, and stays out of the Standard. A lesson about all later
+   code is one line in the Standard, or a lint setting when a tool can
+   check it, per § Lint settings.
+3. **The bar.** A line gets in only when an agent can follow it while
+   it writes code, and a reviewer can check it on a diff.
+4. **Source.** The rule names its source, as this skills repo's ADR
+   0003 decided: a source read on this run, written `(name)` with its
+   row in the Sources table; the repo's own code; or the user. The
+   model's memory is never a source.
+5. **Area.** A job and the one thing to use goes in One way for each
+   job. A rule for one folder goes in By folder, and a rule about a
+   whole change in Each change. Any other rule goes in its area from
+   § Shape.
+
+Done when the lesson is one line in its area, a changed line, a lint
+setting, or a ticket or ADR, and the Standard holds no two rules that
+say it.
+
+### Lint settings
+
+A lint setting is written only when no code breaks it today, or when
+the tool can limit it to new code, as a baseline file of today's
+breaks does. In every other case, the setting is named in the ticket
+that fixes the code, and that ticket turns it on. An `Old way` gets a
+tool ban for new code, such as a banned import, when the repo's lint
+tool can do it.
+
+### Never in the Standard
+
+- A list of problems: those are tickets.
+- A long reason: that is an ADR, and the rule links to it.
+- Install steps.
+- A line nobody can check.
