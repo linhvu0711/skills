@@ -269,8 +269,9 @@ block above, and the Done rule holds whole.
 
 - **Slices.** Each step that changes code is one slice, in step order.
   Its `file:line` is the `Change`; the pattern the step names to copy
-  stays in `Change`. A step that only adds or edits a test case is not a
-  slice; it is a test in the slice whose change it proves. Dead code the
+  stays in `Change` when it follows the Standard. A step that only adds
+  or edits a test case is not a slice; it is a test in the slice whose
+  change it proves. Dead code the
   round found goes first, in a delete slice per § Slices; the Steps'
   slices follow it, and no step is re-planned.
 - **Tests.** The last step names the test file, the case, and the
@@ -312,9 +313,9 @@ block above, and the Done rule holds whole.
   issue.
   Nothing else is decided here; the Steps decided it. A Step whose
   new module fails the deletion test, whose new swap seam has one
-  adapter, or that breaks Right design first, Shape first, Rerun and
-  crash, or One writer,
-  is a choice the issue got wrong, and ends the short path as
+  adapter, that breaks Right design first, Shape first, Rerun and
+  crash, or One writer, or that copies a way the Standard marks
+  `Old way:`, is a choice the issue got wrong, and ends the short path as
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim, then one line
   for each list or save case that does not apply, per § Slices.

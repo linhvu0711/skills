@@ -61,7 +61,7 @@ Say go, or name a ref (S2, W1, D3, #4) and what to change.
 
 A `perf` ticket's plan gets a Perf block (Metric, Command, Before, and a Pass rule with its run count) from the issue's Baseline and Target, read by the shared benchmark checklist.
 
-A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. It still looks for dead code, and a delete slice goes before the Steps. It also reads the data the Steps touch, and a Step that breaks the data shape, rerun, or one-writer rules sends the ticket down the full path. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path. A Step that patches a part whose design does not fit also sends it down the full path.
+A `ready-to-build` ticket takes a short path: its Steps are trusted and only the gaps are read. It still looks for dead code, and a delete slice goes before the Steps. It also reads the data the Steps touch, and a Step that breaks the data shape, rerun, or one-writer rules sends the ticket down the full path. A Step that adds a module or a seam still meets the rules above; one that fails them sends the ticket down the full path. A Step that patches a part whose design does not fit also sends it down the full path. So does a Step that copies a way the repo's Standard marks `Old way:`, as when the ticket was written before the Standard changed.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
