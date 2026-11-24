@@ -15,7 +15,7 @@ Read `../../shared/grilling.md`, `references/domain-modeling.md`, and `../../sha
 
 A **seed** is what another skill hands you when it invokes you: a source (an audit, a report, a card, a diagnosis) and its open decisions, named. A seed can also be a GitHub issue the user points at, most often one the capture skill filed (`/grill #12`, "grill me on issue 12"): read it with `gh issue view <n>`, and its number is the seed number for § Close out. The seed is round 0: build the first frontier from its open decisions, and fan out only for facts it does not carry.
 
-A caller writes one block and nothing more: `Read ../grill/SKILL.md and follow it. Seed: <the source>. Open decisions: <the list>. [Close out: caller.|Close out: text.] Then continue at step N.` A caller whose own work is docs, written after the grill, adds `Close out: caller.`, so its files and the grill's go in one PR. A caller that files or records the work itself adds `Close out: text.`, so it gets the doc text back and puts it there. § Close out says what changes. How the interview runs, how it ends, and what it writes are this skill's, not the caller's.
+A caller writes one block and nothing more: `Read ../grill/SKILL.md and follow it. Seed: <the source>. Open decisions: <the list>. [Close out: text.] Then continue at step N.` A caller that files or records the work itself adds `Close out: text.`, so it gets the doc text back and puts it there. § Close out says what changes. How the interview runs, how it ends, and what it writes are this skill's, not the caller's.
 
 During a seeded grill, the glossary entries and the ADRs are yours to settle. New terms join the list. A rejected option with a load-bearing reason becomes an ADR in the list, so a later run of the caller does not suggest it again.
 
@@ -64,8 +64,6 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
      - Issue line: `Closes #<seed>` for a seed issue. A grill that started from an idea in chat has no issue, so no line.
      - Summary: the settled decisions list.
   3. Print the PR link. Never merge: the merge waits for the user's explicit go-ahead.
-
-**`Close out: caller.`** Write the docs, list the files under the settled decisions, one per line, and hand back. They stay uncommitted on the branch the run started on, and the caller ships them with its own files.
 
 **`Close out: text.`** Write nothing. Under the settled decisions, list each doc entry: the file, the full text in a fenced block, and `already true` or `with code`. Hand back. The caller puts the entries in the issue it files, or on its map.
 

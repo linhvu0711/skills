@@ -1,4 +1,3 @@
-<!-- set-review-rules:general:start -->
 # Review rules
 
 Every pull request in this repo is reviewed on three axes: **Logic**,
@@ -151,4 +150,3 @@ always wins over it:
 
 Done when every hunk has been read against the rules and each finding
 cites a rule or names a smell.
-<!-- set-review-rules:general:end -->

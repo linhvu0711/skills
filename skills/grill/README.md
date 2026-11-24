@@ -21,7 +21,7 @@ https://github.com/acme/shop/issues/12 · size/M · feat
 
 When no code follows ("we will not build X", or a word for code that exists), the docs are true now, so you get one docs PR, opened by [make-pr](../make-pr/). It never merges the PR.
 
-When another skill calls it and writes its own docs afterwards (set-review-rules), the grill writes its files and opens no PR, so one PR holds all of them. When the caller files the work itself ([triage](../triage/), [audit-coding-standards](../audit-coding-standards/)) or keeps a map ([discover-path](../discover-path/)), the grill writes nothing and hands back the doc text.
+When the caller files the work itself ([triage](../triage/), [audit-coding-standards](../audit-coding-standards/)) or keeps a map ([discover-path](../discover-path/)), the grill writes nothing and hands back the doc text.
 
 Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
 
@@ -43,7 +43,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Calls [unslop](../unslop/), then [to-issue](../to-issue/) or [to-epic](../to-epic/), or [make-pr](../make-pr/) when no work follows.
 - Suggests [create-prototype](../create-prototype/) before it files work that changes a screen.
 - Sends a bug to [triage](../triage/) first, and work too big for one session to [discover-path](../discover-path/).
-- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), [audit-coding-standards](../audit-coding-standards/), and [set-review-rules](../set-review-rules/).
+- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), and [audit-coding-standards](../audit-coding-standards/).
 - Named as the next step when a gate fails in [to-issue](../to-issue/), [to-epic](../to-epic/), [plan-up](../plan-up/), and [create-prototype](../create-prototype/).
 
 ## Credits
