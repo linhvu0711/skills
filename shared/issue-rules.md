@@ -398,7 +398,9 @@ covered". Those are not outcomes.
 When the chat did not settle a state, in this order:
 
 1. **The repo has a pattern.** Most apps already show errors, empty lists,
-   and spinners one way. The lookup round finds it. Copy it and name the
+   and spinners one way. The lookup round finds it. The Standard's rule
+   for the state comes first; the code's way is the pattern only where
+   the Standard has none. Copy it and name the
    file: "Error shows the toast from `ErrorToast.tsx:12`". No question.
 2. **No pattern, and the choice does not change the work.** Empty-state
    text, a spinner's place. Pick a sane default, write it as the line, and
@@ -450,7 +452,9 @@ Steps rules under Task body.
 - Each step names one file and line, one concrete change, and, when it is not
   obvious, how to see it worked.
 - At least one step points at an existing pattern to copy: "like
-  `statsController.js:40`". Never describe a shape the code already shows.
+  `statsController.js:40`", a line that follows the Standard's way for
+  the job when it names one, per § Lookup. Never describe a shape the
+  code already shows.
 - The last step is the test: the file, the case name, the command that runs
   it.
 - Concrete words only. Name the route, the field, the label text, the enum
@@ -487,11 +491,14 @@ with the brief inline. Ask for exactly the missing
 facts: the seam, the files, the tests that cover them, and the file count
 per package whenever the work may touch more than one (a wide refactor, a
 `feat` that spans server and web). For `feat` and `fix`, also ask
-how the repo already shows errors, empty states, loading, and bad input near
-this place, with file and line, so the unhappy-path lines can copy it. When
-the ticket looks XS or S, add to the brief: the exact lines that change, the
-nearest existing pattern to copy, and the test file and command that cover
-the place. Steps are written from those, and only from those. For a `task`,
+what the repo's Standard, `CODING_STANDARDS.md` and the `docs/standards/`
+files it links to, says for errors, empty states, loading, and bad input,
+and how the repo already shows them near this place, with file and line,
+so the unhappy-path lines can copy it. When the ticket looks XS or S, add
+to the brief: the exact lines that change, the pattern to copy (the way
+the Standard names for the job when it names one, else the nearest
+existing pattern, with any way the Standard marks `Old way:` named as
+such), and the test file and command that cover the place. Steps are written from those, and only from those. For a `task`,
 the round is one reader whose brief asks for the web, against the platform's own
 docs: the page for each step, the fields and values, the review or approval
 wait, and the check that proves the result works. The round is done when

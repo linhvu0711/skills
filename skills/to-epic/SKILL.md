@@ -23,7 +23,8 @@ sub-issue obeys it. This file adds the cutting rules and the epic flow.
    Decisions so far and its `## Docs to write`. What the chat lacks, fetch
    in the one lookup round. For every
    ticket that looks XS or S, the same round also fetches its lines, the
-   pattern to copy, and the test, so its Steps can be written. Also list
+   pattern to copy (the Standard's way first, per the rules file
+   § Lookup), and the test, so its Steps can be written. Also list
    every thing outside the repo a ticket needs before it can land (an
    account, an app, a key, a bucket, DNS, billing) and every thing a person
    must do after it lands (set the variables, cut over, log in as the user
