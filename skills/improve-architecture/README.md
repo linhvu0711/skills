@@ -17,7 +17,7 @@ Each candidate is a card. A card shows the advice (fix, or keep and mark), the c
 - Hard to test: no test reaches the part through its interface.
 - Heavier than its job: a queue, a layer, or a seam built for one caller.
 
-The parts of the code that changed most in the last 200 commits come first, and cards with new lines sit under Still spreading at the top. A card that needs your choice stands out, and buttons filter the cards by advice. A card an open ticket already covers shows as Known and gets no question.
+The parts of the code that changed most in the repo's last 200 commits come first, and cards with new lines sit under Still spreading at the top. A card that needs your choice stands out, and buttons filter the cards by advice. A card an open ticket already covers shows as Known and gets no question.
 
 Then it asks only about the cards that need you, one question at a time, through [grill](../grill/). For a deepening it asks what the new module must hold, which dependencies sit behind its seam, its shape, and which tests stay. Ask to see other interfaces and three or more agents each design one under a different constraint, scored on points named before the designs come back. Then it prints one change list in chat: the tickets, the new rules, and the ADRs. Say `go`, or name a line to change.
 

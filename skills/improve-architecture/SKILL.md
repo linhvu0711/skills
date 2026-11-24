@@ -57,10 +57,10 @@ A module that only passes calls on is this skill's: a Too thin candidate.
 
 ## Search
 
-One search serves every kind. From the repo root, list the files in scope with `git ls-files`, minus what the run leaves out and minus prose, such as `.md` and `.txt`: code, scripts, and config. Count each file's changes over the last 200 commits:
+One search serves every kind. From the repo root, list the files in scope with `git ls-files`, minus what the run leaves out and minus prose, such as `.md` and `.txt`: code, scripts, and config. Count each file's changes over the repo's last 200 commits, then keep the counts of the files in scope. A path after `git log` would count a quiet folder's last 200 commits instead, reaching back months:
 
 ```bash
-git log -200 --name-only --format= -- <scope> | sort | uniq -c
+git log -200 --name-only --format= | sort | uniq -c
 ```
 
 ## Helper
