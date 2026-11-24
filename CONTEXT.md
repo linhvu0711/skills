@@ -25,7 +25,7 @@ The model a subagent runs on when none of its home models can run, and every tim
 _Avoid_: fallback
 
 **Checker**:
-A subagent that judges work the main agent's model family made: the logic reviewer, the plan-correctness checker, and the plan-design checker.
+A subagent that judges work the main agent's model family made: the logic reviewer, the plan-correctness checker, the plan-design checker, and the gap checker.
 
 **Explorer**:
 The read-only subagent that fetches facts for a skill. The repo ships it, with the same name in every harness.
@@ -47,8 +47,12 @@ The title and body that every pull request opened by these skills follows. It is
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
 **Close-out**:
-The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead, or take the written files into its own PR.
+The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write; when that code changes a screen, it first suggests a prototype and waits for go. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead, or take the written files into its own PR.
 _Avoid_: wrap-up, finish
+
+**Gap check**:
+A second model's read of the decisions a grill settled, once, before the grill files an epic. It reports missing pieces and decisions that rest on a fact the code contradicts, and each one the chat has not answered becomes a question to the user.
+_Avoid_: second opinion, grill review
 
 **Docs to write**:
 The section of an issue that holds doc text agreed on but not true yet: a glossary entry, an ADR, a README line, each with its file and full text. The PR whose code makes it true writes it. Until then other skills read it as decided, not built.
