@@ -66,11 +66,14 @@ in `CODING_STANDARDS.md` with one line: "Rules are in
 
 ### Older shape
 
-A Standard with no intro lines, a `Layout` heading, or a `## Sources`
-table at its end is in an older shape. § Sources table and § Add one
-rule each bring it up to date first: add the three lines, name
-`Layout` `Structure`, and move the table per § Sources table. Every
-rule stays in its area.
+A Standard with no intro lines, a `Layout` heading, a `## Sources`
+table at its end, or a line tagged with a tool alone, as `[eslint]`,
+is in an older shape. § Sources table and § Add one rule each bring it
+up to date first: add the three lines, name `Layout` `Structure`, and
+move the table per § Sources table. A line tagged with a tool alone
+goes when that tool's config has its check on, since the config then
+holds the rule; with the check off, the line stays and loses its tag.
+Every other rule stays in its area.
 
 ## Sources table
 
