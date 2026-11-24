@@ -144,7 +144,8 @@ there. It asks nothing, files nothing, and writes nothing.
    `choice` false gets no question: its advice is its answer. Rows that
    one answer settles, such as three `TODO` comments that wait on the
    same fix, are one decision. A big row, or a row alone, is one
-   decision.
+   decision. No decision is open: skip the grill and go to § Change
+   list.
 2. **Grill.** Hand the decisions over as a seed, in the caller's block
    that `../../skills/grill/SKILL.md` § Seed names:
 
