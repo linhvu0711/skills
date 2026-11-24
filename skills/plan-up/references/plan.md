@@ -314,8 +314,9 @@ block above, and the Done rule holds whole.
   Nothing else is decided here; the Steps decided it. A Step whose
   new module fails the deletion test, whose new swap seam has one
   adapter, that breaks Right design first, Shape first, Rerun and
-  crash, or One writer, or that copies a way the Standard marks
-  `Old way:`, is a choice the issue got wrong, and ends the short path as
+  crash, or One writer, or whose pattern to copy breaks a rule of the
+  Standard, a way it marks `Old way:` included, is a choice the issue
+  got wrong, and ends the short path as
   a choice does, below.
 - **Out of scope.** The issue's Scope `Out`, verbatim, then one line
   for each list or save case that does not apply, per § Slices.
