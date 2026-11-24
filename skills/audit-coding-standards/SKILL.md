@@ -52,7 +52,7 @@ A stack part the user names as planned during the talk is researched per `resear
 
 ## Apply
 
-- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row with a use of another way, whose ticket moves those uses to the way picked, or an Old API use row: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
+- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row with a use of another way, in the repo, not only the scope, whose ticket moves those uses to the way picked, or an Old API use row: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
 - **Edits.** After the run filed the tickets:
   - a scattered rule moved in leaves its old file, and so does one whose clash the user settled for the other rule; the rest of that file stays;
   - an Old or wrong rule answered drop loses its line;
@@ -60,7 +60,7 @@ A stack part the user names as planned during the talk is researched per `resear
   - `CLAUDE.md` and `AGENTS.md`, where they exist and lack it, get one line: `Read CODING_STANDARDS.md before you write or review code.`
   - `.editorconfig` is written or updated to match the Formatting rules;
   - the Sources table, per `standard.md` § Sources table: a row for every source a rule of this run cites and every source the research read, with its version and today's date. A stack part not researched keeps its rows, so the next run checks it again.
-- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above. A Two ways row's rule is a One way for each job line, `<job>: <way picked>. Old way: <every other way with a use> (#<n>).`, as `Dates: date-fns. Old way: moment (#61).`, `<n>` the ticket filed above. A way with no use, as `lodash.debounce 0` when the user keeps the own code, gets no `Old way:` mark, so a row with no use of another way files no ticket and writes `<job>: <way picked>.` An Outdated `Old way:` mark loses its `Old way:` part, and the line keeps the job and its way. A Folders that break most rule goes in By folder.
+- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above. A Two ways row's rule is a One way for each job line, `<job>: <way picked>. Old way: <every other way with a use> (#<n>).`, as `Dates: date-fns. Old way: moment (#61).`, `<n>` the ticket filed above. A way with no use, as `lodash.debounce 0` when the user keeps the own code, gets no `Old way:` mark; on a folder scan, `rg` the whole repo for such a way first, and a use outside the folder counts, so a row with no use of another way files no ticket and writes `<job>: <way picked>.` An Outdated `Old way:` mark loses its `Old way:` part, and the line keeps the job and its way. A Folders that break most rule goes in By folder.
 
 ## Examples
 
