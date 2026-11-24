@@ -78,6 +78,21 @@
   .place code { font-family: var(--mono); font-size: 12.5px; background: var(--neutral-soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; margin-right: 6px; }
   .place .how { color: var(--muted); }
   .place .mark { color: var(--accent); font-weight: 600; font-size: 12px; margin-left: 6px; }
+  .tag.strong { background: var(--ok-soft); color: var(--ok); }
+  .tag.worth { background: var(--warn-soft); color: var(--warn); }
+  .tag.spec { background: var(--neutral-soft); color: var(--muted); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid transparent; border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; margin: 0 0 16px; }
+  .card.choice { border-left-color: var(--accent); background: var(--soft); }
+  .card h3 { display: inline; font-size: 16px; margin: 0 0 0 8px; }
+  .card p { margin: 8px 0; }
+  .card .solution { color: var(--muted); }
+  .diagrams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .diagrams figure { margin: 0; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; overflow-x: auto; background: var(--bg); }
+  .diagrams figcaption { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; margin: 0 0 6px; }
+  .diagrams pre { margin: 0; }
+  .card ul.wins { margin: 8px 0; padding-left: 20px; }
+  .adr { background: var(--warn-soft); border-radius: var(--radius); padding: 6px 10px; }
+  @media (max-width: 720px) { .diagrams { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -113,22 +128,33 @@ const DATA = {};
   const app = document.getElementById('app');
   let filter = 'all';
 
-  const rowLines = (r) => {
+  const adviceSpan = (r) => el('span', { class: 'advice ' + r.advice }, ADVICE[r.advice]);
+  const rowTags = (r) => {
     const tags = [];
     if (r.choice) tags.push(el('span', { class: 'tag choice' }, 'Your choice'));
     if (r.state === 'known') tags.push(el('span', { class: 'tag known' }, 'Known ' + r.ticket));
     if (r.state === 'came-back') tags.push(el('span', { class: 'tag back' }, 'Came back ' + r.ticket));
+    return tags;
+  };
+  const placeLine = (p) => el('div', { class: 'place' },
+    el('code', {}, p.at), el('code', {}, p.text),
+    el('span', { class: 'how' }, p.label + ': ' + p.proof),
+    p.new ? el('span', { class: 'mark' }, 'new') : null);
+  const section = (title, list, drawItems) => {
+    const shown = list.filter(FILTERS.find((f) => f[0] === filter)[2]);
+    if (!shown.length) return null;
+    return el('section', {}, el('h2', {}, title), drawItems(shown));
+  };
+
+  const rowLines = (r) => {
     const head = el('tr', { class: 'row' + (r.choice ? ' choice' : ''), 'data-id': r.id,
       tabindex: '0', 'aria-expanded': 'false' },
-      el('td', {}, el('span', { class: 'advice ' + r.advice }, ADVICE[r.advice])),
-      el('td', {}, el('span', { class: 'name' }, r.name), tags),
+      el('td', {}, adviceSpan(r)),
+      el('td', {}, el('span', { class: 'name' }, r.name), rowTags(r)),
       el('td', {}, r.reason),
       el('td', { class: 'num' }, r.count));
     const places = el('tr', { class: 'places', hidden: '' },
-      el('td', { colspan: '4' }, r.places.map((p) => el('div', { class: 'place' },
-        el('code', {}, p.at), el('code', {}, p.text),
-        el('span', { class: 'how' }, p.label + ': ' + p.proof),
-        p.new ? el('span', { class: 'mark' }, 'new') : null))));
+      el('td', { colspan: '4' }, r.places.map(placeLine)));
     const toggle = () => {
       places.hidden = !places.hidden;
       head.classList.toggle('open', !places.hidden);
@@ -141,14 +167,46 @@ const DATA = {};
     return [head, places];
   };
 
-  const table = (title, list) => {
-    const shown = list.filter(FILTERS.find((f) => f[0] === filter)[2]);
-    if (!shown.length) return null;
-    return el('section', {}, el('h2', {}, title),
-      el('div', { class: 'tablewrap' }, el('table', {},
-        el('thead', {}, el('tr', {}, el('th', {}, 'Advice'), el('th', {}, 'Name'), el('th', {}, 'Reason'), el('th', {}, 'Places'))),
-        el('tbody', {}, shown.map(rowLines)))));
+  const table = (title, list) => section(title, list, (shown) =>
+    el('div', { class: 'tablewrap' }, el('table', {},
+      el('thead', {}, el('tr', {}, el('th', {}, 'Advice'), el('th', {}, 'Name'), el('th', {}, 'Reason'), el('th', {}, 'Places'))),
+      el('tbody', {}, shown.map(rowLines)))));
+
+  const BADGE = { Strong: 'strong', 'Worth exploring': 'worth', Speculative: 'spec' };
+  const kindTitle = (id) => ((DATA.kinds || []).find((k) => k.id === id) || {}).title || id;
+  const diagram = (caption, source) => {
+    const pre = el('pre', { class: 'mermaid' });
+    pre.textContent = source;
+    return el('figure', {}, el('figcaption', {}, caption), pre);
   };
+  const cardOf = (r) => {
+    const c = r.card;
+    return el('article', { class: 'card' + (r.choice ? ' choice' : ''), 'data-id': r.id },
+      el('div', {}, adviceSpan(r), el('h3', {}, r.name), rowTags(r),
+        el('span', { class: 'tag ' + BADGE[c.badge] }, c.badge),
+        c.tag ? el('span', { class: 'tag' }, c.tag) : null,
+        el('span', { class: 'tag' }, kindTitle(r.kind))),
+      el('p', {}, r.reason),
+      c.solution ? el('p', { class: 'solution' }, c.solution) : null,
+      el('div', { class: 'diagrams' }, diagram('Before', c.before), diagram('After', c.after)),
+      (c.wins || []).length ? el('ul', { class: 'wins' }, c.wins.map((w) => el('li', {}, w))) : null,
+      c.adr ? el('p', { class: 'adr' }, c.adr) : null,
+      el('div', {}, r.places.map(placeLine)));
+  };
+  const cards = (title, list) => section(title, list, (shown) => el('div', {}, shown.map(cardOf)));
+
+  let mermaid = null;
+  const paint = () => {
+    if (mermaid) mermaid.run({ nodes: app.querySelectorAll('pre.mermaid:not([data-processed])') });
+  };
+  if (DATA.view === 'cards') {
+    import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then((m) => {
+      mermaid = m.default;
+      const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default' });
+      paint();
+    });
+  }
 
   const draw = () => {
     app.innerHTML = '';
@@ -167,9 +225,17 @@ const DATA = {};
       return el('button', { class: 'ft-f', 'aria-pressed': String(filter === key), disabled: n ? null : '',
         onclick: () => { filter = key; draw(); } }, el('b', {}, n), word);
     })));
-    const sections = [table('Still spreading', rows.filter((r) => r.spreading))];
-    for (const kind of DATA.kinds || []) sections.push(table(kind.title, rows.filter((r) => !r.spreading && r.kind === kind.id)));
+    const spreading = rows.filter((r) => r.spreading);
+    const rest = rows.filter((r) => !r.spreading);
+    const sections = [];
+    if (DATA.view === 'cards') {
+      sections.push(cards('Still spreading', spreading), cards('Candidates', rest));
+    } else {
+      sections.push(table('Still spreading', spreading));
+      for (const kind of DATA.kinds || []) sections.push(table(kind.title, rest.filter((r) => r.kind === kind.id)));
+    }
     app.append(...sections.filter(Boolean));
+    paint();
   };
   draw();
 })();
