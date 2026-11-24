@@ -83,7 +83,9 @@ check.
 
 Does the change fit how this repo writes code?
 
-The rules are in `CODING_STANDARDS.md`. Cite the rule for each finding.
+The repo's rules for this axis are under `## Repo rules` below, from
+the Standard and the ADRs about the change. Cite the rule for each
+finding.
 Skip anything a linter or formatter already enforces.
 
 When `CODING_STANDARDS.md` is missing, the code next to the diff is the

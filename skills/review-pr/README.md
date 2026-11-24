@@ -1,6 +1,6 @@
 # review-pr
 
-Reviews a pull request on three separate checks (logic, scope, standards), one subagent each, with your repo's own review rules folded in.
+Reviews a pull request on three separate checks (logic, scope, standards), one subagent each, with your repo's Standard and its decisions folded in.
 
 ## Use it when
 
@@ -8,7 +8,7 @@ You want a review before you merge. `/review-pr 42` reviews PR 42; `/review-pr` 
 
 ## What you get
 
-A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a severity (🔴 blocker, 🟠 should, 🔵 nit), a `path:line`, the rule it breaks, and a one-line fix. Scope is judged against the linked issue and its epic. It never posts to GitHub; the last line gives you the command to do it yourself:
+A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a severity (🔴 blocker, 🟠 should, 🔵 nit), a `path:line`, the rule it breaks, and a one-line fix. The rules come from your Standard, `CODING_STANDARDS.md` and the `docs/standards/` files it links to, each sent to the check it belongs to. The ADRs in `docs/adr/` that are in force and about the changed files go along too, so a change that goes against a decision is a finding. A deprecated or superseded ADR is left out. Scope is judged against the linked issue and its epic. It never posts to GitHub; the last line gives you the command to do it yourself:
 
 ```
 Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md
@@ -21,12 +21,12 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in.
-- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents on the home models its file names for your harness, tried in order, or on its backup, and explorers for the rule search. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent files into Claude Code, Codex, and Antigravity.
-- The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/review/rule-sources.md`.
+- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents on the home models its file names for your harness, tried in order, or on its backup, and explorers that read the Standard and the ADRs. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent files into Claude Code, Codex, and Antigravity.
+- The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/coding-standards/standard.md`, which says which lines of the Standard are rules.
 
 ## Fits with
 
-- Reads the `REVIEW.md` that [set-review-rules](../set-review-rules/) writes. With no rules in the repo, the report suggests running it.
+- Reads the Standard that [audit-coding-standards](../audit-coding-standards/) writes. With no Standard, the report suggests running it.
 - Nothing calls this skill; you run it.
 
 ## Credits

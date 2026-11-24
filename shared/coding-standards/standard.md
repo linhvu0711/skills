@@ -77,6 +77,20 @@ of those files, as an override for `src/` alone, or a check that is
 off: the line stays and loses its tag.
 Every other rule stays in its area.
 
+## Reading the Standard
+
+A skill that checks code against the Standard reads its rules this
+way, so every reader takes the same lines.
+
+- Read `CODING_STANDARDS.md` and each `docs/standards/<topic>.md`
+  that a "Rules are in" line points to. A file of tables, such as
+  `docs/standards/sources.md`, holds no rule.
+- A rule is one line in an area, with its sentence of why under it
+  when it has one. A heading, a table row, the three intro lines, a
+  "Rules are in" line, and a line under `Not covered` are not rules.
+- Keep each rule with its file and line, as `CODING_STANDARDS.md:14`,
+  so a finding can cite it.
+
 ## Sources table
 
 `docs/standards/sources.md` holds the one Sources table, for all rules
