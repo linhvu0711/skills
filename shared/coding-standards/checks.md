@@ -60,19 +60,8 @@ examples, or `no pattern`.
 The checklist for gaps and proposals. Each area gets one rule, or an
 on-purpose "left out".
 
-| Area | What a rule here settles |
-|---|---|
-| Names | Case per kind: files, types, functions, constants, DB columns, env vars |
-| Layout | Folder tree, where a new module goes, what a module may import |
-| Errors | Throw or return, custom error types, what gets caught where |
-| Logging | Library, levels, structured fields, what is never logged |
-| Tests | Framework, file placement, naming, what must have a test |
-| Commits | Message format, branch names, PR size |
-| Deps | How one is added, pinning, lockfile policy |
-| Config and secrets | Env var loading, what lives in a `.env`, what never enters git |
-| API shape | Route naming, response envelope, versioning, pagination |
-| Formatting | Indent, line length, quotes, trailing commas: the formatter's job |
-| Stack-specific | Type strictness, async style, ORM usage, component patterns, and the like |
+The areas are those of `standard.md` § Shape from `Names` to
+`Stack-specific`, with what a rule in each settles.
 
 ## Check the rules
 
@@ -83,14 +72,21 @@ Four checks, in this order. The caller says which rules they run on.
   use. `git log -1` on the rule's file against the code gives its age:
   a hint where to look, never the verdict.
 - **Drift**: the code breaks a live rule. For each rule a search can
-  check, get a count and three `file:line` examples. Drift is a code
+  check, get a count and three `file:line` examples. A check that is on
+  in a checker config, and a formatter the repo runs, report their own
+  breaks wherever the repo runs them, as in CI: the audit runs no
+  checker or formatter. Drift is a code
   problem by default: the rule stands.
 - **Behind current practice**: a rule, or the code's pattern, that a
   research result contradicts. A rule with no source is not a finding
   by itself; the team may have made it.
 - **Gaps**: an area in `Areas` with no rule, and a stack part in use or
-  planned with no rule. Also scattered rules, which belong in the
-  Standard.
+  planned with no rule. A check that is on in a checker config, or a
+  formatter the repo runs, is a rule of the area it covers, since a
+  rule a tool checks lives only in its config (`standard.md` § Add one
+  rule): `ruff format` in CI fills Formatting, while a `line-length`
+  value with no check or formatter that uses it fills nothing. Also scattered rules, which belong in
+  the Standard.
 
 Done when every rule the caller named has been checked for outdated,
 drift, and behind current practice, every area and stack part for a

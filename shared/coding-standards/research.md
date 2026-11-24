@@ -98,8 +98,9 @@ user can pick the level 2 rule instead.
 
 ## Re-check
 
-`CODING_STANDARDS.md` ends with a Sources table: part, name, link,
-version, date checked. A stack part that was searched and gave no rule
+The Sources table is in `docs/standards/sources.md`, or at the end of
+`CODING_STANDARDS.md` in an older Standard: part, name, link, version,
+date checked. A stack part that was searched and gave no rule
 still has a row, for the main page searched. With the table, research
 only the stack parts that are due:
 

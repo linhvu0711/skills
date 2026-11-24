@@ -74,7 +74,7 @@ proposals from nextjs.org, react.dev, and the TypeScript handbook, one
 per area, each with its link; Vercel's React guide is level 2 and
 agent-ready. Logging is `no source`. Grill: each proposal is a question
 with the sourced rule as the recommended answer; Logging is left out.
-Write `CODING_STANDARDS.md` with the Sources table, `.editorconfig`,
+Write `CODING_STANDARDS.md` and its Sources table in `docs/standards/sources.md`, `.editorconfig`,
 tighten `tsconfig.json` strictness as agreed. No `CLAUDE.md` exists, so
 none is written. Hand-off offers Vercel's guide as an extra install.
 Last line: `Ready for /commit`.
@@ -92,7 +92,7 @@ hold, the code's pattern for Names and Tests, the research for
 Logging, `no source` for API shape. Grill: fold both files in (yes),
 the view rule (keep, enforce), Logging (add: `structlog`, agreed
 fields), secrets (change the code), API shape (left out, no public API).
-Write `CODING_STANDARDS.md` with the Sources table, strip the section
+Write `CODING_STANDARDS.md` and its Sources table in `docs/standards/sources.md`, strip the section
 from `CONTRIBUTING.md`, strip the rules from `CLAUDE.md` and leave the
 pointer line, update `ruff.toml`. Hand off: one `chore` issue for the
 61 function views and one for the secrets change, `Ready for /make-pr`.
