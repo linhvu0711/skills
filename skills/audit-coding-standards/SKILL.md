@@ -1,106 +1,69 @@
 ---
 name: audit-coding-standards
-description: "Check a repo's CODING_STANDARDS.md against its code and current sources (outdated rules, drift, behind current practice, gaps), then grill the user on the findings and write the settled changes. No commit."
+description: "Make or check a repo's CODING_STANDARDS.md: research the stack, read the whole repo and any scattered rules, show a report page of rules that are old or wrong, jobs with no rule, and code that breaks a rule, talk through your choices, and after your go file tickets and write the Standard, with nothing committed."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-You keep the repo's Standard true: `CODING_STANDARDS.md` and the topic
-files it links to. You check it against the code and against what the
-stack's own sources say today, report, grill the user on what you found,
-and write what was settled. The first Standard is
-`set-coding-standards`'s job.
+Agents copy what the code and the rules show them. A rule that names a tool the repo dropped, a job the Standard says nothing about, and code that breaks a rule all teach the next agent the wrong way. This skill finds them, and after the user's go it files tickets and writes the Standard: `CODING_STANDARDS.md` at the root, with the topic files it links to, per `../../shared/coding-standards/standard.md`. A repo with no Standard gets its first one: every check runs against an empty Standard, so every area is a job with no rule.
 
-## Facts
+Read `../../shared/facts.md` first: you are the brain, helpers retrieve, short lookups are yours.
 
-Read `../../shared/facts.md` first: you are the brain,
-Explore agents retrieve, short lookups are yours.
+Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the five steps, and it asks this skill for four things: § Kinds, § Search, § Helper, and § Apply, below. § Search names when to read `../../shared/coding-standards/checks.md` and `../../shared/coding-standards/research.md`.
 
-## Steps
+## Search
 
-1. **Gate.** No `CODING_STANDARDS.md` at the root: say "No Standard
-   yet. Run `/set-coding-standards` to make one." Stop. Done when you
-   hold the Standard's files.
+1. **Rules and size.** Run `checks.md` § Find the rules and § Size the repo, under its § Secrets. No `CODING_STANDARDS.md` at the root: the Standard is empty, and every rule found is scattered. Empty bucket: say what its table says and end the run; nothing is written.
+2. **Research.** Start it per `research.md`, beside the judges. With a Sources table, research only the stack parts its § Re-check calls due; with none, every part.
+3. **Files.** From the repo root, the files in scope are `git ls-files` minus what the run leaves out, and minus the rule files step 1 found. Tests stay in: they are code. Every file in scope has places, since any line can break a rule or show how the code does a job.
 
-2. **Find and size.** Read `../../shared/coding-standards/checks.md`.
-   Run its `Find the rules` and `Size the repo`. Empty bucket: say what
-   the table says, stop.
+## Helper
 
-3. **Research.** Read `../../shared/coding-standards/research.md`
-   and follow it: research only the stack parts that § Re-check calls
-   due from the Sources table. Done when the done line at the end of
-   `research.md` holds.
+`rule-judge`, one per batch. Its brief holds the batch's files, the span start, every rule of the Standard and every scattered rule with its `path:line`, the checker configs that have checks on, the areas of `checks.md` § Areas with what a rule in each settles, and § Kinds of this file, pasted in whole.
 
-4. **Check.** Run `Sample the code`, then all four checks of
-   `Check the rules` on the Standard's rules and the scattered rules.
+## Kinds
 
-5. **Report.** Print the report in `checks.md` § Report shape, the
-   audit lines, with a verdict. `clean` means outdated, drift, behind
-   current practice, gaps, and not researched are all "none"; list the
-   areas checked under it. Otherwise `needs work`. Done when the report
-   is in chat with a verdict.
+One report kind: id `standards`, title `Standard`. Before you group the judges' places, run `checks.md` § Check the rules with the research's returns. This section maps its four checks to rows; the checks themselves live there. Three kinds of row:
 
-6. **Clean.** Verdict `clean`: when step 3 re-checked sources, set each
-   of their Sources table rows to the version read and today's date,
-   from the report's `Sources` line, per
-   `../../shared/coding-standards/standard.md` § Sources table, which
-   brings an older shape up to date first. Name the rows changed. Those
-   are the only changes. Stop.
+- **Old or wrong rule**: a rule that check calls Outdated or Behind current practice. One row per rule; its place is the rule's line.
+  - Outdated, as `run flake8` when `ruff.toml` replaced it. Advice `fix`: update it to what the repo has now, or drop it; the change list gives the new text. `choice` is false.
+  - Behind current practice, as secrets read at import against the Django deployment checklist. Advice `fix`: follow the source. `choice` is true, since the team may have made the rule on purpose.
+- **Job with no rule**: each Gap that check finds, so in a repo with no Standard, every area. One row per area, stack part, or file of scattered rules, each with one proposed rule, the first that applies:
+  - a scattered rule for the area that is not outdated: that rule, `scattered: <path>`. Advice `fix`: move it into the Standard. `choice` is false.
+  - else the rule `checks.md` § Size the repo picks for the bucket, with its source or the code's count. `choice` is true when the code's way and the research differ.
+  - neither: down `research.md` § No source. `model's view, no source` sets `choice` true. `no source` has no proposal: advice `fine`, `choice` true, and the user writes the rule or leaves the area out under Not covered.
 
-7. **Grill.** Verdict `needs work`: read
-   `../../shared/coding-standards/write.md` and run its
-   `Grill` with the report as the seed, at once. The user who wants
-   only the report says stop at the first question. A stopped grill
-   ends the run there. When `Not researched` is the only finding,
-   nothing needs a decision: go to step 9.
+  A level 1 and a level 2 source that disagree, per `research.md` § Conflicts, set `choice` true, with both links in the reason. Every other proposal is advice `fix`, add the rule, with `choice` false.
 
-8. **Write.** Run `write.md` § Write. Only the rules the grill changed,
-   added, or dropped move; the rest of the Standard stays as it is.
+  Its places are the code lines that show the way, or the scattered rule's lines. When no line in the repo does the job, it has one place: the page of the rule's source, or, with no rule, the main page the research searched (its `none` return, or the part's Sources table row when the part was not due), labelled `Seen` with `read on this run` or `searched on this run, no rule`.
+- **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way.
 
-9. **Hand off.** Run `write.md` § Hand off.
+A stack part the user names as planned during the talk is researched per `research.md` before its area's rows get an answer.
+
+`changes` adds `Sources table: <n> rows` when the research read any source, so a run with no row still writes the dates it checked.
+
+## Apply
+
+- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets: a ticket row. Its body names the lint setting it turns on. No row is a seed.
+- **Edits.** After the run filed the tickets:
+  - a scattered rule moved in leaves its old file; the rest of that file stays;
+  - an Old or wrong rule answered drop loses its line;
+  - `CLAUDE.md` and `AGENTS.md`, where they exist and lack it, get one line: `Read CODING_STANDARDS.md before you write or review code.`
+  - `.editorconfig` is written or updated to match the Formatting rules;
+  - the Sources table, per `standard.md` § Sources table: a row for every source a rule of this run cites and every source the research read, with its version and today's date. A stack part not researched keeps its rows, so the next run checks it again.
+- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above.
 
 ## Examples
 
-**User:** `/audit-coding-standards` in a 3-year-old Django monolith, 900
-files, 6 authors, with a `CODING_STANDARDS.md` from last year.
+**User:** `/audit-coding-standards` in a fresh Next.js scaffold, 4 source files, no Standard.
 
-Find: the Standard, plus rules in `CLAUDE.md` (scattered). Big bucket.
-The Sources table's Django row is past 6 months, so Django is due;
-Python, pytest, and general are not. Outdated: the Standard names
-`flake8`, but `ruff.toml` replaced it. Drift: "views are class-based",
-61 function views, three examples. Behind current practice: secrets
-read with `os.environ[]` at import, against the Django deployment
-checklist. Gaps: the `CLAUDE.md` rules, Logging. Verdict: needs work.
-Grill at once: `flake8` to `ruff` (update), the view rule (keep,
-enforce), secrets (change the code), fold `CLAUDE.md` in (yes),
-Logging (add: `structlog`). Write those rules, set the Django row's
-date, strip the rules from `CLAUDE.md` and leave the pointer line.
-Hand off: one `chore` issue for the 61 views, one for the secrets.
-`Ready for /make-pr`.
+Small bucket. The research gives proposals from nextjs.org, react.dev, and the TypeScript handbook. Every area is a Job with no rule. Logging is `no source`, its place the main page searched, and it is the one question. The change list holds 11 rules, `Sources table: 5 rows`, and `.editorconfig`. The user says go. `CODING_STANDARDS.md` is created, the Run table gets a line, then `Ready for a pull request`.
 
-**User:** `/audit-coding-standards` in a repo whose Sources table was
-checked 7 months ago; the sources still agree with every rule.
+**User:** `/audit-coding-standards` in a Django monolith, 900 files, with a Standard from last year and rules in `CLAUDE.md`.
 
-Every part is due by date. The research agrees with every rule, and the
-code with every rule. Verdict: clean. Set those rows' version and date,
-name them, stop.
+Big bucket; Django is due. Rows: `run flake8` is an Old or wrong rule (fix). The `CLAUDE.md` rules are a Job with no rule (move in). Logging is a Job with no rule (research: `structlog`). 61 function views break "views are class-based" (choice: most views do it the other way). Secrets read at import are an Old or wrong rule against the deployment checklist (choice). The talk asks two questions. After the go: tickets for the views and the secrets, the rules written, and `CLAUDE.md` keeps its pointer line.
 
-**User:** `/audit-coding-standards`, then "stop, I only want the
-report" at the first question.
+**User:** `/audit-coding-standards` in a repo whose Sources table is 7 months old; every rule still agrees with its source and the code keeps every rule.
 
-No file changes. No decision was settled, so say so and stop. The
-report is already in chat.
-
-**User:** `/audit-coding-standards` in a repo with no
-`CODING_STANDARDS.md`.
-
-Say there is no Standard yet, and to run `/set-coding-standards`. Stop.
-
-**User:** `/audit-coding-standards` with no web search.
-
-The research dispatches nothing. Every due stack part is `not
-researched: no web access`. Drift and gaps still run on the code.
-Verdict: needs work, because the research is not done. The grill
-settles the code findings; the hand-off says to run the audit again
-with web access.
+No row. The page says `I found nothing to fix.`, and the change list is `Sources table: 6 rows`. The user says go: the dates are written, and the Run table gets a line.
