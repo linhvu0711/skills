@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-KEYS = ["skill", "repo", "commit", "date", "scope", "new", "tickets", "kinds", "changes", "rows"]
+KEYS = ["skill", "repo", "commit", "date", "scope", "new", "kinds", "changes", "rows"]
 ADVICE = {"fix", "keep-and-mark", "fine"}
 STATES = {"", "known", "came-back"}
 LABELS = {"Seen", "Inferred"}
@@ -29,6 +29,9 @@ def problems(report):
     view = report.get("view", "rows")
     if view not in VIEWS:
         yield f'view "{view}" is not rows or cards'
+    not_checked = report.get("not_checked", [])
+    if not isinstance(not_checked, list) or not all(isinstance(line, str) and line for line in not_checked):
+        yield 'rows file: "not_checked" is not a list of lines'
     kinds = {k.get("id") for k in report["kinds"]}
     seen = set()
     for row in report["rows"]:

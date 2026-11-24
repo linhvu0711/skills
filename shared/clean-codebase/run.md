@@ -104,9 +104,9 @@ gh issue list --state all --search "<2 or 3 words of the row>" --limit 20 --json
 - A closed issue whose problem is in the code again: `state` is
   `came-back`, `ticket` that `#<n>`. It is asked like any other row.
 
-A failed search: the rows stay as they are, and `tickets` is `not
-checked: <the error line>`. In no-GitHub mode, `tickets` is `not
-checked: <the line held at Scan>`.
+A failed search: the rows stay as they are, and `not_checked` gets the
+line `Known and Came back, <the error line>`. In no-GitHub mode,
+`not_checked` gets `Known and Came back, <the line held at Scan>`.
 
 ## Report
 
@@ -116,7 +116,10 @@ checked: <the line held at Scan>`.
    no `origin` uses `local` and its folder name. Create the folder when
    needed. The file never goes into the repo it reads. `changes` lists
    what the change list will hold, one line per part with its count, as
-   `Comment edits: 251 in 40 files` or `Tickets: 2`.
+   `Comment edits: 251 in 40 files` or `Tickets: 2`. `not_checked` lists
+   each check the run could not do, one line each with why, as `Old API
+   use, no web access`; the page shows each as `Not checked: <line>`.
+   Leave it out when every check ran.
 2. Build the page:
 
    ```bash

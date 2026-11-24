@@ -5,7 +5,6 @@
   "date": "2026-11-24",
   "scope": "whole repo",
   "new": "since the last prune-codebase run, 2026-11-01 at 9c1d2e3",
-  "tickets": "checked",
   "kinds": [
     {
       "id": "comments",
