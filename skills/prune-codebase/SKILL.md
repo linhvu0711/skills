@@ -16,13 +16,15 @@ Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the 
 
 These comments are never a place, and no row names them:
 
-- a comment that says why: a reason, a limit, or a source the code cannot show, such as a browser bug or the reason for a magic number;
+- a short comment that says why: a reason, a limit, or a source the code cannot show, such as the reason for a magic number;
 - a license header;
 - a doc comment on a public function or type;
 - a tool line with a reason, as `// eslint-disable-next-line no-console -- CLI output`;
 - a shebang;
 - a pragma;
 - the `Given`, `When`, and `Then` lines in a test.
+
+A hack and a long note of why are rows per § Kinds, even when they say why.
 
 ## Kinds
 

@@ -12,7 +12,7 @@ A report page in your browser. Its first line says what "new" means for this run
 
 Each row is one kind of bad comment with every place it shows: comments that repeat the code, comments that are no longer true, code inside a comment, banner lines, long notes of why, and hacks or `TODO`s with no ticket link. A row shows the advice (fix, keep and mark, or not a bad example), a reason, and a count. Click a row to see each place and how the agent knows, marked Seen or Inferred. Rows with new places come first, under Still spreading. A row that needs your choice stands out, and buttons filter the rows by advice. A row an open ticket already covers shows as Known and gets no question. A row whose ticket was closed but whose problem is back shows as Came back.
 
-Some comments always stay: a comment that says why, a license header, a doc comment on a public function, a tool line with a reason, a shebang, a pragma, and the `Given`, `When`, and `Then` lines in a test.
+Some comments always stay: a short comment that says why, a license header, a doc comment on a public function, a tool line with a reason, a shebang, a pragma, and the `Given`, `When`, and `Then` lines in a test. A hack or a long note of why still gets a row, even when it says why.
 
 Then it asks only about the rows that need you, one question at a time, through [grill](../grill/). Rows with a clear answer get no question. Then it prints one change list in chat: the tickets, the new rules, the lint settings, the comment edits, and the ADRs. Say `go`, or name a line to change.
 
