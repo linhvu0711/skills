@@ -5,6 +5,7 @@
   "date": "2026-11-24",
   "scope": "whole repo",
   "new": "since the last prune-codebase run, 2026-11-01 at 9c1d2e3",
+  "not_checked": ["Known and Came back, issues are off", "Old API use, no web access"],
   "kinds": [
     {
       "id": "comments",
