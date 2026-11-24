@@ -32,7 +32,7 @@ If nothing is worth changing, or every card is already fixed, it says `Nothing w
 ## Fits with
 
 - Use it after a build worth learning from, such as one run with [ship](../ship/). [orchestrate](../orchestrate/) starts it at the end of every run.
-- Fixes it proposes often land through [set-review-rules](../set-review-rules/), [set-coding-standards](../set-coding-standards/), or [audit-coding-standards](../audit-coding-standards/), and through [write-for-agents](../write-for-agents/) for any skill or steering text.
+- Fixes it proposes often land through [set-review-rules](../set-review-rules/) or [audit-coding-standards](../audit-coding-standards/), and through [write-for-agents](../write-for-agents/) for any skill or steering text.
 - [find-cc-session](../find-cc-session/) and [find-co-session](../find-co-session/) find one session; retro reads many through the same scripts, behind each harness's adapter.
 
 ## Credits

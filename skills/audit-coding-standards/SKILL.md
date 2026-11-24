@@ -10,7 +10,7 @@ Agents copy what the code and the rules show them. A rule that names a tool the 
 
 Read `../../shared/facts.md` first: you are the brain, helpers retrieve, short lookups are yours.
 
-Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the five steps, and it asks this skill for four things: § Kinds, § Search, § Helper, and § Apply, below. § Search names when to read `../../shared/coding-standards/checks.md` and `../../shared/coding-standards/research.md`.
+Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the five steps, and it asks this skill for four things: § Kinds, § Search, § Helper, and § Apply, below. § Search names when to read `references/checks.md` and `references/research.md`.
 
 ## Search
 

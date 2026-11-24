@@ -116,8 +116,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [review-pr](skills/review-pr/) | Reviews a pull request on three separate checks (logic, scope, standards), with your repo's own rules folded in. |
 | [validate-pr-review](skills/validate-pr-review/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
 | [set-review-rules](skills/set-review-rules/) | Writes a `REVIEW.md` for your repo: the shared three-part review plus the rules only your repo needs. |
-| [set-coding-standards](skills/set-coding-standards/) | Makes your repo's first `CODING_STANDARDS.md`: researches your stack, reads your code, asks what you want, then writes the file and the tool configs. |
-| [audit-coding-standards](skills/audit-coding-standards/) | Checks your `CODING_STANDARDS.md` against your code and current docs, asks how to fix what is outdated, broken, or missing, then writes the changes. |
+| [audit-coding-standards](skills/audit-coding-standards/) | Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it has one: researches your stack, reads your code, shows a report page, asks only your choices, then files tickets and writes the rules. |
 | [prune-codebase](skills/prune-codebase/) | Finds what teaches agents bad habits: bad comments, unused code, copies, and hacks. Shows them on a report page, and after your go edits comments, files tickets, and adds rules, with no code changed and nothing committed. |
 | [retro](skills/retro/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, review rules, standards, skills. |
 

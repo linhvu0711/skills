@@ -2,7 +2,7 @@
 
 What `audit-coding-standards` runs to learn how code is written in a
 repo: where its rules live, how big it is, and what is wrong with the
-rules. The research it cites is `research.md`, next to this file.
+rules. The research it cites is `references/research.md`.
 
 The **Standard** is `CODING_STANDARDS.md` at the repo root, with the
 `docs/standards/<topic>.md` files it links to. **Scattered rules** are
@@ -32,7 +32,7 @@ sorted into rules or not, each rule marked Standard or scattered.
 
 Count source files, ignoring vendored and generated trees. Run
 `git shortlog -sn` for authors. List the stack parts in use and planned,
-per `research.md` § Stack parts. Bucket:
+per `references/research.md` § Stack parts. Bucket:
 
 | Bucket | Test | Rules come from |
 |---|---|---|
@@ -49,7 +49,7 @@ planned are written down.
 The checklist for gaps and proposals. Each area gets one rule, or an
 on-purpose "left out".
 
-The areas are those of `standard.md` § Shape from `Names` to
+The areas are those of `../../shared/coding-standards/standard.md` § Shape from `Names` to
 `Stack-specific`, with what a rule in each settles.
 
 ## Check the rules

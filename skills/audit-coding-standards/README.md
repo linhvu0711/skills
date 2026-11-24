@@ -18,7 +18,7 @@ Each row is one of three kinds:
 
 In a repo with no Standard, every area (Names, Structure, Errors, Logging, Tests, and so on) is a job with no rule, so the first run writes the whole file. Rows with new places come first, under Still spreading. A row an open ticket already covers shows as Known and gets no question. A row whose ticket was closed but whose problem is back shows as Came back.
 
-Each proposed rule names where it came from: a page read on this run, what most of your code already does, or you. The model's memory never counts as a source. The size of the repo decides which wins when they differ. In a small repo the docs win. In a bigger one your code's way wins, and the row asks you, with the docs' rule in its reason. The research reads only the stack parts that are due: after a major version bump, after 6 months, or when a part has no row in the Sources table yet. The details are in [research.md](../../shared/coding-standards/research.md).
+Each proposed rule names where it came from: a page read on this run, what most of your code already does, or you. The model's memory never counts as a source. The size of the repo decides which wins when they differ. In a small repo the docs win. In a bigger one your code's way wins, and the row asks you, with the docs' rule in its reason. The research reads only the stack parts that are due: after a major version bump, after 6 months, or when a part has no row in the Sources table yet. The details are in [research.md](references/research.md).
 
 Then it asks only about the rows that need you, one question at a time, through [grill](../grill/). Rows with a clear answer get no question. Then it prints one change list in chat: the tickets, the rules, the lint settings, the scattered rules it moves in, and the Sources table rows. Say `go`, or name a line to change.
 
@@ -35,7 +35,8 @@ When it finds nothing, the page says so and nothing is written. When it found no
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Web search or the context7 MCP server, for the research.
 - An agent that can start subagents, for the research and for the `rule-judge` helper in `agents/`, which reads about ten files at a time. It starts per `../../shared/facts.md` § Skill agents, on the home models its file names for your harness, or on its backup. [link.sh](../../scripts/link.sh) installs it.
-- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape and the checks, and [facts.md](../../shared/facts.md) says how facts are fetched.
+- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape, and [facts.md](../../shared/facts.md) says how facts are fetched.
+- Its own [checks.md](references/checks.md) and [research.md](references/research.md): where rules live, the four checks, the size of the repo, and how sources are read.
 - [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets.
 
 ## Fits with
