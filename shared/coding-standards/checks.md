@@ -78,8 +78,11 @@ Four checks, in this order. The caller says which rules they run on.
   research result contradicts. A rule with no source is not a finding
   by itself; the team may have made it.
 - **Gaps**: an area in `Areas` with no rule, and a stack part in use or
-  planned with no rule. Also scattered rules, which belong in the
-  Standard.
+  planned with no rule. A setting that is on in a checker config is a
+  rule of the area it covers, since a rule a tool checks lives only in
+  its config (`standard.md` § Add one rule): a line length set in
+  `ruff.toml` fills Formatting. Also scattered rules, which belong in
+  the Standard.
 
 Done when every rule the caller named has been checked for outdated,
 drift, and behind current practice, every area and stack part for a
