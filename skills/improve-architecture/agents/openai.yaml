@@ -1,6 +1,6 @@
 interface:
   display_name: "Improve Architecture"
-  short_description: "Find deepenings and simplifications, report them, grill every one"
+  short_description: "Find design problems, show each as a card, file the redesigns"
   default_prompt: "$improve-architecture"
 policy:
   allow_implicit_invocation: false

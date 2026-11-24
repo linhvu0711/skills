@@ -1,36 +1,46 @@
 # improve-architecture
 
-Scans a codebase for two kinds of candidate: shallow modules worth deepening, and code to simplify. Shows them in a visual report, then grills you on every one and files the work as issues.
+Finds code that needs a new design: modules too thin, parts that leak their inside, code that is hard to test, and parts built for more than their job. It shows each one as a card with a before and after diagram, and after your go it files the redesigns as tickets. It changes no code and commits nothing.
 
 ## Use it when
 
-The code has become hard to change or hard to test, or has grown parts nobody needs, and you want to know where a refactor or a cut would pay off most. Type `/improve-architecture`, or add a direction: `/improve-architecture the notification code is a mess`. With no direction it looks where the last 200 commits landed.
+Agents in your repo copy the shape they see. Five modules that each pass an order on to the next one tell the next agent to add a sixth. Type `/improve-architecture` (`$improve-architecture` in Codex) to read the whole repo, or add a folder to read less: `/improve-architecture src/notify`. It leaves out vendored, generated, and gitignored files.
 
 ## What you get
 
-An HTML report that opens in your browser as a local page. A candidate is a deepening (merge small modules that only pass work along into one deep module) or a simplification: dead code, copied code, code that redoes what the language or a package already does, an option no caller uses, twisted logic, or a package used for one small thing.
+A report page in your browser. Its first line says what "new" means for this run, such as "since the last improve-architecture run, 2026-11-01". Then one sentence sums it up: "I found 3 things. I would fix 1. 1 needs your choice. 1 is Known: an open ticket covers it."
 
-Each big candidate gets a card with the files, the problem, the change in plain words, the wins, a before and after diagram, and a strength badge (`Strong`, `Worth exploring`, `Speculative`). Small ones, such as a function nothing calls, sit in short tables grouped by topic, each row with its proof, as in `Seen: 0 hits, also by name and in config`. The report ends with a top pick.
+Each candidate is a card. A card shows the advice (fix, or keep and mark), the change as a title, one reason, a strength badge (`Strong`, `Worth exploring`, or `Speculative`), the kind, and two diagrams side by side: the code as it is, and as it would be. It ends with the files involved and how the agent knows, marked Seen or Inferred. There are four kinds:
 
-When you say `go`, a [grill](../grill/) asks about every candidate: the big ones first, then each small table as one question. Say `drop` to skip one. A big one you drop for a lasting reason gets an ADR, so the next run leaves it out. Then the grill files the work as issues, as few as make sense, with the agreed glossary and ADR text inside. If you want to compare interfaces, three or more sub-agents each design one under a different constraint. Each design starts from how a caller uses the code, then fits its interface to that use. The designs are scored on 3 to 6 points named before they come back, one point at a time, and you get the scores and a pick. Parts the designs agree on count as a strong sign. Designs that differ wildly mean the question is unclear, so it is reframed, not averaged; a split that stays after one reframe comes to you as an open question, with the scores and a pick, and waits for your answer. A merge takes one or two parts from each design at most.
+- Too thin: a module whose interface is nearly as complex as what it does, or one that only passes calls on. A deepening merges them into one deep module.
+- Leaks its inside: a caller reads another part's inside, as Checkout reading the Pricing cache.
+- Hard to test: no test reaches the part through its interface.
+- Heavier than its job: a queue, a layer, or a seam built for one caller.
 
-It changes no code and proposes no interface on its own.
+The parts of the code that changed most in the last 200 commits come first, and cards with new lines sit under Still spreading at the top. A card that needs your choice stands out, and buttons filter the cards by advice. A card an open ticket already covers shows as Known and gets no question.
 
-Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+Then it asks only about the cards that need you, one question at a time, through [grill](../grill/). For a deepening it asks what the new module must hold, which dependencies sit behind its seam, its shape, and which tests stay. Ask to see other interfaces and three or more agents each design one under a different constraint, scored on points named before the designs come back. Then it prints one change list in chat: the tickets, the new rules, and the ADRs. Say `go`, or name a line to change.
+
+After the go it files each redesign as a ticket typed `refactor`, so [plan-up](../plan-up/) plans it with a lock test where no test covers the code. A design you keep on purpose gets an ADR, and the next run leaves it out. It adds each rule to `CODING_STANDARDS.md` and one line to the Run table in `docs/standards/runs.md`. Nothing is committed. The last line is `Ready for a pull request` when a file changed.
+
+When it finds nothing, the page says so, and the skill asks nothing and writes nothing. Stop the talk before the go and it files and writes nothing. Without GitHub, or with no right to file issues there, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file.
 
 ## Needs
 
-- `git`, for the recent history.
-- Sub-agents: explorers for the code, per the reader job in `../../shared/facts.md`, and for the design-it-twice step the `interface-designer` agent in `agents/`, each started per `../../shared/facts.md` § Skill agents on the model its file names for your harness. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent file into Claude Code, Codex, and Antigravity.
-- A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Tailwind and Mermaid. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
-- [grill](../grill/), for the candidates.
-- From the shared core: [facts.md](../../shared/facts.md), [codebase-design.md](../../shared/codebase-design.md) for the vocabulary and the principles, and [serve.sh](../../shared/serve.sh) to serve the report.
+- `gh`, signed in, for the tickets and the Known check. Without it the run stops at the change list.
+- A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Mermaid, which draws the diagrams. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
+- `git`, for the change counts.
+- An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files, and the `interface-designer` agent for the three designs. [link.sh](../../scripts/link.sh) installs both into Claude Code, Codex, and Antigravity.
+- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [codebase-design.md](../../shared/codebase-design.md) holds the vocabulary and the deletion test, and [facts.md](../../shared/facts.md) says how facts are fetched.
+- [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets and seeds.
 
 ## Fits with
 
-- Calls [grill](../grill/) on every candidate. The issues it files are typed `refactor`, so [plan-up](../plan-up/) adds a lock test where no test covers the code.
-- [prune-codebase](../prune-codebase/) finds bad comments, edits them after your go, and files tickets for the hacks.
-- No other skill calls it; you start it yourself.
+- Calls [grill](../grill/), [to-issue](../to-issue/), and [capture](../capture/). A rule goes in through the Standard's shared step, as in [prune-codebase](../prune-codebase/).
+- Hands off to [make-pr](../make-pr/) for the ADRs and rules it leaves uncommitted.
+- [plan-up](../plan-up/) and [ship](../ship/) build a ticket it filed: `/ship #42`.
+- Unused code, copies, hacks, and comments go to [prune-codebase](../prune-codebase/).
+- Two ways to do one job go to [audit-coding-standards](../audit-coding-standards/).
 
 ## Credits
 
