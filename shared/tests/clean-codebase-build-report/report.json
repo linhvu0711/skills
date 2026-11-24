@@ -1,0 +1,50 @@
+{
+  "skill": "prune-codebase",
+  "repo": "acme/shop",
+  "commit": "4f2a1b0",
+  "date": "2026-11-24",
+  "scope": "whole repo",
+  "new": "since the last prune-codebase run, 2026-11-01 at 9c1d2e3",
+  "tickets": "checked",
+  "kinds": [{"id": "comments", "title": "Comments"}],
+  "changes": ["Comment edits: 4 in 2 files", "Tickets: 1", "ADRs: 1"],
+  "rows": [
+    {
+      "id": "R1", "kind": "comments", "name": "Comments that repeat the code", "advice": "fix",
+      "reason": "each one says what the next line already says", "choice": false, "state": "", "ticket": "",
+      "places": [
+        {"at": "src/user.ts:14", "text": "// loop over users", "label": "Seen", "proof": "the for loop under it", "new": true},
+        {"at": "src/user.ts:30", "text": "// return the user", "label": "Seen", "proof": "the return under it", "new": false},
+        {"at": "src/cart.ts:8", "text": "// add one", "label": "Seen", "proof": "count + 1 under it", "new": false}
+      ]
+    },
+    {
+      "id": "R2", "kind": "comments", "name": "Banner lines", "advice": "fix",
+      "reason": "a banner says nothing an agent can use", "choice": false, "state": "", "ticket": "",
+      "places": [
+        {"at": "src/utils.ts:1", "text": "// ===== helpers =====", "label": "Seen", "proof": "a line of = signs only", "new": false}
+      ]
+    },
+    {
+      "id": "R3", "kind": "comments", "name": "Hack: Safari drops the first event", "advice": "keep-and-mark",
+      "reason": "the hack may still be needed; a ticket can track its fix", "choice": true, "state": "came-back", "ticket": "#12",
+      "places": [
+        {"at": "src/event.ts:12", "text": "// temp fix, Safari drops 1st event", "label": "Seen", "proof": "Safari 16 is no longer in the browserslist", "new": false}
+      ]
+    },
+    {
+      "id": "R4", "kind": "comments", "name": "Long note of why: order retries", "advice": "fix",
+      "reason": "twenty lines of why belong in an ADR", "choice": true, "state": "", "ticket": "",
+      "places": [
+        {"at": "src/orders/retry.ts:3", "text": "// We retry twice because", "label": "Inferred", "proof": "the note spans lines 3 to 22", "new": false}
+      ]
+    },
+    {
+      "id": "R5", "kind": "comments", "name": "HACK: skip tax for the test shop", "advice": "keep-and-mark",
+      "reason": "an open ticket already tracks the fix", "choice": false, "state": "known", "ticket": "#42",
+      "places": [
+        {"at": "src/tax.ts:20", "text": "// HACK: skip tax for test shop", "label": "Seen", "proof": "issue #42 names src/tax.ts", "new": false}
+      ]
+    }
+  ]
+}
