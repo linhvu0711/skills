@@ -18,7 +18,7 @@ Then it asks only about the rows that need you, one question at a time, through 
 
 After the go it files the tickets first. A fix to unused code, a copy, or a hack becomes a ticket, since the skill changes no code; a hack with an unclear fix becomes a seed. It writes an ADR for each long note of why and leaves one line with the link in the code. It edits the comments, adds a ticket or ADR link to each hack you keep, as a new comment line when it had none, and checks that `git diff` on the code files shows only comment lines. It adds each rule to `CODING_STANDARDS.md`, and one line to the Run table in `docs/standards/runs.md`, so the next run knows what is new. Nothing is committed. The last line is `Ready for a pull request` when a file changed.
 
-When it finds nothing, the page says so, and the skill asks nothing and writes nothing. Stop the talk before the go and it files and writes nothing. Without GitHub, or with no right to file issues there, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file.
+When it finds nothing, the page says so, and the skill asks nothing and writes nothing. Stop the talk before the go and it files and writes nothing. Without GitHub, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file. A ticket it cannot file, as with a login that may not file issues, stops the run before it writes any file.
 
 ## Needs
 
@@ -36,4 +36,4 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - Two ways to do one job go to [audit-coding-standards](../audit-coding-standards/); the same code twice stays here.
 - A wait or a retry in a test or CI goes to [improve-ci](../improve-ci/).
 - Shares its history script with [why](../why/).
-- For now [improve-codebase](../improve-codebase/) also reports unused and copied code. A module that only passes calls on is its find, not this skill's.
+- A module that only passes calls on goes to [improve-architecture](../improve-architecture/).

@@ -121,6 +121,66 @@ t_cb_row_with_no_state() {
   eq summary "$(jq -r .summary "$here/clean-codebase-build-report/report-data.json")" "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -r .summary)"
 }
 
+# cb_cards <jq filter>: the card fixture, changed by the filter, at $T/clean-improve-architecture-acme-shop.json
+cb_cards() {
+  T="$(mktemp -d)"
+  jq "$1" "$here/clean-codebase-build-report/cards.json" > "$T/clean-improve-architecture-acme-shop.json"
+}
+
+t_cb_builds_cards() {
+  # Given: the card fixture
+  cb_cards .
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq DATA "$(jq -S . "$here/clean-codebase-build-report/cards-data.json")" "$(cb_data "$T/clean-improve-architecture-acme-shop.html")"
+}
+
+t_cb_refuses_card_badge() {
+  # Given: R1's card with a badge the report does not know
+  cb_cards '(.rows[] | select(.id == "R1") | .card.badge) = "Great"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R1: badge "Great" is not Strong, Worth exploring, or Speculative' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_refuses_card_no_after() {
+  # Given: R2's card with no after diagram
+  cb_cards '(.rows[] | select(.id == "R2") | .card) |= del(.after)'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R2: card has no after diagram' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_refuses_view() {
+  # Given: the card fixture with a view the report does not know
+  cb_cards '.view = "grid"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'view "grid" is not rows or cards' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_refuses_known_card_choice() {
+  # Given: the Known card R3 asks a question
+  cb_cards '(.rows[] | select(.id == "R3") | .choice) = true'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R3: a Known row asks nothing, so choice is false' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
 cases=(
   "builds the report page with its counts|t_cb_builds_report"
   "says nothing found for no rows|t_cb_nothing_found"
@@ -132,4 +192,9 @@ cases=(
   "keeps the old page after a bad build|t_cb_keeps_old_page"
   "escapes tags in a place's text|t_cb_escapes_tags_in_text"
   "builds a row with no state|t_cb_row_with_no_state"
+  "builds a card report|t_cb_builds_cards"
+  "refuses a card badge it does not know|t_cb_refuses_card_badge"
+  "refuses a card with no after diagram|t_cb_refuses_card_no_after"
+  "refuses a view it does not know|t_cb_refuses_view"
+  "refuses a Known card that asks a question|t_cb_refuses_known_card_choice"
 )

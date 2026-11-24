@@ -1,3 +1,6 @@
+---
+status: superseded by ADR-0035
+---
 # Simplification lives in improve-codebase, and the skill files issues only
 
 One skill scans for both deepenings and simplifications. Both read the same busy code and show in the same report, and a big simplification needs the same grill as a deepening. The skill was named improve-architecture; it is now improve-codebase, so the name covers both jobs. The grill takes every candidate, big ones first and then small ones in topic groups, and files issues. The skill changes no code, so plan-up plans every cut, with a lock test where no test covers the code, before it ships.

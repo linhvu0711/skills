@@ -1,6 +1,0 @@
-interface:
-  display_name: "Improve Codebase"
-  short_description: "Find deepenings and simplifications, report them, grill every one"
-  default_prompt: "$improve-codebase"
-policy:
-  allow_implicit_invocation: false

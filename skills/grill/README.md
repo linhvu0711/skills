@@ -43,7 +43,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Calls [unslop](../unslop/), then [to-issue](../to-issue/) or [to-epic](../to-epic/), or [make-pr](../make-pr/) when no work follows.
 - Suggests [create-prototype](../create-prototype/) before it files work that changes a screen.
 - Sends a bug to [triage](../triage/) first, and work too big for one session to [discover-path](../discover-path/).
-- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-codebase](../improve-codebase/), [audit-coding-standards](../audit-coding-standards/), and [set-review-rules](../set-review-rules/).
+- Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), [audit-coding-standards](../audit-coding-standards/), and [set-review-rules](../set-review-rules/).
 - Named as the next step when a gate fails in [to-issue](../to-issue/), [to-epic](../to-epic/), [plan-up](../plan-up/), and [create-prototype](../create-prototype/).
 
 ## Credits

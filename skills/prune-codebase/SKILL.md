@@ -73,7 +73,7 @@ A tool line with a reason (§ Always stays) is not a hack. A hack whose comment 
 Some finds look like these kinds and belong to another skill. Leave them out of the report:
 
 - The same code two times is a copy and belongs here. Two different ways to do one job, as `fetch` in one module and `axios` in another, belong to `audit-coding-standards`.
-- A module that only passes calls on to the one under it belongs to the design skill, `improve-codebase`.
+- A module that only passes calls on to the one under it belongs to the design skill, `improve-architecture`.
 - A wait or a retry in a test or in CI, as a `sleep` in a test or a retry flag in a workflow, belongs to `improve-ci`.
 
 ## Search

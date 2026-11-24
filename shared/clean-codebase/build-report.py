@@ -16,6 +16,8 @@ KEYS = ["skill", "repo", "commit", "date", "scope", "new", "tickets", "kinds", "
 ADVICE = {"fix", "keep-and-mark", "fine"}
 STATES = {"", "known", "came-back"}
 LABELS = {"Seen", "Inferred"}
+VIEWS = {"rows", "cards"}
+BADGES = {"Strong", "Worth exploring", "Speculative"}
 
 
 def problems(report):
@@ -24,6 +26,9 @@ def problems(report):
             yield f'rows file: no "{key}"'
     if any(key not in report for key in KEYS):
         return
+    view = report.get("view", "rows")
+    if view not in VIEWS:
+        yield f'view "{view}" is not rows or cards'
     kinds = {k.get("id") for k in report["kinds"]}
     seen = set()
     for row in report["rows"]:
@@ -42,12 +47,25 @@ def problems(report):
             yield f"row {rid}: {state} needs a ticket"
         if state == "known" and row.get("choice"):
             yield f"row {rid}: a Known row asks nothing, so choice is false"
+        if view == "cards":
+            yield from card_problems(rid, row.get("card"))
         places = row.get("places") or []
         if not places:
             yield f"row {rid}: no places"
         for n, place in enumerate(places, 1):
             if place.get("label") not in LABELS:
                 yield f'row {rid} place {n}: label "{place.get("label")}" is not Seen or Inferred'
+
+
+def card_problems(rid, card):
+    if not card:
+        yield f"row {rid}: no card"
+        return
+    if card.get("badge") not in BADGES:
+        yield f'row {rid}: badge "{card.get("badge")}" is not Strong, Worth exploring, or Speculative'
+    for side in ("before", "after"):
+        if not card.get(side):
+            yield f"row {rid}: card has no {side} diagram"
 
 
 def plural(n, one, many):

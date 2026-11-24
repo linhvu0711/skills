@@ -9,6 +9,6 @@ A grill no longer writes `CONTEXT.md` or an ADR while it talks, and no longer op
 
 ## Consequences
 
-- While a decision waits in an open issue, `/grill`, `/improve-codebase`, and `/plan-up` read those issues as decided, not built.
+- While a decision waits in an open issue, `/grill`, `/improve-architecture`, and `/plan-up` read those issues as decided, not built.
 - A seed is never closed for growing: it becomes the issue, the map, or the epic parent. A `/discover-path` map keeps all doc text in its own `## Docs to write` until `/to-epic` hands each entry to a sub-issue.
 - A later decision edits waiting text in place. A superseded ADR is needed only for an ADR that shipped.

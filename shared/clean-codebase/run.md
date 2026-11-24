@@ -4,16 +4,20 @@ Paths in this file are relative to its own folder, after links are followed. Bef
 
 The five steps every clean-codebase skill runs on a repo: scan, report,
 talk, change list, do it. The skill that reads this file gives four
-things the steps ask for, each in its own section:
+things the steps ask for, each in its own section, and may give a fifth:
 
 - **Kinds**: the report kinds it finds, each an `id` and a `title`, and
   for each kind of row its advice and when a row needs the user's choice.
+  It may also give the order of the rows, as `hottest first`.
 - **Search**: for each kind, how search tools find its places, before
-  any helper reads.
+  any helper reads. One search may serve every kind.
 - **Helper**: for each kind, the skill agent that judges a batch of its
-  places, how big a batch is, and what its brief pastes in.
+  places, how big a batch is, and what its brief pastes in. One helper
+  may judge every kind in one pass.
 - **Apply**: which rows become a ticket and which a seed, and how the
   skill writes its own edits after the go.
+- **Talk**, when the skill has one: what a decision asks for its kinds,
+  and each step that runs during the talk when the user asks for it.
 
 Words such as **Row**, **Known**, **Came back**, **Keep and mark**,
 **Change list**, and **Run table** mean what `../../CONTEXT.md` § Clean
@@ -50,12 +54,14 @@ user's go, it files and writes nothing.
    shows it, with no fixed number, and say why in the phrase, as `the
    last 3 weeks: about 40 commits a week, no earlier run`. Hold the
    phrase as `new`, and the span start as a date.
-4. **Places.** Run the skill's § Search on the scope, for each kind. Hold `HEAD`'s
-   short SHA as the run's commit.
+4. **Places.** Run the skill's § Search on the scope, for each kind, or
+   once when it serves every kind. Hold `HEAD`'s short SHA as the run's
+   commit.
 5. **Judge.** Batch each kind's places as the skill's § Helper says,
    about ten files per batch, per `../facts.md` § Brain and hands. Start
    each kind's helper on each of its batches per `../facts.md` § Skill
-   agents, all in one message. Each brief holds the batch's files, the span start, and what the skill's
+   agents, all in one message. A helper that judges every kind starts
+   once per batch, not once per kind. Each brief holds the batch's files, the span start, and what the skill's
    § Helper says to paste in. Each place comes back with its `path:line`,
    its text, its row kind, its evidence label (`Seen` or `Inferred`, per
    `../facts.md` § Evidence labels) and proof, and `new`: its line is
@@ -74,8 +80,14 @@ a hack is still needed; every other row has a clear answer, its advice.
 
 A row is **Still spreading** when one of its places is new.
 
+The rows go in the rows file in the order the skill's § Kinds gives,
+else as they came back.
+
 The rows file's shape, every key and its values, is the one
-`build-report.py` checks; its problem lines name each fault.
+`build-report.py` checks; its problem lines name each fault. A skill
+whose report shows each row as a card, with a before and an after
+diagram, sets `view` to `cards` and gives each row a `card`; its
+§ Kinds says what a card holds.
 
 ## Known and Came back
 
@@ -156,6 +168,12 @@ talk has no decision, and the run goes on to § Change list.
    ```
    Read ../../skills/grill/SKILL.md and follow it. Seed: the report <URL> and its rows file <path>. Open decisions: <one per decision, with its rows>. Close out: text. Then continue at § Talk step 3 of the clean-codebase run.
    ```
+
+   A skill with a § Talk: each open decision also carries what that
+   section asks for it, as `<decision>, with its rows; ask: <what the
+   skill's § Talk asks>`, and the block adds `Also run: <each step the
+   skill's § Talk names>, when the user asks for it.` before `Close out:
+   text.`
 
    `Close out: text.` keeps the grill from writing files: it hands back
    each doc entry it settled, with `already true` or `with code`.
@@ -252,3 +270,8 @@ GitHub cannot be reached, issues are off, or the repo is archived. The
 scan, the report, and the talk run; § Known and Came back is skipped.
 § Change list prints the list and ends the run: nothing is filed and no
 file is written.
+
+The check cannot see whether the login may file issues. A login that may
+not is caught when its first ticket fails, at § Do it step 1, before any
+file is written. A change list with no ticket needs no GitHub, so its
+files are written.
