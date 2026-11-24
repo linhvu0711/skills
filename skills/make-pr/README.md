@@ -34,5 +34,5 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 
 - Hands off to [ready-pr](../ready-pr/), which takes the open PR to ready-to-merge.
 - Called by [grill](../grill/) for its docs PR at the close-out, and by [ship](../ship/) after [build-and-prove](../build-and-prove/), with its proof folder.
-- Named by [set-coding-standards](../set-coding-standards/) and [audit-coding-standards](../audit-coding-standards/) as the next step.
+- Named by [audit-coding-standards](../audit-coding-standards/) as the next step.
 - Shares the PR shape with [handoff](../handoff/), whose cloud builders open their own PRs.

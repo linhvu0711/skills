@@ -54,9 +54,9 @@ def plural(n, one, many):
     return one if n == 1 else many
 
 
-def summary(rows):
+def summary(rows, changes):
     if not rows:
-        return "I found nothing to change."
+        return "I found nothing to fix." if changes else "I found nothing to change."
     known = [r for r in rows if r["state"] == "known"]
     open_rows = [r for r in rows if r["state"] != "known"]
     settled = [r for r in open_rows if not r["choice"]]
@@ -86,7 +86,7 @@ def page_data(report):
                      "count": len(row["places"]),
                      "spreading": any(p.get("new") for p in row["places"])}
                     for row in report["rows"]]
-    data["summary"] = summary(data["rows"])
+    data["summary"] = summary(data["rows"], report["changes"])
     return data
 
 

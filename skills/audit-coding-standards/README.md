@@ -1,45 +1,47 @@
 # audit-coding-standards
 
-Checks your `CODING_STANDARDS.md` against your code and against what the stack's own docs say today, then asks you how to fix what it found and writes the changes.
+Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it has one. It shows what it found on a report page, and after your go it files tickets and writes the rules. Nothing is committed.
 
 ## Use it when
 
-Your repo has a `CODING_STANDARDS.md` and you want to know if it still holds: after a big upgrade, before a release, or every few months. Type `/audit-coding-standards` in the repo. It only runs when you call it. With no `CODING_STANDARDS.md` yet, it stops and points you to [set-coding-standards](../set-coding-standards/).
+Your repo has no Standard yet, or its rules are spread over `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`. Or it has a `CODING_STANDARDS.md` that may have gone stale after a big upgrade or a few months. Type `/audit-coding-standards` (`$audit-coding-standards` in Codex) to read the whole repo, or add a folder to read less. It only runs when you call it.
 
 ## What you get
 
-First, a report with a verdict. Drift comes with a count and three `file:line` examples. Rules found outside the file (in `CLAUDE.md`, say) show up as gaps.
+A report page in your browser. Its first line says what "new" means for this run, such as "since the last audit-coding-standards run, 2026-11-01". Then one sentence sums it up: "I found 9 things. I would fix 6. 3 need your choice."
 
-```
-Stack: Python, Django, ruff       Size: big, 900 files, 6 authors
-Rules found in: CODING_STANDARDS.md, CLAUDE.md
-Outdated: "run flake8" — ruff.toml replaced it
-Drift: "views are class-based" — 61, e.g. shop/views.py:40 ×3
-Behind current practice: secrets read at import — the deployment checklist loads them from the environment (https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/)
-Gaps: CLAUDE.md, Logging
-Not researched: none
-Verdict: needs work
-```
+Each row is one of three kinds:
 
-On `needs work`, the grill starts at once: one question per finding, with a recommended answer. When it ends, the settled changes go into `CODING_STANDARDS.md` and the tool configs, nothing else moves, and nothing is committed: the changes and any glossary entry or ADR the grill wrote wait together on your branch. The chat ends with the files changed, the drift left as code problems, and `Ready for /commit`. Each rule goes in through the same shared step as in set: it first looks for a rule that already says it, and a tool setting is written only when no code breaks it today, or when the tool can limit it to new code; otherwise the setting is named in the issue that fixes the code. A rule a tool checks lives only in that tool's config; the Standard does not repeat it. To keep only the report, say stop at the first question. Stop later and the Standard and configs stay as they are; the decisions made so far are printed so you can reuse them.
+- A rule that is old or wrong, such as "run flake8" when `ruff.toml` replaced flake8, or a rule the stack's own docs now say the opposite of.
+- A job with no rule, with the rule it proposes and where that rule came from. Errors with no rule, where most of your code throws `HttpError`, is one.
+- Code that breaks a rule, with every place it does. Tests count: a test named against your Tests rule is a place like any other.
 
-On `clean`, the only change is the date and version on the Sources table rows it checked again. When it changes those rows, an older Standard also gets brought up to date: the three opening lines that explain its marks, the Layout area renamed Structure, and the Sources table moved from the end of `CODING_STANDARDS.md` to `docs/standards/sources.md`. An old line tagged with a tool, as `[eslint]`, is removed when that tool's config has the check on for every file the line covers, since the config holds the rule; otherwise the line stays and loses its tag. Checks that are on in a tool's config count as rules, and the tool reports their breaks where your repo runs it, such as in CI; the audit runs no tool. The other rules stay where they are.
+In a repo with no Standard, every area (Names, Structure, Errors, Logging, Tests, and so on) is a job with no rule, so the first run writes the whole file. Rows with new places come first, under Still spreading. A row an open ticket already covers shows as Known and gets no question. A row whose ticket was closed but whose problem is back shows as Came back.
 
-Research only runs for the stack parts that are due. It reads the Sources table in `docs/standards/sources.md` (the Standard's shape is in [standard.md](../../shared/coding-standards/standard.md)) and checks a part again only after a major version bump, after 6 months, or when the part has no row yet. Each finding cites what it came from: a page read on this run, or what most of the code already does, never the model's memory. The details are in [research.md](../../shared/coding-standards/research.md).
+Each proposed rule names where it came from: a page read on this run, what most of your code already does, or you. The model's memory never counts as a source. The size of the repo decides which wins when they differ. In a small repo the docs win. In a bigger one your code's way wins, and the row asks you, with the docs' rule in its reason. The research reads only the stack parts that are due: after a major version bump, after 6 months, or when a part has no row in the Sources table yet. The details are in [research.md](references/research.md).
 
-Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unknown), and it tries to see a fact itself, by safe reads, searches, and runs, before it calls it a guess, per the shared `facts.md`.
+Then it asks only about the rows that need you, one question at a time, through [grill](../grill/). Rows with a clear answer get no question. A rule from `CONTRIBUTING.md` that says something different from the Standard, such as `.test.ts` against `.spec.ts`, needs you: the row shows both, and you pick. Then it prints one change list in chat: the tickets, the rules, the lint settings, the scattered rules it moves in, and the Sources table rows. Say `go`, or name a line to change.
+
+After the go it files the tickets first: code that breaks a rule gets a ticket that fixes it and turns on the lint setting, unless that rule lost a clash you settled. Then it moves scattered rules into the Standard and takes them out of their old files. It adds one line to `CLAUDE.md` and `AGENTS.md` that points at the Standard, updates `.editorconfig`, and writes the Sources table in `docs/standards/sources.md`. Each rule goes in through the Standard's one shared step. That step first looks for a rule that already says it, and writes a tool setting only when no code breaks it today. Then it adds a line to the Run table in `docs/standards/runs.md`, so the next run knows what is new. The last line is `Ready for a pull request`.
+
+The Standard opens with three lines that explain its marks. A rule a tool checks lives in that tool's config, not in the file. `(name)` after a rule names its source. `[eslint, after #61]` means a tool will check the rule once ticket #61 lands. `Old way:` means existing code still uses a way you should not copy. The first area is One way for each job, as in `Dates: date-fns. Old way: moment (#61).` A topic with more than about 40 rules moves to `docs/standards/<topic>.md`. The shape is in [standard.md](../../shared/coding-standards/standard.md).
+
+When it finds nothing, the page says so and nothing is written. When it found nothing wrong but checked some sources again, the page says "I found nothing to fix." and the change list offers to write their new dates. Stop the talk before the go and it files and writes nothing. Without GitHub, or with no right to file issues there, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file.
 
 ## Needs
 
-- The [grill](../grill/) skill, which it uses to ask you about each finding.
-- The shared core files `../../shared/facts.md` and `../../shared/coding-standards/` (`checks.md`, `research.md`, `standard.md`, `write.md`), which it shares with set.
-- `git`, for the author count and the age of the rules file.
-- `gh`, to read open issues for planned work.
-- Web search or the context7 MCP server, for the research. Without them the code checks still run, the research is marked not done, and the hand-off tells you to run it again with web access.
-- An agent that can start subagents, for the research and for sampling the code.
+- `gh`, signed in, for the tickets, the Known check, and open issues that name planned work.
+- `git`, for the author count and the age of the rules.
+- A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
+- Web search or the context7 MCP server, for the research.
+- An agent that can start subagents, for the research and for the `rule-judge` helper in `agents/`, which reads about ten files at a time. It starts per `../../shared/facts.md` § Skill agents, on the home models its file names for your harness, or on its backup. [link.sh](../../scripts/link.sh) installs it.
+- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape, and [facts.md](../../shared/facts.md) says how facts are fetched.
+- Its own [checks.md](references/checks.md) and [research.md](references/research.md): where rules live, the four checks, the size of the repo, and how sources are read.
+- [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets.
 
 ## Fits with
 
-- Takes over from [set-coding-standards](../set-coding-standards/), which writes the first `CODING_STANDARDS.md`.
-- Calls [grill](../grill/).
-- Hands off to [commit](../commit/) or [make-pr](../make-pr/), and names [to-issue](../to-issue/) or [capture](../capture/) for drift left as code problems.
+- Calls [grill](../grill/), [to-issue](../to-issue/), and [capture](../capture/).
+- [prune-codebase](../prune-codebase/) runs the same five steps on bad comments.
+- Hands off to [make-pr](../make-pr/) for the files it leaves uncommitted.
+- [ship](../ship/) can fix a ticket it filed later: `/ship #42`.

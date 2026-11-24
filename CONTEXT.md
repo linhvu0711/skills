@@ -281,7 +281,7 @@ The answer for a row that stays on purpose. A comment at the place, or one rule 
 _Avoid_: ignore, accepted debt, won't fix
 
 **Change list**:
-What a run does after the user's go: the tickets, the new rules, the lint settings, the comment edits, and the ADRs.
+What a run does after the user's go: the tickets, the new rules, the lint settings, the skill's own edits (comment edits, scattered rules moved in, Sources table rows), and the ADRs.
 _Avoid_: plan, summary
 
 **Run table**:

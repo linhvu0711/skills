@@ -136,8 +136,11 @@ checked: <the line held at Scan>`.
    Publish fails: say why, give the `.html` path, stop.
 4. Chat gets the URL, or the artifact link, and the page's summary line.
 
-No rows: the page says `I found nothing to change.`, and the run ends
-there. It asks nothing, files nothing, and writes nothing.
+No rows and nothing in `changes`: the page says `I found nothing to
+change.`, and the run ends there. It asks nothing, files nothing, and
+writes nothing. No rows with a change, such as Sources table dates the
+research checked again: the page says `I found nothing to fix.`, the
+talk has no decision, and the run goes on to § Change list.
 
 ## Talk
 
