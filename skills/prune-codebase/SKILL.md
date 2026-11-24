@@ -60,7 +60,7 @@ Id `hacks`, title `Hacks`. Code that goes around a problem and does not solve it
 - a guard that hides a bug: a null check for a state no correct caller reaches, per `../../shared/review/general-rules.md` rule 7;
 - a `TODO`, `HACK`, or `FIXME` note, as `// temp fix, Safari drops the first event` or `// don't touch, breaks prod`.
 
-A tool line with a reason (§ Always stays) is not a hack. Before it gives advice on a hack, the helper reads the history of its line with `../../shared/trail.py`: when it came, the PR and issue behind it, and what its fix would be. One row per hack, unless one fix covers several. The advice:
+A tool line with a reason (§ Always stays) is not a hack. A hack whose comment links an ADR that still covers it was kept and marked already: it is not a place. A broken link, or an ADR about other code, keeps it a place; a ticket link is left to § Known and Came back of the run. Before it gives advice on a hack, the helper reads the history of its line with `../../shared/trail.py`: when it came, the PR and issue behind it, and what its fix would be. One row per hack, unless one fix covers several. The advice:
 
 - `fix`: a ticket when the fix is known, as a cast that a type the repo now has makes needless; a seed when it is unclear;
 - `keep-and-mark` with a ticket, when the hack stays until a fix can come;

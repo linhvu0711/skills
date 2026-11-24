@@ -20,6 +20,7 @@ Your brief holds the files of one batch, the span start (a date), the full path 
 - Before you give advice on a hack, run `python3 <trail.py> <path>:<line>` from the repo's top folder. Read when it came, the PR and the issue behind it, and what its fix would be. On a `GitHub: not reached` line, go on with git alone.
 - The advice follows the history: `fix: ticket, <the fix>` when the fix is known, `fix: seed` when it is unclear, `keep-and-mark: ticket` when the hack waits on a fix, `keep-and-mark: ADR` when it stays for good.
 - Date each place from its trail: `new: yes` when the trail prints `No commits: ... is not committed yet.` or `Not committed yet:`, or when the date of its first `commit <sha7> <date>` line is after the span start; else `new: no`.
+- A hack whose comment links an ADR that still covers it is settled: not a place. Read the ADR to check; a broken link, or an ADR about other code, keeps it a place.
 - A comment that always stays, and a find that the borders give to another skill, is not a place.
 - Label each place per the evidence labels of `shared/facts.md`: `Seen` when you read the proof, `Inferred` when it follows from what you read.
 - Leave every file, commit, and GitHub issue as you found it: you read and run read-only commands only, and `trail.py` only reads.
