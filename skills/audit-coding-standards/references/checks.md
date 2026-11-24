@@ -13,7 +13,7 @@ rules about code that live anywhere else.
 Search the repo for every file that carries code rules. Fixed list,
 always checked:
 
-`CODING_STANDARDS.md`, `CONVENTIONS.md`, `CONTRIBUTING.md`, `STYLE*.md`, `docs/**`, `CLAUDE.md`,
+`CODING_STANDARDS.md`, `REVIEW.md`, `CONVENTIONS.md`, `CONTRIBUTING.md`, `STYLE*.md`, `docs/**`, `CLAUDE.md`,
 `AGENTS.md`, `.cursorrules`, `.cursor/rules/**`, `.editorconfig`, linter
 and formatter configs (`.eslintrc*`, `eslint.config.*`, `.prettierrc*`,
 `biome.json*`, `ruff.toml`, `pyproject.toml`, `.golangci.yml`,
@@ -24,6 +24,11 @@ Read each hit. Keep the ones with real rules about code (names, layout,
 patterns, tests, commits); install steps and PR how-tos are not rules.
 Mark each rule kept as in the Standard or scattered. A linter or
 formatter config is the tool's own rules, not a scattered rule.
+In `REVIEW.md`, the block between the `set-review-rules:general`
+markers is the shared review rules, not the repo's: leave it. Each rule
+below the end marker is a scattered rule, a review rule about a whole
+change too; its axis headings and `None yet.` lines are not rules. A
+`REVIEW.md` with no marker block is all repo rules.
 
 Done when every path in the list has been looked for, and every hit is
 sorted into rules or not, each rule marked Standard or scattered.
