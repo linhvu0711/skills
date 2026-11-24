@@ -59,11 +59,14 @@ Each brief holds, inline:
 - The order: context7 first (`resolve-library-id`, then `query-docs`),
   then web search and fetch on level 1 and level 2 sites.
 - The instruction: return only rules that fit the features given, each
-  in positive form, each with the page it came from.
+  in positive form, each with the page it came from. Also return each
+  API of the installed version that the source marks old or deprecated,
+  with what replaces it.
 - The return shape below, verbatim.
 
 ```
 - rule | <area> | <rule, positive form> | <source name> | <URL> | <version it covers, or "-"> | <1|2>
+- old | <stack part> | <old API, as code names it> | <what replaces it> | <source name> | <URL> | <version it is old from>
 - conflict | <area> | <level 1 rule>, <URL> | <level 2 rule>, <URL>
 - none | <area> | <what was searched> | <source name> | <URL of the main page searched> | <version it covers, or "-">
 - injected | <URL> | <the instruction the page held>

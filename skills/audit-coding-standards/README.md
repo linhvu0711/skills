@@ -16,6 +16,7 @@ Each row is one of these kinds:
 - A job with no rule, with the rule it proposes and where that rule came from. Errors with no rule, where most of your code throws `HttpError`, is one.
 - Code that breaks a rule, with every place it does. Tests count: a test named against your Tests rule is a place like any other.
 - A job done two ways, with a count for each way, such as dates parsed with `date-fns` in 40 places and `moment` in 12. Your own code that does what an installed package already does counts as a way. The row names the way it would keep and why. After your go the Standard gets a line such as `Dates: date-fns. Old way: moment (#61).`, where #61 is the ticket that moves the old uses. A later run takes the `Old way:` mark off once no code uses that way.
+- Old API use: code that calls an API the stack's own docs, read on this run, now call old or deprecated, with what replaces it. With no web access, the page says `Not checked: Old API use, no web access`.
 
 In a repo with no Standard, every area (Names, Structure, Errors, Logging, Tests, and so on) is a job with no rule, so the first run writes the whole file. Rows with new places come first, under Still spreading. A row an open ticket already covers shows as Known and gets no question. A row whose ticket was closed but whose problem is back shows as Came back.
 

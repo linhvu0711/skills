@@ -26,7 +26,7 @@ Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the 
 
 ## Kinds
 
-One report kind: id `standards`, title `Standard`. Before you group the judges' places, run `checks.md` § Check the rules with the research's returns, then § Two ways with the way-judges' returns. This section maps the checks to rows; the checks themselves live there. Kinds of row:
+One report kind: id `standards`, title `Standard`. Before you group the judges' places, run `checks.md` § Check the rules with the research's returns, then § Two ways with the way-judges' returns, and § Old API use. This section maps the checks to rows; the checks themselves live there. Kinds of row:
 
 - **Old or wrong rule**: a rule that check calls Outdated or Behind current practice. One row per rule; its place is the rule's line.
   - Outdated, as `run flake8` when `ruff.toml` replaced it, or an `Old way: moment (#61)` mark once no file uses moment. Advice `fix`: update it to what the repo has now, or drop it, and an `Old way:` mark loses its `Old way:` part; the change list gives the new text. `choice` is false.
@@ -41,14 +41,17 @@ One report kind: id `standards`, title `Standard`. Before you group the judges' 
   Its places are the code lines that show the way, or the scattered rule's lines. When no line in the repo does the job, it has one place: the page of the rule's source, or, with no rule, the main page the research searched (its `none` return, or the part's Sources table row when the part was not due), labelled `Seen` with `read on this run`, `searched on this run, no rule`, or, for a Sources table row, `from the Sources table, checked <date>`.
 - **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way. In a folder scan, the reason says the count covers that folder only.
 - **Two ways**: each job of `checks.md` § Two ways. One row per job. Its places are the way-judges' places for every way; its reason names each way with its count, as `date-fns 40, moment 12, own code 3 (src/utils/date.ts)`, and in a folder scan says the counts cover that folder only. Advice `fix`, naming the winner of `checks.md` § Two ways and why, as `use date-fns: 40 of 55 places, and the repo installs it`. `choice` is true: the user picks the one way, and every other way becomes its Old way.
+- **Old API use**: each API of `checks.md` § Old API use. One row per API. Its places are the lines that use it; its reason names the source that marks it old, the version, and what replaces it, as `componentWillMount: old since React 16.3 (react-docs), use componentDidMount`. Advice `fix`: a ticket moves the uses to the replacement, a `chore` when it is a sweep. `choice` is false.
 
 A stack part the user names as planned during the talk is researched per `research.md` before its area's rows get an answer.
 
 `changes` adds `Sources table: <n> rows` when the research read any source, so a run with no row still writes the dates it checked.
 
+`not_checked` names each case `checks.md` § Old API use did not check: `Old API use, no web access`, or `Old API use for <part>, not due for research`, one line per part.
+
 ## Apply
 
-- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row, whose ticket moves every other way's uses to the way picked: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
+- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row, whose ticket moves every other way's uses to the way picked, or an Old API use row: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
 - **Edits.** After the run filed the tickets:
   - a scattered rule moved in leaves its old file, and so does one whose clash the user settled for the other rule; the rest of that file stays;
   - an Old or wrong rule answered drop loses its line;

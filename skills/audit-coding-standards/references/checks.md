@@ -106,6 +106,21 @@ code does that they do not.
 Done when every job in the returns is a row, or a job with one way and
 no own code that redoes a package or feature.
 
+## Old API use
+
+Each `old` line of the research's returns is an API a source read on
+this run marks old (ADR 0003). Only an API old from the installed
+version or before counts. Search the files in scope for its name with
+`rg -n -w`. A hit is a use when the line calls, imports, extends, or
+sets the API; a hit in a comment, a string, or a same-named thing of
+another package is not. Each API with a use is a row. Two cases leave
+it not checked: no web access, where the research read no source, and
+a stack part the research skipped as not due (`research.md`
+§ Re-check).
+
+Done when every `old` line is searched, and each case not checked is
+named with why.
+
 ## Secrets
 
 Configs and `.env` files carry secrets. Redact before they enter the chat
