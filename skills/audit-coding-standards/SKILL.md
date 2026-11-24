@@ -52,7 +52,7 @@ A stack part the user names as planned during the talk is researched per `resear
 
 ## Apply
 
-- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row with a use of another way, in the repo, not only the scope, whose ticket moves those uses to the way picked, or an Old API use row: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
+- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row with a use of another way, in the repo, not only the scope, whose ticket moves those uses to the way picked and, on a folder scan, gives their count in the whole repo, or an Old API use row: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
 - **Edits.** After the run filed the tickets:
   - a scattered rule moved in leaves its old file, and so does one whose clash the user settled for the other rule; the rest of that file stays;
   - an Old or wrong rule answered drop loses its line;
