@@ -91,7 +91,7 @@ One helper per kind, one per batch. Each brief holds the batch's files and the s
 
 - `comment-judge`: a batch of about ten files with comment lines. Its brief pastes § Always stays and § Kinds, Comments.
 - `unused-judge`: a batch of about ten files. Its brief pastes § Kinds, Unused code, and § Borders.
-- `copy-judge`: a batch of about five groups, so about ten files. Its brief holds the groups' lines and pastes § Kinds, Copies, and § Borders.
+- `copy-judge`: a batch of groups that hold about ten files in all; a group with more files is a batch of its own. Its brief holds the groups' lines and pastes § Kinds, Copies, and § Borders.
 - `hack-judge`: a batch of about ten files. Its brief holds the full path of `../../shared/trail.py` and pastes § Always stays, § Kinds, Hacks, and § Borders.
 
 ## Apply
