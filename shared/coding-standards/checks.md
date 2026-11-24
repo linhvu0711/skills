@@ -72,16 +72,19 @@ Four checks, in this order. The caller says which rules they run on.
   use. `git log -1` on the rule's file against the code gives its age:
   a hint where to look, never the verdict.
 - **Drift**: the code breaks a live rule. For each rule a search can
-  check, get a count and three `file:line` examples. Drift is a code
+  check, get a count and three `file:line` examples. A check that is on
+  in a checker config is a live rule too: run the checker, and its hits
+  for that check are the count and the examples. Drift is a code
   problem by default: the rule stands.
 - **Behind current practice**: a rule, or the code's pattern, that a
   research result contradicts. A rule with no source is not a finding
   by itself; the team may have made it.
 - **Gaps**: an area in `Areas` with no rule, and a stack part in use or
-  planned with no rule. A setting that is on in a checker config is a
-  rule of the area it covers, since a rule a tool checks lives only in
-  its config (`standard.md` § Add one rule): a line length set in
-  `ruff.toml` fills Formatting. Also scattered rules, which belong in
+  planned with no rule. A check that is on in a checker config, or a
+  formatter the repo runs, is a rule of the area it covers, since a
+  rule a tool checks lives only in its config (`standard.md` § Add one
+  rule): `ruff format` in CI fills Formatting, while a `line-length`
+  value with no check or formatter that uses it fills nothing. Also scattered rules, which belong in
   the Standard.
 
 Done when every rule the caller named has been checked for outdated,

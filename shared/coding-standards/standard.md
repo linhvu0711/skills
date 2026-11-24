@@ -71,8 +71,10 @@ table at its end, or a line tagged with a tool alone, as `[eslint]`,
 is in an older shape. § Sources table and § Add one rule each bring it
 up to date first: add the three lines, name `Layout` `Structure`, and
 move the table per § Sources table. A line tagged with a tool alone
-goes when that tool's config has its check on, since the config then
-holds the rule; with the check off, the line stays and loses its tag.
+goes when that tool's config has its check on for every file the line
+covers, since the config then holds the rule. A check on for only some
+of those files, as an override for `src/` alone, or a check that is
+off: the line stays and loses its tag.
 Every other rule stays in its area.
 
 ## Sources table
