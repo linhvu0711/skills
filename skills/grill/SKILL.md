@@ -50,7 +50,7 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
 
 **No line**, the default:
 
-- Work follows, code to build: file it in the shape the work takes, with as few tickets as the work allows:
+- Work follows, code to build. When the settled work changes what a person sees or clicks (a screen, a page, a dialog, a control), first say `Run /create-prototype <the feature or page>, or say go to file the work.` and wait. A change the user makes while reviewing the prototype is a decision: add it to the settled list, and to each doc entry it changes. On `go`, file. Work that changes no screen files at once. File it in the shape the work takes, with as few tickets as the work allows:
   - One ticket: invoke the to-issue skill with the Skill tool.
   - A few tickets that do not depend on each other: invoke to-issue once per ticket.
   - Tickets that depend on each other, or more than one ticket from a seed issue: invoke to-epic.
