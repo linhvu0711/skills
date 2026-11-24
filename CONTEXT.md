@@ -288,6 +288,10 @@ _Avoid_: plan, summary
 The table in `docs/standards/runs.md` with one line for each clean-codebase run: the skill, the date, and the commit.
 _Avoid_: run log, state file
 
+**Hack**:
+Code that goes around a problem and does not solve it: a check turned off, an unsafe cast, a wait that hides a timing problem, an error that is ignored.
+_Avoid_: workaround, tech debt, smell
+
 ## Worktrees
 
 **Safe to prune**:

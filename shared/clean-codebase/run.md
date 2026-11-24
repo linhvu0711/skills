@@ -8,9 +8,10 @@ things the steps ask for, each in its own section:
 
 - **Kinds**: the report kinds it finds, each an `id` and a `title`, and
   for each kind of row its advice and when a row needs the user's choice.
-- **Search**: how search tools find the places, before any helper reads.
-- **Helper**: the skill agent that judges a batch of places, and what its
-  brief pastes in.
+- **Search**: for each kind, how search tools find its places, before
+  any helper reads.
+- **Helper**: for each kind, the skill agent that judges a batch of its
+  places, how big a batch is, and what its brief pastes in.
 - **Apply**: which rows become a ticket and which a seed, and how the
   skill writes its own edits after the go.
 
@@ -49,12 +50,12 @@ user's go, it files and writes nothing.
    shows it, with no fixed number, and say why in the phrase, as `the
    last 3 weeks: about 40 commits a week, no earlier run`. Hold the
    phrase as `new`, and the span start as a date.
-4. **Places.** Run the skill's § Search on the scope. Hold `HEAD`'s
+4. **Places.** Run the skill's § Search on the scope, for each kind. Hold `HEAD`'s
    short SHA as the run's commit.
-5. **Judge.** Batch the files with places, about ten files per batch,
-   per `../facts.md` § Brain and hands. Start the skill's helper on each
-   batch per `../facts.md` § Skill agents, all in one message. Each brief
-   holds the batch's files, the span start, and what the skill's
+5. **Judge.** Batch each kind's places as the skill's § Helper says,
+   about ten files per batch, per `../facts.md` § Brain and hands. Start
+   each kind's helper on each of its batches per `../facts.md` § Skill
+   agents, all in one message. Each brief holds the batch's files, the span start, and what the skill's
    § Helper says to paste in. Each place comes back with its `path:line`,
    its text, its row kind, its evidence label (`Seen` or `Inferred`, per
    `../facts.md` § Evidence labels) and proof, and `new`: its line is

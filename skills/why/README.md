@@ -48,7 +48,7 @@ It only reads: no change to the repo, no comment on GitHub.
 
 ## Tests
 
-The cases for [trail.py](scripts/trail.py) are in [tests/trail.sh](tests/trail.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [trail.py](../../shared/trail.py), in the shared core since prune-codebase reads it too, are in [shared/tests/trail.sh](../../shared/tests/trail.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
 
 ## Credits
 

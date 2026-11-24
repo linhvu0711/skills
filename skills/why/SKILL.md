@@ -19,7 +19,7 @@ written to the repo or to GitHub.
 1. **Code.** The words after the skill's command name the code:
    - `<file>:<line>` or `<file>:<start>-<end>`: that range.
    - A file named alone, or a question about a whole file: the whole file,
-     and step 2 runs `python3 scripts/trail.py <file>`.
+     and step 2 runs `python3 ../../shared/trail.py <file>`.
    - A symbol, or a line of code: `git grep -n -F '<it>'`. One hit: the
      range is the function or block around it, read from the file.
      Several: the one the question names, else the first, and say which.
@@ -32,7 +32,7 @@ written to the repo or to GitHub.
 2. **Trail.** From the repo's top folder, with `<file>` from there:
 
    ```bash
-   python3 scripts/trail.py <file>:<start>-<end>
+   python3 ../../shared/trail.py <file>:<start>-<end>
    ```
 
    It prints each commit that changed the lines, newest first, with its
