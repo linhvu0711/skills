@@ -99,7 +99,7 @@ def main():
     shell = (Path(__file__).resolve().parent / "report.html").read_text(encoding="utf-8")
     output = path.with_suffix(".html")
     tmp = output.with_suffix(".html.tmp")
-    payload = json.dumps(page_data(report), ensure_ascii=False).replace("</", r"<\/")
+    payload = json.dumps(page_data(report), ensure_ascii=False).replace("<", r"\u003c")
     try:
         tmp.write_text(shell.replace("const DATA = {};", "const DATA = " + payload + ";"), encoding="utf-8")
         os.replace(tmp, output)

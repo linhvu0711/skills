@@ -90,6 +90,17 @@ t_cb_keeps_old_page() {
   eq same "same" "$(cmp -s "$T/first" "$T/clean-prune-codebase-acme-shop.html" && echo same || echo differs)"
 }
 
+t_cb_escapes_tags_in_text() {
+  # Given: R1's first place is the first line of a commented-out script
+  cb_rows '(.rows[] | select(.id == "R1") | .places[0].text) = "<!-- <script src=\"old.js\">"'
+  # When
+  cb_build "$T/clean-prune-codebase-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq scripts 2 "$(grep -o '<script' "$T/clean-prune-codebase-acme-shop.html" | wc -l | tr -d ' ')"
+  eq text '<!-- <script src="old.js">' "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -r '.rows[] | select(.id == "R1") | .places[0].text')"
+}
+
 cases=(
   "builds the report page with its counts|t_cb_builds_report"
   "says nothing found for no rows|t_cb_nothing_found"
@@ -98,4 +109,5 @@ cases=(
   "refuses a Known row with no ticket|t_cb_refuses_known_no_ticket"
   "builds the same page twice|t_cb_builds_twice"
   "keeps the old page after a bad build|t_cb_keeps_old_page"
+  "escapes tags in a place's text|t_cb_escapes_tags_in_text"
 )
