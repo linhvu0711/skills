@@ -141,7 +141,7 @@ git log --since=<date> --no-merges -i -E --grep='^(fix|revert)' --format='@%h %a
 ```
 
 Each line is `<folder>` and a tab, then `<short SHA> <date> <subject>`.
-`<scope>` is `.`, or the folder the user named. Count per folder with
+`<scope>` is `.`, or the folder the user named, then one `':(exclude)<path>'` for each path the run leaves out (`../../shared/clean-codebase/run.md` § Scan), as `':(exclude)vendor'`, so a fix that regenerates a vendored file adds no line for its folder. Count per folder with
 `cut -f1 | sort | uniq -c | sort -rn | head -5`. Each folder whose count
 stands clear of the rest is a row, five at most, unless the Standard's
 By folder area already has a rule for it. No line, or no count that
