@@ -35,7 +35,7 @@ One report kind: id `comments`, title `Comments`. Six kinds of row, each with it
 - **Code inside a comment**: `// const old = fetchV1()`. Advice `fix`: delete. All such places are one row.
 - **Banner line**: `// ===== helpers =====`. Advice `fix`: delete. All such places are one row.
 - **Long note of why**: many lines that explain a decision, as a twenty-line block above a retry loop. Advice `fix`: move it to an ADR and leave one line with its link. One row per note, and `choice` is true: whether it is worth an ADR, and its title, are the user's.
-- **Hack or `TODO` with no ticket link**: `// temp fix, Safari drops the first event`, `// TODO: retry`, `// don't touch, breaks prod`. One row per hack, unless one fix covers several. The advice:
+- **Hack or `TODO` with no ticket or ADR link**: `// temp fix, Safari drops the first event`, `// TODO: retry`, `// don't touch, breaks prod`. One row per hack, unless one fix covers several. The advice:
   - `keep-and-mark` with a ticket, when a fix can come;
   - `keep-and-mark` with an ADR, when the hack stays for good;
   - `fix`: delete, when the code already does what the note asks, as a `TODO: retry` above code that retries.
