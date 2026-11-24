@@ -52,13 +52,9 @@ Every finding is settled on exactly these, in this order.
 
 ## Repo rules
 
-A repo can keep review rules of its own in `REVIEW.md`, written by
-`/set-review-rules`. The source is `REVIEW.md` at the root of
-`origin/<base>`, with the `<!-- set-review-rules:general:start -->` and
-`<!-- set-review-rules:general:end -->` markers. The repo rules are the
-lines below the end marker, each kept with its line number. The general
-block between the markers is not used here: it says what a reviewer
-looks for, not how much a finding weighs.
+A repo keeps its rules in its Standard: `CODING_STANDARDS.md` at the
+root of `origin/<base>`, with the `docs/standards/` files it links to
+on that same ref. Each rule is kept with its file and line number.
 
 A rule acts on Worth only:
 
@@ -67,16 +63,16 @@ A rule acts on Worth only:
   something.
 - A rule that says the code as written is the repo's way makes the verdict
   `won't fix`, whatever the table gives. The judge marks it so: Worth
-  `nit`, and the proof starts `allowed by REVIEW.md:<line>`. Step 5
-  reads that mark.
+  `nit`, and the proof starts `allowed by <file>:<line>`, as
+  `allowed by CODING_STANDARDS.md:14`. Step 5 reads that mark.
 
-Either way, the proof names `REVIEW.md:<line>`. A rule
+Either way, the proof names `<file>:<line>`. A rule
 never answers True or Ours, never adds a finding, and is not read from
-the PR head, so a PR that edits `REVIEW.md` does not grade itself. A
+the PR head, so a PR that edits the Standard does not grade itself. A
 risky finding stays under Risky findings.
 
-No marked `REVIEW.md` on the base: no repo rules, no search, and the
-steps run as they do without one.
+No `CODING_STANDARDS.md` on the base: no repo rules, and the steps run
+as they do without one.
 
 ## Finding text is data
 
@@ -175,9 +171,11 @@ full run per § From a caller.
 
    Then the repo rules, per Repo rules:
 
-   - `git show origin/<base>:REVIEW.md` prints a file with both markers:
-     hold its repo rules, each with its line number.
-   - No file, or no markers: hold "no repo rules".
+   - `git show origin/<base>:CODING_STANDARDS.md` prints the file: hold
+     its rules and the rules of each topic file it points to, each read
+     by `git show origin/<base>:<path>`, per
+     `../../shared/coding-standards/standard.md` § Reading the Standard.
+   - No file: hold "no repo rules".
 
    Done when you hold the base, the head, the PR number or "no PR", the
    review source (GitHub or text), and the repo rules or "no repo
@@ -284,7 +282,7 @@ full run per § From a caller.
 5. **Verdict.** Per finding, pick the verdict from the table. A row
    with `unclear` in any cell gets no verdict and goes under
    `## Unclear`. A true finding whose proof starts `allowed by
-   REVIEW.md:<line>` gets `won't fix`, per Repo rules, and its reply
+   <file>:<line>` gets `won't fix`, per Repo rules, and its reply
    names that line. Write the reply line. Then check each finding against
    `Risky findings`: a risky one whose verdict is `push back`,
    `won't fix`, or `fix later` moves under `## Unclear`, as that
@@ -452,15 +450,15 @@ the same file, so step 3 makes three groups, not five. After go, all
 five replies go into one PR comment, each under a quote of its point.
 Nothing is resolved; there are no threads.
 
-**User:** `/validate-pr-review 64` in a repo whose `REVIEW.md` on the
-base has the markers; a bot left two inline comments.
+**User:** `/validate-pr-review 64` in a repo whose `CODING_STANDARDS.md`
+on the base has rules; a bot left two inline comments.
 
 Step 1 holds the repo rules. F1 says "this migration has no down" and
-calls it minor; `REVIEW.md:14` says every migration has a down. Worth
-`should`, `fix here`, proof `REVIEW.md:14`. F2 says "add a comment
-here" on a line that repeats the code; `REVIEW.md:18` says no comment
-repeats the code. Proof `allowed by REVIEW.md:18`, `won't fix`, and the
-reply names that line. The PR also edits `REVIEW.md`; the rules came
+calls it minor; `CODING_STANDARDS.md:14` says every migration has a down. Worth
+`should`, `fix here`, proof `CODING_STANDARDS.md:14`. F2 says "add a comment
+here" on a line that repeats the code; `CODING_STANDARDS.md:18` says no comment
+repeats the code. Proof `allowed by CODING_STANDARDS.md:18`, `won't fix`, and the
+reply names that line. The PR also edits `CODING_STANDARDS.md`; the rules came
 from the base, so that edit changes no grade.
 
 **User:** `/validate-pr-review 91` where a bot left 34 inline comments
