@@ -60,8 +60,8 @@ The Sources table gets a row for every source in the report's
 `Sources` line, and for every source the research read during the
 grill, per `standard.md` § Sources table.
 
-Done when every settled rule is in `CODING_STANDARDS.md` or one topic
-file exactly once, every rule from a source names a row of the Sources
+Done when every settled rule is in exactly one place: a line in
+`CODING_STANDARDS.md` or one topic file, or a lint setting in a config, every rule from a source names a row of the Sources
 table, every lint setting `standard.md` § Lint settings allows is in a
 config and each one it holds back is named under Hand off, and
 `git status` lists only the files above and any the grill wrote itself.
