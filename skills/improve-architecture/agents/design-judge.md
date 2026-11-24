@@ -28,7 +28,9 @@ Your brief holds the files of one batch, the span start (a date), the full path 
 Your last message is the report and nothing else, one line per candidate, numbered from C1:
 
 ```
-C<n> | <kind id> | <path:line>, <path:line> | <Seen|Inferred>: <the friction and its proof> | new: <yes|no> | deletion test: <concentrates|moves|n/a> | <advice>
+C<n> | <kind id> | <path:line> new: <yes|no>, <path:line> new: <yes|no> | <Seen|Inferred>: <the friction and its proof> | deletion test: <concentrates|moves|n/a> | <advice>
 ```
+
+Each place carries its own `new`, so the report marks only the new lines.
 
 The advice is `fix` or `keep-and-mark`, with a few words: `fix: one Order intake module`. With no candidate in the batch: `NO PLACES`.
