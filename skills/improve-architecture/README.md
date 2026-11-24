@@ -23,7 +23,7 @@ Then it asks only about the cards that need you, one question at a time, through
 
 After the go it files each redesign as a ticket typed `refactor`, so [plan-up](../plan-up/) plans it with a lock test where no test covers the code. A design you keep on purpose gets an ADR, and the next run leaves it out. It adds each rule to `CODING_STANDARDS.md` and one line to the Run table in `docs/standards/runs.md`. Nothing is committed. The last line is `Ready for a pull request` when a file changed.
 
-When it finds nothing, the page says so, and the skill asks nothing and writes nothing. Stop the talk before the go and it files and writes nothing. Without GitHub, or with no right to file issues there, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file.
+When it finds nothing, the page says so, and the skill asks nothing and writes nothing. Stop the talk before the go and it files and writes nothing. Without GitHub, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file. A ticket it cannot file, as with a login that may not file issues, stops the run before it writes any file.
 
 ## Needs
 

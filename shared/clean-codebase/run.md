@@ -270,3 +270,8 @@ GitHub cannot be reached, issues are off, or the repo is archived. The
 scan, the report, and the talk run; § Known and Came back is skipped.
 § Change list prints the list and ends the run: nothing is filed and no
 file is written.
+
+The check cannot see whether the login may file issues. A login that may
+not is caught when its first ticket fails, at § Do it step 1, before any
+file is written. A change list with no ticket needs no GitHub, so its
+files are written.

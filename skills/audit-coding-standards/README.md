@@ -26,7 +26,7 @@ After the go it files the tickets first: code that breaks a rule gets a ticket t
 
 The Standard opens with three lines that explain its marks. A rule a tool checks lives in that tool's config, not in the file. `(name)` after a rule names its source. `[eslint, after #61]` means a tool will check the rule once ticket #61 lands. `Old way:` means existing code still uses a way you should not copy. The first area is One way for each job, as in `Dates: date-fns. Old way: moment (#61).` A topic with more than about 40 rules moves to `docs/standards/<topic>.md`. The shape is in [standard.md](../../shared/coding-standards/standard.md).
 
-When it finds nothing, the page says so and nothing is written. When it found nothing wrong but checked some sources again, the page says "I found nothing to fix." and the change list offers to write their new dates. Stop the talk before the go and it files and writes nothing. Without GitHub, or with no right to file issues there, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file.
+When it finds nothing, the page says so and nothing is written. When it found nothing wrong but checked some sources again, the page says "I found nothing to fix." and the change list offers to write their new dates. Stop the talk before the go and it files and writes nothing. Without GitHub, you still get the report, the talk, and the change list in chat, but it files no ticket and writes no file. A ticket it cannot file, as with a login that may not file issues, stops the run before it writes any file.
 
 ## Needs
 
