@@ -19,7 +19,7 @@ Your brief holds the files of one batch, the span start (a date), every rule wit
 - Read each file whole.
 - A line that breaks a rule is a place of kind `code that breaks a rule`. Its proof names the rule's `path:line`. A test file is code: a test that breaks a rule, as a test name against the Tests rule, is a place too.
 - A break of a check that is on in a checker config the brief names is the checker's to report. Leave it out.
-- For each area with no rule, give one place per file that shows how this file does that job, of kind `job with no rule`: the first such line, with the area, the way, and the file's count in the proof, as `Errors: throws HttpError, 4 lines`.
+- For each area with no rule, give one place per way this file does that job, of kind `job with no rule`: the first line that does it that way, with the area, the way, and that way's count in the file in the proof, as `Errors: throws HttpError, 4 lines`. A file that throws `HttpError` 4 times and returns `null` twice gives two places.
 - Date each place with `git blame -L <line>,<line> --porcelain <file>`. It is `new` when its commit is after the span start, or when the line is not committed yet.
 - Label each place per the evidence labels of `shared/facts.md`: `Seen` when you read the proof, `Inferred` when it follows from what you read.
 - Leave every file, commit, and GitHub issue as you found it: you read and run read-only commands only.
