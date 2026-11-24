@@ -81,7 +81,7 @@ What a decision asks, by kind:
 - **Too thin**: the constraints on the deepened module; which dependencies sit behind the seam and how each is tested, per its category; the shape of the deepened module; which tests survive and which are replaced.
 - **Leaks its inside**, **Hard to test**, **Heavier than its job**: whether to redesign, and how.
 
-When the user asks to see other interfaces for a candidate, run `references/design-it-twice.md` before that decision closes.
+When the user asks to see other interfaces for a Too thin candidate, run `references/design-it-twice.md` before that decision closes.
 
 A candidate the user turns down for a reason that stays true is answered `keep-and-mark`: the grill hands back its ADR, so the next run leaves the candidate out.
 
