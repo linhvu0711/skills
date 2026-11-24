@@ -1,0 +1,97 @@
+# The Standard
+
+What the Standard looks like, and the one step that adds a rule to it.
+Every skill that writes `CODING_STANDARDS.md` or adds a rule follows
+this file, so each rule lands in one format.
+
+## Shape
+
+`CODING_STANDARDS.md` starts with these three lines, as written:
+
+```
+This file is the Standard: the rules for how code is written in this repo. Read it before you write or review code.
+`(name)` after a rule names its source, listed in `docs/standards/sources.md`. `[tool]` means a tool checks the rule.
+`Old way:` names a way that existing code still uses. Add no new use of it.
+```
+
+Then the areas, each a `##` heading, in this order:
+
+| Area | What a rule here settles |
+|---|---|
+| One way for each job | For each job the code does in many places, the one thing to use |
+| Names | Case per kind: files, types, functions, constants, DB columns, env vars |
+| Structure | Folder tree, where a new module goes, what a module may import |
+| Errors | Throw or return, custom error types, what gets caught where |
+| Logging | Library, levels, structured fields, what is never logged |
+| Tests | Framework, file placement, naming, what must have a test |
+| Commits | Message format, branch names, PR size |
+| Deps | How one is added, pinning, lockfile policy |
+| Config and secrets | Env var loading, what lives in a `.env`, what never enters git |
+| API shape | Route naming, response envelope, versioning, pagination |
+| Formatting | Indent, line length, quotes, trailing commas: the formatter's job |
+| Stack-specific | Type strictness, async style, ORM usage, component patterns, and the like |
+| By folder | A rule for one folder, the folder first |
+| Each change | A rule about a whole change |
+| Not covered | The areas left out on purpose |
+
+An area with no rule has no heading.
+
+- **One way for each job**: one line per job: the job, the one thing to
+  use, and its Old way when one exists, as in `Dates: date-fns. Old
+  way: moment (#61).` The number is the ticket that removes the last
+  uses of the Old way, `(no ticket)` until one is filed. The mark goes
+  when the uses are gone.
+- **By folder**: the folder first, as in "`billing/`: each change is
+  checked against the invoice tests."
+- **Each change**: as in "A migration has a way back."
+- **Not covered**: last, so the next reader knows each area left out
+  was a choice.
+
+Every other area reads as rules, one per line. Each rule states the
+positive form: "Files are `kebab-case`", "Errors are returned, never
+thrown across a module edge". Each rule is in our own words, never the
+source's text copied. A rule from a source ends with the source's name
+in parentheses, then a rule a tool checks names the tool in brackets:
+`Components that use state are Client Components (react-docs) [eslint]`.
+A rule from the code or the user carries no source name. A rule with a
+reason that is not obvious gets one sentence of why under it.
+
+A topic past about 40 rules (one area, or one stack part's rules) moves
+to `docs/standards/<topic>.md` in the same rule shape. Its heading stays
+in `CODING_STANDARDS.md` with one line: "Rules are in
+`docs/standards/<topic>.md`."
+
+### Older shape
+
+A Standard with no intro lines, a `Layout` heading, or a `## Sources`
+table at its end is in an older shape. § Sources table and § Add one
+rule each bring it up to date first: add the three lines, name
+`Layout` `Structure`, and move the table per § Sources table. Every
+rule stays in its area.
+
+## Sources table
+
+`docs/standards/sources.md` holds the one Sources table, for all rules
+in all files. `CODING_STANDARDS.md` holds no table. A write to the
+table runs § Older shape first: a table still at the end of
+`CODING_STANDARDS.md` moves here with its rows unchanged, and leaves
+the Standard.
+
+```
+# Sources
+
+| Part | Name | Link | Version | Checked |
+|---|---|---|---|---|
+| react | react-docs | https://react.dev/reference/rules | 19 | 2026-09-30 |
+| general | conventional-commits | https://www.conventionalcommits.org/en/v1.0.0/ | 1.0.0 | 2026-09-30 |
+```
+
+`Part` is the stack part, or `general`. `Version` is the stack part's
+version the source covers, or `-` when it has none. `Checked` is the
+date the research read it. A stack part that was searched and gave no
+rule still gets a row, for the main page searched. The audit reads this
+table to know which stack parts are due.
+
+Each source gets a new row, or the version and date of its row already
+there. A row that no rule cites any more and no stack part in use or
+planned needs goes.

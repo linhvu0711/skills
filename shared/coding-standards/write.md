@@ -4,6 +4,8 @@ How `set-coding-standards` and `audit-coding-standards` settle the
 report with the user and write what was settled. The report comes from
 `checks.md`, next to this file. A rule comes from a source the research
 read, the code, or the user; `research.md` defines the source levels.
+The Standard's shape and the step that adds one rule are in
+`standard.md`, next to this file.
 
 ## Grill
 
@@ -39,11 +41,13 @@ itself (a `CONTEXT.md` term, an ADR); those are the grill's. Stop.
 
 Files in the working tree, nothing else:
 
-- `CODING_STANDARDS.md` at the root, in the shape under `File shape`.
-  Every settled rule is in it. Rules folded in from other files are
-  removed from those files.
+- `CODING_STANDARDS.md` at the root, in the shape of `standard.md`
+  § Shape. Every settled rule is in it. Rules folded in from other
+  files are removed from those files.
 - `docs/standards/<topic>.md` for a topic past about 40 rules, per
-  `File shape`.
+  `standard.md` § Shape.
+- `docs/standards/sources.md`, the Sources table, per `standard.md`
+  § Sources table.
 - `.editorconfig`, written or updated to match.
 - Configs of the tools the project already has, so each rule a tool can
   check is checked. New tools and CI changes become issues in Hand off.
@@ -53,50 +57,12 @@ Files in the working tree, nothing else:
 
 The Sources table gets a row for every source in the report's
 `Sources` line, and for every source the research read during the
-grill: a new row, or the version and date of a row already
-there. A row that no rule cites any more and no stack part in use or
-planned needs goes.
+grill, per `standard.md` § Sources table.
 
 Done when every settled rule is in `CODING_STANDARDS.md` or one topic
 file exactly once, every rule from a source names a row of the Sources
 table, every tool-checkable rule is in a config, and `git status` lists
 only the files above and any the grill wrote itself.
-
-## File shape
-
-`CODING_STANDARDS.md` reads as rules, one per line, grouped by area
-heading in the order of `checks.md` § Areas. Each rule states the
-positive form: "Files are `kebab-case`", "Errors are returned, never
-thrown across a module edge". Each rule is in our own words, never the
-source's text copied. A rule from a source ends with the source's name
-in parentheses, then a rule a tool checks names the tool in brackets:
-`Components that use state are Client Components (react-docs) [eslint]`.
-A rule from the code or the user carries no source name. A rule with a
-reason that is not obvious gets one sentence of why under it. Areas left
-out on purpose are listed once at the end under "Not covered", so the
-next reader knows it was a choice.
-
-A topic past about 40 rules (one area, or one stack part's rules) moves
-to `docs/standards/<topic>.md` in the same rule shape. Its heading stays
-in `CODING_STANDARDS.md` with one line: "Rules are in
-`docs/standards/<topic>.md`."
-
-The file ends with the one Sources table, for all rules in all files:
-
-```
-## Sources
-
-| Part | Name | Link | Version | Checked |
-|---|---|---|---|---|
-| react | react-docs | https://react.dev/reference/rules | 19 | 2026-09-30 |
-| general | conventional-commits | https://www.conventionalcommits.org/en/v1.0.0/ | 1.0.0 | 2026-09-30 |
-```
-
-`Part` is the stack part, or `general`. `Version` is the stack part's
-version the source covers, or `-` when it has none. `Checked` is the
-date the research read it. A stack part that was searched and gave no
-rule still gets a row, for the main page searched. The audit reads this
-table to know which stack parts are due.
 
 ## Hand off
 

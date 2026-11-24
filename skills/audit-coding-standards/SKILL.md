@@ -43,8 +43,10 @@ Explore agents retrieve, short lookups are yours.
 
 6. **Clean.** Verdict `clean`: when step 3 re-checked sources, set each
    of their Sources table rows to the version read and today's date,
-   from the report's `Sources` line, and name the rows changed. That
-   table is the only change. Stop.
+   from the report's `Sources` line, per
+   `../../shared/coding-standards/standard.md` § Sources table, which
+   brings an older shape up to date first. Name the rows changed. Those
+   are the only changes. Stop.
 
 7. **Grill.** Verdict `needs work`: read
    `../../shared/coding-standards/write.md` and run its

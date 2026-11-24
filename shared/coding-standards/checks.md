@@ -60,19 +60,8 @@ examples, or `no pattern`.
 The checklist for gaps and proposals. Each area gets one rule, or an
 on-purpose "left out".
 
-| Area | What a rule here settles |
-|---|---|
-| Names | Case per kind: files, types, functions, constants, DB columns, env vars |
-| Layout | Folder tree, where a new module goes, what a module may import |
-| Errors | Throw or return, custom error types, what gets caught where |
-| Logging | Library, levels, structured fields, what is never logged |
-| Tests | Framework, file placement, naming, what must have a test |
-| Commits | Message format, branch names, PR size |
-| Deps | How one is added, pinning, lockfile policy |
-| Config and secrets | Env var loading, what lives in a `.env`, what never enters git |
-| API shape | Route naming, response envelope, versioning, pagination |
-| Formatting | Indent, line length, quotes, trailing commas: the formatter's job |
-| Stack-specific | Type strictness, async style, ORM usage, component patterns, and the like |
+The areas are those of `standard.md` § Shape from `Names` to
+`Stack-specific`, with what a rule in each settles.
 
 ## Check the rules
 
