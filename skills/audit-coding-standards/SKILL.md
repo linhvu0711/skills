@@ -29,8 +29,8 @@ One report kind: id `standards`, title `Standard`. Before you group the judges' 
 - **Old or wrong rule**: a rule that check calls Outdated or Behind current practice. One row per rule; its place is the rule's line.
   - Outdated, as `run flake8` when `ruff.toml` replaced it. Advice `fix`: update it to what the repo has now, or drop it; the change list gives the new text. `choice` is false.
   - Behind current practice, as secrets read at import against the Django deployment checklist. Advice `fix`: follow the source. `choice` is true, since the team may have made the rule on purpose.
-- **Job with no rule**: each Gap that check finds, so in a repo with no Standard, every area. One row per area, stack part, or file of scattered rules, each with one proposed rule, the first that applies:
-  - a scattered rule for the area that is not outdated: that rule, `scattered: <path>`. Advice `fix`: move it into the Standard. `choice` is false.
+- **Job with no rule**: each Gap that check finds, so in a repo with no Standard, every area. One row per area or stack part with no rule, and one per scattered rule that is not outdated and no such row proposes, so every rule of a scattered file moves in. Each row has one proposed rule, the first that applies:
+  - a scattered rule for the area that is not outdated: that rule, `scattered: <path>`. Advice `fix`: move it into the Standard. `choice` is false, unless it says something different from a rule of the Standard or another scattered rule for the same job: then `choice` is true, and the reason names both rules, as `.test.ts` in `CONTRIBUTING.md` against `.spec.ts` in the Standard.
   - else the rule `checks.md` § Size the repo picks for the bucket, with its source or the code's count. `choice` is true when the code's way and the research differ.
   - neither: down `research.md` § No source. `model's view, no source` sets `choice` true. `no source` has no proposal: advice `fine`, `choice` true, and the user writes the rule or leaves the area out under Not covered.
 
@@ -47,7 +47,7 @@ A stack part the user names as planned during the talk is researched per `resear
 
 - **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets: a ticket row. Its body names the lint setting it turns on. No row is a seed.
 - **Edits.** After the run filed the tickets:
-  - a scattered rule moved in leaves its old file; the rest of that file stays;
+  - a scattered rule moved in leaves its old file, and so does one whose clash the user settled for the other rule; the rest of that file stays;
   - an Old or wrong rule answered drop loses its line;
   - `CLAUDE.md` and `AGENTS.md`, where they exist and lack it, get one line: `Read CODING_STANDARDS.md before you write or review code.`
   - `.editorconfig` is written or updated to match the Formatting rules;
