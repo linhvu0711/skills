@@ -492,17 +492,18 @@ facts: the seam, the files, the tests that cover them, and the file count
 per package whenever the work may touch more than one (a wide refactor, a
 `feat` that spans server and web). For `feat` and `fix`, also ask
 what the repo's Standard, `CODING_STANDARDS.md` and the `docs/standards/`
-files it links to, says for errors, empty states, loading, and bad input,
-and how the repo already shows them near this place, with file and line,
-so the unhappy-path lines can copy it. When the ticket looks XS or S, add
-to the brief: the exact lines that change, the pattern to copy (the way
-the Standard names for the job when it names one, else the nearest
+files it links to, says for errors, empty states, loading, bad input, and
+no permission, and how the repo already shows them near this place, with
+file and line, so the unhappy-path lines can copy it. When the ticket looks
+XS or S, add to the brief: the exact lines that change, the pattern to copy
+(the way the Standard names for the job when it names one, else the nearest
 existing pattern, with any way the Standard marks `Old way:` named as
-such), and the test file and command that cover the place. Steps are written from those, and only from those. For a `task`,
-the round is one reader whose brief asks for the web, against the platform's own
-docs: the page for each step, the fields and values, the review or approval
-wait, and the check that proves the result works. The round is done when
-every fact you listed came back or came back as "not found". No second round.
+such), and the test file and command that cover the place. Steps are
+written from those, and only from those. For a `task`, the round is one
+reader whose brief asks for the web, against the platform's own docs: the
+page for each step, the fields and values, the review or approval wait, and
+the check that proves the result works. The round is done when every fact
+you listed came back or came back as "not found". No second round.
 
 ## Repo convention
 
