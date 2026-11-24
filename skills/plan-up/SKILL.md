@@ -193,9 +193,10 @@ two match: ask. Then go on with their URLs.
      order it relies on;
    - what the repo already holds that does the job, or part of it: a
      helper, a service, a component, a type, a fixture, a script; where
-     each lives, who calls it, how far it reaches. The plan extends
-     these before it adds when their design fits, per `plan.md`
-     § Slices;
+     each lives, who calls it, how far it reaches, and whether the
+     Standard names it as the one way for its job or marks it
+     `Old way:`. The plan extends these before it adds when their
+     design fits, per `plan.md` § Slices;
    - for each part the work touches: what it would look like if built
      today for every job it has, the new one too; the signs in the code
      that its current design is wrong, as `plan.md` § Slices, Right
@@ -215,7 +216,8 @@ two match: ask. Then go on with their URLs.
    - how the repo runs test, typecheck, lint, build, and the app, read
      from CI config, package scripts, and README;
    - the nearest existing test at each candidate seam, how the repo
-     mocks its borders, and, for each Done-when line, each test at any
+     mocks its borders, with the rules of the Standard's Tests area,
+     and, for each Done-when line, each test at any
      level that already checks it, whole or in part, per `plan.md`
      § Tests that can fail;
    - when any line is on a screen: the UI kind and how it is opened,
@@ -223,8 +225,11 @@ two match: ask. Then go on with their URLs.
      tokens, the shared component folder, the nearest existing screen,
      and, for a screen that exists on the base, what it shows there
      now, for the walk's `Before` line;
-   - the repo's own words and code rules, wherever they live:
-     `CONTEXT.md`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`,
+   - the repo's Standard first, `CODING_STANDARDS.md` at the root and
+     the `docs/standards/` files it links to, with its `One way for
+     each job` lines and each `Old way:` mark; then the repo's own words
+     and other code rules, wherever they live: `CONTEXT.md`,
+     `CONTRIBUTING.md`,
      `CONVENTIONS.md`, `STYLE*.md`, `docs/**`, ADRs, the
      `## Docs to write` of other open issues in the area
      (decided, not built: they bind the plan like an ADR), `AGENTS.md`,
@@ -406,11 +411,14 @@ two match: ask. Then go on with their URLs.
      the plan path, `BASE_WT`, and the full path of
      `../../shared/facts.md`. The design checker's brief adds the full
      paths of `../../shared/codebase-design.md` and
-     `references/plan.md`. Nothing else: no notes, no reasons, no
-     chat.
+     `references/plan.md`. When `BASE_WT` has `CODING_STANDARDS.md`
+     at its root, each brief also holds its full path, the repo's
+     Standard. Nothing else: no notes, no reasons, no chat.
    - **Sort each finding.** Design findings first, since one can
      change the approach and leave a correctness finding about a step
-     that is gone; that finding is `kept`, with that reason. One you
+     that is gone; that finding is `kept`, with that reason. A
+     correctness finding on the same `Change` and the same Standard
+     rule as a design finding is that finding: sort it once. One you
      agree with: fix the plan. One you disagree with, or whose fix is
      a big fork by step 5's sort: ask the user, one question per
      message in the format of `../../shared/grilling.md`, with the

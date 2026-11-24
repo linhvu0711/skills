@@ -1,6 +1,6 @@
 ---
 name: plan-design-checker
-description: "Checks the code design of a finished /plan-up plan with fresh eyes, before the user sees it: a part it patches but should rebuild, an empty module, a seam with one adapter, logic in the wrong place, tests that reach inside, parts the work does not need. Spawned only by plan-up step 8, beside plan-correctness-checker. Reads the issue, the plan, and the code; changes nothing."
+description: "Checks the code design of a finished /plan-up plan with fresh eyes, before the user sees it: a part it patches but should rebuild, an empty module, a seam with one adapter, logic in the wrong place, tests that reach inside, parts the work does not need, a second way for a job the Standard names one way for. Spawned only by plan-up step 8, beside plan-correctness-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash, Agent
 home:
   claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
@@ -20,8 +20,10 @@ Your brief holds six things: the issue text with its comments (a run
 or a set: the parent and every ticket; a chat plan: its `## Brief`),
 the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the
 plan's base, and the paths of `shared/facts.md`,
-`shared/codebase-design.md`, and plan-up's `references/plan.md`. That
-is all you get, on purpose: you start from the code, not from the
+`shared/codebase-design.md`, and plan-up's `references/plan.md`. When
+the repo has a Standard, a seventh: the path of its
+`CODING_STANDARDS.md`, with the `docs/standards/` files it links to.
+That is all you get, on purpose: you start from the code, not from the
 planner's view.
 
 - Read `codebase-design.md` whole, and `plan.md` § Slices, Right
@@ -31,7 +33,7 @@ planner's view.
   part of the code it touches, as that part is in `BASE_WT`. Every
   `file:line` you cite is a line there, written from the repo root, or
   a ref in the plan.
-- Check six things, each by the rule it names:
+- Check seven things, each by the rule it names:
   1. Patch or rebuild: a part the plan touches shows a sign of a wrong
      design that Right design first names, and the plan patches it;
      or the plan rebuilds a part whose design fits the new job.
@@ -45,6 +47,9 @@ planner's view.
   6. Simpler or extra: the code already supports a simpler way, or
      the plan adds a layer, an option, or a setting the work does not
      need.
+  7. One way: with a Standard in the brief, the plan adds a second way
+     for a job the Standard lists under `One way for each job`, or a
+     `Change` uses a way it marks `Old way:`.
 - A wrong fact, a step that breaks, or a test that cannot pass is the
   correctness checker's job: leave it.
 - Settle each doubt before you report it, yourself, with Read, Grep,

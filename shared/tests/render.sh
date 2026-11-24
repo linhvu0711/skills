@@ -123,13 +123,17 @@ t_render_same_kind_rule() {
   every_rules_hold "means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again"
 }
 
+t_render_standard_first_rule() {
+  every_rules_hold "take the way the repo's Standard names for it, else the nearest existing pattern"
+}
+
 t_render_same_kind_before_fallback() {
   local ex same any
   for ex in local devin cursor; do
     render "$ex" rules
     eq "$ex exit" 0 "$code"
     same="$(printf '%s\n' "$out" | grep -n '^- A second surprise of the same kind' | cut -d: -f1)"
-    any="$(printf '%s\n' "$out" | grep -n '^- Anything else: \*\*pick the nearest existing pattern' | cut -d: -f1)"
+    any="$(printf '%s\n' "$out" | grep -n '^- Anything else: \*\*take the way the repo.s Standard names' | cut -d: -f1)"
     eq "$ex same-kind rule before the fallback" yes "$([ -n "$same" ] && [ -n "$any" ] && [ "$same" -lt "$any" ] && echo yes || echo no)"
   done
 }
@@ -271,6 +275,7 @@ cases=(
   "every executor's rules never undo a Mutate break with git|t_render_mutate_no_git_rule"
   "every executor's rules stop on a second surprise of one kind|t_render_same_kind_rule"
   "every executor's rules sort the same-kind stop before the nearest-pattern fallback|t_render_same_kind_before_fallback"
+  "every executor's rules take the Standard's way before the nearest pattern|t_render_standard_first_rule"
   "every executor's rules keep a comment only when it says why|t_render_comment_rule"
   "every executor's rules check data at the edge|t_render_edge_rule"
   "cloud rules carry the perf row|t_render_cloud_perf_row"

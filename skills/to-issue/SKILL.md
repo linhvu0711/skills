@@ -30,7 +30,8 @@ report. This file is the order of operations.
 3. **Type and size.** Pick the type from the table. Size from the facts
    table. When a size fact is unknown, run the one lookup round, then decide.
    When the ticket looks XS or S, the same round also fetches the lines, the
-   pattern to copy, and the test, so Steps can be written.
+   pattern to copy (the Standard's way first, per the rules file § Lookup),
+   and the test, so Steps can be written.
    XL: say which facts push it over the ceiling and that `to-epic` is the
    tool for it, and stop. Nothing is created.
    `task`: no size, no XL check. The lookup round goes to the platform's
@@ -44,8 +45,8 @@ report. This file is the order of operations.
 5. **Write.** Title per the title rule. Body per the template, with the type
    variant when it applies. Every Done-when line is observable from outside
    the code. For `feat` and `fix`, walk the five unhappy-path states per the
-   rules file: copy the repo's pattern, else default and mark Open, else the
-   gate fails and you ask in one block. XS also gets Steps, per the Steps
+   rules file: copy the Standard's rule, else the repo's pattern, else
+   default and mark Open, else the gate fails and you ask in one block. XS also gets Steps, per the Steps
    rules. S gets Steps only when every step comes from a line that was seen
    and no choice is open. A step that needs a decision the chat never made:
    XS becomes S, and S gets no Steps. `task`: body per the rules file § Task

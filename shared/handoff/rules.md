@@ -656,9 +656,13 @@ Sort each one:
   that do not exist, two callers that expect another shape), means the
   design may be wrong: **stop and ask**, rather than pick the nearest
   pattern again. Say both surprises and what they share.
-- Anything else: **pick the nearest existing pattern**, go on, and say
-  so {{here}} in one line: plan said X, code had Y, did Z. When it
-  changed what the code does, it is also a bullet under `Where to look`
+- Anything else: **take the way the repo's Standard names for it, else
+  the nearest existing pattern**, go on, and say so {{here}} in one
+  line: plan said X, code had Y, did Z. The Standard is
+  `CODING_STANDARDS.md` at the repo root, with the `docs/standards/`
+  files it links to. Where the code shows a way it marks `Old way:`,
+  take the way it names. No Standard: the nearest existing pattern.
+  When it changed what the code does, it is also a bullet under `Where to look`
   in the PR.
 <!-- local -->
   `/build-and-prove` puts it there through `/make-pr`.

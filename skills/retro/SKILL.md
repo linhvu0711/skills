@@ -152,6 +152,6 @@ Work goes through two stages. The implementing agent carries the most context pr
 ### Files
 
 - `CLAUDE.md` and `AGENTS.md` load into every session in the repo. Use them sparingly, mostly for navigation pointers.
-- Review rules and coding standards files are read during review, not implementation.
+- Review rules files are read during review. The Standard, `CODING_STANDARDS.md`, is read when an agent plans, writes a ticket, builds, or reviews.
 - Docs are reference files that other files point to. Look for one before proposing a new one.
 - Skills hold docs whose description earns a place in context, and commands the user types.
