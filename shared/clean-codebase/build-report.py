@@ -81,9 +81,12 @@ def summary(rows):
 
 def page_data(report):
     data = dict(report)
-    data["rows"] = [dict(row, count=len(row["places"]), spreading=any(p["new"] for p in row["places"]))
+    data["rows"] = [{"state": "", "ticket": "", "choice": False, **row,
+                     "places": [{"new": False, **p} for p in row["places"]],
+                     "count": len(row["places"]),
+                     "spreading": any(p.get("new") for p in row["places"])}
                     for row in report["rows"]]
-    data["summary"] = summary(report["rows"])
+    data["summary"] = summary(data["rows"])
     return data
 
 

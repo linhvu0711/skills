@@ -101,6 +101,16 @@ t_cb_escapes_tags_in_text() {
   eq text '<!-- <script src="old.js">' "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -r '.rows[] | select(.id == "R1") | .places[0].text')"
 }
 
+t_cb_row_with_no_state() {
+  # Given: the rows with an empty state have no state key at all
+  cb_rows '(.rows[] | select(.state == "")) |= del(.state)'
+  # When
+  cb_build "$T/clean-prune-codebase-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq summary "$(jq -r .summary "$here/clean-codebase-build-report/report-data.json")" "$(cb_data "$T/clean-prune-codebase-acme-shop.html" | jq -r .summary)"
+}
+
 cases=(
   "builds the report page with its counts|t_cb_builds_report"
   "says nothing found for no rows|t_cb_nothing_found"
@@ -110,4 +120,5 @@ cases=(
   "builds the same page twice|t_cb_builds_twice"
   "keeps the old page after a bad build|t_cb_keeps_old_page"
   "escapes tags in a place's text|t_cb_escapes_tags_in_text"
+  "builds a row with no state|t_cb_row_with_no_state"
 )
