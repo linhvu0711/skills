@@ -115,7 +115,7 @@ Run: <cmd>              UI: web | desktop | terminal | none
 Open: <how the executor reaches the UI after Run>
 Screen: <web: 1440x795 and 390x664 | desktop: window size | terminal: cols x rows>
 Platform: linux | windows | macos-outpost
-Standards: <the files that hold the rules, or "the code">
+Standards: <the Standard first when the repo has one, then the other files that hold rules, or "the code">
 
 ## Perf
 Metric:    <what is measured, and its unit>
@@ -569,6 +569,11 @@ slice of its own. `Then` is a known literal: a value from the issue, the
 spec, or a worked example. `Change` names a line you saw this session and
 a pattern to copy, or, in a rebuild with no pattern that fits, a
 `Decided` line that says why; describing a shape the code already shows is waste.
+The pattern to copy is the way the Standard names for the job when it
+names one, and a line that follows it; with no rule there, or no
+Standard, the nearest existing pattern. Where the code near the change
+shows a way the Standard marks `Old way:`, the `Change` copies the way
+the Standard names.
 `Change` extends before it adds when the part's design fits (Right
 design first): a helper, a component, a type, a
 fixture that does the job or part of it is called or widened, never
@@ -597,7 +602,10 @@ case name says what the code does, as in
 `exports one order as CSV`, never how it does it, as in `calls
 formatRow once`. Mocks only at borders, named in `Given`. A database the
 repo owns is no border when the repo has a test database: the test runs
-on it. A border the repo already mocks: copy that mock. A border the repo has never mocked: decide the
+on it. A border the repo already mocks: read the Standard's Tests area
+first; a rule there for that border is the mock to write, and a mock it
+marks `Old way:` is replaced by the one it names. With no such rule,
+copy the repo's mock. A border the repo has never mocked: decide the
 shape here, one function per outside call and the client passed in, and
 write it in `Change`. `Change` follows the rules under `Standards`. A
 rule the copied `file:line` breaks, or one no line shows, is quoted in
@@ -743,7 +751,8 @@ No dead code found: no delete slice and no line about it.
 
 The executor has no taste, so the plan holds every look
 decision. A slice on a screen names in `Change` the mockup frame it
-matches and the component or screen it copies, `file:line`. What the
+matches and the component or screen it copies, `file:line`: the one
+the Standard names for that job when it names one, else the nearest. What the
 mockup and the repo leave open (spacing, copy, empty and error text, a
 color) is a small fork: pick, write it under `Decided`. No mockup and no
 rule to copy: a big fork, ask.
@@ -886,8 +895,9 @@ facts or forks.
   file the new case joins. A `Then` checked at two seams has a
   `Decided` line that names the risk only the second seam has.
 - Every `Change` names a `file:line` seen this session, or an earlier
-  layer's slice, and a pattern to copy, or, in a rebuild, a `Decided`
-  line that says why no pattern fits.
+  layer's slice, and a pattern to copy, per § Slices: the Standard's way
+  first, or, in a rebuild, a `Decided` line that says why no pattern
+  fits.
 - Every function, component, type, or file a `Change` adds has a
   `Decided` line naming the nearest existing one and why it does not
   serve, or saying the repo has never done this job. A new module's line
@@ -915,8 +925,11 @@ facts or forks.
   that says why.
   No dead code found: no delete slice and no line about it.
 - Every command in Facts came from CI, scripts, or README.
-- `Standards` names where the rules live; every `Change` follows them,
-  and a rule the copied line breaks is quoted.
+- `Standards` names where the rules live, the Standard first when the
+  repo has one; every `Change` follows them, copies the way the Standard
+  names where the code shows an `Old way:`, and adds no second way for a
+  job under its `One way for each job`; a rule the copied line breaks is
+  quoted.
 - Every slice on a screen names its mockup frame and the component or
   screen it copies; every open look choice is under `Decided`.
 - Every walk step names an exact label, route, key, or element, and
