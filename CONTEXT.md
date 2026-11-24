@@ -51,7 +51,7 @@ The grill's last step after `Grill done.`. It places the doc text the grill kept
 _Avoid_: wrap-up, finish
 
 **Gap check**:
-A second model's read of the decisions a grill settled, once, before the grill files more than one ticket. It reports missing pieces and decisions that rest on a fact the code contradicts, and each one the chat has not answered becomes a question to the user.
+A second model's read of the decisions a grill settled, once, before the grill files an epic. It reports missing pieces and decisions that rest on a fact the code contradicts, and each one the chat has not answered becomes a question to the user.
 _Avoid_: second opinion, grill review
 
 **Docs to write**:
