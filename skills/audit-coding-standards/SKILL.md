@@ -17,17 +17,19 @@ Then read `../../shared/clean-codebase/run.md` and follow it whole. It runs the 
 1. **Rules and size.** Run `checks.md` § Find the rules and § Size the repo, under its § Secrets. No `CODING_STANDARDS.md` at the root: the Standard is empty, and every rule found is scattered. Empty bucket: say what its table says and end the run; nothing is written.
 2. **Research.** Start it per `research.md`, beside the judges. With a Sources table, research only the stack parts its § Re-check calls due; with none, every part.
 3. **Files.** From the repo root, the files in scope are `git ls-files` minus what the run leaves out, and minus the rule files step 1 found. Tests stay in: they are code. Every file in scope has places, since any line can break a rule or show how the code does a job.
+4. **Packages.** Every dependency the repo's manifests name, with its version: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `Gemfile`, and the like. way-judge's brief holds this list.
 
 ## Helper
 
-`rule-judge`, one per batch. Its brief holds the batch's files, the span start, every rule of the Standard and every scattered rule with its `path:line`, the checker configs that have checks on, the areas of `checks.md` § Areas with what a rule in each settles, and § Kinds of this file, pasted in whole.
+- `rule-judge`, one per batch. Its brief holds the batch's files, the span start, every rule of the Standard and every scattered rule with its `path:line`, the checker configs that have checks on, the areas of `checks.md` § Areas with what a rule in each settles, and § Kinds of this file, pasted in whole but its Two ways, Old API use, and Folders that break most bullets.
+- `way-judge`, one per batch of about ten files that hold code; prose such as `.md` and `.txt`, and config, stay out, and tests stay in. Its brief holds the batch's files, the span start, the package list from § Search step 4, and every One way for each job line of the Standard with its `path:line`. It gets no § Kinds text: the row, its count, and its advice are the lead's.
 
 ## Kinds
 
-One report kind: id `standards`, title `Standard`. Before you group the judges' places, run `checks.md` § Check the rules with the research's returns. This section maps its four checks to rows; the checks themselves live there. Three kinds of row:
+One report kind: id `standards`, title `Standard`. Before you group the judges' places, run `checks.md` § Check the rules with the research's returns, then § Two ways with the way-judges' returns. This section maps the checks to rows; the checks themselves live there. Kinds of row:
 
 - **Old or wrong rule**: a rule that check calls Outdated or Behind current practice. One row per rule; its place is the rule's line.
-  - Outdated, as `run flake8` when `ruff.toml` replaced it. Advice `fix`: update it to what the repo has now, or drop it; the change list gives the new text. `choice` is false.
+  - Outdated, as `run flake8` when `ruff.toml` replaced it, or an `Old way: moment (#61)` mark once no file uses moment. Advice `fix`: update it to what the repo has now, or drop it, and an `Old way:` mark loses its `Old way:` part; the change list gives the new text. `choice` is false.
   - Behind current practice, as secrets read at import against the Django deployment checklist. Advice `fix`: follow the source. `choice` is true, since the team may have made the rule on purpose.
 - **Job with no rule**: each Gap that check finds, so in a repo with no Standard, every area. One row per area or stack part with no rule, and one per scattered rule that is not outdated and no such row proposes, so every rule of a scattered file moves in. Each row has one proposed rule, the first that applies:
   - a scattered rule for the area that is not outdated: that rule, `scattered: <path>`. Advice `fix`: move it into the Standard. `choice` is false, unless it says something different from a rule of the Standard or another scattered rule for the same job: then `choice` is true, and the reason names both rules, as `.test.ts` in `CONTRIBUTING.md` against `.spec.ts` in the Standard.
@@ -38,6 +40,7 @@ One report kind: id `standards`, title `Standard`. Before you group the judges' 
 
   Its places are the code lines that show the way, or the scattered rule's lines. When no line in the repo does the job, it has one place: the page of the rule's source, or, with no rule, the main page the research searched (its `none` return, or the part's Sources table row when the part was not due), labelled `Seen` with `read on this run`, `searched on this run, no rule`, or, for a Sources table row, `from the Sources table, checked <date>`.
 - **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way. In a folder scan, the reason says the count covers that folder only.
+- **Two ways**: each job of `checks.md` § Two ways. One row per job. Its places are the way-judges' places for every way; its reason names each way with its count, as `date-fns 40, moment 12, own code 3 (src/utils/date.ts)`, and in a folder scan says the counts cover that folder only. Advice `fix`, naming the winner of `checks.md` § Two ways and why, as `use date-fns: 40 of 55 places, and the repo installs it`. `choice` is true: the user picks the one way, and every other way becomes its Old way.
 
 A stack part the user names as planned during the talk is researched per `research.md` before its area's rows get an answer.
 
@@ -45,14 +48,14 @@ A stack part the user names as planned during the talk is researched per `resear
 
 ## Apply
 
-- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
+- **Tickets.** A Code that breaks a rule row answered fix the code, and any row whose answer changes code, as following the source on secrets, or a Two ways row, whose ticket moves every other way's uses to the way picked: a ticket row. Its body names the lint setting it turns on. A Code that breaks a rule row whose rule lost a clash in the talk files no ticket, since that rule leaves the repo. No row is a seed.
 - **Edits.** After the run filed the tickets:
   - a scattered rule moved in leaves its old file, and so does one whose clash the user settled for the other rule; the rest of that file stays;
   - an Old or wrong rule answered drop loses its line;
   - `CLAUDE.md` and `AGENTS.md`, where they exist and lack it, get one line: `Read CODING_STANDARDS.md before you write or review code.`
   - `.editorconfig` is written or updated to match the Formatting rules;
   - the Sources table, per `standard.md` § Sources table: a row for every source a rule of this run cites and every source the research read, with its version and today's date. A stack part not researched keeps its rows, so the next run checks it again.
-- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above.
+- **Rules.** The run's Rules step writes each added, changed, or moved rule by `standard.md` § Add one rule, whose step 0 creates `CODING_STANDARDS.md` in a repo with none. A rule whose lint setting waits names the ticket filed above. A Two ways row's rule is a One way for each job line, `<job>: <way picked>. Old way: <every other way> (#<n>).`, as `Dates: date-fns. Old way: moment (#61).`, `<n>` the ticket filed above. An Outdated `Old way:` mark loses its `Old way:` part, and the line keeps the job and its way.
 
 ## Examples
 

@@ -254,6 +254,10 @@ _Avoid_: deprecated, legacy
 Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`.
 _Avoid_: legacy rules, old conventions
 
+**Two ways**:
+A row where the code does one job in two or more different ways. The same code in two places is a copy, which is a row of prune-codebase.
+_Avoid_: inconsistency, duplication
+
 ## Clean codebase
 
 **Row**:

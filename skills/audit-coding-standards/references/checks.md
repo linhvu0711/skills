@@ -59,7 +59,10 @@ Four checks, in this order. They run on every rule of the Standard and every sca
 - **Outdated**: a rule that names a tool, path, version, or link that no
   longer exists in the repo, or a rule for a stack part no longer in
   use. `git log -1` on the rule's file against the code gives its age:
-  a hint where to look, never the verdict.
+  a hint where to look, never the verdict. An `Old way:` mark is
+  outdated when the way-judges give no place for that way and `rg` for
+  its name finds no use in the files in scope. Whole-repo scans only: a
+  folder scan cannot see the rest of the repo.
 - **Drift**: the code breaks a live rule. Its places are each line
   that breaks the rule. A check that is on in a checker config, and a
   formatter the repo runs, report their own breaks wherever the repo
@@ -80,6 +83,28 @@ Done when every rule of the Standard and every scattered rule has
 been checked for outdated, drift, and behind current practice, every
 area and stack part for a gap, and each finding carries its evidence
 or source.
+
+## Two ways
+
+Join the way-judges' returns by job across batches: two names for one
+job, as `parse dates` and `date parsing`, are one job. A job is a row
+when the scope does it in two or more ways and the Standard has no One
+way for each job line for it. Add the counts per way. Own code whose
+proof names a language feature or an installed package that already
+does the job is two ways on its own: the own code, and that feature or
+package with a count of 0 when nothing uses it, as `own code
+(src/utils/debounce.ts) 6, lodash.debounce 0`. A job done one way in
+many places, with no own code beside a package or feature, is no row.
+
+The winner, by the bucket of § Size the repo: in a small repo, the way
+a research source names, else the way most places use; in a middle or
+big repo, the way most places use, with a source that names another way
+in the reason. Own code loses to an installed package or a language
+feature that does the same job, unless the reason names what the own
+code does that they do not.
+
+Done when every job in the returns is a row, or a job with one way and
+no own code that redoes a package or feature.
 
 ## Secrets
 
