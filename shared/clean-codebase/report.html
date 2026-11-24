@@ -57,6 +57,7 @@
   th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; background: var(--neutral-soft); }
   tr.row { cursor: pointer; }
   tr.row:hover td { background: var(--neutral-soft); }
+  tr.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   tr.row td:first-child { border-left: 3px solid transparent; white-space: nowrap; }
   tr.row td:first-child::before { content: "▸"; color: var(--muted); font-size: 11px; display: inline-block; width: 14px; transition: transform .15s; }
   tr.row.open td:first-child::before { transform: rotate(90deg); }
@@ -117,7 +118,8 @@ const DATA = {};
     if (r.choice) tags.push(el('span', { class: 'tag choice' }, 'Your choice'));
     if (r.state === 'known') tags.push(el('span', { class: 'tag known' }, 'Known ' + r.ticket));
     if (r.state === 'came-back') tags.push(el('span', { class: 'tag back' }, 'Came back ' + r.ticket));
-    const head = el('tr', { class: 'row' + (r.choice ? ' choice' : ''), 'data-id': r.id },
+    const head = el('tr', { class: 'row' + (r.choice ? ' choice' : ''), 'data-id': r.id,
+      tabindex: '0', 'aria-expanded': 'false' },
       el('td', {}, el('span', { class: 'advice ' + r.advice }, ADVICE[r.advice])),
       el('td', {}, el('span', { class: 'name' }, r.name), tags),
       el('td', {}, r.reason),
@@ -127,9 +129,14 @@ const DATA = {};
         el('code', {}, p.at), el('code', {}, p.text),
         el('span', { class: 'how' }, p.label + ': ' + p.proof),
         p.new ? el('span', { class: 'mark' }, 'new') : null))));
-    head.addEventListener('click', () => {
+    const toggle = () => {
       places.hidden = !places.hidden;
       head.classList.toggle('open', !places.hidden);
+      head.setAttribute('aria-expanded', String(!places.hidden));
+    };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
     return [head, places];
   };
