@@ -1,6 +1,6 @@
 ---
 name: interface-designer
-description: Designs one interface for a module that /improve-codebase wants to deepen. Spawned only by that skill's design-it-twice step, three or more in parallel, each under a different design constraint. Read-only.
+description: Designs one interface for a module that /improve-architecture wants to deepen. Spawned only by that skill's design-it-twice step, three or more in parallel, each under a different design constraint. Read-only.
 tools: Read, Grep, Glob
 home:
   claude: claude claude-fable-5-2 high

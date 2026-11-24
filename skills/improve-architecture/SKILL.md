@@ -1,5 +1,5 @@
 ---
-name: improve-codebase
+name: improve-architecture
 description: "Scan a codebase for candidates: shallow modules worth deepening, and code to simplify (dead, copied, hand-made, unused, twisted). Show them in a visual report, then grill every one and file the work as issues. Use for 'improve architecture', 'where should we deepen', 'find refactor candidates', 'simplify the codebase', 'find dead code'."
 disable-model-invocation: true
 ---
@@ -157,7 +157,7 @@ explorers retrieve, short lookups are yours.
 
 ## Examples
 
-**User:** `/improve-codebase`
+**User:** `/improve-architecture`
 
 Scope from git log: `src/orders/` and `src/pricing/` carry most of the last
 200 commits. Two explorers, one per folder. Orders comes back with
@@ -169,7 +169,7 @@ badge `Strong`, dependency `local-substitutable` (PGLite exists); one
 small table, "Dates", with two rows. User says `go`. The grill opens with
 the seam question, then asks about the Dates group as one question.
 
-**User:** `/improve-codebase the notification code is a mess`
+**User:** `/improve-architecture the notification code is a mess`
 
 Direction named, no git-log inference. One explorer on
 `src/notifications/`. One big card, `ports & adapters`, because Twilio and

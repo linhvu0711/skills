@@ -1,10 +1,10 @@
-# improve-codebase
+# improve-architecture
 
 Scans a codebase for two kinds of candidate: shallow modules worth deepening, and code to simplify. Shows them in a visual report, then grills you on every one and files the work as issues.
 
 ## Use it when
 
-The code has become hard to change or hard to test, or has grown parts nobody needs, and you want to know where a refactor or a cut would pay off most. Type `/improve-codebase`, or add a direction: `/improve-codebase the notification code is a mess`. With no direction it looks where the last 200 commits landed.
+The code has become hard to change or hard to test, or has grown parts nobody needs, and you want to know where a refactor or a cut would pay off most. Type `/improve-architecture`, or add a direction: `/improve-architecture the notification code is a mess`. With no direction it looks where the last 200 commits landed.
 
 ## What you get
 

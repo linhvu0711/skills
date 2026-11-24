@@ -36,4 +36,4 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - Two ways to do one job go to [audit-coding-standards](../audit-coding-standards/); the same code twice stays here.
 - A wait or a retry in a test or CI goes to [improve-ci](../improve-ci/).
 - Shares its history script with [why](../why/).
-- For now [improve-codebase](../improve-codebase/) also reports unused and copied code. A module that only passes calls on is its find, not this skill's.
+- For now [improve-architecture](../improve-architecture/) also reports unused and copied code. A module that only passes calls on is its find, not this skill's.

@@ -67,7 +67,7 @@ How sure a stated fact is: Seen (read in a source, or run and observed), Inferre
 _Avoid_: confidence level, certainty
 
 **Candidate**:
-One find in the improve-codebase report: a deepening or a simplification, small or big. A big candidate gets a card with a before and after diagram and its own grill questions. Small candidates sit in topic tables, and the grill asks about each table as one group.
+One find in the improve-architecture report: a deepening or a simplification, small or big. A big candidate gets a card with a before and after diagram and its own grill questions. Small candidates sit in topic tables, and the grill asks about each table as one group.
 _Avoid_: finding, suggestion, card (the card is how a big one is shown)
 
 **Deepening**:
