@@ -60,7 +60,7 @@ From the repo root, list the files in scope with `git ls-files`, minus what the 
   - correct: replace the comment's text with the new text from the change list;
   - long note of why: replace the note with one line in the file's comment form, `Why: see docs/adr/<file>.md`;
   - keep and mark: add ` see #<n>` for a ticket or ` see docs/adr/<file>.md` for an ADR at the end of the comment, in the repo's form for links when it has one.
-- **Diff check.** Then `git diff -U0` on the files you edited. Every changed line is a comment line. A file with any other change: undo your edits in that file, and name it in chat with the line that is not a comment.
+- **Diff check.** Then `git diff -U0` on the files you edited. Each changed line is a comment line, or keeps the code before its comment as it was, as `foo(); // loop` that becomes `foo();`. A file with any other change: undo your edits in that file, and name it in chat with the line whose code changed.
 
 ## Examples
 
