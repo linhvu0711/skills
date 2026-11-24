@@ -1,6 +1,6 @@
 ---
 name: plan-correctness-checker
-description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
+description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass, a step that breaks the repo's Standard. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash, Agent
 home:
   claude: antigravity gemini-4-neon medium, devin gemini-4-neon-high medium
@@ -18,7 +18,9 @@ cold, from the plan alone, so every wrong fact in it becomes wrong code.
 Your brief holds four things: the issue text with its comments (a run
 or a set: the parent and every ticket; a chat plan: its `## Brief`),
 the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and
-the path of `shared/facts.md`. That is all you get, on purpose: you
+the path of `shared/facts.md`. When the repo has a Standard, a fifth:
+the path of its `CODING_STANDARDS.md`, with the `docs/standards/`
+files it links to. That is all you get, on purpose: you
 start from the code, not from the planner's view.
 
 - Read the plan whole, then check it against the code in `BASE_WT`.
@@ -31,7 +33,10 @@ start from the code, not from the planner's view.
   prove: a `Change` with a check before a write, or two actors that
   write one target, with no `Race:` Proof row for each interleaving that
   matters, or a race test whose writes never overlap at the seam, such
-  as two requests through a harness that serves one at a time. The
+  as two requests through a harness that serves one at a time; and,
+  with a Standard in the brief, a `Change` that breaks one of its
+  rules: one that uses a way it marks `Old way:`, or adds a second way
+  for a job it lists under `One way for each job`. The
   shape of the code (where logic lives, what is a module, a simpler
   way) is the design checker's job: leave it.
 - Hunt the list and save cases. Each list a screen reads needs a test

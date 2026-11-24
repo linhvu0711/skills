@@ -411,11 +411,14 @@ two match: ask. Then go on with their URLs.
      the plan path, `BASE_WT`, and the full path of
      `../../shared/facts.md`. The design checker's brief adds the full
      paths of `../../shared/codebase-design.md` and
-     `references/plan.md`. Nothing else: no notes, no reasons, no
-     chat.
+     `references/plan.md`. When `BASE_WT` has `CODING_STANDARDS.md`
+     at its root, each brief also holds its full path, the repo's
+     Standard. Nothing else: no notes, no reasons, no chat.
    - **Sort each finding.** Design findings first, since one can
      change the approach and leave a correctness finding about a step
-     that is gone; that finding is `kept`, with that reason. One you
+     that is gone; that finding is `kept`, with that reason. A
+     correctness finding on the same `Change` and the same Standard
+     rule as a design finding is that finding: sort it once. One you
      agree with: fix the plan. One you disagree with, or whose fix is
      a big fork by step 5's sort: ask the user, one question per
      message in the format of `../../shared/grilling.md`, with the
