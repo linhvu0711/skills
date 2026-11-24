@@ -60,9 +60,22 @@ t_copies_skips_binary() {
   eq stdout "6 lines: a.py:2-7 b.py:3-8" "$out"
 }
 
+t_copies_no_overlap_in_one_file() {
+  # Given: a six-line block, then the same block, then its first five lines, in one file
+  T="$(mktemp -d)"
+  for i in 1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5; do echo "v$i = $i"; done > a.py
+  echo a.py > list
+  # When
+  copies
+  # Then
+  eq exit 0 "$code"
+  eq stdout "6 lines: a.py:1-6 a.py:7-12" "$out"
+}
+
 cases=(
   "copies: two files share six lines: one group|t_copies_six_lines"
   "copies: five shared lines are no copy|t_copies_five_lines"
   "copies: a longer copy is one group|t_copies_longer_copy"
   "copies: a file that is not text is skipped|t_copies_skips_binary"
+  "copies: a block repeated in one file does not overlap itself|t_copies_no_overlap_in_one_file"
 )

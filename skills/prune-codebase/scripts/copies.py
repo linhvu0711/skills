@@ -67,8 +67,12 @@ def main():
     for group in groups:
         if shift(group, -1) in groups:
             continue
+        starts = defaultdict(list)
+        for path, i in group:
+            starts[path].append(i)
+        gap = min((b - a for s in starts.values() for a, b in zip(s, s[1:])), default=float("inf"))
         length = 1
-        while shift(group, length) in groups:
+        while MIN + length <= gap and shift(group, length) in groups:
             length += 1
         n = MIN + length - 1
         spans = [f"{path}:{files[path][i][0]}-{files[path][i + n - 1][0]}" for path, i in group]
