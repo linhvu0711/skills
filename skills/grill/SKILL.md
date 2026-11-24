@@ -40,7 +40,7 @@ Each answer can expose a fact you have not seen: an answer names a file, a servi
 A second model reads the settled decisions once, with fresh eyes, before the grill files more than one ticket. It runs when the user confirms shared understanding (`grilling.md` § Done), the seed has no close-out line, and the shape you named is more than one ticket. One ticket, a close-out line, or no work to file: skip to § Close out.
 
 1. Start `gap-checker` per `../../shared/facts.md` § Skill agents. Its brief holds the grill's source (the seed, the issue's text, or the idea in the user's words), each settled decision with its reason, each option the user turned down with why, the shape, the repo folder, and the full path of `../../shared/facts.md`. Nothing else: no chat.
-2. Sort each finding. One the chat already answered is `already settled`. Each other one joins the frontier as a question in the `grilling.md` format, its proof on the `Seen:` line.
+2. Sort each finding. A Gap the chat already answered is `already settled`. A Wrong fact is never settled by the answer whose reason it disproves. Each other finding joins the frontier as a question in the `grilling.md` format, a code proof on its `Seen:` line.
 3. Run the frontier until `grilling.md` § Done holds again, then ask the user to confirm again. The check runs once per grill: the questions after it end at this second confirm.
 4. Hold one line for the settled list: `Gap check: <n> found · <a> asked · <s> already settled`, `Gap check: none found`, or `Gap check: failed · <why>` when the checker errs, refuses, or hits a usage limit. With nothing left to ask, or a failed check, the first confirm stands.
 
@@ -50,7 +50,7 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
 
 **No line**, the default:
 
-- Work follows, code to build. When the settled work changes what a person sees or clicks (a screen, a page, a dialog, a control), first say `Run /create-prototype <the feature or page>, or say go to file the work.` and wait. A change the user makes while reviewing the prototype is a decision: add it to the settled list, and to each doc entry it changes. On `go`, file. Work that changes no screen files at once. File it in the shape the work takes, with as few tickets as the work allows:
+- Work follows, code to build. When the settled work changes what a person sees or clicks (a screen, a page, a dialog, a control), first say `Run /create-prototype <the feature or page>, or say go to file the work.` and wait. A change the user makes while reviewing the prototype is a decision: add it to the settled list, and to each doc entry it changes. A change that adds or alters a user action reopens its branch of the design tree: ask its frontier until `grilling.md` § Done holds again, with no second gap check. On `go`, file. Work that changes no screen files at once. File it in the shape the work takes, with as few tickets as the work allows:
   - One ticket: invoke the to-issue skill with the Skill tool.
   - A few tickets that do not depend on each other: invoke to-issue once per ticket.
   - Tickets that depend on each other, or more than one ticket from a seed issue: invoke to-epic.
