@@ -118,7 +118,9 @@ this run marks old (ADR 0003). Only an API old from the installed
 version or before counts. Search the files in scope for its name with
 `rg -n -w`. A hit is a use when the line calls, imports, extends, or
 sets the API; a hit in a comment, a string, or a same-named thing of
-another package is not. Each API with a use is a row. Two cases leave
+another package is not. An import that gives it another name, as
+`render as renderLegacy`, adds a search for that name in its file. Each
+API with a use is a row. Two cases leave
 it not checked: no web access, where the research read no source, and
 a stack part the research skipped as not due (`research.md`
 § Re-check).
