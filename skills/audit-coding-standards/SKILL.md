@@ -37,7 +37,7 @@ One report kind: id `standards`, title `Standard`. Before you group the judges' 
   A level 1 and a level 2 source that disagree, per `research.md` § Conflicts, set `choice` true, with both links in the reason. Every other proposal is advice `fix`, add the rule, with `choice` false.
 
   Its places are the code lines that show the way, or the scattered rule's lines. When no line in the repo does the job, it has one place: the page of the rule's source, or, with no rule, the main page the research searched (its `none` return, or the part's Sources table row when the part was not due), labelled `Seen` with `read on this run`, `searched on this run, no rule`, or, for a Sources table row, `from the Sources table, checked <date>`.
-- **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way.
+- **Code that breaks a rule**: each Drift place the judges found. A test that breaks a rule is a place like any other. One row per rule. Advice `fix`: a ticket fixes the code, a `chore` when it is a sweep, and turns on its lint setting per `standard.md` § Lint settings. `choice` is true when most places that do the job break the rule: keep it and fix the code, or change the rule to the code's way. In a folder scan, the reason says the count covers that folder only.
 
 A stack part the user names as planned during the talk is researched per `research.md` before its area's rows get an answer.
 
