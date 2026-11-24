@@ -19,7 +19,7 @@ Your brief holds groups that span about ten files in all, or one bigger group al
 - Read each copy in its file. In a group of more than ten places, read two of them: `copies.py` already found the same lines at the rest. Each copy you did not read keeps the range `copies.py` gave and is `Inferred`. A group is a copy when its places do the same job with the same code, as one date parser pasted into three modules.
 - Lines that match by chance, as a run of imports, a license, or a table of test data, are not a copy: leave the group out.
 - Widen a copy you read to the whole function or block the copies share, and name it.
-- Date each copy with `git blame -L <start>,<end> --porcelain <file>`. It is `new` when any of its lines has a commit after the span start, or is not committed yet.
+- Date each copy over the range `copies.py` gave, read or not, with `git blame -L <start>,<end> --porcelain <file>`. It is `new` when any of its lines has a commit after the span start, or is not committed yet.
 - A find that the borders give to another skill is not a place.
 - Label each copy per the evidence labels of `shared/facts.md`: `Seen` when you read both copies, `Inferred` when it follows from what you read.
 - Leave every file, commit, and GitHub issue as you found it: you read and run read-only commands only.
