@@ -29,7 +29,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Fits with
 
 - Calls [grill](../grill/) on every candidate. The issues it files are typed `refactor`, so [plan-up](../plan-up/) adds a lock test where no test covers the code.
-- [prune-comments](../prune-comments/) does the same job for comments, and fixes them itself.
+- [prune-codebase](../prune-codebase/) finds bad comments, edits them after your go, and files tickets for the hacks.
 - No other skill calls it; you start it yourself.
 
 ## Credits

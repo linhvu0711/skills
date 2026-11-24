@@ -108,8 +108,9 @@ planned needs goes.
 
 Every rule enters the Standard by these steps, whichever skill adds it.
 
-0. **Shape.** The Standard is in an older shape: bring it up to date
-   per § Older shape.
+0. **Shape.** No `CODING_STANDARDS.md` yet: create it with the three
+   lines of § Shape. The Standard is in an older shape: bring it up to
+   date per § Older shape.
 1. **Look first.** Search `CODING_STANDARDS.md` and its topic files for
    a rule that already says the lesson, or part of it. One found:
    change that rule, and add no second one.

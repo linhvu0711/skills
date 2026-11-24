@@ -258,6 +258,36 @@ _Avoid_: deprecated, legacy
 Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`.
 _Avoid_: legacy rules, old conventions
 
+## Clean codebase
+
+**Row**:
+One find in a clean-codebase report: one kind of problem, every place it shows, a count, and the agent's advice.
+_Avoid_: finding, issue, item
+
+**Still spreading**:
+A row that has more places than at the last run. The report lists these rows first.
+_Avoid_: trending, regression
+
+**Known**:
+A row or candidate that an open ticket already covers. The report shows it and asks nothing.
+_Avoid_: duplicate, ignored
+
+**Came back**:
+A row whose ticket is closed and whose problem is in the code again.
+_Avoid_: regression, reopened
+
+**Keep and mark**:
+The answer for a row that stays on purpose. A comment at the place, or one rule in the Standard, says why and links a ticket or an ADR.
+_Avoid_: ignore, accepted debt, won't fix
+
+**Change list**:
+What a run does after the user's go: the tickets, the new rules, the lint settings, the comment edits, and the ADRs.
+_Avoid_: plan, summary
+
+**Run table**:
+The table in `docs/standards/runs.md` with one line for each clean-codebase run: the skill, the date, and the commit.
+_Avoid_: run log, state file
+
 ## Worktrees
 
 **Safe to prune**:
