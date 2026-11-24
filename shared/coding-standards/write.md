@@ -75,6 +75,10 @@ In chat:
   issue you recommend for it (`fix` ticket, or a `chore` when it is a
   sweep), and the lint setting that issue turns on, per `standard.md`
   § Lint settings. Name `/to-issue` for one, `/capture` for a seed.
+- Lint settings held back, per `standard.md` § Lint settings, that no
+  drift line covers, such as a new rule the code already breaks: one
+  line each, with its count and the issue you recommend that fixes the
+  code and turns the setting on.
 - New tools or CI the rules need: one recommended issue each.
 - Agent-ready sources the research found: one line each, "you can
   install <name> as an extra: <URL>".
