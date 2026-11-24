@@ -19,7 +19,7 @@ A caller writes one block and nothing more: `Read ../grill/SKILL.md and follow i
 
 During a seeded grill, the glossary entries and the ADRs are yours to settle. New terms join the list. A rejected option with a load-bearing reason becomes an ADR in the list, so a later run of the caller does not suggest it again.
 
-The grill ends per `grilling.md` § Done, when the user confirms shared understanding. Then say `Grill done.`, list the settled decisions, run § Close out, and hand control back. The caller continues at its next step.
+The grill ends per `grilling.md` § Done, when the user confirms shared understanding, after § Gap check when it runs. Then say `Grill done.`, list the settled decisions, run § Close out, and hand control back. The caller continues at its next step.
 
 ## Before round 1
 
@@ -34,6 +34,15 @@ Build the first frontier from the plan and from what you found. Every question t
 ## During the interview
 
 Each answer can expose a fact you have not seen: an answer names a file, a service, an API, or a behaviour that nothing you fetched covers. `facts.md` § A fact that arrives late says what to do. Ask the rest of the frontier while the fetch runs.
+
+## Gap check
+
+A second model reads the settled decisions once, with fresh eyes, before the grill files more than one ticket. It runs when the user confirms shared understanding (`grilling.md` § Done), the seed has no close-out line, and the shape you named is more than one ticket. One ticket, a close-out line, or no work to file: skip to § Close out.
+
+1. Start `gap-checker` per `../../shared/facts.md` § Skill agents. Its brief holds the grill's source (the seed, the issue's text, or the idea in the user's words), each settled decision with its reason, each option the user turned down with why, the shape, the repo folder, and the full path of `../../shared/facts.md`. Nothing else: no chat.
+2. Sort each finding. One the chat already answered is `already settled`. Each other one joins the frontier as a question in the `grilling.md` format, its proof on the `Seen:` line.
+3. Run the frontier until `grilling.md` § Done holds again, then ask the user to confirm again. The check runs once per grill: the questions after it end at this second confirm.
+4. Hold one line for the settled list: `Gap check: <n> found · <a> asked · <s> already settled`, `Gap check: none found`, or `Gap check: failed · <why>` when the checker errs, refuses, or hits a usage limit. With nothing left to ask, or a failed check, the first confirm stands.
 
 ## Close out
 
