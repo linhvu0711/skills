@@ -329,7 +329,7 @@ A way of working that went well in two or more sessions or PRs, which a shared f
 _Avoid_: best practice, win
 
 **Setup map**:
-For one repo, the file that does each job for its agents (steering, review rules, coding standards, skills, checks and CI, docs), or none.
+For one repo, the file that does each job for its agents (steering, coding standards, skills, checks and CI, docs), or none.
 _Avoid_: config list
 
 **Home repo**:
