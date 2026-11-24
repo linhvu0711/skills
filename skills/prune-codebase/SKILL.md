@@ -24,7 +24,7 @@ These comments are never a place, and no row names them:
 - a pragma;
 - the `Given`, `When`, and `Then` lines in a test.
 
-A hack and a long note of why are rows per § Kinds, even when they say why.
+A long note of why is a Comments row, and a hack a Hacks row, even when its comment says why.
 
 ## Kinds
 
@@ -32,20 +32,13 @@ Four report kinds, each with its own helper (§ Helper).
 
 ### Comments
 
-Id `comments`, title `Comments`. Six kinds of row, each with its advice:
+Id `comments`, title `Comments`. Five kinds of row, each with its advice:
 
 - **Repeats the code**: `// loop over users` above the loop. Advice `fix`: delete. All such places are one row.
-- **No longer true**: `// returns null` above code that throws. Advice `fix`: delete it, or correct it when the comment says something the code cannot show; the change list gives the new text. All such places are one row.
+- **No longer true**: `// returns null` above code that throws, or a `TODO: retry` above code that retries. Advice `fix`: delete it, or correct it when the comment says something the code cannot show; the change list gives the new text. All such places are one row.
 - **Code inside a comment**: `// const old = fetchV1()`. Advice `fix`: delete. All such places are one row.
 - **Banner line**: `// ===== helpers =====`. Advice `fix`: delete. All such places are one row.
 - **Long note of why**: many lines that explain a decision, as a twenty-line block above a retry loop. Advice `fix`: move it to an ADR and leave one line with its link. One row per note, and `choice` is true: whether it is worth an ADR, and its title, are the user's.
-- **Hack or `TODO` with no ticket or ADR link**: `// temp fix, Safari drops the first event`, `// TODO: retry`, `// don't touch, breaks prod`. One row per hack, unless one fix covers several. The advice:
-  - `keep-and-mark` with a ticket, when a fix can come;
-  - `keep-and-mark` with an ADR, when the hack stays for good;
-  - `fix`: delete, when the code already does what the note asks, as a `TODO: retry` above code that retries.
-
-  `choice` is true when the fix is unclear, or when the hack may still be needed.
-
 A tool line with no reason is not a row.
 
 ### Unused code
@@ -56,12 +49,32 @@ Id `unused`, title `Unused code`. A function, a file, a folder, a flag, or an op
 
 Id `copies`, title `Copies`. The same code in two or more places, as one date parser pasted into three modules. One row per group; each copy is a place. Advice `fix`: a ticket to keep one copy and call it from the others. `fine` when the copies must stay apart, as a script that has to run with no imports.
 
+### Hacks
+
+Id `hacks`, title `Hacks`. Code that goes around a problem and does not solve it, with a comment or without one. Some examples; the list is not complete:
+
+- a line that turns a check off: `// eslint-disable-next-line`, `@ts-ignore`, `# noqa`;
+- an unsafe cast: `as any`, `as unknown as User`;
+- a wait that hides a timing problem: `sleep(500)` before a read;
+- a `catch` that ignores the error: `catch {}`, `except: pass`;
+- a guard that hides a bug: a null check for a state no correct caller reaches, per `../../shared/review/general-rules.md` rule 7;
+- a `TODO`, `HACK`, or `FIXME` note, as `// temp fix, Safari drops the first event` or `// don't touch, breaks prod`.
+
+A tool line with a reason (§ Always stays) is not a hack. Before it gives advice on a hack, the helper reads the history of its line with `../../shared/trail.py`: when it came, the PR and issue behind it, and what its fix would be. One row per hack, unless one fix covers several. The advice:
+
+- `fix`: a ticket when the fix is known, as a cast that a type the repo now has makes needless; a seed when it is unclear;
+- `keep-and-mark` with a ticket, when the hack stays until a fix can come;
+- `keep-and-mark` with an ADR, when it stays for good.
+
+`choice` is true when the fix is unclear, or when the hack may still be needed.
+
 ## Borders
 
 Some finds look like these kinds and belong to another skill. Leave them out of the report:
 
 - The same code two times is a copy and belongs here. Two different ways to do one job, as `fetch` in one module and `axios` in another, belong to `audit-coding-standards`.
 - A module that only passes calls on to the one under it belongs to the design skill, `improve-codebase`.
+- A wait or a retry in a test or in CI, as a `sleep` in a test or a retry flag in a workflow, belongs to `improve-ci`.
 
 ## Search
 
@@ -70,6 +83,7 @@ From the repo root, list the files in scope with `git ls-files`, minus what the 
 - **Comments**: find the comment lines with `rg -n`, using the comment markers of the languages present: `//`, `#`, `/*`, `--`, `<!--`, `;`. Keep only the files with a hit. A file's places are its comment lines.
 - **Unused code**: every file that holds code, a script, or config. Prose, such as `.md` and `.txt`, is left out. The helper finds the places as it reads.
 - **Copies**: pipe the same code, script, and config files to `python3 scripts/copies.py`. Each line it prints is one group, as `9 lines: src/orders.ts:12-24 src/billing.ts:40-52`. No line: no copies.
+- **Hacks**: the same files as Unused code. The helper finds the places as it reads.
 
 ## Helper
 
@@ -78,23 +92,24 @@ One helper per kind, one per batch. Each brief holds the batch's files and the s
 - `comment-judge`: a batch of about ten files with comment lines. Its brief pastes § Always stays and § Kinds, Comments.
 - `unused-judge`: a batch of about ten files. Its brief pastes § Kinds, Unused code, and § Borders.
 - `copy-judge`: a batch of about five groups, so about ten files. Its brief holds the groups' lines and pastes § Kinds, Copies, and § Borders.
+- `hack-judge`: a batch of about ten files. Its brief holds the full path of `../../shared/trail.py` and pastes § Always stays, § Kinds, Hacks, and § Borders.
 
 ## Apply
 
-- **Ticket or seed.** A row on Unused code or Copies whose answer is `fix` is a ticket row: its fix is known, as `delete formatV1: no caller in the code, strings, scripts, or config`, or `keep parseDate in src/dates.ts, call it from src/orders.ts and src/billing.ts`. A hack row whose answer is `keep-and-mark` with a ticket: a ticket row when its fix is known, as a workaround for a browser version the repo no longer supports; a seed row when the fix is unclear, as `// don't touch, breaks prod`. The run files them.
+- **Ticket or seed.** A row on Unused code, Copies, or Hacks whose answer is `fix`, and a row whose answer is `keep-and-mark` with a ticket, is a ticket row when its fix is known: `delete formatV1: no caller in the code, strings, scripts, or config`, `keep parseDate in src/dates.ts, call it from src/orders.ts and src/billing.ts`, or a workaround for a browser version the repo no longer supports. A hack row whose fix is unclear is a seed row, as `// don't touch, breaks prod`. The run files them.
 - **Edits.** After the run filed the tickets and wrote the ADRs:
   - delete: the whole line when the comment is the whole line, else only the comment and the space before it;
   - correct: replace the comment's text with the new text from the change list;
   - long note of why: replace the note with one line in the file's comment form, `Why: see docs/adr/<file>.md`;
-  - keep and mark: add ` see #<n>` for a ticket or ` see docs/adr/<file>.md` for an ADR at the end of the comment, in the repo's form for links when it has one.
-- **No code fix.** A `fix` on Unused code or Copies changes no code here: its ticket is the change.
+  - keep and mark: add ` see #<n>` for a ticket or ` see docs/adr/<file>.md` for an ADR at the end of the comment, in the repo's form for links when it has one. A place with no comment gets a new comment line above it, in the file's comment form, saying what it works around and the link, as `// cast until the API types land, see #123`.
+- **No code fix.** A `fix` on Unused code, Copies, or Hacks changes no code here: its ticket is the change.
 - **Diff check.** Then `git diff -U0` on the files you edited. Each changed line is a comment line, or keeps its code outside the comment as it was, as `foo(); // loop` that becomes `foo();`. A file with any other change: undo your edits in that file, and name it in chat with the line whose code changed.
 
 ## Examples
 
 **User:** `/prune-codebase`
 
-The search finds comments in 120 files: 12 helpers. The report: `I found 7 things. I would fix 4. 2 need your choice. 1 is Known: an open ticket covers it.` `Comments that repeat the code` is Still spreading, with 3 new places since the last run. The talk asks two questions: a long note of why in `src/orders/retry.ts` becomes an ADR, and the Safari hack gets a ticket. The change list holds 1 ticket, 1 ADR, and 251 comment edits. The user says go. `R3 → #123 (ticket)`, the ADR, the edits, a line in the Run table, then `Ready for a pull request`.
+The scan holds 300 files and 4 copy groups: 12 comment, 30 unused, 1 copy, and 30 hack helpers. The report: `I found 7 things. I would fix 4. 2 need your choice. 1 is Known: an open ticket covers it.` `Comments that repeat the code` is Still spreading, with 3 new places since the last run. The talk asks two questions: a long note of why in `src/orders/retry.ts` becomes an ADR, the Safari hack gets a ticket, and an `as any` in `src/api/user.ts:40`, whose trail shows PR #88 added it until the API types land, is kept and marked with a ticket. The change list holds 2 tickets, 1 ADR, and 252 comment edits. The user says go. `R3 → #123 (ticket)`, `R4 → #124 (ticket)`, the ADR, the edits, a line in the Run table, then `Ready for a pull request`.
 
 **User:** `/prune-codebase src/billing`
 
