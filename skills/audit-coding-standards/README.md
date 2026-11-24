@@ -4,17 +4,20 @@ Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it 
 
 ## Use it when
 
-Your repo has no Standard yet, or its rules are spread over `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`. Or it has a `CODING_STANDARDS.md` that may have gone stale after a big upgrade or a few months. Type `/audit-coding-standards` (`$audit-coding-standards` in Codex) to read the whole repo, or add a folder to read less. It only runs when you call it.
+Your repo has no Standard yet, or its rules are spread over `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`. A `REVIEW.md` counts too: its repo rules move into the Standard, and a rule about a whole change goes under Each change. Or it has a `CODING_STANDARDS.md` that may have gone stale after a big upgrade or a few months. Type `/audit-coding-standards` (`$audit-coding-standards` in Codex) to read the whole repo, or add a folder to read less. It only runs when you call it.
 
 ## What you get
 
 A report page in your browser. Its first line says what "new" means for this run, such as "since the last audit-coding-standards run, 2026-11-01". Then one sentence sums it up: "I found 9 things. I would fix 6. 3 need your choice."
 
-Each row is one of three kinds:
+Each row is one of these kinds:
 
 - A rule that is old or wrong, such as "run flake8" when `ruff.toml` replaced flake8, or a rule the stack's own docs now say the opposite of.
 - A job with no rule, with the rule it proposes and where that rule came from. Errors with no rule, where most of your code throws `HttpError`, is one.
 - Code that breaks a rule, with every place it does. Tests count: a test named against your Tests rule is a place like any other.
+- A job done two ways, with a count for each way, such as dates parsed with `date-fns` in 40 places and `moment` in 12. Your own code that does what an installed package already does counts as a way. The row names the way it would keep and why. After your go the Standard gets a line such as `Dates: date-fns. Old way: moment (#61).`, where #61 is the ticket that moves the old uses. A later run takes the `Old way:` mark off once no code uses that way.
+- Old API use: code that calls an API the stack's own docs, read on this run, now call old or deprecated, with what replaces it. With no web access, the page says `Not checked: Old API use, no web access`.
+- The folders that break most: the folders that fix and revert commits touch most. The row says the span it counted, such as the last 6 months, picked from how often the repo gets commits. After your go, a folder can get a rule of its own under By folder.
 
 In a repo with no Standard, every area (Names, Structure, Errors, Logging, Tests, and so on) is a job with no rule, so the first run writes the whole file. Rows with new places come first, under Still spreading. A row an open ticket already covers shows as Known and gets no question. A row whose ticket was closed but whose problem is back shows as Came back.
 
@@ -22,7 +25,7 @@ Each proposed rule names where it came from: a page read on this run, what most 
 
 Then it asks only about the rows that need you, one question at a time, through [grill](../grill/). Rows with a clear answer get no question. A rule from `CONTRIBUTING.md` that says something different from the Standard, such as `.test.ts` against `.spec.ts`, needs you: the row shows both, and you pick. Then it prints one change list in chat: the tickets, the rules, the lint settings, the scattered rules it moves in, and the Sources table rows. Say `go`, or name a line to change.
 
-After the go it files the tickets first: code that breaks a rule gets a ticket that fixes it and turns on the lint setting, unless that rule lost a clash you settled. Then it moves scattered rules into the Standard and takes them out of their old files. It adds one line to `CLAUDE.md` and `AGENTS.md` that points at the Standard, updates `.editorconfig`, and writes the Sources table in `docs/standards/sources.md`. Each rule goes in through the Standard's one shared step. That step first looks for a rule that already says it, and writes a tool setting only when no code breaks it today. Then it adds a line to the Run table in `docs/standards/runs.md`, so the next run knows what is new. The last line is `Ready for a pull request`.
+After the go it files the tickets first: code that breaks a rule gets a ticket that fixes it and turns on the lint setting, unless that rule lost a clash you settled. A job done two ways gets a ticket that moves the old uses. Then it moves scattered rules into the Standard and takes them out of their old files. When every rule of a `REVIEW.md` has moved, the change list offers to delete it and the lines that point at it. Take that line out to keep the file. It adds one line to `CLAUDE.md` and `AGENTS.md` that points at the Standard, updates `.editorconfig`, and writes the Sources table in `docs/standards/sources.md`. Each rule goes in through the Standard's one shared step. That step first looks for a rule that already says it, and writes a tool setting only when no code breaks it today. Then it adds a line to the Run table in `docs/standards/runs.md`, so the next run knows what is new. The last line is `Ready for a pull request`.
 
 The Standard opens with three lines that explain its marks. A rule a tool checks lives in that tool's config, not in the file. `(name)` after a rule names its source. `[eslint, after #61]` means a tool will check the rule once ticket #61 lands. `Old way:` means existing code still uses a way you should not copy. The first area is One way for each job, as in `Dates: date-fns. Old way: moment (#61).` A topic with more than about 40 rules moves to `docs/standards/<topic>.md`. The shape is in [standard.md](../../shared/coding-standards/standard.md).
 
@@ -34,7 +37,7 @@ When it finds nothing, the page says so and nothing is written. When it found no
 - `git`, for the author count and the age of the rules.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Web search or the context7 MCP server, for the research.
-- An agent that can start subagents, for the research and for the `rule-judge` helper in `agents/`, which reads about ten files at a time. It starts per `../../shared/facts.md` § Skill agents, on the home models its file names for your harness, or on its backup. [link.sh](../../scripts/link.sh) installs it.
+- An agent that can start subagents, for the research and for the `rule-judge` and `way-judge` helpers in `agents/`, which each read about ten files at a time. They start per `../../shared/facts.md` § Skill agents, on the home models each file names for your harness, or on its backup. [link.sh](../../scripts/link.sh) installs both.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - Its own [checks.md](references/checks.md) and [research.md](references/research.md): where rules live, the four checks, the size of the repo, and how sources are read.
 - [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets.

@@ -251,8 +251,12 @@ In the Standard, a way to do a job that existing code still uses and new code mu
 _Avoid_: deprecated, legacy
 
 **Scattered rules**:
-Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, or `.cursor/rules/`.
+Rules about code that live outside the Standard, in files such as `CONTRIBUTING.md`, `CLAUDE.md`, `.cursor/rules/`, or a `REVIEW.md` from before the Standard was the only rules file.
 _Avoid_: legacy rules, old conventions
+
+**Two ways**:
+A row where the code does one job in two or more different ways. The same code in two places is a copy, which is a row of prune-codebase.
+_Avoid_: inconsistency, duplication
 
 ## Clean codebase
 

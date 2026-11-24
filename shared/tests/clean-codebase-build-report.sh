@@ -52,6 +52,17 @@ t_cb_refuses_advice() {
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
+t_cb_refuses_not_checked() {
+  # Given: not_checked as one string, not a list of lines
+  cb_rows '.not_checked = "Old API use, no web access"'
+  # When
+  cb_build "$T/clean-prune-codebase-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'rows file: "not_checked" is not a list of lines' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
 t_cb_refuses_label() {
   # Given: R1's second place labelled Guess
   cb_rows '(.rows[] | select(.id == "R1") | .places[1].label) = "Guess"'
@@ -186,6 +197,7 @@ cases=(
   "says nothing found for no rows|t_cb_nothing_found"
   "says nothing to fix for no rows with a change|t_cb_nothing_to_fix"
   "refuses an advice it does not know|t_cb_refuses_advice"
+  "refuses a not_checked that is not a list of lines|t_cb_refuses_not_checked"
   "refuses a place label that is not Seen or Inferred|t_cb_refuses_label"
   "refuses a Known row with no ticket|t_cb_refuses_known_no_ticket"
   "builds the same page twice|t_cb_builds_twice"

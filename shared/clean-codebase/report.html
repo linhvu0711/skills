@@ -214,7 +214,7 @@ const DATA = {};
       el('p', { class: 'new' }, 'New means: ' + DATA.new + '.'),
       el('p', { class: 'sum' }, DATA.summary),
       el('p', { class: 'meta' }, [DATA.skill, DATA.repo, DATA.scope, DATA.commit, DATA.date].join(' · ')),
-      DATA.tickets !== 'checked' ? el('p', { class: 'warn' }, 'Tickets ' + DATA.tickets) : null));
+      (DATA.not_checked || []).map((line) => el('p', { class: 'warn' }, 'Not checked: ' + line))));
     if ((DATA.changes || []).length) {
       app.append(el('div', { class: 'box' }, el('h2', {}, 'The change list will hold'),
         el('ul', {}, DATA.changes.map((c) => el('li', {}, c)))));
