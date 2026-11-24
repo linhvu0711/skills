@@ -42,7 +42,7 @@ import subprocess
 import sys
 
 # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "gh.py"))
 GH = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(GH)
 

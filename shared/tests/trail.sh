@@ -1,9 +1,9 @@
-# trail.sh: the cases for this skill's trail.py. The repo's
+# trail.sh: the cases for the shared core's trail.py. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-trail() { run python3 "$here/../scripts/trail.py" "$@"; }
+trail() { run python3 "$here/../trail.py" "$@"; }
 
 # commit_app <day> <message> [<body>]: commit app.py with that author date.
 commit_app() {
