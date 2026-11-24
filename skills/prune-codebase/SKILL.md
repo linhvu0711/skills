@@ -52,10 +52,15 @@ A tool line with no reason is not a row.
 
 Id `unused`, title `Unused code`. A function, a file, a folder, a flag, or an option or mode that nothing uses, as an exported `formatV1` with no caller, or a `--legacy` flag that no script passes. One row per thing; a folder and its files are one row. Each place names the searches that found no caller: in the code, in text strings, in scripts, and in config, and whether a name built at run time could reach it. Advice `fix`: a ticket to delete it. When a caller can exist outside the repo, as an export of a published package, a public API route, or a command a user types, the place is `Inferred` and the row's `choice` is true: whether an outside caller still needs it is the user's.
 
+### Copies
+
+Id `copies`, title `Copies`. The same code in two or more places, as one date parser pasted into three modules. One row per group; each copy is a place. Advice `fix`: a ticket to keep one copy and call it from the others. `fine` when the copies must stay apart, as a script that has to run with no imports.
+
 ## Borders
 
 Some finds look like these kinds and belong to another skill. Leave them out of the report:
 
+- The same code two times is a copy and belongs here. Two different ways to do one job, as `fetch` in one module and `axios` in another, belong to `audit-coding-standards`.
 - A module that only passes calls on to the one under it belongs to the design skill, `improve-codebase`.
 
 ## Search
@@ -64,6 +69,7 @@ From the repo root, list the files in scope with `git ls-files`, minus what the 
 
 - **Comments**: find the comment lines with `rg -n`, using the comment markers of the languages present: `//`, `#`, `/*`, `--`, `<!--`, `;`. Keep only the files with a hit. A file's places are its comment lines.
 - **Unused code**: every file that holds code, a script, or config. Prose, such as `.md` and `.txt`, is left out. The helper finds the places as it reads.
+- **Copies**: pipe the same code, script, and config files to `python3 scripts/copies.py`. Each line it prints is one group, as `9 lines: src/orders.ts:12-24 src/billing.ts:40-52`. No line: no copies.
 
 ## Helper
 
@@ -71,16 +77,17 @@ One helper per kind, one per batch. Each brief holds the batch's files and the s
 
 - `comment-judge`: a batch of about ten files with comment lines. Its brief pastes § Always stays and § Kinds, Comments.
 - `unused-judge`: a batch of about ten files. Its brief pastes § Kinds, Unused code, and § Borders.
+- `copy-judge`: a batch of about five groups, so about ten files. Its brief holds the groups' lines and pastes § Kinds, Copies, and § Borders.
 
 ## Apply
 
-- **Ticket or seed.** A row on Unused code whose answer is `fix` is a ticket row: its fix is known, as `delete formatV1: no caller in the code, strings, scripts, or config`. A hack row whose answer is `keep-and-mark` with a ticket: a ticket row when its fix is known, as a workaround for a browser version the repo no longer supports; a seed row when the fix is unclear, as `// don't touch, breaks prod`. The run files them.
+- **Ticket or seed.** A row on Unused code or Copies whose answer is `fix` is a ticket row: its fix is known, as `delete formatV1: no caller in the code, strings, scripts, or config`, or `keep parseDate in src/dates.ts, call it from src/orders.ts and src/billing.ts`. A hack row whose answer is `keep-and-mark` with a ticket: a ticket row when its fix is known, as a workaround for a browser version the repo no longer supports; a seed row when the fix is unclear, as `// don't touch, breaks prod`. The run files them.
 - **Edits.** After the run filed the tickets and wrote the ADRs:
   - delete: the whole line when the comment is the whole line, else only the comment and the space before it;
   - correct: replace the comment's text with the new text from the change list;
   - long note of why: replace the note with one line in the file's comment form, `Why: see docs/adr/<file>.md`;
   - keep and mark: add ` see #<n>` for a ticket or ` see docs/adr/<file>.md` for an ADR at the end of the comment, in the repo's form for links when it has one.
-- **No code fix.** A `fix` on Unused code changes no code here: its ticket is the change.
+- **No code fix.** A `fix` on Unused code or Copies changes no code here: its ticket is the change.
 - **Diff check.** Then `git diff -U0` on the files you edited. Each changed line is a comment line, or keeps its code outside the comment as it was, as `foo(); // loop` that becomes `foo();`. A file with any other change: undo your edits in that file, and name it in chat with the line whose code changed.
 
 ## Examples
