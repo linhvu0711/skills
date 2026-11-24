@@ -73,8 +73,9 @@ Four checks, in this order. The caller says which rules they run on.
   a hint where to look, never the verdict.
 - **Drift**: the code breaks a live rule. For each rule a search can
   check, get a count and three `file:line` examples. A check that is on
-  in a checker config is a live rule too: run the checker, and its hits
-  for that check are the count and the examples. Drift is a code
+  in a checker config, and a formatter the repo runs, report their own
+  breaks wherever the repo runs them, as in CI: the audit runs no
+  checker or formatter. Drift is a code
   problem by default: the rule stands.
 - **Behind current practice**: a rule, or the code's pattern, that a
   research result contradicts. A rule with no source is not a finding
