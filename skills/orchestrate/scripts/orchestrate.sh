@@ -107,8 +107,12 @@ put() {
   mv "$tmp" "$file"
 }
 
-# save: the whole state.
-save() { put "$run/state.json" jq . <<<"$S"; }
+# save [<board state> <obs>]: the whole state, then the board: whole with the
+# Run read's value, else only its run part.
+save() {
+  put "$run/state.json" jq . <<<"$S"
+  write_board "${1:-$S}" "${2:-}"
+}
 
 # copy_page: the board page into the run folder, by put, so a resume
 # brings a newer page to an old run. The page names its run: serve.sh reuses
@@ -210,6 +214,9 @@ skill() {
 # shellcheck disable=SC2016 # the $ names are jq variables
 ship_mode_jq='def ship_mode($n): .ship[$n] // .ship.default // "";'
 
+# Failed Checks in a row before the user must act (ADR 0018).
+fail_limit=3
+
 # A check that read the run ends the failure streak and keeps its time.
 # shellcheck disable=SC2016 # the $ names are jq variables
 good_check_jq='def good_check($at): .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at;'
@@ -265,7 +272,43 @@ joins='
 # thread's link once the thread has the title `🧭 <name>`.
 thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 
+# ---------- task turn ----------
+# The task turn: one task issue with a thread per Mac, since two tasks at
+# once can fight over the browser and the user. This run holds it for a
+# task whose task thread is pending or started; when it holds none, a
+# running run of any repo may. A paused or stopped run has no watcher to
+# free its turn, so only a running one counts. This part alone writes
+# .task_turn and reads it from another run.
+# shellcheck disable=SC2016 # the $ names are jq variables
+turn_jq='def take_turn($holders): .task_turn = $holders; def free_turn($n): .task_turn = ((.task_turn // []) - [$n]);'
+
+# turn_holders <stages>: the task issues of this run that hold the turn.
+turn_holders() {
+  jq -c --argjson st "$1" '. as $S | [.set[] | select($st[tostring] == "task") | . as $n
+    | ([$S.threads[] | select(.number == $n)] | last) as $r
+    | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S"
+}
+
+# other_turn: `<repo>#<n>` of the first other run that holds the turn, or
+# nothing. Another run's file that does not parse holds no turn, so it never
+# fails this check. Nor does a run whose watcher is gone, as after a restart:
+# no check of its own would ever free its turn.
+other_turn() {
+  local f turn pid
+  while IFS= read -r -d '' f; do
+    read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
+      | "\(.repo)#\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
+    watcher_alive "${pid:-}" || turn=""
+    [ -z "$turn" ] || { echo "$turn"; return; }
+  done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
+}
+
 # ---------- board ----------
+# run_part($limit): what the board shows of the run itself, from a state.
+# shellcheck disable=SC2016 # the $ names are jq variables
+board_run_jq='def run_part($limit): {repo, name, status, timer: {fails: (.timer.fails // 0), why: .timer.why,
+  checked_at: .timer.checked_at, every: .timer.every, must_act: ((.timer.fails // 0) >= $limit)}};'
+
 # board: a jq program on null, with the state as $S and the check's rows as
 # $rows, what only the board needs as $cards, keyed by number, and T3's
 # threads as $ts, keyed by id: the board page's data. An epic is no card: its sub-issues are.
@@ -310,7 +353,7 @@ board='
       elif $S.status == "paused" then held("paused: starts on resume")
       else held("starts at the next check") end;
   def rank($xs): . as $x | $xs | index([$x]);
-  {repo: $S.repo, name: $S.name, checked_at: $S.timer.checked_at,
+  ($S | run_part($limit)) + {checked_at: $S.timer.checked_at,
    issues: [$rows | to_entries[] | .key as $i | .value | select(.stage != "epic")
      | .number as $n
      | ([$S.threads[] | select(.number == $n)] | last) as $rec
@@ -330,14 +373,24 @@ board='
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
    | map(del(.order))}'
 
-# write_board <state> <obs>: board.json in the run folder, by put, as save
-# writes the state, from the state and the Run read's value: its live and
-# removed rows, its cards, and T3's threads. Only a good check calls it, so a
-# failed one leaves the last good board.
+# write_board <state> [obs]: board.json in the run folder, by put, the one
+# writer of it. With the Run read's value, the whole board: its live and
+# removed rows, its cards, and T3's threads. Without it, only the run part of
+# the state, over the cards there: the run part follows every save, so the
+# page never shows a status or a timer the state has left, and the cards
+# change only on a good check.
 write_board() {
-  # shellcheck disable=SC2016 # the $ names are jq variables
-  put "$run/board.json" jq -n --argjson S "$1" --argjson o "$2" \
-    "$ship_mode_jq"'($o.rows + $o.gone_rows) as $rows | $o.cards as $cards | $o.statuses as $ts | '"$board"
+  if [ -n "${2:-}" ]; then
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq -n --argjson S "$1" --argjson o "$2" --argjson limit "$fail_limit" \
+      "$ship_mode_jq$board_run_jq"'($o.rows + $o.gone_rows) as $rows | $o.cards as $cards | $o.statuses as $ts | '"$board"
+  elif [ -f "$run/board.json" ]; then
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq --argjson S "$1" --argjson limit "$fail_limit" "$board_run_jq"'. + ($S | run_part($limit))' "$run/board.json"
+  else
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq -n --argjson S "$1" --argjson limit "$fail_limit" "$board_run_jq"'$S | run_part($limit)'
+  fi
 }
 
 # ---------- start ----------
@@ -377,18 +430,7 @@ cmd_start() {
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
 }
 
-# ---------- check ----------
-# fail_check <line>: a check that read too little to start anything. Only the
-# failure count of the state as it was is written; after 3 in a row the user
-# must act.
-fail_check() {
-  local fails
-  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"; save
-  fails="$(jq .timer.fails <<<"$S")"
-  if [ "$fails" -ge 3 ]; then die "check failed $fails times in a row: $1. You must act, then say check now."; fi
-  die "check failed: $1"
-}
-
+# ---------- run read ----------
 # observe: the Run read: the run as it is now, from the state in S, GitHub,
 # and T3, for check and for a watcher check, so the two never read a run two
 # ways. Its callers run it in a subshell with set -e on, so nothing it sets
@@ -421,7 +463,7 @@ observe() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f pid
+  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
@@ -430,26 +472,9 @@ observe() {
     [ "$j" != null ] || continue
     stages="$(jq -c --arg n "$n" --arg s "$(stage "$j" "$(jq -r .started_at <<<"$S")")" '.[$n] = $s' <<<"$stages")"
   done
-  # The task turn: one task issue with a thread per Mac, since two tasks at
-  # once can fight over the browser and the user. This run holds it for a
-  # task whose task thread is pending or started; when it holds none, a
-  # running run of any repo may. A paused or stopped run has no watcher to
-  # free its turn, so only a running one counts.
-  holders="$(jq -c --argjson st "$stages" '. as $S | [.set[] | select($st[tostring] == "task") | . as $n
-    | ([$S.threads[] | select(.number == $n)] | last) as $r
-    | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S")"
+  holders="$(turn_holders "$stages")"
   turn="$(jq -r --arg slug "$slug" 'if . == [] then empty else "\($slug)#\(.[0])" end' <<<"$holders")"
-  # Another run's file that does not parse holds no turn, so it never fails
-  # this check. Nor does a run whose watcher is gone, as after a restart: no
-  # check of its own would ever free its turn.
-  if [ -z "$turn" ]; then
-    while IFS= read -r -d '' f; do
-      read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
-        | "\(.repo)#\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
-      watcher_alive "${pid:-}" || turn=""
-      [ -z "$turn" ] || break
-    done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
-  fi
+  [ -n "$turn" ] || turn="$(other_turn)"
   task_turn="$holders"
   # owners: each PR's owner, the first issue in set order that it closes. A
   # shared PR's conflict goes only to its owner's thread, so no two threads
@@ -558,25 +583,55 @@ observe() {
     '$ARGS.named'
 }
 
+# read_run <at-limit>: the Run read into the caller's obs. A read that fails
+# adds one to the failure streak and keeps why; at fail_limit in a row it runs
+# <at-limit> <why>, which may change S and stop, the stop line. Then the state
+# is saved and the command stops.
+read_run() {
+  local rc=0 why
+  # A call under `||` would turn set -e off inside observe, so it runs as the
+  # repo's test runner runs a case.
+  set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
+  [ "$rc" -ne 0 ] || return 0
+  why="$(tail -1 "$obsf" | sed 's/^stop: //')"
+  S="$(jq -c --arg why "$why" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"
+  stop="check failed: $why"
+  # Run in this shell, not in $( ), so the step's S and stop reach save and die.
+  [ "$(jq .timer.fails <<<"$S")" -lt "$fail_limit" ] || "$1" "$why"
+  save
+  die "$stop"
+}
+
+# check_at_limit <why>: no one wakes the agent's own check; its stop line says
+# the user must act.
+check_at_limit() {
+  stop="check failed $(jq .timer.fails <<<"$S") times in a row: $1. You must act, then say check now."
+}
+
+# watch_at_limit <why>: no one reads a watcher's stop line, so it wakes the
+# orchestrator thread, once a streak. A failed read hands back no T3 statuses.
+watch_at_limit() {
+  if [ "$(jq '.timer.alerted != true' <<<"$S")" = true ] && [ "$(wake '{}')" = true ]; then
+    S="$(jq -c '.timer.alerted = true' <<<"$S")"
+  fi
+}
+
+# ---------- check ----------
 cmd_check() {
   in_t3
   newest_run
   [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
-  local obs rc seen
-  # A call under `||` would turn set -e off inside observe, so it runs as the
-  # repo's test runner runs a case.
-  rc=0; set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
-  [ "$rc" -eq 0 ] || fail_check "$(tail -1 "$obsf" | sed 's/^stop: //')"
+  local obs seen
+  read_run check_at_limit
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
   seen="$(jq -c '.seen // {}' <<<"$S")"
   S="$(jq -cn --argjson o "$obs" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    "$good_check_jq"'$o.state | .threads += $o.claims | .task_turn = $o.task_turn | good_check($at)
+    "$good_check_jq$turn_jq"'$o.state | .threads += $o.claims | take_turn($o.task_turn) | good_check($at)
      | if $o.done then .status = "done" else . end
      | .seen = {status: .status, issues: ($o.rows | map({key: (.number | tostring), value: .}) | from_entries)}')"
-  save
-  write_board "$S" "$obs"
+  save "$S" "$obs"
   # A start counts as a change even on a row that did not move, as after a
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
@@ -616,10 +671,10 @@ cmd_started() {
   else
     upd="$(jq -cn --arg id "$3" --arg link "$4" '{thread: $id, link: $link, status: "started"}')"
   fi
-  S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
+  S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" "$turn_jq"'
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
     | .threads[$i] += $u
-    | if $u.status == "failed" then .task_turn = ((.task_turn // []) - [$n]) else . end' <<<"$S")"
+    | if $u.status == "failed" then free_turn($n) else . end' <<<"$S")"
   save
 }
 
@@ -852,19 +907,6 @@ cmd_sync() {
 }
 
 # ---------- watch ----------
-# watch_fail <line>: a watcher check that read too little. It counts the
-# failure as fail_check does; at 3 in a row it wakes the orchestrator thread,
-# once a streak, since no one reads a watcher's stop line.
-watch_fail() {
-  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"
-  # A failed read hands back no T3 statuses.
-  if [ "$(jq '.timer.fails >= 3 and .timer.alerted != true' <<<"$S")" = true ] && [ "$(wake '{}')" = true ]; then
-    S="$(jq -c '.timer.alerted = true' <<<"$S")"
-  fi
-  save
-  die "check failed: $1"
-}
-
 # wake <statuses>: send the orchestrator thread `/orchestrate check`, unless T3's statuses show it
 # busy: mid-turn, or waiting on the user, where a message would land as the
 # answer to its question. Prints true when it sent. A failed send is left on
@@ -955,19 +997,16 @@ cmd_watch() {
   newest_run
   [ "$(jq -r .status <<<"$S")" = running ] || exit 3
   [ $# -eq 1 ] || [ "$(jq -r '.timer.watcher.token // ""' <<<"$S")" = "$3" ] || exit 3
-  local obs rc at view reasons woke=false
-  # Run as cmd_check runs it, so set -e holds inside observe.
-  rc=0; set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
-  [ "$rc" -eq 0 ] || watch_fail "$(tail -1 "$obsf" | sed 's/^stop: //')"
+  local obs at view reasons woke=false
+  read_run watch_at_limit
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   view="$(jq -c --arg at "$at" "$good_check_jq"'.state | good_check($at)' <<<"$obs")"
   # A conflict is claimed before it is sent, so a failed send is never tried
   # again. The task turn keeps only its holders: a watcher claims no start,
   # but a task that closed frees the turn for the other runs now.
   S="$(jq -c --arg at "$at" --argjson o "$obs" \
-    "$good_check_jq"'.conflicts = ((.conflicts // []) + $o.sent) | .task_turn = $o.holders | good_check($at)' <<<"$S")"
-  save
-  write_board "$view" "$obs"
+    "$good_check_jq$turn_jq"'.conflicts = ((.conflicts // []) + $o.sent) | take_turn($o.holders) | good_check($at)' <<<"$S")"
+  save "$view" "$obs"
   local c
   while IFS= read -r c; do
     "$t3" thread send "$(jq -r .thread <<<"$c")" "$(jq -r .message <<<"$c")" >/dev/null 2>"$errf" \

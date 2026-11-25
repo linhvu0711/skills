@@ -399,11 +399,14 @@ t_fs_second_task_waits() {
 }
 
 # fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
-# task turn for #7, with its watcher's pid.
+# task turn for #7, with its watcher's pid. The status `broken` writes a state
+# file that does not parse.
 fs_other_run() {
-  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"
+  local f="$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  mkdir -p "$(dirname "$f")"
+  if [ "$1" = broken ]; then echo '{"repo":' > "$f"; return; fi
   jq -cn --arg s "$1" --arg p "${2:-}" '{repo: "acme/web", status: $s, task_turn: [7],
-    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$f"
 }
 
 t_fs_other_run_holds_turn() {
@@ -442,8 +445,7 @@ t_fs_stopped_run_no_turn() {
 
 t_fs_broken_run_no_turn() {
   # Given: a run of #42, open and manual; another run's state file does not parse
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
-  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"; echo '{"repo":' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run broken
   # When
   fs_go check acme/app
   # Then
@@ -1082,7 +1084,7 @@ t_fs_watch_paused() {
   # Then
   eq exit 3 "$code"
   eq stdout "" "$out"
-  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq cards false "$(fs_board 'has("issues")')"
 }
 
 # fs_orchestrator <status>: T3 lists the orchestrator thread f1 with that status.
@@ -1278,7 +1280,7 @@ t_fs_watch_old_token() {
   # Then
   eq exit 3 "$code"
   eq stdout "" "$out"
-  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq cards false "$(fs_board 'has("issues")')"
   eq sends none "$(fs_sends)"
 }
 
@@ -2079,12 +2081,62 @@ t_fs_failed_check_why() {
 t_fs_failed_check_keeps_board() {
   # Given: a run of #42 checked once, then gh logged out
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_go check acme/app; cp "$(fs_run)/board.json" "$T/board.before"
+  fs_go check acme/app; local before; before="$(fs_board .issues)"
   printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
   # When
   fs_go check acme/app
   # Then
-  eq board same "$(cmp -s "$T/board.before" "$(fs_run)/board.json" && echo same)"
+  eq cards "$before" "$(fs_board .issues)"
+}
+
+t_fs_failed_check_board_timer() {
+  # Given: a run of #42 checked once, then gh logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq board '{"status":"running","fails":1,"why":"HTTP 401: Bad credentials","must_act":false,"cards":1}' \
+    "$(fs_board '{status, fails: .timer.fails, why: .timer.why, must_act: .timer.must_act, cards: (.issues | length)}')"
+}
+
+t_fs_third_failure_board_must_act() {
+  # Given: a run of #42, never checked; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app; fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq board '{"fails":3,"must_act":true}' "$(fs_board '{fails: .timer.fails, must_act: .timer.must_act}')"
+}
+
+t_fs_watch_fail_board_timer() {
+  # Given: a run of #42; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq board '{"fails":1,"why":"HTTP 401: Bad credentials"}' "$(fs_board '{fails: .timer.fails, why: .timer.why}')"
+}
+
+t_fs_pause_board_status() {
+  # Given: a run of #42, checked once
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq board '{"status":"paused","cards":1}' "$(fs_board '{status, cards: (.issues | length)}')"
+}
+
+t_fs_board_run_shape() {
+  # Given: a run of #42, checked once
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  # When
+  local keys='[keys, (.timer | keys)]'
+  # Then
+  eq keys '[["checked_at","issues","name","repo","status","timer"],["checked_at","every","fails","must_act","why"]] same' \
+    "$(fs_board "$keys") $([ "$(jq -c "$keys" "$here/fixtures/board/board.json")" = "$(fs_board "$keys")" ] && echo same)"
 }
 
 t_fs_board_journey() {
@@ -2107,6 +2159,42 @@ t_fs_board_fixture_shape() {
   local fixture; fixture="$(jq -c '.issues[0] | keys' "$here/fixtures/board/board.json")"
   # Then
   eq keys "$fixture" "$(fs_board '.issues[0] | keys')"
+}
+
+# fs_page <board.json>: the board page run on a fake page with that board,
+# its {fetched, banner, hdot} line in out.
+fs_page() {
+  T="${T:-$(mktemp -d)}"
+  run node "$here/page.cjs" "$here/../assets/board.html" "$1"
+  eq "page exit" 0 "$code"
+}
+
+t_fs_page_reads_board_only() {
+  # Given: the failing board fixture
+  # When
+  fs_page "$here/fixtures/board/board-failing.json"
+  # Then
+  eq fetched '["board.json"]' "$(jq -c .fetched <<<"$out")"
+}
+
+t_fs_page_must_act_banner() {
+  # Given: a board whose check failed once, flagged for the user to act
+  T="$(mktemp -d)"
+  jq '.timer = {fails: 1, why: "bad", checked_at: null, every: 5, must_act: true}' "$here/fixtures/board/board.json" > "$T/board.json"
+  # When
+  fs_page "$T/board.json"
+  # Then
+  eq page '{"hdot":"dot bad","keeps":true}' "$(jq -c '{hdot, keeps: (.banner | startswith("<b>Checks keep failing.</b>"))}' <<<"$out")"
+}
+
+t_fs_page_no_flag_warns() {
+  # Given: the same, with 4 failed checks and no flag
+  T="$(mktemp -d)"
+  jq '.timer = {fails: 4, why: "bad", checked_at: null, every: 5, must_act: false}' "$here/fixtures/board/board.json" > "$T/board.json"
+  # When
+  fs_page "$T/board.json"
+  # Then
+  eq page '{"hdot":"dot warn","warns":true}' "$(jq -c '{hdot, warns: (.banner | startswith("<b>Check failing.</b>"))}' <<<"$out")"
 }
 
 t_fs_page_no_mockup_data() {
@@ -2423,8 +2511,16 @@ cases=(
   "a good check records its time|t_fs_check_records_time"
   "a failed check records why|t_fs_failed_check_why"
   "a failed check keeps the last board|t_fs_failed_check_keeps_board"
+  "a failed check shows on the board|t_fs_failed_check_board_timer"
+  "the third failed check tells the board the user must act|t_fs_third_failure_board_must_act"
+  "a failed watcher check shows on the board|t_fs_watch_fail_board_timer"
+  "a pause shows on the board with no check|t_fs_pause_board_status"
+  "the board holds the run part in the fixture's shape|t_fs_board_run_shape"
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
+  "the board page fetches only board.json|t_fs_page_reads_board_only"
+  "the board page says checks keep failing when the board flags it|t_fs_page_must_act_banner"
+  "the board page only warns when the board does not flag it|t_fs_page_no_flag_warns"
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
   "two runs get two different pages|t_fs_two_runs_two_pages"
