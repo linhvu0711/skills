@@ -73,8 +73,8 @@ t_cursor_no_key() {
 # output; `renew <agent> -- <command>` runs the command, with MAC_NEW_BASE from
 # $T/mac.new when that file exists.
 # `return <agent> -- <command>` runs the command and prints
-# `<agent>: destroyed mac-1` when it passes, else `<agent>: mac-1 kept, its run
-# has not ended`.
+# `<agent>: destroyed mac-1` when it passes, `<agent>: mac-1 kept, its run has
+# not ended` when it exits 1, and else fails as mac.sh does.
 fake_mac() {
   cat > "$T/mac.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -84,8 +84,12 @@ case "$1" in
   rent) shift 5; "$@" ;;
   renew) shift 3
          if [ -f "$d/mac.new" ]; then MAC_NEW_BASE="$(cat "$d/mac.new")" "$@"; else "$@"; fi ;;
-  return) a="$2"; shift 3
-          if "$@"; then echo "$a: destroyed mac-1"; else echo "$a: mac-1 kept, its run has not ended"; fi ;;
+  return) a="$2"; shift 3; rc=0; "$@" || rc=$?
+          case "$rc" in
+            0) echo "$a: destroyed mac-1" ;;
+            1) echo "$a: mac-1 kept, its run has not ended" ;;
+            *) echo "mac.sh: could not check the run of $a, so mac-1 is kept" >&2; exit 1 ;;
+          esac ;;
 esac
 EOF
   export HANDOFF_MAC="$T/mac.sh"
@@ -188,6 +192,21 @@ t_cursor_release_run_goes() {
   eq stdout "bc-1: mac-1 kept, its run has not ended" "$out"
 }
 
+t_cursor_release_check_fails() {
+  # Given: the run cannot be read
+  fake_curl; fake_mac
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"detail":"bad gateway"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  printf 502 > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.code"
+  # When
+  cursor_mac release bc-1
+  # Then
+  eq exit 1 "$code"
+  eq stdout "" "$out"
+  has stderr "HTTP 502 on GET /agents/bc-1/runs/run-2" "$err"
+  has stderr "mac.sh: could not check the run of bc-1, so mac-1 is kept" "$err"
+}
+
 t_cursor_release() {
   # Given
   fake_curl; fake_mac
@@ -235,6 +254,7 @@ cases=(
   "cursor say tells the agent on a new Mac to check its branch out|t_cursor_say_new_mac"
   "cursor release keeps the Mac while the run goes|t_cursor_release_run_goes"
   "cursor release hands the run check to mac.sh return|t_cursor_release"
+  "cursor release fails when the run cannot be read|t_cursor_release_check_fails"
   "cursor facts lists repos and models|t_cursor_facts"
   "cursor interval is 60|t_cursor_interval"
   "cursor start sends the prompt and prints the agent|t_cursor_start"

@@ -9,7 +9,8 @@
 #   cursor.sh say <agent> <note-file>                      -> sends a follow-up (a new run on the agent)
 #   cursor.sh release <agent>                              -> gives the agent's Mac back once its run ended
 #                                                             (mac.sh return); nothing for an agent with no Mac
-#   cursor.sh ended <agent>                                -> exit 0 when the latest run ended
+#   cursor.sh ended <agent>                                -> exit 0 when the latest run ended, 1 while
+#                                                             it goes, 2 when the run cannot be read
 #   cursor.sh create <body-file> <worker>                  -> starts the agent on a Mac's worker
 #   cursor.sh send <agent> <note-file>                     -> posts the note as a new run
 #                                                             (mac.sh runs these three inside the rental)
@@ -274,8 +275,9 @@ $text"
 
 cmd_ended() {
   local id; id=$(aid "${1:-}")
-  local rst
-  IFS=$'\t' read -r _ rst _ <<<"$(fetch "$id")"
+  local line rst
+  line=$(fetch "$id") || exit 2
+  IFS=$'\t' read -r _ rst _ <<<"$line"
   case "$rst" in FINISHED|ERROR|CANCELLED|EXPIRED) return 0 ;; *) return 1 ;; esac
 }
 

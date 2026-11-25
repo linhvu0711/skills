@@ -289,6 +289,21 @@ t_mac_return_run_goes() {
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
+t_mac_return_check_fails() {
+  # Given: the run check cannot read the run (exit 2)
+  fake_nsc
+  row_with mac-1
+  # When
+  mac return bc-1 -- sh -c 'echo "cursor.sh: HTTP 502 on GET /agents/bc-1/runs/run-2" >&2; exit 2'
+  # Then
+  eq exit 1 "$code"
+  eq stdout "" "$out"
+  eq stderr "cursor.sh: HTTP 502 on GET /agents/bc-1/runs/run-2
+mac.sh: could not check the run of bc-1, so mac-1 is kept" "$err"
+  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
+}
+
 t_mac_return_keeps_newer_mac() {
   # Given: the run check is where a renew names mac-2 in the row
   fake_nsc
@@ -331,6 +346,7 @@ cases=(
   "mac renew sends no note when the old Mac is not given back|t_mac_renew_old_mac_kept"
   "mac return gives the Mac back once the run ended|t_mac_return"
   "mac return keeps the Mac while a run goes|t_mac_return_run_goes"
+  "mac return fails and keeps the Mac when the run check cannot run|t_mac_return_check_fails"
   "mac return keeps a Mac a renew named meanwhile|t_mac_return_keeps_newer_mac"
   "mac return keeps the row when the Mac is not given back|t_mac_return_keeps_row"
   "mac rent starts the worker, the keys sent by stdin|t_mac_rent_starts_worker"

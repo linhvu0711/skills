@@ -22,8 +22,9 @@
 #   mac.sh return <agent> -- <command>     -> reads the row, then runs the command
 #                                             (the run check); it passes: gives the
 #                                             Mac back, "<agent>: destroyed <id>";
-#                                             it fails: "<agent>: <id> kept, its run
-#                                             has not ended"; no Mac: "<agent>: no Mac"
+#                                             it exits 1: "<agent>: <id> kept, its run
+#                                             has not ended"; no Mac: "<agent>: no Mac";
+#                                             any other exit: exit 1, the Mac kept
 #
 # Giving a Mac back deletes the keys and destroys it: "destroyed <id>", or
 # "already gone <id>"; when the Mac still runs, exit 1 with the hand command
@@ -227,12 +228,14 @@ cmd_renew() {
 }
 
 cmd_return() {
-  local agent="${1:-}" row w wid r b mac line
+  local agent="${1:-}" row w wid r b mac line rc=0
   verb=return; shift || true; after_dashes "$@"; shift
   row=$(row_get "$agent")
   [[ -n "$row" ]] && IFS=$'\t' read -r w wid r b mac <<<"$row"
   if [[ -z "$row" || "$mac" == "-" ]]; then echo "$agent: no Mac"; return 0; fi
-  if ! "$@"; then echo "$agent: $mac kept, its run has not ended"; return 0; fi
+  "$@" || rc=$?
+  if (( rc == 1 )); then echo "$agent: $mac kept, its run has not ended"; return 0; fi
+  (( rc == 0 )) || die "could not check the run of $agent, so $mac is kept"
   line=$(cmd_down "$mac") || exit 1
   row_clear "$agent" "$mac"
   echo "$agent: $line"
