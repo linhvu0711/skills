@@ -27,6 +27,7 @@ this file, runs every adapter's find in one call through ``find`` and
 from __future__ import annotations
 
 import argparse
+import codecs
 import datetime as dt
 import json
 import os
@@ -202,6 +203,13 @@ def find(h: Harness, args) -> list[dict]:
     return rows
 
 
+def print_json(obj) -> None:
+    # Raw text only when stdout is UTF-8: a Latin-1 PYTHONIOENCODING cannot
+    # write an emoji, and JSON's \u escapes read the same under any encoding.
+    utf8 = codecs.lookup(sys.stdout.encoding or "ascii").name == "utf-8"
+    print(json.dumps(obj, indent=2, ensure_ascii=not utf8))
+
+
 def main(h: Harness) -> int:
     args = _parser().parse_args()
     if args.cmd == "extract":
@@ -215,5 +223,5 @@ def main(h: Harness) -> int:
         rows = find(h, args) if installed(h) else []
     except Failed as e:
         raise SystemExit(f"stop: {e}")
-    print(json.dumps(rows, indent=2, ensure_ascii=False))
+    print_json(rows)
     return 0

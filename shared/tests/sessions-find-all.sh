@@ -114,13 +114,13 @@ sys.stdout.buffer.write(b"caf\xe9\n")'
 }
 
 t_fa_other_io_encoding() {
-  # Given: a Claude session whose prompt has an é, and a Latin-1 PYTHONIOENCODING
+  # Given: a Claude session whose prompt has an é and an emoji, a Codex rollout, and a Latin-1 PYTHONIOENCODING
   fa_home
-  printf '{"type":"user","message":{"role":"user","content":"export café"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s1"}\n' > "$HOME/.claude/projects/-p-app/s1.jsonl"
+  printf '{"type":"user","message":{"role":"user","content":"export café 🚀"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s1"}\n' > "$HOME/.claude/projects/-p-app/s1.jsonl"
   # When
   PYTHONIOENCODING=latin-1 run python3 "$S" --root /p/app
   # Then
-  eq prompt "export café" "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="latin-1"))["sessions"][0]["first_prompt"])' "$T/out")"
+  eq rows "export café 🚀 codex" "$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1], encoding="latin-1"))["sessions"]; print(s[0]["first_prompt"], s[1]["harness"])' "$T/out")"
 }
 
 cases=(
@@ -130,5 +130,5 @@ cases=(
   "find-all runs each harness's finder once|t_fa_finder_runs_once"
   "find-all keeps a failed harness's error and lists the rest|t_fa_failed_harness"
   "find-all fails only the harness whose finder output is not UTF-8|t_fa_not_utf8"
-  "find-all reads a finder's UTF-8 under another PYTHONIOENCODING|t_fa_other_io_encoding"
+  "find-all reads and writes every character under a Latin-1 PYTHONIOENCODING|t_fa_other_io_encoding"
 )

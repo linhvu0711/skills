@@ -16,7 +16,6 @@ Prints {"harnesses": [{"harness", "label", "installed"}, plus "error" when its f
 
 import argparse
 import importlib.util
-import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +66,7 @@ def main():
             except lib.Failed as e:
                 entry["error"] = str(e)
         harnesses.append(entry)
-    print(json.dumps({"harnesses": harnesses, "sessions": rows, "unread": unread(args)}, indent=2, ensure_ascii=False))
+    lib.print_json({"harnesses": harnesses, "sessions": rows, "unread": unread(args)})
 
 
 if __name__ == "__main__":
