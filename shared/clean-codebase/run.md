@@ -42,7 +42,7 @@ A row is **Still spreading** when one of its places is new.
 
 The rows go in the rows file in the order the skill's § Kinds gives, else as they came back.
 
-The rows file's shape, every key and its values, is the one `build-report.py` checks; its problem lines name each fault. A skill whose report shows each row as a card, with a before and an after diagram, sets `view` to `cards` and gives each row a `card`; its § Kinds says what a card holds.
+The rows file's shape, every key and its values, is the one `build_report.py` checks; its problem lines name each fault. A skill whose report shows each row as a card, with a before and an after diagram, sets `view` to `cards` and gives each row a `card`; its § Kinds says what a card holds.
 
 ## Known and Came back
 
@@ -63,7 +63,7 @@ A failed search: the rows stay as they are, and `not_checked` gets the line `Kno
 2. Build the page:
 
    ```bash
-   python3 build-report.py "$HOME/.agents/artifacts/codebase/clean-<skill>-<owner>-<repo>.json"
+   python3 build_report.py "$HOME/.agents/artifacts/codebase/clean-<skill>-<owner>-<repo>.json"
    ```
 
    It prints `page: <path>`. Problem lines name each fault in the rows file: fix the file and build again.

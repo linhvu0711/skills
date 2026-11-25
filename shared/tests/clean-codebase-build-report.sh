@@ -1,7 +1,7 @@
 # clean-codebase-build-report.sh: a rows file in, the report page's DATA out.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-cb_build() { run python3 "$here/../clean-codebase/build-report.py" "$@"; }
+cb_build() { run python3 "$here/../clean-codebase/build_report.py" "$@"; }
 cb_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
 # cb_rows <jq filter>: the fixture rows file, changed by the filter, at $T/clean-prune-codebase-acme-shop.json

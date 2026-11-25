@@ -1,4 +1,4 @@
-# issue-conventions.sh: the cases for the shared core's issue-conventions.py.
+# issue-conventions.sh: the cases for the shared core's issue_conventions.py.
 # The repo's test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -15,7 +15,7 @@ ic_setup() {
 # conv <cmd> <args...>: the conventions command, with HOME in $T and the store
 # env vars unset, so every case reads and writes the default paths.
 conv() {
-  run env -u GH_ISSUE_STORE -u GH_PRIORITY_STORE -u CAPTURE_STORE HOME="$T/home" python3 "$here/../issue-conventions.py" "$@"
+  run env -u GH_ISSUE_STORE -u GH_PRIORITY_STORE -u CAPTURE_STORE HOME="$T/home" python3 "$here/../issue_conventions.py" "$@"
 }
 
 set_types() { conv set O/R --style colon --xs size/XS --s size/S --m size/M --l size/L --word fix=bug --sampled 12; }

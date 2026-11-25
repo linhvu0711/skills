@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a diagram page's DATA before the page is shown.
 
-    check-data.py <page .html>
+    check_data.py <page .html>
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
 problem and exits 1 when it is not: a type the catalog does not list, an

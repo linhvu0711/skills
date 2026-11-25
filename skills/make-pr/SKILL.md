@@ -64,7 +64,7 @@ A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the finished `
 
    Done when `gh pr view -R <repo> <n> --json title,body` shows what you wrote.
 
-10. **Label.** Find the repo's size labels the way `../../shared/issue-rules.md` § Repo convention reads its `size` line: the saved map from `python3 ../../shared/issue-conventions.py get <owner/repo>`, else the labels that clearly name a size (`size/S`, `Size: Small`, `effort-large`, bare `S`) in `gh label list --limit 200 --json name -q '.[].name'`, plus an XL label when the repo has one. Size the diff with `../../shared/size.md`, put on the label for that size, and take off any other size label. No size labels: no label, and none created. Done when the PR has one size label, or the repo has none.
+10. **Label.** Find the repo's size labels the way `../../shared/issue-rules.md` § Repo convention reads its `size` line: the saved map from `python3 ../../shared/issue_conventions.py get <owner/repo>`, else the labels that clearly name a size (`size/S`, `Size: Small`, `effort-large`, bare `S`) in `gh label list --limit 200 --json name -q '.[].name'`, plus an XL label when the repo has one. Size the diff with `../../shared/size.md`, put on the label for that size, and take off any other size label. No size labels: no label, and none created. Done when the PR has one size label, or the repo has none.
 
 11. **Report.** Chat gets this and nothing more:
 

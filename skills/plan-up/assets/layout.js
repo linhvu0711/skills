@@ -1,6 +1,6 @@
 // layout.js: where the plan page draws each Change map box, flow, and label,
 // and the rows of its Files tree.
-// No page calls: build-page.py puts this file into the page, and the node
+// No page calls: build_page.py puts this file into the page, and the node
 // tests in tests/layout.sh run it alone.
 const PlanLayout = (() => {
   'use strict';

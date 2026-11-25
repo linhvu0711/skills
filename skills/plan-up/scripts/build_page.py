@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a plan page from its Markdown, the only source of the page.
 
-    build-page.py <plan-slug.md>
+    build_page.py <plan-slug.md>
 
 Prints `page: <html path>` and exits 0. Prints each problem and exits 1
 without changing the old page when a block is bad.

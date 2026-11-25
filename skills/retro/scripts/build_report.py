@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the retro report page from its cards file.
 
-    build-report.py <cards .json>
+    build_report.py <cards .json>
 
 Writes report.html next to the cards file, prints `page: <html path>`, and
 exits 0. Prints each problem and exits 1 without changing the old page when

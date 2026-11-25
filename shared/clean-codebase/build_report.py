@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a clean-codebase report page from its rows file.
 
-    build-report.py <rows .json>
+    build_report.py <rows .json>
 
 Writes the page next to the rows file, prints `page: <html path>`, and
 exits 0. Prints each problem and exits 1 without changing the old page

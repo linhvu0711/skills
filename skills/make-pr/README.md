@@ -28,7 +28,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 - [commit](../commit/), for the commit messages.
 - [unslop](../unslop/), for the prose of the title and body.
 - From the shared core: [pr-shape.md](../../shared/pr-shape.md), [size.md](../../shared/size.md), and [issue-rules.md](../../shared/issue-rules.md) for the repo's size labels.
-- `python3`, for the saved size-label map in the shared core's [issue-conventions.py](../../shared/issue-conventions.py).
+- `python3`, for the saved size-label map in the shared core's [issue_conventions.py](../../shared/issue_conventions.py).
 
 ## Fits with
 

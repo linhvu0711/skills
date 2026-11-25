@@ -56,7 +56,7 @@ None of these: no priority. Continue with the kind's label only.
 ### 3. Load or learn the repo convention
 
 ```bash
-CONV="../../shared/issue-conventions.py"
+CONV="../../shared/issue_conventions.py"
 python3 "$CONV" seed-get owner/repo
 ```
 

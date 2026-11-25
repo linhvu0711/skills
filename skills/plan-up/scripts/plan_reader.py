@@ -1,4 +1,4 @@
-"""Read a plan .md once, into the values build-page.py and prune.py use, and
+"""Read a plan .md once, into the values build_page.py and prune.py use, and
 judge it against every line shape and limit of ../../shared/plan.md.
 
     plan = plan_reader.read(path)
