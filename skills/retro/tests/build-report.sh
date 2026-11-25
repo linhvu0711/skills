@@ -130,9 +130,30 @@ t_rb_dot_strip() {
   eq strip "hit-strong hit-strong | 5 times in 2 of 2 items · 9 user turns · PR #40, S1" "$(rb_page strip 1)"
 }
 
+t_rb_escapes_quote() {
+  # Given: the fixture cards file; card 1's first quote is "push <main> first"
+  rb_cards .
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  has page 'push &lt;main&gt; first' "$(cat "$T/report.html")"
+  lacks page 'push <main> first' "$(cat "$T/report.html")"
+}
+
+t_rb_this_project_first() {
+  # Given: the acme/tools card first in the file
+  rb_cards '.cards |= reverse'
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  eq homes 'id="home-acme-shop" id="home-acme-tools" ' "$(grep -o 'id="home-[a-z-]*"' "$T/report.html" | tr '\n' ' ')"
+}
+
 cases=(
   "draws the key in date order|t_rb_key_in_date_order"
   "builds the same page twice|t_rb_builds_twice"
   "draws each overview cell from the card's items|t_rb_overview_cells"
   "draws the dot strip and item count from the card's items|t_rb_dot_strip"
+  "escapes a quote's text|t_rb_escapes_quote"
+  "puts this project's cards first|t_rb_this_project_first"
 )

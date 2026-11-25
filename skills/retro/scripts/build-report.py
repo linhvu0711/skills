@@ -102,16 +102,120 @@ def strip(card, cols):
       </div>"""
 
 
+CHIP = {"Strong": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100",
+        "Worth exploring": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100",
+        "Speculative": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100",
+        "One-time": "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-100",
+        "Tip": "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-100"}
+
+
+def chips(card):
+    tags = [escape(card["kind"])]
+    if card.get("open"):
+        tags.append(f'open #{card["open"]}')
+    if card.get("did_not_hold"):
+        tags.append(f'the fix did not hold #{card["did_not_hold"]}')
+    if card.get("home_unknown"):
+        tags.append(f'home unknown ({escape(card["home_unknown"])})')
+    badge = f'        <span class="rounded-full px-2 py-0.5 {CHIP[card["badge"]]}">{escape(card["badge"])}</span>'
+    return "\n".join([badge] + [f'        <span class="rounded-full px-2 py-0.5 border">{tag}</span>' for tag in tags])
+
+
+def quote(q, pad):
+    return (f'{pad}<blockquote class="font-mono text-[13px] leading-relaxed px-3 py-2 rounded-r">{escape(q["text"])}'
+            f'<span class="block font-sans text-xs muted mt-1">{escape(q["item"])} · {escape(q["where"])}</span></blockquote>')
+
+
+def happened(card):
+    shown = [quote(q, "          ") for q in card["quotes"][:2]]
+    rest = card["quotes"][2:]
+    if rest:
+        folded = "\n".join(quote(q, "              ") for q in rest)
+        shown.append(f"""          <details class="text-sm">
+            <summary class="muted">{len(rest)} more quotes</summary>
+            <div class="space-y-2 mt-2">
+{folded}
+            </div>
+          </details>""")
+    return "\n".join(shown)
+
+
+def fix_side(card):
+    if not card.get("texts"):
+        return f"""        <div class="card rounded-lg border p-4 space-y-2">
+          <p class="text-xs uppercase tracking-wider muted">Fix</p>
+          <p>{card["fix"]}</p>
+        </div>"""
+    files = "\n".join(f"""          <div class="space-y-1">
+            <p class="font-mono text-xs muted">{escape(t["file"])} · {escape(t["place"])}</p>
+            <div class="diff-del font-mono text-[13px] px-3 py-1.5 rounded">− {escape(t["now"])}</div>
+            <div class="diff-add font-mono text-[13px] px-3 py-1.5 rounded">+ {escape(t["after"])}</div>
+          </div>""" for t in card["texts"])
+    return f"""        <div class="card rounded-lg border p-4 space-y-3">
+          <p class="text-xs uppercase tracking-wider muted">The text, before and after</p>
+{files}
+        </div>"""
+
+
+def card_html(n, card, cols):
+    where = "".join(f"<li>{line}</li>" for line in card["where"])
+    fix_line = f'\n      <p><strong>Fix.</strong> {card["fix"]}</p>' if card.get("texts") else ""
+    return f"""    <article id="card-{n}" class="card rounded-xl border p-6 space-y-5">
+      <h3 class="font-serif text-2xl">{n}. {card["title"]}</h3>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+{chips(card)}
+      </div>
+{strip(card, cols)}
+      <ul class="font-mono text-sm muted">{where}</ul>
+      <div class="grid md:grid-cols-2 gap-4 items-start">
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-wider muted">What happened</p>
+{happened(card)}
+        </div>
+{fix_side(card)}
+      </div>{fix_line}
+    </article>"""
+
+
 def cards_section(cards):
     cols = columns(cards)
     out = []
     for home, numbered in groups(cards):
-        for n, card in numbered:
-            out.append(f"""    <article id="card-{n}" class="card rounded-xl border p-6 space-y-5">
-      <h3 class="font-serif text-2xl">{n}. {card["title"]}</h3>
-{strip(card, cols)}
-    </article>""")
+        name = escape(home) + (" (this project)" if home == cards["repo"] else "")
+        slug = home.replace("/", "-").lower()
+        body = "\n".join(card_html(n, card, cols) for n, card in numbered)
+        out.append(f"""    <div id="home-{escape(slug)}" class="space-y-10">
+    <h2 class="font-serif text-2xl muted">{name}</h2>
+{body}
+    </div>""")
     return '\n  <section id="cards" class="space-y-12">\n' + "\n".join(out) + "\n  </section>\n"
+
+
+def questions(cards):
+    if not cards["questions"]:
+        return ""
+    lines = "".join(f'<li>{q["text"]} <span class="text-xs muted">{escape(q["item"])} · {escape(q["where"])}</span></li>'
+                    for q in cards["questions"])
+    return f"""
+  <section id="open-questions" class="space-y-3">
+    <h2 class="font-serif text-2xl">Open questions</h2>
+    <ul class="list-disc pl-5 space-y-1">{lines}</ul>
+  </section>
+"""
+
+
+def top_pick(cards):
+    first = next(numbered[0][1] for _, numbered in groups(cards))
+    return f"""
+  <section id="top-pick">
+    <article class="card top rounded-xl border-2 p-8 space-y-3">
+      <p class="text-xs uppercase tracking-wider muted">Top pick</p>
+      <h2 class="font-serif text-3xl"><a class="accent" href="#card-1">1. {first["title"]}</a></h2>
+      <p>{cards["top_why"]}</p>
+      <p class="text-sm muted">Which cards should become issues? Answer in chat with their numbers, for example <code>1 4</code>, or <code>none</code>.</p>
+    </article>
+  </section>
+"""
 
 
 def overview(cards):
@@ -144,7 +248,7 @@ def overview(cards):
 
 
 def page(cards, shell):
-    body = header(cards) + overview(cards) + cards_section(cards)
+    body = header(cards) + overview(cards) + cards_section(cards) + questions(cards) + top_pick(cards)
     return shell.replace("{{repo name}}", escape(cards["repo"])).replace("  <!-- REPORT -->\n", body)
 
 
