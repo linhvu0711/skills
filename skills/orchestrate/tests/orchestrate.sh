@@ -190,11 +190,11 @@ fs_record() {
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
-# fs_set_state <jq program>: change the newest run's state, as a run from an
+# fs_set_state [jq flags] <jq program>: change the newest run's state, as a run from an
 # older orchestrate.sh left it.
 fs_set_state() {
   local f; f="$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"
-  jq "$1" "$f" > "$f.new" && mv "$f.new" "$f"
+  jq "$@" "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
 # fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
@@ -952,6 +952,7 @@ t_fs_all_closed_done() {
   has stdout '"done":true' "$out"
   has stdout '"number":42,"title":"Export orders","stages":["bug","ticket"]' "$out"
   has stdout '"url":"https://github.com/acme/app/pull/43","state":"MERGED"' "$out"
+  has stdout "\"paths\":[\"$T/dev/app\"]" "$out"
   eq status done "$(fs_state -r .status)"
 }
 
@@ -990,8 +991,32 @@ t_fs_sync_fast_forwards() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
   eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_each_repo() {
+  # Given: a run with threads in acme/app and acme/lib; each origin's main is one commit ahead
+  fs_setup; fs_lib; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git clone -q --bare "$T/dev/lib" "$T/remote-lib.git"
+  git -C "$T/dev/lib" config url."$T/remote-lib.git".insteadOf https://github.com/acme/lib.git
+  git -C "$T/dev/lib" fetch -q origin
+  git clone -q "$T/remote-lib.git" "$T/other-lib"
+  fs_set_state --arg app "$T/dev/app" --arg lib "$T/dev/lib" '.threads += [
+    {ref: "acme/app#42", repo: "acme/app", path: $app, stage: "ticket", thread: "t1", status: "started"},
+    {ref: "acme/lib#5", repo: "acme/lib", path: $lib, stage: "ticket", thread: "t2", status: "started"}]'
+  local was_app was_lib
+  was_app="$(fs_short "$T/dev/app" main)"; was_lib="$(fs_short "$T/dev/lib" main)"
+  fs_push a.txt one
+  printf 'two\n' > "$T/other-lib/b.txt"; git -C "$T/other-lib" add b.txt
+  git -C "$T/other-lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m two
+  git -C "$T/other-lib" push -q origin main
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "app: main fast-forwarded $was_app..$(fs_short "$T/other" main)
+lib: main fast-forwarded $was_lib..$(fs_short "$T/other-lib" main)" "$out"
 }
 
 t_fs_sync_fetch_fails() {
@@ -1005,7 +1030,7 @@ t_fs_sync_fetch_fails() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  has stdout "main not updated: fetch failed: " "$out"
+  has stdout "app: main not updated: fetch failed: " "$out"
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -1016,7 +1041,7 @@ t_fs_sync_up_to_date() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main up to date at $(fs_short "$T/dev/app" main)" "$out"
+  eq stdout "app: main up to date at $(fs_short "$T/dev/app" main)" "$out"
 }
 
 t_fs_sync_own_commits() {
@@ -1029,7 +1054,7 @@ t_fs_sync_own_commits() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: it has commits origin/main lacks" "$out"
+  eq stdout "app: main not updated: it has commits origin/main lacks" "$out"
   eq main "$mine" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -1046,7 +1071,7 @@ t_fs_sync_edits_in_the_way() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq stdout "app: main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
   eq edit mine "$(cat "$T/dev/app/a.txt")"
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -1064,7 +1089,7 @@ t_fs_sync_edits_in_the_way_autostash() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq stdout "app: main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -1080,7 +1105,7 @@ t_fs_sync_ignored_file_in_the_way() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  has stdout "main not updated: " "$out"
+  has stdout "app: main not updated: " "$out"
   eq file mine "$(cat "$T/dev/app/b.txt")"
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -1096,7 +1121,7 @@ t_fs_sync_narrow_fetch_refspec() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
 }
 
 t_fs_sync_other_branch() {
@@ -1109,7 +1134,7 @@ t_fs_sync_other_branch() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
   eq branch feat/x "$(git -C "$T/dev/app" branch --show-current)"
   eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -2604,6 +2629,7 @@ cases=(
   "the retro gets the analysis row|t_fs_done_retro_row"
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
+  "sync fast-forwards each repo the run worked in|t_fs_sync_each_repo"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
   "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
   "sync leaves a default branch with its own commits|t_fs_sync_own_commits"

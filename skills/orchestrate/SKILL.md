@@ -307,19 +307,20 @@ A check printed `"done": true`.
    <label> <title> · <stages joined by →> · PR #<n> <state> · threads <links>
    ```
 
-3. `scripts/orchestrate.sh sync <owner/repo>`, and post its line as it
-   is. It fast-forwards the default branch of the run's main checkout to
-   origin's, so prune-worktrees judges by the merged work. The retro reads
+3. `scripts/orchestrate.sh sync <owner/repo>`, and post its lines as
+   they are, one per repo the run worked in. Each fast-forwards the
+   default branch of that repo's main checkout to origin's, so
+   prune-worktrees judges by the merged work. The retro reads
    the files of the branch that is checked out, so it sees the merged
    work only when that branch is the default one. A `not updated` line
    leaves the branch as it was; go on.
-4. From the run's `path` (the main checkout), run
-   `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
+4. From each folder in the check line's `paths` (the main checkouts),
+   run `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
    lines as they are, as `/ship` does after its merges.
 5. The check's line has no `retro` (issues were taken out of the run):
-   post `Run ended with #<a> #<b> taken out. Start the retro yourself
-   when the work is done: /retro run <run>`, with the numbers from
-   `removed` and `run` from the line, and start no thread. Else start
+   post `Run ended with <label a> <label b> taken out. Start the retro yourself
+   when the work is done: /retro run <run>`, with the label of each
+   ref in `removed` and `run` from the line, and start no thread. Else start
    the retro: follow `../../shared/kickoff/launch-t3.md` with the
    check's `retro` line, so one thread runs `/retro run <run>` on
    everything the run did. Post its link. A `stop:` line or an error

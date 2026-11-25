@@ -764,7 +764,7 @@ cmd_check() {
   # A start counts as a change even on a row that did not move, as after a
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
-  jq -cn --arg run "$run" --arg am "$analysis_model" --arg ae "$analysis_effort" --argjson S "$S" --argjson o "$obs" --argjson seen "$seen" '
+  jq -cn --arg run "$run" --arg am "$analysis_model" --arg ae "$analysis_effort" --argjson S "$S" --argjson o "$obs" --argjson seen "$seen" "$run_repos_jq"'
     $o.starts as $starts | $o.rows as $rows | $o.joined as $joined | $o.done as $done
     | $o.propose as $propose | $o.settles as $settles
     | ($rows | map(. as $r | . + {changed: (($starts | any(.ref == $r.ref))
@@ -775,7 +775,7 @@ cmd_check() {
     + if $done then {summary: [$rows[] | .ref as $r | {ref, label, number, title,
         stages: (reduce ($S.threads[] | select(.ref == $r) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.ref == $r and .link != null) | .link]}],
-        removed: $S.removed}
+        removed: $S.removed, paths: ($S | run_repos | map(.path))}
       # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
       # A run with issues taken out is not the whole work, so it gets no retro yet.
       + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
@@ -1005,18 +1005,25 @@ cmd_resume() {
 }
 
 # ---------- sync ----------
-# sync: the default branch of the newest run's main checkout, fast-forwarded
-# to origin's, so prune-worktrees judges, and the retro reads, the merged
+# sync: the default branch of each main checkout the newest run worked in,
+# fast-forwarded to origin's, one line per repo, led by the repo's name, so prune-worktrees judges, and the retro reads, the merged
 # work. It only fast-forwards: the checkout is the user's, so their branch,
 # commits, and edits stay. A branch that cannot move exits 0 with a
 # `not updated` line, since the done run goes on to prune and retro anyway.
 cmd_sync() {
   [ $# -eq 0 ] || die "usage: orchestrate.sh sync <owner/repo>"
   newest_run
-  local path def new old where
-  path="$(jq -r .path <<<"$S")"
-  def="$(gh repo view "$slug" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
-    || { printf '%s not updated: gh could not name the default branch: %s\n' "$slug" "$(tail -1 "$errf")"; return 0; }
+  local rr p
+  while IFS=$'\t' read -r rr p; do
+    printf '%s: %s\n' "${rr#*/}" "$(sync_one "$rr" "$p")"
+  done < <(jq -r "$run_repos_jq"'run_repos[] | [.repo, .path] | @tsv' <<<"$S")
+}
+
+# sync_one <owner/repo> <path>: sync's line for one repo.
+sync_one() {
+  local repo="$1" path="$2" def new old where
+  def="$(gh repo view "$repo" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
+    || { printf '%s not updated: gh could not name the default branch: %s\n' "$repo" "$(tail -1 "$errf")"; return 0; }
   # The refspec is named, since the clone's own fetch refspec may leave the default branch out.
   git -C "$path" fetch --quiet origin "+refs/heads/$def:refs/remotes/origin/$def" 2>"$errf" \
     || { printf '%s not updated: fetch failed: %s\n' "$def" "$(tail -1 "$errf")"; return 0; }
