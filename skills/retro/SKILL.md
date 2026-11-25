@@ -49,11 +49,12 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 scripts/github.py list <owner/repo> --transcripts <scratch> --since D [--until D]
    ```
 
-   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues` of each repo, into a second folder. Each file name holds its repo, so two repos' PR 12 stay apart:
+   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues` of each repo, into a second folder, under one folder per repo, so two repos' PR 12 stay apart:
 
    ```bash
-   python3 scripts/github.py pr <owner/repo> <n> > <github>/pr-<owner>-<repo>-<n>.md
-   python3 scripts/github.py issues <owner/repo> <n>... > <github>/issues-<owner>-<repo>.md
+   mkdir -p <github>/<owner>/<repo>
+   python3 scripts/github.py pr <owner/repo> <n> > <github>/<owner>/<repo>/pr-<n>.md
+   python3 scripts/github.py issues <owner/repo> <n>... > <github>/<owner>/<repo>/issues.md
    ```
 
    Count the readers: one per session, one per PR, one per issues bundle. More than 20: print `<s> sessions, <p> PRs, <i> issues: <r> readers. Say go.` and wait for `go`; any other answer narrows the scope, and you go back to step 1. Done when every untouched PR and issue has its bundle, and the count is 20 or less or the user said `go`.
