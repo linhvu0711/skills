@@ -536,7 +536,7 @@ gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\
   `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL
   label, when the repo has one, is the PR-only label the handoff skills own;
   it stays out of the map.
-- Priority: the shared store. `python3 "$CONV" priority-get owner/repo`.
+- Priority: the shared store. `python3 issue-conventions.py priority-get owner/repo`.
   On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or
   `priority: …` family, or words: p0 = critical else high, p1 = high,
   p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created
