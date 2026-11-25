@@ -5,9 +5,9 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # gp_run <code>: run <code> with the module gh.py loaded by path as `gh`, as a
-# caller loads it. A case that sets GP_PATH runs python3 with that PATH.
+# caller loads it. A case that sets gp_path runs python3 with that PATH.
 gp_run() {
-  run env ${GP_PATH:+PATH="$GP_PATH"} python3 -I -c '
+  run env ${gp_path:+PATH="$gp_path"} python3 -I -c '
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("gh", sys.argv[1])
 gh = importlib.util.module_from_spec(spec)
@@ -43,8 +43,9 @@ t_gp_stop_gh_cannot_start() {
   # system folder, where a real gh would be found next
   T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin"; printf '#!/bin/sh\n' > "$T/bin/gh"; chmod -x "$T/bin/gh"
-  ln -s "$(command -v python3)" "$T/bin/python3"
-  local GP_PATH="$T/bin"
+  # The interpreter itself: a shim such as pyenv's needs bash from PATH.
+  ln -s "$(python3 -c 'import sys; print(sys.executable)')" "$T/bin/python3"
+  local gp_path="$T/bin"
   # When
   gp_run 'gh.stop("list runs", "run", "list")'
   # Then
