@@ -20,7 +20,7 @@ Your brief holds six things: the issue text with its comments (a run
 or a set: the parent and every ticket; a chat plan: its `## Brief`),
 the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the
 plan's base, and the paths of `shared/facts.md`,
-`shared/codebase-design.md`, and plan-up's `references/plan.md`. When
+`shared/codebase-design.md`, and `shared/plan.md`. When
 the repo has a Standard, a seventh: the path of its
 `CODING_STANDARDS.md`, with the `docs/standards/` files it links to.
 That is all you get, on purpose: you start from the code, not from the

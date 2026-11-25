@@ -1,11 +1,11 @@
 """Read a plan .md once, into the values build-page.py and prune.py use, and
-judge it against every line shape and limit of references/plan.md.
+judge it against every line shape and limit of ../../shared/plan.md.
 
     plan = plan_reader.read(path)
     for line in plan_reader.problems(plan): ...
 
 The plan is one dict of text, lists of text, key-value dicts, table rows as
-cell lists, and records, in the shape of references/plan.md. Any text reads
+cell lists, and records, in the shape of ../../shared/plan.md. Any text reads
 without an error: a missing block reads as empty. `problems` names each bad
 line, every one, in the order the builder prints them.
 """

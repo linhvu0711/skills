@@ -141,7 +141,7 @@ done.
    or `macos` for `macos-outpost`), `PERF` (the plan's `Perf` block, or
    none), and the layer's blocks: for a run, only the blocks under
    `## Layer <n>`, and `PERF` is the layer's. The slug is `<owner>-<repo>-<N>`.
-   A chat plan (`../plan-up/references/plan.md` § Chat plan) has no
+   A chat plan (`../../shared/plan.md` § Chat plan) has no
    `N`: its slug is the plan file's, `plan-<slug>.md`.
    `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 

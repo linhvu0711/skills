@@ -118,8 +118,8 @@ showed, and name `/grill`.
 
 ## What it leaves
 
-One `Proved` line per probe, per `plan.md` § Shape, and nothing else:
+One `Proved` line per probe, per `../../shared/plan.md` § Shape, and nothing else:
 the scripts stay in the temp folder and go with it. The executor reads
 no file of ours, so a line carries what it needs to build: the value,
 the shape, the limit. A doc the probe found wrong or missing becomes a
-`Docs` line in the slice it follows, per `plan.md` § Slices.
+`Docs` line in the slice it follows, per `../../shared/plan.md` § Slices.
