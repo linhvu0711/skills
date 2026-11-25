@@ -399,11 +399,14 @@ t_fs_second_task_waits() {
 }
 
 # fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
-# task turn for #7, with its watcher's pid.
+# task turn for #7, with its watcher's pid. The status `broken` writes a state
+# file that does not parse.
 fs_other_run() {
-  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"
+  local f="$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  mkdir -p "$(dirname "$f")"
+  if [ "$1" = broken ]; then echo '{"repo":' > "$f"; return; fi
   jq -cn --arg s "$1" --arg p "${2:-}" '{repo: "acme/web", status: $s, task_turn: [7],
-    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+    timer: {watcher: (if $p == "" then null else {pid: ($p | tonumber)} end)}}' > "$f"
 }
 
 t_fs_other_run_holds_turn() {
@@ -442,8 +445,7 @@ t_fs_stopped_run_no_turn() {
 
 t_fs_broken_run_no_turn() {
   # Given: a run of #42, open and manual; another run's state file does not parse
-  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
-  mkdir -p "$T/orchestrate/acme-web/20260101T000000Z"; echo '{"repo":' > "$T/orchestrate/acme-web/20260101T000000Z/state.json"
+  fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run broken
   # When
   fs_go check acme/app
   # Then

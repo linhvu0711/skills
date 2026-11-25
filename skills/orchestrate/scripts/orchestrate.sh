@@ -268,6 +268,37 @@ joins='
 # thread's link once the thread has the title `🧭 <name>`.
 thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 
+# ---------- task turn ----------
+# The task turn: one task issue with a thread per Mac, since two tasks at
+# once can fight over the browser and the user. This run holds it for a
+# task whose task thread is pending or started; when it holds none, a
+# running run of any repo may. A paused or stopped run has no watcher to
+# free its turn, so only a running one counts. This part alone writes
+# .task_turn and reads it from another run.
+# shellcheck disable=SC2016 # the $ names are jq variables
+turn_jq='def take_turn($holders): .task_turn = $holders; def free_turn($n): .task_turn = ((.task_turn // []) - [$n]);'
+
+# turn_holders <stages>: the task issues of this run that hold the turn.
+turn_holders() {
+  jq -c --argjson st "$1" '. as $S | [.set[] | select($st[tostring] == "task") | . as $n
+    | ([$S.threads[] | select(.number == $n)] | last) as $r
+    | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S"
+}
+
+# other_turn: `<repo>#<n>` of the first other run that holds the turn, or
+# nothing. Another run's file that does not parse holds no turn, so it never
+# fails this check. Nor does a run whose watcher is gone, as after a restart:
+# no check of its own would ever free its turn.
+other_turn() {
+  local f turn pid
+  while IFS= read -r -d '' f; do
+    read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
+      | "\(.repo)#\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
+    watcher_alive "${pid:-}" || turn=""
+    [ -z "$turn" ] || { echo "$turn"; return; }
+  done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
+}
+
 # ---------- board ----------
 # board: a jq program on null, with the state as $S and the check's rows as
 # $rows, what only the board needs as $cards, keyed by number, and T3's
@@ -413,7 +444,7 @@ observe() {
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn f pid
+  local n j st sk free blocked rec prop line wait rc gone row conf owners stages turn
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
@@ -422,26 +453,9 @@ observe() {
     [ "$j" != null ] || continue
     stages="$(jq -c --arg n "$n" --arg s "$(stage "$j" "$(jq -r .started_at <<<"$S")")" '.[$n] = $s' <<<"$stages")"
   done
-  # The task turn: one task issue with a thread per Mac, since two tasks at
-  # once can fight over the browser and the user. This run holds it for a
-  # task whose task thread is pending or started; when it holds none, a
-  # running run of any repo may. A paused or stopped run has no watcher to
-  # free its turn, so only a running one counts.
-  holders="$(jq -c --argjson st "$stages" '. as $S | [.set[] | select($st[tostring] == "task") | . as $n
-    | ([$S.threads[] | select(.number == $n)] | last) as $r
-    | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S")"
+  holders="$(turn_holders "$stages")"
   turn="$(jq -r --arg slug "$slug" 'if . == [] then empty else "\($slug)#\(.[0])" end' <<<"$holders")"
-  # Another run's file that does not parse holds no turn, so it never fails
-  # this check. Nor does a run whose watcher is gone, as after a restart: no
-  # check of its own would ever free its turn.
-  if [ -z "$turn" ]; then
-    while IFS= read -r -d '' f; do
-      read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
-        | "\(.repo)#\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
-      watcher_alive "${pid:-}" || turn=""
-      [ -z "$turn" ] || break
-    done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
-  fi
+  [ -n "$turn" ] || turn="$(other_turn)"
   task_turn="$holders"
   # owners: each PR's owner, the first issue in set order that it closes. A
   # shared PR's conflict goes only to its owner's thread, so no two threads
@@ -595,7 +609,7 @@ cmd_check() {
   # timer whether anything moved. A run from before it has none: all changed.
   seen="$(jq -c '.seen // {}' <<<"$S")"
   S="$(jq -cn --argjson o "$obs" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    "$good_check_jq"'$o.state | .threads += $o.claims | .task_turn = $o.task_turn | good_check($at)
+    "$good_check_jq$turn_jq"'$o.state | .threads += $o.claims | take_turn($o.task_turn) | good_check($at)
      | if $o.done then .status = "done" else . end
      | .seen = {status: .status, issues: ($o.rows | map({key: (.number | tostring), value: .}) | from_entries)}')"
   save
@@ -639,10 +653,10 @@ cmd_started() {
   else
     upd="$(jq -cn --arg id "$3" --arg link "$4" '{thread: $id, link: $link, status: "started"}')"
   fi
-  S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" '
+  S="$(jq -c --argjson n "$n" --arg s "$st" --argjson u "$upd" "$turn_jq"'
     (.threads | map(.number == $n and .stage == $s and .status == "pending") | rindex(true)) as $i
     | .threads[$i] += $u
-    | if $u.status == "failed" then .task_turn = ((.task_turn // []) - [$n]) else . end' <<<"$S")"
+    | if $u.status == "failed" then free_turn($n) else . end' <<<"$S")"
   save
 }
 
@@ -973,7 +987,7 @@ cmd_watch() {
   # again. The task turn keeps only its holders: a watcher claims no start,
   # but a task that closed frees the turn for the other runs now.
   S="$(jq -c --arg at "$at" --argjson o "$obs" \
-    "$good_check_jq"'.conflicts = ((.conflicts // []) + $o.sent) | .task_turn = $o.holders | good_check($at)' <<<"$S")"
+    "$good_check_jq$turn_jq"'.conflicts = ((.conflicts // []) + $o.sent) | take_turn($o.holders) | good_check($at)' <<<"$S")"
   save
   write_board "$view" "$obs"
   local c
