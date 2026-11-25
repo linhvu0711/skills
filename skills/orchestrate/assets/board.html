@@ -201,9 +201,9 @@
 
 <script>
 (function () {
-  // The page only reads: board.json, which each good check writes, and
-  // state.json, the run's status and timer. Every change goes through the
-  // orchestrator thread.
+  // The page only reads board.json: the run's status and timer, which each
+  // save writes, and the cards, which each good check writes. Every change
+  // goes through the orchestrator thread.
   var COLS = [
     ['shape', 'Shape', 'Deciding what to build'],
     ['build', 'Build', 'A thread builds it, or you do the task'],
@@ -211,7 +211,7 @@
     ['done', 'Done', 'Closed'],
   ]
   var EVERY = 5000
-  var B = null, S = null, good = null, stale = false, focus = false, openN = null, seen = ''
+  var B = null, good = null, stale = false, focus = false, openN = null, seen = ''
 
   var ICON_THREAD = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
   // Drawn, not typed: a font without ✓ or ○ shows an empty box.
@@ -258,21 +258,21 @@
   }
 
   function top() {
-    var loading = !B
+    var loading = !B || !B.issues
     var counted = loading ? [] : B.issues.filter(function (x) { return !x.removed })
     var doneN = counted.filter(function (x) { return x.column === 'done' }).length
     var youN = loading ? 0 : B.issues.filter(function (x) { return x.mark === 'you' }).length
-    var st = S ? S.status : ''
-    if (S) { $('run').textContent = S.name; $('repo').textContent = S.repo; document.title = S.repo.split('/').pop() }
+    var st = B ? B.status : ''
+    if (B) { $('run').textContent = B.name; $('repo').textContent = B.repo; document.title = B.repo.split('/').pop() }
     var pill = $('pill')
     pill.className = 'pill ' + st
     pill.innerHTML = (st === 'running' ? '<span class="dot agent"></span>' : '') + esc(st)
     $('fill').style.width = (loading || !counted.length ? 0 : Math.round(100 * doneN / counted.length)) + '%'
     $('ptext').textContent = loading ? 'loading…' : doneN + ' / ' + counted.length + ' closed'
 
-    var t = S ? S.timer : null, hd = $('hdot'), ht = $('htext')
+    var t = B ? B.timer : null, hd = $('hdot'), ht = $('htext')
     if (!t) { hd.className = 'dot'; ht.textContent = '' }
-    else if (t.fails >= 3) { hd.className = 'dot bad'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
+    else if (t.must_act) { hd.className = 'dot bad'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
     else if (t.fails > 0) { hd.className = 'dot warn'; ht.textContent = 'check failing · ' + t.fails + ' in a row' }
     else if (st === 'stopped' || st === 'done') { hd.className = 'dot ok'; ht.textContent = 'checks stopped' }
     else if (t.checked_at) {
@@ -288,7 +288,7 @@
 
     var b = $('banner'), bh = '', bc = ''
     if (stale) { bc = 'bad'; bh = '<b>Cannot read the page data.</b><span>The page server or the run folder is gone. Showing the last good data from ' + (good ? hhmm(good) : 'never') + '. Run <code>/orchestrate resume</code> in a thread.</span>' }
-    else if (t && t.fails >= 3) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the orchestrator thread.</span>' }
+    else if (t && t.must_act) { bc = 'bad'; bh = '<b>Checks keep failing.</b><span>' + esc(t.why) + ', ' + t.fails + ' checks in a row. Fix it, then say <code>check now</code> in the orchestrator thread.</span>' }
     else if (t && t.fails > 0) { bc = 'warn'; bh = '<b>Check failing.</b><span>' + esc(t.why) + '. Nothing new starts until a check passes.</span>' }
     else if (st === 'paused') { bc = 'info'; bh = '<b>Paused.</b><span>Running threads keep going; nothing new starts. Say <code>resume</code> in the orchestrator thread.</span>' }
     else if (st === 'stopped') { bc = 'info'; bh = '<b>Stopped.</b><span>No more checks. The board shows the last state. Say <code>/orchestrate resume</code> to go on.</span>' }
@@ -306,7 +306,7 @@
     document.querySelectorAll('.col').forEach(function (s) { scrolled[s.getAttribute('data-col')] = s.querySelector('.cards').scrollTop })
     document.body.classList.toggle('stale', stale)
     top()
-    var loading = !B
+    var loading = !B || !B.issues
     $('board').innerHTML = COLS.map(function (c) {
       var items = loading ? [] : B.issues.filter(function (x) { return x.column === c[0] })
       var body = loading ? '<div class="skel"></div><div class="skel"></div>' : items.length ? items.map(card).join('') : '<div class="nothing">Nothing here</div>'
@@ -369,18 +369,16 @@
       return r.text()
     })
   }
-  // A 404 for board.json before any good read means the run has not checked
-  // yet, so the columns keep their skeletons.
+  // A board.json with no issues means the run has not checked yet, so the
+  // columns keep their skeletons; a 404 keeps the last good board.
   function read() {
     // Drawn again only when the data changed, so a keyboard user keeps the
     // button they are on.
-    Promise.all([get('board.json'), get('state.json')]).then(function (r) {
-      if (r[0]) good = Date.now()
-      var now = r[0] + '\n' + r[1]
-      if (now === seen && !stale) return
-      seen = now
-      if (r[1]) S = JSON.parse(r[1])
-      if (r[0]) B = JSON.parse(r[0])
+    get('board.json').then(function (r) {
+      if (r) good = Date.now()
+      if (r === seen && !stale) return
+      seen = r
+      if (r) B = JSON.parse(r)
       stale = false
       render()
     }).catch(function () { if (B && !stale) { stale = true; render() } })

@@ -2161,6 +2161,42 @@ t_fs_board_fixture_shape() {
   eq keys "$fixture" "$(fs_board '.issues[0] | keys')"
 }
 
+# fs_page <board.json>: the board page run on a fake page with that board,
+# its {fetched, banner, hdot} line in out.
+fs_page() {
+  T="${T:-$(mktemp -d)}"
+  run node "$here/page.cjs" "$here/../assets/board.html" "$1"
+  eq "page exit" 0 "$code"
+}
+
+t_fs_page_reads_board_only() {
+  # Given: the failing board fixture
+  # When
+  fs_page "$here/fixtures/board/board-failing.json"
+  # Then
+  eq fetched '["board.json"]' "$(jq -c .fetched <<<"$out")"
+}
+
+t_fs_page_must_act_banner() {
+  # Given: a board whose check failed once, flagged for the user to act
+  T="$(mktemp -d)"
+  jq '.timer = {fails: 1, why: "bad", checked_at: null, every: 5, must_act: true}' "$here/fixtures/board/board.json" > "$T/board.json"
+  # When
+  fs_page "$T/board.json"
+  # Then
+  eq page '{"hdot":"dot bad","keeps":true}' "$(jq -c '{hdot, keeps: (.banner | startswith("<b>Checks keep failing.</b>"))}' <<<"$out")"
+}
+
+t_fs_page_no_flag_warns() {
+  # Given: the same, with 4 failed checks and no flag
+  T="$(mktemp -d)"
+  jq '.timer = {fails: 4, why: "bad", checked_at: null, every: 5, must_act: false}' "$here/fixtures/board/board.json" > "$T/board.json"
+  # When
+  fs_page "$T/board.json"
+  # Then
+  eq page '{"hdot":"dot warn","warns":true}' "$(jq -c '{hdot, warns: (.banner | startswith("<b>Check failing.</b>"))}' <<<"$out")"
+}
+
 t_fs_page_no_mockup_data() {
   # Given: the board page
   # When
@@ -2482,6 +2518,9 @@ cases=(
   "the board holds the run part in the fixture's shape|t_fs_board_run_shape"
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
+  "the board page fetches only board.json|t_fs_page_reads_board_only"
+  "the board page says checks keep failing when the board flags it|t_fs_page_must_act_banner"
+  "the board page only warns when the board does not flag it|t_fs_page_no_flag_warns"
   "the page ships no mockup data|t_fs_page_no_mockup_data"
   "resume copies the board page again|t_fs_resume_copies_page"
   "two runs get two different pages|t_fs_two_runs_two_pages"
