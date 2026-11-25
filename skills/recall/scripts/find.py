@@ -19,6 +19,7 @@ not installed is not searched, and a last line says so, as in
 With no session left, prints `No sessions on <topic>.` (after the not
 installed line, when there is one) and exits 1.
 """
+import argparse
 import json
 import re
 import subprocess
@@ -46,9 +47,9 @@ def line(r):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit("usage: find.py <topic>")
-    topic = sys.argv[1]
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("topic", help="words the sessions are about")
+    topic = ap.parse_args().topic
     out = run(SESSIONS / "find_all.py", "--root", ".", "--query", topic) or {}
     tools = [h for h in out.get("harnesses", []) if "error" not in h]
     # A topic with no word the finder keeps scores nothing, since the finder

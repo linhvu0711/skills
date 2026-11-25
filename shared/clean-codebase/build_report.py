@@ -7,6 +7,7 @@ Writes the page next to the rows file, prints `page: <html path>`, and
 exits 0. Prints each problem and exits 1 without changing the old page
 when the rows file is bad.
 """
+import argparse
 import json
 import os
 import re
@@ -163,9 +164,9 @@ def page_data(report):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2].strip())
-    path = Path(sys.argv[1])
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("rows", help="the rows .json")
+    path = Path(ap.parse_args().rows)
     report = json.loads(path.read_text(encoding="utf-8"))
     found = list(problems(report))
     if found:

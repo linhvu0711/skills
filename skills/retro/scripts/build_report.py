@@ -7,6 +7,7 @@ Writes report.html next to the cards file, prints `page: <html path>`, and
 exits 0. Prints each problem and exits 1 without changing the old page when
 the cards file is bad.
 """
+import argparse
 import json
 import os
 import sys
@@ -282,9 +283,9 @@ def page(cards, shell):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2].strip())
-    path = Path(sys.argv[1])
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("cards", help="the cards .json")
+    path = Path(ap.parse_args().cards)
     cards = json.loads(path.read_text(encoding="utf-8"))
     found = list(problems(cards))
     if found:

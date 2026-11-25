@@ -9,6 +9,7 @@ id that points at nothing, an id used twice or left out, a step number
 that is not a step, a label left out, or more than the type's node budget,
 read from references/catalog.md.
 """
+import argparse
 import json
 import re
 import sys
@@ -121,9 +122,9 @@ def sequence_problems(data):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2].strip())
-    path = sys.argv[1]
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("page", help="the page .html")
+    path = ap.parse_args().page
     data, error = read_data(Path(path).read_text(encoding="utf-8"), path)
     if error:
         print(error)

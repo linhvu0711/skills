@@ -6,6 +6,7 @@
 Prints `page: <html path>` and exits 0. Prints each problem and exits 1
 without changing the old page when a block is bad.
 """
+import argparse
 import json
 import os
 import sys
@@ -120,9 +121,9 @@ def tick_problems(data):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2].strip())
-    path = Path(sys.argv[1])
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("plan", help="the plan .md")
+    path = Path(ap.parse_args().plan)
     plan = plan_reader.read(path)
     if not plan["reviews"]:
         print(f"not a plan-up .md: {path.name}")

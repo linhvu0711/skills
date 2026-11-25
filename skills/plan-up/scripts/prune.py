@@ -12,12 +12,12 @@ older than 30 days. Any other slug with no issue, an unknown repo, or a
 gh error stays. Files that belong to no plan are printed as `stray`,
 never deleted. Each plan is read through plan_reader.py.
 """
+import argparse
 import glob
 import json
 import os
 import re
 import subprocess
-import sys
 import time
 
 import plan_reader
@@ -50,7 +50,9 @@ def files(folder):
 
 def main():
     folder = os.environ.get("PLAN_DIR") or os.path.expanduser("~/.agents/artifacts/plan")
-    dry = sys.argv[1:2] == ["-n"]
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("-n", dest="dry", action="store_true", help="print what would go, delete nothing")
+    dry = ap.parse_args().dry
     if not os.path.isdir(folder):
         return
     cache, pruned, kept = {}, 0, 0
