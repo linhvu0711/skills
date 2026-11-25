@@ -134,6 +134,7 @@ INJECTED = (
     "<bash-stdout>",
     "<bash-input>",
     "# AGENTS.md instructions",
+    "AGENTS.md instructions for",
     "<INSTRUCTIONS>",
     "<environment_context>",
     "<user_instructions>",
