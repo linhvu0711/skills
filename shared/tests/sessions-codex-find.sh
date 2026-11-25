@@ -218,8 +218,21 @@ t_cof_skips_injected_item() {
   eq prompt "add the flag" "$(printf '%s' "$out" | jq -r '.sessions[0].first_prompt')"
 }
 
+t_cof_rebuilds_older_index() {
+  # Given: c1 indexed, then its index rewritten as version 6 with a stale prompt
+  cof_home; co_rollout c1 /p/app "fix the export"
+  run python3 "$F" --cwd /p/app --all --json
+  local idx="$HOME/.cache/find-co-session/codex-index.json"
+  jq '.version = 6 | .files |= map_values(.prompts = ["stale prompt"] | .first_prompt = "stale prompt")' "$idx" > "$idx.new" && mv "$idx.new" "$idx"
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq prompt "fix the export" "$(printf '%s' "$out" | jq -r '.sessions[0].first_prompt')"
+}
+
 cases=(
   "finder skips a user item the harness injected|t_cof_skips_injected_item"
+  "finder rebuilds an index of an older version|t_cof_rebuilds_older_index"
   "finder lists a project session|t_cof_lists_project_session"
   "finder lists a compressed rollout|t_cof_lists_zst_session"
   "finder lists a compressed rollout it cannot read as unreadable|t_cof_zst_unreadable"
