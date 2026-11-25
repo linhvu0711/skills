@@ -5,9 +5,9 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # gp_run <code>: run <code> with the module gh.py loaded by path as `gh`, as a
-# caller loads it.
+# caller loads it. A case that sets GP_PATH runs python3 with that PATH.
 gp_run() {
-  run python3 -I -c '
+  run env ${GP_PATH:+PATH="$GP_PATH"} python3 -I -c '
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("gh", sys.argv[1])
 gh = importlib.util.module_from_spec(spec)
@@ -39,10 +39,12 @@ t_gp_run_hint_kept_out() {
 }
 
 t_gp_stop_gh_cannot_start() {
-  # Given: the only gh on PATH cannot be run
+  # Given: a PATH that holds python3 and a gh that cannot be run, and no
+  # system folder, where a real gh would be found next
   T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin"; printf '#!/bin/sh\n' > "$T/bin/gh"; chmod -x "$T/bin/gh"
-  export PATH="$T/bin:/usr/bin:/bin"
+  ln -s "$(command -v python3)" "$T/bin/python3"
+  local GP_PATH="$T/bin"
   # When
   gp_run 'gh.stop("list runs", "run", "list")'
   # Then
