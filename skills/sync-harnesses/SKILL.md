@@ -8,8 +8,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-The script fixes what a link can fix and reports the rest. Its lines are
-the reply.
+The script fixes what a link can fix and reports the rest. Its lines are the reply.
 
 ## Steps
 
@@ -19,5 +18,4 @@ the reply.
    bash scripts/sync-harnesses.sh
    ```
 
-2. Reply with its stdout, verbatim, and nothing more, on exit 0 and on
-   exit 1. Exit 1 means it printed a `problem:` line.
+2. Reply with its stdout, verbatim, and nothing more, on exit 0 and on exit 1. Exit 1 means it printed a `problem:` line.

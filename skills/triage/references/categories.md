@@ -1,8 +1,6 @@
 # Categories
 
-The first question is "where does it work, and where does it not". The
-answer places the bug. Each category has a tell, a thing to look at, and an
-exit. Name the category in the report.
+The first question is "where does it work, and where does it not". The answer places the bug. Each category has a tell, a thing to look at, and an exit. Name the category in the report.
 
 | Category | Tell | Look at | Exit |
 |---|---|---|---|
@@ -15,9 +13,6 @@ exit. Name the category in the report.
 | Flaky | Fails sometimes. | Raise the repro rate first. Races, timing, order. | `fix` issue. |
 | Not a bug | The code does what it was told. | The spec, the test, the ADR. | `docs` issue, or nothing. Say why. |
 
-When two categories fit, take the cheaper one to test first. Local env is
-cheaper to rule out than our code. Dependency is cheaper than data.
+When two categories fit, take the cheaper one to test first. Local env is cheaper to rule out than our code. Dependency is cheaper than data.
 
-The external row is the one people miss. Many "bugs" are a state the code
-never had a line for: the vendor timed out, the list came back empty. The
-issue that follows is the unhappy-path line that `to-issue` asks for.
+The external row is the one people miss. Many "bugs" are a state the code never had a line for: the vendor timed out, the list came back empty. The issue that follows is the unhappy-path line that `to-issue` asks for.

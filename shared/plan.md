@@ -1,67 +1,27 @@
 # Plan rules
 
-The plan is what the executor follows; `../skills/plan-up/references/executor.md` says what it has,
-what it lacks, and how it works a plan. Every decision that needs
-judgment is made here.
+The plan is what the executor follows; `../skills/plan-up/references/executor.md` says what it has, what it lacks, and how it works a plan. Every decision that needs judgment is made here.
 
 ## Vocabulary
 
-- **Seam**: where a module's interface lives, per
-  `codebase-design.md`. A plan's seams are external
-  ones: the public place a caller and a test both cross, a function, a
-  route, a command, a screen. Tests live at seams, never inside.
-- **Slice**: one change and the tests that prove it. One seam, one
-  change, one commit. Each test has one `Then`. A test that needs no
-  change of its own rides in the slice whose change covers it.
-- **Probe**: a small run, outside the repo's tree, that settles a fact
-  reading cannot, per `../skills/plan-up/references/probes.md`. Its answer is a `Proved` line.
-- **Stale doc**: a doc that says what the code did before the change: a
-  README section, a guide, a `CHANGELOG`, an ADR, `--help` text, an
-  `.env.example`. A doc the change needs and nobody wrote is stale too.
-- **Tracer bullet**: the first slice, after a delete slice when there is
-  one, runs the thinnest path end to end, so every later slice widens a
-  path that already works.
-- **On a screen**: a Done-when line a person checks by looking at the
-  running app: text, layout, color, wrap, width, order, a dialog. A web
-  page, a desktop window, and a command's printed output in a terminal
-  all count, so a CLI that prints lines is `UI: terminal`. A line only a
-  program reads (a return value, `--json`, an API or MCP field, a file)
-  is off a screen.
-- **Proof**: the artifact that shows a Done-when line holds: a test case,
-  or the reason no test can see the line; for a line on a screen, also a
-  UI walk's screenshot plus the video that shows it.
-- **UI walk**: a scripted pass through the running app, by hand in the
-  executor's desktop: web in a browser, a desktop app, or a terminal.
-- **Before shot**: a screenshot of a walk's screen on the base, taken
-  before any change, so a reader of the PR sees what changed. Only a
-  walk whose screen exists on the base, and looks or acts different
-  after the change, has one.
-- **Video**: one recording of one or more walks, in order, from one
-  `Setup`. Every walk is in exactly one video.
-- **Review block**: the plan in the words a person needs to approve it:
-  what changes, how, what it touches, the choices, the risks, how we
-  know it works, and the scope. The page shows it as the Review view,
-  its first tab. Everything under it is for the executor.
-- **Change map**: the one diagram in the Review view. A box is a part
-  with a job, named in the repo's own words (`CONTEXT.md` first); an
-  arrow is what moves between parts, or who asks whom; a group is the
-  app or package the parts live in. A store box names the tables,
-  columns, or keys that change. Files are a box's details, never boxes,
-  and an import is never an arrow.
-- **File changes**: every file the plan adds, edits, deletes, or moves,
-  with the slices that change it. The Review view draws it as a file
-  tree under the Change map.
-- **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each
-  ticket is one **layer**; layer 1's PR targets the base, each later
-  layer's PR targets the branch of the layer below.
+- **Seam**: where a module's interface lives, per `codebase-design.md`. A plan's seams are external ones: the public place a caller and a test both cross, a function, a route, a command, a screen. Tests live at seams, never inside.
+- **Slice**: one change and the tests that prove it. One seam, one change, one commit. Each test has one `Then`. A test that needs no change of its own rides in the slice whose change covers it.
+- **Probe**: a small run, outside the repo's tree, that settles a fact reading cannot, per `../skills/plan-up/references/probes.md`. Its answer is a `Proved` line.
+- **Stale doc**: a doc that says what the code did before the change: a README section, a guide, a `CHANGELOG`, an ADR, `--help` text, an `.env.example`. A doc the change needs and nobody wrote is stale too.
+- **Tracer bullet**: the first slice, after a delete slice when there is one, runs the thinnest path end to end, so every later slice widens a path that already works.
+- **On a screen**: a Done-when line a person checks by looking at the running app: text, layout, color, wrap, width, order, a dialog. A web page, a desktop window, and a command's printed output in a terminal all count, so a CLI that prints lines is `UI: terminal`. A line only a program reads (a return value, `--json`, an API or MCP field, a file) is off a screen.
+- **Proof**: the artifact that shows a Done-when line holds: a test case, or the reason no test can see the line; for a line on a screen, also a UI walk's screenshot plus the video that shows it.
+- **UI walk**: a scripted pass through the running app, by hand in the executor's desktop: web in a browser, a desktop app, or a terminal.
+- **Before shot**: a screenshot of a walk's screen on the base, taken before any change, so a reader of the PR sees what changed. Only a walk whose screen exists on the base, and looks or acts different after the change, has one.
+- **Video**: one recording of one or more walks, in order, from one `Setup`. Every walk is in exactly one video.
+- **Review block**: the plan in the words a person needs to approve it: what changes, how, what it touches, the choices, the risks, how we know it works, and the scope. The page shows it as the Review view, its first tab. Everything under it is for the executor.
+- **Change map**: the one diagram in the Review view. A box is a part with a job, named in the repo's own words (`CONTEXT.md` first); an arrow is what moves between parts, or who asks whom; a group is the app or package the parts live in. A store box names the tables, columns, or keys that change. Files are a box's details, never boxes, and an import is never an arrow.
+- **File changes**: every file the plan adds, edits, deletes, or moves, with the slices that change it. The Review view draws it as a file tree under the Change map.
+- **Run**: one path through an epic, or a set of plain tickets with no parent, landed as a stack of PRs. Each ticket is one **layer**; layer 1's PR targets the base, each later layer's PR targets the branch of the layer below.
 
 ## Shape
 
-Write every block in this order. Drop a block only when no probe ran
-(`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`),
-nothing was decided (`Decided`), or the issue is not a `perf` (`Perf`).
-`Plan check` is never written in steps 4 to 7: only `../skills/plan-up/SKILL.md` step 8
-adds it, after a check ran (§ Plan check).
+Write every block in this order. Drop a block only when no probe ran (`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`), nothing was decided (`Decided`), or the issue is not a `perf` (`Perf`). `Plan check` is never written in steps 4 to 7: only `../skills/plan-up/SKILL.md` step 8 adds it, after a check ran (§ Plan check).
 
 ```markdown
 # Plan: #<n> <issue title>
@@ -190,12 +150,7 @@ By: plan-correctness-checker · <n> round(s); plan-design-checker · <n> round(s
 
 ## Chat plan
 
-A chat plan (`../skills/plan-up/SKILL.md` § Six forms) has no issue. It takes the shape
-of one ticket, with two changes. The head line has no number:
-`# Plan: <brief title>`. And a `## Brief` block comes after Out of
-scope, last but for a `## Plan check` block: the brief's `Task` and `Done when` lines from `../skills/plan-up/SKILL.md`
-step 2, word for word, since there is no issue for the build prompt to
-quote.
+A chat plan (`../skills/plan-up/SKILL.md` § Six forms) has no issue. It takes the shape of one ticket, with two changes. The head line has no number: `# Plan: <brief title>`. And a `## Brief` block comes after Out of scope, last but for a `## Plan check` block: the brief's `Task` and `Done when` lines from `../skills/plan-up/SKILL.md` step 2, word for word, since there is no issue for the build prompt to quote.
 
 ```markdown
 ## Brief
@@ -207,8 +162,7 @@ Done when:
 
 ## Run
 
-A run is one plan with the blocks above written once per layer. These
-blocks come first and once:
+A run is one plan with the blocks above written once per layer. These blocks come first and once:
 
 ```markdown
 # Plan: #<first ticket or epic> <title>
@@ -235,576 +189,180 @@ for the whole stack>
 <as above, once, every layer's probes; `Used by` names the layer, `L2 S1`>
 ```
 
-Then, for each layer in stack order, a heading `## Layer n · #N <title>`
-and under it a small `## Review` block, then `## File changes`, `## Summary`, Proof, Seams, Slices, UI
-walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket.
-The layer's Review holds three parts: `Change`, in brief, what
-this layer's PR adds to the stack; `Choices`, its forks and decisions;
-`Works when`, its Proof rows.
+Then, for each layer in stack order, a heading `## Layer n · #N <title>` and under it a small `## Review` block, then `## File changes`, `## Summary`, Proof, Seams, Slices, UI walks, Videos, Gates, Decided, Out of scope, exactly as for one ticket. The layer's Review holds three parts: `Change`, in brief, what this layer's PR adds to the stack; `Choices`, its forks and decisions; `Works when`, its Proof rows.
 
-A run has one Change map, after the stack's Review, for the whole stack.
-Each part and flow that is not `same` ends with the layer that makes
-it: a `Layer` column (`L1`) on the parts table, and `, L1` inside a
-flow's brackets, as in `(new, L1)`. The page lists each layer's refs
-under its small Review. Proof rows number from 1 in each
-layer. Each layer's videos are its own PR's proof.
+A run has one Change map, after the stack's Review, for the whole stack. Each part and flow that is not `same` ends with the layer that makes it: a `Layer` column (`L1`) on the parts table, and `, L1` inside a flow's brackets, as in `(new, L1)`. The page lists each layer's refs under its small Review. Proof rows number from 1 in each layer. Each layer's videos are its own PR's proof.
 
-A seam or a `Change` in layer n may name code that an earlier layer's
-slice creates and the repo does not hold yet. Write the place as
-`layer 1, slice 2` where `file:line` would go, plus the name the earlier
-slice gives it. Nothing points at a later layer. The points line is
-information, not a cap: the user chose the run.
+A seam or a `Change` in layer n may name code that an earlier layer's slice creates and the repo does not hold yet. Write the place as `layer 1, slice 2` where `file:line` would go, plus the name the earlier slice gives it. Nothing points at a later layer. The points line is information, not a cap: the user chose the run.
 
-A single ticket prepped `on` an open stack is a run of one layer whose
-Base is `PR #<n>`. It has both the stack Review and the layer Review.
-The H1 and Date come first and once; each layer has its own Summary.
+A single ticket prepped `on` an open stack is a run of one layer whose Base is `PR #<n>`. It has both the stack Review and the layer Review. The H1 and Date come first and once; each layer has its own Summary.
 
 ## Ready-to-build
 
-An issue with `ready-to-build` carries Steps that `to-issue` checked line
-by line: every `file:line` was seen, no choice is open. The plan trusts
-them. This is the **short path**: the repo is read only for what the
-Steps do not say, and no step is re-planned. The plan still has every
-block above, and the Done rule holds whole.
+An issue with `ready-to-build` carries Steps that `to-issue` checked line by line: every `file:line` was seen, no choice is open. The plan trusts them. This is the **short path**: the repo is read only for what the Steps do not say, and no step is re-planned. The plan still has every block above, and the Done rule holds whole.
 
-- **Slices.** Each step that changes code is one slice, in step order.
-  Its `file:line` is the `Change`; the pattern the step names to copy
-  stays in `Change` when it follows the Standard. A step that only adds
-  or edits a test case is not a slice; it is a test in the slice whose
-  change it proves. Dead code the
-  round found goes first, in a delete slice per § Slices; the Steps'
-  slices follow it, and no step is re-planned.
-- **Tests.** The last step names the test file, the case, and the
-  command. `Given`, `When`, `Then` come from the Done-when line the case
-  proves; `Then` is the literal the issue gives (`116 pass`, the ISO
-  date). No literal in the issue: the explorer round reads the test file
-  and the code, and the plan writes one.
-- **Proof.** One row per Done-when line, as always, and one `Race:`
-  row per interleaving § One writer asks. A line the named
-  case proves points at it. A line only a command shows (`grep … is
-  empty`, `bun test` passes) puts that command in the Test column; its
-  artifact is the command's output. A line neither reaches gets a test
-  written here, at the seam, like any plan.
-- **UI.** A Done-when line on a screen gets a walk and a video, written
-  here as for any plan. The label does not say the ticket has no screen;
-  XS rarely does.
-- **Facts.** One explorer round, and only this: the commands from CI,
-  scripts, or README; the seam each changed line sits behind; the tests
-  that already cover those seams; the standards files; the docs the
-  Steps make stale; the UI kind and how it opens when a line is on a
-  screen; the nearest existing one for each function, component, type,
-  or file a Step adds; the data the Steps read and write, with where
-  its type is defined and its other writers; the dead code in the area
-  the Steps touch, and the design of each part the Steps touch, as
-  `../skills/plan-up/SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
-  line needs one.
-- **Docs.** Each stale doc is a `Docs` line in the slice of the step
-  that makes it stale. The Steps need not name it.
-- **Seams and Gates.** From that round. A seam is the public thing the
-  changed line sits behind, the one its existing test uses.
-- **Decided.** Only the issue's `Open` lines, each closed by a fact from
-  the round or by a question to the user, the docs the round found
-  that stay as they are, and the line § Done asks for each function,
-  component, type, or file a Step adds, written from the Step and the
-  round, the line § Slices asks for code a delete search kept, and
-  the line § Slices asks for a lock (One writer), and, for a rebuild
-  the Steps plan in the order Right design first asks, a line marked
-  `(user)` that says the issue chose it, since the user approved the
-  issue.
-  Nothing else is decided here; the Steps decided it. A Step whose
-  new module fails the deletion test, whose new swap seam has one
-  adapter, that breaks Right design first, Shape first, Rerun and
-  crash, or One writer, or whose pattern to copy breaks a rule of the
-  Standard, a way it marks `Old way:` included, is a choice the issue
-  got wrong, and ends the short path as
-  a choice does, below.
-- **Out of scope.** The issue's Scope `Out`, verbatim, then one line
-  for each list or save case that does not apply, per § Slices.
-- **Review.** As for any plan, from the blocks above. `Choices` holds
-  only the `Decided` lines the issue's `Open` lines left, and the
-  rebuild line above when there is one.
-- **Change map.** As for any plan. The explorer round adds one ask: the
-  parts and flows around each seam the Steps touch.
+- **Slices.** Each step that changes code is one slice, in step order. Its `file:line` is the `Change`; the pattern the step names to copy stays in `Change` when it follows the Standard. A step that only adds or edits a test case is not a slice; it is a test in the slice whose change it proves. Dead code the round found goes first, in a delete slice per § Slices; the Steps' slices follow it, and no step is re-planned.
+- **Tests.** The last step names the test file, the case, and the command. `Given`, `When`, `Then` come from the Done-when line the case proves; `Then` is the literal the issue gives (`116 pass`, the ISO date). No literal in the issue: the explorer round reads the test file and the code, and the plan writes one.
+- **Proof.** One row per Done-when line, as always, and one `Race:` row per interleaving § One writer asks. A line the named case proves points at it. A line only a command shows (`grep … is empty`, `bun test` passes) puts that command in the Test column; its artifact is the command's output. A line neither reaches gets a test written here, at the seam, like any plan.
+- **UI.** A Done-when line on a screen gets a walk and a video, written here as for any plan. The label does not say the ticket has no screen; XS rarely does.
+- **Facts.** One explorer round, and only this: the commands from CI, scripts, or README; the seam each changed line sits behind; the tests that already cover those seams; the standards files; the docs the Steps make stale; the UI kind and how it opens when a line is on a screen; the nearest existing one for each function, component, type, or file a Step adds; the data the Steps read and write, with where its type is defined and its other writers; the dead code in the area the Steps touch, and the design of each part the Steps touch, as `../skills/plan-up/SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open` line needs one.
+- **Docs.** Each stale doc is a `Docs` line in the slice of the step that makes it stale. The Steps need not name it.
+- **Seams and Gates.** From that round. A seam is the public thing the changed line sits behind, the one its existing test uses.
+- **Decided.** Only the issue's `Open` lines, each closed by a fact from the round or by a question to the user, the docs the round found that stay as they are, and the line § Done asks for each function, component, type, or file a Step adds, written from the Step and the round, the line § Slices asks for code a delete search kept, and the line § Slices asks for a lock (One writer), and, for a rebuild the Steps plan in the order Right design first asks, a line marked `(user)` that says the issue chose it, since the user approved the issue. Nothing else is decided here; the Steps decided it. A Step whose new module fails the deletion test, whose new swap seam has one adapter, that breaks Right design first, Shape first, Rerun and crash, or One writer, or whose pattern to copy breaks a rule of the Standard, a way it marks `Old way:` included, is a choice the issue got wrong, and ends the short path as a choice does, below.
+- **Out of scope.** The issue's Scope `Out`, verbatim, then one line for each list or save case that does not apply, per § Slices.
+- **Review.** As for any plan, from the blocks above. `Choices` holds only the `Decided` lines the issue's `Open` lines left, and the rebuild line above when there is one.
+- **Change map.** As for any plan. The explorer round adds one ask: the parts and flows around each seam the Steps touch.
 
 Two things end the short path:
 
-- **A stale step.** The code at a step's `file:line` is not what the
-  step says: the line moved and still shows the same code, fix the
-  `file:line` in `Change` and say so in the summary; the code, the name,
-  or the pattern is gone, say which step and what is there now, and
-  stop. The issue gets fixed, not the plan.
-- **A choice.** A step that needs a decision the issue did not make
-  means the label was wrong. Say which step and why, then plan the
-  ticket on the full path from `../skills/plan-up/SKILL.md` step 4, with the Steps as input.
+- **A stale step.** The code at a step's `file:line` is not what the step says: the line moved and still shows the same code, fix the `file:line` in `Change` and say so in the summary; the code, the name, or the pattern is gone, say which step and what is there now, and stop. The issue gets fixed, not the plan.
+- **A choice.** A step that needs a decision the issue did not make means the label was wrong. Say which step and why, then plan the ticket on the full path from `../skills/plan-up/SKILL.md` step 4, with the Steps as input.
 
 In a run, a labelled layer is built the same way.
 
 ## Type variants
 
-The shape above proves new behavior works, as a `feat` needs. Three
-types need other proof: a `fix` proves the old bug is gone, a `refactor`
-proves nothing changed, and a `perf` proves a number moved. The type is
-the leading word of the issue's title, per
-`issue-rules.md` § Types. A repo that writes
-another word for a type keeps it in the `words` map of `python3
-issue-conventions.py get <owner/repo>`, as `bug` for
-`fix`; that word is read as the type it stands for. A `fix`, `refactor`,
-or `perf` issue adds the rules of its type below to every other rule in
-this file, on the full path and the short one. In a run, each layer
-reads its own ticket's type. A Step of a `ready-to-build` issue that
-breaks one of these rules is a choice the issue got wrong, and ends the
-short path as § Ready-to-build says.
+The shape above proves new behavior works, as a `feat` needs. Three types need other proof: a `fix` proves the old bug is gone, a `refactor` proves nothing changed, and a `perf` proves a number moved. The type is the leading word of the issue's title, per `issue-rules.md` § Types. A repo that writes another word for a type keeps it in the `words` map of `python3 issue-conventions.py get <owner/repo>`, as `bug` for `fix`; that word is read as the type it stands for. A `fix`, `refactor`, or `perf` issue adds the rules of its type below to every other rule in this file, on the full path and the short one. In a run, each layer reads its own ticket's type. A Step of a `ready-to-build` issue that breaks one of these rules is a choice the issue got wrong, and ends the short path as § Ready-to-build says.
 
 ### fix
 
-The issue's What to build holds three lines: `Expected:`, `Actual:`,
-and `Repro:`.
+The issue's What to build holds three lines: `Expected:`, `Actual:`, and `Repro:`.
 
-- **Facts.** The facts round asks for the code the `Repro:` runs
-  through on the base, the seam a test reaches it by, and the nearest
-  test at that seam.
-- **Proof.** Row 1 is the `Repro:`, word for word in the Done-when
-  column; numbered steps go on one line, each keeping its number. The
-  Done-when lines follow from row 2.
-- **First slice.** Slice 1, or slice 2 after a delete slice. Its first
-  test proves row 1. It runs the repro through a seam that exists on the
-  base, never through a name a slice adds, so the test runs before any
-  change. `Then` is the `Expected:` result, as a literal. A `Red:` line
-  under `Then` is the `Actual:` result, as the failed assertion shows it
-  on the base. A missing symbol, an import error, or a crash before the
-  assertion is not red: the test must fail on its assertion, for the
-  bug's reason.
-- **Walk.** A bug a person sees on a screen gets walk 1, which proves
-  row 1. Its `Before:` line holds the `Repro:` steps and the `Actual:`
-  state they reach, so the before shot shows the bug, and its `See` is
-  the `Expected:` state.
+- **Facts.** The facts round asks for the code the `Repro:` runs through on the base, the seam a test reaches it by, and the nearest test at that seam.
+- **Proof.** Row 1 is the `Repro:`, word for word in the Done-when column; numbered steps go on one line, each keeping its number. The Done-when lines follow from row 2.
+- **First slice.** Slice 1, or slice 2 after a delete slice. Its first test proves row 1. It runs the repro through a seam that exists on the base, never through a name a slice adds, so the test runs before any change. `Then` is the `Expected:` result, as a literal. A `Red:` line under `Then` is the `Actual:` result, as the failed assertion shows it on the base. A missing symbol, an import error, or a crash before the assertion is not red: the test must fail on its assertion, for the bug's reason.
+- **Walk.** A bug a person sees on a screen gets walk 1, which proves row 1. Its `Before:` line holds the `Repro:` steps and the `Actual:` state they reach, so the before shot shows the bug, and its `See` is the `Expected:` state.
 
 ### refactor
 
 The structure changes and the behavior does not.
 
-- **Facts.** The facts round asks for the tests that cover the code
-  the refactor moves, every caller of the old form, and, for a rename,
-  every hit of the old name in strings, docs, and config.
-- **Covering tests.** `Gates` names the existing tests that cover the
-  code. They stay untouched and green from the first slice to the last.
-- **Lock test.** Where no test covers the code, the first slice after
-  any delete slice is a lock test alone, with
-  `Change: none, a lock test`. It passes on the base and stays green to
-  the end; its commit body says it was green before any change. Since it
-  passes on the base, it has a `Mutate:` line (§ Tests that can fail).
-- **Callers.** Every caller moves to the new form, and the last slice
-  deletes the old one, in the same PR. In a run, the old form is gone
-  by the last layer.
-- **Rename.** The search for the old name is a
-  whole-word or call pattern, as `rg -n '\bBaseState\b'` or `rg -n 'released\('`, so
-  `FakeBaseState` is no hit; it is scoped to the files it is about, by
-  path or `-g`, so a private step of the same name elsewhere is no hit;
-  and it runs once on the base copy when the plan is written. Each hit
-  of that run is a `Change` or a `Docs` line, or a `Decided` line that
-  says why it stays. `Gates` holds the search command and the base hits
-  that may stay; after the change, any other hit fails the gate.
+- **Facts.** The facts round asks for the tests that cover the code the refactor moves, every caller of the old form, and, for a rename, every hit of the old name in strings, docs, and config.
+- **Covering tests.** `Gates` names the existing tests that cover the code. They stay untouched and green from the first slice to the last.
+- **Lock test.** Where no test covers the code, the first slice after any delete slice is a lock test alone, with `Change: none, a lock test`. It passes on the base and stays green to the end; its commit body says it was green before any change. Since it passes on the base, it has a `Mutate:` line (§ Tests that can fail).
+- **Callers.** Every caller moves to the new form, and the last slice deletes the old one, in the same PR. In a run, the old form is gone by the last layer.
+- **Rename.** The search for the old name is a whole-word or call pattern, as `rg -n '\bBaseState\b'` or `rg -n 'released\('`, so `FakeBaseState` is no hit; it is scoped to the files it is about, by path or `-g`, so a private step of the same name elsewhere is no hit; and it runs once on the base copy when the plan is written. Each hit of that run is a `Change` or a `Docs` line, or a `Decided` line that says why it stays. `Gates` holds the search command and the base hits that may stay; after the change, any other hit fails the gate.
 
 ### perf
 
-Read `benchmark.md` first: it says when a speed
-number can be trusted.
+Read `benchmark.md` first: it says when a speed number can be trusted.
 
-- The `Perf` block sits after `Facts`. Its `Metric`, `Command`, and
-  `Before` come from the issue's `Baseline:` line.
-- A perf issue with no `Baseline:` line gets one from a probe on the
-  base copy, measured per the checklist. Its `Proved` line is the
-  `Before`.
-- The `Command` runs from the repo root, with the tools the `Platform`
-  has.
-- The `Pass rule` names its run count, at least 5 per side, and the
-  issue's `Target:`.
-- The Done-when line that names the Target is the perf Proof row. Its
-  Test column is `Perf: <Command>`, and its artifact is `before → after`.
-- The slices keep behavior the same, so their tests are the existing
-  tests at each seam, named under `Gates`.
+- The `Perf` block sits after `Facts`. Its `Metric`, `Command`, and `Before` come from the issue's `Baseline:` line.
+- A perf issue with no `Baseline:` line gets one from a probe on the base copy, measured per the checklist. Its `Proved` line is the `Before`.
+- The `Command` runs from the repo root, with the tools the `Platform` has.
+- The `Pass rule` names its run count, at least 5 per side, and the issue's `Target:`.
+- The Done-when line that names the Target is the perf Proof row. Its Test column is `Perf: <Command>`, and its artifact is `before → after`.
+- The slices keep behavior the same, so their tests are the existing tests at each seam, named under `Gates`.
 
 ## Filling the blocks
 
-Write plain marks: no long dash and no curly quote outside backticks.
-`../skills/plan-up/scripts/build-page.py` refuses each one and names its line.
+Write plain marks: no long dash and no curly quote outside backticks. `../skills/plan-up/scripts/build-page.py` refuses each one and names its line.
 
-Each Review part, map name, job, flow label, and count has a limit, and
-`../skills/plan-up/scripts/build-page.py` names any line over its limit.
+Each Review part, map name, job, flow label, and count has a limit, and `../skills/plan-up/scripts/build-page.py` names any line over its limit.
 
 ### Summary
 
-A few lines: what changes, the path slice 1 takes,
-and the counts. The page shows it as the layer's Overview lead.
+A few lines: what changes, the path slice 1 takes, and the counts. The page shows it as the layer's Overview lead.
 
 ### Review
 
-Written last, from the blocks under it, and placed first.
-It is for a person who approves the plan and never reads a slice, so it
-uses the issue's words and the repo's names, and no plan words (`slice
-2`, `walk 1`); refs (`D2`, `P1`, `#3`, `O1`) are fine, since the page
-links them. Each part keeps its limit; a part that needs more says less.
-- `Change` says what a user or a caller sees before and after, not which
-  files move.
-- `Approach` names the way the plan builds it and the way it does not,
-  with the reason in one clause.
-- `Blast radius` has all six lines. `none` is a finding: it tells the
-  reader the plan checked. `Dependency` names every package the plan
-  adds or bumps, with its `Decided` ref.
-- `Choices` lists every big fork, marked `(user)`,
-  then every `Decided` line marked `(hard to undo)`, its `Choices`
-  line ending `(hard to undo)` too, so `/ship` sees it; then the other
-  `Decided` lines whose wrong pick costs the most, three at most; the
-  marked lines do not count toward the three. Nothing was
-  forked or decided: one line, `- none`.
-- `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line
-  that proves it, or `not proved`. No belief carries a risk: `- none`.
-- `Works when` has one line per Proof row, in order, the Done-when line
-  in plain words.
-- `In` and `Out` are the scope. `Out` names the `Out of scope` lines by
-  their `O` ref.
+Written last, from the blocks under it, and placed first. It is for a person who approves the plan and never reads a slice, so it uses the issue's words and the repo's names, and no plan words (`slice 2`, `walk 1`); refs (`D2`, `P1`, `#3`, `O1`) are fine, since the page links them. Each part keeps its limit; a part that needs more says less.
+- `Change` says what a user or a caller sees before and after, not which files move.
+- `Approach` names the way the plan builds it and the way it does not, with the reason in one clause.
+- `Blast radius` has all six lines. `none` is a finding: it tells the reader the plan checked. `Dependency` names every package the plan adds or bumps, with its `Decided` ref.
+- `Choices` lists every big fork, marked `(user)`, then every `Decided` line marked `(hard to undo)`, its `Choices` line ending `(hard to undo)` too, so `/ship` sees it; then the other `Decided` lines whose wrong pick costs the most, three at most; the marked lines do not count toward the three. Nothing was forked or decided: one line, `- none`.
+- `Risks` holds the beliefs the plan rests on with the worst failure, each with what breaks if it is wrong and the `P` line that proves it, or `not proved`. No belief carries a risk: `- none`.
+- `Works when` has one line per Proof row, in order, the Done-when line in plain words.
+- `In` and `Out` are the scope. `Out` names the `Out of scope` lines by their `O` ref.
 
 ### Change map
 
-Drawn when a part is added or removed, a job moves from
-one part to another, or a flow is added, removed, or changes. A change
-inside one part's job draws no map: the block holds one line, `None: no
-part or flow changes.`, so the reader sees that the plan checked.
-- A part is named in the repo's words and carries its job, or how its
-  job changes, short enough to fit the box; the builder names a `Part`,
-  `Job`, or flow label over its limit. `Change` is
-  `new`, `changed` (the job changes), `removed`, or `same`. A `same` part is on the map only when
-  a changed flow touches it.
-- `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names
-  what changes in it), or `outside` (a tool, a service, a person, or an
-  app the repo does not hold).
-- `At` is the files of a part that exists now, `file` or `file:line`,
-  comma list, or the slice that makes a new one (`S2`, `L2 S1`). An
-  `outside` part leaves it empty.
-- A flow names what moves or what is asked, never `imports`, in a few
-  words. `(same)` may be left out.
-- Over the part limit: merge the `same` parts no changed flow needs,
-  then parts of one group whose flows match. Still over: one map per
-  area, each block headed `## Change map · <area>`.
-- `Grid` is `column,row`, both 0 or more, and no two parts share a
-  cell. Flow goes left to right: people and outside callers on the left,
-  stores on the right. The parts of one group sit in cells next to each
-  other, with no other part inside the group's area.
+Drawn when a part is added or removed, a job moves from one part to another, or a flow is added, removed, or changes. A change inside one part's job draws no map: the block holds one line, `None: no part or flow changes.`, so the reader sees that the plan checked.
+- A part is named in the repo's words and carries its job, or how its job changes, short enough to fit the box; the builder names a `Part`, `Job`, or flow label over its limit. `Change` is `new`, `changed` (the job changes), `removed`, or `same`. A `same` part is on the map only when a changed flow touches it.
+- `Kind` is `part`, `store` (a table, a file, a cache: its `Job` names what changes in it), or `outside` (a tool, a service, a person, or an app the repo does not hold).
+- `At` is the files of a part that exists now, `file` or `file:line`, comma list, or the slice that makes a new one (`S2`, `L2 S1`). An `outside` part leaves it empty.
+- A flow names what moves or what is asked, never `imports`, in a few words. `(same)` may be left out.
+- Over the part limit: merge the `same` parts no changed flow needs, then parts of one group whose flows match. Still over: one map per area, each block headed `## Change map · <area>`.
+- `Grid` is `column,row`, both 0 or more, and no two parts share a cell. Flow goes left to right: people and outside callers on the left, stores on the right. The parts of one group sit in cells next to each other, with no other part inside the group's area.
 
 ### File changes
 
-Every file the slices add, edit, delete, or move, one row each, written
-after the slices and before the Review.
-- `File` is the path from the repo root in backticks; a moved file is
-  `` `old` → `new` ``.
-- `Change` is `new`, `edited`, `deleted`, or `moved`. A file a tool
-  writes whole, such as a migration, a snapshot, or a lockfile, adds
-  `, generated`, and a name the tool picks is written with a `<name>`
-  part, as `` `migrations/0006_<name>.sql` ``.
-- `Slices` names each slice that changes the file, `S1, S3`; in a run,
-  the layer's own slices.
-- `Note` says the file's job or what changes in it, in a few words, and
-  may be empty.
+Every file the slices add, edit, delete, or move, one row each, written after the slices and before the Review.
+- `File` is the path from the repo root in backticks; a moved file is `` `old` → `new` ``.
+- `Change` is `new`, `edited`, `deleted`, or `moved`. A file a tool writes whole, such as a migration, a snapshot, or a lockfile, adds `, generated`, and a name the tool picks is written with a `<name>` part, as `` `migrations/0006_<name>.sql` ``.
+- `Slices` names each slice that changes the file, `S1, S3`; in a run, the layer's own slices.
+- `Note` says the file's job or what changes in it, in a few words, and may be empty.
 
-A run writes the block in each layer, after the layer's Review. The page
-draws it as a file tree under Blast radius.
-`../skills/plan-up/scripts/build-page.py` refuses a plan with no block, a row with an
-unknown change, a moved row with no `→`, a row with no slice or a slice
-the layer lacks, a row whose slice does not name it (a generated row is
-not checked), and a file listed twice.
+A run writes the block in each layer, after the layer's Review. The page draws it as a file tree under Blast radius. `../skills/plan-up/scripts/build-page.py` refuses a plan with no block, a row with an unknown change, a moved row with no `→`, a row with no slice or a slice the layer lacks, a row whose slice does not name it (a generated row is not checked), and a file listed twice.
 
 ### Facts
 
-Every command is read from CI config, package scripts, or the
-README, never guessed. `Open` says how the executor reaches the UI from a
-fresh machine: a URL after `Run`, a window that appears, a command to
-type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
-`../skills/plan-up/references/executor.md` describes it; its screen is 1024x768, so a wide layout
-needs a scroll or zoom step in the walk. A web walk on the linux
-Sandbox opens its page with the browser starter, `walk-browser <url>
---viewport-size=1440,795`, at laptop size, and
-`--viewport-size=390,664` at phone size, the page of an iPhone 13
-or 14. The 900 px screen loses 85 px to the browser bars and 20 px to
-the taskbar, so a taller page runs under the taskbar or off the screen,
-and the video hides its bottom. `../skills/plan-up/scripts/build-page.py` refuses a
-`--viewport-size` taller than 795.
+Every command is read from CI config, package scripts, or the README, never guessed. `Open` says how the executor reaches the UI from a fresh machine: a URL after `Run`, a window that appears, a command to type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as `../skills/plan-up/references/executor.md` describes it; its screen is 1024x768, so a wide layout needs a scroll or zoom step in the walk. A web walk on the linux Sandbox opens its page with the browser starter, `walk-browser <url> --viewport-size=1440,795`, at laptop size, and `--viewport-size=390,664` at phone size, the page of an iPhone 13 or 14. The 900 px screen loses 85 px to the browser bars and 20 px to the taskbar, so a taller page runs under the taskbar or off the screen, and the video hides its bottom. `../skills/plan-up/scripts/build-page.py` refuses a `--viewport-size` taller than 795.
 
 ### Proved
 
-One line per probe, numbered `P1`, `P2`. The fact first, as
-exact as a `Then`: the value, the shape, the limit, the error. Then what
-ran, in one clause, and the day. `Used by` names each slice, walk, or
-`Decided` line that rests on it; a probe nothing uses was not needed,
-and its line goes. A big fork's option that a probe backs names its
-`P` line.
+One line per probe, numbered `P1`, `P2`. The fact first, as exact as a `Then`: the value, the shape, the limit, the error. Then what ran, in one clause, and the day. `Used by` names each slice, walk, or `Decided` line that rests on it; a probe nothing uses was not needed, and its line goes. A big fork's option that a probe backs names its `P` line.
 
 ### Proof
 
-One row per Done-when line, verbatim. A race row (§ One writer)
-follows them, its cell starting `Race:`. A row names a test, or
-says in the Test column why a test cannot see the line. A row on a
-screen also names its UI walk and the video step that shows its `See`,
-even when its test passes: the test proves the code gives the right
-output, the walk proves a person sees it right, at the real width, in
-the real colors, with the real dialog. A row with no test and no reason
-is a gap; a row on a screen with no walk is a gap, except a state under
-about 1 s with no hook to hold it (§ UI walks): its UI walk column says
-`none: under 1 s, no hook`, and its test is the proof.
+One row per Done-when line, verbatim. A race row (§ One writer) follows them, its cell starting `Race:`. A row names a test, or says in the Test column why a test cannot see the line. A row on a screen also names its UI walk and the video step that shows its `See`, even when its test passes: the test proves the code gives the right output, the walk proves a person sees it right, at the real width, in the real colors, with the real dialog. A row with no test and no reason is a gap; a row on a screen with no walk is a gap, except a state under about 1 s with no hook to hold it (§ UI walks): its UI walk column says `none: under 1 s, no hook`, and its test is the proof.
 
 ### Seams
 
-A seam is public: something a caller, a user, or a client
-reaches without knowing the inside. Prefer the seam the repo already
-tests. A new seam goes under `Decided`, with the seam it copies. A new
-seam that is a public API is hard to undo: sort it per `../skills/plan-up/SKILL.md`
-step 5. A new seam that swaps one thing
-for another (an interface, a port, a client passed in) needs
-two adapters, such as the real one and the test fake. One adapter is a
-hypothetical seam: the code calls that one thing direct.
+A seam is public: something a caller, a user, or a client reaches without knowing the inside. Prefer the seam the repo already tests. A new seam goes under `Decided`, with the seam it copies. A new seam that is a public API is hard to undo: sort it per `../skills/plan-up/SKILL.md` step 5. A new seam that swaps one thing for another (an interface, a port, a client passed in) needs two adapters, such as the real one and the test fake. One adapter is a hypothetical seam: the code calls that one thing direct.
 
 ### Slices
 
-One per change, in tracer-bullet order. A slice lists every
-test its change makes green, and nothing else: a test that would be green
-without a change of its own belongs to the slice that covers it, not to a
-slice of its own. `Then` is a known literal: a value from the issue, the
-spec, or a worked example. `Change` names a line you saw this session and
-a pattern to copy, or, in a rebuild with no pattern that fits, a
-`Decided` line that says why; describing a shape the code already shows is waste.
-The pattern to copy is the way the Standard names for the job when it
-names one, and a line that follows it; with no rule there, or no
-Standard, the nearest existing pattern. Where the code near the change
-shows a way the Standard marks `Old way:`, the `Change` copies the way
-the Standard names.
-`Change` extends before it adds when the part's design fits (Right
-design first): a helper, a component, a type, a
-fixture that does the job or part of it is called or widened, never
-written twice. A new one is added only when the nearest existing one
-is named and the line that keeps it from serving is quoted, under
-`Decided`. A new module also passes the deletion test: delete it, and
-its complexity comes back in its callers. A module that only passes a
-call on fails it; the callers call the code under it. Its `Decided` line
-says what it hides. A job the repo has never done gets a new thing; that is the
-plain case, and `Decided` says so in one clause. A new dependency is
-never the plain case: it is a big fork, per `../skills/plan-up/SKILL.md` step 5, asked and
-answered before the `Change` names it.
-Unhappy paths are tests like any other, usually in the same slice as the
-happy path of their seam. Two seams miss them most, so name their cases
-as tests. The list cases: each list a screen reads gets a test while it
-loads, one when the load fails, and one when it comes back empty while
-a filter or a pick is still set. The save cases: each save gets two
-tests for a resend after a lost answer, one that sends the same request
-again and ends with one saved result, and one whose resend carries a
-later edit and ends with that edit saved; one for a close or a cancel
-while the save runs; and one for a second tab that already did it, as a
-`not_found` from a record that tab removed. A second tab that edited
-the record first is a race, per § One writer. A case that does not apply
-is an `Out of scope` line that says why, as for any unhappy path. A
-case name says what the code does, as in
-`exports one order as CSV`, never how it does it, as in `calls
-formatRow once`. Mocks only at borders, named in `Given`. A database the
-repo owns is no border when the repo has a test database: the test runs
-on it. A border the repo already mocks: read the Standard's Tests area
-first; a rule there for that border is the mock to write, and a mock it
-marks `Old way:` is replaced by the one it names. With no such rule,
-copy the repo's mock. A border the repo has never mocked: decide the
-shape here, one function per outside call and the client passed in, and
-write it in `Change`. `Change` follows the rules under `Standards`. A
-rule the copied `file:line` breaks, or one no line shows, is quoted in
-`Change`.
-Each stale doc is a `Docs` line in the slice whose change makes it
-stale, so the code and its doc land in one commit. The line names the
-`file:line`, or the new file, and what the doc says after the slice, as
-exact as a `Change`. A doc that is wrong on the base about code a slice
-touches goes in the first slice that touches that code. A doc that is
-wrong about code no slice touches is not this plan's: it goes under
-`Out of scope` with its `file:line`. A doc the facts round found that
-stays true goes under `Decided`, one line, with why. `Docs` lines need
-no test and no Proof row, unless a Done-when line is about the doc.
-Each entry under the issue's `## Docs to write` is a `Docs` line in the
-slice whose change makes it true, its text copied word for word: the
-words were agreed, and the plan does not write them again. An entry
-already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`:
-the builder takes the next free number on its base when the slice runs.
+One per change, in tracer-bullet order. A slice lists every test its change makes green, and nothing else: a test that would be green without a change of its own belongs to the slice that covers it, not to a slice of its own. `Then` is a known literal: a value from the issue, the spec, or a worked example. `Change` names a line you saw this session and a pattern to copy, or, in a rebuild with no pattern that fits, a `Decided` line that says why; describing a shape the code already shows is waste. The pattern to copy is the way the Standard names for the job when it names one, and a line that follows it; with no rule there, or no Standard, the nearest existing pattern. Where the code near the change shows a way the Standard marks `Old way:`, the `Change` copies the way the Standard names. `Change` extends before it adds when the part's design fits (Right design first): a helper, a component, a type, a fixture that does the job or part of it is called or widened, never written twice. A new one is added only when the nearest existing one is named and the line that keeps it from serving is quoted, under `Decided`. A new module also passes the deletion test: delete it, and its complexity comes back in its callers. A module that only passes a call on fails it; the callers call the code under it. Its `Decided` line says what it hides. A job the repo has never done gets a new thing; that is the plain case, and `Decided` says so in one clause. A new dependency is never the plain case: it is a big fork, per `../skills/plan-up/SKILL.md` step 5, asked and answered before the `Change` names it.
+
+Unhappy paths are tests like any other, usually in the same slice as the happy path of their seam. Two seams miss them most, so name their cases as tests. The list cases: each list a screen reads gets a test while it loads, one when the load fails, and one when it comes back empty while a filter or a pick is still set. The save cases: each save gets two tests for a resend after a lost answer, one that sends the same request again and ends with one saved result, and one whose resend carries a later edit and ends with that edit saved; one for a close or a cancel while the save runs; and one for a second tab that already did it, as a `not_found` from a record that tab removed. A second tab that edited the record first is a race, per § One writer. A case that does not apply is an `Out of scope` line that says why, as for any unhappy path. A case name says what the code does, as in `exports one order as CSV`, never how it does it, as in `calls formatRow once`.
+
+Mocks only at borders, named in `Given`. A database the repo owns is no border when the repo has a test database: the test runs on it. A border the repo already mocks: read the Standard's Tests area first; a rule there for that border is the mock to write, and a mock it marks `Old way:` is replaced by the one it names. With no such rule, copy the repo's mock. A border the repo has never mocked: decide the shape here, one function per outside call and the client passed in, and write it in `Change`. `Change` follows the rules under `Standards`. A rule the copied `file:line` breaks, or one no line shows, is quoted in `Change`.
+
+Each stale doc is a `Docs` line in the slice whose change makes it stale, so the code and its doc land in one commit. The line names the `file:line`, or the new file, and what the doc says after the slice, as exact as a `Change`. A doc that is wrong on the base about code a slice touches goes in the first slice that touches that code. A doc that is wrong about code no slice touches is not this plan's: it goes under `Out of scope` with its `file:line`. A doc the facts round found that stays true goes under `Decided`, one line, with why. `Docs` lines need no test and no Proof row, unless a Done-when line is about the doc. Each entry under the issue's `## Docs to write` is a `Docs` line in the slice whose change makes it true, its text copied word for word: the words were agreed, and the plan does not write them again. An entry already true goes in slice 1. A new ADR is `docs/adr/<next>-<slug>.md`: the builder takes the next free number on its base when the slice runs.
 
 #### Tests that can fail
 
-A test proves a line only when it can go red. Four rules hold for
-every test a slice lists.
+A test proves a line only when it can go red. Four rules hold for every test a slice lists.
 
-- **Mutate.** A test the builder sees green before its own change has
-  a `Mutate:` line under its `Then`: one `file:line` the test reaches,
-  and one edit there that turns it red, such as `>` to `>=`, or the
-  check taken out. Two kinds are green before their change: a
-  refactor's lock test (§ refactor), and a test whose behavior the base
-  already has, such as an unhappy path an existing check already
-  refuses. `Mutate:` and `Red:` never sit on one test: `Red:` is a
-  fix's first test, red on the base. Every other race test (Overlap)
-  carries `Mutate:`, even when it is red before its change: once it is
-  green, its `Mutate:` edit opens the race again and turns it red.
-- **Refusals.** A test whose `Then` is a refusal (an error, a
-  rejection, an empty result, `false`) takes the `Given` of a passing
-  case with one input changed, so only that input can make it refuse.
-  Its `Then` holds the literal only its own check gives: the message,
-  the error code, or the field it names, never a bare `400`, `throws`,
-  or `false` alone. A refusal whose check is on the base has a
-  `Mutate:` line that takes that check out. In a race test (Overlap)
-  the passing case is the one write alone, and the changed input is the
-  second write that overlaps it.
-- **One seam per Then.** One `Then` is checked at one seam. The facts
-  round names each existing test that already checks a Done-when line,
-  at any level. One that already checks the whole `Then` is the line's
-  Proof row, and no new test is planned for it. One that checks part of
-  it gets the new case in that test's file or table. A test of one
-  `Then` at two seams needs a `Decided` line that names the risk only
-  the second seam has, such as a process boundary or a real transport.
-  A UI walk beside a test is not a second test (§ Proof).
-- **Overlap.** A race test (§ One writer) makes the two writes overlap
-  at the seam where the race lives: it calls the store or the function
-  that checks and writes, and holds the first write open between its
-  check and its write with a database trigger, a hook, or a fake that
-  waits, while the second runs. Two requests through a test harness
-  that serves one request at a time run one after the other, so such a
-  test stays green on the broken code. A race test always carries one
-  of the two lines: `Red:` when it is a fix's first test, else
-  `Mutate:` with the edit that opens the race again, such as the lock,
-  the unique key, or the check in the same transaction taken out.
+- **Mutate.** A test the builder sees green before its own change has a `Mutate:` line under its `Then`: one `file:line` the test reaches, and one edit there that turns it red, such as `>` to `>=`, or the check taken out. Two kinds are green before their change: a refactor's lock test (§ refactor), and a test whose behavior the base already has, such as an unhappy path an existing check already refuses. `Mutate:` and `Red:` never sit on one test: `Red:` is a fix's first test, red on the base. Every other race test (Overlap) carries `Mutate:`, even when it is red before its change: once it is green, its `Mutate:` edit opens the race again and turns it red.
+- **Refusals.** A test whose `Then` is a refusal (an error, a rejection, an empty result, `false`) takes the `Given` of a passing case with one input changed, so only that input can make it refuse. Its `Then` holds the literal only its own check gives: the message, the error code, or the field it names, never a bare `400`, `throws`, or `false` alone. A refusal whose check is on the base has a `Mutate:` line that takes that check out. In a race test (Overlap) the passing case is the one write alone, and the changed input is the second write that overlaps it.
+- **One seam per Then.** One `Then` is checked at one seam. The facts round names each existing test that already checks a Done-when line, at any level. One that already checks the whole `Then` is the line's Proof row, and no new test is planned for it. One that checks part of it gets the new case in that test's file or table. A test of one `Then` at two seams needs a `Decided` line that names the risk only the second seam has, such as a process boundary or a real transport. A UI walk beside a test is not a second test (§ Proof).
+- **Overlap.** A race test (§ One writer) makes the two writes overlap at the seam where the race lives: it calls the store or the function that checks and writes, and holds the first write open between its check and its write with a database trigger, a hook, or a fake that waits, while the second runs. Two requests through a test harness that serves one request at a time run one after the other, so such a test stays green on the broken code. A race test always carries one of the two lines: `Red:` when it is a fix's first test, else `Mutate:` with the edit that opens the race again, such as the lock, the unique key, or the check in the same transaction taken out.
 
 #### Right design first
 
-The plan first says what each part the work
-touches would look like if it was built today for every job it has,
-the new one too. The facts round brings the signs that the current
-design is wrong: a flag or a branch for one case, the same logic in two
-places, a caller that works around the part, a new need that fits only
-at the side. The design fits: the plan extends it by the simplest change
-that keeps the code clear. The design does not fit: the part is rebuilt,
-a big fork per `../skills/plan-up/SKILL.md` step 5, where the patch is the lower option
-with what it costs later. A rebuild is slices in this order: the new
-form, each caller moved to it, and last the old form deleted, all in the
-same PR. The simplest path then decides how: the fewest parts moved,
-each slice green on its own.
+The plan first says what each part the work touches would look like if it was built today for every job it has, the new one too. The facts round brings the signs that the current design is wrong: a flag or a branch for one case, the same logic in two places, a caller that works around the part, a new need that fits only at the side. The design fits: the plan extends it by the simplest change that keeps the code clear. The design does not fit: the part is rebuilt, a big fork per `../skills/plan-up/SKILL.md` step 5, where the patch is the lower option with what it costs later. A rebuild is slices in this order: the new form, each caller moved to it, and last the old form deleted, all in the same PR. The simplest path then decides how: the fewest parts moved, each slice green on its own.
 
 #### Shape first
 
-A `Change` that adds or changes data names its shape
-before its logic: the type, the table, or the file or key format, in
-the first slice that needs it. A new need goes into that shape as if it
-was there from the start. A flag, a mode, or one more branch for the
-new case at the side, where a wider type or model would hold it, is
-planned again. A new kind of ID gets its own type. Data from outside is
-parsed into a type at the edge. A type that a schema, a spec, or a
-generator already defines is taken from there, never written by hand.
+A `Change` that adds or changes data names its shape before its logic: the type, the table, or the file or key format, in the first slice that needs it. A new need goes into that shape as if it was there from the start. A flag, a mode, or one more branch for the new case at the side, where a wider type or model would hold it, is planned again. A new kind of ID gets its own type. Data from outside is parsed into a type at the edge. A type that a schema, a spec, or a generator already defines is taken from there, never written by hand.
 
 #### Rerun and crash
 
-A `Change` that writes outside memory (a file, a
-row, a remote call) reads what is there and writes only the
-difference. A file is written under a temp name, then renamed into
-place. So a second run, and a run after a crash, end in the same state. Its
-slice has a test that runs the step twice; `Then` is the end state.
+A `Change` that writes outside memory (a file, a row, a remote call) reads what is there and writes only the difference. A file is written under a temp name, then renamed into place. So a second run, and a run after a crash, end in the same state. Its slice has a test that runs the step twice; `Then` is the end state.
 
 #### One writer
 
-Two actors that write one target (a file, a key, a
-row) each get their own target, joined when it is read. A lock is
-planned only when one shared target must stay, and its `Decided` line
-says why.
+Two actors that write one target (a file, a key, a row) each get their own target, joined when it is read. A lock is planned only when one shared target must stay, and its `Decided` line says why.
 
-A target that stays shared, by a lock or by design, still races: two
-actors reach it in the same moment. Two shapes show it: a check before
-a write (a cap counted, then a row inserted), and two writes of one key
-(two tabs save one record, two adds of one name). Each interleaving
-that matters gets its own Proof row after the Done-when rows, its
-Done-when cell starting `Race:`, as in `Race: both adds pass the 300
-cap check before either inserts`, and one line in `Works when`. The
-interleavings that matter: both actors pass the check before either
-writes; both write the same key; one removes what the other writes. Its
-test sits in the slice whose change closes the race, has one `Then`,
-the end state after both writes, as in `300 items; the second add
-refused with "list is full"`, and follows § Tests that can fail,
-Overlap.
+A target that stays shared, by a lock or by design, still races: two actors reach it in the same moment. Two shapes show it: a check before a write (a cap counted, then a row inserted), and two writes of one key (two tabs save one record, two adds of one name). Each interleaving that matters gets its own Proof row after the Done-when rows, its Done-when cell starting `Race:`, as in `Race: both adds pass the 300 cap check before either inserts`, and one line in `Works when`. The interleavings that matter: both actors pass the check before either writes; both write the same key; one removes what the other writes. Its test sits in the slice whose change closes the race, has one `Then`, the end state after both writes, as in `300 items; the second add refused with "list is full"`, and follows § Tests that can fail, Overlap.
 
 #### Delete slice
 
-Dead code the facts round found in the area the
-ticket touches is deleted first, alone, so the new code is built on the
-simpler base and nothing copies the old way. Code is dead only when a
-search shows
-no caller in the code, in strings, in scripts, and in config,
-and nothing can call it by name at run time (a route table, a plugin
-list, a name built from a string). A hit on any search, or a
-name that can be called at run time, keeps the code: a `Decided` line
-names it and says why it stays. The delete slice is slice 1, headed
-`Slice 1, deletes dead code: <area>`. Its `Change` lines delete and do
-nothing else, each with the search that showed no caller. A doc that
-names the deleted code is a `Docs` line in it. Its tests are the
-existing tests under `Gates` that cover the area, each with `Given: the
-base`, `When:` the command that runs it, and `Then: pass, before and
-after the delete`. When no Gate covers the area, its one test is the
-search: `Given: the base`, `When:` each search from its `Change` lines,
-and `Then: before the delete, hits only in the code it deletes; after
-it, no hit`. This test alone changes across the delete, and the builder
-runs it on both sides. It proves no Done-when line. The tracer bullet is the
-first slice after it.
-No dead code found: no delete slice and no line about it.
+Dead code the facts round found in the area the ticket touches is deleted first, alone, so the new code is built on the simpler base and nothing copies the old way. Code is dead only when a search shows no caller in the code, in strings, in scripts, and in config, and nothing can call it by name at run time (a route table, a plugin list, a name built from a string). A hit on any search, or a name that can be called at run time, keeps the code: a `Decided` line names it and says why it stays. The delete slice is slice 1, headed `Slice 1, deletes dead code: <area>`. Its `Change` lines delete and do nothing else, each with the search that showed no caller. A doc that names the deleted code is a `Docs` line in it. Its tests are the existing tests under `Gates` that cover the area, each with `Given: the base`, `When:` the command that runs it, and `Then: pass, before and after the delete`. When no Gate covers the area, its one test is the search: `Given: the base`, `When:` each search from its `Change` lines, and `Then: before the delete, hits only in the code it deletes; after it, no hit`. This test alone changes across the delete, and the builder runs it on both sides. It proves no Done-when line. The tracer bullet is the first slice after it. No dead code found: no delete slice and no line about it.
 
 ### Look
 
-The executor has no taste, so the plan holds every look
-decision. A slice on a screen names in `Change` the mockup frame it
-matches and the component or screen it copies, `file:line`: the one
-the Standard names for that job when it names one, else the nearest. What the
-mockup and the repo leave open (spacing, copy, empty and error text, a
-color) is a small fork: pick, write it under `Decided`. No mockup and no
-rule to copy: a big fork, ask.
+The executor has no taste, so the plan holds every look decision. A slice on a screen names in `Change` the mockup frame it matches and the component or screen it copies, `file:line`: the one the Standard names for that job when it names one, else the nearest. What the mockup and the repo leave open (spacing, copy, empty and error text, a color) is a small fork: pick, write it under `Decided`. No mockup and no rule to copy: a big fork, ask.
 
 ### UI walks
 
-Every step names an exact label, route, key, or element.
-`Setup` is the commands that put the app in the state the line
-assumes, each in backticks, run in order, or `none`. Saved data comes
-from the repo's seed or e2e helper, which the walker runs in the
-Sandbox through `proofbox exec`. No such helper: the app's own HTTP
-API, called with `curl` the way its page calls it. Neither: the first
-slice that needs the data adds a seed command beside the repo's e2e
-helpers. A login is a saved session the starter loads with `--storage
+Every step names an exact label, route, key, or element. `Setup` is the commands that put the app in the state the line assumes, each in backticks, run in order, or `none`. Saved data comes from the repo's seed or e2e helper, which the walker runs in the Sandbox through `proofbox exec`. No such helper: the app's own HTTP API, called with `curl` the way its page calls it. Neither: the first slice that needs the data adds a seed command beside the repo's e2e helpers. A login is a saved session the starter loads with `--storage
 <file>`, made by a Setup command, or the login written as `Steps`. A
-walk that opens its own page puts the `walk-browser` command last.
-`../skills/plan-up/scripts/build-page.py` refuses a `Setup` with no backtick command that
-is not `none`. Each `See` item is visible at the walk's `Screen`
-size in the state its `Setup` makes: a row the seed or fixture holds, on
-the screen the steps reach, with no scroll or filter the steps do not
-take. A `See` names no value that follows the real clock, such as a date
-the sample data moves to today or a time like `2 days ago`; it names a
-value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of
-day sets the clock in `Setup`, to a named time: in a web walk the
-starter's `--clock <time>`, else the hook the repo's tests use (a fake
-timer, a seed date), so the walk shows the same at any hour and never
-waits for the real clock. No such hook in the repo: a big fork, ask. A
-`See` state that lasts under about 1 s, such as a loading spinner, a
-flash, or a toast that fades, names in its walk's `Setup` a fake, a
-test scenario, or a delay hook the repo has that keeps it on screen, so
-the walk can stop on it. With no such hook, that line is proved by a
-test, not by a walk. `Must not` is the negative check. In a web walk
-it is often what the screenshot cannot show: `no console error` and
-`no failed request`, which the walker reads from the browser log each
-video saves. In a terminal walk it is text the screen
-shows or must not show, as in `no line starting Error:`, never `stderr`
-or `stdout`, which a terminal shows mixed; `../skills/plan-up/scripts/build-page.py`
-refuses those words there. One walk per row on a screen, happy and unhappy. No two
-walks end in the same picture: the screenshot is the proof, so a walk
-whose `See` matches another walk's proves nothing on its own. Change the
-steps until each walk ends in its own state; a `Cancel` walk first types
-a new value, then cancels, and `See` names the old value.
+walk that opens its own page puts the `walk-browser` command last. `../skills/plan-up/scripts/build-page.py` refuses a `Setup` with no backtick command that is not `none`. Each `See` item is visible at the walk's `Screen` size in the state its `Setup` makes: a row the seed or fixture holds, on the screen the steps reach, with no scroll or filter the steps do not take. A `See` names no value that follows the real clock, such as a date the sample data moves to today or a time like `2 days ago`; it names a value the `Setup` fixes, or the clock is set as below. A walk whose `See` depends on the date or the time of day sets the clock in `Setup`, to a named time: in a web walk the starter's `--clock <time>`, else the hook the repo's tests use (a fake timer, a seed date), so the walk shows the same at any hour and never waits for the real clock. No such hook in the repo: a big fork, ask. A `See` state that lasts under about 1 s, such as a loading spinner, a flash, or a toast that fades, names in its walk's `Setup` a fake, a test scenario, or a delay hook the repo has that keeps it on screen, so the walk can stop on it. With no such hook, that line is proved by a test, not by a walk. `Must not` is the negative check. In a web walk it is often what the screenshot cannot show: `no console error` and `no failed request`, which the walker reads from the browser log each video saves. In a terminal walk it is text the screen shows or must not show, as in `no line starting Error:`, never `stderr` or `stdout`, which a terminal shows mixed; `../skills/plan-up/scripts/build-page.py` refuses those words there. One walk per row on a screen, happy and unhappy. No two walks end in the same picture: the screenshot is the proof, so a walk whose `See` matches another walk's proves nothing on its own. Change the steps until each walk ends in its own state; a `Cancel` walk first types a new value, then cancels, and `See` names the old value.
 
-A step is one action: one click, one key, or one command typed and sent
-with `Return`. Text to type, a command or a value, sits in backticks
-right after the word `type`. A command stands alone: never two joined
-with `;` or `&&`, never two in one step, and never `clear` first, since
-a viewer of the video must see each command and its result.
-`../skills/plan-up/scripts/build-page.py` refuses a step that breaks this, naming the walk
-or video and the step. In a terminal:
+A step is one action: one click, one key, or one command typed and sent with `Return`. Text to type, a command or a value, sits in backticks right after the word `type`. A command stands alone: never two joined with `;` or `&&`, never two in one step, and never `clear` first, since a viewer of the video must see each command and its result. `../skills/plan-up/scripts/build-page.py` refuses a step that breaks this, naming the walk or video and the step. In a terminal:
 
 ```markdown
   1. Type `tally status`, press Return.
@@ -815,162 +373,57 @@ never one step that types `clear; tally status; tally rules list`.
 
 ### Before shots
 
-A walk's `Before` line names steps when
-its screen exists on the base and the change alters what a person sees
-there: a fix for a bug on a screen, a new look, layout, or text, or new
-behavior on a screen that exists, such as a new sort order or a new
-button on an old page. The line names the steps, from the walk's
-`Setup`, that reach the same screen on the base, and what the screen
-shows there now, as exact as `See`; for a bug, the wrong state. A step
-that needs what the change adds is left out: the base has no `Undo`
-button, so the shot is the screen before that click. `Before: none` for
-a new page, a new dialog, or new output where there was none: there
-is nothing to compare. Two walks whose
-before shots would be the same picture: the first names the steps, the
-rest say `as walk n` and share its shot. The shot uses the walk's `Setup` data and the `Screen`
-size, so the two pictures line up. A Setup command that a slice adds
-is not on the base: the `Before` line starts with the base's own
-command for the same data, in backticks, or is `none` with a `Decided`
-line that says why. In a run, a layer's base is the
-branch of the layer below, so its before shot shows the screen as that
-layer left it.
+A walk's `Before` line names steps when its screen exists on the base and the change alters what a person sees there: a fix for a bug on a screen, a new look, layout, or text, or new behavior on a screen that exists, such as a new sort order or a new button on an old page. The line names the steps, from the walk's `Setup`, that reach the same screen on the base, and what the screen shows there now, as exact as `See`; for a bug, the wrong state. A step that needs what the change adds is left out: the base has no `Undo` button, so the shot is the screen before that click. `Before: none` for a new page, a new dialog, or new output where there was none: there is nothing to compare. Two walks whose before shots would be the same picture: the first names the steps, the rest say `as walk n` and share its shot. The shot uses the walk's `Setup` data and the `Screen` size, so the two pictures line up. A Setup command that a slice adds is not on the base: the `Before` line starts with the base's own command for the same data, in backticks, or is `none` with a `Decided` line that says why. In a run, a layer's base is the branch of the layer below, so its before shot shows the screen as that layer left it.
 
 ### Videos
 
-The fewest recordings that show every walk. Walks that share
-a `Setup` go in one video, ordered so each walk's end state is the next
-walk's start state, or with a reset step between them. Start a new video
-only when the `Setup` differs, or a walk leaves a state no in-video step
-can undo. Numbered steps, exact labels; a `Shows` line ties each walk's
-`See` to the step where it appears, and the screenshot is that frame.
+The fewest recordings that show every walk. Walks that share a `Setup` go in one video, ordered so each walk's end state is the next walk's start state, or with a reset step between them. Start a new video only when the `Setup` differs, or a walk leaves a state no in-video step can undo. Numbered steps, exact labels; a `Shows` line ties each walk's `See` to the step where it appears, and the screenshot is that frame.
 
 ### Gates
 
-Name the existing tests that cover the touched seams, so the
-executor keeps them green rather than editing them.
+Name the existing tests that cover the touched seams, so the executor keeps them green rather than editing them.
 
 ### Decided
 
-Every small fork, one line each, so the user can veto any
-with one word. A choice the user made in a question goes here too, marked
-`(user)`. A hard-to-undo pick with a clear winner, per `../skills/plan-up/SKILL.md`
-step 5, ends `(hard to undo)`.
+Every small fork, one line each, so the user can veto any with one word. A choice the user made in a question goes here too, marked `(user)`. A hard-to-undo pick with a clear winner, per `../skills/plan-up/SKILL.md` step 5, ends `(hard to undo)`.
 
 ### Plan check
 
-Written by `../skills/plan-up/SKILL.md` step 8, only when a checker ran and did not
-fail, and always last in the file. The head line names each checker
-that ran and how many rounds it ran, joined by `; `. Then one line per
-finding: the correctness findings first, each as `Correctness F<n>`,
-then the design findings as `Design F<n>`, each in its checker's
-order, with what became of it: `fixed`, with the ref of the block it
-changed; `asked you`, with the user's answer; or `kept`, with why the
-plan stands. A checker that found nothing: one line, `- Correctness
-none` or `- Design none`. The page does not show this block; the
-summary's `Plan check:` line points the reader to it.
+Written by `../skills/plan-up/SKILL.md` step 8, only when a checker ran and did not fail, and always last in the file. The head line names each checker that ran and how many rounds it ran, joined by `; `. Then one line per finding: the correctness findings first, each as `Correctness F<n>`, then the design findings as `Design F<n>`, each in its checker's order, with what became of it: `fixed`, with the ref of the block it changed; `asked you`, with the user's answer; or `kept`, with why the plan stands. A checker that found nothing: one line, `- Correctness none` or `- Design none`. The page does not show this block; the summary's `Plan check:` line points the reader to it.
 
 ## Done
 
-The plan is done when every line below holds. A miss sends you back to
-facts or forks.
+The plan is done when every line below holds. A miss sends you back to facts or forks.
 
-- Every `Proved` line has its fact, what ran, the day, and a `Used by`
-  that names a slice, a walk, or a `Decided` line. Every probe left the
-  checkout's status as step 1 found it, and removed its own worktree.
-- Every doc the facts round or a probe named is a `Docs` line in a
-  slice, a `Decided` line that says why it stays, or an `Out of scope`
-  line when it covers code no slice touches. A slice whose change makes
-  a doc stale carries its `Docs` line.
-- Every Done-when line has a Proof row; every row has a test or a
-  stated reason why no test can see it; every row on a screen also has
-  a walk, or says `none: under 1 s, no hook` (§ UI walks).
-- Every seam is at a `file:line` seen this session, or at an earlier
-  layer's slice.
+- Every `Proved` line has its fact, what ran, the day, and a `Used by` that names a slice, a walk, or a `Decided` line. Every probe left the checkout's status as step 1 found it, and removed its own worktree.
+- Every doc the facts round or a probe named is a `Docs` line in a slice, a `Decided` line that says why it stays, or an `Out of scope` line when it covers code no slice touches. A slice whose change makes a doc stale carries its `Docs` line.
+- Every Done-when line has a Proof row; every row has a test or a stated reason why no test can see it; every row on a screen also has a walk, or says `none: under 1 s, no hook` (§ UI walks).
+- Every seam is at a `file:line` seen this session, or at an earlier layer's slice.
 - Every `Then` is a literal.
-- Every test green before its own change has a `Mutate:` line with a
-  `file:line` and one edit; no test has both `Mutate:` and `Red:`;
-  every race test has one of the two.
-- Every refusal test takes a passing case's `Given` with one input
-  changed, and its `Then` is the literal only its own check gives.
-- Every Done-when line that an existing test already checks names that
-  test: as its Proof row when it checks the whole `Then`, or as the
-  file the new case joins. A `Then` checked at two seams has a
-  `Decided` line that names the risk only the second seam has.
-- Every `Change` names a `file:line` seen this session, or an earlier
-  layer's slice, and a pattern to copy, per § Slices: the Standard's way
-  first, or, in a rebuild, a `Decided` line that says why no pattern
-  fits.
-- Every function, component, type, or file a `Change` adds has a
-  `Decided` line naming the nearest existing one and why it does not
-  serve, or saying the repo has never done this job. A new module's line
-  says what it hides, so it passes the deletion test; a new seam that
-  swaps one thing for another has two adapters.
-- Every `Change` that adds or changes data names its shape in the
-  first slice that needs it, and no slice adds a flag or a branch at
-  the side that the shape could hold (Shape first).
-- Every part a `Change` touches fits its design, or has a `Decided`
-  line, marked `(user)`, for its fork per Right design first: the
-  rebuild (the new form, each caller moved, the old form deleted last,
-  in the same PR) or the patch.
-- Every `Change` that writes outside memory has a test that runs it
-  twice (Rerun and crash).
-- Every target that two actors write has one target per actor, or a
-  `Decided` line for its lock (One writer).
-- Every check before a write, and every target that stays shared, has
-  a `Race:` Proof row per interleaving that matters, each with its own
-  `Then`, and its test overlaps the writes at the seam and carries
-  `Red:` or `Mutate:` (One writer, Overlap).
-- Dead code the facts round found is a delete slice, slice 1, whose
-  `Change` lines only delete, each with the search that showed
-  no caller in the code, in strings, in scripts, and in config;
-  code that a search hit or a run-time name keeps has a `Decided` line
-  that says why.
-  No dead code found: no delete slice and no line about it.
+- Every test green before its own change has a `Mutate:` line with a `file:line` and one edit; no test has both `Mutate:` and `Red:`; every race test has one of the two.
+- Every refusal test takes a passing case's `Given` with one input changed, and its `Then` is the literal only its own check gives.
+- Every Done-when line that an existing test already checks names that test: as its Proof row when it checks the whole `Then`, or as the file the new case joins. A `Then` checked at two seams has a `Decided` line that names the risk only the second seam has.
+- Every `Change` names a `file:line` seen this session, or an earlier layer's slice, and a pattern to copy, per § Slices: the Standard's way first, or, in a rebuild, a `Decided` line that says why no pattern fits.
+- Every function, component, type, or file a `Change` adds has a `Decided` line naming the nearest existing one and why it does not serve, or saying the repo has never done this job. A new module's line says what it hides, so it passes the deletion test; a new seam that swaps one thing for another has two adapters.
+- Every `Change` that adds or changes data names its shape in the first slice that needs it, and no slice adds a flag or a branch at the side that the shape could hold (Shape first).
+- Every part a `Change` touches fits its design, or has a `Decided` line, marked `(user)`, for its fork per Right design first: the rebuild (the new form, each caller moved, the old form deleted last, in the same PR) or the patch.
+- Every `Change` that writes outside memory has a test that runs it twice (Rerun and crash).
+- Every target that two actors write has one target per actor, or a `Decided` line for its lock (One writer).
+- Every check before a write, and every target that stays shared, has a `Race:` Proof row per interleaving that matters, each with its own `Then`, and its test overlaps the writes at the seam and carries `Red:` or `Mutate:` (One writer, Overlap).
+- Dead code the facts round found is a delete slice, slice 1, whose `Change` lines only delete, each with the search that showed no caller in the code, in strings, in scripts, and in config; code that a search hit or a run-time name keeps has a `Decided` line that says why. No dead code found: no delete slice and no line about it.
 - Every command in Facts came from CI, scripts, or README.
-- `Standards` names where the rules live, the Standard first when the
-  repo has one; every `Change` follows them, copies the way the Standard
-  names where the code shows an `Old way:`, and adds no second way for a
-  job under its `One way for each job`; a rule the copied line breaks is
-  quoted.
-- Every slice on a screen names its mockup frame and the component or
-  screen it copies; every open look choice is under `Decided`.
-- Every walk step names an exact label, route, key, or element, and
-  does one action, a typed command alone; every walk has a `Setup` of
-  backticked commands or `none`, and a `Must not`; each `See` item is visible at the `Screen` size in the
-  `Setup` state and names no value that follows the real clock; a terminal walk's `Must not` names screen text, never
-  `stderr` or `stdout`; no two walks end in the same picture;
-  every walk is named in a Proof row, and the row and the walk agree on
-  which line it proves.
-- Every walk has a `Before` line: `none`, `as walk n` for an earlier
-  walk of the same layer that names steps, or steps that work on the base and the exact
-  state they reach.
-- Every walk is in exactly one video; no two videos share a `Setup`;
-  every walk's Proof row names its video and step.
+- `Standards` names where the rules live, the Standard first when the repo has one; every `Change` follows them, copies the way the Standard names where the code shows an `Old way:`, and adds no second way for a job under its `One way for each job`; a rule the copied line breaks is quoted.
+- Every slice on a screen names its mockup frame and the component or screen it copies; every open look choice is under `Decided`.
+- Every walk step names an exact label, route, key, or element, and does one action, a typed command alone; every walk has a `Setup` of backticked commands or `none`, and a `Must not`; each `See` item is visible at the `Screen` size in the `Setup` state and names no value that follows the real clock; a terminal walk's `Must not` names screen text, never `stderr` or `stdout`; no two walks end in the same picture; every walk is named in a Proof row, and the row and the walk agree on which line it proves.
+- Every walk has a `Before` line: `none`, `as walk n` for an earlier walk of the same layer that names steps, or steps that work on the base and the exact state they reach.
+- Every walk is in exactly one video; no two videos share a `Setup`; every walk's Proof row names its video and step.
 - No Open line remains. Every big fork was put to the user and answered.
-- Every `Decided` line marked `(hard to undo)` names the `file:line`
-  that settles it, and the Review lists it under `Choices`.
-- Every dependency a `Change` adds or bumps was asked as a big fork,
-  and its `Decided` line is marked `(user)`.
+- Every `Decided` line marked `(hard to undo)` names the `file:line` that settles it, and the Review lists it under `Choices`.
+- Every dependency a `Change` adds or bumps was asked as a big fork, and its `Decided` line is marked `(user)`.
 - Gates name the existing tests on the touched seams.
-- A `perf` plan: the `Perf` block has all four lines, its `Pass rule`
-  names a run count of at least 5, and the Proof row of the Target line
-  names the `Command`.
-- A run: the Stack block lists every layer with its base, and the order
-  respects every `Blocked by` edge.
-- The Review block has every part, each in its limit: `Change`,
-  `Approach`, `In`, and `Out`; `Blast radius` all six lines; `Choices`
-  every big fork and its `Decided` lines; `Risks`; `Works when` one line
-  per Proof row. A run: one stack Review, and one small Review per layer.
-- A `fix` or `refactor` issue: every rule of § Type variants for its
-  type holds.
-- The Change map block is there: a map, or the `None` line when no
-  part, job, or flow changes. A map is within its part limit, each part
-  with a job, a `Change`, and a free `Grid` cell outside other groups'
-  areas; names, jobs, and flow labels fit their limits; every part but an `outside`
-  one has an `At`; every `same` part is touched by a changed flow; every
-  flow names what moves; in a run, every part and flow that is not
-  `same` names its layer.
-- The File changes block is there, in each layer of a run: one row per
-  file a `Change` or `Docs` line adds, edits, deletes, or moves, never a
-  file a line only copies from; each row names every slice that changes
-  it, and each of those slices names the file.
+- A `perf` plan: the `Perf` block has all four lines, its `Pass rule` names a run count of at least 5, and the Proof row of the Target line names the `Command`.
+- A run: the Stack block lists every layer with its base, and the order respects every `Blocked by` edge.
+- The Review block has every part, each in its limit: `Change`, `Approach`, `In`, and `Out`; `Blast radius` all six lines; `Choices` every big fork and its `Decided` lines; `Risks`; `Works when` one line per Proof row. A run: one stack Review, and one small Review per layer.
+- A `fix` or `refactor` issue: every rule of § Type variants for its type holds.
+- The Change map block is there: a map, or the `None` line when no part, job, or flow changes. A map is within its part limit, each part with a job, a `Change`, and a free `Grid` cell outside other groups' areas; names, jobs, and flow labels fit their limits; every part but an `outside` one has an `At`; every `same` part is touched by a changed flow; every flow names what moves; in a run, every part and flow that is not `same` names its layer.
+- The File changes block is there, in each layer of a run: one row per file a `Change` or `Docs` line adds, edits, deletes, or moves, never a file a line only copies from; each row names every slice that changes it, and each of those slices names the file.

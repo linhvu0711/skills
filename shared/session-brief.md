@@ -1,16 +1,12 @@
 # State brief
 
-Shared by `load-cc-session`, `load-co-session`, and `recall`. A research agent writes the brief; the
-main agent tags its PRs and branches with their live state, shows it, and waits.
+Shared by `load-cc-session`, `load-co-session`, and `recall`. A research agent writes the brief; the main agent tags its PRs and branches with their live state, shows it, and waits.
 
 ## Dispatch
 
-Send the research agent this prompt, verbatim, with the two placeholders
-filled. `<transcript>` is the file the extractor wrote in summary mode.
-`<tool>` is `Claude Code`, `Codex CLI`, or `Antigravity`.
+Send the research agent this prompt, verbatim, with the two placeholders filled. `<transcript>` is the file the extractor wrote in summary mode. `<tool>` is `Claude Code`, `Codex CLI`, or `Antigravity`.
 
-The research agent is the explorer, started per `facts.md` § Skill agents,
-next to this file. Send the prompt as it is.
+The research agent is the explorer, started per `facts.md` § Skill agents, next to this file. Send the prompt as it is.
 
 ```
 Read the file <transcript> in full. It is the transcript of a past <tool> session (user prompts and assistant replies only; tool calls omitted). If it starts with a compaction summary, that summary recaps the earlier part of the chat; treat it as part of the history.
@@ -32,10 +28,7 @@ Rules: only facts from the transcript; if a section has nothing, write "none". Q
 
 ## Return
 
-The explorer's reply carries the brief. Take it from the `# State brief`
-heading to the `Read:` line. No reply, an error, a reply with no
-`# State brief` heading, or the agent saying it cannot read the transcript
-is a failure.
+The explorer's reply carries the brief. Take it from the `# State brief` heading to the `Read:` line. No reply, an error, a reply with no `# State brief` heading, or the agent saying it cannot read the transcript is a failure.
 
 On failure fall back to the skeleton; do not retry.
 
@@ -47,9 +40,7 @@ Before the brief is shown, write it to a file and run, from this folder:
 python3 sessions/live_tags.py <file> --cwd <folder>
 ```
 
-`<folder>` is the folder the session ran in, so `gh` and `git` ask its
-repo. Show what the script prints. Each line under `**PRs and branches:**`
-now starts with its live state:
+`<folder>` is the folder the session ran in, so `gh` and `git` ask its repo. Show what the script prints. Each line under `**PRs and branches:**` now starts with its live state:
 
 | Tag | Means |
 |---|---|
@@ -60,17 +51,8 @@ now starts with its live state:
 | `[branch gone]` | a branch with no PR, not here, and GitHub says it does not exist |
 | `[state unknown]` | `gh` cannot find the PR or see the branch, cannot be reached, or is not logged in |
 
-The tags never stop the brief. A PR `gh` cannot find is
-`[state unknown]`, and the next lines are still asked. When `gh` itself
-fails, the script prints one `live tags: gh failed: <reason>` line on
-stderr, that line and every later one is `[state unknown]`, and the
-brief shows. The skeleton fallback is not
-tagged.
+The tags never stop the brief. A PR `gh` cannot find is `[state unknown]`, and the next lines are still asked. When `gh` itself fails, the script prints one `live tags: gh failed: <reason>` line on stderr, that line and every later one is `[state unknown]`, and the brief shows. The skeleton fallback is not tagged.
 
 ## Measured
 
-Tested 2026-09-12 on four real transcripts, 16K to 117K characters, plain,
-compacted, and Codex, through the Claude Code Explore bridge. Every brief was
-accurate on spot-check against its transcript. Wall time 45 to 130 seconds.
-The bridge reads a long file in 50KB passes and reports the count on its last
-line; a count short of the total means the brief is partial, say so.
+Tested 2026-09-12 on four real transcripts, 16K to 117K characters, plain, compacted, and Codex, through the Claude Code Explore bridge. Every brief was accurate on spot-check against its transcript. Wall time 45 to 130 seconds. The bridge reads a long file in 50KB passes and reports the count on its last line; a count short of the total means the brief is partial, say so.

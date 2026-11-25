@@ -894,6 +894,16 @@ t_hook_stops_harness_branch() {
   eq commits 1 "$(git rev-list --count HEAD)"
 }
 
+t_flags_skill_tool_in_skill() {
+  # Given: a skill line that names one harness's tool to start a skill
+  repo; skill demo 'Then invoke to-issue with the Skill tool.'; git add -A; git commit -qm files
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/SKILL.md:6: harness tool: with the Skill tool" "$err"
+}
+
 # skill_md <name>: skills/<name>/SKILL.md with a frontmatter whose name is
 # the folder and whose description is not empty.
 skill_md() {
@@ -1659,6 +1669,7 @@ cases=(
   "passes a harness command form in a description|t_passes_harness_in_description"
   "passes a harness command form in a README|t_passes_harness_in_readme"
   "hook stops a commit that adds a harness branch|t_hook_stops_harness_branch"
+  "flags a Skill tool name in a skill file|t_flags_skill_tool_in_skill"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"

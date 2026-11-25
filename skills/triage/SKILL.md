@@ -1,23 +1,18 @@
 ---
 name: triage
-description: "Find the root cause of a bug, or the hot spot behind a slow thing, then file the fix ticket. No code fix. When a real decision is open it runs the grill skill first. A bug issue it starts from becomes the ticket. Use for 'triage', 'diagnose', 'debug this', 'why is X broken', 'why is X slow'."
+description: "Find the root cause of a bug, or the hot spot behind a slow thing, then file the fix ticket. No code fix. When a real decision is open it runs the grill skill first. A bug issue it starts from becomes the ticket. Use when the user says 'triage', 'diagnose', 'debug this', 'why is X broken', or 'why is X slow'."
 disable-model-invocation: true
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-Read `references/method.md` and `references/categories.md` first. This file
-is the order of operations.
+Read `references/method.md` and `references/categories.md` first. This file is the order of operations.
 
-You find what is true. You do not fix it. The output is a cause with a
-`file:line`, or a hot spot with a number, then a ticket a worker can pick up
-cold. The repo is left exactly as you found it.
+You find what is true. You do not fix it. The output is a cause with a `file:line`, or a hot spot with a number, then a ticket a worker can pick up cold. The repo is left exactly as you found it.
 
 ## Brain and hands
 
-You are the brain. Delegate work whose output is long and whose judgment is
-small. Keep work whose output is short, or whose next step depends on reading
-this one closely.
+You are the brain. Delegate work whose output is long and whose judgment is small. Keep work whose output is short, or whose next step depends on reading this one closely.
 
 | Delegate | Keep |
 |---|---|
@@ -27,39 +22,26 @@ this one closely.
 | Read a long log and pull the matching lines | Write expected, actual, repro, cause |
 | Diff two envs, versions, or configs | |
 
-Reading goes to the explorer and running to the runner, per
-`../../shared/facts.md` § Reader and runner. Both carry out a brief;
-they do not think for you.
+Reading goes to the explorer and running to the runner, per `../../shared/facts.md` § Reader and runner. Both carry out a brief; they do not think for you.
 
 A runner brief pastes the runner job's lines, then holds four things, always:
 
 1. The working directory.
 2. The exact command, or the steps in order.
-3. The verdict rule: an exit code, a string that must or must not appear,
-   a number under a limit, or a bisect script. The runner judges by this rule
-   and nothing else. When you cannot write the rule down, the work is not
-   ready to delegate; run it yourself.
+3. The verdict rule: an exit code, a string that must or must not appear, a number under a limit, or a bisect script. The runner judges by this rule and nothing else. When you cannot write the rule down, the work is not ready to delegate; run it yourself.
 4. What to clean up: processes to kill, `git bisect reset`, temp files.
 
-The runner answers in the job's shape, `VERDICT`, `EVIDENCE`, `REPRO`,
-`CLEANUP`, plus any extra field you asked for (first bad commit, a measured
-number). It never edits the repo's files and never touches git state beyond
-the bisect you asked for.
+The runner answers in the job's shape, `VERDICT`, `EVIDENCE`, `REPRO`, `CLEANUP`, plus any extra field you asked for (first bad commit, a measured number). It never edits the repo's files and never touches git state beyond the bisect you asked for.
 
-One short command with ten lines of output is yours. A loop that runs many times, a bisect, or a measurement repeated for
-a stable number goes to a runner.
+One short command with ten lines of output is yours. A loop that runs many times, a bisect, or a measurement repeated for a stable number goes to a runner.
 
 ## Gate
 
-One thing must be stated: the symptom, what the user sees, in the chat or
-in an issue the user names. "The CSV dates look wrong" passes. "Something is broken" does not. Ask for the symptom and
-stop. Nothing else is required to start.
+One thing must be stated: the symptom, what the user sees, in the chat or in an issue the user names. "The CSV dates look wrong" passes. "Something is broken" does not. Ask for the symptom and stop. Nothing else is required to start.
 
 ## Must know
 
-Everything else you find first and ask second. One question per message,
-with your best guess as the default, and only when the sources below said
-nothing.
+Everything else you find first and ask second. One question per message, with your best guess as the default, and only when the sources below said nothing.
 
 | Must know | Who finds it |
 |---|---|
@@ -72,47 +54,21 @@ nothing.
 
 ## Steps
 
-1. **Gate.** An issue named (`#12` or its URL): read it first,
-   `gh issue view <number-or-url> --json number,title,body,labels,comments`
-   (a URL as given, so an issue in another repo stays in its repo). Read the
-   comments too; a later comment can change the symptom, the repro, or
-   where it fails. Symptom stated, in the chat or the issue: continue.
-   Not stated: ask, stop.
+1. **Gate.** An issue named (`#12` or its URL): read it first, `gh issue view <number-or-url> --json number,title,body,labels,comments` (a URL as given, so an issue in another repo stays in its repo). Read the comments too; a later comment can change the symptom, the repro, or where it fails. Symptom stated, in the chat or the issue: continue. Not stated: ask, stop.
 
-2. **Place it.** Answer "where does it work, where does it not" from the
-   sources in the table. That gives the category in `categories.md`. The
-   category sets what you look at and what the exit is.
+2. **Place it.** Answer "where does it work, where does it not" from the sources in the table. That gives the category in `categories.md`. The category sets what you look at and what the exit is.
 
-3. **Cheap path first.** Fetch and read the code on the symptom's path: the
-   handler, the helper, the callers, the test. A visible cause: confirm it
-   with one probe (a command, a test, a log line) and go to step 6. Most
-   bugs end here.
+3. **Cheap path first.** Fetch and read the code on the symptom's path: the handler, the helper, the callers, the test. A visible cause: confirm it with one probe (a command, a test, a log line) and go to step 6. Most bugs end here.
 
-4. **Hard path.** Build a repro that runs in seconds and fails on the exact
-   symptom. Shrink it until nothing left is optional. Then halve, per
-   `method.md`: in time, in the data path, or across environments. Cut until
-   one line, one value, or one setting flips the symptom.
+4. **Hard path.** Build a repro that runs in seconds and fails on the exact symptom. Shrink it until nothing left is optional. Then halve, per `method.md`: in time, in the data path, or across environments. Cut until one line, one value, or one setting flips the symptom.
 
-5. **Stuck.** Halving cannot cut further: write a hypothesis with the one
-   check that kills it, per `method.md` § Hypotheses, and run the check.
-   Killed: go back to step 4 with what it taught you. Keep going while
-   each check cuts the space. Stop only when the next check needs a thing
-   only the user has: a log, the steps they took, access you lack. The
-   exit is then Blocked. Skip steps 6, 7, 10, and 11. Do steps 8 and 9,
-   then § Blocked, so the repo is clean and the findings are saved before
-   you ask.
+5. **Stuck.** Halving cannot cut further: write a hypothesis with the one check that kills it, per `method.md` § Hypotheses, and run the check. Killed: go back to step 4 with what it taught you. Keep going while each check cuts the space. Stop only when the next check needs a thing only the user has: a log, the steps they took, access you lack. The exit is then Blocked. Skip steps 6, 7, 10, and 11. Do steps 8 and 9, then § Blocked, so the repo is clean and the findings are saved before you ask.
 
-6. **Confirm.** One probe flips the symptom both ways, per `method.md`
-   § Confirm. The cause is the line where the mistake is made, not where
-   the symptom shows.
+6. **Confirm.** One probe flips the symptom both ways, per `method.md` § Confirm. The cause is the line where the mistake is made, not where the symptom shows.
 
-7. **Same mistake.** The confirmed cause is one place the mistake was
-   made. Search for the same mistake elsewhere, per `method.md` § Same
-   mistake. The report gets an `Also at:` line: each place found, as
-   `file:line`, or `Also at: none found` with the search used.
+7. **Same mistake.** The confirmed cause is one place the mistake was made. Search for the same mistake elsewhere, per `method.md` § Same mistake. The report gets an `Also at:` line: each place found, as `file:line`, or `Also at: none found` with the search used.
 
-8. **Clean up.** Per `method.md` § Clean: every debug line, throwaway file,
-   and changed setting goes, and `git status` is what it was.
+8. **Clean up.** Per `method.md` § Clean: every debug line, throwaway file, and changed setting goes, and `git status` is what it was.
 
 9. **Report.** In chat, in this shape:
 
@@ -128,135 +84,64 @@ nothing.
    Also at: <file:line, one per place>, or none found, <the search used>   (blocked: no line)
    ```
 
-   When the category is local env, show the fix command in a code block and
-   put it on the clipboard with `../../shared/copy.sh`; on any
-   other exit than 0, say `Clipboard copy skipped.` The user runs it. You do
-   not change their machine. The same holds for the ops fix of live env and
-   the data fix of data: name it in the report, the user does it.
+   When the category is local env, show the fix command in a code block and put it on the clipboard with `../../shared/copy.sh`; on any other exit than 0, say `Clipboard copy skipped.` The user runs it. You do not change their machine. The same holds for the ops fix of live env and the data fix of data: name it in the report, the user does it.
 
-10. **Grill.** Test the report against § When grill fits. It fits: write
-    the seed block in the same message, right after the report, and invoke
-    read `../grill/SKILL.md` and follow it. The seed is the report, and the bug
-    issue when there is one; the open decisions are the choices you found;
-    `Close out: text.`, since step 11 files the ticket. After `Grill done.`,
-    go to step 11 with the doc entries it handed back. It does not fit: go
-    to step 11, with no question to the user. The report is the agreement.
+10. **Grill.** Test the report against § When grill fits. It fits: write the seed block in the same message, right after the report, and invoke read `../grill/SKILL.md` and follow it. The seed is the report, and the bug issue when there is one; the open decisions are the choices you found; `Close out: text.`, since step 11 files the ticket. After `Grill done.`, go to step 11 with the doc entries it handed back. It does not fit: go to step 11, with no question to the user. The report is the agreement.
 
-11. **File.** Read `../to-issue/SKILL.md` and follow it, in the same
-    turn. Do not ask first, and do not end with `Ready for /to-issue`.
+11. **File.** Read `../to-issue/SKILL.md` and follow it, in the same turn. Do not ask first, and do not end with `Ready for /to-issue`.
 
-    - Cause found: the ticket is the Exit of the category in
-      `references/categories.md`: its type and its work, or nothing when
-      the exit says so. A perf hot spot is a `perf` ticket. Only the code
-      part of an exit is filed; the user's part stays in the report.
-      The ticket's `## Context` carries the report's `Also at:` line,
-      each place as a permalink per
-      `../../shared/issue-rules.md` § Written for a stranger,
-      and `none found` with its search word for word.
-      Carry the settled decisions after a grill, and its doc entries
-      under `## Docs to write`, per
-      `../../shared/issue-rules.md` § Docs to write.
-    - Nothing to file: say why in one line and stop. The bug issue from
-      step 1, if any, stays as it is. The grill handed back doc entries:
-      they are true now, so write them and open the docs PR per
-      `../grill/SKILL.md` § Close out, no work, with `Refs #<bug>`.
+    - Cause found: the ticket is the Exit of the category in `references/categories.md`: its type and its work, or nothing when the exit says so. A perf hot spot is a `perf` ticket. Only the code part of an exit is filed; the user's part stays in the report. The ticket's `## Context` carries the report's `Also at:` line, each place as a permalink per `../../shared/issue-rules.md` § Written for a stranger, and `none found` with its search word for word. Carry the settled decisions after a grill, and its doc entries under `## Docs to write`, per `../../shared/issue-rules.md` § Docs to write.
+    - Nothing to file: say why in one line and stop. The bug issue from step 1, if any, stays as it is. The grill handed back doc entries: they are true now, so write them and open the docs PR per `../grill/SKILL.md` § Close out, no work, with `Refs #<bug>`.
 
-    The bug issue from step 1 is the origin: to-issue rewrites it into the
-    ticket, per `../../shared/issue-rules.md` § Origin bug. No
-    new issue, nothing closed. The to-issue gate fails: show its gaps, or
-    its `Captured:` line when it filed the bug through capture, and stop.
-    The report stays in chat.
+    The bug issue from step 1 is the origin: to-issue rewrites it into the ticket, per `../../shared/issue-rules.md` § Origin bug. No new issue, nothing closed. The to-issue gate fails: show its gaps, or its `Captured:` line when it filed the bug through capture, and stop. The report stays in chat.
 
 ## Blocked
 
-File nothing. Started from a bug issue: add the report to it as one
-comment, `gh issue comment <number-or-url> --body-file <file>`, so the
-next triage starts from what you found. The issue stays a bug. Then ask
-the user for the one thing you need, and stop. The user gives it: start
-again at step 4, from the report.
+File nothing. Started from a bug issue: add the report to it as one comment, `gh issue comment <number-or-url> --body-file <file>`, so the next triage starts from what you found. The issue stays a bug. Then ask the user for the one thing you need, and stop. The user gives it: start again at step 4, from the report.
 
 ## When grill fits
 
 Run the grill skill when any one of these holds.
 
-- More than one fix, and they differ in blast radius. Fix the helper and
-  touch three callers, or patch one line.
+- More than one fix, and they differ in blast radius. Fix the helper and touch three callers, or patch one line.
 - Expected is not settled. The user and the code disagree on what "right" is.
-- The fix needs a new term or a new decision, something for `CONTEXT.md` or
-  an ADR.
+- The fix needs a new term or a new decision, something for `CONTEXT.md` or an ADR.
 
-For perf: grill when the fix is a trade-off, like cache it or drop the
-join.
+For perf: grill when the fix is a trade-off, like cache it or drop the join.
 
 None holds: you know the fix. Skip the grill and file.
 
-The seed block, verbatim, filled in: `Invoke the grill skill with the Skill
-tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
-list>. Close out: text. Then continue at step 11.` The grill owns the
-interview and the doc text; step 11 files the ticket with it. You wait
-for `Grill done.`
+The seed block, verbatim, filled in: `Start the grill skill. Seed: <the report>, bug issue <#n or none>. Open decisions: <the list>. Close out: text. Then continue at step 11.` The grill owns the interview and the doc text; step 11 files the ticket with it. You wait for `Grill done.`
 
 ## Paid or slow checks
 
-A check can cost money or time: a rented Sandbox, a long loop, a cloud
-run. Say the cost in one line, as `Renting a Linux Sandbox, about 30
-min.`, and run it. Do not ask whether to run it, and never offer to
-file a ticket for later in place of the check. Give a rented Sandbox
-enough life for the whole job, so it does not end in the middle of one.
+A check can cost money or time: a rented Sandbox, a long loop, a cloud run. Say the cost in one line, as `Renting a Linux Sandbox, about 30 min.`, and run it. Do not ask whether to run it, and never offer to file a ticket for later in place of the check. Give a rented Sandbox enough life for the whole job, so it does not end in the middle of one.
 
 ## Secrets
 
-Logs, env dumps, and configs carry secrets. Redact before they enter the
-chat or an agent brief. Never paste a token, a key, or a signed URL.
+Logs, env dumps, and configs carry secrets. Redact before they enter the chat or an agent brief. Never paste a token, a key, or a signed URL.
 
 ## Examples
 
 **User:** `/triage the CSV export shows dates as big numbers`
 
-Gate passes. An explorer fetches `src/orders/export.ts`, the date helper, its
-callers, the export test. Reading shows `export.ts:57` writes the raw
-`createdAt` and never calls `formatDate`, unlike line 49. One probe: the
-existing test with an ISO assertion fails on that field. Report with
-Category `Our code`. One fix, no open decision: no grill. Invoke to-issue
-right away; it creates an XS `fix` ticket.
+Gate passes. An explorer fetches `src/orders/export.ts`, the date helper, its callers, the export test. Reading shows `export.ts:57` writes the raw `createdAt` and never calls `formatDate`, unlike line 49. One probe: the existing test with an ISO assertion fails on that field. Report with Category `Our code`. One fix, no open decision: no grill. Invoke to-issue right away; it creates an XS `fix` ticket.
 
 **User:** `/triage orders page is slow`
 
-Gate passes. Metric and baseline are not stated: measure the page, p95 is
-1.2 s. Target is the user's: one question, default "under 300 ms". Then a
-timer around the handler shows the orders query runs 41 times per page,
-900 of the 1200 ms. Hot spot found. The fix is a trade-off, batch the query
-or cache it. Report, then the seed block with open decision "batch or
-cache", and invoke the grill skill. After `Grill done.`, list the settled
-decision and invoke to-issue for the `perf` ticket.
+Gate passes. Metric and baseline are not stated: measure the page, p95 is 1.2 s. Target is the user's: one question, default "under 300 ms". Then a timer around the handler shows the orders query runs 41 times per page, 900 of the 1200 ms. Hot spot found. The fix is a trade-off, batch the query or cache it. Report, then the seed block with open decision "batch or cache", and invoke the grill skill. After `Grill done.`, list the settled decision and invoke to-issue for the `perf` ticket.
 
 **User:** `/triage login fails on my machine`
 
-Where does it work: CI is green, a teammate is fine. Category `Local env`.
-Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code
-issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket
-only if the setup docs never mention the variable; else nothing to file.
+Where does it work: CI is green, a teammate is fine. Category `Local env`. Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket only if the setup docs never mention the variable; else nothing to file.
 
 **User:** `/triage downloads through the helper sometimes never end`
 
-Gate passes. The helper's logs show the download gets almost every byte,
-then stops. A Sandbox is needed for a loop: `Renting a Linux Sandbox,
-about 30 min.` The loop runs the same download through the helper and
-through plain `ssh`: the helper path hangs 25 of 45 times, plain `ssh`
-0 of 45. So the cause is in the helper process. That is a place, not a
-cause. Log lines at each step of the helper's path, in a throwaway
-worktree, and the loop again: the log line after the child's exit
-event never comes. More log lines between the last one that came and
-the first that did not, down to one line. Confirm it both ways. Report,
-`fix` ticket.
+Gate passes. The helper's logs show the download gets almost every byte, then stops. A Sandbox is needed for a loop: `Renting a Linux Sandbox, about 30 min.` The loop runs the same download through the helper and through plain `ssh`: the helper path hangs 25 of 45 times, plain `ssh` 0 of 45. So the cause is in the helper process. That is a place, not a cause. Log lines at each step of the helper's path, in a throwaway worktree, and the loop again: the log line after the child's exit event never comes. More log lines between the last one that came and the first that did not, down to one line. Confirm it both ways. Report, `fix` ticket.
 
 **User:** `/triage #42`
 
-Read issue 42 with its comments. The body says "checkout button does
-nothing"; the last comment says it only fails in Safari. Gate passes, and
-"where it does not work" is already Safari. Go on at step 2. At step 11,
-to-issue rewrites #42 into the `fix` ticket: new title, new body, the
-old body kept under Original report. Same number, nothing closed.
+Read issue 42 with its comments. The body says "checkout button does nothing"; the last comment says it only fails in Safari. Gate passes, and "where it does not work" is already Safari. Go on at step 2. At step 11, to-issue rewrites #42 into the `fix` ticket: new title, new body, the old body kept under Original report. Same number, nothing closed.
 
 **User:** `/triage something is off`
 

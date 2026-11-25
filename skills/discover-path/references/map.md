@@ -1,13 +1,10 @@
 # The map
 
-Formats, labels, titles, and commands for `discover-path`. The flow is in
-`SKILL.md`.
+Formats, labels, titles, and commands for `discover-path`. The flow is in `SKILL.md`.
 
 ## Labels
 
-Five labels, one group, one pink ramp. Match a label by its name,
-case-insensitive: a repo that already has `discovery/map` keeps it. Create
-only the missing ones.
+Five labels, one group, one pink ramp. Match a label by its name, case-insensitive: a repo that already has `discovery/map` keeps it. Create only the missing ones.
 
 ```bash
 gh label create "discovery/map"        --color 880E4F --description "Parent of open questions. Not an epic: nothing here is decided yet"
@@ -17,20 +14,13 @@ gh label create "discovery/experiment" --color F06292 --description "Only trying
 gh label create "discovery/task"       --color F8BBD0 --description "Manual work that unblocks a decision. Never a slice of the build"
 ```
 
-`issue-rules.md` § Labels forbids type labels; this group is its one
-exception, owned by this skill. No size label, no priority label on a map
-or its tickets.
+`issue-rules.md` § Labels forbids type labels; this group is its one exception, owned by this skill. No size label, no priority label on a map or its tickets.
 
 ## Titles
 
-`<prefix><text>`, under 70 characters, no trailing period. The prefix is the
-type word in the repo's title style. The prefix and the label agree.
+`<prefix><text>`, under 70 characters, no trailing period. The prefix is the type word in the repo's title style. The prefix and the label agree.
 
-**Learn the style once per run**, before the first `gh issue create`, by
-the rule `to-issue` uses (`../../shared/issue-rules.md` § Repo
-convention): most existing titles look like `[bug] …` gives `bracket`;
-`bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives
-`bracket`.
+**Learn the style once per run**, before the first `gh issue create`, by the rule `to-issue` uses (`../../shared/issue-rules.md` § Repo convention): most existing titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives `bracket`.
 
 ```bash
 gh issue list --state all --limit 30 --json title -q '.[].title'
@@ -43,8 +33,7 @@ t() { printf '[%s] %s' "$1" "$2"; }   # bracket
 t() { printf '%s: %s' "$1" "$2"; }    # colon
 ```
 
-A title is never typed by hand: `t grill "Which plan model?"`. Count the
-characters of the result; over 70, shorten the text, never the prefix.
+A title is never typed by hand: `t grill "Which plan model?"`. Count the characters of the result; over 70, shorten the text, never the prefix.
 
 | Issue | `t` call | Bracket result |
 |---|---|---|
@@ -55,15 +44,11 @@ characters of the result; over 70, shorten the text, never the prefix.
 | Task | `t task "Get a Stripe test account for the team"` | `[task] Get a Stripe test account for the team` |
 | Revisit | `t grill "Which plan model? (revisit)"` | `[grill] Which plan model? (revisit)` |
 
-A question ends with `?`. A task does not. A second revisit gets
-`(revisit 2)`. A link to a ticket keeps the prefix in its text (SKILL.md,
-Refer by name). On the map body a bare `#n` also works: GitHub renders the
-current title, so it never goes stale.
+A question ends with `?`. A task does not. A second revisit gets `(revisit 2)`. A link to a ticket keeps the prefix in its text (SKILL.md, Refer by name). On the map body a bare `#n` also works: GitHub renders the current title, so it never goes stale.
 
 ## Map body
 
-The whole map at low resolution. Open tickets are not listed here: they are
-the open children, found by query.
+The whole map at low resolution. Open tickets are not listed here: they are the open children, found by query.
 
 ```markdown
 ## Destination
@@ -94,11 +79,7 @@ The full text the grill agreed on, word for word, per `issue-rules.md`
 ~~~
 ```
 
-Decisions so far is an index. A decision lives on its ticket; the map gists
-it and links. A patch of fog that becomes a ticket leaves Not yet specified
-the same moment. Out of scope never graduates. Docs to write holds every
-glossary entry and ADR the grills agreed on, in full, until `to-epic` hands
-each to a sub-issue; drop the heading while it is empty.
+Decisions so far is an index. A decision lives on its ticket; the map gists it and links. A patch of fog that becomes a ticket leaves Not yet specified the same moment. Out of scope never graduates. Docs to write holds every glossary entry and ADR the grills agreed on, in full, until `to-epic` hands each to a sub-issue; drop the heading while it is empty.
 
 ## Ticket body
 
@@ -158,9 +139,7 @@ Numbers are positions in this list until issues exist. Free tickets first.
 
 ## Commands
 
-Repo: `gh repo view --json nameWithOwner -q .nameWithOwner`. Add
-`--repo owner/repo` to every command when the current directory is not the
-target.
+Repo: `gh repo view --json nameWithOwner -q .nameWithOwner`. Add `--repo owner/repo` to every command when the current directory is not the target.
 
 **Create the map**
 
@@ -171,8 +150,7 @@ B
 gh issue create --title "$(t discovery "<effort>")" --body-file "$f" --assignee @me --label "discovery/map"
 ```
 
-With an origin seed, the seed becomes the map instead: same `$f`, the old
-seed body at the end in `<details><summary>Original seed</summary>…</details>`.
+With an origin seed, the seed becomes the map instead: same `$f`, the old seed body at the end in `<details><summary>Original seed</summary>…</details>`.
 
 ```bash
 gh issue edit <seed> --title "$(t discovery "<effort>")" --body-file "$f" \
@@ -186,8 +164,7 @@ gh issue create --title "$(t grill "<question>?")" --body-file "$f" \
   --label "discovery/grill" --parent <P> [--blocked-by <n1>,<n2>]
 ```
 
-No `--assignee`: an assignee on a ticket is a claim (`issue-rules.md`
-§ Assignee).
+No `--assignee`: an assignee on a ticket is a claim (`issue-rules.md` § Assignee).
 
 **List the children**
 
@@ -202,9 +179,7 @@ gh issue view <n> --json state,assignees,title
 gh api repos/<owner>/<repo>/issues/<n> --jq '.issue_dependencies_summary.blocked_by'
 ```
 
-**Frontier**: the children that are open, have `0` open blockers, and no
-assignee. First in map order wins. Map order is the order the tickets were
-created, which is the proposal order.
+**Frontier**: the children that are open, have `0` open blockers, and no assignee. First in map order wins. Map order is the order the tickets were created, which is the proposal order.
 
 **Claim**: `gh issue edit <n> --add-assignee @me`
 
@@ -236,9 +211,6 @@ The `issue_id` is the blocker's numeric database id, not its `#number`.
 
 When `--parent` or `--blocked-by` fails because the repo's plan lacks them:
 
-- Child: `Part of #<map>` stays as the first Context line (it is there
-  anyway) and the map body gets a `## Tickets` task list with one line per
-  child.
-- Blocking: a `Blocked by: #n, #n` line right under the Question heading.
-  A ticket is unblocked when every issue on that line is closed.
+- Child: `Part of #<map>` stays as the first Context line (it is there anyway) and the map body gets a `## Tickets` task list with one line per child.
+- Blocking: a `Blocked by: #n, #n` line right under the Question heading. A ticket is unblocked when every issue on that line is closed.
 - Frontier: read the task list, then each child's `Blocked by` line.

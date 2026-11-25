@@ -1,6 +1,6 @@
 ---
 name: audit-coding-standards
-description: "Make or check a repo's CODING_STANDARDS.md: research the stack, read the whole repo, any scattered rules, and a REVIEW.md, show a report page of rules that are old or wrong, jobs with no rule, code that breaks a rule, jobs done two ways, old API use, and the folders that break most, talk through your choices, and after your go file tickets and write the Standard, with nothing committed."
+description: "Make or check a repo's CODING_STANDARDS.md: research the stack, read the whole repo, any scattered rules, and a REVIEW.md, show a report page of rules that are old or wrong, jobs with no rule, code that breaks a rule, jobs done two ways, old API use, and the folders that break most, talk through your choices, and after your go file tickets and write the Standard, with nothing committed. Use when the user asks to write, check, or update a repo's coding standard."
 disable-model-invocation: true
 ---
 

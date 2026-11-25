@@ -1,6 +1,6 @@
 ---
 name: complete-task
-description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, moving a secret."
+description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, moving a secret. Use when the user types /complete-task with a task issue."
 disable-model-invocation: true
 ---
 

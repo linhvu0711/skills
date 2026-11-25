@@ -9,48 +9,23 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 
 Write one small GitHub issue that holds a raw thing. Two kinds:
 
-- a **seed**: an idea. A feature, a refactor, a cleanup, anything that
-  could be done. Nobody has decided to do it. It may be dropped.
-- a **bug**: a thing seen broken. Behaviour that is wrong today. Nobody
-  has decided how it must behave after a fix; that is what `/to-issue`
-  writes when it turns the bug into a `fix` ticket.
+- a **seed**: an idea. A feature, a refactor, a cleanup, anything that could be done. Nobody has decided to do it. It may be dropped.
+- a **bug**: a thing seen broken. Behaviour that is wrong today. Nobody has decided how it must behave after a fix; that is what `/to-issue` writes when it turns the bug into a `fix` ticket.
 
-Both are raw: neither is a typed ticket, and `[bug]` is not `[fix]`. The
-point is speed and low noise. File it and get out.
+Both are raw: neither is a typed ticket, and `[bug]` is not `[fix]`. The point is speed and low noise. File it and get out.
 
 ## Hard rules
 
-- **Seed or bug, nothing else.** The nine real types (`feat`, `fix`,
-  `docs`, `refactor`, `perf`, `test`, `chore`, `spike`, `task`, per
-  `../../shared/issue-rules.md` § Types), `improve`, and every
-  other word mean "decided". A seed and a bug are not decided.
-- **The kind comes from the words.** It is a bug when the text says
-  something behaves wrong today: `bug:`, "broken", "wrong", "crashes",
-  "fails", "shows X but should Y", a stack trace, a review finding that
-  is true. Anything else is a seed. Not sure: seed.
-- **Priority is optional.** A priority the user stated (step 2) becomes the
-  priority label. None stated: no priority label, no question, no guess.
-- **No diagnosis. No plan.** Do not root-cause, estimate, propose an approach,
-  or write acceptance criteria. A cause the chat already proved by running
-  something is a fact for Context; a cause it only suspects goes on one
-  `Open:` line.
-- **No digging.** Use only what is already in the conversation: no code
-  reads, no searches. The mechanical steps in
-  `../../shared/issue-rules.md` § Written for a stranger (the
-  commit lookup, the GitHub check, the upload) are not digging; run them.
-- **Written for a stranger.** The reader has neither this chat nor this
-  machine. Follow `../../shared/issue-rules.md` § Written for a
-  stranger: nothing local, no session words, code by permalink, evidence in
-  the issue, environment when it matters, proven apart from guessed.
+- **Seed or bug, nothing else.** The nine real types (`feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `spike`, `task`, per `../../shared/issue-rules.md` § Types), `improve`, and every other word mean "decided". A seed and a bug are not decided.
+- **The kind comes from the words.** It is a bug when the text says something behaves wrong today: `bug:`, "broken", "wrong", "crashes", "fails", "shows X but should Y", a stack trace, a review finding that is true. Anything else is a seed. Not sure: seed.
+- **Priority is optional.** A priority the user stated (step 2) becomes the priority label. None stated: no priority label, no question, no guess.
+- **No diagnosis. No plan.** Do not root-cause, estimate, propose an approach, or write acceptance criteria. A cause the chat already proved by running something is a fact for Context; a cause it only suspects goes on one `Open:` line.
+- **No digging.** Use only what is already in the conversation: no code reads, no searches. The mechanical steps in `../../shared/issue-rules.md` § Written for a stranger (the commit lookup, the GitHub check, the upload) are not digging; run them.
+- **Written for a stranger.** The reader has neither this chat nor this machine. Follow `../../shared/issue-rules.md` § Written for a stranger: nothing local, no session words, code by permalink, evidence in the issue, environment when it matters, proven apart from guessed.
 - **One question at most:** "Which repo?", when it cannot be determined.
-- **Learn the repo convention once.** It is saved per repo. Do not re-read old
-  issues on a repo that already has a saved entry.
-- **Labels:** the kind's label, `seed` or `bug`, plus one priority
-  label only when the user gave a priority. Only ever create `seed`,
-  `bug`, or a `p<N>` when the repo lacks it. A repo's own `seed`, `bug`,
-  or `p1`, any case, is used as it is. Never any other label.
-- **Assignee: the user**, per `../../shared/issue-rules.md` § Assignee.
-  No milestone, no project board.
+- **Learn the repo convention once.** It is saved per repo. Do not re-read old issues on a repo that already has a saved entry.
+- **Labels:** the kind's label, `seed` or `bug`, plus one priority label only when the user gave a priority. Only ever create `seed`, `bug`, or a `p<N>` when the repo lacks it. A repo's own `seed`, `bug`, or `p1`, any case, is used as it is. Never any other label.
+- **Assignee: the user**, per `../../shared/issue-rules.md` § Assignee. No milestone, no project board.
 - **Never edit or close existing issues.**
 
 ## Steps
@@ -63,9 +38,7 @@ A repo the chat names for this issue, as a caller skill names one: use it. Else:
 gh repo view --json nameWithOwner -q .nameWithOwner
 ```
 
-It fails: use the repo the conversation is clearly about. Still unknown: ask
-the user which `owner/repo`. `gh` not authenticated: stop and tell the user
-to run `gh auth login`.
+It fails: use the repo the conversation is clearly about. Still unknown: ask the user which `owner/repo`. `gh` not authenticated: stop and tell the user to run `gh auth login`.
 
 ### 2. Get the priority (optional)
 
@@ -87,19 +60,11 @@ CONV="../../shared/issue-conventions.py"
 python3 "$CONV" seed-get owner/repo
 ```
 
-**Hit** (exit 0, prints JSON with `prefix`, `seed_label`, `bug_label`, and
-`priority.p0..p3` when the repo has priority labels): use those values and go
-to step 4, skipping the learning commands. The bug prefix is the seed
-prefix with the word swapped: `[seed] ` gives `[bug] `, `seed: ` gives
-`bug: `.
+**Hit** (exit 0, prints JSON with `prefix`, `seed_label`, `bug_label`, and `priority.p0..p3` when the repo has priority labels): use those values and go to step 4, skipping the learning commands. The bug prefix is the seed prefix with the word swapped: `[seed] ` gives `[bug] `, `seed: ` gives `bug: `.
 
-The script keeps the priority labels in a store any issue tool can reuse
-(`~/.config/gh-issues/priority-labels.json`), and the seed `prefix` and
-`seed_label` in capture's own store (`~/.config/capture/conventions.json`).
-It reads and writes both; leave the files to it.
+The script keeps the priority labels in a store any issue tool can reuse (`~/.config/gh-issues/priority-labels.json`), and the seed `prefix` and `seed_label` in capture's own store (`~/.config/capture/conventions.json`). It reads and writes both; leave the files to it.
 
-**Miss** (prints `MISS`, exit 3), or the user said `--relearn` / "relearn":
-learn it now, once.
+**Miss** (prints `MISS`, exit 3), or the user said `--relearn` / "relearn": learn it now, once.
 
 ```bash
 python3 "$CONV" seed-forget owner/repo   # only for --relearn
@@ -115,11 +80,9 @@ Prefix shape from the titles:
 | `bug: …`, `feat(scope): …`     | `seed: …`    |
 | No clear pattern, or no issues | `[seed] …`   |
 
-The word is always `seed` (or `bug` for a bug), lowercase, like the type
-words in the repo. Only the wrapping follows the repo.
+The word is always `seed` (or `bug` for a bug), lowercase, like the type words in the repo. Only the wrapping follows the repo.
 
-Seed label: the repo's `seed`, any case. Bug label: the repo's `bug`, any
-case. If the repo lacks one, it gets created in step 6.
+Seed label: the repo's `seed`, any case. Bug label: the repo's `bug`, any case. If the repo lacks one, it gets created in step 6.
 
 Priority label names, from what the repo already has:
 
@@ -137,9 +100,7 @@ python3 "$CONV" seed-set owner/repo --prefix "[seed] " --seed-label seed --bug-l
   --p0 p0 --p1 p1 --p2 p2 --p3 p3 --sampled <number of titles seen>
 ```
 
-Save only when at least 5 titles were seen. With fewer, use the defaults
-above for this run and save nothing, so the repo is learned again once it
-has real history.
+Save only when at least 5 titles were seen. With fewer, use the defaults above for this run and save nothing, so the repo is learned again once it has real history.
 
 ### 4. Quick duplicate check
 
@@ -149,22 +110,13 @@ One search, 2 or 3 keywords from the idea:
 gh issue list --repo owner/repo --state open --search "<keywords>" --limit 10 --json number,title,url
 ```
 
-A result that is clearly the same thing: show it to the user and stop.
-Otherwise run the closed search of
-`../../shared/issue-rules.md` § Duplicates and seeds, on the
-same keywords. A clear closed match does not stop it: it goes in the
-body's Context as one `Related: #<n> (closed)` line.
+A result that is clearly the same thing: show it to the user and stop. Otherwise run the closed search of `../../shared/issue-rules.md` § Duplicates and seeds, on the same keywords. A clear closed match does not stop it: it goes in the body's Context as one `Related: #<n> (closed)` line.
 
 ### 5. Write the title and body
 
-The title is the kind's prefix plus a short noun phrase, under 70
-characters, no trailing period. Examples: `[seed] Cache user avatars on the
-profile page`, `[bug] Nightly job skips rows with null email`. The priority
-goes in the label, not the title.
+The title is the kind's prefix plus a short noun phrase, under 70 characters, no trailing period. Examples: `[seed] Cache user avatars on the profile page`, `[bug] Nightly job skips rows with null email`. The priority goes in the label, not the title.
 
-Write the body to a temp file and pass it with `--body-file`. Keep it short,
-and write it for a stranger (Hard rules). A seed has three sections, a bug
-four. A seed:
+Write the body to a temp file and pass it with `--body-file`. Keep it short, and write it for a stranger (Hard rules). A seed has three sections, a bug four. A seed:
 
 ```markdown
 ## Seed
@@ -206,19 +158,11 @@ Bug only. Not triaged, not planned. Becomes a `fix` ticket through
 /to-issue once the behaviour after the fix is written.
 ```
 
-The Repro comes only from what the chat ran or saw. Never invent a command
-or a result. When the chat holds no repro, the section is one line:
-`Not known yet.` A screenshot the chat already has goes into `## Bug` or
-`## Repro` as `![alt](./file.png)` and is uploaded in step 6.
+The Repro comes only from what the chat ran or saw. Never invent a command or a result. When the chat holds no repro, the section is one line: `Not known yet.` A screenshot the chat already has goes into `## Bug` or `## Repro` as `![alt](./file.png)` and is uploaded in step 6.
 
-Detail the user gave beyond this stays in `## Seed` or `## Bug` as plain
-prose, as they said it.
+Detail the user gave beyond this stays in `## Seed` or `## Bug` as plain prose, as they said it.
 
-Before step 6, read the body once as the stranger. It fails, and you fix
-it, when it names a local path (`/tmp/`, `/private/`, a home folder, a
-scratch folder, a shell variable like `$S`), an ID of something that died
-with the session, a word only this chat explains, or a bare `path:line`
-in Context.
+Before step 6, read the body once as the stranger. It fails, and you fix it, when it names a local path (`/tmp/`, `/private/`, a home folder, a scratch folder, a shell variable like `$S`), an ID of something that died with the session, a word only this chat explains, or a bare `path:line` in Context.
 
 ### 6. Create the issue
 
@@ -231,21 +175,11 @@ gh issue create --repo owner/repo --title "<title>" --body-file "$f" --assignee 
 # the kind's label alone.
 ```
 
-When the body references a screenshot or recording, first check that this
-`gh` can upload it: `gh issue create --help` lists `--attach`. It does: run
-the create from the folder that holds the files and add one
-`--attach './file.png#<alt text>'` per file; `gh` uploads each and swaps
-the `./file.png` reference for its URL. Then check that no `(./`
-reference is left in the issue body. It does not: replace each reference
-with one sentence of what the file showed, file the issue without the
-flag, and add `Screenshot not attached: this gh has no --attach.` to the
-report line.
+When the body references a screenshot or recording, first check that this `gh` can upload it: `gh issue create --help` lists `--attach`. It does: run the create from the folder that holds the files and add one `--attach './file.png#<alt text>'` per file; `gh` uploads each and swaps the `./file.png` reference for its URL. Then check that no `(./` reference is left in the issue body. It does not: replace each reference with one sentence of what the file showed, file the issue without the flag, and add `Screenshot not attached: this gh has no --attach.` to the report line.
 
-**If `gh` fails because a label does not exist**, handle it once, then retry
-once:
+**If `gh` fails because a label does not exist**, handle it once, then retry once:
 
-- The missing label is `seed`, `bug`, or a lowercase `p<N>`: create it
-  and retry.
+- The missing label is `seed`, `bug`, or a lowercase `p<N>`: create it and retry.
 
   ```bash
   gh label create --repo owner/repo "seed" --color C5DEF5 --description "Captured idea. Not triaged. May be dropped."
@@ -253,13 +187,9 @@ once:
   gh label create --repo owner/repo "p1"   --color D93F0B --description "Priority 1"
   ```
 
-  Colors: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a
-  heat ramp. These names and colors are owned by
-  `../../shared/issue-rules.md` § Labels and
-  § Repo convention; change them there first.
+  Colors: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a heat ramp. These names and colors are owned by `../../shared/issue-rules.md` § Labels and § Repo convention; change them there first.
 
-- The missing label is anything else (the repo renamed or deleted it): the
-  saved convention is stale. Run `seed-forget`, redo step 3, retry.
+- The missing label is anything else (the repo renamed or deleted it): the saved convention is stale. Run `seed-forget`, redo step 3, retry.
 
 If the retry also fails, show the error and stop.
 
@@ -275,70 +205,39 @@ printf "%s" "<url>" | bash ../../shared/copy.sh
 
 Any other exit than 0: `Captured: <url> (clipboard copy skipped)`.
 
-Nothing else, except the `Screenshot not attached` note from step 6 when it
-applies. No summary of the body, no next steps.
+Nothing else, except the `Screenshot not attached` note from step 6 when it applies. No summary of the body, no next steps.
 
 ## Edge cases, handled
 
-- **Store file missing or corrupt.** Either store is treated as empty; a
-  corrupt file is moved aside to `<name>.bak-<time>` and the get returns
-  `MISS`. Learn again.
-- **Label renamed or deleted in the repo.** Step 6 catches the create error,
-  forgets the entry, learns again, retries once.
-- **Repo renamed or moved.** `gh repo view` returns the new name, which is a
-  miss. It gets learned under the new name. The old entry is harmless.
-- **Repo had no history when first seen.** Nothing was saved (under 5
-  titles), so it gets learned properly later.
-- **User wants a fresh read.** `--relearn` or the word "relearn" in the
-  request forces step 3 to run again.
-- **Saved entry has no `bug_label`.** It was learned before bugs existed
-  here. Use `bug` for this run; `seed-set` again with `--bug-label` when the
-  repo's own label differs.
+- **Store file missing or corrupt.** Either store is treated as empty; a corrupt file is moved aside to `<name>.bak-<time>` and the get returns `MISS`. Learn again.
+- **Label renamed or deleted in the repo.** Step 6 catches the create error, forgets the entry, learns again, retries once.
+- **Repo renamed or moved.** `gh repo view` returns the new name, which is a miss. It gets learned under the new name. The old entry is harmless.
+- **Repo had no history when first seen.** Nothing was saved (under 5 titles), so it gets learned properly later.
+- **User wants a fresh read.** `--relearn` or the word "relearn" in the request forces step 3 to run again.
+- **Saved entry has no `bug_label`.** It was learned before bugs existed here. Use `bug` for this run; `seed-set` again with `--bug-label` when the repo's own label differs.
 
 ## Examples
 
 **User:** `/capture p2: ...`, followed by `the settings page re-fetches the whole user object on every tab switch`.
 
-Title: `[seed] Settings page re-fetches user object on every tab switch`.
-Labels: `seed`, `p2`. Body `## Seed`: their sentence. `## Context`: only if a
-file path was already named in the chat. Done.
+Title: `[seed] Settings page re-fetches user object on every tab switch`. Labels: `seed`, `p2`. Body `## Seed`: their sentence. `## Context`: only if a file path was already named in the chat. Done.
 
 **User:** "park this: we could let users export their data as CSV"
 
-No priority given. Do not ask. File it with the `seed` label only.
-Title: `[seed] Export user data as CSV`. Labels: `seed`.
+No priority given. Do not ask. File it with the `seed` label only. Title: `[seed] Export user data as CSV`. Labels: `seed`.
 
 **User:** "capture this, urgent: the nightly job silently skips rows with a null email"
 
-"Silently skips" is behaviour that is wrong today: a bug. Title:
-`[bug] Nightly job skips rows with null email`. Labels: `bug` and the
-repo's p0 label (`p0`, `priority/p0`, or `priority: critical`, whichever the
-saved convention says). Body `## Bug`: `Seen:` their sentence; no
-`Expected:` line, they did not say. `## Repro`: `Not known yet.`, the chat
-ran nothing.
+"Silently skips" is behaviour that is wrong today: a bug. Title: `[bug] Nightly job skips rows with null email`. Labels: `bug` and the repo's p0 label (`p0`, `priority/p0`, or `priority: critical`, whichever the saved convention says). Body `## Bug`: `Seen:` their sentence; no `Expected:` line, they did not say. `## Repro`: `Not known yet.`, the chat ran nothing.
 
 **User:** `/capture bug: the post modal shows ready while a media file is missing; the server rejects the publish`
 
-Title: `[bug] Post modal shows ready while a media file is missing`.
-Labels: `bug`. Body `## Bug`: `Seen:` the modal shows ready while a media
-file is missing; `Expected:` the server rejects the publish, so the modal
-should not say ready. `## Context`: a permalink only if the chat named the
-file and line.
+Title: `[bug] Post modal shows ready while a media file is missing`. Labels: `bug`. Body `## Bug`: `Seen:` the modal shows ready while a media file is missing; `Expected:` the server rejects the publish, so the modal should not say ready. `## Context`: a permalink only if the chat named the file and line.
 
-**User:** `/capture this` after a chat that ran a command on a test VM ten
-times, saw it hang 2 times with no error, took a screenshot of the stuck
-screen into a scratch folder, and suspects the wrapper script.
+**User:** `/capture this` after a chat that ran a command on a test VM ten times, saw it hang 2 times with no error, took a screenshot of the stuck screen into a scratch folder, and suspects the wrapper script.
 
-A bug. `## Repro`: the environment line, the commands from the chat with
-the VM ID replaced by `"$id"` from the create command, the hang described as
-seen, and `2 of 10 runs`. The screenshot is copied next to the body, named
-for what it shows, and attached. `## Context`: a permalink to the wrapper
-script, an `Open:` line that names it as the suspect, and one `Found while
-…` line. The scratch path and the VM ID appear nowhere.
+A bug. `## Repro`: the environment line, the commands from the chat with the VM ID replaced by `"$id"` from the create command, the hang described as seen, and `2 of 10 runs`. The screenshot is copied next to the body, named for what it shows, and attached. `## Context`: a permalink to the wrapper script, an `Open:` line that names it as the suspect, and one `Found while …` line. The scratch path and the VM ID appear nowhere.
 
 **User:** "write the fix ticket for the login bug"
 
-Not this skill. That asks for a real, typed issue: a `fix` through
-`/to-issue`, which writes what the behaviour must be after the fix. A
-`[bug]` that already exists is its origin; `/to-issue` rewrites it into
-the `fix` ticket.
+Not this skill. That asks for a real, typed issue: a `fix` through `/to-issue`, which writes what the behaviour must be after the fix. A `[bug]` that already exists is its origin; `/to-issue` rewrites it into the `fix` ticket.

@@ -1,6 +1,6 @@
 ---
 name: find-cc-session
-description: "Find a past Claude Code session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Fires on '/find-cc-session ...' in Claude Code, '$find-cc-session ...' in Codex, 'find the claude session where we fixed CI', 'which claude chat did I do X in'. Not for the current Claude Code session's own ID (that is `$CLAUDE_CODE_SESSION_ID`), not for loading a session whose ID is already known (that is load-cc-session), and not for Codex sessions (that is find-co-session)."
+description: "Find a past Claude Code session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Not for the current Claude Code session's own ID (that is `$CLAUDE_CODE_SESSION_ID`), not for loading a session whose ID is already known (that is load-cc-session), and not for Codex sessions (that is find-co-session). Use when the user types '/find-cc-session ...' in Claude Code or '$find-cc-session ...' in Codex, or says 'find the claude session where we fixed CI' or 'which claude chat did I do X in'."
 ---
 
 # find-cc-session
@@ -13,9 +13,7 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in e
 
 ## Steps
 
-1. **Run the finder.**
-   `python3 ../../shared/sessions/claude/find_sessions.py "<description>"`
-   No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
+1. **Run the finder.** `python3 ../../shared/sessions/claude/find_sessions.py "<description>"` No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
 2. **Judge the candidates.** The score counts words, not meaning, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. Set the `← current session` line aside unless the description clearly names it.
 

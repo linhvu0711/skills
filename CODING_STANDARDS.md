@@ -20,8 +20,8 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 - Do a job every session adapter needs (load a sibling module, skip injected context, keep the project's sessions of the last N days): a helper in `shared/sessions/adapter_lib.py`. Old way: an adapter's own `load()` or its own injected-context check (#410).
 - Set up a git repo in a test: `repo` from `scripts/test-lib.sh`. Old way: own setup code (#408).
 - Check a result in a test: `eq`, `has`, and `lacks` from `scripts/test-lib.sh`. Old way: a bare `[ -e … ] || exit 1` check (#408).
-- Start another skill from skill text: "start the `<name>` skill"; `shared/harness.md` names each harness's way. Old way: "with the Skill tool" (#407).
-- Lay out Markdown: one line per paragraph, list item, or table row. Old way: hard wrap near 72 columns (#407).
+- Start another skill from skill text: "start the `<name>` skill"; `shared/harness.md` names each harness's way.
+- Lay out Markdown: one line per paragraph, list item, or table row.
 
 ## Names
 

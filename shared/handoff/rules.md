@@ -1,15 +1,10 @@
 <!-- template: shared by /handoff and /build-and-prove. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
-You are the executor. The plan above was written by someone who read the
-repo and made every decision that needs judgment. Follow it in order.
-Your job is clean code, green tests, and proof for every Done-when line.
+You are the executor. The plan above was written by someone who read the repo and made every decision that needs judgment. Follow it in order. Your job is clean code, green tests, and proof for every Done-when line.
 
 ## Before anything
 
 <!-- cloud -->
-`gh` must be version 2.99 or newer, so that `gh pr edit --attach`
-exists. Run `gh --version`. Older: install the latest release for this
-machine, no sudo needed, and keep it first on `PATH` for the whole
-{{session}}:
+`gh` must be version 2.99 or newer, so that `gh pr edit --attach` exists. Run `gh --version`. Older: install the latest release for this machine, no sudo needed, and keep it first on `PATH` for the whole {{session}}:
 
 ```bash
 v=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest | sed 's#.*/tag/v##')
@@ -23,237 +18,89 @@ export PATH="$HOME/.local/bin:$PATH"; hash -r; gh --version
 ```
 
 <!-- devin -->
-Then `gh api user -q .login`. It must print the user's GitHub login;
-it comes from the `GH_TOKEN` secret. An error instead: stop and ask,
-say what it printed. Every rule below that uses `gh` needs it; the
-machine's own `gh` login is Devin's GitHub app, which cannot act as
-the user. Everything that lands on GitHub, a commit, a PR, a comment,
-a reply, a resolved thread, a label, an issue, is the user's work
-under the user's login, never Devin's app. Never run `gh auth status`
-and never print a token, a `Token:` line, or an `Authorization`
-header, even masked.
+Then `gh api user -q .login`. It must print the user's GitHub login; it comes from the `GH_TOKEN` secret. An error instead: stop and ask, say what it printed. Every rule below that uses `gh` needs it; the machine's own `gh` login is Devin's GitHub app, which cannot act as the user. Everything that lands on GitHub, a commit, a PR, a comment, a reply, a resolved thread, a label, an issue, is the user's work under the user's login, never Devin's app. Never run `gh auth status` and never print a token, a `Token:` line, or an `Authorization` header, even masked.
 <!-- /devin -->
 <!-- cursor -->
-Then `gh api user -q .login`. It must print a GitHub login (it comes
-from the `GH_TOKEN` secret). An error instead: stop and ask (see
-Asking below), say what it printed. Then set the commit identity from
-the `Author` line at the top of the prompt, before the first commit:
-`git config user.name "<name>" && git config user.email "<email>"`.
-Every commit you make carries that name and email; the workspace's
-default, `Cursor Agent`, never appears as an author or committer. Every rule below that uses `gh`
-needs it; the workspace's own git token can push but cannot open a PR,
-make a label, or file an issue. Everything that lands on GitHub, a
-commit, a PR, a comment, a reply, a resolved thread, a label, an
-issue, is the user's work under the user's login, never Cursor's bot.
-Never run `gh auth status` and never
-print a token, a `Token:` line, or an `Authorization` header, even
-masked: a message that looks like it holds a token ends the run as an
-error, and the whole message is lost.
+Then `gh api user -q .login`. It must print a GitHub login (it comes from the `GH_TOKEN` secret). An error instead: stop and ask (see Asking below), say what it printed. Then set the commit identity from the `Author` line at the top of the prompt, before the first commit: `git config user.name "<name>" && git config user.email "<email>"`. Every commit you make carries that name and email; the workspace's default, `Cursor Agent`, never appears as an author or committer. Every rule below that uses `gh` needs it; the workspace's own git token can push but cannot open a PR, make a label, or file an issue. Everything that lands on GitHub, a commit, a PR, a comment, a reply, a resolved thread, a label, an issue, is the user's work under the user's login, never Cursor's bot. Never run `gh auth status` and never print a token, a `Token:` line, or an `Authorization` header, even masked: a message that looks like it holds a token ends the run as an error, and the whole message is lost.
 <!-- /cursor -->
 <!-- /cloud -->
 <!-- local -->
-You are in a git worktree that `/build-and-prove` made, already on the
-branch named under `Branch` at the top of the prompt, with the base
-branch fetched. Every git command runs in that worktree. Stay on that
-branch; the main checkout and every other worktree are not yours.
-Never print a token, a `Token:` line, or an `Authorization` header,
-even masked.
+You are in a git worktree that `/build-and-prove` made, already on the branch named under `Branch` at the top of the prompt, with the base branch fetched. Every git command runs in that worktree. Stay on that branch; the main checkout and every other worktree are not yours. Never print a token, a `Token:` line, or an `Authorization` header, even masked.
 
-This machine is the local machine, and the repo's packages are
-already installed in the worktree.
-Each slice's tests, the typecheck, and lint run here, in the worktree,
-with the commands under `Facts`. The full suite, the build, and the app
-never run here: after you finish, `/build-and-prove`
-runs in the run's proofbox Sandbox the Gates the PR's CI does not run,
-and leaves the rest to CI.
+This machine is the local machine, and the repo's packages are already installed in the worktree. Each slice's tests, the typecheck, and lint run here, in the worktree, with the commands under `Facts`. The full suite, the build, and the app never run here: after you finish, `/build-and-prove` runs in the run's proofbox Sandbox the Gates the PR's CI does not run, and leaves the rest to CI.
 
-With `UI: none` under `Facts`, there is no Sandbox: `/build-and-prove`
-runs the Gates on this machine and leaves the rest to the PR's CI.
-Never run `box.sh`. A slice's command that fails because this machine
-lacks a tool (`command not found`, exit 127): install nothing; stop and
-ask (see Asking below), and name the tool, so the user installs it.
-The repo's e2e spec files are left to the PR's CI. The two paragraphs
-below are for a plan with UI walks.
+With `UI: none` under `Facts`, there is no Sandbox: `/build-and-prove` runs the Gates on this machine and leaves the rest to the PR's CI. Never run `box.sh`. A slice's command that fails because this machine lacks a tool (`command not found`, exit 127): install nothing; stop and ask (see Asking below), and name the tool, so the user installs it. The repo's e2e spec files are left to the PR's CI. The two paragraphs below are for a plan with UI walks.
 
-A slice's command that fails because this machine lacks a tool
-(`command not found`, exit 127): install nothing here. Start the
-Sandbox once, then run that command there, every time it runs:
+A slice's command that fails because this machine lacks a tool (`command not found`, exit 127): install nothing here. Start the Sandbox once, then run that command there, every time it runs:
 
 ```bash
 bash {{skills}}/build-and-prove/scripts/box.sh up <Proof folder> <Worktree> <os> <Repo>
 bash {{skills}}/build-and-prove/scripts/box.sh run <Proof folder> -- <command>
 ```
 
-`<Proof folder>`, `<Worktree>`, and `<Repo>` are the lines of those
-names at the top of the prompt; `<os>` is `macos` when `Facts` say
-`Platform: macos-outpost`, else `linux`. `run` sends the files you
-changed, runs the command there, and exits with the command's code, so
-a red test is a non-zero exit. The Sandbox stays for the rest of the
-run: never run `box.sh down`. A `stop:` line from it: stop and ask (see
-Asking below), say what it printed.
+`<Proof folder>`, `<Worktree>`, and `<Repo>` are the lines of those names at the top of the prompt; `<os>` is `macos` when `Facts` say `Platform: macos-outpost`, else `linux`. `run` sends the files you changed, runs the command there, and exits with the command's code, so a red test is a non-zero exit. The Sandbox stays for the rest of the run: never run `box.sh down`. A `stop:` line from it: stop and ask (see Asking below), say what it printed.
 
-A repo with e2e tests, ones that start the app and drive it in a
-browser (a Playwright or Cypress config, an `e2e` script): before each
-slice's commit, run the e2e spec files the slice changes, and those
-that open a screen or route the slice changes, found by a search of the
-e2e folder for that route, page, or component name. They need the app, so they run in
-the Sandbox: `box.sh up` once, as above, then `box.sh run <Proof
-folder> -- <the repo's e2e command> <spec files>`. Red: the slice is
-not green, as with its own test. None found: say so in one line, and
-commit.
+A repo with e2e tests, ones that start the app and drive it in a browser (a Playwright or Cypress config, an `e2e` script): before each slice's commit, run the e2e spec files the slice changes, and those that open a screen or route the slice changes, found by a search of the e2e folder for that route, page, or component name. They need the app, so they run in the Sandbox: `box.sh up` once, as above, then `box.sh run <Proof folder> -- <the repo's e2e command> <spec files>`. Red: the slice is not green, as with its own test. None found: say so in one line, and commit.
 <!-- /local -->
 
 <!-- cloud -->
 ## Layers
 
-A prompt with a `Stack` table is a run: one layer per row, each layer
-one PR, the PRs a stack. Work the layers in order. A layer starts when
-the layer below has its PR open. Its branch starts from the branch named
-under `Base`: the base branch, or the head branch of the layer below.
-The plan may name a place as `layer 1, slice 2`: that is code the earlier
-layer's slice created; it is on that branch under the name the plan
-gives. No `Stack` table: one layer, one PR, the blocks as written.
+A prompt with a `Stack` table is a run: one layer per row, each layer one PR, the PRs a stack. Work the layers in order. A layer starts when the layer below has its PR open. Its branch starts from the branch named under `Base`: the base branch, or the head branch of the layer below. The plan may name a place as `layer 1, slice 2`: that is code the earlier layer's slice created; it is on that branch under the name the plan gives. No `Stack` table: one layer, one PR, the blocks as written.
 <!-- /cloud -->
 
 ## Branch names
 
 <!-- cloud -->
-Each branch has the shape under § The pull request, Branch, with the
-layer's issue number. In a run, each layer gets its own branch in this
-shape from its own issue.
+Each branch has the shape under § The pull request, Branch, with the layer's issue number. In a run, each layer gets its own branch in this shape from its own issue.
 <!-- /cloud -->
 <!-- cursor -->
-Make the branch yourself, `git checkout -b <name> <base>`, before the
-first commit; the branch the workspace opened on is not the one. The
-word `cursor` never appears in a branch name, in any case or spelling.
+Make the branch yourself, `git checkout -b <name> <base>`, before the first commit; the branch the workspace opened on is not the one. The word `cursor` never appears in a branch name, in any case or spelling.
 <!-- /cursor -->
 <!-- devin -->
 The word `devin` never appears in a branch name, in any case or spelling.
 <!-- /devin -->
 <!-- local -->
-`/build-and-prove` made the branch; it is the one under `Branch`. One
-layer.
+`/build-and-prove` made the branch; it is the one under `Branch`. One layer.
 <!-- /local -->
 
 <!-- cloud -->
 ## Before shots
 
-A walk under `UI walks` whose `Before` line names steps needs a
-picture of its screen as the base shows it. A line that says `none` or
-`as walk n` takes no shot of its own. Take it before the layer's
-first slice, while the branch holds no change of this layer: run the
-app with the `Run` and `Open` lines under `Facts`, do the walk's
-`Setup`, go to `Where`, do the steps the `Before` line names, and take
-a screenshot of the screen they end on, at the `Screen` size, the same
-way you walk the walks later. Save it as `before-<walk number>.png`,
-check that it shows what the line says, then stop the app. A `Before`
-line whose steps do not work on the base, or whose screen does not show
-what the line says, is a surprise (see below).
+A walk under `UI walks` whose `Before` line names steps needs a picture of its screen as the base shows it. A line that says `none` or `as walk n` takes no shot of its own. Take it before the layer's first slice, while the branch holds no change of this layer: run the app with the `Run` and `Open` lines under `Facts`, do the walk's `Setup`, go to `Where`, do the steps the `Before` line names, and take a screenshot of the screen they end on, at the `Screen` size, the same way you walk the walks later. Save it as `before-<walk number>.png`, check that it shows what the line says, then stop the app. A `Before` line whose steps do not work on the base, or whose screen does not show what the line says, is a surprise (see below).
 
 <!-- /cloud -->
 ## How to work
 
-- Work one slice at a time, in the order given. For each slice: write
-  every test listed under it first and run them; they are red, except a
-  lock test, a test with a `Mutate:` line, and a delete slice's tests
-  (see Tests). Write the smallest change that makes them all
-  green. Run the test file and the typecheck; both green. Make the
-  slice's `Docs` lines, so the doc lands with the code it describes.
-  Commit.
+- Work one slice at a time, in the order given. For each slice: write every test listed under it first and run them; they are red, except a lock test, a test with a `Mutate:` line, and a delete slice's tests (see Tests). Write the smallest change that makes them all green. Run the test file and the typecheck; both green. Make the slice's `Docs` lines, so the doc lands with the code it describes. Commit.
 <!-- local -->
-- A file a slice writes for an agent, a skill (`SKILL.md` and the files
-  it reads), `AGENTS.md`, or `CLAUDE.md`, follows
-  `{{skills}}/write-for-agents/SKILL.md`. Prose a slice writes for
-  people, a README or a doc, goes through `{{skills}}/unslop/SKILL.md`
-  before the commit. Code, commands, and paths stay as they are.
+- A file a slice writes for an agent, a skill (`SKILL.md` and the files it reads), `AGENTS.md`, or `CLAUDE.md`, follows `{{skills}}/write-for-agents/SKILL.md`. Prose a slice writes for people, a README or a doc, goes through `{{skills}}/unslop/SKILL.md` before the commit. Code, commands, and paths stay as they are.
 <!-- /local -->
-- Green ends the slice. Tidying comes later, from review. The next slice
-  starts.
+- Green ends the slice. Tidying comes later, from review. The next slice starts.
 - One slice is one commit. The layer's PR reads in slice order.
-- Commit messages follow Conventional Commits: `type(scope): summary`.
-  `type` is `feat`, `fix`, `test`, `refactor`, `chore`, or `docs`; `scope`
-  is the module touched, or left out. The summary is imperative, lower
-  case, no period, 72 characters at most, and says what the code now
-  does, as in `feat(todos): restore a deleted todo`. The words `slice`
-  and the slice number never appear. A slice that was green before any
-  change says so in the commit body, not the summary.
-- Build what the plan says and only that. Code outside the slices stays
-  as it is, including code that looks like it could be tidier.
-- Keep a comment in the code you write only when it says why: a reason,
-  a limit, or a source the code cannot show. A comment that says what
-  the next line does is left out. The `Given`, `When`, and `Then` lines
-  in a test stay; they tie the test to its entry in the plan.
-- Check data at the edge where it comes in: a request body, a
-  command's arguments, a file or an env var read, an outside API's
-  reply. Code past the edge trusts what the edge checked and does not
-  check it again.
-- The `Decided` block is closed. Follow it. `Proved` lines are facts
-  that were run before the plan; build on them, do not run them again.
+- Commit messages follow Conventional Commits: `type(scope): summary`. `type` is `feat`, `fix`, `test`, `refactor`, `chore`, or `docs`; `scope` is the module touched, or left out. The summary is imperative, lower case, no period, 72 characters at most, and says what the code now does, as in `feat(todos): restore a deleted todo`. The words `slice` and the slice number never appear. A slice that was green before any change says so in the commit body, not the summary.
+- Build what the plan says and only that. Code outside the slices stays as it is, including code that looks like it could be tidier.
+- Keep a comment in the code you write only when it says why: a reason, a limit, or a source the code cannot show. A comment that says what the next line does is left out. The `Given`, `When`, and `Then` lines in a test stay; they tie the test to its entry in the plan.
+- Check data at the edge where it comes in: a request body, a command's arguments, a file or an env var read, an outside API's reply. Code past the edge trusts what the edge checked and does not check it again.
+- The `Decided` block is closed. Follow it. `Proved` lines are facts that were run before the plan; build on them, do not run them again.
 - Anything under `Out of scope` stays out, even when it is one line away.
 
 ## Tests
 
-- A test looks through the seam named in its slice: the public function,
-  route, command, or screen. It calls the seam and checks what comes
-  back. It never reads internals, private state, or a database row to
-  check a result.
-- The test body follows `Given`, `When`, `Then` from its entry in the
-  slice. `Then` compares against the literal in the plan.
-- A test with a `Red:` line is a fix's first test. Run it before any
-  change: it fails on its assertion, and the failure shows what `Red:`
-  names. A missing symbol, an import error, or a crash before the
-  assertion is not red: change the test until it fails for the bug's
-  reason, then make the change.
-- A slice whose `Change` says `none, a lock test` holds a refactor's
-  lock test. It passes on the base: run it, see it green, run its
-  `Mutate:` check, and commit it alone, with a commit body that says it
-  was green before any change. It stays green through every later
-  slice.
-- A test with a `Mutate:` line is green before its change, so you make
-  its red by hand. Once it is green, copy the file to a temp folder
-  outside the worktree, make the one edit `Mutate:` names, and run the
-  test: it fails on its assertion. Copy the file back from the temp
-  folder, so `cmp <file> <copy>` exits 0, and run the test again:
-  green. Never undo the edit with `git checkout`, `git restore`, or
-  `git stash`: the slice's change is not committed yet, and they throw
-  it away. The commit body says `Mutate: <file:line> turned it red`. A test that
-  stays green under the edit proves nothing: make the test stronger,
-  and keep its `Then`, until the edit turns it red. When no test with
-  that `Then` can go red under the edit, stop and ask (see Asking). A
-  test green before its change with no `Mutate:` line gets the same
-  check: pick the line its `Then` rests on, make one edit there, and
-  say so in the commit body.
-- A slice headed `deletes dead code` deletes code that no caller uses.
-  Its tests exist already, or its test is a search from its `Change`
-  lines: write none. Run them before the change: the tests are green,
-  and a search hits only the code it deletes. Make the delete, run them
-  again: the tests are green, and a search has no hit. Commit with a
-  body that says so.
-- Mock only at the borders the slice names under `Given`: an outside
-  API, the clock, randomness. Everything the repo owns runs for real.
-  A database the repo owns runs for real too, on the repo's
-  test database; mock it only when the repo has none and `Given` names
-  it.
-- Never check which of the repo's own functions the code called,
-  how many times, or in what order, as with `toHaveBeenCalledWith` on a
-  module the repo owns. Check what comes back through the seam.
+- A test looks through the seam named in its slice: the public function, route, command, or screen. It calls the seam and checks what comes back. It never reads internals, private state, or a database row to check a result.
+- The test body follows `Given`, `When`, `Then` from its entry in the slice. `Then` compares against the literal in the plan.
+- A test with a `Red:` line is a fix's first test. Run it before any change: it fails on its assertion, and the failure shows what `Red:` names. A missing symbol, an import error, or a crash before the assertion is not red: change the test until it fails for the bug's reason, then make the change.
+- A slice whose `Change` says `none, a lock test` holds a refactor's lock test. It passes on the base: run it, see it green, run its `Mutate:` check, and commit it alone, with a commit body that says it was green before any change. It stays green through every later slice.
+- A test with a `Mutate:` line is green before its change, so you make its red by hand. Once it is green, copy the file to a temp folder outside the worktree, make the one edit `Mutate:` names, and run the test: it fails on its assertion. Copy the file back from the temp folder, so `cmp <file> <copy>` exits 0, and run the test again: green. Never undo the edit with `git checkout`, `git restore`, or `git stash`: the slice's change is not committed yet, and they throw it away. The commit body says `Mutate: <file:line> turned it red`. A test that stays green under the edit proves nothing: make the test stronger, and keep its `Then`, until the edit turns it red. When no test with that `Then` can go red under the edit, stop and ask (see Asking). A test green before its change with no `Mutate:` line gets the same check: pick the line its `Then` rests on, make one edit there, and say so in the commit body.
+- A slice headed `deletes dead code` deletes code that no caller uses. Its tests exist already, or its test is a search from its `Change` lines: write none. Run them before the change: the tests are green, and a search hits only the code it deletes. Make the delete, run them again: the tests are green, and a search has no hit. Commit with a body that says so.
+- Mock only at the borders the slice names under `Given`: an outside API, the clock, randomness. Everything the repo owns runs for real. A database the repo owns runs for real too, on the repo's test database; mock it only when the repo has none and `Given` names it.
+- Never check which of the repo's own functions the code called, how many times, or in what order, as with `toHaveBeenCalledWith` on a module the repo owns. Check what comes back through the seam.
 - The case name is the one in the Proof table. One `Then` per test.
-- Existing tests named under `Gates` stay as they are and stay green.
-  A change that breaks one of them is a surprise; see below.
-- A test that says no (an error, a rejection, an empty result, `false`)
-  must refuse at its own check. Its `Given` is a passing case's, with
-  one input changed, and it compares the literal only that check gives:
-  the message, the error code, or the field it names. A bare status,
-  `throws`, or `false` alone can come from any check.
-- Before the commit, ask two questions of the test. Would it still pass
-  if the inside were rewritten with the same behavior? A `no` means it
-  reads internals; move it to the seam. Would it fail if the code
-  returned the wrong value, and would it fail if every function it
-  imports returned `undefined`? A `no` to either means it proves
-  nothing; put the literal back.
+- Existing tests named under `Gates` stay as they are and stay green. A change that breaks one of them is a surprise; see below.
+- A test that says no (an error, a rejection, an empty result, `false`) must refuse at its own check. Its `Given` is a passing case's, with one input changed, and it compares the literal only that check gives: the message, the error code, or the field it names. A bare status, `throws`, or `false` alone can come from any check.
+- Before the commit, ask two questions of the test. Would it still pass if the inside were rewritten with the same behavior? A `no` means it reads internals; move it to the seam. Would it fail if the code returned the wrong value, and would it fail if every function it imports returned `undefined`? A `no` to either means it proves nothing; put the literal back.
 
-A test in this shape, for a slice whose seam is `exportOrders` and whose
-`Then` is `"id,total\n1,15.00\n"`:
+A test in this shape, for a slice whose seam is `exportOrders` and whose `Then` is `"id,total\n1,15.00\n"`:
 
 ```ts
 test("exports one order as CSV", async () => {
@@ -287,104 +134,43 @@ test("exports one order as CSV", async () => {
 ## When every slice of a layer is green
 
 <!-- cloud -->
-1. Run the full test suite, typecheck, lint, and build, with the commands
-   under `Facts`. All green before you go on.
+1. Run the full test suite, typecheck, lint, and build, with the commands under `Facts`. All green before you go on.
 <!-- /cloud -->
 <!-- local -->
-1. Run nothing more. The full suite and the build are Gates, and
-   `/build-and-prove` runs them in the Sandbox.
-2. Go to Finish. You open no PR and push nothing: `/build-and-prove`
-   runs the Gates and has the walks filmed, and `/make-pr` opens the PR.
+1. Run nothing more. The full suite and the build are Gates, and `/build-and-prove` runs them in the Sandbox.
+2. Go to Finish. You open no PR and push nothing: `/build-and-prove` runs the Gates and has the walks filmed, and `/make-pr` opens the PR.
 <!-- /local -->
 <!-- cloud -->
 <!-- devin -->
-2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every
-   entry under `UI walks`, in order. Do the `Setup`, go to `Where`, do
-   the `Steps` with the exact labels given, look for `See`, and check
-   every `Must not`. A `Setup` or `Open` command `walk-browser <url>
-   [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the
-   local Sandbox's browser starter: open the URL in your own browser at
-   that page size, with that saved login and that clock.
+2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every entry under `UI walks`, in order. Do the `Setup`, go to `Where`, do the `Steps` with the exact labels given, look for `See`, and check every `Must not`. A `Setup` or `Open` command `walk-browser <url> [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the local Sandbox's browser starter: open the URL in your own browser at that page size, with that saved login and that clock.
 <!-- /devin -->
 <!-- cursor -->
-2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every
-   entry under `UI walks`, in order, in a headless browser (Playwright,
-   or what the repo already uses). Do the `Setup`, go to `Where`, do
-   the `Steps` with the exact labels given, look for `See`, and check
-   every `Must not`. A `Setup` or `Open` command `walk-browser <url>
-   [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the
-   local Sandbox's browser starter: open the URL in your own browser at
-   that page size, with that saved login and that clock.
+2. Run the app with the `Run` and `Open` lines under `Facts`. Walk every entry under `UI walks`, in order, in a headless browser (Playwright, or what the repo already uses). Do the `Setup`, go to `Where`, do the `Steps` with the exact labels given, look for `See`, and check every `Must not`. A `Setup` or `Open` command `walk-browser <url> [--viewport-size=w,h] [--storage <file>] [--clock <time>]` is the local Sandbox's browser starter: open the URL in your own browser at that page size, with that saved login and that clock.
 <!-- /cursor -->
-3. Anything red is work: a test, the typecheck, lint, the build, or a
-   walk. Fix it, run the checks again, walk again. Repeat until all
-   of it is green.
-4. Only then, record every video under `Videos`, each once: its
-   numbered steps, nothing more. A recording starts as step 1 begins and
-   stops when the last step is on screen. No lead-in from an earlier
-   walk, no tail. Record it the way a person tries the app for the first
-   time, at real speed: no speed-up, no time-lapse. After each action,
-   hold long enough for the result to be read. Let pages load, let content and animations settle, pause a
-   beat on the state that matters before the next step. A viewer must be
-   able to follow what happens and why. An overlay caption per step is
-   welcome; its text is the step number and the step line from the plan,
-   nothing else. The caption hides nothing: a bar fixed at the top of
-   the viewport, with the page pushed down by the bar's height
-   (`document.body.style.paddingTop`), so the page's own header stays
-   in view. At each step the video's `Shows` line names, take
-   that walk's screenshot: the frame that shows its `See`. Save it as
-   `after-<walk number>.png`. Every walk's
-   screenshot comes from its video this way, so a walk with no `Shows`
-   step in any video is a gap; stop and ask.
+3. Anything red is work: a test, the typecheck, lint, the build, or a walk. Fix it, run the checks again, walk again. Repeat until all of it is green.
+4. Only then, record every video under `Videos`, each once: its numbered steps, nothing more. A recording starts as step 1 begins and stops when the last step is on screen. No lead-in from an earlier walk, no tail. Record it the way a person tries the app for the first time, at real speed: no speed-up, no time-lapse. After each action, hold long enough for the result to be read. Let pages load, let content and animations settle, pause a beat on the state that matters before the next step. A viewer must be able to follow what happens and why. An overlay caption per step is welcome; its text is the step number and the step line from the plan, nothing else. The caption hides nothing: a bar fixed at the top of the viewport, with the page pushed down by the bar's height (`document.body.style.paddingTop`), so the page's own header stays in view. At each step the video's `Shows` line names, take that walk's screenshot: the frame that shows its `See`. Save it as `after-<walk number>.png`. Every walk's screenshot comes from its video this way, so a walk with no `Shows` step in any video is a gap; stop and ask.
 <!-- devin -->
-   Your screen recorder speeds up idle and typing time by itself; a
-   badge like `▶▶ 19.1x` in a corner of the frame is that. Do not use
-   it. Record the whole display at 1x with `ffmpeg`, one file per
-   video, `video-<n>.mp4`, where `n` is the video's number:
+   Your screen recorder speeds up idle and typing time by itself; a badge like `▶▶ 19.1x` in a corner of the frame is that. Do not use it. Record the whole display at 1x with `ffmpeg`, one file per video, `video-<n>.mp4`, where `n` is the video's number:
    - linux: `ffmpeg -y -f x11grab -framerate 24 -video_size "$(xdpyinfo
      | awk '/dimensions/{print $2}')" -i "$DISPLAY" -c:v libx264
      -pix_fmt yuv420p video-<n>.mp4`
-   - macos-outpost: `ffmpeg -y -f avfoundation -framerate 24 -i
-     "<screen>:none" -c:v libx264 -pix_fmt yuv420p video-<n>.mp4`;
-     `ffmpeg -f avfoundation -list_devices true -i ""` names the screen.
-   - windows: `ffmpeg -y -f gdigrab -framerate 24 -i desktop -c:v
-     libx264 -pix_fmt yuv420p video-<n>.mp4`
-   Type at a person's pace, about 16 characters a second (on linux,
-   `xdotool type --delay 60`), and hold about 2 s after each result.
-   Click inside a window before you type; an unfocused window drops the
-   keys. A terminal walk opens at the `Screen` size under `Facts`. On
-   linux it runs in xterm
-   (`xterm -geometry <cols>x<rows> -fa Monospace -fs 12`), not konsole:
-   after `clear`, konsole can leave new lines off the screen. Take each
-   screenshot from the video, `ffmpeg -ss <t> -i video-<n>.mp4
-   -frames:v 1 after-<walk number>.png`, so the screenshots and the
-   video agree.
+   - macos-outpost: `ffmpeg -y -f avfoundation -framerate 24 -i "<screen>:none" -c:v libx264 -pix_fmt yuv420p video-<n>.mp4`; `ffmpeg -f avfoundation -list_devices true -i ""` names the screen.
+   - windows: `ffmpeg -y -f gdigrab -framerate 24 -i desktop -c:v libx264 -pix_fmt yuv420p video-<n>.mp4` Type at a person's pace, about 16 characters a second (on linux, `xdotool type --delay 60`), and hold about 2 s after each result. Click inside a window before you type; an unfocused window drops the keys. A terminal walk opens at the `Screen` size under `Facts`. On linux it runs in xterm (`xterm -geometry <cols>x<rows> -fa Monospace -fs 12`), not konsole: after `clear`, konsole can leave new lines off the screen. Take each screenshot from the video, `ffmpeg -ss <t> -i video-<n>.mp4 -frames:v 1 after-<walk number>.png`, so the screenshots and the video agree.
 <!-- /devin -->
-   Before you attach a video, check it: its length (`ffprobe`) is at
-   least the time its steps take by hand, and no frame shows a speed
-   badge. A video that fails is recorded again.
+   Before you attach a video, check it: its length (`ffprobe`) is at least the time its steps take by hand, and no frame shows a speed badge. A video that fails is recorded again.
 <!-- /cloud -->
 
 <!-- cloud -->
 ## A perf plan
 
-A prompt with a `# Perf` block, or a layer with a `## Perf` block,
-measures after the full suite is green, before the PR. A prompt with no
-`Perf` block skips this part.
+A prompt with a `# Perf` block, or a layer with a `## Perf` block, measures after the full suite is green, before the PR. A prompt with no `Perf` block skips this part.
 
 1. Add a second worktree of the base branch.
-2. Run the block's `Command` in turns, base then head, as many times
-   each as its `Pass rule` says, per the checklist below.
-3. Write the Proof row of the Target line as `## The pull request`
-   shows: the metric and unit, `before → after`, the run count, and the
-   command.
-4. A base median outside the `Before` spread: the row ends with the
-   issue's Baseline in brackets, as `## The pull request` shows. A head
-   that misses the `Pass rule` is a surprise (see `## Surprises`).
+2. Run the block's `Command` in turns, base then head, as many times each as its `Pass rule` says, per the checklist below.
+3. Write the Proof row of the Target line as `## The pull request` shows: the metric and unit, `before → after`, the run count, and the command.
+4. A base median outside the `Before` spread: the row ends with the issue's Baseline in brackets, as `## The pull request` shows. A head that misses the `Pass rule` is a surprise (see `## Surprises`).
 5. Remove the second worktree.
-6. A fix after the PR opens that changes code the `Command` runs:
-   measure again, steps 1 to 5, before its push, and write the row
-   again for the new head.
+6. A fix after the PR opens that changes code the `Command` runs: measure again, steps 1 to 5, before its push, and write the row again for the new head.
 
 <!-- include ../benchmark.md -->
 <!-- /cloud -->
@@ -396,81 +182,37 @@ measures after the full suite is green, before the PR. A prompt with no
 
 ### For this build
 
-- The core change under `Where to look` is the seam the plan names. A
-  surprise that changed what the code does is a bullet there (see
-  Surprises).
+- The core change under `Where to look` is the seam the plan names. A surprise that changed what the code does is a bullet there (see Surprises).
 <!-- cloud -->
 <!-- devin -->
-- One PR per layer, ready for review, against the branch named under
-  `Base` for that layer.
-- A run: before the first PR, announce the stack in the session by the
-  epic's title. Stacking on GitHub is the `gh stack` extension; install
-  it once per session, `gh extension install github/gh-stack`. Open each
-  layer's PR as soon as its walks and videos are done, then link the open
-  layer PRs into the stack, in stack order, bottom to top, by number:
+- One PR per layer, ready for review, against the branch named under `Base` for that layer.
+- A run: before the first PR, announce the stack in the session by the epic's title. Stacking on GitHub is the `gh stack` extension; install it once per session, `gh extension install github/gh-stack`. Open each layer's PR as soon as its walks and videos are done, then link the open layer PRs into the stack, in stack order, bottom to top, by number:
 <!-- /devin -->
 <!-- cursor -->
-- One PR per layer, against the branch named under `Base` for that
-  layer. Open it as a draft as soon as the first slice is green, so CI
-  runs on every push: `gh pr create --draft`, never your built-in
-  pull-request tool (it only registers a request and opens nothing).
-  Right after it opens, subscribe to it with your subscription tool,
-  so every comment, review, and check result on it reaches you as a
-  new turn; say the PR URL and `subscribed` in your reply. Mark it ready,
-  `gh pr ready <n>`, only when every gate holds, every Done-when line
-  has its proof, the size label is on, and every check is green.
-- CI. After every push, `gh pr checks <n> --watch`. A red check is work,
-  the same as a red test: read the log, fix, push, watch again. A check
-  that is red for a reason outside the plan's slices is a surprise;
-  see below.
-- A run: before the first PR, announce the stack in your reply by the
-  epic's title. Stacking on GitHub is the `gh stack` extension; install
-  it once, `gh extension install github/gh-stack`. Open each layer's
-  draft PR as soon as its first slice is green, then link the open
-  layer PRs into the stack, in stack order, bottom to top, by number:
+- One PR per layer, against the branch named under `Base` for that layer. Open it as a draft as soon as the first slice is green, so CI runs on every push: `gh pr create --draft`, never your built-in pull-request tool (it only registers a request and opens nothing). Right after it opens, subscribe to it with your subscription tool, so every comment, review, and check result on it reaches you as a new turn; say the PR URL and `subscribed` in your reply. Mark it ready, `gh pr ready <n>`, only when every gate holds, every Done-when line has its proof, the size label is on, and every check is green.
+- CI. After every push, `gh pr checks <n> --watch`. A red check is work, the same as a red test: read the log, fix, push, watch again. A check that is red for a reason outside the plan's slices is a surprise; see below.
+- A run: before the first PR, announce the stack in your reply by the epic's title. Stacking on GitHub is the `gh stack` extension; install it once, `gh extension install github/gh-stack`. Open each layer's draft PR as soon as its first slice is green, then link the open layer PRs into the stack, in stack order, bottom to top, by number:
 <!-- /cursor -->
 
   ```bash
   gh stack link <layer-1 PR> … <newest PR>
   ```
 
-  Two PRs open makes the stack; each later call adds the new PR. Then
-  start the next layer. The PR body covers that layer's Done-when lines
-  only.
-- The media rules are under § Proof above: the Screenshot and Video
-  columns, the Screenshots and Videos parts, and `gh pr edit --attach`.
+  Two PRs open makes the stack; each later call adds the new PR. Then start the next layer. The PR body covers that layer's Done-when lines only.
+- The media rules are under § Proof above: the Screenshot and Video columns, the Screenshots and Videos parts, and `gh pr edit --attach`.
 <!-- devin -->
-  Only when `--attach` fails: paste the files into the PR editor on
-  github.com with your browser; the links come out the same. Links into
-  the Devin app do not count as proof.
+  Only when `--attach` fails: paste the files into the PR editor on github.com with your browser; the links come out the same. Links into the Devin app do not count as proof.
 <!-- /devin -->
 <!-- cursor -->
   Links into the Cursor app do not count as proof.
 <!-- /cursor -->
 <!-- /cloud -->
-- The size label. Size the PR's own diff with the table under § Size
-  below, the same table the issue was sized with. The diff is against
-  the branch under `Base` for that layer, so a stacked PR counts only
-  its layer. Put the label the prompt names under `Size labels` for
-  that size on the PR: `gh pr edit <n> --add-label "<label>"`. One size
-  label per PR. A `Size labels` line that starts with `bot`: the repo's
-  workflow puts the label on; your part is the facts and the sentence
-  below. The issue's size (the `size` after the issue line, or the
-  `Size` column of `Stack`) was a forecast; the diff is the measurement.
-  Same size: nothing to say. Any other size: one sentence in `Summary`,
-  as in `Issue said S; the PR is M: 7 files, one new route, because the
-  form needed its own validator`, and the same line in the finish
-  message. The plan stands as written and the PR stays one PR. An L or
-  XL from an issue sized XS or S is more likely a wrong base or a
-  committed generated file than real work: check the base branch and
-  the file list before you label.
+- The size label. Size the PR's own diff with the table under § Size below, the same table the issue was sized with. The diff is against the branch under `Base` for that layer, so a stacked PR counts only its layer. Put the label the prompt names under `Size labels` for that size on the PR: `gh pr edit <n> --add-label "<label>"`. One size label per PR. A `Size labels` line that starts with `bot`: the repo's workflow puts the label on; your part is the facts and the sentence below. The issue's size (the `size` after the issue line, or the `Size` column of `Stack`) was a forecast; the diff is the measurement. Same size: nothing to say. Any other size: one sentence in `Summary`, as in `Issue said S; the PR is M: 7 files, one new route, because the form needed its own validator`, and the same line in the finish message. The plan stands as written and the PR stays one PR. An L or XL from an issue sized XS or S is more likely a wrong base or a committed generated file than real work: check the base branch and the file list before you label.
 <!-- devin -->
-- A PR is not ready while any Done-when line has an empty `Test` cell,
-  it has no size label, or any gate is red.
+- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label, or any gate is red.
 <!-- /devin -->
 <!-- cursor -->
-- A PR is not ready while any Done-when line has an empty `Test` cell,
-  it has no size label, any check is red, or any gate is red.
+- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label, any check is red, or any gate is red.
 <!-- /cursor -->
 
 ## Size
@@ -481,41 +223,17 @@ measures after the full suite is green, before the PR. A prompt with no
 
 <!-- cloud -->
 <!-- devin -->
-Devin Review runs on the PR and posts comments. Comments from people on
-the PR count the same way. Every comment gets an answer before you
-finish, and the review runs again on each push; repeat until it posts
-nothing new. In a run, a comment on a lower layer is work while you
-build a higher one: fix it on that layer's branch, resolve what the
-layers above it need, keep every layer green. A merged lower layer
-retargets the rest; nothing to do.
+Devin Review runs on the PR and posts comments. Comments from people on the PR count the same way. Every comment gets an answer before you finish, and the review runs again on each push; repeat until it posts nothing new. In a run, a comment on a lower layer is work while you build a higher one: fix it on that layer's branch, resolve what the layers above it need, keep every layer green. A merged lower layer retargets the rest; nothing to do.
 <!-- /devin -->
 <!-- cursor -->
-You are subscribed to every PR you opened (see above): a review
-comment, a reply, or a failed check starts a new turn for you. Your
-own replies come back to you the same way, since they are posted under
-the same login: a turn whose trigger is a comment you wrote, or a
-comment you already answered, ends at once with one line, `already
-handled`, and no new comment. Never answer yourself. Bots (Cursor Bugbot, Devin
-Review, any other) and people count the same way. Every comment gets an
-answer before you finish, and the review runs again on each push; repeat
-until it posts nothing new. In a run, a comment on a lower layer is work
-while you build a higher one: fix it on that layer's branch, resolve
-what the layers above it need, keep every layer green. A merged lower
-layer retargets the rest; nothing to do.
+You are subscribed to every PR you opened (see above): a review comment, a reply, or a failed check starts a new turn for you. Your own replies come back to you the same way, since they are posted under the same login: a turn whose trigger is a comment you wrote, or a comment you already answered, ends at once with one line, `already handled`, and no new comment. Never answer yourself. Bots (Cursor Bugbot, Devin Review, any other) and people count the same way. Every comment gets an answer before you finish, and the review runs again on each push; repeat until it posts nothing new. In a run, a comment on a lower layer is work while you build a higher one: fix it on that layer's branch, resolve what the layers above it need, keep every layer green. A merged lower layer retargets the rest; nothing to do.
 <!-- /cursor -->
 
 Sort each comment with three questions, in order:
 
-1. **True?** Read the code and run it, or a test, to see. A claim that
-   does not hold is a `push back`.
-2. **Ours?** `git blame` the lines against the base branch. The PR
-   wrote or moved them: ours. They were the same before the PR: not
-   ours, and the PR did not cause it. A real problem in code the PR did
-   not write is still a real problem; the answer is only about where
-   it gets fixed.
-3. **Worth it?** `blocker` (wrong result, data loss, a security hole, a
-   red gate), `should` (a real defect or a rule of the repo broken), or
-   `nit` (style, a name, a comment).
+1. **True?** Read the code and run it, or a test, to see. A claim that does not hold is a `push back`.
+2. **Ours?** `git blame` the lines against the base branch. The PR wrote or moved them: ours. They were the same before the PR: not ours, and the PR did not cause it. A real problem in code the PR did not write is still a real problem; the answer is only about where it gets fixed.
+3. **Worth it?** `blocker` (wrong result, data loss, a security hole, a red gate), `should` (a real defect or a rule of the repo broken), or `nit` (style, a name, a comment).
 
 Then the verdict:
 
@@ -527,11 +245,7 @@ Then the verdict:
 | yes | no | should | `fix later` |
 | yes | no | nit | `won't fix`: reply with one line why |
 
-`fix later` means an issue exists before you reply. Never "noted",
-"out of scope", or "flagged to the owner" without a URL: those leave a
-real problem with no home. A true finding is
-a bug, so the issue is a `[bug]`: a raw record of what is broken, not
-a fix ticket. File it with:
+`fix later` means an issue exists before you reply. Never "noted", "out of scope", or "flagged to the owner" without a URL: those leave a real problem with no home. A true finding is a bug, so the issue is a `[bug]`: a raw record of what is broken, not a fix ticket. File it with:
 
 ```bash
 f=$(mktemp) && cat > "$f" <<'EOF'
@@ -548,31 +262,11 @@ EOF
 gh issue create --title "[bug] <short noun phrase, under 70 chars>" --body-file "$f" --assignee @me --label bug
 ```
 
-The label `bug` missing in the repo: create it once,
-`gh label create bug --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."`,
-and retry. It is assigned to the user, `@me`, since your `gh` runs as
-the user. No priority label, no plan, no root cause, no
-approach in the body. One issue per finding; two findings with the
-same cause share one issue. Search
-`gh issue list --state open --search "<two words>"` first and reuse an
-open issue that is clearly the same thing. Each issue filed or reused
-gets its line under `## Follow-ups` in the PR body: write `pr-body.md`
-again and `gh pr edit <n> --body-file pr-body.md`.
+The label `bug` missing in the repo: create it once, `gh label create bug --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."`, and retry. It is assigned to the user, `@me`, since your `gh` runs as the user. No priority label, no plan, no root cause, no approach in the body. One issue per finding; two findings with the same cause share one issue. Search `gh issue list --state open --search "<two words>"` first and reuse an open issue that is clearly the same thing. Each issue filed or reused gets its line under `## Follow-ups` in the PR body: write `pr-body.md` again and `gh pr edit <n> --body-file pr-body.md`.
 
-Every reply carries its proof: `fix here` the commit SHA, `fix later`
-the issue URL, `push back` the fact, `won't fix` the reason. Resolve a
-thread only after that reply is posted; a thread with no SHA and no
-issue URL stays open. A `fix here` whose change touches a seam, a
-Done-when line, a schema, an API, or a `Decided` line is a surprise:
-stop and ask before the fix, not after (see below).
+Every reply carries its proof: `fix here` the commit SHA, `fix later` the issue URL, `push back` the fact, `won't fix` the reason. Resolve a thread only after that reply is posted; a thread with no SHA and no issue URL stays open. A `fix here` whose change touches a seam, a Done-when line, a schema, an API, or a `Decided` line is a surprise: stop and ask before the fix, not after (see below).
 
-Every word you put on the PR is posted as the user, through `gh` with
-the `GH_TOKEN` secret, the same login `gh api user -q .login` printed:
-a reply in a review thread, a comment on the PR, a thread resolved, a
-review submitted, the PR body, a label. Never your built-in GitHub,
-pull-request, or comment tool for any of it: those post as {{app}}'s
-own app or bot login, and a comment under that login on this PR is a
-rule broken, even when the words are right. The three commands:
+Every word you put on the PR is posted as the user, through `gh` with the `GH_TOKEN` secret, the same login `gh api user -q .login` printed: a reply in a review thread, a comment on the PR, a thread resolved, a review submitted, the PR body, a label. Never your built-in GitHub, pull-request, or comment tool for any of it: those post as {{app}}'s own app or bot login, and a comment under that login on this PR is a rule broken, even when the words are right. The three commands:
 
 ```bash
 # reply inside a review thread (the thread's first comment id from `gh api repos/{owner}/{repo}/pulls/<n>/comments`)
@@ -587,84 +281,41 @@ After each post, read it back (`gh api` the comment, or `gh pr view
 <n> --comments`) and check the author login is the user's. Another
 login: delete that comment and post it again with `gh`.
 
-Each comment is one line {{here}}: what it said, the verdict,
-and the SHA or the issue URL.
+Each comment is one line {{here}}: what it said, the verdict, and the SHA or the issue URL.
 <!-- /cloud -->
 <!-- /cloud -->
 
 <!-- cursor -->
 ## Asking
 
-Your ask tool does not wait for an answer. So to ask, end the turn: your
-last message is the question and nothing else. Say what the plan said,
-what you found, and the options you see. Then do no more work. The
-answer comes as your next turn, with `# Answer` at the top. Never guess
-and go on when a rule below says stop and ask.
+Your ask tool does not wait for an answer. So to ask, end the turn: your last message is the question and nothing else. Say what the plan said, what you found, and the options you see. Then do no more work. The answer comes as your next turn, with `# Answer` at the top. Never guess and go on when a rule below says stop and ask.
 
 <!-- /cursor -->
 <!-- local -->
 ## Asking
 
-To ask, stop and ask the user in chat: what the plan said, what you
-found, and the options you see, two or three, the one you would pick
-first. Then wait for the answer. Never guess and go on when a rule
-below says stop and ask.
+To ask, stop and ask the user in chat: what the plan said, what you found, and the options you see, two or three, the one you would pick first. Then wait for the answer. Never guess and go on when a rule below says stop and ask.
 
 <!-- /local -->
 ## Surprises
 
-A surprise is any place the code is not what the plan says: a file moved,
-a helper has another name, a line is off, a library does not behave as
-its docs said, a named existing test goes red.
+A surprise is any place the code is not what the plan says: a file moved, a helper has another name, a line is off, a library does not behave as its docs said, a named existing test goes red.
 
 Sort each one:
 
 <!-- devin -->
-- It changes a seam, a Done-when line, a schema, an API, a `Decided`
-  line, a place a later layer's plan names, or makes a `Gates` test
-  fail: **stop and ask** in the session.
-  Say what the plan said, what you found, and the options you see. Wait
-  for the answer. A review comment whose fix needs one of these changes
-  is the same case: stop and ask before the fix, not after.
+- It changes a seam, a Done-when line, a schema, an API, a `Decided` line, a place a later layer's plan names, or makes a `Gates` test fail: **stop and ask** in the session. Say what the plan said, what you found, and the options you see. Wait for the answer. A review comment whose fix needs one of these changes is the same case: stop and ask before the fix, not after.
 <!-- /devin -->
 <!-- cursor -->
-- It changes a seam, a Done-when line, a schema, an API, a `Decided`
-  line, a place a later layer's plan names, or makes a `Gates` test
-  fail: **stop and ask** (see Asking). A review comment whose fix needs
-  one of these changes is the same case: stop and ask before the fix,
-  not after. A CI check red for a reason outside the plan's slices is
-  the same case.
+- It changes a seam, a Done-when line, a schema, an API, a `Decided` line, a place a later layer's plan names, or makes a `Gates` test fail: **stop and ask** (see Asking). A review comment whose fix needs one of these changes is the same case: stop and ask before the fix, not after. A CI check red for a reason outside the plan's slices is the same case.
 <!-- /cursor -->
 <!-- local -->
-- It changes a seam, a Done-when line, a schema, an API, a `Decided`
-  line, or makes a `Gates` test fail: **stop and ask** (see Asking).
-- It changes the look of a screen the issue does not name: a shared
-  component, style, or token that another page uses, or a page outside
-  the plan's walks. **Stop and ask** before the change (see Asking),
-  and name the screens it reaches. A look change left for PR review is
-  found too late.
+- It changes a seam, a Done-when line, a schema, an API, a `Decided` line, or makes a `Gates` test fail: **stop and ask** (see Asking).
+- It changes the look of a screen the issue does not name: a shared component, style, or token that another page uses, or a page outside the plan's walks. **Stop and ask** before the change (see Asking), and name the screens it reaches. A look change left for PR review is found too late.
 <!-- /local -->
-- The same red after two fixes that did not turn it green: before a
-  third fix, write down the cause you believe, and one check that shows
-  whether it is the cause: a log line, a smaller test, or a value read
-  at the seam. Run the check. It holds: fix that cause. It shows the
-  belief wrong: that is a new lead; write the next belief from what the
-  check showed, and test it the same way. No check can test the belief:
-  stop and ask. Say what is red, each fix you tried, and the belief.
-  Say each belief and what its check showed {{here}}.
-- A second surprise of the same kind as an earlier one, where the plan
-  was wrong about the code in the same way twice (two helpers it names
-  that do not exist, two callers that expect another shape), means the
-  design may be wrong: **stop and ask**, rather than pick the nearest
-  pattern again. Say both surprises and what they share.
-- Anything else: **take the way the repo's Standard names for it, else
-  the nearest existing pattern**, go on, and say so {{here}} in one
-  line: plan said X, code had Y, did Z. The Standard is
-  `CODING_STANDARDS.md` at the repo root, with the `docs/standards/`
-  files it links to. Where the code shows a way it marks `Old way:`,
-  take the way it names. No Standard: the nearest existing pattern.
-  When it changed what the code does, it is also a bullet under `Where to look`
-  in the PR.
+- The same red after two fixes that did not turn it green: before a third fix, write down the cause you believe, and one check that shows whether it is the cause: a log line, a smaller test, or a value read at the seam. Run the check. It holds: fix that cause. It shows the belief wrong: that is a new lead; write the next belief from what the check showed, and test it the same way. No check can test the belief: stop and ask. Say what is red, each fix you tried, and the belief. Say each belief and what its check showed {{here}}.
+- A second surprise of the same kind as an earlier one, where the plan was wrong about the code in the same way twice (two helpers it names that do not exist, two callers that expect another shape), means the design may be wrong: **stop and ask**, rather than pick the nearest pattern again. Say both surprises and what they share.
+- Anything else: **take the way the repo's Standard names for it, else the nearest existing pattern**, go on, and say so {{here}} in one line: plan said X, code had Y, did Z. The Standard is `CODING_STANDARDS.md` at the repo root, with the `docs/standards/` files it links to. Where the code shows a way it marks `Old way:`, take the way it names. No Standard: the nearest existing pattern. When it changed what the code does, it is also a bullet under `Where to look` in the PR.
 <!-- local -->
   `/build-and-prove` puts it there through `/make-pr`.
 <!-- /local -->
@@ -672,38 +323,11 @@ Sort each one:
 ## Finish
 
 <!-- devin -->
-When every gate holds, every Done-when line has its proof, and the review
-posts nothing: size the diff once more, since review fixes moved it,
-and when the size changed swap the label (`--remove-label` the old,
-`--add-label` the new). Check every review thread: each one resolved
-carries a commit SHA, an issue URL, or a push-back fact. Then send one
-message with the PR URL, the size with its facts and line count, then every
-surprise and every review comment, one line each with its verdict and
-its SHA or issue URL, and a `Filed:` line listing every issue URL this
-session created (or `Filed: none`); in a run one such block per layer
-in stack order. The proof is already in the PR.
-Then stop. Secrets, tokens, and keys stay out of the PR, the commits, the
-screenshots, and the videos.
+When every gate holds, every Done-when line has its proof, and the review posts nothing: size the diff once more, since review fixes moved it, and when the size changed swap the label (`--remove-label` the old, `--add-label` the new). Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Then send one message with the PR URL, the size with its facts and line count, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL this session created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Then stop. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
 <!-- /devin -->
 <!-- cursor -->
-When every gate holds, every check is green, every Done-when line has
-its proof, and the review posts nothing: size the diff once more,
-since review fixes moved it, and when the size changed swap the label
-(`--remove-label` the old, `--add-label` the new). Check every review
-thread: each one resolved carries a commit SHA, an issue URL, or a
-push-back fact. Mark the PR ready, `gh pr ready <n>`. Then end the turn
-with one message: the PR URL, the size with its facts and line count, then every
-surprise and every review comment, one line each with its verdict and
-its SHA or issue URL, and a `Filed:` line listing every issue URL you
-created (or `Filed: none`); in a run one such block per layer in stack
-order. The proof is already in the PR. Secrets, tokens, and keys stay
-out of the PR, the commits, the screenshots, and the videos.
+When every gate holds, every check is green, every Done-when line has its proof, and the review posts nothing: size the diff once more, since review fixes moved it, and when the size changed swap the label (`--remove-label` the old, `--add-label` the new). Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Mark the PR ready, `gh pr ready <n>`. Then end the turn with one message: the PR URL, the size with its facts and line count, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL you created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
 <!-- /cursor -->
 <!-- local -->
-When every slice is committed and its tests, the typecheck, and lint
-are green, end the turn with one message: every
-surprise, one line each, then as the last line `BUILT <branch>`, the
-branch under `Branch`. Something stays red and you could not close it:
-the same message, last line `NOT BUILT <branch>: <what is open>`.
-Secrets, tokens, and keys stay out of the commits.
+When every slice is committed and its tests, the typecheck, and lint are green, end the turn with one message: every surprise, one line each, then as the last line `BUILT <branch>`, the branch under `Branch`. Something stays red and you could not close it: the same message, last line `NOT BUILT <branch>: <what is open>`. Secrets, tokens, and keys stay out of the commits.
 <!-- /local -->

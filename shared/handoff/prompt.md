@@ -1,29 +1,15 @@
 <!-- template: shared by /handoff and /build-and-prove. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 # Prompt rules
 
-The prompt file is the only thing the executor gets. It reads no file
-of ours beyond it. So it carries the issue, the plan, and the rules in
+The prompt file is the only thing the executor gets. It reads no file of ours beyond it. So it carries the issue, the plan, and the rules in
 <!-- local -->
-full, in this order. `/build-and-prove` writes the file and the
-session follows the file itself.
-The head lines (everything above the first `# ` heading) open the file,
-because the rules block reads `Repo`, `Base branch`, `Branch`, and
-`Proof folder` by name. A local prompt never has `UI walks`, `Videos`,
-`Perf`, or a `Stack`: the walker does the walks, `/build-and-prove`
-measures the `Perf` block, and a run is built one layer per prompt.
+full, in this order. `/build-and-prove` writes the file and the session follows the file itself. The head lines (everything above the first `# ` heading) open the file, because the rules block reads `Repo`, `Base branch`, `Branch`, and `Proof folder` by name. A local prompt never has `UI walks`, `Videos`, `Perf`, or a `Stack`: the walker does the walks, `/build-and-prove` measures the `Perf` block, and a run is built one layer per prompt.
 <!-- /local -->
 <!-- devin -->
-full, in this order. `devin.sh` sends it as an attachment: Devin's
-prompt is the head lines (everything above the first `# ` heading) and
-an `ATTACHMENT:"<url>"` line, and it reads the file whole. So the head
-lines must stand on their own, and every heading below stays in the
-file.
+full, in this order. `devin.sh` sends it as an attachment: Devin's prompt is the head lines (everything above the first `# ` heading) and an `ATTACHMENT:"<url>"` line, and it reads the file whole. So the head lines must stand on their own, and every heading below stays in the file.
 <!-- /devin -->
 <!-- cursor -->
-full, in this order. `cursor.sh` sends the file whole as the prompt
-text: there is no attachment and no pointer line. The head lines
-(everything above the first `# ` heading) still open the file, because
-the rules block reads `Repo`, `Base branch`, and `Size labels` by name.
+full, in this order. `cursor.sh` sends the file whole as the prompt text: there is no attachment and no pointer line. The head lines (everything above the first `# ` heading) still open the file, because the rules block reads `Repo`, `Base branch`, and `Size labels` by name.
 <!-- /cursor -->
 
 ## Skeleton
@@ -96,35 +82,19 @@ The headings are fixed. The rules block refers to them by name.
 <!-- cursor -->
 ## Author
 
-`Author` is the user's git identity, `git config user.name` and
-`git config user.email` on the user's machine, as `Name <email>`. The
-rules block sets it in the workspace before the first commit, so the
-commits are the user's and not `Cursor Agent`'s.
+`Author` is the user's git identity, `git config user.name` and `git config user.email` on the user's machine, as `Name <email>`. The rules block sets it in the workspace before the first commit, so the commits are the user's and not `Cursor Agent`'s.
 
 <!-- /cursor -->
 <!-- cloud -->
 ## Size
 
-`Size labels` lists the five PR size labels in the repo's own spelling,
-as `{{caller}}` resolved and created them; the rules block picks
-one from the facts of the diff, with the same table the issue was
-sized by (§ Size in the rules). The line starts with `bot ·` when a workflow
-in the repo labels PRs by size; then the names are the bot's, and the
-executor leaves the labelling to it. `size M` after the issue line is
-the issue's size label mapped to its letter, `size none` when the issue
-has no size label. A run carries the letter per layer in the `Size`
-column of `Stack`, copied from the plan's Stack table without the
-`Points` column. The executor uses these only to say when the diff
-lands on another size than the forecast.
+`Size labels` lists the five PR size labels in the repo's own spelling, as `{{caller}}` resolved and created them; the rules block picks one from the facts of the diff, with the same table the issue was sized by (§ Size in the rules). The line starts with `bot ·` when a workflow in the repo labels PRs by size; then the names are the bot's, and the executor leaves the labelling to it. `size M` after the issue line is the issue's size label mapped to its letter, `size none` when the issue has no size label. A run carries the letter per layer in the `Size` column of `Stack`, copied from the plan's Stack table without the `Points` column. The executor uses these only to say when the diff lands on another size than the forecast.
 
 <!-- /cloud -->
 <!-- cloud -->
 ## Run
 
-A run stacks several layers in one prompt. The head names the stack,
-`Facts`, `Proved`, and `Rules` appear once, and every other block appears once per
-layer under a layer heading. The rules block reads the stack from
-`# Stack`.
+A run stacks several layers in one prompt. The head names the stack, `Facts`, `Proved`, and `Rules` appear once, and every other block appears once per layer under a layer heading. The rules block reads the stack from `# Stack`.
 
 ```markdown
 Repo: owner/name
@@ -169,24 +139,19 @@ Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
 <the rules block, `render.sh {{me}} rules`, pasted whole>
 ```
 
-A `layer 1, slice 2` pointer in the plan stays as written; the rules
-block tells the executor what it means.
+A `layer 1, slice 2` pointer in the plan stays as written; the rules block tells the executor what it means.
 <!-- /cloud -->
 
 ## Follow-up
 
 <!-- devin -->
-A follow-up goes into a session that already holds the first prompt.
-Only what changed, same headings, nothing repeated:
+A follow-up goes into a session that already holds the first prompt. Only what changed, same headings, nothing repeated:
 <!-- /devin -->
 <!-- local -->
-A follow-up is the next thing the planning session does itself. Only
-what changed, same headings, nothing repeated:
+A follow-up is the next thing the planning session does itself. Only what changed, same headings, nothing repeated:
 <!-- /local -->
 <!-- cursor -->
-A follow-up goes into an agent that already holds the first prompt. It
-is a new run on the same agent, same workspace, same branch. Only what
-changed, same headings, nothing repeated:
+A follow-up goes into an agent that already holds the first prompt. It is a new run on the same agent, same workspace, same branch. Only what changed, same headings, nothing repeated:
 <!-- /cursor -->
 
 ```markdown
@@ -224,14 +189,10 @@ Decided line, say so under `Changed`.
 ## Answer
 
 <!-- devin -->
-An answer goes into a session that stopped on a question. It is short:
-the pick, the fact behind it, and what to do now. No headings the
-question did not ask for.
+An answer goes into a session that stopped on a question. It is short: the pick, the fact behind it, and what to do now. No headings the question did not ask for.
 <!-- /devin -->
 <!-- cursor -->
-An answer goes into an agent whose last run ended on a question. It is
-short: the pick, the fact behind it, and what to do now. No headings
-the question did not ask for.
+An answer goes into an agent whose last run ended on a question. It is short: the pick, the fact behind it, and what to do now. No headings the question did not ask for.
 <!-- /cursor -->
 
 ```markdown
@@ -260,12 +221,7 @@ The agent keeps the rules it already has. When the user made the pick
 <!-- cloud -->
 ## New layer
 
-A plan prepped `on` the top PR of the running stack goes in as a
-follow-up that adds one layer. `Changed` says which PR it stacks on;
-`Stack` carries the layer whole, in the shape of a layer block from
-§ Run, with its own Task and Done when; `Proved` carries the plan's
-`Proved` block, its `Used by` refs named for the new layer (`L4 S1`),
-and drops when no probe ran; `Check` names its gates.
+A plan prepped `on` the top PR of the running stack goes in as a follow-up that adds one layer. `Changed` says which PR it stacks on; `Stack` carries the layer whole, in the shape of a layer block from § Run, with its own Task and Done when; `Proved` carries the plan's `Proved` block, its `Used by` refs named for the new layer (`L4 S1`), and drops when no probe ran; `Check` names its gates.
 
 ```markdown
 # Changed
