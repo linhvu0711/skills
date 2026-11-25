@@ -72,9 +72,12 @@ The skill agent `walker` (`agents/walker.md`, started per
   round it repeats, so a shot the dead round left unchecked is taken
   again;
 - the folder to write in, `PROOF`;
-- the pace rules, so the walker cannot drop them: every click
-  `--settle 3s`; a state under about 3 s shot by its action's own
-  `--screenshot` with `--settle 300ms`;
+- the pace rules, so the walker cannot drop them: in a recording,
+  each step is one call, its first action with `--mark 'step <k>: <the
+  step>'` and `--screenshot`, at proofbox's default 700 ms settle, and
+  no `--mark` outside a recording; a state under
+  about 3 s shot by its action's own `--screenshot` with `--settle
+  300ms`;
   a timed run as one mark, one `proofbox exec` that holds every timed
   action as an `/opt/proofbox/pixel` line, and one look, then an empty
   mark for each further step of the run, so mark numbers stay step

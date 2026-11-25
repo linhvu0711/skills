@@ -61,12 +61,15 @@ scratch folder when you finish; the system clears its temp folders.
 - Act: `proofbox click <id> <x> <y>`, `proofbox type <id> '<text>'`,
   `proofbox key <id> <keys>` (`Return`, `ctrl+s`), `proofbox scroll <id>
   <x> <y> down [steps]`, `proofbox drag <id> <x1> <y1> <x2> <y2>`. Keep
-  the default human pace: a person watches these videos. Add
-  `--screenshot <scratch>/look.png` to an action to see its result.
-- Every `proofbox click` takes `--settle 3s`, so the screen has settled
-  and a viewer of the video sees each result. A click whose result lasts
-  under about 3 s (a toast, a flash, a 5 s Undo bar) takes `--settle
-  300ms` instead.
+  the default human pace, with its 700 ms settle: a person watches these
+  videos. Add `--screenshot <scratch>/look.png` to an action to see its
+  result.
+- During a recording, an action also takes `--mark '<label>'`: it sets
+  the step mark and does the action in one call (§ Mode after, step 3).
+  With no recording, proofbox refuses the action, so an action in mode
+  before, or before `record start`, carries no `--mark`.
+- An action whose result lasts under about 3 s (a toast, a flash, a 5 s
+  Undo bar) takes `--settle 300ms`.
 - A state that lasts under about 3 s is shot by the action that makes it
   appear, with that action's
   own `--screenshot <scratch>/short-<walk>.png`. proofbox waits the
@@ -161,8 +164,9 @@ scratch folder when you finish; the system clears its temp folders.
 - On macOS, a dialog asks for a password (a permission, the Keychain):
   type the Login password `runner` with `proofbox type`, as a person
   does. On Linux there is none.
-- Before each action, look. Find the exact label, route, or element the
-  step names on the screen. It is not there: that is a finding; take a
+- Before each action, look: at the last action's `--screenshot`, or at
+  a `proofbox screenshot` before the first one. Find the exact label,
+  route, or element the step names on the screen. It is not there: that is a finding; take a
   screenshot and go on to the next walk.
 
 ## Close the browser
@@ -214,12 +218,23 @@ One recording per video under `Videos`, in order:
      bottom <s> · fail-<walk>.png`. Go on to the next video.
    - Exit 125 with `Sandbox <id> is gone`: end as § Report says.
 2. `proofbox record start <id>`.
-3. For each numbered step: first `proofbox mark <id> 'step <k>: <the
-   step>'`, cut to 60 characters, then do the step. One mark per step,
-   so the mark's number is the step's number; a timed run keeps this
-   with its empty marks (§ How you see and act). To wait for something
-   slow, as a page that loads for 20 s: first `proofbox mark <id>
-   'wait: <why>' --wait`, which names the wait in the video and does
+3. For each numbered step: do its first action with `--mark 'step <k>:
+   <the step>'`, cut to 60 characters, and `--screenshot
+   <scratch>/look.png`, as in `proofbox click <id> 640 360 --mark 'step
+   3: click Save' --screenshot <scratch>/look.png`. Read the shot: it
+   is your look after this step and before the next. The step's later
+   actions, as the `key Return` after a `type`, carry no mark. Two
+   steps set their mark with `proofbox mark <id> 'step <k>: <the
+   step>'` alone, so the mark still comes first: a command step that
+   brings the terminal to the front, marked before the `xdotool`
+   call, so the last step's screenshot still shows the app; and a step
+   whose target is not on the screen, marked before you go on. One
+   mark per step, so the mark's number is the step's number; a timed
+   run keeps this with its own mark and empty marks (§ How you see and
+   act). The shot shows a page
+   still loading: look once more, `proofbox screenshot <id> --out
+   <scratch>/look.png`. To wait for something slow, as a page that
+   loads for 20 s: first `proofbox mark <id> 'wait: <why>' --wait`, which names the wait in the video and does
    not pause; then one `proofbox exec <id> -- sleep <s>`, at most 60,
    then look. That is the one way to wait. A shell call that starts with
    `sleep` is blocked, and you have no watch tool, whatever a block

@@ -17,10 +17,12 @@
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
 #
-# auth checks the login of the Provider that ~/.config/proofbox/config picks
-# for the OS (namespace when it names none), from `proofbox auth status --json`, so a
-# run can stop before any work. Logged in, or no login needed: it prints
-# PROVIDER=<name>.
+# auth first checks that `proofbox click --help` lists --mark, which the walker
+# sets on each step's action; an older proofbox stops it with `stop: proofbox
+# is too old: run proofbox update`. Then it checks the login of the Provider
+# that ~/.config/proofbox/config picks for the OS (namespace when it names
+# none), from `proofbox auth status --json`, so a run can stop before any
+# work. Logged in, or no login needed: it prints PROVIDER=<name>.
 #
 # up creates the Sandbox with the repo's setup script, and its Secrets file and
 # size when there are, from ~/.agents/proofbox/<owner>-<repo>/: setup-<os>.sh,
@@ -521,6 +523,8 @@ case "$verb" in
     conf="$HOME/.config/proofbox/config"; provider=""
     [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
     provider="${provider:-namespace}"
+    pb keep keep click --help
+    grep -q -- '--mark' <<<"$got" || die "proofbox is too old: run proofbox update"
     command -v jq >/dev/null || die "jq is not installed: box.sh auth reads proofbox's login JSON with it"
     pb keep keep auth status --json
     [ "$rc" -eq 0 ] || die "proofbox auth status failed"
