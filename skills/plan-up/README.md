@@ -102,7 +102,7 @@ The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh
 
 The map's routes and labels and the Files tree are worked out in [assets/layout.js](assets/layout.js), which makes no page call; `build-page.py` puts it into the page. Its cases are in [tests/layout.sh](tests/layout.sh). They run on the page data of each fixture and check that no label covers a box, a group title, or another label, and that each flow keeps clear of every box but its two ends. `run-three.md` is a three-layer run whose flows must bend around boxes. A case also builds the Files tree of `files.md` and checks each row.
 
-The cases for [plan_reader.py](scripts/plan_reader.py) are in [tests/plan_reader.sh](tests/plan_reader.sh): each field's good line and the parts it gives, and each bad line and the error that names it. The reader gives the whole verdict: the builder adds no check of its own, so any caller of `problems` gets every problem line, an odd number of backticks in a page text too.
+The cases for [plan_reader.py](scripts/plan_reader.py) are in [tests/plan_reader.sh](tests/plan_reader.sh): each field's good line and the parts it gives, and each bad line and the error that names it. `build-page.py` gives the whole verdict: the reader's problem lines, then each text in the page data with an odd number of backticks. It checks the page data, not the plan, so it checks each text as the page shows it: a Review part cut across two lines is one text, and the area of a None map, which the page never shows, is not checked.
 
 A perf plan's `## Perf` block shows on the Overview tab under the facts, and the builder refuses a Perf block that lacks one of its four lines, and a `[perf]` ticket or run layer with no Perf block.
 

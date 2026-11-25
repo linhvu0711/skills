@@ -102,6 +102,23 @@ def page_data(plan):
     return data
 
 
+def strings(node, path=""):
+    if isinstance(node, str):
+        yield path, node
+    elif isinstance(node, dict):
+        for k, v in node.items():
+            yield from strings(v, f"{path}.{k}" if path else k)
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from strings(v, f"{path}[{i}]")
+
+
+def tick_problems(data):
+    for where, text in strings(data):
+        if text.count("`") % 2:
+            yield f"{where}: odd number of backticks, one shows raw: {text[:80]}"
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__.strip().splitlines()[2].strip())
@@ -110,11 +127,11 @@ def main():
     if not plan["reviews"]:
         print(f"not a plan-up .md: {path.name}")
         sys.exit(1)
-    problems = list(plan_reader.problems(plan))
+    data = page_data(plan)
+    problems = [*plan_reader.problems(plan), *tick_problems(data)]
     if problems:
         print("\n".join(problems))
         sys.exit(1)
-    data = page_data(plan)
     assets = Path(__file__).resolve().parent.parent / "assets"
     shell = (assets / "shell.html").read_text(encoding="utf-8")
     layout = (assets / "layout.js").read_text(encoding="utf-8")

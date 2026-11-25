@@ -247,6 +247,34 @@ t_build_odd_tick() {
   bad_ticket 's/- O1 orders export as PDF/&`/' 'layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
 }
 
+t_build_proof_tick() {
+  bad_ticket 's/^| 1 | orders export as CSV |/| 1 | orders export as `CSV |/' \
+    'layers[0].proof[0].line: odd number of backticks, one shows raw: orders export as `CSV'
+}
+
+t_build_none_map_area_tick() {
+  # Given: a None map whose heading names an area with one backtick; the page never shows that area
+  T="$(mktemp -d)"
+  sed 's/^## Change map$/## Change map · `api/' "$here/build-page/none-map.md" > "$T/plan-none-map.md"
+  # When
+  build "$T/plan-none-map.md"
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
+}
+
+t_build_wrapped_tick() {
+  # Given: one backtick span cut across the two lines of the Approach part
+  T="$(mktemp -d)"
+  sed 's/^Approach: stream CSV through/Approach: stream `CSV\
+  through`/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
+}
+
 t_build_no_date() {
   bad_ticket 's/Size: size\/M    Date: 2026-10-04/Size: size\/M/' 'head: no `Date: YYYY-MM-DD` line under `# Plan:`'
 }
@@ -837,6 +865,9 @@ cases=(
   "build-page refuses a blank Before|t_build_blank_before"
   "build-page refuses a Proved line with no date|t_build_no_proved_date"
   "build-page refuses an odd backtick|t_build_odd_tick"
+  "build-page names an odd backtick in a Proof cell|t_build_proof_tick"
+  "build-page passes a backtick in the area of a None map|t_build_none_map_area_tick"
+  "build-page reads a backtick span cut across two lines as whole|t_build_wrapped_tick"
   "build-page refuses a plan with no Date|t_build_no_date"
   "build-page refuses a plan with no head|t_build_no_head"
   "build-page refuses a ticket with no Size|t_build_no_size"
