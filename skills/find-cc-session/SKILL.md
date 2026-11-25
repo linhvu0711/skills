@@ -13,9 +13,7 @@ Sibling: **find-co-session** does the same for Codex CLI sessions. Both run in e
 
 ## Steps
 
-1. **Run the finder.**
-   `python3 ../../shared/sessions/claude/find_sessions.py "<description>"`
-   No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
+1. **Run the finder.** `python3 ../../shared/sessions/claude/find_sessions.py "<description>"` No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--project-dir <path>`. `--help` lists the other flags.
 
 2. **Judge the candidates.** The score counts words, not meaning, so read each title, opening prompt, and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. Set the `← current session` line aside unless the description clearly names it.
 

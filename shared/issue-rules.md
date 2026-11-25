@@ -1,87 +1,36 @@
 # Issue rules
 
-Shared by `to-issue` and `to-epic`; `capture` follows § Written for a
-stranger and the label names. One issue here is a **ticket**: a unit of
-work an agent can pick up cold, in a fresh context window, and ship as one PR.
-The one exception is a `task`: work a person does cold in a platform outside
-the repo, and reports back. Everything below serves those two readers.
+Shared by `to-issue` and `to-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
 
 ## Vocabulary
 
-Titles and bodies use the repo's own words. The glossary is `CONTEXT.md` (or
-the `CONTEXT.md` of the bounded context named in `CONTEXT-MAP.md`). Decisions
-already made live in `docs/adr/`; a ticket in that area respects them and
-names the ADR in Context. When neither file exists, use the names the code
-uses. A decision made but not built yet waits in an open issue's
-`## Docs to write` (see Body): it is decided, not built, and a ticket in
-that area respects it like an ADR.
+Titles and bodies use the repo's own words. The glossary is `CONTEXT.md` (or the `CONTEXT.md` of the bounded context named in `CONTEXT-MAP.md`). Decisions already made live in `docs/adr/`; a ticket in that area respects them and names the ADR in Context. When neither file exists, use the names the code uses. A decision made but not built yet waits in an open issue's `## Docs to write` (see Body): it is decided, not built, and a ticket in that area respects it like an ADR.
 
 ## Written for a stranger
 
-Every issue these skills write, a ticket, a `task`, or a raw seed or bug from
-`capture`, is read by someone with no access to the chat that wrote it or the
-machine it ran on, maybe months later: another person, or an agent in a fresh
-session. Write so that reader can act on the issue alone.
+Every issue these skills write, a ticket, a `task`, or a raw seed or bug from `capture`, is read by someone with no access to the chat that wrote it or the machine it ran on, maybe months later: another person, or an agent in a fresh session. Write so that reader can act on the issue alone.
 
-- **Nothing local.** No path on the writer's machine (a temp, scratch, or
-  home folder), and no name of a thing that dies with the session: a VM or
-  sandbox ID, a PID, a temp branch, a local port. Say what the thing was
-  instead: "a fresh macOS VM", not its ID.
-- **Nothing of the source repo.** An issue or comment filed in a repo other
-  than the one the chat ran in names nothing of that repo: not its name, its
-  `owner/name`, a path in it, or a path in one of its worktrees. In a quote,
-  put what the thing is in its place, as "a web app's cart file". A caller
-  that names the words to leave out, as retro does, has each one checked
-  before the issue is made.
-- **No session words.** "Run 3", "the agent", "my limit", "as we saw above"
-  mean nothing to the reader. Name what happened. How it was found is one
-  line at most: `Found while <doing what>, YYYY-MM-DD.`
-- **Code by permalink.** In Context, a file and line is
-  `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`, where
-  `<sha>` is the full commit the lines were seen at, read in the checkout
-  where they were seen (`git -C <that checkout> rev-parse HEAD`), which
-  is not always the current folder. It must be on GitHub in the issue's
-  repo: `gh api repos/<owner>/<repo>/commits/<sha> --silent` succeeds.
-  No such checkout, or GitHub does not have the commit: write the path
-  with no line, because a bare line number drifts with the next change. Steps keep the short `path:line` form; the
-  Files line in Context carries the permalinks for the same places.
-- **Evidence in the issue.** An error goes in a code block, verbatim. A log
-  goes in as the lines that matter, ten at most. A screenshot or recording
-  the chat already has is uploaded with `--attach` on `gh issue create` or
-  `gh issue edit` and referenced as `![alt](./file.png)`, never as a local
-  path.
-- **Environment, when the behaviour depends on it.** One line: the version
-  or commit, the OS, and any provider or service it ran on.
-- **Proven apart from guessed.** A fact the chat proved by running something
-  is stated as a fact, with its proof (see Known). A cause or fix the chat
-  only suspects goes on an `Open:` line, never as a fact.
+- **Nothing local.** No path on the writer's machine (a temp, scratch, or home folder), and no name of a thing that dies with the session: a VM or sandbox ID, a PID, a temp branch, a local port. Say what the thing was instead: "a fresh macOS VM", not its ID.
+- **Nothing of the source repo.** An issue or comment filed in a repo other than the one the chat ran in names nothing of that repo: not its name, its `owner/name`, a path in it, or a path in one of its worktrees. In a quote, put what the thing is in its place, as "a web app's cart file". A caller that names the words to leave out, as retro does, has each one checked before the issue is made.
+- **No session words.** "Run 3", "the agent", "my limit", "as we saw above" mean nothing to the reader. Name what happened. How it was found is one line at most: `Found while <doing what>, YYYY-MM-DD.`
+- **Code by permalink.** In Context, a file and line is `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`, where `<sha>` is the full commit the lines were seen at, read in the checkout where they were seen (`git -C <that checkout> rev-parse HEAD`), which is not always the current folder. It must be on GitHub in the issue's repo: `gh api repos/<owner>/<repo>/commits/<sha> --silent` succeeds. No such checkout, or GitHub does not have the commit: write the path with no line, because a bare line number drifts with the next change. Steps keep the short `path:line` form; the Files line in Context carries the permalinks for the same places.
+- **Evidence in the issue.** An error goes in a code block, verbatim. A log goes in as the lines that matter, ten at most. A screenshot or recording the chat already has is uploaded with `--attach` on `gh issue create` or `gh issue edit` and referenced as `![alt](./file.png)`, never as a local path.
+- **Environment, when the behaviour depends on it.** One line: the version or commit, the OS, and any provider or service it ran on.
+- **Proven apart from guessed.** A fact the chat proved by running something is stated as a fact, with its proof (see Known). A cause or fix the chat only suspects goes on an `Open:` line, never as a fact.
 
-The commit lookup, the GitHub check, and the upload are mechanical steps, not
-research. A skill that forbids digging still runs them.
+The commit lookup, the GitHub check, and the upload are mechanical steps, not research. A skill that forbids digging still runs them.
 
 ## Readiness gate
 
 A ticket can be written only when all three hold, from the conversation alone:
 
-1. **Who and what**: the user-visible behaviour is stated. You can say who
-   does what and what they see.
-2. **Done means**: you can write the done checklist from the user's view.
-   For `feat` and `fix` that includes the unhappy paths that change what gets
-   built (see Unhappy paths). A missing one that the repo has no pattern for
-   and that changes the work is a gap.
-3. **Where**: the repo is known: the one the chat or a caller skill names for this issue,
-   else the current folder's (`gh repo view --json nameWithOwner`), else the
-   repo the conversation is clearly about.
+1. **Who and what**: the user-visible behaviour is stated. You can say who does what and what they see.
+2. **Done means**: you can write the done checklist from the user's view. For `feat` and `fix` that includes the unhappy paths that change what gets built (see Unhappy paths). A missing one that the repo has no pattern for and that changes the work is a gap.
+3. **Where**: the repo is known: the one the chat or a caller skill names for this issue, else the current folder's (`gh repo view --json nameWithOwner`), else the repo the conversation is clearly about.
 
-For a `task`, "what" is the thing that must exist at the end, "done" is the
-code ticket being able to use it, and "where" is the platform and account on
-top of the repo. Unhappy paths do not apply.
+For a `task`, "what" is the thing that must exist at the end, "done" is the code ticket being able to use it, and "where" is the platform and account on top of the repo. Unhappy paths do not apply.
 
-Any one missing: stop. List the gaps in one short block, each as the question
-whose answer would close it. Name `/grill` as the way to close many at once,
-or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet
-known. Write nothing on GitHub, except the `capture` issue that `to-issue`
-step 1 files for a raw thing.
+Any one missing: stop. List the gaps in one short block, each as the question whose answer would close it. Name `/grill` as the way to close many at once, or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet known. Write nothing on GitHub, except the `capture` issue that `to-issue` step 1 files for a raw thing.
 
 ## Types
 
@@ -99,100 +48,46 @@ Nine. The type is the leading word of the title.
 | `spike` | Time-boxed research; the output is a decision, not code |
 | `task` | Work a person does in a platform outside the repo: an account, an app, a key, a bucket, DNS, billing. The output is a thing that exists, not a PR |
 
-Security work is `fix` or `feat`. Design or UX work is `spike` until a
-behaviour is decided, then `feat`.
+Security work is `fix` or `feat`. Design or UX work is `spike` until a behaviour is decided, then `feat`.
 
-A `task` needs a person's login or hands. The complete-task skill drives it,
-and the person does only their own steps: a password, a passkey or 2FA
-check, a payment, a Mac pop-up, moving a secret. Setup an agent can run
-from a CLI with a token (`railway init`, `wrangler r2 bucket create`) is a
-`chore` that lands as a script. One task per platform and account: Railway and Cloudflare R2 are two
-tasks, two logins, two owners.
+A `task` needs a person's login or hands. The complete-task skill drives it, and the person does only their own steps: a password, a passkey or 2FA check, a payment, a Mac pop-up, moving a secret. Setup an agent can run from a CLI with a token (`railway init`, `wrangler r2 bucket create`) is a `chore` that lands as a script. One task per platform and account: Railway and Cloudflare R2 are two tasks, two logins, two owners.
 
-A ticket is **pure**: all code, or all human work. Walk the Done when list
-and ask of each line: can an agent tick it from the repo, with no login of
-the user's? A line that needs a person's login, a platform page, or a real
-account (set a variable, paste a secret, cut over DNS, log in as the user
-and prove it live) leaves the code ticket and becomes its own `task`. Human
-work the code needs first is a task that blocks the code ticket. Human work
-that comes after the code lands is a task blocked by the code ticket. The
-code ticket's Done when then ends on what an agent can prove alone: tests
-green, a local build, an image that starts, a doc that names the variables.
+A ticket is **pure**: all code, or all human work. Walk the Done when list and ask of each line: can an agent tick it from the repo, with no login of the user's? A line that needs a person's login, a platform page, or a real account (set a variable, paste a secret, cut over DNS, log in as the user and prove it live) leaves the code ticket and becomes its own `task`. Human work the code needs first is a task that blocks the code ticket. Human work that comes after the code lands is a task blocked by the code ticket. The code ticket's Done when then ends on what an agent can prove alone: tests green, a local build, an image that starts, a doc that names the variables.
 
-`discover-path` has its own `task:` tickets under `discovery/task`; those
-live in a map, not an epic, and keep their own rules.
+`discover-path` has its own `task:` tickets under `discovery/task`; those live in a map, not an epic, and keep their own rules.
 
 ## Title
 
 `<prefix><noun phrase>`, under 70 characters, no trailing period.
 
-- **Style** comes from the repo convention (`style`): `bracket` gives
-  `[feat] Export orders as CSV`, `colon` gives `feat: export orders as CSV`.
-- **Word** is the type name, unless the convention maps it (`words`, e.g.
-  the repo writes `bug:` where we write `fix:`).
+- **Style** comes from the repo convention (`style`): `bracket` gives `[feat] Export orders as CSV`, `colon` gives `feat: export orders as CSV`.
+- **Word** is the type name, unless the convention maps it (`words`, e.g. the repo writes `bug:` where we write `fix:`).
 - The epic parent uses `epic` in the type slot: `[epic] …` or `epic: …`.
 
 Priority and size never appear in the title. They are labels.
 
 ## Size
 
-The ruler is `size.md`; read it. It is one table, shared with the handoff
-rules that size the PR, so the ticket's label and the PR's label mean the
-same thing. XL is never a ticket label.
+The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
 
-XL in `to-issue`: stop, state which facts push it over (files, seams,
-packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut
-it further.
+XL in `to-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut it further.
 
-A `task` has no size. Size measures code in a window; a task costs wall clock,
-and its `Lead time:` line carries that. Skip the table, the lookup for size,
-and the XL check.
+A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
 
-When the facts are unknown and the chat does not settle them, one read-only
-lookup round is allowed (see Lookup). Still unknown after that: pick the larger
-size and write the unknown under `Open` in Context.
+When the facts are unknown and the chat does not settle them, one read-only lookup round is allowed (see Lookup). Still unknown after that: pick the larger size and write the unknown under `Open` in Context.
 
-XS is special. By the time a ticket is XS, the chat plus the one lookup round
-already say which lines change and what to copy. So an XS ticket carries a
-`Steps` section (see Body) and the `ready-to-build` label. The Steps are
-final: `plan-up` trusts them and takes its short path (no repo read for
-seams, no forks), and the executor gets a plan built from them. If the
-steps cannot be written from what is known, the ticket was never XS. Make
-it S, and drop Steps and the label.
+XS is special. By the time a ticket is XS, the chat plus the one lookup round already say which lines change and what to copy. So an XS ticket carries a `Steps` section (see Body) and the `ready-to-build` label. The Steps are final: `plan-up` trusts them and takes its short path (no repo read for seams, no forks), and the executor gets a plan built from them. If the steps cannot be written from what is known, the ticket was never XS. Make it S, and drop Steps and the label.
 
-S gets Steps only when they are free. Free means every step names a file and
-line that the chat or the lookup actually showed, and no step needs a choice
-the chat did not make. Then write Steps and add `ready-to-build`, same as XS.
-One step that would be a guess: no Steps, no label. M and L never carry
-Steps.
+S gets Steps only when they are free. Free means every step names a file and line that the chat or the lookup actually showed, and no step needs a choice the chat did not make. Then write Steps and add `ready-to-build`, same as XS. One step that would be a guess: no Steps, no label. M and L never carry Steps.
 
 ## Labels
 
 - **Size**: always one, from the convention's `size` map.
-- **Priority**: only when the user named one in this request. Words map as in
-  the table below. Never ask for one, never infer one.
-- **Ready to build**: `ready-to-build`, on every ticket that carries Steps (see
-  Size). It says the Steps are final. `plan-up` reads it as "trust the
-  Steps" and takes its short path
-  (`plan.md` § Ready-to-build); the ticket
-  still gets a plan before it goes to an executor. Created on first use. Never on a
-  `task`, even though a task always carries Steps: the label means code
-  steps a plan can be built from.
-- **Manual**: `manual`, on every `task` and on nothing else. It is the one
-  label a task carries: no size, no `ready-to-build`. `plan-up` skips tickets that
-  carry it, and lists them before planning an epic or a run. Created on first
-  use.
-- **Type**: no label. The prefix carries the type. Exceptions, both only when
-  the repo already has them: pass `--type <Name>` when the repo (an org repo)
-  has issue types matching ours; add the repo's existing type label when it
-  keeps such labels. Never create a type label. The one group outside this
-  rule is `discovery/*`, owned by `discover-path` and made only by it.
-- **Plain names**: labels are plain text, no icon. A name in a command or a
-  convention (`ready-to-build`, `size/M`) means the repo's existing
-  label of that name, matched case folded. Only a label the repo lacks is
-  created, from the block below. A repo's labels are used as they are and
-  are never renamed. One color per family (the block below) tells families
-  apart at a glance; the text tells labels apart inside a family.
+- **Priority**: only when the user named one in this request. Words map as in the table below. Never ask for one, never infer one.
+- **Ready to build**: `ready-to-build`, on every ticket that carries Steps (see Size). It says the Steps are final. `plan-up` reads it as "trust the Steps" and takes its short path (`plan.md` § Ready-to-build); the ticket still gets a plan before it goes to an executor. Created on first use. Never on a `task`, even though a task always carries Steps: the label means code steps a plan can be built from.
+- **Manual**: `manual`, on every `task` and on nothing else. It is the one label a task carries: no size, no `ready-to-build`. `plan-up` skips tickets that carry it, and lists them before planning an epic or a run. Created on first use.
+- **Type**: no label. The prefix carries the type. Exceptions, both only when the repo already has them: pass `--type <Name>` when the repo (an org repo) has issue types matching ours; add the repo's existing type label when it keeps such labels. Never create a type label. The one group outside this rule is `discovery/*`, owned by `discover-path` and made only by it.
+- **Plain names**: labels are plain text, no icon. A name in a command or a convention (`ready-to-build`, `size/M`) means the repo's existing label of that name, matched case folded. Only a label the repo lacks is created, from the block below. A repo's labels are used as they are and are never renamed. One color per family (the block below) tells families apart at a glance; the text tells labels apart inside a family.
 
 | User says | Level |
 |---|---|
@@ -203,43 +98,18 @@ Steps.
 
 ## Assignee
 
-Every new issue these skills create is assigned to the user who runs
-them: `--assignee @me` on `gh issue create`. `@me` is the login `gh` is
-signed in as, the user's own, also on a cloud executor, whose `gh` runs
-on the user's token.
+Every new issue these skills create is assigned to the user who runs them: `--assignee @me` on `gh issue create`. `@me` is the login `gh` is signed in as, the user's own, also on a cloud executor, whose `gh` runs on the user's token.
 
-- **Someone else.** The user names another person in the request
-  (`assign it to @bob`): `--assignee <login>` instead.
+- **Someone else.** The user names another person in the request (`assign it to @bob`): `--assignee <login>` instead.
 - **None.** The user says no assignee: no flag.
-- **Rewritten in place.** An issue rewritten in place (§ Origin bug,
-  § Origin seed) keeps the assignees it has.
-- **Check first.** On github.com, `gh` creates the issue, then assigns
-  it in a second call. A refused assign leaves the issue made, with no
-  URL printed. So before the first create of a run, check the login:
-  `gh api repos/<owner>/<repo>/assignees/<login> --silent`, where
-  `<login>` for `@me` is `gh api user -q .login`. Exit 0: use the flag.
-  Any other exit: create with no flag, and add `Not assigned: <login>
-  cannot be assigned in <owner>/<repo>.` to the report.
-- **Never twice.** A create that fails after the check: do not create
-  again. Look for the issue in the repo's newest issues, which are
-  read live, not from the search index that lags behind a new issue:
-  `gh api "repos/<owner>/<repo>/issues?creator=<login>&sort=created&direction=desc&per_page=10"
-  --jq '.[] | select(.pull_request == null) | "\(.html_url)\t\(.title)"'`. Report the one whose title
-  matches exactly, with `Not assigned: <gh's error line>.` None
-  matches: report the error and stop.
-- **discover-path's tickets.** Its child tickets are created with no
-  assignee, since an assignee there means a run claimed the ticket. Its
-  map follows this rule.
+- **Rewritten in place.** An issue rewritten in place (§ Origin bug, § Origin seed) keeps the assignees it has.
+- **Check first.** On github.com, `gh` creates the issue, then assigns it in a second call. A refused assign leaves the issue made, with no URL printed. So before the first create of a run, check the login: `gh api repos/<owner>/<repo>/assignees/<login> --silent`, where `<login>` for `@me` is `gh api user -q .login`. Exit 0: use the flag. Any other exit: create with no flag, and add `Not assigned: <login> cannot be assigned in <owner>/<repo>.` to the report.
+- **Never twice.** A create that fails after the check: do not create again. Look for the issue in the repo's newest issues, which are read live, not from the search index that lags behind a new issue: `gh api "repos/<owner>/<repo>/issues?creator=<login>&sort=created&direction=desc&per_page=10" --jq '.[] | select(.pull_request == null) | "\(.html_url)\t\(.title)"'`. Report the one whose title matches exactly, with `Not assigned: <gh's error line>.` None matches: report the error and stop.
+- **discover-path's tickets.** Its child tickets are created with no assignee, since an assignee there means a run claimed the ticket. Its map follows this rule.
 
 ## Body
 
-Write it to a temp file, pass it with `--body-file`. Four sections, in this
-order. XS adds a fifth, `Steps`, after Done when, and S adds it when the
-steps are free (see Size). `Docs to write` comes last, only when the chat
-settled doc text (see Docs to write below). Every line is from the user's view: what someone
-sees, runs, or gets. Without Steps, implementation plans and file-by-file
-instructions stay out; the worker owns those. With Steps the ticket owns
-them.
+Write it to a temp file, pass it with `--body-file`. Four sections, in this order. XS adds a fifth, `Steps`, after Done when, and S adds it when the steps are free (see Size). `Docs to write` comes last, only when the chat settled doc text (see Docs to write below). Every line is from the user's view: what someone sees, runs, or gets. Without Steps, implementation plans and file-by-file instructions stay out; the worker owns those. With Steps the ticket owns them.
 
 ```markdown
 ## What to build
@@ -291,44 +161,26 @@ ticket, each as `#N owns <thing>. Do not build it here.`
 
 Type variants:
 
-- `fix`: inside **What to build**, three labelled lines: `Expected:`,
-  `Actual:`, `Repro:` (numbered steps or a command).
-- `perf`: inside **What to build**, two labelled lines: `Baseline:` the
-  number now, with its unit, the median and spread of how many runs, the
-  command, and the machine; and `Target:` the number to reach, the
-  user's, in the same metric and unit. One Done-when line names the
-  Target.
-- `spike`: replace **Done when** with `Question:` (one line), `Time box:`
-  (a duration), `Output:` (where the decision is written, usually an ADR or a
-  comment on this issue).
+- `fix`: inside **What to build**, three labelled lines: `Expected:`, `Actual:`, `Repro:` (numbered steps or a command).
+- `perf`: inside **What to build**, two labelled lines: `Baseline:` the number now, with its unit, the median and spread of how many runs, the command, and the machine; and `Target:` the number to reach, the user's, in the same metric and unit. One Done-when line names the Target.
+- `spike`: replace **Done when** with `Question:` (one line), `Time box:` (a duration), `Output:` (where the decision is written, usually an ADR or a comment on this issue).
 - `task`: see Task body below.
 
 Drop a Context bullet that would be empty. Keep the four headings.
 
 ### Docs to write
 
-Doc text the chat agreed on, most often in a grill, that becomes true only
-when this ticket's code lands: a glossary entry, an ADR, a line in a
-README or a spec. It waits here, not in the doc, so no doc says what the
-code does not do yet. The PR that ships the code writes it, word for word.
+Doc text the chat agreed on, most often in a grill, that becomes true only when this ticket's code lands: a glossary entry, an ADR, a line in a README or a spec. It waits here, not in the doc, so no doc says what the code does not do yet. The PR that ships the code writes it, word for word.
 
-- One `###` heading per file, the path in backticks. Under it the full
-  text, as agreed, fenced with `~~~markdown` and `~~~`, so a code block
-  inside the doc stays whole. Never a summary: the
-  builder copies it and does not write it again.
-- A new ADR has no number yet: `docs/adr/<next>-<slug>.md`. The build
-  takes the next free number on its base.
-- Text that is true already, like "we will not build X", rides on the
-  first code ticket of the same work. With no code ticket at all, it is
-  not here: the grill ships it in a docs PR.
-- A later decision that changes the text edits the entry. Text that never
-  shipped needs no superseded ADR.
+- One `###` heading per file, the path in backticks. Under it the full text, as agreed, fenced with `~~~markdown` and `~~~`, so a code block inside the doc stays whole. Never a summary: the builder copies it and does not write it again.
+- A new ADR has no number yet: `docs/adr/<next>-<slug>.md`. The build takes the next free number on its base.
+- Text that is true already, like "we will not build X", rides on the first code ticket of the same work. With no code ticket at all, it is not here: the grill ships it in a docs PR.
+- A later decision that changes the text edits the entry. Text that never shipped needs no superseded ADR.
 - A ticket closed with no PR takes its text with it.
 
 ### Task body
 
-The reader is a person, or the complete-task agent, in a platform they may
-not know, doing it cold. The four headings stay. Inside them:
+The reader is a person, or the complete-task agent, in a platform they may not know, doing it cold. The four headings stay. Inside them:
 
 ```markdown
 ## What to build
@@ -359,23 +211,15 @@ What must exist at the end, and which code ticket needs it. Two sentences.
 - Known, Open: as for any ticket.
 ```
 
-Every credential in Hand back carries the warning on its line. The value of
-one never appears in an issue, a comment, or a PR.
+Every credential in Hand back carries the warning on its line. The value of one never appears in an issue, a comment, or a PR.
 
-Steps are always written. They come from the platform's docs, fetched in the
-one lookup round, whose brief asks for the web (see Lookup). Each step names the page,
-the button or field, and the value to enter. A step with no doc source goes
-under Open as the question it leaves, never into Steps. The last step is the
-proof: the check that shows the code ticket can use the result.
+Steps are always written. They come from the platform's docs, fetched in the one lookup round, whose brief asks for the web (see Lookup). Each step names the page, the button or field, and the value to enter. A step with no doc source goes under Open as the question it leaves, never into Steps. The last step is the proof: the check that shows the code ticket can use the result.
 
-`Lead time:` is what `to-epic` reads to place the task: a wait of days puts
-the task in the first phase, whatever phase needs it.
+`Lead time:` is what `to-epic` reads to place the task: a wait of days puts the task in the first phase, whatever phase needs it.
 
 ### Unhappy paths (feat and fix)
 
-A Done when list written by reflex holds only the happy path. The worker then
-guesses what the user sees when things go wrong. So for every `feat` and
-`fix`, walk five states before the list is done:
+A Done when list written by reflex holds only the happy path. The worker then guesses what the user sees when things go wrong. So for every `feat` and `fix`, walk five states before the list is done:
 
 | State | Question |
 |---|---|
@@ -385,32 +229,17 @@ guesses what the user sees when things go wrong. So for every `feat` and
 | Bad input | The input is wrong. What stops it, and what says so? |
 | No permission | The user may not do this. What do they see? |
 
-The states are not screen-only. An API, a job, or a CLI has the same five;
-the answers look different: a status code and body, `200` with `[]`, a
-timeout or partial result, `400` naming the field, `403`.
+The states are not screen-only. An API, a job, or a CLI has the same five; the answers look different: a status code and body, `200` with `[]`, a timeout or partial result, `400` naming the field, `403`.
 
-Each state that applies becomes one Done when line, as observable as the
-happy lines: "Wrong file type shows `Only CSV files` under the field". Each
-state that does not apply is named under **Out** in Scope, so the worker
-knows it was a choice. Never write "errors are handled" or "edge cases are
-covered". Those are not outcomes.
+Each state that applies becomes one Done when line, as observable as the happy lines: "Wrong file type shows `Only CSV files` under the field". Each state that does not apply is named under **Out** in Scope, so the worker knows it was a choice. Never write "errors are handled" or "edge cases are covered". Those are not outcomes.
 
 When the chat did not settle a state, in this order:
 
-1. **The repo has a pattern.** Most apps already show errors, empty lists,
-   and spinners one way. The lookup round finds it. The Standard's rule
-   for the state comes first; the code's way is the pattern only where
-   the Standard has none. Copy it and name the
-   file: "Error shows the toast from `ErrorToast.tsx:12`". No question.
-2. **No pattern, and the choice does not change the work.** Empty-state
-   text, a spinner's place. Pick a sane default, write it as the line, and
-   add one line under **Open** in Context: "Empty text is a guess." The user
-   fixes it in the issue. No round trip.
-3. **No pattern, and the choice changes the work.** Retry or roll back, keep
-   half the data or none. This is a product decision. The gate fails. Ask.
+1. **The repo has a pattern.** Most apps already show errors, empty lists, and spinners one way. The lookup round finds it. The Standard's rule for the state comes first; the code's way is the pattern only where the Standard has none. Copy it and name the file: "Error shows the toast from `ErrorToast.tsx:12`". No question.
+2. **No pattern, and the choice does not change the work.** Empty-state text, a spinner's place. Pick a sane default, write it as the line, and add one line under **Open** in Context: "Empty text is a guess." The user fixes it in the issue. No round trip.
+3. **No pattern, and the choice changes the work.** Retry or roll back, keep half the data or none. This is a product decision. The gate fails. Ask.
 
-Ask as one short block, not one question per state. Each line is a state,
-your proposed default, and it wants only `go` or a change:
+Ask as one short block, not one question per state. Each line is a state, your proposed default, and it wants only `go` or a change:
 
 ```
 Unhappy paths, tell me which are wrong:
@@ -424,41 +253,23 @@ Say go, or edit a line.
 
 ### Known (when the chat ran something)
 
-Sometimes the chat already ran the thing: called the vendor's API, sent
-the webhook, tried the library against real data. What came back is a
-fact the repo does not hold, and the next stage will go looking for it
-again unless the ticket carries it. So each fact the chat proved by
-running something becomes one **Known** line in Context, with its proof:
+Sometimes the chat already ran the thing: called the vendor's API, sent the webhook, tried the library against real data. What came back is a fact the repo does not hold, and the next stage will go looking for it again unless the ticket carries it. So each fact the chat proved by running something becomes one **Known** line in Context, with its proof:
 
-- the auth that worked: the kind, and where the credential lives, never
-  the value;
+- the auth that worked: the kind, and where the credential lives, never the value;
 - the request and response shape as seen, where it differs from the docs;
 - a limit that was hit: rate, size, timeout, page size;
-- the command that shows it, pasted in the issue, and the day it ran; a
-  script counts only when it is in the repo.
+- the command that shows it, pasted in the issue, and the day it ran; a script counts only when it is in the repo.
 
-One line, one fact, one proof: "Refunds on ACH come back `status:
-pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test
-mode, 2026-09-08". A
-fact the chat only read about is not Known. It stays out, or goes under
-Open when it still needs proof.
+One line, one fact, one proof: "Refunds on ACH come back `status: pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test mode, 2026-09-08". A fact the chat only read about is not Known. It stays out, or goes under Open when it still needs proof.
 
 ### Steps (XS always, S when free)
 
-Three to seven numbered steps a worker can follow cold, in order, each
-from a line seen in the chat or the lookup (see Size). A `task` has its own
-Steps rules under Task body.
+Three to seven numbered steps a worker can follow cold, in order, each from a line seen in the chat or the lookup (see Size). A `task` has its own Steps rules under Task body.
 
-- Each step names one file and line, one concrete change, and, when it is not
-  obvious, how to see it worked.
-- At least one step points at an existing pattern to copy: "like
-  `statsController.js:40`", a line that follows the Standard's way for
-  the job when it names one, per § Lookup. Never describe a shape the
-  code already shows.
-- The last step is the test: the file, the case name, the command that runs
-  it.
-- Concrete words only. Name the route, the field, the label text, the enum
-  values. "Nicer", "cleaner", "handle errors properly" are not steps.
+- Each step names one file and line, one concrete change, and, when it is not obvious, how to see it worked.
+- At least one step points at an existing pattern to copy: "like `statsController.js:40`", a line that follows the Standard's way for the job when it names one, per § Lookup. Never describe a shape the code already shows.
+- The last step is the test: the file, the case name, the command that runs it.
+- Concrete words only. Name the route, the field, the label text, the enum values. "Nicer", "cleaner", "handle errors properly" are not steps.
 
 Bad:
 
@@ -479,37 +290,15 @@ Good:
    passes.
 ```
 
-The good one names the route, the response shape, the data source, the file
-to copy, and the test. The bad one leaves all of that to the worker. That is
-a planning ticket wearing an XS label.
+The good one names the route, the response shape, the data source, the file to copy, and the test. The bad one leaves all of that to the worker. That is a planning ticket wearing an XS label.
 
 ## Lookup
 
-Reach for the code only when the chat leaves a size fact or a Context fact
-unknown. One round, read-only. Start explorers per `facts.md` § Skill agents,
-with the brief inline. Ask for exactly the missing
-facts: the seam, the files, the tests that cover them, and the file count
-per package whenever the work may touch more than one (a wide refactor, a
-`feat` that spans server and web). For `feat` and `fix`, also ask
-what the repo's Standard, `CODING_STANDARDS.md` and the `docs/standards/`
-files it links to, says for errors, empty states, loading, bad input, and
-no permission, and how the repo already shows them near this place, with
-file and line, so the unhappy-path lines can copy it. When the ticket looks
-XS or S, add to the brief: the exact lines that change, the pattern to copy
-(the way the Standard names for the job when it names one, else the nearest
-existing pattern, with any way the Standard marks `Old way:` named as
-such), and the test file and command that cover the place. Steps are
-written from those, and only from those. For a `task`, the round is one
-reader whose brief asks for the web, against the platform's own docs: the
-page for each step, the fields and values, the review or approval wait, and
-the check that proves the result works. The round is done when every fact
-you listed came back or came back as "not found". No second round.
+Reach for the code only when the chat leaves a size fact or a Context fact unknown. One round, read-only. Start explorers per `facts.md` § Skill agents, with the brief inline. Ask for exactly the missing facts: the seam, the files, the tests that cover them, and the file count per package whenever the work may touch more than one (a wide refactor, a `feat` that spans server and web). For `feat` and `fix`, also ask what the repo's Standard, `CODING_STANDARDS.md` and the `docs/standards/` files it links to, says for errors, empty states, loading, bad input, and no permission, and how the repo already shows them near this place, with file and line, so the unhappy-path lines can copy it. When the ticket looks XS or S, add to the brief: the exact lines that change, the pattern to copy (the way the Standard names for the job when it names one, else the nearest existing pattern, with any way the Standard marks `Old way:` named as such), and the test file and command that cover the place. Steps are written from those, and only from those. For a `task`, the round is one reader whose brief asks for the web, against the platform's own docs: the page for each step, the fields and values, the review or approval wait, and the check that proves the result works. The round is done when every fact you listed came back or came back as "not found". No second round.
 
 ## Repo convention
 
-`owner/repo` in this file is the repo the gate's Where line found. Every `gh`
-command here names it with `--repo`, so a run in one checkout files into
-another.
+`owner/repo` in this file is the repo the gate's Where line found. Every `gh` command here names it with `--repo`, so a run in one checkout files into another.
 
 Load once per repo, with `issue-conventions.py`, the script next to this file:
 
@@ -525,28 +314,14 @@ gh issue list --repo owner/repo --state all --limit 30 --json title -q '.[].titl
 gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\(.name)\t\(.description)"'
 ```
 
-- `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or
-  `feat(scope): …` gives `colon`; no pattern gives `bracket`.
-- `words`: when the repo's titles use a different word for one of our types
-  (`bug` for `fix`, `feature` for `feat`), record it.
-- `size`: labels that clearly denote size (`size/S`, `Size: Small`,
-  `effort-large`, bare `S`), matched case-insensitively across separators,
-  mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS
-  to its smallest. A repo with none:
-  `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL
-  label, when the repo has one, is the PR-only label the handoff skills own;
-  it stays out of the map.
-- Priority: the shared store. `python3 issue-conventions.py priority-get owner/repo`.
-  On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or
-  `priority: …` family, or words: p0 = critical else high, p1 = high,
-  p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created
-  on demand) and save with `priority-set`.
+- `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no pattern gives `bracket`.
+- `words`: when the repo's titles use a different word for one of our types (`bug` for `fix`, `feature` for `feat`), record it.
+- `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS to its smallest. A repo with none: `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL label, when the repo has one, is the PR-only label the handoff skills own; it stays out of the map.
+- Priority: the shared store. `python3 issue-conventions.py priority-get owner/repo`. On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or `priority: …` family, or words: p0 = critical else high, p1 = high, p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created on demand) and save with `priority-set`.
 
-Save with `set` only when at least 5 titles were seen; otherwise use the
-defaults for this run and leave the store empty so the repo is learned later.
+Save with `set` only when at least 5 titles were seen; otherwise use the defaults for this run and leave the store empty so the repo is learned later.
 
-Label creation, only for labels this file names and only when `gh` fails on
-them:
+Label creation, only for labels this file names and only when `gh` fails on them:
 
 ```bash
 gh label create --repo owner/repo "size/XS" --color BFDADC --description "Fits one place, 1-2 files"
@@ -558,31 +333,22 @@ gh label create --repo owner/repo "manual" --color 6E7781 --description "Work in
 gh label create --repo owner/repo "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
 ```
 
-Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`,
-a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by
-`capture`.
+Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by `capture`.
 
-One hue per family, never reused: size teal, priority red to yellow,
-ready-to-build green, manual grey, seed light blue, bug purple,
-`discovery/*` pink (`../skills/discover-path/references/map.md`).
+One hue per family, never reused: size teal, priority red to yellow, ready-to-build green, manual grey, seed light blue, bug purple, `discovery/*` pink (`../skills/discover-path/references/map.md`).
 
-A label the convention names that no longer exists: `forget` the repo, learn
-again, retry once.
+A label the convention names that no longer exists: `forget` the repo, learn again, retry once.
 
 ## Duplicates and seeds
 
-Before creating, two searches on the same 2 or 3 keywords. First the open
-issues:
+Before creating, two searches on the same 2 or 3 keywords. First the open issues:
 
 ```bash
 gh issue list --repo owner/repo --state open --search "<2 or 3 keywords>" --limit 10 --json number,title,labels,url
 ```
 
-- A result that is clearly the same work and is **not** a seed: show it and
-  stop. Nothing is created.
-- A result that is clearly the same work and carries the `seed`, `bug`, or
-  `discovery/map` label, or a seed, bug, or map number the conversation
-  named: it is the **origin**. Continue.
+- A result that is clearly the same work and is **not** a seed: show it and stop. Nothing is created.
+- A result that is clearly the same work and carries the `seed`, `bug`, or `discovery/map` label, or a seed, bug, or map number the conversation named: it is the **origin**. Continue.
 
 Then the closed issues, so work that comes back keeps its history:
 
@@ -590,17 +356,12 @@ Then the closed issues, so work that comes back keeps its history:
 gh issue list --repo owner/repo --state closed --search "<2 or 3 keywords>" --limit 10 --json number,title,url
 ```
 
-- A result that is clearly the same work does not stop the run. The new
-  issue's Context gets `#<n> (closed)` on its Related line, one per match,
-  or a line `- Related: #<n> (closed)` when it has none.
-- The search fails: go on without it, and say in chat
-  `Closed-issue search failed: <first error line>. Filed without it.`
+- A result that is clearly the same work does not stop the run. The new issue's Context gets `#<n> (closed)` on its Related line, one per match, or a line `- Related: #<n> (closed)` when it has none.
+- The search fails: go on without it, and say in chat `Closed-issue search failed: <first error line>. Filed without it.`
 
 ### Origin bug
 
-A `bug` label, or a bug issue the conversation named, like the one
-`/triage #42` read. `to-issue` does not create a new issue. It rewrites
-the bug into the ticket, so the number, the comments, and the links stay:
+A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `to-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
 gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
@@ -608,42 +369,25 @@ gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remo
   [--add-label "<priority label>"] [--type <Name>]
 ```
 
-The new body keeps the reporter's words: the old body goes at the end of
-Context, in `<details><summary>Original report</summary>…</details>`. Skip
-it when the old body only restates the new one, as a short `[bug]` from
-`capture` does. Remove `bug` only when the issue carries it.
+The new body keeps the reporter's words: the old body goes at the end of Context, in `<details><summary>Original report</summary>…</details>`. Skip it when the old body only restates the new one, as a short `[bug]` from `capture` does. Remove `bug` only when the issue carries it.
 
 ### Origin seed
 
-A `seed` label, or a `discovery/map` issue the conversation named, like
-the one `/discover-path` printed `Map clear.` for. It is rewritten in
-place, like an origin bug: the number, the comments, and the links stay,
-and nothing is closed. A ticket: the seed becomes the ticket. An epic: the
-seed or the map becomes the parent, and the sub-issues go under it.
+A `seed` label, or a `discovery/map` issue the conversation named, like the one `/discover-path` printed `Map clear.` for. It is rewritten in place, like an origin bug: the number, the comments, and the links stay, and nothing is closed. A ticket: the seed becomes the ticket. An epic: the seed or the map becomes the parent, and the sub-issues go under it.
 
 ```bash
 gh issue edit --repo owner/repo <seed> --title "<title>" --body-file "$f" \
   [--remove-label seed] [--remove-label discovery/map] [--add-label …] [--type <Name>]
 ```
 
-The labels are the ones a new issue of that kind gets. The old body goes
-at the end of Context, in `<details><summary>Original seed</summary>…</details>`;
-skip it when the new body restates it. From a map, leave its
-`## Docs to write` out of the kept body: each entry now lives on the
-ticket that writes it, and a second copy in an open issue would read as
-a decision still waiting. A map keeps its closed question tickets as
-sub-issues: they are the record of how the work was decided.
-A bug that grows into an epic becomes the parent the same way.
+The labels are the ones a new issue of that kind gets. The old body goes at the end of Context, in `<details><summary>Original seed</summary>…</details>`; skip it when the new body restates it. From a map, leave its `## Docs to write` out of the kept body: each entry now lives on the ticket that writes it, and a second copy in an open issue would read as a decision still waiting. A map keeps its closed question tickets as sub-issues: they are the record of how the work was decided. A bug that grows into an epic becomes the parent the same way.
 
 ## Report
 
-Put the URL on the clipboard with `copy.sh`, the script next to this
-file. Call it by its absolute path: `<shared core>` is the folder you
-read this file from, not the working directory.
+Put the URL on the clipboard with `copy.sh`, the script next to this file. Call it by its absolute path: `<shared core>` is the folder you read this file from, not the working directory.
 
 ```bash
 printf "%s" "<url>" | bash "<shared core>/copy.sh"
 ```
 
-Exit 0: the URL is on the clipboard. Say so in one line. Any other exit:
-print the URL on its own line and say `Clipboard copy skipped.`
+Exit 0: the URL is on the clipboard. Say so in one line. Any other exit: print the URL on its own line and say `Clipboard copy skipped.`

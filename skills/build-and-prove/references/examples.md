@@ -1,50 +1,19 @@
 # Examples
 
-**User:** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-42.md`
-on Sonnet; the plan has `UI: web`, three walks, two videos.
+**User:** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-42.md` on Sonnet; the plan has `UI: web`, three walks, two videos.
 
-Plan read, slug `acme-shop-42`. proofbox found. Worktree
-`~/development/worktrees/acme/shop/feat-42-export-orders-csv` from
-`main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`;
-`app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it
-in. Prompt written, this session builds four slices, each test red
-then green on the local machine. After the fourth, `box.sh up` prints
-`SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from
-the base, walker in `before` mode, `before-1.png`. Gates on `1a2b3c4`:
-step 8's `box.sh gates "$PROOF" --ci "$WT" -- 'pnpm test' 'pnpm lint'
-'pnpm build'` leaves `pnpm test` to CI,
-since `ci.yml` runs it on pull requests, and runs `pnpm lint` and
-`pnpm build` green in the Sandbox. Round 1: walk 3 fails,
-its screenshot shows the `Export` button disabled with rows on screen:
-an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
-pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:`
-copies walk 3's round 1 FAIL.
+Plan read, slug `acme-shop-42`. proofbox found. Worktree `~/development/worktrees/acme/shop/feat-42-export-orders-csv` from `main`. No setup script yet: written from `.nvmrc` and `pnpm-lock.yaml`; `app.env` gets `PORT=3000` and an empty `STRIPE_KEY=`; the user fills it in. Prompt written, this session builds four slices, each test red then green on the local machine. After the fourth, `box.sh up` prints `SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from the base, walker in `before` mode, `before-1.png`. Gates on `1a2b3c4`: step 8's `box.sh gates "$PROOF" --ci "$WT" -- 'pnpm test' 'pnpm lint' 'pnpm build'` leaves `pnpm test` to CI, since `ci.yml` runs it on pull requests, and runs `pnpm lint` and `pnpm build` green in the Sandbox. Round 1: walk 3 fails, its screenshot shows the `Export` button disabled with rows on screen: an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:` copies walk 3's round 1 FAIL.
 
-**No UI.** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-57.md`;
-the plan is a fix with `UI: none`.
+**No UI.** `/build-and-prove ~/.agents/artifacts/plan/plan-acme-shop-57.md`; the plan is a fix with `UI: none`.
 
-Steps 2, 4, and 6 are skipped: no proofbox, no setup files, no
-Sandbox. This session builds two slices on the local machine. Step 8
-reads `references/checks.md`: `box.sh gates "$PROOF" --local "$WT" --
-'pnpm test' 'pnpm lint'` writes `pnpm test · 9e18c16 · not run: CI
-runs it (ci.yml)`, since `ci.yml` runs `pnpm test` on pull requests,
-and `pnpm lint · 9e18c16 · 0 errors (local machine)`.
-Step 11 is skipped. The report says `Checks: pnpm lint green on 9e18c16
-on the local machine · pnpm test: CI` and `Walks: none (no UI)`.
+Steps 2, 4, and 6 are skipped: no proofbox, no setup files, no Sandbox. This session builds two slices on the local machine. Step 8 reads `references/checks.md`: `box.sh gates "$PROOF" --local "$WT" -- 'pnpm test' 'pnpm lint'` writes `pnpm test · 9e18c16 · not run: CI runs it (ci.yml)`, since `ci.yml` runs `pnpm test` on pull requests, and `pnpm lint · 9e18c16 · 0 errors (local machine)`. Step 11 is skipped. The report says `Checks: pnpm lint green on 9e18c16 on the local machine · pnpm test: CI` and `Walks: none (no UI)`.
 
 **`box.sh auth`** at step 2 prints `stop: log in first: proofbox auth login namespace`.
 
 Show it, copy it with `copy.sh`, stop. No worktree, no Coding, and no Sandbox yet.
 
-**Walker** reports walk 2 failed: step 3 says click `Save`, the screen
-shows `Save changes`, and after it the saved row is there.
+**Walker** reports walk 2 failed: step 3 says click `Save`, the screen shows `Save changes`, and after it the saved row is there.
 
-The Done-when line holds; only the label in the plan was wrong. Small
-fork: walk 2's step fixed in the plan, a `Decided` line, one line to the
-user, round 2.
+The Done-when line holds; only the label in the plan was wrong. Small fork: walk 2's step fixed in the plan, a `Decided` line, one line to the user, round 2.
 
-**Follow-up after a review fix.** The fix changes the save form's
-message for a full list. All three videos open the save form, but no
-walk fills the list, so no step runs the new code: `Videos: keep 1, 2,
-3 (only a full list shows the new message)`. No walker; the Gates run
-as § Follow-up says.
+**Follow-up after a review fix.** The fix changes the save form's message for a full list. All three videos open the save form, but no walk fills the list, so no step runs the new code: `Videos: keep 1, 2, 3 (only a full list shows the new message)`. No walker; the Gates run as § Follow-up says.
