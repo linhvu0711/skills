@@ -29,25 +29,18 @@ Usage:
 """
 import argparse
 import glob
-import importlib.util
 import json
 import os
 import re
 import sys
 
-# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-_spec = importlib.util.spec_from_file_location(
-    "rank", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rank.py"))
-rank = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rank)
-_spec = importlib.util.spec_from_file_location(
-    "adapter_lib", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "adapter_lib.py"))
-adapter_lib = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(adapter_lib)
-_spec = importlib.util.spec_from_file_location(
-    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
-chat_log = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chat_log)
+here = os.path.dirname(os.path.abspath(__file__))
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
+
+rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
+chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 WRAP_PREFIXES = (
     "<local-command-caveat>",

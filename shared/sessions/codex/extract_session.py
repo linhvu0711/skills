@@ -33,29 +33,20 @@ one-liners, tool results truncated):
 """
 import argparse
 import glob
-import importlib.util
 import json
 import os
 import re
 import sys
 
 
-# Loaded by path: `python3 -I` leaves this folder off sys.path.
-_spec = importlib.util.spec_from_file_location(
-    "rollout_io", os.path.join(os.path.dirname(os.path.abspath(__file__)), "rollout_io.py"))
-rollout_io = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rollout_io)
-_spec = importlib.util.spec_from_file_location(
-    "printer", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "printer.py"))
-printer = importlib.util.module_from_spec(_spec)
-# Registered before it runs: dataclasses looks a module up in sys.modules, and
-# Python 3.11 and older fail on printer.py's dataclasses without it.
-sys.modules["printer"] = printer
-_spec.loader.exec_module(printer)
-_spec = importlib.util.spec_from_file_location(
-    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
-chat_log = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chat_log)
+here = os.path.dirname(os.path.abspath(__file__))
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
+
+rollout_io = adapter_lib.load("rollout_io", os.path.join(here, "rollout_io.py"))
+printer = adapter_lib.load("printer", os.path.join(here, "..", "printer.py"))
+chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 WORDS = printer.Words(
     transcript="Loaded Codex session transcript",

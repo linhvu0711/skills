@@ -42,26 +42,19 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import importlib.util
 import json
 import os
 import re
 import sys
 
-# Loaded by path: `python3 -I` leaves this folder off sys.path.
 here = os.path.dirname(os.path.abspath(__file__))
-_spec = importlib.util.spec_from_file_location("rollout_io", os.path.join(here, "rollout_io.py"))
-rollout_io = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rollout_io)
-_spec = importlib.util.spec_from_file_location("rank", os.path.join(here, "..", "rank.py"))
-rank = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rank)
-_spec = importlib.util.spec_from_file_location("adapter_lib", os.path.join(here, "..", "adapter_lib.py"))
-adapter_lib = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(adapter_lib)
-_spec = importlib.util.spec_from_file_location("chat_log", os.path.join(here, "..", "chat_log.py"))
-chat_log = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chat_log)
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
+
+rollout_io = adapter_lib.load("rollout_io", os.path.join(here, "rollout_io.py"))
+rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
+chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 INDEX_PATHS = (
     os.path.join(os.path.expanduser("~"), ".cache", "find-co-session", "codex-index.json"),

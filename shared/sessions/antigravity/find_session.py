@@ -11,28 +11,17 @@ not a chat is an unreadable item {path, modified, why}.
 """
 
 import argparse
-import importlib.util
 import json
 import os
 import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
 
-
-def load(name, path):
-    # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    # Registered before it runs: dataclasses looks a module up in sys.modules, and
-    # Python 3.11 and older fail on store.py's Chat without it.
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-store = load("store", os.path.join(here, "store.py"))
-rank = load("rank", os.path.join(here, "..", "rank.py"))
-adapter_lib = load("adapter_lib", os.path.join(here, "..", "adapter_lib.py"))
+store = adapter_lib.load("store", os.path.join(here, "store.py"))
+rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
 
 WEIGHTS = {"prompts": 2.0, "body": 1.0}
 

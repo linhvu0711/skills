@@ -20,11 +20,10 @@ fa_home() {
 fa_fake() {
   cp -R "$here/../sessions" "$T/sessions"; mkdir -p "$T/sessions/fake"
   cat > "$T/sessions/fake/adapter.py" <<'EOF'
-import importlib.util, os
+import os, sys
 here = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("adapter_lib", os.path.join(here, "..", "adapter_lib.py"))
-lib = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lib)
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib as lib
 HARNESS = lib.Harness(name="fake", label="Fake", data=[here], finder=os.path.join(here, "finder.py"),
                       extractor="", flags=lambda roots, days: [], title=lambda s: s.get("first_prompt") or "",
                       current="", extract_flags=())

@@ -5,14 +5,13 @@ Reads ~/.claude/projects/ through find_sessions.py and extract_session.py,
 next to this file.
 """
 
-import importlib.util
 import os
+import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
-# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-spec = importlib.util.spec_from_file_location("adapter_lib", os.path.join(here, "..", "adapter_lib.py"))
-lib = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lib)
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib as lib  # noqa: E402
 
 
 def flags(roots, days):
