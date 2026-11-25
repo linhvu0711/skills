@@ -191,13 +191,33 @@ Done when every row has an answer.
 
 ## Change list
 
-Print one list in chat, each part with its count and its lines:
+First group the ticket rows into tickets. A ticket is one issue and one
+PR, so small work that belongs together is filed, planned, and reviewed
+once. Size each ticket row by `../size.md`. Rows share a ticket when
+all three hold:
+
+- each row is XS or S, and the ticket stays M or smaller;
+- the rows have one type, the leading word of the issue title per
+  `../issue-rules.md` § Types, as `refactor` or `fix`;
+- one PR would do them together, and a reviewer reads it as one change:
+  they touch the same files or folder, they are the same kind of fix,
+  or one answer in the talk settled them.
+
+A row of size L gets a ticket of its own. A seed row stays alone, since
+its fix is not known yet. Number the tickets in list order: `Ticket 1`,
+`Ticket 2`.
+
+Then print one list in chat, each part with its count and its lines:
 
 ```
 Change list
-Tickets: 2
-  R3 Hack: Safari drops the first event · ticket · src/event.ts:12
-  R4 don't touch, breaks prod · seed · src/pay.ts:40
+Tickets: 3 for 5 rows
+  Ticket 1: R2, R5, R7 · refactor · S · delete the unused date helpers
+    R2 Unused: formatV1 · src/dates.ts:12
+    R5 Unused: formatV2 · src/dates.ts:40
+    R7 Copies: parseDate in 2 files · src/orders.ts:8
+  Ticket 2: R3 · fix · S · Hack: Safari drops the first event · src/event.ts:12
+  Seed: R4 · don't touch, breaks prod · src/pay.ts:40
 Rules: 1
   Comments: a TODO links its ticket. (you)
 Lint settings: none
@@ -208,8 +228,9 @@ ADRs: 1
 Docs: none
 ```
 
-Then `Say go, or name a line and what to change.` and wait. A change:
-make it, print the list again, and wait again. `Docs` holds each doc
+Then `Say go, or name a line and what to change.` and wait. A change,
+as `split R7 out of Ticket 1` or `join Ticket 1 and Ticket 2`: make it,
+print the list again, and wait again. `Docs` holds each doc
 entry the grill handed back that is not an ADR, as a `CONTEXT.md` term.
 A part with nothing in it says `none`.
 
