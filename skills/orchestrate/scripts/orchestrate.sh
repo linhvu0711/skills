@@ -104,18 +104,29 @@ issue_url() { printf 'https://github.com/%s/issues/%s' "${1%#*}" "${1##*#}"; }
 
 # to_ref <word>: the ref an issue word names: n or #n in this repo,
 # owner/repo#n, or repo#n, the one repo of that name among the run repo and
-# the run's refs.
+# the run's refs. GitHub reads a repo path in any case, so a repo the run
+# already holds keeps the spelling the run holds it by.
 to_ref() {
   local m
-  if [[ "$1" =~ ^#?([0-9]+)$ ]]; then printf '%s#%s' "$slug" "${BASH_REMATCH[1]}"
-  elif [[ "$1" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+$ ]]; then printf '%s' "$1"
+  if [[ "$1" =~ ^#?([0-9]+)$ ]]; then printf '%s#%s' "$slug" "${BASH_REMATCH[1]}"; return; fi
+  if [[ "$1" =~ ^([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)#([0-9]+)$ ]]; then
+    m="$(run_repo_named full "${BASH_REMATCH[1]}")"
+    printf '%s#%s' "${m:-${BASH_REMATCH[1]}}" "${BASH_REMATCH[2]}"
   elif [[ "$1" =~ ^([A-Za-z0-9_.-]+)#([0-9]+)$ ]]; then
-    m="$(jq -r --arg h "$slug" --arg name "${BASH_REMATCH[1]}" \
-      '[$h, ((.set // []) + (.removed // []))[] | split("#")[0]] | unique | map(select(split("/")[1] == $name)) | if length == 1 then .[0] else empty end' \
-      <<<"${S:-null}")"
+    m="$(run_repo_named name "${BASH_REMATCH[1]}")"
     [ -n "$m" ] || die "no single repo named ${BASH_REMATCH[1]} in this run; say owner/${BASH_REMATCH[1]}#${BASH_REMATCH[2]}"
     printf '%s#%s' "$m" "${BASH_REMATCH[2]}"
   else die "not an issue: $1; say #n, repo#n, or owner/repo#n"; fi
+}
+
+# run_repo_named full|name <word>: the one repo among the run repo and the
+# run's refs whose owner/repo, or whose repo name, is the word in any case,
+# or nothing.
+run_repo_named() {
+  jq -r --arg h "$slug" --arg how "$1" --arg w "$2" \
+    '[$h, ((.set // []) + (.removed // []))[] | split("#")[0]] | unique
+     | map(select((if $how == "full" then . else split("/")[1] end | ascii_downcase) == ($w | ascii_downcase)))
+     | if length == 1 then .[0] else empty end' <<<"${S:-null}"
 }
 
 # ---------- state ----------

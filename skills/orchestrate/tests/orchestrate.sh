@@ -824,6 +824,17 @@ t_fs_ref_forms() {
   eq set '["acme/lib#6","acme/lib#7","acme/app#8"]' "$(fs_state '.set[-3:]')"
 }
 
+t_fs_ref_any_case() {
+  # Given: the run of epic acme/app#70, whose part acme/lib#5 joined by GitHub's spelling
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app remove Acme/Lib#5
+  # Then
+  eq exit 0 "$code"
+  eq set '["acme/app#70"]' "$(fs_state .set)"
+  eq removed '["acme/lib#5"]' "$(fs_state .removed)"
+}
+
 t_fs_ref_unknown_repo() {
   # Given: the run of epic acme/app#70 with part acme/lib#5
   fs_lib_epic; fs_go check acme/app
@@ -2643,6 +2654,7 @@ cases=(
   "two runs started in the same second have one owner|t_fs_same_second_runs_one_owner"
   "a check waits while another run's check holds the claims lock|t_fs_check_waits_for_claims_lock"
   "commands take #n, repo#n, and owner/repo#n|t_fs_ref_forms"
+  "an issue word names a run's repo in any case|t_fs_ref_any_case"
   "repo#n of a repo the run does not have stops|t_fs_ref_unknown_repo"
   "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
   "add puts an issue in the set|t_fs_add_to_set"
