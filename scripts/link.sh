@@ -98,7 +98,13 @@ unlink_dead() {
 link_state() {
   local l="$1/$2"; why=""
   if [ ! -e "$l" ] && [ ! -L "$l" ]; then st=missing
-  elif [ ! -e "$l" ]; then st=stale; why="$l is a link to nothing, not made here"
+  elif [ ! -e "$l" ]; then
+    st=stale
+    # The relative form is the one unlink_dead takes as its own for Claude Code.
+    case "$(readlink "$l")" in
+      "$3"|"../../.agents/skills/$2") ;;
+      *) why="$l is a link to nothing, not made here" ;;
+    esac
   elif ! [ "$l" -ef "$3" ]; then st=stale; why="$l is not this repo's $2"
   else st=ok; fi
 }
