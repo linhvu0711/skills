@@ -329,7 +329,7 @@
     if (x.model) f.push(['Model', esc(x.model) + (x.effort ? ' · ' + esc(x.effort) : '')])
     if (x.thread) f.push(['Thread', a(x.thread.url, esc(x.thread.id)) + (x.thread.status ? ' · ' + esc(x.thread.status) : '')])
     if (x.pr) f.push(['PR', a(x.pr.url, '#' + x.pr.number)])
-    if (x.blocked_by && x.blocked_by.length) f.push(['Blocked by', x.blocked_by.map(function (b) { return '<span class="ref">#' + b + '</span>' }).join(' ')])
+    if (x.blocked_by && x.blocked_by.length) f.push(['Blocked by', x.blocked_by.map(function (b) { return '<span class="ref">' + esc(b) + '</span>' }).join(' ')])
     var facts = '<dl class="facts">' + f.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>' }).join('') + '</dl>'
     var last = x.journey.length - 1
     var steps = x.journey.map(function (s, i) {

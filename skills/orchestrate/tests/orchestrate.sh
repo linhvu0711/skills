@@ -102,7 +102,21 @@ t_fs_start_writes_run() {
   # Then
   eq exit 0 "$code"
   eq runs 1 "$(ls -1 "$T/orchestrate/acme-app" | wc -l | tr -d ' ')"
-  eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
+  eq state '{"set":["acme/app#42"],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
+}
+
+t_fs_old_state_converted() {
+  # Given: a run of #42 after one check, its state rewritten as a run from
+  # before refs left it: bare numbers in the set, the threads, and the keys
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  fs_set_state '.set = [42] | .threads = [{number: 42, stage: "ticket", thread: "t1", link: "[i42](t3-thread://v1/t1)", status: "started", why: null, command: "ship"}] | .proposals = {"42": {route: "ship"}}'
+  # When: two checks
+  fs_go check acme/app; local first="$out"
+  fs_go check acme/app
+  # Then
+  eq state '{"set":["acme/app#42"],"thread":"acme/app#42","proposals":["acme/app#42"]}' \
+    "$(fs_state -c '{set, thread: .threads[0].ref, proposals: (.proposals | keys)}')"
+  eq starts '[] []' "$(jq -c .starts <<<"$first") $(jq -c .starts <<<"$out")"
 }
 
 t_fs_ticket_starts_ship() {
@@ -126,7 +140,7 @@ t_fs_second_check_starts_nothing() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  eq threads '[{"number":42,"stage":"ticket","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+  eq threads '[{"ref":"acme/app#42","stage":"ticket","status":"pending"}]' "$(fs_state '[.threads[] | {ref, stage, status}]')"
 }
 
 t_fs_recorded_thread_not_again() {
@@ -241,9 +255,9 @@ t_fs_conflict_listed() {
   fs_go watch acme/app --once
   # Then
   eq exit 0 "$code"
-  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
-  eq state '[{"number":42,"pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {number, pr, head, thread}]')"
+  eq state '[{"ref":"acme/app#42","pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {ref, pr, head, thread}]')"
 }
 
 t_fs_conflict_once_per_head() {
@@ -264,7 +278,7 @@ t_fs_conflict_new_head() {
   # When
   fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq state '["aaa111","bbb222"]' "$(fs_state '[.conflicts[] | .head]')"
 }
 
@@ -312,7 +326,7 @@ t_fs_conflict_shared_pr() {
   # When
   fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.sent[] | {number, pr}]' <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43}]' "$(jq -c '[.sent[] | {ref, pr}]' <<<"$out")"
   eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
@@ -393,9 +407,9 @@ t_fs_second_task_waits() {
   # When
   fs_go check acme/app
   # Then
-  eq starts '[42]' "$(jq -c '[.starts[] | .number]' <<<"$out")"
+  eq starts '["acme/app#42"]' "$(jq -c '[.starts[] | .ref]' <<<"$out")"
   has stdout '"wait":"waits for the task turn: acme/app#42"' "$out"
-  eq state '[42]' "$(fs_state '.task_turn')"
+  eq state '["acme/app#42"]' "$(fs_state '.task_turn')"
 }
 
 # fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
@@ -457,7 +471,7 @@ t_fs_failed_task_launch_frees_turn() {
   # Given: a run of #42, manual, claimed by a check, so it holds the turn
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   fs_go check acme/app
-  eq "turn held" '[42]' "$(fs_state '.task_turn')"
+  eq "turn held" '["acme/app#42"]' "$(fs_state '.task_turn')"
   # When
   fs_go started acme/app 42 task --failed "no reply"
   # Then
@@ -535,7 +549,7 @@ t_fs_closed_seed_done() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"number":42,"title":"Export orders","stage":"done"' "$out"
+  has stdout '"label":"#42","url":"https://github.com/acme/app/issues/42","title":"Export orders","stage":"done"' "$out"
 }
 
 t_fs_open_blocker_holds() {
@@ -545,7 +559,7 @@ t_fs_open_blocker_holds() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"free":false,"blocked_by":[41]' "$out"
+  has stdout '"free":false,"blocked_by":["acme/app#41"]' "$out"
 }
 
 t_fs_closed_blockers_free() {
@@ -577,8 +591,8 @@ t_fs_restart_fresh_thread() {
   eq "restart exit" 0 "$code"
   fs_go check acme/app
   # Then
-  has stdout '"starts":[{"number":42' "$out"
-  eq threads '[{"number":42,"status":"pending"}]' "$(fs_state '[.threads[] | {number, status}]')"
+  has stdout '"ref":"acme/app#42","stage":"ticket"' "$out"
+  eq threads '[{"ref":"acme/app#42","status":"pending"}]' "$(fs_state '[.threads[] | {ref, status}]')"
 }
 
 t_fs_failed_launch_not_again() {
@@ -601,10 +615,10 @@ t_fs_epic_brings_subs() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"joined":[71]' "$out"
-  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
-  has stdout '"starts":[{"number":71' "$out"
-  eq set '[70,71]' "$(fs_state .set)"
+  has stdout '"joined":["acme/app#71"]' "$out"
+  has stdout '"label":"#70","url":"https://github.com/acme/app/issues/70","title":"Order export","stage":"epic"' "$out"
+  has stdout '"ref":"acme/app#71","stage":"ticket"' "$out"
+  eq set '["acme/app#70","acme/app#71"]' "$(fs_state .set)"
 }
 
 t_fs_followup_joins() {
@@ -615,7 +629,7 @@ t_fs_followup_joins() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"joined":[50]' "$out"
+  has stdout '"joined":["acme/app#50"]' "$out"
   has stdout '"message":"/grill #50"' "$out"
 }
 
@@ -626,7 +640,7 @@ t_fs_add_to_set() {
   fs_go change acme/app add 43
   # Then
   eq exit 0 "$code"
-  eq set '[42,43]' "$(fs_state .set)"
+  eq set '["acme/app#42","acme/app#43"]' "$(fs_state .set)"
 }
 
 t_fs_removed_never_rejoins() {
@@ -640,7 +654,7 @@ t_fs_removed_never_rejoins() {
   fs_go check acme/app
   # Then
   has stdout '"joined":[]' "$out"
-  eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
+  eq sets '{"set":["acme/app#70"],"removed":["acme/app#71"]}' "$(fs_state '{set, removed}')"
 }
 
 t_fs_ship_merge_one() {
@@ -662,7 +676,7 @@ t_fs_ship_merge_all() {
   fs_go change acme/app ship merge all
   # Then
   eq exit 0 "$code"
-  eq ship '{"42":"","default":"merge"}' "$(fs_state .ship)"
+  eq ship '{"acme/app#42":"","default":"merge"}' "$(fs_state .ship)"
 }
 
 t_fs_ship_started() {
@@ -796,7 +810,7 @@ t_fs_done_removed_no_retro() {
   fs_go check acme/app
   # Then
   has stdout '"done":true' "$out"
-  has stdout '"removed":[44]' "$out"
+  has stdout '"removed":["acme/app#44"]' "$out"
   eq line false "$(jq -c 'has("retro")' <<<"$out")"
 }
 
@@ -941,7 +955,7 @@ t_fs_epic_done() {
   fs_go check acme/app
   # Then
   has stdout '"done":true' "$out"
-  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+  has stdout '"label":"#70","url":"https://github.com/acme/app/issues/70","title":"Order export","stage":"epic"' "$out"
 }
 
 t_fs_manual_keeps_open() {
@@ -1336,7 +1350,7 @@ t_fs_lock_live_stops() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: the run of acme/app is busy: another orchestrate.sh holds its lock" "$err"
-  eq set '[42]' "$(fs_state .set)"
+  eq set '["acme/app#42"]' "$(fs_state .set)"
 }
 
 t_fs_lock_dead_taken() {
@@ -1348,7 +1362,7 @@ t_fs_lock_dead_taken() {
   fs_go change acme/app add 43
   # Then
   eq exit 0 "$code"
-  eq set '[42,43]' "$(fs_state .set)"
+  eq set '["acme/app#42","acme/app#43"]' "$(fs_state .set)"
   eq lock no "$([ -e "$(fs_run)/.lock" ] && echo yes || echo no)"
 }
 
@@ -1416,7 +1430,7 @@ t_fs_unlabeled_listed() {
   # Then
   eq exit 0 "$code"
   has stdout '"proposal":null,"answer":null' "$out"
-  has stdout '"propose":[42]' "$out"
+  has stdout '"propose":["acme/app#42"]' "$out"
   has stdout '"starts":[]' "$out"
 }
 
@@ -1426,7 +1440,7 @@ t_fs_added_unlabeled_listed() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"propose":[43]' "$out"
+  has stdout '"propose":["acme/app#43"]' "$out"
   has stdout '"message":"/ship #42"' "$out"
 }
 
@@ -1436,12 +1450,12 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
   eq "second exit" 0 "$code"
-  eq proposals '{"42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
   fs_go check acme/app
   # Then
   has stdout '"propose":[]' "$out"
@@ -1455,8 +1469,8 @@ t_fs_proposed_prints_row() {
   fs_go proposed acme/app 42 ship --size M
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
-  eq proposals '{"42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
 }
 
 t_fs_proposed_use_wins() {
@@ -1467,7 +1481,7 @@ t_fs_proposed_use_wins() {
   fs_go proposed acme/app 42 grill
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
 }
 
 t_fs_proposed_ship_needs_size() {
@@ -1498,7 +1512,7 @@ t_fs_proposed_bad_size() {
   fs_go proposed acme/app 42 ship --size huge
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
 }
 
 t_fs_use_bad_effort() {
@@ -1518,7 +1532,7 @@ t_fs_ship_bad_mode() {
   fs_go change acme/app ship full 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <n>|all" "$err"
+  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <issue>|all" "$err"
 }
 
 t_fs_done_retro_row() {
@@ -1539,7 +1553,7 @@ t_fs_proposed_no_model() {
   fs_go proposed acme/app 42 close
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"close","size":null,"model":null,"effort":null}' "$out"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"close","size":null,"model":null,"effort":null}' "$out"
 }
 
 t_fs_proposed_decide_stop() {
@@ -1550,8 +1564,8 @@ t_fs_proposed_decide_stop() {
   fs_go proposed acme/app 42 ready-pr
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
-  eq route '"ready-pr"' "$(fs_state '.proposals["42"].route')"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
+  eq route '"ready-pr"' "$(fs_state '.proposals["acme/app#42"].route')"
 }
 
 t_fs_answer_keeps_size() {
@@ -1561,7 +1575,7 @@ t_fs_answer_keeps_size() {
   fs_go change acme/app answer 42 yes
   # Then
   eq exit 0 "$code"
-  eq proposals '{"42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
 }
 
 t_fs_ship_proposal_size_launches() {
@@ -1604,7 +1618,7 @@ t_fs_grill_answer_starts() {
   # Then
   has stdout '"message":"/grill #42"' "$out"
   has stdout '"stage":"unlabeled"' "$out"
-  eq threads '[{"number":42,"stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+  eq threads '[{"ref":"acme/app#42","stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {ref, stage, status}]')"
 }
 
 t_fs_ship_answer_starts() {
@@ -1626,7 +1640,7 @@ t_fs_all_yes() {
   fs_go change acme/app answer all yes
   # Then
   eq exit 0 "$code"
-  eq answers '{"42":"grill","43":"close","44":null}' "$(fs_state '.proposals | map_values(.answer)')"
+  eq answers '{"acme/app#42":"grill","acme/app#43":"close","acme/app#44":null}' "$(fs_state '.proposals | map_values(.answer)')"
 }
 
 t_fs_yes_on_unsure() {
@@ -1646,7 +1660,7 @@ t_fs_answered_waits_blocker() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"blocked_by":[41]' "$out"
+  has stdout '"blocked_by":["acme/app#41"]' "$out"
   has stdout '"answer":"grill"' "$out"
 }
 
@@ -2056,7 +2070,7 @@ t_fs_removed_starts_nothing() {
   # When
   fs_go check acme/app
   # Then
-  eq started '[42]' "$(fs_state '[.threads[] | .number]')"
+  eq started '["acme/app#42"]' "$(fs_state '[.threads[] | .ref]')"
 }
 
 t_fs_check_records_time() {
@@ -2244,7 +2258,7 @@ t_fs_settle_triage_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq line '{"settles":[{"number":42,"stage":"bug","command":"triage","thread":"t42","link":"[i42](t3-thread://v1/t42)","status":"completed","run":"r1","now":"ticket"}],"changed":true}' \
+  eq line '{"settles":[{"ref":"acme/app#42","label":"#42","stage":"bug","command":"triage","thread":"t42","link":"[i42](t3-thread://v1/t42)","status":"completed","run":"r1","now":"ticket"}],"changed":true}' \
     "$(jq -c '{settles, changed}' <<<"$out")"
 }
 
@@ -2255,7 +2269,7 @@ t_fs_settle_grill_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq settles '[{"number":44,"command":"grill","run":"r7","now":"ticket"}]' "$(jq -c '[.settles[] | {number, command, run, now}]' <<<"$out")"
+  eq settles '[{"ref":"acme/app#44","command":"grill","run":"r7","now":"ticket"}]' "$(jq -c '[.settles[] | {ref, command, run, now}]' <<<"$out")"
 }
 
 t_fs_settle_not_listed() {
@@ -2280,7 +2294,7 @@ t_fs_settle_failed_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq settles '[{"number":42,"status":"failed"}]' "$(jq -c '[.settles[] | {number, status}]' <<<"$out")"
+  eq settles '[{"ref":"acme/app#42","status":"failed"}]' "$(jq -c '[.settles[] | {ref, status}]' <<<"$out")"
 }
 
 t_fs_settle_paused() {
@@ -2354,6 +2368,7 @@ t_fs_watch_wakes_settle() {
 
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
+  "an old run's bare numbers become refs|t_fs_old_state_converted"
   "a free ticket starts ship|t_fs_ticket_starts_ship"
   "a second check starts nothing|t_fs_second_check_starts_nothing"
   "a recorded thread is not started again|t_fs_recorded_thread_not_again"

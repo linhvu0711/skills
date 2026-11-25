@@ -86,8 +86,9 @@ Exit 0: one JSON line. For each item of `starts`, in order:
 
 1. Follow `../../shared/kickoff/launch-t3.md` with the item as its
    line. Its stop lines end this item only.
-2. Started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> <threadId> "<link>"`.
-   Not started: `scripts/orchestrate.sh started <owner/repo> <number> <stage> --failed "<the stop line>"`.
+2. Started: `scripts/orchestrate.sh started <owner/repo> <ref> <stage> <threadId> "<link>"`.
+   Not started: `scripts/orchestrate.sh started <owner/repo> <ref> <stage> --failed "<the stop line>"`.
+   `<ref>` is the item's `ref`.
 
 Then § Settle, for each item of `settles`.
 
@@ -101,25 +102,27 @@ Then post, by what ran the check:
 - Any other way in (start, resume, `check now`, `add`, `restart`, the
   answers): post the lines below for every issue.
 
-One line per issue, set order:
+One line per issue, set order. An issue's `ref` is `owner/repo#n`; its
+label is `#n` in this repo and `repo#n` in another, as each issue's
+`label` reads:
 
 ```
-#<number> <title> · <stage> · <what happens>
+<label> <title> · <stage> · <what happens>
 ```
 
 `<what happens>` is the started thread's link and `/<skill>`, the
-issue's `wait`, `blocked by #a #b`, its thread's link and
-`thread_status`, `launch failed: <why>; say restart #<number>` when
+issue's `wait`, `blocked by` and the label of each `blocked_by` ref, its thread's link and
+`thread_status`, `launch failed: <why>; say restart <label>` when
 `claim` is `failed`, or `done`. A `task` thread's line reads
 `/complete-task`, and the thread waits for the user's `go`. A `waiting`
-issue reads `waits outside; say resume #<number>`. An `unlabeled`
+issue reads `waits outside; say resume <label>`. An `unlabeled`
 issue goes by its `answer`: none, `waits: your answer`, plus
 ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`;
 `task`, `yours`; `close`, `yours to close`; a skill, as any other stage.
 The `ship` skill reads `/ship`, plus `--review`, `--ready`, or `--merge`
 when the user set that ship mode for the issue or for all; with none,
-the `/ship` thread picks the ship mode from its own plan. Lead with `Joined: #a #b` when `joined` is
-not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
+the `/ship` thread picks the ship mode from its own plan. Lead with `Joined:` and the label of each
+`joined` ref when `joined` is not empty, and with `Paused.` when `status` is `paused`. `"done": true`:
 § Done. `propose` not empty: § Propose, after these lines. `settles`
 not empty: one line per item, after the issue lines, per § Settle.
 
@@ -146,8 +149,8 @@ each, in order:
 Post one line per item:
 
 ```
-#<number> /<command> thread <link> · settled
-#<number> /<command> thread <link> · kept open: <why>
+<label> /<command> thread <link> · settled
+<label> /<command> thread <link> · kept open: <why>
 ```
 
 A kept thread stays in the user's thread list, which is the signal, so
@@ -183,12 +186,12 @@ the quiet turns are silent too.
 
 ## Propose
 
-The issues in `propose` are unlabeled and have no proposal yet. For each,
-in order:
+The refs in `propose` are unlabeled issues with no proposal yet. For
+each, in order, with `<n>` its number and `<label>` its label:
 
-1. **Read.** `gh issue view <n> --json number,title,body,labels,comments`.
+1. **Read.** `gh issue view <n> --repo <the ref's owner/repo> --json number,title,body,labels,comments`.
    It fails: the route is `unsure`, and the line is
-   `#<n> · not sure: could not read #<n>: <gh's last stderr line>`.
+   `<label> · not sure: could not read <label>: <gh's last stderr line>`.
 2. **Route.** The first case that holds:
    1. A person must do it outside the repo, per
       `../../shared/issue-rules.md` § Task body: `task`.
@@ -212,7 +215,7 @@ in order:
    whose every fact holds. Hold the size and its facts line, as
    `size.md` writes it: `S: one path, about 4 files`. Any other route
    takes no size.
-4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <n> <route>`,
+4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`,
    plus `--size <size>` when step 3 gave one. It prints one JSON line:
    the `model` and `effort` the thread would get, from the same table
    the launch reads, or both `null` with a `why`.
@@ -220,9 +223,9 @@ in order:
 Then post one list:
 
 ```
-Proposals. Answer in one reply: all yes, #<n> <skill>, #<n> yes, or skip #<n>.
-#<n> <title> · <what> · <size facts> · <model> <effort> · <reason> · "<quote>"
-#<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size facts> · "<quote>"
+Proposals. Answer in one reply: all yes, <label> <skill>, <label> yes, or skip <label>.
+<label> <title> · <what> · <size facts> · <model> <effort> · <reason> · "<quote>"
+<label> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size facts> · "<quote>"
 ```
 
 `<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`.
@@ -252,8 +255,8 @@ and the answers then run § Check. The turn ends per § Snooze.
   issue's thread runs on.
 - `restart #n`: `change <owner/repo> restart <n>`, then § Check.
 - `resume #n` on an issue at stage `waiting`: `gh issue edit <n> --repo
-  <owner/repo> --remove-label waiting`, then `change <owner/repo> restart
-  <n>`, then § Check, so a new ready thread starts when the task turn is
+  <the issue's owner/repo> --remove-label waiting`, with `<n>` its bare
+  number, then `change <owner/repo> restart <n>`, then § Check, so a new ready thread starts when the task turn is
   free. A restart that stops with `has no thread to restart` is fine: go on.
 - `skip #n` on an issue at stage `task`: `change <owner/repo> remove
   <n>`, then § Check, so the next task takes the task turn. Its thread
@@ -298,7 +301,7 @@ A check printed `"done": true`.
 2. Post one summary, one line per item of `summary`:
 
    ```
-   #<number> <title> · <stages joined by →> · PR #<n> <state> · threads <links>
+   <label> <title> · <stages joined by →> · PR #<n> <state> · threads <links>
    ```
 
 3. `scripts/orchestrate.sh sync <owner/repo>`, and post its line as it
