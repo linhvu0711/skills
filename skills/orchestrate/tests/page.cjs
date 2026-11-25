@@ -8,7 +8,7 @@
 const fs = require('fs')
 const vm = require('vm')
 
-const [page, board] = process.argv.slice(2)
+const { positionals: [page, board] } = require('util').parseArgs({ allowPositionals: true })
 const html = fs.readFileSync(page, 'utf8')
 const script = html.slice(html.indexOf('<script>') + '<script>'.length, html.lastIndexOf('</script>'))
 
