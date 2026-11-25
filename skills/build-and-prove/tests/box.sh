@@ -200,6 +200,18 @@ t_box_no_proofbox() {
   has stderr "stop: proofbox is not installed" "$err"
 }
 
+t_box_unknown_verb_without_proofbox() {
+  # Given: no proofbox on PATH
+  repo
+  export PATH="/usr/bin:/bin"
+  # When
+  box nope
+  # Then
+  eq exit 64 "$code"
+  has stderr "usage: box.sh auth <linux|macos>" "$err"
+  lacks stderr "proofbox is not installed" "$err"
+}
+
 t_box_create_fails() {
   fake_proofbox
   echo "Namespace refused the Sandbox: 4 of 4 in use; nothing was created. Delete a Sandbox or use a smaller --size" > "$FAKE_PB/create.fail"
@@ -1210,6 +1222,7 @@ cases=(
   "box.env is read as text, never run|t_box_state_not_run"
   "down deletes the Sandbox and clears the state|t_box_down"
   "up stops when proofbox is missing|t_box_no_proofbox"
+  "an unknown verb gets the usage, proofbox or not|t_box_unknown_verb_without_proofbox"
   "up stops with proofbox's line when create fails|t_box_create_fails"
   "up names the login command when the login is missing|t_box_login"
   "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"

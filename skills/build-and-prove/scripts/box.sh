@@ -144,6 +144,7 @@ cover="$here/../../../shared/ci-covers.sh"
 
 usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
+case "$verb" in up|run|start|stop|open|close|fit|gates|down|auth) ;; *) die_usage "$usage" ;; esac
 # gates checks for proofbox itself, when it loads the Sandbox.
 [ "$verb" = gates ] || command -v proofbox >/dev/null || die "proofbox is not installed"
 
@@ -544,5 +545,4 @@ case "$verb" in
       *) die "proofbox auth status: $provider login is $login" ;;
     esac
     ;;
-  *) die_usage "$usage" ;;
 esac
