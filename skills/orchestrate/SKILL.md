@@ -32,8 +32,8 @@ asked for it.
 
 `/orchestrate <set>`, in a T3 Code thread.
 
-1. **Set.** Turn the user's words into issue numbers in this repo,
-   once, per `../../shared/kickoff/target.md` § Resolving the target
+1. **Set.** Turn the user's words into issue words, once: `#n` for an
+   issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/kickoff/target.md` § Resolving the target
    from the session, steps 1 and 2. A list stays a list; an epic is its
    number; a rule is a search, as `assigned to me` is
    `gh issue list --assignee @me --state open --json number`. Name the
@@ -48,7 +48,7 @@ asked for it.
 3. **Run.**
 
    ```bash
-   scripts/orchestrate.sh start <owner/repo> --name "<name>" --thread <threadId> --env <environmentId> <n>...
+   scripts/orchestrate.sh start <owner/repo> --name "<name>" --thread <threadId> --env <environmentId> <issue>...
    ```
 
    Its stops: `not inside T3 Code`, `a live run in <owner/repo>: <link>`
