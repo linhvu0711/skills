@@ -23,6 +23,8 @@ A diagram that needs a paragraph to be understood gets redrawn.
 
 Each side is Mermaid 11 source, as a string in the rows file. Pick the pattern that fits the candidate, and draw both sides in the same pattern, so the two read as before and after.
 
+Write each side in the card form, which the page builder checks line by line: `flowchart LR`, `flowchart TD`, or `sequenceDiagram` on line 1; a node as `ID`, `ID[Plain label]`, or `ID["Any label"]`; an arrow as `-->` or `-.->`, its label in quotes between bars, as `A -.->|"reads .status"| B`; `subgraph`, `end`, `classDef`, `class`; and in a sequence, `participant`, `A->>B: text`, `A-->>B: text`, `Note over A: text`, `loop`, `alt`, `else`, `opt`, `end`. A plain label holds letters, digits, spaces, and `_ . , : / -`; put any other mark in quotes. A line outside the form fails the build, named by row, side, and line.
+
 ### Flowchart (the workhorse for dependencies and call flow)
 
 A `flowchart LR` when the point is "X calls Y calls Z, and look at the mess". Colour a leak edge red and the deep module dark with `classDef`.
@@ -31,7 +33,7 @@ A `flowchart LR` when the point is "X calls Y calls Z, and look at the mess". Co
 flowchart LR
   A[OrderHandler] --> B[OrderValidator]
   B --> C[OrderRepo]
-  C -. leak .-> D[PricingClient]
+  C -.->|"leak"| D[PricingClient]
   classDef leak stroke:#dc2626,stroke-width:2px;
   class C,D leak
 ```

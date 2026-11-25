@@ -10,7 +10,7 @@ Agents in your repo copy the shape they see. Five modules that each pass an orde
 
 A report page in your browser. Its first line says what "new" means for this run, such as "since the last improve-architecture run, 2026-11-01". Then one sentence sums it up: "I found 3 things. I would fix 1. 1 needs your choice. 1 is Known: an open ticket covers it."
 
-Each candidate is a card. A card shows the advice (fix, or keep and mark), the change as a title, one reason, a strength badge (`Strong`, `Worth exploring`, or `Speculative`), the kind, and two diagrams side by side: the code as it is, and as it would be. It ends with the files involved and how the agent knows, marked Seen or Inferred. There are four kinds:
+Each candidate is a card. A card shows the advice (fix, or keep and mark), the change as a title, one reason, a strength badge (`Strong`, `Worth exploring`, or `Speculative`), the kind, and two diagrams side by side: the code as it is, and as it would be. The page builder refuses a diagram that would not draw, and names the card, the side, and the line. It ends with the files involved and how the agent knows, marked Seen or Inferred. There are four kinds:
 
 - Too thin: a module whose interface is nearly as complex as what it does, or one that only passes calls on. A deepening merges them into one deep module.
 - Leaks its inside: a caller reads another part's inside, as Checkout reading the Pricing cache.

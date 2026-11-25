@@ -192,6 +192,38 @@ t_cb_refuses_known_card_choice() {
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
+t_cb_refuses_dotted_label() {
+  # Given: R2's before diagram with a dotted arrow whose label holds dots
+  cb_cards '(.rows[] | select(.id == "R2") | .card.before) = "flowchart LR\n  K[Checkout] -. reads .status .-> P[Pricing]"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R2 before line 2: write an arrow label as -.->|"text"|' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_refuses_card_line() {
+  # Given: R1's after diagram with a plain label that holds brackets
+  cb_cards '(.rows[] | select(.id == "R1") | .card.after) = "flowchart LR\n  A[Order intake (v2)] --> C[OrderRepo]"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R1 after line 2: not a card diagram line, see cards.md' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_builds_sequence_card() {
+  # Given: R3's before diagram as a sequence
+  cb_cards '(.rows[] | select(.id == "R3") | .card.before) = "sequenceDiagram\n  participant S as SMS sender\n  S->>Q: send (retry 3)\n  Q-->>S: ok"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "page: $T/clean-improve-architecture-acme-shop.html" "$out"
+}
+
 cases=(
   "builds the report page with its counts|t_cb_builds_report"
   "says nothing found for no rows|t_cb_nothing_found"
@@ -209,4 +241,7 @@ cases=(
   "refuses a card with no after diagram|t_cb_refuses_card_no_after"
   "refuses a view it does not know|t_cb_refuses_view"
   "refuses a Known card that asks a question|t_cb_refuses_known_card_choice"
+  "refuses a dotted arrow label with dots|t_cb_refuses_dotted_label"
+  "refuses a card diagram line it does not know|t_cb_refuses_card_line"
+  "builds a sequence card|t_cb_builds_sequence_card"
 )
