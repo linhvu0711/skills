@@ -192,7 +192,7 @@ _Avoid_: inspired by
 ## Checks
 
 **Repo check**:
-The GitHub Action that checks every push and pull request: each skill has its README and license files, and every relative path points to a file that exists.
+The GitHub Action that checks every pull request and every push to main: each skill has its README and license files, and every relative path points to a file that exists.
 _Avoid_: CI lint
 
 ## CI audit
