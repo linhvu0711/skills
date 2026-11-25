@@ -355,9 +355,10 @@ lives for one run:
   `bash scripts/handoff.sh release <session>` once the run ends. A Mac
   no one gives back ends by itself after 4 hours.
 - A destroy that fails keeps the Mac's row: the watch prints `mac.sh`'s
-  line, which names the Mac and the hand command, and tries again on
-  its next poll; `release` exits 1. Tell the user that line: the Mac
-  costs money until it goes.
+  line, which names the Mac and the hand command, and with `--follow`
+  tries again on its next poll; `release` exits 1. Tell the user that
+  line: the Mac costs money until it goes. A watch without `--follow`
+  stops there, so run `release` again later.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
