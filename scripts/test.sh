@@ -1492,6 +1492,18 @@ t_subject_hook_passes_revert() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
+t_subject_hook_passes_git_merge() {
+  # Given: a branch with a 50-character name, one commit ahead
+  local b; b="$(times 50 a)"
+  hooked; git switch -qc "$b"; printf 'x\n' > a.md; git add a.md; git commit -qm a
+  git switch -q -; printf 'y\n' > b.md; git add b.md; git commit -qm b
+  # When: git writes the subject `Merge branch '<b>'`
+  run git merge --no-ff --no-edit "$b"
+  # Then
+  eq exit 0 "$code"
+  eq commits 4 "$(git rev-list --count HEAD)"
+}
+
 t_marked_change_runs_subject_check() {
   # Given
   hooked; printf 'x\n' > a.md; git add a.md
@@ -1692,6 +1704,7 @@ cases=(
   "commit hook counts characters, not bytes|t_subject_hook_counts_characters"
   "commit hook lets a long Merge subject through|t_subject_hook_passes_merge"
   "commit hook lets a long Revert subject through|t_subject_hook_passes_revert"
+  "commit hook lets the subject of a git merge through|t_subject_hook_passes_git_merge"
   "Readme marker does not skip the subject check|t_marked_change_runs_subject_check"
   "readme hook asks a skill that names a changed core file|t_readme_hook_asks_named_core"
   "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
