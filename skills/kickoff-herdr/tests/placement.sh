@@ -96,6 +96,15 @@ t_pl_pick_full() {
   eq stdout "None" "$out"
 }
 
+t_pl_pick_stacked() {
+  # Given: this tab w1:t1's last column holds two stacked panes, w1:p4
+  # 60 wide listed before w1:p3 100 wide
+  # When
+  pl 'print(placement.pick("w1:t1", [("w1:t1", lay("w1:p1:0:100 w1:p4:100:60 w1:p3:100:100", "0:200"))]))'
+  # Then
+  eq stdout "('w1:t1', 'w1:p3')" "$out"
+}
+
 cases=(
   "placement imports without running|t_pl_imports"
   "next_resize shrinks a column that is too wide|t_pl_shrinks"
@@ -106,4 +115,5 @@ cases=(
   "pick keeps a tab of 2 columns and its right pane|t_pl_pick_two_columns"
   "pick passes a full tab for the tab with fewest columns|t_pl_pick_fewest"
   "pick gives nothing when every tab is full|t_pl_pick_full"
+  "pick splits the widest pane of a stacked column|t_pl_pick_stacked"
 )
