@@ -1226,6 +1226,18 @@ t_fs_close_epics_refused() {
   eq stdout "#70 not closed: GraphQL: Resource not accessible by integration" "$out"
 }
 
+t_fs_close_epics_sub_reopened() {
+  # Given: a done run of epic #70; its sub-issue #71 opened again after the last check
+  fs_done_epic; printf '' > "$FAKE_GH/issue-close.json"
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"}]' "Order export"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "#70 not closed: #71 is still open" "$out"
+  eq "close calls" no "$([ -e "$FAKE_GH/issue-close.calls" ] && echo yes || echo no)"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2731,6 +2743,7 @@ cases=(
   "close-epics closes the open epic of a done run|t_fs_close_epics_closes_done_epic"
   "close-epics stops on a run that is not done|t_fs_close_epics_not_done"
   "close-epics reports a refused close and exits 0|t_fs_close_epics_refused"
+  "close-epics leaves an epic whose sub-issue opened again|t_fs_close_epics_sub_reopened"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"

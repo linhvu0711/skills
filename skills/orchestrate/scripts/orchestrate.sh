@@ -1082,13 +1082,46 @@ cmd_close_epics() {
   newest_run
   # An epic stays at stage epic all run long, with open sub-issues; only a done run makes the close safe.
   [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
-  local r
-  for r in $(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S"); do
-    if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
-      printf '%s closed\n' "$(label_of "$r")"
-    else
-      printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+  local pending left got r kind val closed
+  pending="$(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S")"
+  # Each pass reads the epics again just before the close, since a sub-issue
+  # can open again after the last check. An inner epic closes a pass before
+  # its parent, so a parent waits for the pass after.
+  while [ -n "$pending" ]; do
+    # shellcheck disable=SC2086 # one word per ref
+    if ! got="$(read_issues $pending)"; then
+      for r in $pending; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done
+      return 0
     fi
+    closed=0; left=""
+    for r in $pending; do
+      IFS=$'\t' read -r kind val < <(jq -r --arg r "$r" '.[$r] as $i
+        | if $i == null then ["error", "not found"]
+          elif $i.error then ["error", $i.error]
+          elif $i.state == "CLOSED" then ["closed", ""]
+          elif any($i.closedByPullRequestsReferences.nodes[]; .state == "OPEN") then
+            ["pr", ([$i.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url][0])]
+          elif any($i.subIssues.nodes[]; .state == "OPEN") then
+            ["sub", ([$i.subIssues.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"][0])]
+          else ["ready", ""] end | @tsv' <<<"$got")
+      case "$kind" in
+        error) printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$val" ;;
+        closed) printf '%s already closed\n' "$(label_of "$r")" ;;
+        pr) printf '%s not closed: %s is open\n' "$(label_of "$r")" "$val" ;;
+        sub) left="$left $r=$val" ;;
+        ready)
+          if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
+            printf '%s closed\n' "$(label_of "$r")"; closed=$((closed + 1))
+          else
+            printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+          fi ;;
+      esac
+    done
+    if [ "$closed" -eq 0 ]; then
+      for r in $left; do printf '%s not closed: %s is still open\n' "$(label_of "${r%%=*}")" "$(label_of "${r#*=}")"; done
+      return 0
+    fi
+    pending="$(for r in $left; do printf '%s\n' "${r%%=*}"; done)"
   done
 }
 
