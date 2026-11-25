@@ -321,6 +321,20 @@ t_ko_three_columns() {
   has report " · split in w1:t4" "$out"
 }
 
+t_ko_room_reads_no_other_tab() {
+  # Given: this tab w1:t1 holds one column; tab w1:t3's layout read fails
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  printf '{"result":{"tabs":[{"tab_id":"w1:t1"},{"tab_id":"w1:t3"}]}}\n' > "$FAKE_HERDR/tab-list.json"
+  ko_panes w1:p1=w1:t1 w1:p5=w1:t3
+  ko_layout w1:p1 1 'w1:p1:0:200' ''
+  ko_layout w1:p2 1 'w1:p1:0:100 w1:p2:100:100' '0:200'
+  # When
+  ko_go https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  lacks "w1:t3 read" "pane layout --pane w1:p5" "$(cat "$T/herdr.log")"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -344,4 +358,5 @@ cases=(
   "a tab of 1 column is split in place|t_ko_one_column"
   "a tab of 2 columns is split and evened|t_ko_two_columns"
   "a tab of 3 columns sends the pane to the tab with fewest|t_ko_three_columns"
+  "a tab with room reads no other tab|t_ko_room_reads_no_other_tab"
 )

@@ -67,27 +67,29 @@ def room(lay):
 def pick(my_tab, layouts):
     """Where to split, as (tab_id, pane_id): my_tab when it has room, else the
     first other tab with the fewest columns that has room, else None. layouts
-    is [(tab_id, layout or None)] in herdr's tab order. The pane is the last
-    column's."""
-    mine = room(dict(layouts).get(my_tab))
-    if mine:
-        return my_tab, mine[-1]["pane_id"]
+    gives (tab_id, layout or None), my_tab first, then herdr's tab order, and
+    is read only as far as needed, so a tab with room reads no other tab. The
+    pane is the last column's."""
     best = None
     for tab, lay in layouts:
-        cols = None if tab == my_tab else room(lay)
-        if cols and (best is None or len(cols) < len(best[1])):
+        cols = room(lay)
+        if tab == my_tab:
+            if cols:
+                return my_tab, cols[-1]["pane_id"]
+        elif cols and (best is None or len(cols) < len(best[1])):
             best = (tab, cols)
     return (best[0], best[1][-1]["pane_id"]) if best else None
 
 
 def tab_layouts(workspace, my_tab):
-    """Each tab's layout, my_tab first, read through its first listed pane."""
+    """Each tab's layout, my_tab first, read through its first listed pane,
+    one tab at a time as the caller asks."""
     first = {}
     for p in herdr("pane", "list", "--workspace", workspace)["panes"]:
         first.setdefault(p["tab_id"], p["pane_id"])
     tabs = [t["tab_id"] for t in herdr("tab", "list", "--workspace", workspace)["tabs"]]
-    order = [my_tab] + [t for t in tabs if t != my_tab]
-    return [(t, layout(first[t]) if t in first else None) for t in order]
+    for t in [my_tab] + [t for t in tabs if t != my_tab]:
+        yield t, (layout(first[t]) if t in first else None)
 
 
 def next_resize(lay, tolerance=2):
