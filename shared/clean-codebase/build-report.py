@@ -93,10 +93,24 @@ def diagram_problems(source):
     if head not in ("flowchart LR", "flowchart TD", "sequenceDiagram"):
         yield 1, "start with flowchart LR, flowchart TD, or sequenceDiagram"
         return
-    forms = SEQUENCE if head == "sequenceDiagram" else FLOWCHART
+    sequence = head == "sequenceDiagram"
+    forms = SEQUENCE if sequence else FLOWCHART
+    openers = ("loop", "alt", "opt") if sequence else ("subgraph",)
+    blocks = []
     for n, line in enumerate(lines[1:], 2):
         line = line.strip()
-        if not line or line.startswith("%%") or any(re.fullmatch(form, line) for form in forms):
+        if not line or line.startswith("%%"):
+            continue
+        if any(re.fullmatch(form, line) for form in forms):
+            word = line.split()[0]
+            if word in openers:
+                blocks.append((n, word))
+            elif word == "else" and (not blocks or blocks[-1][1] != "alt"):
+                yield n, "else outside an alt block"
+            elif word == "end" and not blocks:
+                yield n, "end with no open block"
+            elif word == "end":
+                blocks.pop()
             continue
         if re.search(r"-\.\s.+\s\.->", line) or re.search(r'-\.->\|[^"]', line):
             yield n, 'write an arrow label as -.->|"text"|'
@@ -104,6 +118,8 @@ def diagram_problems(source):
             yield n, 'write an arrow label as -->|"text"|'
         else:
             yield n, "not a card diagram line, see cards.md"
+    for n, word in blocks:
+        yield n, f"{word} with no end"
 
 
 def plural(n, one, many):

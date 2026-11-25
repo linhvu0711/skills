@@ -214,6 +214,27 @@ t_cb_refuses_card_line() {
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
+t_cb_refuses_unclosed_subgraph() {
+  # Given: R2's before diagram opens a subgraph and never ends it
+  cb_cards '(.rows[] | select(.id == "R2") | .card.before) = "flowchart LR\n  subgraph Deep[Module]\n  K[Checkout] --> P[Pricing]"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'row R2 before line 2: subgraph with no end' "$out"
+  eq page "" "$(ls "$T" | grep '\.html' || true)"
+}
+
+t_cb_refuses_sequence_blocks() {
+  # Given: R3's before diagram with an else outside alt and a loop with no end
+  cb_cards '(.rows[] | select(.id == "R3") | .card.before) = "sequenceDiagram\n  S->>Q: send\n  else failed\n  loop retry 3\n  Q-->>S: ok"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout "$(printf 'row R3 before line 3: else outside an alt block\nrow R3 before line 4: loop with no end')" "$out"
+}
+
 t_cb_builds_sequence_card() {
   # Given: R3's before diagram as a sequence
   cb_cards '(.rows[] | select(.id == "R3") | .card.before) = "sequenceDiagram\n  participant S as SMS sender\n  S->>Q: send (retry 3)\n  Q-->>S: ok"'
@@ -243,5 +264,7 @@ cases=(
   "refuses a Known card that asks a question|t_cb_refuses_known_card_choice"
   "refuses a dotted arrow label with dots|t_cb_refuses_dotted_label"
   "refuses a card diagram line it does not know|t_cb_refuses_card_line"
+  "refuses a subgraph with no end|t_cb_refuses_unclosed_subgraph"
+  "refuses an else outside alt and a loop with no end|t_cb_refuses_sequence_blocks"
   "builds a sequence card|t_cb_builds_sequence_card"
 )
