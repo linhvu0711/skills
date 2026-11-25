@@ -66,7 +66,7 @@ A failed search: the rows stay as they are, and `not_checked` gets the line `Kno
    python3 build_report.py "$HOME/.agents/artifacts/codebase/clean-<skill>-<owner>-<repo>.json"
    ```
 
-   It prints `page: <path>`. Problem lines name each fault in the rows file: fix the file and build again.
+   It prints `page: <path>`. Problem lines on stderr name each fault in the rows file: fix the file and build again.
 3. Serve it with the shared serve script, which prints its URL:
 
    ```bash

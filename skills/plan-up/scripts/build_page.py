@@ -3,8 +3,8 @@
 
     build_page.py <plan-slug.md>
 
-Prints `page: <html path>` and exits 0. Prints each problem and exits 1
-without changing the old page when a block is bad.
+Prints `page: <html path>` and exits 0. Prints each problem on stderr and
+exits 1 without changing the old page when a block is bad.
 """
 import argparse
 import json
@@ -125,13 +125,11 @@ def main():
     path = ap.parse_args().plan
     plan = plan_reader.read(path)
     if not plan["reviews"]:
-        print(f"not a plan-up .md: {os.path.basename(path)}")
-        sys.exit(1)
+        sys.exit(f"stop: not a plan-up .md: {os.path.basename(path)}")
     data = page_data(plan)
     problems = [*plan_reader.problems(plan), *tick_problems(data)]
     if problems:
-        print("\n".join(problems))
-        sys.exit(1)
+        sys.exit("\n".join(problems))
     assets = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "assets")
     with open(os.path.join(assets, "shell.html"), encoding="utf-8") as f:
         shell = f.read()

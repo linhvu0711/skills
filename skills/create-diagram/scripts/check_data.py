@@ -4,7 +4,7 @@
     check_data.py <page .html>
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
-problem and exits 1 when it is not: a type the catalog does not list, an
+problem on stderr and exits 1 when it is not: a type the catalog does not list, an
 id that points at nothing, an id used twice or left out, a step number
 that is not a step, a label left out, or more than the type's node budget,
 read from references/catalog.md.
@@ -129,18 +129,15 @@ def main():
     with open(path, encoding="utf-8") as f:
         data, error = read_data(f.read(), path)
     if error:
-        print(error)
-        sys.exit(1)
+        sys.exit(f"stop: {error}")
     limits = budgets().get(data.get("type"))
     if limits is None:
-        print(f'type "{data.get("type", "")}" is not a catalog type')
-        sys.exit(1)
+        sys.exit(f'stop: type "{data.get("type", "")}" is not a catalog type')
     sequence = data["type"] == "sequence"
     found = list(sequence_problems(data) if sequence else graph_problems(data))
     found += budget_problems(data, limits)
     if found:
-        print("\n".join(found))
-        sys.exit(1)
+        sys.exit("\n".join(found))
     if sequence:
         print(f'ok: sequence, {len(data.get("participants", []))} participants, {len(data.get("steps", []))} steps')
     else:

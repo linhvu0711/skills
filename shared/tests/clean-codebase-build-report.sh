@@ -48,7 +48,8 @@ t_cb_refuses_advice() {
   cb_build "$T/clean-prune-codebase-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R2: advice "delete" is not fix, keep-and-mark, or fine' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R2: advice "delete" is not fix, keep-and-mark, or fine' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -59,7 +60,8 @@ t_cb_refuses_not_checked() {
   cb_build "$T/clean-prune-codebase-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'rows file: "not_checked" is not a list of lines' "$out"
+  eq stdout "" "$out"
+  eq stderr 'rows file: "not_checked" is not a list of lines' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -70,7 +72,8 @@ t_cb_refuses_label() {
   cb_build "$T/clean-prune-codebase-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R1 place 2: label "Guess" is not Seen or Inferred' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R1 place 2: label "Guess" is not Seen or Inferred' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -81,7 +84,8 @@ t_cb_refuses_known_no_ticket() {
   cb_build "$T/clean-prune-codebase-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R5: known needs a ticket' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R5: known needs a ticket' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -155,7 +159,8 @@ t_cb_refuses_card_badge() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R1: badge "Great" is not Strong, Worth exploring, or Speculative' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R1: badge "Great" is not Strong, Worth exploring, or Speculative' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -166,7 +171,8 @@ t_cb_refuses_card_no_after() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R2: card has no after diagram' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R2: card has no after diagram' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -177,7 +183,8 @@ t_cb_refuses_view() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'view "grid" is not rows or cards' "$out"
+  eq stdout "" "$out"
+  eq stderr 'view "grid" is not rows or cards' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -188,7 +195,8 @@ t_cb_refuses_known_card_choice() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R3: a Known row asks nothing, so choice is false' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R3: a Known row asks nothing, so choice is false' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -199,7 +207,8 @@ t_cb_refuses_dotted_label() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R2 before line 2: write an arrow label as -.->|"text"|' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R2 before line 2: write an arrow label as -.->|"text"|' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -210,7 +219,8 @@ t_cb_refuses_card_line() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R1 after line 2: not a card diagram line, see cards.md' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R1 after line 2: not a card diagram line, see cards.md' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -221,7 +231,8 @@ t_cb_refuses_unclosed_subgraph() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'row R2 before line 2: subgraph with no end' "$out"
+  eq stdout "" "$out"
+  eq stderr 'row R2 before line 2: subgraph with no end' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -232,7 +243,8 @@ t_cb_refuses_sequence_blocks() {
   cb_build "$T/clean-improve-architecture-acme-shop.json"
   # Then
   eq exit 1 "$code"
-  eq stdout "$(printf 'row R3 before line 3: else outside an alt block\nrow R3 before line 4: loop with no end')" "$out"
+  eq stdout "" "$out"
+  eq stderr "$(printf 'row R3 before line 3: else outside an alt block\nrow R3 before line 4: loop with no end')" "$err"
 }
 
 t_cb_builds_nested_sequence() {

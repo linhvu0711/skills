@@ -7,7 +7,7 @@ The page shows; it takes no pick. The pick comes back in chat, as card numbers (
 ## Writing and showing it
 
 - Folder: `$HOME/.agents/artifacts/retro/<owner>-<repo>-<YYYYMMDD-HHMM>/`, made for this run and holding only `cards.json` and `report.html`, since the server shares the whole folder. Transcripts and bundles stay in the scratch folders.
-- Build the page: `python3 scripts/build_report.py <folder>/cards.json`. It prints `page: <path>`. Problem lines name each fault in the cards file: fix the file and build again.
+- Build the page: `python3 scripts/build_report.py <folder>/cards.json`. It prints `page: <path>`. Problem lines on stderr name each fault in the cards file: fix the file and build again.
 - Tailwind, from its play CDN in the head of `assets/report.html`, is the only script.
 - The layout works at phone width: the page's 16px side gutter, no horizontal page scroll; the overview table scrolls inside its own box.
 - Serve and open it:

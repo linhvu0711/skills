@@ -4,8 +4,8 @@
     build_report.py <cards .json>
 
 Writes report.html next to the cards file, prints `page: <html path>`, and
-exits 0. Prints each problem and exits 1 without changing the old page when
-the cards file is bad.
+exits 0. Prints each problem on stderr and exits 1 without changing the old
+page when the cards file is bad.
 """
 import argparse
 import json
@@ -289,8 +289,7 @@ def main():
         cards = json.load(f)
     found = list(problems(cards))
     if found:
-        print("\n".join(found))
-        sys.exit(1)
+        sys.exit("\n".join(found))
     assets = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "assets")
     with open(os.path.join(assets, "report.html"), encoding="utf-8") as f:
         shell = f.read()
