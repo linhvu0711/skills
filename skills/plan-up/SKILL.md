@@ -6,18 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-The rules live in `../../shared/plan.md`, the plan rules, and in
-`references/`: `executor.md` and `probes.md`. Each step names the section it reads,
-as `../../shared/plan.md` § Change map: read from that heading to the
-next heading of its level or higher, not the whole file. A heading
-inside a code fence belongs to a template, not a section. A step that
-needs a whole file says so and why. First read `../../shared/plan.md`
-§ Vocabulary: its words run through every step. At steps 8 and 9,
-read `../../shared/plan-page.md`: where the plan is written
-and how it is shown. Before a `Decided` line adds a module or a seam, on the full
-path or the short one, read `../../shared/codebase-design.md`:
-the new one must pass its deletion test, and a seam needs two adapters.
-This file is the order of operations.
+The rules live in `../../shared/plan.md`, the plan rules, and in `references/`: `executor.md` and `probes.md`. Each step names the section it reads, as `../../shared/plan.md` § Change map: read from that heading to the next heading of its level or higher, not the whole file. A heading inside a code fence belongs to a template, not a section. A step that needs a whole file says so and why. First read `../../shared/plan.md` § Vocabulary: its words run through every step. At steps 8 and 9, read `../../shared/plan-page.md`: where the plan is written and how it is shown. Before a `Decided` line adds a module or a seam, on the full path or the short one, read `../../shared/codebase-design.md`: the new one must pass its deletion test, and a seam needs two adapters. This file is the order of operations.
 
 You plan; you do not build, and the repo is left as you found it. Facts
 come from reading, and from a probe when reading leaves a doubt the plan
