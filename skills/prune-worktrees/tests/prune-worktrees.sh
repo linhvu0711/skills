@@ -31,6 +31,11 @@ wt() {
   local i; for i in $(seq "${3:-1}"); do git -C "$1" commit -q --allow-empty -m "c$i"; done
 }
 
+# root_wt <worktree> <branch>: a new repo (repo, on main) with a worktree at
+# <worktree> on <branch>, merged into main. It runs in a subshell, so T, R,
+# and the folder the case runs prune from stay the session's repo.
+root_wt() { ( repo; git branch -M main; git worktree add -q -b "$2" "$1" main; git merge -q --ff-only "$2" ); }
+
 t_prune_removes_merged() {
   wt_repo; gh_remote; fake_gh; wt "$T/elsewhere/feat-1-a" feat/1-a
   head_pr feat/1-a 43 MERGED "$(git rev-parse feat/1-a)"
@@ -160,10 +165,7 @@ t_prune_clears_stale() {
 
 t_prune_all() {
   wt_repo; gh_remote; fake_gh
-  mkdir "$T/b"; git -C "$T/b" init -q -b main
-  git -C "$T/b" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
-  git -C "$T/b" worktree add -q -b feat/2-b "$T/root/b/feat-2-b" main
-  git -C "$T/b" merge -q --ff-only feat/2-b
+  root_wt "$T/root/b/feat-2-b" feat/2-b
   run env WORKTREES_ROOT="$T/root" bash "$P" all
   eq exit 0 "$code"
   eq stdout "$(printf 'removed %s (<1M), branch feat/2-b deleted (-d)\nfreed <1M' "$T/root/b/feat-2-b")" "$out"
@@ -172,15 +174,8 @@ t_prune_all() {
 
 t_prune_all_both_shapes() {
   wt_repo; gh_remote; fake_gh
-  local r
-  for r in b c; do
-    mkdir "$T/$r"; git -C "$T/$r" init -q -b main
-    git -C "$T/$r" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
-  done
-  git -C "$T/b" worktree add -q -b feat/2-b "$T/root/b/feat-2-b" main
-  git -C "$T/b" merge -q --ff-only feat/2-b
-  git -C "$T/c" worktree add -q -b feat/3-c "$T/root/acme/c/feat-3-c" main
-  git -C "$T/c" merge -q --ff-only feat/3-c
+  root_wt "$T/root/b/feat-2-b" feat/2-b
+  root_wt "$T/root/acme/c/feat-3-c" feat/3-c
   run env WORKTREES_ROOT="$T/root" bash "$P" all
   eq stdout "$(printf 'removed %s (<1M), branch feat/3-c deleted (-d)\nremoved %s (<1M), branch feat/2-b deleted (-d)\nfreed <1M' "$T/root/acme/c/feat-3-c" "$T/root/b/feat-2-b")" "$out"
 }
