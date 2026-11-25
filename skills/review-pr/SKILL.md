@@ -79,7 +79,8 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
    - The Standard: `../../shared/coding-standards/standard.md`
      § Reading the Standard, pasted in full. Return one line per rule,
      `<path:line> | <the rule, verbatim>`.
-   - The ADRs: the changed files from step 1's stat, pasted. Read each
+   - The ADRs: the changed files, from
+     `git diff --name-status <base>...HEAD`, pasted. Read each
      `docs/adr/*.md`. Leave out one whose `status:` line starts with
      `deprecated` or `superseded`. Keep one whose decision is about a
      changed file: it names the file, its folder, or the part the file
