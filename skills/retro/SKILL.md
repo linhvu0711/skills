@@ -30,9 +30,9 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    It prints `harnesses`, `sessions`, and `unread`. Keep the `sessions` rows whose `harness` the sources keep.
 
-   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is.
+   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry with an `error` is a harness not read: its error goes to the report.
 
-   Done when every row is kept or dropped with a reason, and every `unread` line is held for the report.
+   Done when every row is kept or dropped with a reason, and every `unread` line and harness `error` is held for the report.
 
 3. **Render.** Make a scratch folder outside every page folder. For each kept session `n`, render its transcript and each helper log in its `subagents`:
 
@@ -137,7 +137,7 @@ Each kind names where its fix lands. The setup map decides the exact file. A fix
 
 ## Read line
 
-The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, each `unread` line, each fix dropped as already in its home, and each home whose check was skipped.
+The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, each `unread` line, each harness whose finder failed, each fix dropped as already in its home, and each home whose check was skipped.
 
 ## Reference
 
