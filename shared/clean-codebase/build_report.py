@@ -12,7 +12,6 @@ import json
 import os
 import re
 import sys
-from pathlib import Path
 
 KEYS = ["skill", "repo", "commit", "date", "scope", "new", "kinds", "changes", "rows"]
 ADVICE = {"fix", "keep-and-mark", "fine"}
@@ -166,22 +165,25 @@ def page_data(report):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("rows", help="the rows .json")
-    path = Path(ap.parse_args().rows)
-    report = json.loads(path.read_text(encoding="utf-8"))
+    path = ap.parse_args().rows
+    with open(path, encoding="utf-8") as f:
+        report = json.load(f)
     found = list(problems(report))
     if found:
         print("\n".join(found))
         sys.exit(1)
-    shell = (Path(__file__).resolve().parent / "report.html").read_text(encoding="utf-8")
-    output = path.with_suffix(".html")
-    tmp = output.with_suffix(".html.tmp")
+    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "report.html"), encoding="utf-8") as f:
+        shell = f.read()
+    output = os.path.splitext(path)[0] + ".html"
+    tmp = output + ".tmp"
     payload = json.dumps(page_data(report), ensure_ascii=False).replace("<", r"\u003c")
     try:
-        tmp.write_text(shell.replace("const DATA = {};", "const DATA = " + payload + ";"), encoding="utf-8")
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(shell.replace("const DATA = {};", "const DATA = " + payload + ";"))
         os.replace(tmp, output)
     finally:
-        if tmp.exists():
-            tmp.unlink()
+        if os.path.exists(tmp):
+            os.remove(tmp)
     print(f"page: {output}")
 
 

@@ -11,17 +11,18 @@ read from references/catalog.md.
 """
 import argparse
 import json
+import os
 import re
 import sys
-from pathlib import Path
 
 MARK = re.compile(r"const DATA\s*=\s*")
-CATALOG = Path(__file__).resolve().parent.parent / "references" / "catalog.md"
+CATALOG = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "references", "catalog.md")
 
 
 def budgets():
     """Per catalog type, its limits as (what, max) pairs, from the Node budget table."""
-    text = CATALOG.read_text(encoding="utf-8")
+    with open(CATALOG, encoding="utf-8") as f:
+        text = f.read()
     table = text.split("## Node budget", 1)[1].split("\n\n", 2)[1]
     found = {}
     for row in table.splitlines()[2:]:
@@ -125,7 +126,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("page", help="the page .html")
     path = ap.parse_args().page
-    data, error = read_data(Path(path).read_text(encoding="utf-8"), path)
+    with open(path, encoding="utf-8") as f:
+        data, error = read_data(f.read(), path)
     if error:
         print(error)
         sys.exit(1)

@@ -12,7 +12,6 @@ import json
 import os
 import sys
 from html import escape
-from pathlib import Path
 
 
 KEYS = ["repo", "scope", "window", "counts", "read", "items", "cards", "questions", "top_why"]
@@ -285,21 +284,25 @@ def page(cards, shell):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cards", help="the cards .json")
-    path = Path(ap.parse_args().cards)
-    cards = json.loads(path.read_text(encoding="utf-8"))
+    path = ap.parse_args().cards
+    with open(path, encoding="utf-8") as f:
+        cards = json.load(f)
     found = list(problems(cards))
     if found:
         print("\n".join(found))
         sys.exit(1)
-    shell = (Path(__file__).resolve().parent.parent / "assets" / "report.html").read_text(encoding="utf-8")
-    output = path.parent / "report.html"
-    tmp = output.with_suffix(".html.tmp")
+    assets = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "assets")
+    with open(os.path.join(assets, "report.html"), encoding="utf-8") as f:
+        shell = f.read()
+    output = os.path.join(os.path.dirname(path), "report.html")
+    tmp = output + ".tmp"
     try:
-        tmp.write_text(page(cards, shell), encoding="utf-8")
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(page(cards, shell))
         os.replace(tmp, output)
     finally:
-        if tmp.exists():
-            tmp.unlink()
+        if os.path.exists(tmp):
+            os.remove(tmp)
     print(f"page: {output}")
 
 

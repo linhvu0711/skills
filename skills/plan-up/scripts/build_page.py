@@ -10,7 +10,6 @@ import argparse
 import json
 import os
 import sys
-from pathlib import Path
 
 import plan_reader
 from plan_reader import BLAST
@@ -123,30 +122,33 @@ def tick_problems(data):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("plan", help="the plan .md")
-    path = Path(ap.parse_args().plan)
+    path = ap.parse_args().plan
     plan = plan_reader.read(path)
     if not plan["reviews"]:
-        print(f"not a plan-up .md: {path.name}")
+        print(f"not a plan-up .md: {os.path.basename(path)}")
         sys.exit(1)
     data = page_data(plan)
     problems = [*plan_reader.problems(plan), *tick_problems(data)]
     if problems:
         print("\n".join(problems))
         sys.exit(1)
-    assets = Path(__file__).resolve().parent.parent / "assets"
-    shell = (assets / "shell.html").read_text(encoding="utf-8")
-    layout = (assets / "layout.js").read_text(encoding="utf-8")
-    output = path.with_suffix(".html")
-    tmp = output.with_suffix(".html.tmp")
+    assets = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "assets")
+    with open(os.path.join(assets, "shell.html"), encoding="utf-8") as f:
+        shell = f.read()
+    with open(os.path.join(assets, "layout.js"), encoding="utf-8") as f:
+        layout = f.read()
+    output = os.path.splitext(path)[0] + ".html"
+    tmp = output + ".tmp"
     payload = json.dumps(data, ensure_ascii=False).replace("</", r"<\/")
     try:
         page = (shell.replace("const DATA = {};", "const DATA = " + payload + ";")
                 .replace('<script src="layout.js"></script>', "<script>\n" + layout + "</script>"))
-        tmp.write_text(page, encoding="utf-8")
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(page)
         os.replace(tmp, output)
     finally:
-        if tmp.exists():
-            tmp.unlink()
+        if os.path.exists(tmp):
+            os.remove(tmp)
     print(f"page: {output}")
 
 

@@ -10,7 +10,6 @@ without an error: a missing block reads as empty. `problems` names each bad
 line, every one, in the order the builder prints them.
 """
 import re
-from pathlib import Path
 
 
 FACTS = "Repo Base Test Typecheck Lint Build Run UI Open Screen Platform Standards".split()
@@ -360,7 +359,8 @@ def layer(section, n, issue, title, review):
 
 
 def read(path):
-    lines = Path(path).read_text(encoding="utf-8").splitlines()
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
     named = blocks(lines)
     top, layer_sections = sections(lines)
     head = key_values(top["head"], ["Size", "Date"])
