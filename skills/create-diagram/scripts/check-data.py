@@ -5,8 +5,9 @@
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
 problem and exits 1 when it is not: a type the catalog does not list, an
-id that points at nothing, an id used twice or left out, a label left out,
-or more than the type's node budget, read from references/catalog.md.
+id that points at nothing, an id used twice or left out, a step number
+that is not a step, a label left out, or more than the type's node budget,
+read from references/catalog.md.
 """
 import json
 import re
@@ -86,6 +87,11 @@ def graph_problems(data):
 
 def sequence_problems(data):
     yield from id_problems("participants", data.get("participants", []), set())
+    count = len(data.get("steps", []))
+
+    def is_step(value):
+        return type(value) is int and 0 <= value < count
+
     people = {p["id"] for p in data.get("participants", []) if "id" in p}
     for person in data.get("participants", []):
         if "label" not in person:
@@ -99,6 +105,9 @@ def sequence_problems(data):
     for i, frame in enumerate(data.get("frames", [])):
         if "label" not in frame:
             yield f'frames[{i}]: no label'
+        for end in ("from", "to"):
+            if not is_step(frame.get(end)):
+                yield f'frames[{i}]: {end} {json.dumps(frame.get(end))} is not a step'
         for p in frame.get("participants", []):
             if p not in people:
                 yield f'frames[{i}]: participant "{p}" is not a participant'
@@ -107,6 +116,8 @@ def sequence_problems(data):
             yield f'notes[{i}]: at "{note.get("at")}" is not a participant'
         if "text" not in note:
             yield f'notes[{i}]: no text'
+        if note.get("after") is not None and not is_step(note["after"]):
+            yield f'notes[{i}]: after {json.dumps(note["after"])} is not a step'
 
 
 def main():
