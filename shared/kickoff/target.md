@@ -91,8 +91,9 @@ So you can answer questions about it:
 
   `--model` and `--effort` still win over every row. With `ready-pr`,
   the thread gets the open PR that closes the issue, as `/ready-pr #43`,
-  in place of the issue. An issue with no open PR, or with two or more,
-  stops.
+  in place of the issue. A PR in another repo keeps its URL, as
+  `/ready-pr https://github.com/acme/lib/pull/9`. An issue with no open
+  PR, or with two or more, stops.
 - Permission mode: kickoff-herdr starts Claude in `auto`. A kickoff-t3 thread takes the mode of the chat that starts it, so a chat in full access starts threads in full access, where helpers in Antigravity run their commands without asking the user at each one.
 - Repo path: found by the checkout resolver,
   `../checkout.sh main <owner/repo>`, whose header says where it looks.
