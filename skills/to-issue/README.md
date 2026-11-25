@@ -28,7 +28,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Needs
 
 - `gh`, signed in.
-- `python3`, for `scripts/conventions.py`, which remembers each repo's title style and size labels.
+- `python3`, for the shared core's [issue-conventions.py](../../shared/issue-conventions.py), which remembers each repo's title style and size labels.
 - Readers for the lookup round, per the reader job in `../../shared/facts.md` (Codex reads the files itself).
 - A clipboard tool, optional, for the URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md) (gate, types, body template, labels) and [size.md](../../shared/size.md), the size ruler.
@@ -40,7 +40,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Puts doc text that a [grill](../grill/) agreed on (a glossary entry, an ADR) under `## Docs to write`, so it lands in the PR that ships the code.
 - Sends XL work to [to-epic](../to-epic/).
 - Sends a loose idea, or a bug with no agreed fix, to [capture](../capture/).
-- Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff-herdr](../kickoff-herdr/). [handoff](../handoff/) reads the size labels through its `scripts/conventions.py`.
+- Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff-herdr](../kickoff-herdr/). [handoff](../handoff/) reads the size labels through the same script.
 
 ## Credits
 
