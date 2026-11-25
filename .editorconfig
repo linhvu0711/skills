@@ -1,0 +1,13 @@
+root = true
+
+[*.{sh,bash,js,cjs,mjs,html,css,json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+[scripts/hooks/*]
+indent_style = space
+indent_size = 2
