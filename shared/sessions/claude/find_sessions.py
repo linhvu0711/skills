@@ -28,7 +28,6 @@ Usage:
     find_sessions.py "..." --limit 40                   # show more candidates (0: all)
 """
 import argparse
-import datetime as dt
 import glob
 import importlib.util
 import json
@@ -79,7 +78,7 @@ def project_session_dir(project_dir):
 def session_dirs(project_dirs, include_subdirs, all_projects):
     """The project folders to read. With include_subdirs, also every folder whose
     encoded name extends a root's, such as <root>/.claude/worktrees/<name>; the
-    encoding is lossy, so in_scope() checks each session's real cwd after."""
+    encoding is lossy, so each session's real cwd is checked after."""
     root = os.path.join(os.path.expanduser("~"), ".claude", "projects")
     if not os.path.isdir(root):
         return []
@@ -97,33 +96,11 @@ def session_dirs(project_dirs, include_subdirs, all_projects):
     return out
 
 
-def in_scope(sess, project_dirs, include_subdirs, all_projects):
-    """True when the session belongs to one of the roots: its recorded cwd is a
-    root, or with include_subdirs below one. Two paths can share a folder name
-    (/p/a-b and /p/a/b), so the cwd decides; a transcript with no cwd counts
-    when its folder is a root's own folder."""
-    if all_projects:
-        return True
-    folder = os.path.basename(os.path.dirname(sess["path"]))
-    cwd = sess.get("cwd")
-    for d in project_dirs:
-        d = os.path.abspath(d)
-        if not cwd:
-            if folder == encode_cwd(d):
-                return True
-            continue
-        if cwd == d or (include_subdirs and cwd.startswith(d.rstrip(os.sep) + os.sep)):
-            return True
-    return False
-
-
-def in_window(mtime, days):
-    """By last activity, in local time: within the last N days counting today
-    as the first."""
-    when = dt.date.fromtimestamp(mtime)
-    if days:
-        return when >= dt.date.today() - dt.timedelta(days=days - 1)
-    return True
+def folder_is_root(sess, roots):
+    """A transcript with no cwd counts when its folder is a root's own folder.
+    With a cwd, the cwd decides, since two paths can share a folder name
+    (/p/a-b and /p/a/b)."""
+    return os.path.basename(os.path.dirname(sess["path"])) in {encode_cwd(r) for r in roots}
 
 
 def strip_wrappers(text):
@@ -256,9 +233,10 @@ def main():
 
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
     files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
-    files = [p for p in files if in_window(os.path.getmtime(p), args.days)]
+    scope = adapter_lib.Scope.last_days(None if args.all_projects else project_dirs, args.include_subdirs, args.days)
+    files = [p for p in files if scope.in_window(os.path.getmtime(p))]
     sessions = [s for s in (parse_session(p) for p in files)
-                if s and in_scope(s, project_dirs, args.include_subdirs, args.all_projects)]
+                if s and (scope.in_roots(s.get("cwd")) or (not s.get("cwd") and folder_is_root(s, scope.roots)))]
 
     ranked, use_query = rank.pick(sessions, sessions, args.query, WEIGHTS, args.all)
 

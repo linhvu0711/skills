@@ -2,15 +2,13 @@
 
 A harness folder with an ``adapter.py`` is one harness retro can read. Its
 adapter calls this module's ``main`` with the harness's own finder and
-extractor, and gets the same three subcommands as every other adapter:
+extractor, and gets the same two subcommands as every other adapter:
 
-    adapter.py probe   --root R... | --all-projects  [--since D] [--until D]
     adapter.py find    --root R... | --all-projects  [--since D] [--until D] [--query Q] [--id PREFIX]...
     adapter.py extract <id or path> [--summary] [--after-compact] [--max-result-chars N]
 
-``probe`` prints {"harness", "label", "sessions", "installed"}; "installed" is
-false when the harness keeps none of its folders on this machine, and then
-``find`` prints []. ``find`` prints a JSON list of rows
+A harness that keeps none of its folders on this machine is not installed,
+and its ``find`` prints []. ``find`` prints a JSON list of rows
 {"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
 "score", "current", "prompts", "first_prompt", "age", "active"}, plus
 "unreadable" on a row the harness could not read. Dates are local YYYY-MM-DD
@@ -21,12 +19,15 @@ last activity in epoch seconds, for sorting. ``extract --summary`` renders
 only the prompts and the replies; ``--after-compact`` starts at the last
 compaction summary in a harness that has one, and a harness with none renders
 the whole session. The finders keep their own flags and keys for the skills
-that call them direct; this hides those differences.
+that call them direct; this hides those differences. find_all.py, next to
+this file, runs every adapter's find in one call through ``find`` and
+``installed``.
 """
 
 from __future__ import annotations
 
 import argparse
+import codecs
 import datetime as dt
 import json
 import os
@@ -52,6 +53,51 @@ class Harness:
         self.current, self.extract_flags = current, extract_flags
 
 
+def first_day(days: int | None) -> dt.date | None:
+    """The first day of the last N days, today counted as the first."""
+    return dt.date.today() - dt.timedelta(days=days - 1) if days else None
+
+
+class Scope:
+    """Which sessions a find keeps: those whose cwd is a root, or below one
+    with subdirs (roots None: every project), and whose last activity falls
+    from since to until, in local days, both ends kept."""
+
+    # A plain class, not a dataclass: most loaders run this file without
+    # putting it in sys.modules, and a dataclass fails that way on Python 3.11
+    # and older.
+    def __init__(self, roots, subdirs: bool = False, since: dt.date | None = None,
+                 until: dt.date | None = None):
+        self.roots = None if roots is None else tuple(os.path.abspath(os.path.expanduser(r)) for r in roots)
+        self.subdirs, self.since, self.until = subdirs, since, until
+
+    @classmethod
+    def last_days(cls, roots, subdirs: bool, days: int | None) -> "Scope":
+        return cls(roots, subdirs, first_day(days))
+
+    def days(self) -> int | None:
+        """The window as the day count a finder's flag takes."""
+        return (dt.date.today() - self.since).days + 1 if self.since else None
+
+    def in_roots(self, cwd) -> bool:
+        if self.roots is None:
+            return True
+        if not cwd:
+            return False
+        c = os.path.normpath(os.path.expanduser(cwd))
+        return any(c == r or (self.subdirs and c.startswith(r.rstrip(os.sep) + os.sep)) for r in self.roots)
+
+    def in_window(self, when: float) -> bool:
+        d = dt.date.fromtimestamp(when)
+        return not (self.since and d < self.since) and not (self.until and d > self.until)
+
+
+def scope_of(args) -> Scope:
+    """A find's scope. Subfolders count, since every adapter asks its finder
+    for them."""
+    return Scope(None if args.all_projects else args.root, True, args.since, args.until)
+
+
 def age(mtime: float) -> str:
     """The row's "age": how long ago mtime was, as "3h ago"."""
     mins = max(0.0, time.time() - mtime) / 60
@@ -72,19 +118,21 @@ def _day(value: str) -> dt.date:
         raise argparse.ArgumentTypeError(f"not a YYYY-MM-DD date: {value}")
 
 
+def find_args(p: argparse.ArgumentParser) -> None:
+    """The arguments of a find: where, when, and what."""
+    where = p.add_mutually_exclusive_group(required=True)
+    where.add_argument("--root", action="append", help="a project folder; repeat for several, subfolders count")
+    where.add_argument("--all-projects", action="store_true")
+    p.add_argument("--since", type=_day, help="first day of last activity, YYYY-MM-DD")
+    p.add_argument("--until", type=_day, help="last day of last activity, YYYY-MM-DD")
+    p.add_argument("--query", default="", help="keywords the finder scores")
+    p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
+
+
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="One harness's sessions, in the shape every adapter shares.")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for cmd in ("probe", "find"):
-        p = sub.add_parser(cmd)
-        where = p.add_mutually_exclusive_group(required=True)
-        where.add_argument("--root", action="append", help="a project folder; repeat for several, subfolders count")
-        where.add_argument("--all-projects", action="store_true")
-        p.add_argument("--since", type=_day, help="first day of last activity, YYYY-MM-DD")
-        p.add_argument("--until", type=_day, help="last day of last activity, YYYY-MM-DD")
-        if cmd == "find":
-            p.add_argument("--query", default="", help="keywords the finder scores")
-            p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
+    find_args(sub.add_parser("find"))
     p = sub.add_parser("extract")
     p.add_argument("path", help="a session id or the path of its file")
     p.add_argument("--summary", action="store_true", help="only the prompts and the replies")
@@ -94,30 +142,44 @@ def _parser() -> argparse.ArgumentParser:
     return ap
 
 
-def _find(h: Harness, args) -> list[dict]:
-    roots = None if args.all_projects else [os.path.abspath(os.path.expanduser(r)) for r in args.root]
-    days = (dt.date.today() - args.since).days + 1 if args.since else None
-    if days is not None and days < 1:
+class Failed(Exception):
+    """A finder that printed no JSON."""
+
+
+def installed(h: Harness) -> bool:
+    """With none of its folders here the harness is not installed, and its finder is not run."""
+    return any(os.path.isdir(d) for d in h.data)
+
+
+def find(h: Harness, args) -> list[dict]:
+    scope = scope_of(args)
+    if scope.since and scope.since > dt.date.today():
         return []
     query = getattr(args, "query", "")
     ids = getattr(args, "id", [])
-    cmd = [sys.executable, h.finder, query, *h.flags(roots, days)]
+    cmd = [sys.executable, h.finder, query, *h.flags(None if scope.roots is None else list(scope.roots), scope.days())]
     if not query:
         cmd.append("--all")
-    done = subprocess.run(cmd, capture_output=True, text=True)
+    # Both ends pinned to UTF-8: an inherited PYTHONIOENCODING or locale would
+    # make the finder write in one encoding and this side read in another.
+    try:
+        done = subprocess.run(cmd, capture_output=True, encoding="utf-8",
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    except UnicodeDecodeError:
+        raise Failed(f"{h.name} finder failed: output is not UTF-8")
     try:
         out = json.loads(done.stdout)
     except ValueError:
         last = (done.stderr or done.stdout).strip().splitlines()[-1:] or ["no output"]
-        raise SystemExit(f"stop: {h.name} finder failed: {last[0]}")
+        raise Failed(f"{h.name} finder failed: {last[0]}")
     if out.get("error"):
         return []
     rows = []
     current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):
-        modified = dt.date.fromtimestamp(float(s["modified"]))
-        if args.until and modified > args.until:
+        if not scope.in_window(float(s["modified"])):
             continue
+        modified = dt.date.fromtimestamp(float(s["modified"]))
         if ids and not any(str(s.get("id", "")).startswith(i) for i in ids):
             continue
         rows.append({"harness": h.name, "id": s.get("id"), "modified": modified.isoformat(),
@@ -129,9 +191,9 @@ def _find(h: Harness, args) -> list[dict]:
     # An unreadable session's id and project are inside it; its file name holds
     # the id, and the finder already kept it to the window's start.
     for u in out.get("unreadable", []):
-        modified = dt.date.fromtimestamp(float(u["modified"]))
-        if args.until and modified > args.until:
+        if not scope.in_window(float(u["modified"])):
             continue
+        modified = dt.date.fromtimestamp(float(u["modified"]))
         if ids and not any(i in os.path.basename(u["path"]) for i in ids):
             continue
         rows.append({"harness": h.name, "id": None, "modified": modified.isoformat(), "cwd": None, "title": None,
@@ -139,6 +201,13 @@ def _find(h: Harness, args) -> list[dict]:
                      "prompts": None, "first_prompt": None, "age": None, "active": float(u["modified"]),
                      "unreadable": f"{u['why']}, project unknown"})
     return rows
+
+
+def print_json(obj) -> None:
+    # Raw text only when stdout is UTF-8: a Latin-1 PYTHONIOENCODING cannot
+    # write an emoji, and JSON's \u escapes read the same under any encoding.
+    utf8 = codecs.lookup(sys.stdout.encoding or "ascii").name == "utf-8"
+    print(json.dumps(obj, indent=2, ensure_ascii=not utf8))
 
 
 def main(h: Harness) -> int:
@@ -150,12 +219,9 @@ def main(h: Harness) -> int:
         if "--max-result-chars" in h.extract_flags:
             asked += ["--max-result-chars", str(args.max_result_chars)]
         return subprocess.run([sys.executable, h.extractor, args.path, *asked]).returncode
-    # With none of its folders here the harness is not installed, and its finder is not run.
-    installed = any(os.path.isdir(d) for d in h.data)
-    rows = _find(h, args) if installed else []
-    if args.cmd == "probe":
-        print(json.dumps({"harness": h.name, "label": h.label,
-                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": installed}))
-    else:
-        print(json.dumps(rows, indent=2, ensure_ascii=False))
+    try:
+        rows = find(h, args) if installed(h) else []
+    except Failed as e:
+        raise SystemExit(f"stop: {e}")
+    print_json(rows)
     return 0

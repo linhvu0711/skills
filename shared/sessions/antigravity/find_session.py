@@ -11,7 +11,6 @@ not a chat is an unreadable item {path, modified, why}.
 """
 
 import argparse
-import datetime as dt
 import importlib.util
 import json
 import os
@@ -38,12 +37,6 @@ adapter_lib = load("adapter_lib", os.path.join(here, "..", "adapter_lib.py"))
 WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
-def in_scope(cwd, roots, subdirs):
-    if roots is None:
-        return True
-    return any(cwd == r or (subdirs and cwd.startswith(r.rstrip("/") + "/")) for r in roots)
-
-
 def main():
     ap = argparse.ArgumentParser(description="Find Antigravity chats.")
     ap.add_argument("query", nargs="?", default="")
@@ -54,11 +47,7 @@ def main():
     ap.add_argument("--all", action="store_true")
     args = ap.parse_args()
 
-    roots = None if args.all_projects else [os.path.abspath(r) for r in args.cwd]
-    since = dt.date.today() - dt.timedelta(days=args.active_days - 1) if args.active_days else None
-
-    def in_window(t):
-        return since is None or dt.date.fromtimestamp(t) >= since
+    scope = adapter_lib.Scope.last_days(None if args.all_projects else args.cwd, args.include_subdirs, args.active_days)
 
     rows, docs, unreadable = [], [], []
     for folder in store.folders():
@@ -71,10 +60,10 @@ def main():
             try:
                 chat = store.read(path)
             except store.Unreadable as e:
-                if in_window(os.path.getmtime(path)):
+                if scope.in_window(os.path.getmtime(path)):
                     unreadable.append({"path": path, "modified": os.path.getmtime(path), "why": str(e)})
                 continue
-            if chat is None or not in_window(chat.last) or not in_scope(chat.cwd, roots, args.include_subdirs):
+            if chat is None or not scope.in_window(chat.last) or not scope.in_roots(chat.cwd):
                 continue
             prompts = [t for role, t in chat.turns if role == "user"]
             replies = [t for role, t in chat.turns if role == "assistant"]

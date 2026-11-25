@@ -22,21 +22,17 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    A window or a source you cannot read stops the run (§ Unhappy states, Bad input). Done when you hold the session flags, the roots or `--all-projects`, the sources, and the repo.
 
-2. **Find.** The current session alone: run the adapter of the harness you run in, `find --root <root>`, and take the row whose `current` is true; go to step 3. No row is current: say `This harness gives a command no session ID; name the session by topic or ID.` and stop. Otherwise ask which harnesses hold sessions:
+2. **Find.** The current session alone: run the adapter of the harness you run in, `find --root <root>`, and take the row whose `current` is true; go to step 3. No row is current: say `This harness gives a command no session ID; name the session by topic or ID.` and stop. Otherwise find every harness's sessions in one call:
 
    ```bash
-   python3 ../../shared/sessions/scan.py --root <root> [--root <root>...] [--since D] [--until D]
+   python3 ../../shared/sessions/find_all.py --root <root> [--root <root>...] [--since D] [--until D] [--query "<topic>"] [--id <prefix>...]
    ```
 
-   Then, for each `adapters` entry with `sessions` above 0 that the sources keep:
+   It prints `harnesses`, `sessions`, and `unread`. Keep the `sessions` rows whose `harness` the sources keep.
 
-   ```bash
-   python3 ../../shared/sessions/<harness>/adapter.py find --root <root>... [--since D] [--until D] [--query "<topic>"] [--id <prefix>...]
-   ```
+   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry the sources keep that has an `error` is a harness not read: its error goes to the report.
 
-   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line from the scan goes to the report as it is.
-
-   Done when every row is kept or dropped with a reason, and every scan line is held for the report.
+   Done when every row is kept or dropped with a reason, and every `unread` line and every `error` of a harness the sources keep is held for the report.
 
 3. **Render.** Make a scratch folder outside every page folder. For each kept session `n`, render its transcript and each helper log in its `subagents`:
 
@@ -108,7 +104,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
 `/retro run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread`.
 
-- **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <path> --since <started_at day> --id <session>`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip the scan, and keep its `unread` lines out.
+- **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <path> --since <started_at day> --id <session>`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip `find_all.py`, and keep its `unread` lines out.
 - **GitHub.** `scripts/github.py list <repo> --transcripts <scratch> --issues <set minus removed>`.
 - **No stop.** The run set the scope, so step 4 does not wait for `go`.
 
@@ -137,11 +133,11 @@ Each kind names where its fix lands. The setup map decides the exact file. A fix
 - **Empty.** Nothing in scope: say what you searched (window, topic, roots or all projects, sources) and stop. Nothing passes the bar, or every card is already fixed: `Nothing worth changing`, step 9.
 - **Slow.** Many readers: after each batch of ten, one line, `read <k> of <n>`.
 - **Bad input.** A window you cannot turn into dates, a source that is no adapter folder and not `PRs` or `issues`, or a run folder with no `state.json`: say what you could not read, give one example of each form (`today`, `last 3 days`, `from 2026-10-01 to 2026-10-05`, `run <folder>`, a harness name), and stop.
-- **No permission.** `gh` not logged in or with no access to the repo: read sessions only, and the report gives `gh auth login`. A harness with data and no adapter: its scan line, `found <harness> sessions, cannot read them yet`.
+- **No permission.** `gh` not logged in or with no access to the repo: read sessions only, and the report gives `gh auth login`. A harness with data and no adapter: its `unread` line, `found <harness> sessions, cannot read them yet`.
 
 ## Read line
 
-The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, each scan line, each fix dropped as already in its home, and each home whose check was skipped.
+The report says how many sessions, PRs, and issues were read, names each item not read or read in part with the reason, each touched PR with the transcript that named it, each `unread` line, each harness the sources keep whose finder failed, each fix dropped as already in its home, and each home whose check was skipped.
 
 ## Reference
 

@@ -199,7 +199,7 @@ def save_index(idx: dict) -> None:
 def rollout_paths(day: dt.date | None, days: int | None):
     """Every rollout in Codex's data folders, or with a window, those that
     started in it."""
-    first = day or (dt.date.today() - dt.timedelta(days=days - 1) if days else None)
+    first = day or adapter_lib.first_day(days)
     last = day or (dt.date.today() if days else None)
     for root in rollout_io.data_folders():
         for dp, _, names in os.walk(root):
@@ -225,30 +225,14 @@ def start_day(path: Path) -> dt.date | None:
         return None
 
 
-def cwd_matches(session_cwd, targets: list[str] | None, include_subdirs: bool) -> bool:
-    """True when the cwd is one of the targets, or below one with include_subdirs.
-    No targets (None) means every project."""
-    if targets is None:
-        return True
-    if not session_cwd:
-        return False
-    s = os.path.normpath(os.path.expanduser(session_cwd))
-    for target in targets:
-        if s == target:
-            return True
-        if include_subdirs and s.startswith(target.rstrip(os.sep) + os.sep):
-            return True
-    return False
-
-
-def collect(paths, targets: list[str] | None, include_subdirs: bool, idx: dict,
-            interactive_only: bool = False, skipped: dict | None = None, in_window=None) -> list[dict]:
+def collect(paths, scope, idx: dict,
+            interactive_only: bool = False, skipped: dict | None = None, keep=None) -> list[dict]:
     """Return sessions for the target cwd, parsing only what the index lacks.
 
     Subagent threads (spawned by another session) are skipped: the
     user never typed into them, so they only add noise. With interactive_only,
     headless `codex exec` runs are skipped too and counted in skipped["exec"].
-    in_window(key, stat) picks the sessions returned; every path still feeds the
+    keep(key, stat) picks the sessions returned; every path still feeds the
     helper map, since a helper can sit in another day folder than its parent or
     be older than a resumed parent. Each session row lists the rollouts of its
     helper threads, and of their helpers, in "subagents"."""
@@ -269,7 +253,7 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, idx: dict,
                 meta = read_meta(p)
             except rollout_io.NoZstd as e:
                 # Its cwd is inside the file, so only the window can filter it.
-                if skipped is not None and (not in_window or in_window(key, st)):
+                if skipped is not None and (not keep or keep(key, st)):
                     skipped.setdefault("unreadable", []).append({"path": key, "modified": st.st_mtime, "why": str(e)})
                 continue
             if not meta:
@@ -279,9 +263,9 @@ def collect(paths, targets: list[str] | None, include_subdirs: bool, idx: dict,
             dirty = True
         if ent.get("parent"):
             helpers.setdefault(ent["parent"], []).append(key)
-        if in_window and not in_window(key, st):
+        if keep and not keep(key, st):
             continue
-        if not cwd_matches(ent.get("cwd"), targets, include_subdirs):
+        if not scope.in_roots(ent.get("cwd")):
             continue
         if ent.get("subagent"):
             continue
@@ -381,34 +365,31 @@ def main() -> int:
     started = {str(p) for p in rollout_paths(day, args.days)} if (day or args.days) else None
     # A resumed rollout stays in its start-day folder, so --active-days goes by
     # the file's mtime instead of the folder.
-    active = dt.date.today() - dt.timedelta(days=args.active_days - 1) if args.active_days else None
+    scope = adapter_lib.Scope.last_days(None if args.all_projects else roots, args.include_subdirs, args.active_days)
 
-    def in_window(key, st):
-        if started is not None and key not in started:
-            return False
-        return active is None or dt.date.fromtimestamp(st.st_mtime) >= active
+    def keep(key, st):
+        return (started is None or key in started) and scope.in_window(st.st_mtime)
 
     # Helpers can sit outside the window (filed under a later day, or older than
     # a resumed parent), but a helper never starts before its parent. So read
     # every folder from the earliest day a picked session started; with no
     # window, that is every folder.
     paths = list(rollout_paths(None, None))
-    if started is not None or active is not None:
+    if started is not None or scope.since is not None:
         picked = []
         for p in paths:
             try:
                 st = p.stat()
             except OSError:
                 continue
-            if in_window(str(p), st):
+            if keep(str(p), st):
                 picked.append(start_day(p))
         first = min((d for d in picked if d), default=None)
         paths = [p for p in paths if first and (start_day(p) or first) >= first]
 
     skipped = {}
-    sessions = collect(paths, None if args.all_projects else roots,
-                       args.include_subdirs, idx,
-                       interactive_only=args.interactive, skipped=skipped, in_window=in_window)
+    sessions = collect(paths, scope, idx,
+                       interactive_only=args.interactive, skipped=skipped, keep=keep)
 
     docs = [{"prompts": "\n".join(s["prompts"]), "body": s["body"]} for s in sessions]
     ranked, use_query = rank.pick(sessions, docs, args.query, WEIGHTS, args.all)
