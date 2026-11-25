@@ -148,6 +148,17 @@ t_walk_browser_no_log() {
   eq stderr "stop: no log: pass --log <file> or set WALK_BROWSER_LOG" "$err"
 }
 
+t_walk_browser_unknown_flag() {
+  # Given
+  fake_playwright quiet
+  cd "$T/app"
+  # When
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --bogus 1 --log "$T/walk.log"
+  # Then
+  eq exit 1 "$code"
+  eq log "stop: usage: walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>] [--log <file>]" "$(cat "$T/walk.log")"
+}
+
 cases=(
   "logs the page's errors and failed requests|t_walk_browser_logs"
   "opens the page at the size, login, and clock it is given|t_walk_browser_options"
@@ -156,4 +167,5 @@ cases=(
   "stops with a line when the browser will not start|t_walk_browser_no_launch"
   "takes its log from WALK_BROWSER_LOG|t_walk_browser_env_log"
   "stops when no log is named|t_walk_browser_no_log"
+  "stops with the usage on an unknown flag|t_walk_browser_unknown_flag"
 )

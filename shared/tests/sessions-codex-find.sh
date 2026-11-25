@@ -205,7 +205,21 @@ t_cof_zst_unreadable() {
   has why '"why": "needs Python 3.14+ or zstd"' "$out"
 }
 
+
+t_cof_skips_injected_item() {
+  # Given: c1's first user item is the environment context, then a prompt
+  cof_home
+  co_rollout c1 /p/app "<environment_context>cwd /p/app</environment_context>"
+  printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"add the flag"}]}}\n' >> "$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c1.jsonl"
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq prompt "add the flag" "$(printf '%s' "$out" | jq -r '.sessions[0].first_prompt')"
+}
+
 cases=(
+  "finder skips a user item the harness injected|t_cof_skips_injected_item"
   "finder lists a project session|t_cof_lists_project_session"
   "finder lists a compressed rollout|t_cof_lists_zst_session"
   "finder lists a compressed rollout it cannot read as unreadable|t_cof_zst_unreadable"
