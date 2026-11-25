@@ -37,6 +37,15 @@ t_cca_probe_counts_window() {
   eq stdout '{"harness": "claude", "label": "Claude Code", "sessions": 1, "installed": true}' "$out"
 }
 
+t_cca_until_drops_newer() {
+  # Given: s1 changed today, s2 changed 10 days ago
+  cca_session s1 "fix the export"; cca_session s2 "tidy the docs" 10
+  # When
+  run python3 "$A" find --root /p/app --until "$(days_ago 5)"
+  # Then
+  eq ids "s2" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["id"] for r in json.load(sys.stdin)))')"
+}
+
 t_cca_rows_carry_query_fields() {
   # Given: one session of /p/app, and it is the one this command runs in
   cca_session s1 "fix the export"; export CLAUDE_CODE_SESSION_ID=s1
@@ -61,4 +70,5 @@ cases=(
   "probe counts the sessions in the window|t_cca_probe_counts_window"
   "adapter rows carry the score, current flag, and prompt count|t_cca_rows_carry_query_fields"
   "adapter extract renders the summary after the last compaction|t_cca_extract_summary"
+  "adapter drops sessions after --until|t_cca_until_drops_newer"
 )

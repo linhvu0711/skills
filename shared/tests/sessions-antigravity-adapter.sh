@@ -17,6 +17,9 @@ rows() {
   printf '%s' "$out" | python3 -c 'import json,sys; print("\n".join(" ".join(str(r.get(k)) for k in sys.argv[1:]) for r in json.load(sys.stdin)))' "$@"
 }
 
+# days_ago <n>: the local date n days back, YYYY-MM-DD.
+days_ago() { python3 -c 'import datetime as d,sys; print(d.date.today()-d.timedelta(days=int(sys.argv[1])))' "$1"; }
+
 t_aga_find_in_window() {
   # Given: one terminal chat of /p/app, today
   ag_home; agy_chat "$C/a1.db" /p/app "fix the export" done
@@ -82,6 +85,21 @@ fix the export
 done" "$(printf '%s\n' "$out" | sed -n '/^---$/,$p' | grep -v '^$')"
 }
 
+t_aga_keeps_root_and_window() {
+  # Given: chats of /p/app today, of /p/app/sub today, of /p/app-two today,
+  # and of /p/app 30 days ago
+  ag_home
+  agy_chat "$C/a1.db" /p/app "fix the export" done
+  agy_chat "$C/a2.db" /p/app/sub "fix the sub" done
+  agy_chat "$C/a3.db" /p/app-two "fix the twin" done
+  agy_chat "$C/a4.db" /p/app "fix the old" done 30
+  # When
+  run python3 "$A" find --root /p/app --since "$(days_ago 7)"
+  # Then
+  eq ids "a1
+a2" "$(rows id | sort)"
+}
+
 t_aga_probe_not_installed() {
   # Given: a fresh HOME with no .gemini and no .t3 folder
   T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"; mkdir -p "$HOME"
@@ -98,5 +116,6 @@ cases=(
   "adapter marks a file it cannot read|t_aga_marks_unreadable"
   "adapter reads a T3 chat|t_aga_reads_t3_chat"
   "adapter extract renders the prompts and replies|t_aga_extract"
+  "adapter keeps chats below the root and in the window|t_aga_keeps_root_and_window"
   "probe says Antigravity is not installed|t_aga_probe_not_installed"
 )
