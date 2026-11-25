@@ -13,6 +13,7 @@
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #        orchestrate.sh sync <owner/repo>
+#        orchestrate.sh close-epics <owner/repo>
 #        orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]
 #
 # A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
@@ -43,11 +44,15 @@
 # the agent's own check still claims the starts, joins the new issues, and
 # marks what changed.
 #
+# close-epics closes, at the end of a done run, each epic of the run that is
+# still open, since the done rule waits for its sub-issues to close.
+#
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
 # Exit 0: one JSON line on stdout for start, check, proposed, timer, and
-# resume; one line of text for sync; nothing for started and change.
+# resume; one line of text per repo for sync and per epic for close-epics;
+# nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -57,7 +62,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|watch <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|close-epics|watch <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -698,10 +703,15 @@ observe() {
   done
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
-  # that closes one still open. The orchestrator never closes an epic itself.
+  # that closes one still open. An open sub-issue that is an epic of the run
+  # counts once its own sub-issues are, since nothing but close-epics closes
+  # it. close-epics closes such an epic once the run is done.
   done="$(jq --argjson rows "$rows" --argjson is "$issues" '
+    [$rows[] | select(.stage == "epic") | .ref] as $epics
+    | def ready($r): all($is[$r].subIssues.nodes[];
+        .state == "CLOSED" or ("\(.repository.nameWithOwner)#\(.number)" as $c | ($epics | index([$c])) != null and ready($c)));
     $rows != [] and all($rows[];
-      (.stage == "done" or (.stage == "epic" and all($is[.ref].subIssues.nodes[]; .state == "CLOSED")))
+      (.stage == "done" or (.stage == "epic" and ready(.ref)))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
   # propose: the unlabeled issues with no proposal yet.
   propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.ref] == null)) | .ref]' <<<"$S")"
@@ -1070,6 +1080,56 @@ sync_one() {
   printf '%s fast-forwarded %s..%s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$old")" "$(git -C "$path" rev-parse --short=7 "$new")"
 }
 
+# ---------- close-epics ----------
+# The last check's rows hold each open epic at stage epic; a closed one is at done.
+cmd_close_epics() {
+  [ $# -eq 0 ] || die "usage: orchestrate.sh close-epics <owner/repo>"
+  newest_run
+  # An epic stays at stage epic all run long, with open sub-issues; only a done run makes the close safe.
+  [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
+  local pending left got r kind val closed
+  pending="$(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S")"
+  # Each pass reads the epics again just before the close, since a sub-issue
+  # can open again after the last check. An inner epic closes a pass before
+  # its parent, so a parent waits for the pass after.
+  while [ -n "$pending" ]; do
+    # shellcheck disable=SC2086 # one word per ref
+    if ! got="$(read_issues $pending)"; then
+      for r in $pending; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done
+      return 0
+    fi
+    closed=0; left=""
+    for r in $pending; do
+      IFS=$'\t' read -r kind val < <(jq -r --arg r "$r" '.[$r] as $i
+        | if $i == null then ["error", "not found"]
+          elif $i.error then ["error", $i.error]
+          elif $i.state == "CLOSED" then ["closed", ""]
+          elif any($i.closedByPullRequestsReferences.nodes[]; .state == "OPEN") then
+            ["pr", ([$i.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url][0])]
+          elif any($i.subIssues.nodes[]; .state == "OPEN") then
+            ["sub", ([$i.subIssues.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"][0])]
+          else ["ready", ""] end | @tsv' <<<"$got")
+      case "$kind" in
+        error) printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$val" ;;
+        closed) printf '%s already closed\n' "$(label_of "$r")" ;;
+        pr) printf '%s not closed: %s is open\n' "$(label_of "$r")" "$val" ;;
+        sub) left="$left $r=$val" ;;
+        ready)
+          if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
+            printf '%s closed\n' "$(label_of "$r")"; closed=$((closed + 1))
+          else
+            printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+          fi ;;
+      esac
+    done
+    if [ "$closed" -eq 0 ]; then
+      for r in $left; do printf '%s not closed: %s is still open\n' "$(label_of "${r%%=*}")" "$(label_of "${r#*=}")"; done
+      return 0
+    fi
+    pending="$(for r in $left; do printf '%s\n' "${r%%=*}"; done)"
+  done
+}
+
 # ---------- watch ----------
 # wake <statuses>: send the orchestrator thread `/orchestrate check`, unless T3's statuses show it
 # busy: mid-turn, or waiting on the user, where a message would land as the
@@ -1193,6 +1253,7 @@ case "$cmd" in
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;
   sync) cmd_sync "$@" ;;
+  close-epics) cmd_close_epics "$@" ;;
   watch) cmd_watch "$@" ;;
   *) die "$usage" ;;
 esac

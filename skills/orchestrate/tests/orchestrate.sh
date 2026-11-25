@@ -1184,6 +1184,94 @@ t_fs_sync_other_branch() {
   eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
+# fs_done_epic: a done run of epic #70 "Order export", open, whose sub-issues
+# #71 and #72 are closed, after the check that ended it.
+fs_done_epic() {
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 CLOSED '["size/S"]'; fs_issue 72 CLOSED '["size/S"]'; fs_start 70 71 72
+  fs_go check acme/app
+}
+
+t_fs_close_epics_closes_done_epic() {
+  # Given: a done run of epic #70, open, whose sub-issues #71 and #72 are closed
+  fs_done_epic; printf '' > "$FAKE_GH/issue-close.json"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "#70 closed" "$out"
+  eq "close args" "issue close 70 --repo acme/app --reason completed" "$(cat "$FAKE_GH/issue-close.args")"
+}
+
+t_fs_close_epics_not_done() {
+  # Given: a running run of epic #70, open, whose sub-issue #71 is open, after a check
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'; fs_start 70 71
+  fs_go check acme/app; printf '' > "$FAKE_GH/issue-close.json"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: the run in acme/app is not done; close-epics runs only at its end" "$err"
+  eq "close calls" no "$([ -e "$FAKE_GH/issue-close.calls" ] && echo yes || echo no)"
+}
+
+t_fs_close_epics_refused() {
+  # Given: a done run of epic #70, open, whose sub-issues are closed; GitHub refuses the close
+  fs_done_epic; printf 'GraphQL: Resource not accessible by integration\n' > "$FAKE_GH/issue-close.fail"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "#70 not closed: GraphQL: Resource not accessible by integration" "$out"
+}
+
+t_fs_close_epics_sub_reopened() {
+  # Given: a done run of epic #70; its sub-issue #71 opened again after the last check
+  fs_done_epic; printf '' > "$FAKE_GH/issue-close.json"
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"}]' "Order export"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "#70 not closed: #71 is still open" "$out"
+  eq "close calls" no "$([ -e "$FAKE_GH/issue-close.calls" ] && echo yes || echo no)"
+}
+
+# fs_nested_epic: a run of epic #70 "Order export", whose open sub-issue is
+# epic #71 "Inner", whose one sub-issue #72 is closed.
+fs_nested_epic() {
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"}]' "Order export"
+  fs_issue 71 OPEN '[]' '[]' '[]' '[{"number":72,"state":"CLOSED"}]' "Inner"
+  fs_issue 72 CLOSED '["size/S"]'; fs_start 70
+}
+
+t_fs_nested_epic_done() {
+  # Given: epic #70 over epic #71 over closed #72
+  fs_nested_epic
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+}
+
+t_fs_close_epics_inner_first() {
+  # Given: the done run of epic #70 over epic #71 over closed #72; the
+  # second read of the close shows #71 closed, as GitHub would after its close
+  local n
+  fs_nested_epic; fs_go check acme/app; printf '' > "$FAKE_GH/issue-close.json"
+  n="$(cat "$FAKE_GH/graphql.calls")"
+  cp "$FAKE_GH/graphql.json" "$T/graphql.keep"
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 CLOSED '[]' '[]' '[]' '[{"number":72,"state":"CLOSED"}]' "Inner"
+  mv "$FAKE_GH/graphql.json" "$FAKE_GH/graphql.$((n + 2)).json"; mv "$T/graphql.keep" "$FAKE_GH/graphql.json"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(printf '#71 closed\n#70 closed')" "$out"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2686,6 +2774,12 @@ cases=(
   "sync leaves edits in the way with merge.autoStash on|t_fs_sync_edits_in_the_way_autostash"
   "sync leaves an ignored file in the way|t_fs_sync_ignored_file_in_the_way"
   "sync moves main when the fetch refspec leaves it out|t_fs_sync_narrow_fetch_refspec"
+  "close-epics closes the open epic of a done run|t_fs_close_epics_closes_done_epic"
+  "close-epics stops on a run that is not done|t_fs_close_epics_not_done"
+  "close-epics reports a refused close and exits 0|t_fs_close_epics_refused"
+  "close-epics leaves an epic whose sub-issue opened again|t_fs_close_epics_sub_reopened"
+  "an epic whose child epic is done ends the run|t_fs_nested_epic_done"
+  "close-epics closes an inner epic before its parent|t_fs_close_epics_inner_first"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"
