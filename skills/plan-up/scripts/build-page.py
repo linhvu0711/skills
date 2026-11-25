@@ -115,12 +115,16 @@ def main():
         print("\n".join(problems))
         sys.exit(1)
     data = page_data(plan)
-    shell = (Path(__file__).resolve().parent.parent / "assets/shell.html").read_text(encoding="utf-8")
+    assets = Path(__file__).resolve().parent.parent / "assets"
+    shell = (assets / "shell.html").read_text(encoding="utf-8")
+    layout = (assets / "layout.js").read_text(encoding="utf-8")
     output = path.with_suffix(".html")
     tmp = output.with_suffix(".html.tmp")
     payload = json.dumps(data, ensure_ascii=False).replace("</", r"<\/")
     try:
-        tmp.write_text(shell.replace("const DATA = {};", "const DATA = " + payload + ";"), encoding="utf-8")
+        page = (shell.replace("const DATA = {};", "const DATA = " + payload + ";")
+                .replace('<script src="layout.js"></script>', "<script>\n" + layout + "</script>"))
+        tmp.write_text(page, encoding="utf-8")
         os.replace(tmp, output)
     finally:
         if tmp.exists():

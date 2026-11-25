@@ -4,13 +4,16 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 build() { run python3 "$here/../scripts/build-page.py" "$@"; }
 page_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
-# render <html>: the built page run in node on a fake page, with text 7 px
-# wide per character. Prints what the Review panel draws: one line per
-# element of each Change map, then one line per Files row.
+# render [--fake-layout <js>] <html>: the built page run in node on a fake
+# page, with text 7 px wide per character. Prints what the Review panel
+# draws: one line per element of each Change map, then one line per Files
+# row. --fake-layout runs <js> in place of the page's layout.js.
 render() {
   run node - "$@" <<'EOF'
 const fs = require('node:fs'), vm = require('node:vm');
-const html = fs.readFileSync(process.argv[2], 'utf8');
+const args = process.argv.slice(2);
+const fake = args[0] === '--fake-layout' ? fs.readFileSync(args.splice(0, 2)[1], 'utf8') : null;
+const html = fs.readFileSync(args[0], 'utf8');
 class Fake {
   constructor(tag) { this.tag = tag; this.attrs = {}; this.children = []; this.listeners = {}; this.dataset = {}; this.text = '';
     this.classList = { toggle() {}, add() {}, remove() {} }; }
@@ -45,7 +48,8 @@ const document = {
 const page = { document, window: { scrollTo() {} }, history: { replaceState() {} }, location: { hash: '' },
   navigator: {}, getComputedStyle: () => ({ fontFamily: '' }) };
 vm.createContext(page);
-for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInContext(code, page);
+for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+  vm.runInContext(fake !== null && /^const PlanLayout\b/m.test(code) ? fake : code, page);
 const review = byId['#panels'].elements().find((s) => s.dataset.id === 'review');
 const find = (n, test, got = []) => { for (const k of n.elements()) { if (test(k)) got.push(k); find(k, test, got); } return got; };
 const maps = find(review, (k) => k.tag === 'svg' && k.attrs['aria-label'] === 'Change map');
@@ -721,6 +725,30 @@ t_build_same_drawing() {
   done
 }
 
+t_build_draws_layout_map() {
+  # Given: the built page of files.md, and a fake PlanLayout with one part and one flow
+  T="$(mktemp -d)"
+  cp "$here/build-page/files.md" "$T/plan-acme-shop-44.md"
+  build "$T/plan-acme-shop-44.md"
+  cat > "$T/fake.js" <<'EOF'
+const PlanLayout = {
+  map: () => ({ width: 400, height: 200, groups: [],
+    parts: [{ ref: 'M1', name: 'Orders page', job: '', change: 'same', kind: 'part', at: [], cx: 100, cy: 100, w: 190, h: 56, text: 'Fake part' }],
+    flows: [{ from: 'M1', to: 'M1', change: 'same', d: 'M1,2 L3,4', label: { x: 50, y: 60, lines: ['fake label'], box: { x1: 0, y1: 50, x2: 100, y2: 70 } } }] }),
+};
+EOF
+  # When
+  render --fake-layout "$T/fake.js" "$T/plan-acme-shop-44.html"
+  # Then
+  eq exit 0 "$code"
+  eq drawing "path d=M1,2 L3,4 fill=none marker-end=url(#map0-same) stroke-width=1.5 style=stroke:var(--muted)
+text font-size=14 font-weight=600 style=fill:var(--ink) text-anchor=middle x=100 y=106 | Fake part
+tspan x=50 | fake label" "$(printf '%s\n' "$out" | grep -E '^(path d=M1|text .*\| Fake part|tspan )')"
+  eq "flows drawn" 1 "$(printf '%s\n' "$out" | grep -c 'marker-end=')"
+  eq "boxes drawn" 1 "$(printf '%s\n' "$out" | grep -c '^rect .*rx=8 ')"
+  eq "labels drawn" 1 "$(printf '%s\n' "$out" | grep -c '^tspan ')"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -807,4 +835,5 @@ cases=(
   "build-page refuses a Setup with no command|t_build_setup_no_command"
   "build-page passes a Setup of none|t_build_setup_none"
   "build-page draws the same map and file tree|t_build_same_drawing"
+  "the page draws the map PlanLayout gives|t_build_draws_layout_map"
 )

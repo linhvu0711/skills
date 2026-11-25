@@ -64,9 +64,9 @@ can differ between plans, so use the URL it prints.
 prints `page:`. This is the step the person sees. Run it on the first
 build and after every rebuild.
 Bump `v` on every rebuild, or the browser shows the old page. Leave the
-page open. Do not open the page with browser tools: `shell.html` is
-fixed, and a render bug in it gets fixed there, once, not worked around
-in the plan.
+page open. Do not open the page with browser tools: `shell.html` and
+`layout.js` are fixed, and a render bug in them gets fixed there, once,
+not worked around in the plan.
 
 ## Headless host
 
