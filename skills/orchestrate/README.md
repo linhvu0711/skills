@@ -8,6 +8,7 @@ You have more issues than you want to start by hand, and you work in T3 Code. Na
 
 - `/orchestrate 12 14 15`: these issues.
 - `/orchestrate epic 70`: every open sub-issue of the epic, and any it gets later.
+- `/orchestrate epic 70`, where a sub-issue lives in another repo: that issue shows as `repo#n` and starts in its own repo's T3 project.
 - `/orchestrate assigned to me`: your open issues, read once at the start.
 
 The thread you type it in becomes the orchestrator. It takes the title `🧭 <the set>`, and stays the place where you steer the run. It runs when you call it, or when its watcher wakes it.

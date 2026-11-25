@@ -746,6 +746,28 @@ t_fs_other_repo_blocker_label() {
   eq action 'blocked by lib#5' "$(fs_card 42 | jq -r .action)"
 }
 
+t_fs_ref_forms() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app add acme/lib#6; eq "owner/repo#n" 0 "$code"
+  fs_go change acme/app add lib#7; eq "repo#n" 0 "$code"
+  fs_go change acme/app add 8
+  # Then
+  eq exit 0 "$code"
+  eq set '["acme/lib#6","acme/lib#7","acme/app#8"]' "$(fs_state '.set[-3:]')"
+}
+
+t_fs_ref_unknown_repo() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app add zed#6
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: no single repo named zed in this run; say owner/zed#6" "$(tail -1 <<<"$err")"
+}
+
 t_fs_add_to_set() {
   # Given: a run of #42
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
@@ -2516,6 +2538,8 @@ cases=(
   "a repo the run cannot read asks you and the rest goes on|t_fs_other_repo_unreadable_asks"
   "a repo not on the Mac asks you|t_fs_other_repo_no_checkout_asks"
   "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
+  "commands take #n, repo#n, and owner/repo#n|t_fs_ref_forms"
+  "repo#n of a repo the run does not have stops|t_fs_ref_unknown_repo"
   "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"

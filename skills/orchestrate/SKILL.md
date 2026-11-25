@@ -239,7 +239,9 @@ Proposals. Answer in one reply: all yes, <label> <skill>, <label> yes, or skip <
 
 A live run takes these, said in this thread. Each runs one
 `orchestrate.sh` call, posts one line, and changes no other run state; `add`
-and the answers then run § Check. The turn ends per § Snooze.
+and the answers then run § Check. The turn ends per § Snooze. Below,
+`#n` stands for any issue word: `#n` in this repo, `repo#n`, or
+`owner/repo#n`, and `<n>` passes that word to `orchestrate.sh` as said.
 
 - `check now`: § Check.
 - `check every <n> min`: `timer <owner/repo> --every <n>`. The watcher
@@ -255,9 +257,9 @@ and the answers then run § Check. The turn ends per § Snooze.
 - `remove #n ...`: `change <owner/repo> remove <n>...`. A removed
   issue's thread runs on.
 - `restart #n`: `change <owner/repo> restart <n>`, then § Check.
-- `resume #n` on an issue at stage `waiting`: `gh issue edit <n> --repo
-  <the issue's owner/repo> --remove-label waiting`, with `<n>` its bare
-  number, then `change <owner/repo> restart <n>`, then § Check, so a new ready thread starts when the task turn is
+- `resume #n` on an issue at stage `waiting`: `gh issue edit <number>
+  --repo <the issue's owner/repo> --remove-label waiting`, then `change
+  <owner/repo> restart <n>`, then § Check, so a new ready thread starts when the task turn is
   free. A restart that stops with `has no thread to restart` is fine: go on.
 - `skip #n` on an issue at stage `task`: `change <owner/repo> remove
   <n>`, then § Check, so the next task takes the task turn. Its thread

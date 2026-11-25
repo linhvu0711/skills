@@ -102,12 +102,20 @@ label_of() { jq -rn --arg r "$1" --arg h "$slug" "$label_jq"'$r | ref_label($h)'
 # issue_url <ref>: the issue's page on GitHub.
 issue_url() { printf 'https://github.com/%s/issues/%s' "${1%#*}" "${1##*#}"; }
 
-# to_ref <word>: the ref an issue word names: n or #n in this repo, or
-# owner/repo#n.
+# to_ref <word>: the ref an issue word names: n or #n in this repo,
+# owner/repo#n, or repo#n, the one repo of that name among the home repo and
+# the run's refs.
 to_ref() {
+  local m
   if [[ "$1" =~ ^#?([0-9]+)$ ]]; then printf '%s#%s' "$slug" "${BASH_REMATCH[1]}"
   elif [[ "$1" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+$ ]]; then printf '%s' "$1"
-  else die "not an issue: $1; say #n or owner/repo#n"; fi
+  elif [[ "$1" =~ ^([A-Za-z0-9_.-]+)#([0-9]+)$ ]]; then
+    m="$(jq -r --arg h "$slug" --arg name "${BASH_REMATCH[1]}" \
+      '[$h, ((.set // []) + (.removed // []))[] | split("#")[0]] | unique | map(select(split("/")[1] == $name)) | if length == 1 then .[0] else empty end' \
+      <<<"${S:-null}")"
+    [ -n "$m" ] || die "no single repo named ${BASH_REMATCH[1]} in this run; say owner/${BASH_REMATCH[1]}#${BASH_REMATCH[2]}"
+    printf '%s#%s' "$m" "${BASH_REMATCH[2]}"
+  else die "not an issue: $1; say #n, repo#n, or owner/repo#n"; fi
 }
 
 # ---------- state ----------
