@@ -107,8 +107,12 @@ put() {
   mv "$tmp" "$file"
 }
 
-# save: the whole state.
-save() { put "$run/state.json" jq . <<<"$S"; }
+# save [<board state> <obs>]: the whole state, then the board: whole with the
+# Run read's value, else only its run part.
+save() {
+  put "$run/state.json" jq . <<<"$S"
+  write_board "${1:-$S}" "${2:-}"
+}
 
 # copy_page: the board page into the run folder, by put, so a resume
 # brings a newer page to an old run. The page names its run: serve.sh reuses
@@ -300,6 +304,11 @@ other_turn() {
 }
 
 # ---------- board ----------
+# run_part($limit): what the board shows of the run itself, from a state.
+# shellcheck disable=SC2016 # the $ names are jq variables
+board_run_jq='def run_part($limit): {repo, name, status, timer: {fails: (.timer.fails // 0), why: .timer.why,
+  checked_at: .timer.checked_at, every: .timer.every, must_act: ((.timer.fails // 0) >= $limit)}};'
+
 # board: a jq program on null, with the state as $S and the check's rows as
 # $rows, what only the board needs as $cards, keyed by number, and T3's
 # threads as $ts, keyed by id: the board page's data. An epic is no card: its sub-issues are.
@@ -344,7 +353,7 @@ board='
       elif $S.status == "paused" then held("paused: starts on resume")
       else held("starts at the next check") end;
   def rank($xs): . as $x | $xs | index([$x]);
-  {repo: $S.repo, name: $S.name, checked_at: $S.timer.checked_at,
+  ($S | run_part($limit)) + {checked_at: $S.timer.checked_at,
    issues: [$rows | to_entries[] | .key as $i | .value | select(.stage != "epic")
      | .number as $n
      | ([$S.threads[] | select(.number == $n)] | last) as $rec
@@ -364,14 +373,24 @@ board='
    | sort_by((.column | rank(["shape", "build", "review", "done"])), (.mark | rank(["you", "agent", "blocked", "done"])), .order)
    | map(del(.order))}'
 
-# write_board <state> <obs>: board.json in the run folder, by put, as save
-# writes the state, from the state and the Run read's value: its live and
-# removed rows, its cards, and T3's threads. Only a good check calls it, so a
-# failed one leaves the last good board.
+# write_board <state> [obs]: board.json in the run folder, by put, the one
+# writer of it. With the Run read's value, the whole board: its live and
+# removed rows, its cards, and T3's threads. Without it, only the run part of
+# the state, over the cards there: the run part follows every save, so the
+# page never shows a status or a timer the state has left, and the cards
+# change only on a good check.
 write_board() {
-  # shellcheck disable=SC2016 # the $ names are jq variables
-  put "$run/board.json" jq -n --argjson S "$1" --argjson o "$2" \
-    "$ship_mode_jq"'($o.rows + $o.gone_rows) as $rows | $o.cards as $cards | $o.statuses as $ts | '"$board"
+  if [ -n "${2:-}" ]; then
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq -n --argjson S "$1" --argjson o "$2" --argjson limit "$fail_limit" \
+      "$ship_mode_jq$board_run_jq"'($o.rows + $o.gone_rows) as $rows | $o.cards as $cards | $o.statuses as $ts | '"$board"
+  elif [ -f "$run/board.json" ]; then
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq --argjson S "$1" --argjson limit "$fail_limit" "$board_run_jq"'. + ($S | run_part($limit))' "$run/board.json"
+  else
+    # shellcheck disable=SC2016 # the $ names are jq variables
+    put "$run/board.json" jq -n --argjson S "$1" --argjson limit "$fail_limit" "$board_run_jq"'$S | run_part($limit)'
+  fi
 }
 
 # ---------- start ----------
@@ -612,8 +631,7 @@ cmd_check() {
     "$good_check_jq$turn_jq"'$o.state | .threads += $o.claims | take_turn($o.task_turn) | good_check($at)
      | if $o.done then .status = "done" else . end
      | .seen = {status: .status, issues: ($o.rows | map({key: (.number | tostring), value: .}) | from_entries)}')"
-  save
-  write_board "$S" "$obs"
+  save "$S" "$obs"
   # A start counts as a change even on a row that did not move, as after a
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
@@ -988,8 +1006,7 @@ cmd_watch() {
   # but a task that closed frees the turn for the other runs now.
   S="$(jq -c --arg at "$at" --argjson o "$obs" \
     "$good_check_jq$turn_jq"'.conflicts = ((.conflicts // []) + $o.sent) | take_turn($o.holders) | good_check($at)' <<<"$S")"
-  save
-  write_board "$view" "$obs"
+  save "$view" "$obs"
   local c
   while IFS= read -r c; do
     "$t3" thread send "$(jq -r .thread <<<"$c")" "$(jq -r .message <<<"$c")" >/dev/null 2>"$errf" \

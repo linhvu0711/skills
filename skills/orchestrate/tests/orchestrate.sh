@@ -1084,7 +1084,7 @@ t_fs_watch_paused() {
   # Then
   eq exit 3 "$code"
   eq stdout "" "$out"
-  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq cards false "$(fs_board 'has("issues")')"
 }
 
 # fs_orchestrator <status>: T3 lists the orchestrator thread f1 with that status.
@@ -1280,7 +1280,7 @@ t_fs_watch_old_token() {
   # Then
   eq exit 3 "$code"
   eq stdout "" "$out"
-  eq board no "$([ -e "$(fs_run)/board.json" ] && echo yes || echo no)"
+  eq cards false "$(fs_board 'has("issues")')"
   eq sends none "$(fs_sends)"
 }
 
@@ -2081,12 +2081,62 @@ t_fs_failed_check_why() {
 t_fs_failed_check_keeps_board() {
   # Given: a run of #42 checked once, then gh logged out
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  fs_go check acme/app; cp "$(fs_run)/board.json" "$T/board.before"
+  fs_go check acme/app; local before; before="$(fs_board .issues)"
   printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
   # When
   fs_go check acme/app
   # Then
-  eq board same "$(cmp -s "$T/board.before" "$(fs_run)/board.json" && echo same)"
+  eq cards "$before" "$(fs_board .issues)"
+}
+
+t_fs_failed_check_board_timer() {
+  # Given: a run of #42 checked once, then gh logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq board '{"status":"running","fails":1,"why":"HTTP 401: Bad credentials","must_act":false,"cards":1}' \
+    "$(fs_board '{status, fails: .timer.fails, why: .timer.why, must_act: .timer.must_act, cards: (.issues | length)}')"
+}
+
+t_fs_third_failure_board_must_act() {
+  # Given: a run of #42, never checked; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go check acme/app; fs_go check acme/app; fs_go check acme/app
+  # Then
+  eq board '{"fails":3,"must_act":true}' "$(fs_board '{fails: .timer.fails, must_act: .timer.must_act}')"
+}
+
+t_fs_watch_fail_board_timer() {
+  # Given: a run of #42; gh is logged out
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  printf 'HTTP 401: Bad credentials\n' > "$FAKE_GH/graphql.fail"
+  # When
+  fs_go watch acme/app --once
+  # Then
+  eq board '{"fails":1,"why":"HTTP 401: Bad credentials"}' "$(fs_board '{fails: .timer.fails, why: .timer.why}')"
+}
+
+t_fs_pause_board_status() {
+  # Given: a run of #42, checked once
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  # When
+  fs_go timer acme/app pause
+  # Then
+  eq board '{"status":"paused","cards":1}' "$(fs_board '{status, cards: (.issues | length)}')"
+}
+
+t_fs_board_run_shape() {
+  # Given: a run of #42, checked once
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  # When
+  local keys='[keys, (.timer | keys)]'
+  # Then
+  eq keys '[["checked_at","issues","name","repo","status","timer"],["checked_at","every","fails","must_act","why"]] same' \
+    "$(fs_board "$keys") $([ "$(jq -c "$keys" "$here/fixtures/board/board.json")" = "$(fs_board "$keys")" ] && echo same)"
 }
 
 t_fs_board_journey() {
@@ -2425,6 +2475,11 @@ cases=(
   "a good check records its time|t_fs_check_records_time"
   "a failed check records why|t_fs_failed_check_why"
   "a failed check keeps the last board|t_fs_failed_check_keeps_board"
+  "a failed check shows on the board|t_fs_failed_check_board_timer"
+  "the third failed check tells the board the user must act|t_fs_third_failure_board_must_act"
+  "a failed watcher check shows on the board|t_fs_watch_fail_board_timer"
+  "a pause shows on the board with no check|t_fs_pause_board_status"
+  "the board holds the run part in the fixture's shape|t_fs_board_run_shape"
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
   "the page ships no mockup data|t_fs_page_no_mockup_data"

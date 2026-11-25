@@ -1,6 +1,14 @@
 {
   "repo": "linhvu0711/demo",
   "name": "epic #70 Order export",
+  "status": "running",
+  "timer": {
+    "fails": 0,
+    "why": null,
+    "checked_at": "2026-10-28T11:14:00Z",
+    "every": 5,
+    "must_act": false
+  },
   "checked_at": "2026-10-28T11:14:00Z",
   "issues": [
     {
