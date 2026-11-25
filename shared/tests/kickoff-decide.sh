@@ -39,7 +39,7 @@ t_kd_json_line() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"#42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"message\":\"/ship #42\"}" "$out"
+  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"#42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"slash_command\":\"/ship\",\"message\":\"/ship #42\"}" "$out"
 }
 
 t_kd_size_rows() {
@@ -175,8 +175,8 @@ t_kd_stops_no_checkout() {
 # kd_line <command> <effort> <reason> [<args>]: the JSON line decide prints
 # for #42 under --command <command>, on model opus.
 kd_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","heading":"#42","message":"/%s %s"}' \
-    "${4:-#42}" "$1" "$2" "$3" "$T/dev/app" "$1" "${4:-#42}"
+  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","heading":"#42","slash_command":"/%s","message":"/%s %s"}' \
+    "${4:-#42}" "$1" "$2" "$3" "$T/dev/app" "$1" "$1" "${4:-#42}"
 }
 
 t_kd_triage_row() {
@@ -206,7 +206,7 @@ t_kd_complete_task_row() {
   kd_run --command complete-task https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "$(printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"complete-task","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"command complete-task","base":"main","path":"%s","label":"i42","heading":"#42","message":"/complete-task --ready #42"}' "$T/dev/app")" "$out"
+  eq stdout "$(printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"complete-task","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"command complete-task","base":"main","path":"%s","label":"i42","heading":"#42","slash_command":"/complete-task --ready","message":"/complete-task --ready #42"}' "$T/dev/app")" "$out"
 }
 
 t_kd_complete_task_not_task() {
@@ -328,6 +328,15 @@ t_kd_mode_in_message() {
   eq command_from set "$(jq -r .command_from <<<"$out")"
 }
 
+t_kd_slash_command() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --command ship --mode merge https://github.com/acme/app/issues/42
+  # Then
+  eq slash_command '/ship --merge' "$(jq -r .slash_command <<<"$out")"
+}
+
 t_kd_no_mode_message() {
   # Given: #42 size/S, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -433,6 +442,7 @@ t_kd_message_keeps_urls() {
 
 cases=(
   "decide prints the row as one JSON line|t_kd_json_line"
+  "--mode merge puts the ship mode in the slash command|t_kd_slash_command"
   "the message names the target by number|t_kd_message_numbers"
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"

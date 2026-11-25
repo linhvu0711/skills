@@ -21,8 +21,11 @@
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, mode, model, model_from, effort, effort_from, reason, base,
-# path, label, heading, and message: the thread's first prompt, as
-# `/ship --merge #42`, which every launcher sends as it is. The message names
+# path, label, heading, slash_command, and message. slash_command is the
+# command as the thread runs it, with its ship mode or --ready, as
+# `/ship --merge`; message is slash_command, a space, and args: the
+# thread's first prompt, as `/ship --merge #42`, which every launcher sends
+# as it is. The message names
 # the target by number, or by URL when gh in the checkout sees another repo.
 # Under --command ready-pr, args is the one open PR that closes the issue.
 # Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
@@ -269,7 +272,8 @@ jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg 
   --arg model "$model" --arg model_from "$model_from" \
   --arg effort "$effort" --arg effort_from "$effort_from" \
   --arg reason "$reason" --arg base "$base" --arg path "$path" --arg label "$label" --arg heading "$heading" \
-  '{number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
+  '("/\($command)" + (if $mode != "" then " --\($mode)" elif $command == "complete-task" then " --ready" else "" end)) as $slash
+   | {number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
     mode: $mode, model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
     reason: $reason, base: $base, path: $path, label: $label, heading: $heading,
-    message: "/\($command)\(if $mode != "" then " --\($mode)" elif $command == "complete-task" then " --ready" else "" end) \($args)"}'
+    slash_command: $slash, message: "\($slash) \($args)"}'

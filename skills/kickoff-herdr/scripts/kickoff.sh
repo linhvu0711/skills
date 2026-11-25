@@ -31,8 +31,7 @@ decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit 1
 field() { jq -r ".$1" <<<"$decided"; }
 number="$(field number)"; title="$(field title)"; prep_args="$(field args)"
 command_from="$(field command_from)"; message="$(field message)"
-# The command as the thread runs it, with its ship mode: /ship --merge.
-command="${message% "$prep_args"}"
+command="$(field slash_command)"
 model="$(field model)"; model_from="$(field model_from)"
 effort="$(field effort)"; effort_from="$(field effort_from)"
 reason="$(field reason)"; base="$(field base)"; path="$(field path)"; label="$(field label)"

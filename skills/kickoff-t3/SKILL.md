@@ -24,14 +24,14 @@ the table, and how to turn the user's words into a target.
    stop. Nothing started. Exit 0: hold the one JSON line it prints. Its
    keys: `number`, `title`, `command`, `command_from`, `mode`, `model`,
    `model_from`, `effort`, `effort_from`, `reason`, `base`, `path`,
-   `thread_title`, `message`, `project`.
+   `slash_command`, `thread_title`, `message`, `project`.
 3. **Launch.** Follow `../../shared/kickoff/launch-t3.md` with the
    line from step 2. Its stop lines are yours. Hold the model id it
    picked and the thread's `link`.
 4. **Report.** Print one line and stop:
 
    ```
-   #<number> <title> → <link> · <message without its args> (<command_from>) · model <model id> (<model_from>) · effort <effort> (<effort_from>) · <reason> · base <base> · project <project>
+   #<number> <title> → <link> · <slash_command> (<command_from>) · model <model id> (<model_from>) · effort <effort> (<effort_from>) · <reason> · base <base> · project <project>
    ```
 
    `<link>` is the thread's `link` from step 3, as it is. The command
@@ -46,7 +46,7 @@ each: steps 2 to 4 once per issue, one after the other.
 **User:** `/kickoff-t3 https://github.com/acme/shop/issues/42`, in a T3
 chat; #42 is `size/M`, and the checkout is a T3 project.
 
-The script prints the line with `command` `ship`, `mode` empty, `model` `opus`,
+The script prints the line with `command` `ship`, `mode` empty, `slash_command` `/ship`, `model` `opus`,
 `effort` `medium`, `project` `found`. `opus` maps to
 `claude-opus-5-5`. The project with that `workspaceRoot` is found. One
 `t3_thread_launch`. Say
