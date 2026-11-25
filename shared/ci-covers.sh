@@ -109,7 +109,7 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
     else {
       if (jk < 0) jk = ind
       if (ind == jk && !dash && !bare) {
-        cur = 0; insteps = (t ~ /^steps:/); sind = -1; inneeds = 0
+        cur = 0; insteps = (unq(t) ~ /^steps:/); sind = -1; inneeds = 0
         kt = unq(t)
         if (kt ~ /^if:([ \t]|$)/) jif[job] = 1
         if (kt ~ /^needs:([ \t]|$)/) {
