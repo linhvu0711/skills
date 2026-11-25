@@ -159,18 +159,10 @@ cmd_watch() {
       done <"$errf"
       IFS=$'\t' read -r st key prs link msg <<<"$line"
       last_link="$link"
-      if [[ "$prs" != "-" ]]; then
-        IFS=',' read -ra arr <<<"$prs"
-        for p in "${arr[@]}"; do
-          case "$seen" in
-            *" $p "*) ;;
-            *) echo "[$(date +%H:%M)] pr $p"; seen="$seen$p "; (( once )) && exit 0 ;;
-          esac
-        done
-      fi
-      # A run that ended gives back what the session holds, before its line
-      # prints, so a chat that answers the line finds it back. A release that
-      # fails is tried again on the next poll of the same run.
+      # A run that ended gives back what the session holds before any line
+      # prints, a PR line too, since --once exits on it: a chat that answers
+      # the line finds it back. A release that fails is tried again on the
+      # next poll of the same run, while the watch goes on.
       case "$st" in
         finished|error|cancelled|expired)
           if [[ "$key" != "$freed" ]]; then
@@ -181,6 +173,15 @@ cmd_watch() {
           fi
           ;;
       esac
+      if [[ "$prs" != "-" ]]; then
+        IFS=',' read -ra arr <<<"$prs"
+        for p in "${arr[@]}"; do
+          case "$seen" in
+            *" $p "*) ;;
+            *) echo "[$(date +%H:%M)] pr $p"; seen="$seen$p "; (( once )) && exit 0 ;;
+          esac
+        done
+      fi
       # An event is a new key in a state the caller acts on. The adapter
       # makes the key, so a new message or a new run counts as new.
       if [[ "$key" != "$prev_key" ]]; then

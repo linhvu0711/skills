@@ -304,6 +304,20 @@ t_watch_retries_release() {
   eq "line 2" "finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped | sed -n 2p)"
 }
 
+t_watch_once_releases_before_pr() {
+  # Given: the poll that ends the run also brings the first PR
+  fake_adapters
+  printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
+  printf 'finished\trun-2|FINISHED\thttps://github.com/o/r/pull/9\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff watch cursor bc-1 --interval 0 --once
+  # Then
+  eq exit 0 "$code"
+  eq stdout "pr https://github.com/o/r/pull/9" "$(unstamped)"
+  eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls" 2>/dev/null || echo 0)"
+}
+
 t_status_never_releases() {
   # Given
   fake_adapters
@@ -319,6 +333,7 @@ t_status_never_releases() {
 cases=(
   "watch returns the Mac once when the run ends|t_watch_releases_once"
   "watch tries the release again on its next poll|t_watch_retries_release"
+  "watch --once gives the Mac back before it prints a PR|t_watch_once_releases_before_pr"
   "status never releases|t_status_never_releases"
   "release frees the session through its executor|t_release_through_adapter"
   "release stops on a session the ledger lacks|t_release_unknown_session"
