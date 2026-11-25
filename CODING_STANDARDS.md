@@ -64,7 +64,6 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 ## Commits
 
 - A commit subject follows Conventional Commits, `<type>(<scope>)!: <subject>`, with `!` for a breaking change (conventional-commits).
-- A commit subject is 50 characters or fewer (git-commit-docs) [commit-msg hook, after #411].
 - The subject is in the imperative mood, with one blank line before the body (git-pro-book).
 - A commit is one logical change, and a pull request has one purpose (git-pro-book, github-pr-docs).
 - A branch is `<type>/<issue>-<slug>`.
