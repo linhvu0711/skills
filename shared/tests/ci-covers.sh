@@ -329,6 +329,18 @@ t_cc_quoted_step_keys() {
     # Then
     eq "stdout ($k, no if)" "ci ci.yml · pnpm test" "$out"
   done
+  # Given
+  T=""; wf ci.yml 'on: pull_request' '"jobs":' '  t:' '    if: false' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq 'stdout ("jobs":)' "here · pnpm test" "$out"
+  # Given
+  T=""; wf ci.yml 'on: pull_request' '"jobs":' '  t:' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq 'stdout ("jobs":, no if)' "ci ci.yml · pnpm test" "$out"
 }
 
 t_cc_needs_unknown_job() {

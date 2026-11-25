@@ -99,7 +99,7 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
   match(line, /^ *(- +)?/); col = RLENGTH
   t = substr(line, col + 1)
   ind = indent(line); dash = (col > ind); bare = (line ~ /^ *-[ \t]*$/)
-  if (ind == 0) { injobs = (line ~ /^jobs:/); jind = -1; cur = 0; next }
+  if (ind == 0) { injobs = (unq(line) ~ /^jobs:/); jind = -1; cur = 0; next }
   if (injobs) {
     if (jind < 0) jind = ind
     if (ind <= jind) {
