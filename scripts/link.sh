@@ -93,12 +93,15 @@ unlink_dead() {
   done
 }
 
-# link_state <folder> <name> <target>: set st to the state of the folder's link
-# for the name, and why to what holds it when something else does.
+# link_state <folder> <name> <target> [<own>]: set st to the state of the
+# folder's link for the name, and why to what holds it when something else
+# does. <own> is one more target that unlink_dead takes as this script's.
 link_state() {
-  local l="$1/$2"; why=""
+  local l="$1/$2" t; why=""
   if [ ! -e "$l" ] && [ ! -L "$l" ]; then st=missing
-  elif [ ! -e "$l" ]; then st=stale; why="$l is a link to nothing, not made here"
+  elif [ ! -e "$l" ]; then
+    st=stale; t="$(readlink "$l")"
+    if [ "$t" != "$3" ] && [ "$t" != "${4-$3}" ]; then why="$l is a link to nothing, not made here"; fi
   elif ! [ "$l" -ef "$3" ]; then st=stale; why="$l is not this repo's $2"
   else st=ok; fi
 }
@@ -213,7 +216,7 @@ hook_state() {
 # holds what the target should hold. folder is the one the setting names for
 # the target, so a reader finds it without cutting the path.
 each_target() {
-  local f n src err shared d any=""
+  local f n src err shared d own any=""
   kind=skill
   for f in "$repo"/skills/*/SKILL.md; do
     [ -f "$f" ] || continue
@@ -221,9 +224,9 @@ each_target() {
     h=shared; path="$agents/$n"; folder="$agents"; want="$repo/skills/$n"
     link_state "$agents" "$n" "$want"; shared="$st"; "$1"
     for h in claude antigravity; do
-      if [ "$h" = claude ]; then d="$claude"; else d="$antigravity"; fi
+      if [ "$h" = claude ]; then d="$claude"; own="../../.agents/skills/$n"; else d="$antigravity"; own="$agents/$n"; fi
       path="$d/$n"; folder="$d"; want="$agents/$n"
-      link_state "$d" "$n" "$want"
+      link_state "$d" "$n" "$want" "$own"
       # A link to a shared link that is not this repo's reaches no skill. It
       # keeps its own why, so a folder of the user's own here is named too.
       if [ "$shared" = stale ]; then st=stale; fi

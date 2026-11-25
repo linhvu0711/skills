@@ -664,6 +664,54 @@ t_link_status_names_held_link_under_held_shared() {
     "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
 }
 
+t_link_status_names_no_holder_for_own_dangling_link() {
+  # Given: everything linked, then the shared skill link pointed at a folder
+  # that is gone
+  linked demo; link_sh
+  rm "$T/agents/demo"; ln -s "$T/gone/skills/demo" "$T/agents/demo"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq "skill lines" "$(printf 'stale\tskill\tshared\tdemo\t%s\t%s\t%s\n' "$T/agents/demo" "$T/agents" "$T/agents/demo is a link to nothing, not made here"
+    status_lines "stale skill claude demo $T/claude/demo $T/claude" "stale skill antigravity demo $T/gskills/demo $T/gskills")" \
+    "$(awk -F '\t' '$2 == "skill"' <<<"$out")"
+}
+
+t_link_status_names_no_holder_for_relative_dangling_link() {
+  # Given: everything linked, then Claude Code's skill link in the relative
+  # form, pointing to nothing
+  linked demo; link_sh
+  rm "$T/claude/demo"; ln -s ../../.agents/skills/demo "$T/claude/demo"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq claude "$(status_lines "stale skill claude demo $T/claude/demo $T/claude")" \
+    "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
+}
+
+t_link_skips_antigravity_relative_dangling_link() {
+  # Given: everything linked, then Antigravity's skill link in Claude Code's
+  # relative form, pointing to nothing; the install does not remove that form
+  # in Antigravity's folder
+  linked demo; link_sh
+  rm "$T/gskills/demo"; ln -s ../../.agents/skills/demo "$T/gskills/demo"
+  # When
+  link_sh
+  # Then
+  has stderr "skip: $T/gskills/demo is a link to nothing, not made here" "$err"
+}
+
+t_link_status_names_no_holder_for_dangling_t3_plugins_link() {
+  # Given: everything linked, then the plugins folder gone
+  linked demo; link_sh
+  rm -rf "$T/gplugins"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq plugins "$(status_lines "stale plugins antigravity plugins $T/t3/p1/config/plugins $T/t3/p1")" \
+    "$(awk -F '\t' '$2 == "plugins"' <<<"$out")"
+}
+
 t_link_status_writes_nothing() {
   # Given: everything linked, then Claude Code's skill link gone
   linked demo; agent demo helper; with_gate; link_sh
@@ -1511,6 +1559,10 @@ cases=(
   "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
   "link status gives the skip words of the install|t_link_status_matches_install_skips"
   "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
+  "link status names no holder for its own dangling link|t_link_status_names_no_holder_for_own_dangling_link"
+  "link status names no holder for Claude Code's relative dangling link|t_link_status_names_no_holder_for_relative_dangling_link"
+  "link names the holder of Antigravity's relative dangling link|t_link_skips_antigravity_relative_dangling_link"
+  "link status names no holder for a T3 link to a missing plugins folder|t_link_status_names_no_holder_for_dangling_t3_plugins_link"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
