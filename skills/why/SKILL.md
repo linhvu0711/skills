@@ -63,23 +63,18 @@ written to the repo or to GitHub.
    `<wt>` is `${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>`,
    with owner and repo from `git remote get-url origin`: the build of a
    merged PR often ran in a worktree there that is gone now. `<words>`
-   are the file name without its extension and the symbol. Ask which
-   tools hold sessions there:
+   are the file name without its extension and the symbol. Find every
+   tool's sessions there in one call:
 
    ```bash
-   python3 ../../shared/sessions/scan.py --root <top> --root <wt>
+   python3 ../../shared/sessions/find_all.py --root <top> --root <wt> --query "<words>"
    ```
 
-   Then, for each `adapters` entry with `sessions` above 0, `<tool>`
-   being its `harness`:
-
-   ```bash
-   python3 ../../shared/sessions/<tool>/adapter.py find --root <top> --root <wt> --query "<words>"
-   ```
-
-   Drop a row with `unreadable`, a row whose `current` is true, or one
-   whose `first_prompt` starts with `/why` or `$why`, then keep the first
-   3 of each tool, in the adapter's order. Render each one kept with
+   From its `sessions` rows, drop a row with `unreadable`, a row whose
+   `current` is true, or one whose `first_prompt` starts with `/why` or
+   `$why`, then keep the first 3 of each tool, in the order
+   `find_all.py` gives; `<tool>` is the row's `harness`. Render each one
+   kept with
    `python3 ../../shared/sessions/<tool>/adapter.py extract <path> --summary > <out>`.
    `<out>` is `<scratch>/why-<id8>.md`, where `<scratch>` is the scratch
    folder that `../../shared/harness.md` names for your harness. Run
