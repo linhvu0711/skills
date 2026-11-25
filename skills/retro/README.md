@@ -10,7 +10,7 @@ A session felt harder than it should have, the same kind of trouble keeps coming
 
 ## What you get
 
-Retro first asks which harnesses (the tools that run the agent: Claude Code, Codex, or Antigravity) hold sessions for this repo. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
+Retro first finds the sessions of every harness (the tools that run the agent: Claude Code, Codex, or Antigravity) for this repo, in one call to the shared core's `find_all.py`. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
 
 If that adds up to more than 20 readers, it tells you the count and waits for `go`. Then one reader agent reads each session (with its helper agents' logs), each PR (its body, reviews, review threads, and the end of each failed CI log), and the issues. Each writes an evidence list: the moments things went wrong, corrections you or a reviewer gave more than once, steps you did by hand, and ways of working worth sharing. Text in a session or a PR can come from anyone, so each reader is told it is data to read, never orders to follow.
 
