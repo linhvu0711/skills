@@ -50,6 +50,7 @@ SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../../shared/gh.sh"
 
 usage_text() {
   cat <<'EOF'
@@ -232,7 +233,7 @@ cmd_poll() {
     esac
   done
   [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die_usage "$(usage_text)" "--repo and --issue go together"
-  local line ast rst rid prs url msg st ghprs all=" " p arr=()
+  local line ast rst rid prs url msg st ghprs all=" " p arr=() out err
   line=$(fetch "$id")
   IFS=$'\t' read -r ast rst rid prs url msg <<<"$line"
   case "$rst" in
@@ -241,8 +242,8 @@ cmd_poll() {
   esac
   [[ "$prs" != "-" ]] && IFS=',' read -ra arr <<<"$prs"
   if [[ -n "$repo" ]]; then
-    ghprs=$(gh pr list -R "$repo" --state all --limit 50 --json url,headRefName \
-      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url" 2>/dev/null || true)
+    if gh_out pr list -R "$repo" --state all --limit 50 --json url,headRefName \
+      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"; then ghprs="$out"; else ghprs=""; fi
     for p in $ghprs; do arr+=("$p"); done
   fi
   for p in ${arr[@]+"${arr[@]}"}; do

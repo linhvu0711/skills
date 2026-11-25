@@ -934,7 +934,7 @@ t_fs_decide_gh_fail_starts_nothing() {
   fs_go check acme/app
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: check failed: gh could not read https://github.com/acme/app/issues/42" "$err"
+  eq stderr "stop: check failed: gh could not read https://github.com/acme/app/issues/42: HTTP 502: Bad gateway" "$err"
   eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
 }
 
@@ -1025,6 +1025,17 @@ t_fs_done_removed_no_retro() {
   has stdout '"done":true' "$out"
   has stdout '"removed":["acme/app#44"]' "$out"
   eq line false "$(jq -c 'has("retro")' <<<"$out")"
+}
+
+t_fs_sync_gh_fails() {
+  # Given: a run of #42, and gh cannot read the repo
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/repo-view.fail"
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "app: acme/app not updated: gh could not name the default branch: HTTP 502: Bad Gateway" "$out"
 }
 
 t_fs_sync_fast_forwards() {
@@ -2768,6 +2779,7 @@ cases=(
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
   "sync fast-forwards each repo the run worked in|t_fs_sync_each_repo"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
+  "sync names gh's line when the default branch is unreadable|t_fs_sync_gh_fails"
   "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
   "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
   "sync leaves a default branch whose edits are in the way|t_fs_sync_edits_in_the_way"

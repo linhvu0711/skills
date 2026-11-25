@@ -43,6 +43,14 @@ t_restack_stops_past_100_prs() {
   eq stderr "stop: more than 100 open PRs on feat/a; restack lists at most 100" "$err"
 }
 
+t_restack_gh_fails() {
+  fake_gh
+  printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/pr-list.fail"
+  run bash "$restack" list o/r feat/a
+  eq exit 1 "$code"
+  eq stderr "stop: gh failed: HTTP 502: Bad Gateway" "$err"
+}
+
 t_restack_lists_nothing() {
   fake_gh
   run bash "$restack" list o/r feat/a
@@ -223,4 +231,5 @@ cases=(
   "restack skips a child with merge commits|t_restack_skips_merge_commits"
   "restack lists a child behind a fork of the same name|t_restack_lists_child_behind_fork_of_same_name"
   "restack stops past 100 PRs on a branch|t_restack_stops_past_100_prs"
+  "restack stops with gh's line when gh fails|t_restack_gh_fails"
 )

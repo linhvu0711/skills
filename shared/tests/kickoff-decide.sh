@@ -136,7 +136,7 @@ t_kd_gh_fails_exit_2() {
     got="$got$code|$(tail -1 <<<"$err");"
   done
   # Then
-  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42;2|stop: gh could not read #43 in acme/app;2|stop: gh could not read the PRs of #42;2|stop: gh could not read https://github.com/acme/app/pull/80;" "$got"
+  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42: HTTP 502;2|stop: gh could not read #43 in acme/app: HTTP 502;2|stop: gh could not read the PRs of #42: HTTP 502;2|stop: gh could not read https://github.com/acme/app/pull/80: HTTP 502;" "$got"
 }
 
 t_kd_base_from_origin_head() {

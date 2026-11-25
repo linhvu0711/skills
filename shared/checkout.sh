@@ -80,6 +80,10 @@ set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/gh.sh"
+
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -182,7 +186,7 @@ find_main() {
 # default branch; when gh fails, origin/HEAD's, with no fetch. When both fail,
 # the stop line and exit <code>, 1 when not given.
 default_branch() {
-  default="$(gh repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
+  if gh_out repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name; then default="$out"; else default=""; fi
   if [ -z "$default" ]; then
     default="$(git -C "$2" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
     default="${default#origin/}"

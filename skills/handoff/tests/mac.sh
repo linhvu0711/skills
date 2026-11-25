@@ -35,6 +35,15 @@ t_mac_rent_starts_worker() {
   lacks "nsc commands" '> ~/.cursor/agent-cli-state' "$(cat "$FAKE_NSC/calls")"
 }
 
+t_mac_rent_no_gh_token() {
+  fake_nsc
+  printf 'not logged in\n' > "$FAKE_GH/auth-token.fail"
+  mac rent ho-1 https://github.com/o/r main -- printf 'bc-1\tu\n'
+  eq exit 1 "$code"
+  eq "stderr last line" "stop: gh is not signed in (not logged in): run gh auth login" "$(tail -1 <<<"$err")"
+  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+}
+
 t_mac_renew_keeps_worker_id() {
   fake_nsc
   echo "$wid" > "$FAKE_NSC/3.out"
@@ -353,6 +362,7 @@ cases=(
   "mac rent gives the Mac back when the worker has no ID|t_mac_rent_no_worker_id"
   "mac rent gives the Mac back when the worker does not start|t_mac_rent_worker_fails"
   "mac rent refuses a worker name the shell would split|t_mac_rent_bad_worker"
+  "mac rent stops when gh has no token|t_mac_rent_no_gh_token"
   "mac return deletes the keys and destroys the Mac|t_mac_return_deletes_keys"
   "mac return fails and names the Mac when nsc destroy fails|t_mac_return_destroy_fails"
   "mac return counts a Mac that no longer exists as given back|t_mac_return_gone"

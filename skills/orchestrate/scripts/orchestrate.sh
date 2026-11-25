@@ -61,6 +61,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 core="$here/../../../shared"
 . "$core/kickoff/labels.sh"
+. "$core/gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
@@ -204,8 +205,8 @@ fields='number title state createdAt labels(first:50){nodes{name}} subIssues(fir
 
 # read_issues <ref>...: one GraphQL call per repo, the run repo first,
 # printed as one object keyed by ref. The run repo's call failing fails it,
-# with gh's stderr in errf. Another repo's call failing gives each of its refs
-# {error: <gh's last stderr line>}, so the rest of the run goes on.
+# with gh's last error line in errf. Another repo's call failing gives each
+# of its refs {error: <that line>}, so the rest of the run goes on.
 read_issues() {
   local all="{}" rr q r n out err
   # shellcheck disable=SC2046 # one word per repo
@@ -213,14 +214,14 @@ read_issues() {
     q=""
     for r in "$@"; do [ "${r%#*}" = "$rr" ] || continue; n="${r##*#}"; q="$q i$n: issue(number: $n) { ...F }"; done
     # shellcheck disable=SC2016 # the $ names are GraphQL variables
-    if out="$(gh api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
-        -F o="${rr%/*}" -F r="${rr#*/}" 2>"$errf")"; then
+    if gh_out api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
+        -F o="${rr%/*}" -F r="${rr#*/}"; then
       all="$(jq -c --arg rr "$rr" --argjson all "$all" --args '.data.repository as $d
         | $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: $d["i" + split("#")[1]]}] | from_entries)' "$@" <<<"$out")"
     elif [ "$rr" = "$slug" ]; then
+      printf '%s\n' "$err" >"$errf"
       return 1
     else
-      err="$(tail -1 "$errf")"
       all="$(jq -c --arg rr "$rr" --arg e "$err" --argjson all "$all" --args '
         $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: {error: $e}}] | from_entries)' "$@" <<<"null")"
     fi
@@ -1057,9 +1058,10 @@ cmd_sync() {
 
 # sync_one <owner/repo> <path>: sync's line for one repo.
 sync_one() {
-  local repo="$1" path="$2" def new old where
-  def="$(gh repo view "$repo" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
-    || { printf '%s not updated: gh could not name the default branch: %s\n' "$repo" "$(tail -1 "$errf")"; return 0; }
+  local repo="$1" path="$2" def new old where out err
+  gh_out repo view "$repo" --json defaultBranchRef -q .defaultBranchRef.name \
+    || { printf '%s not updated: gh could not name the default branch: %s\n' "$repo" "$err"; return 0; }
+  def="$out"
   # The refspec is named, since the clone's own fetch refspec may leave the default branch out.
   git -C "$path" fetch --quiet origin "+refs/heads/$def:refs/remotes/origin/$def" 2>"$errf" \
     || { printf '%s not updated: fetch failed: %s\n' "$def" "$(tail -1 "$errf")"; return 0; }
@@ -1091,7 +1093,7 @@ cmd_close_epics() {
   newest_run
   # An epic stays at stage epic all run long, with open sub-issues; only a done run makes the close safe.
   [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
-  local pending left got r kind val closed
+  local pending left got r kind val closed out err
   pending="$(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S")"
   # Each pass reads the epics again just before the close, since a sub-issue
   # can open again after the last check. An inner epic closes a pass before
@@ -1119,10 +1121,10 @@ cmd_close_epics() {
         pr) printf '%s not closed: %s is open\n' "$(label_of "$r")" "$val" ;;
         sub) left="$left $r=$val" ;;
         ready)
-          if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
+          if gh_out issue close "${r##*#}" --repo "${r%#*}" --reason completed; then
             printf '%s closed\n' "$(label_of "$r")"; closed=$((closed + 1))
           else
-            printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+            printf '%s not closed: %s\n' "$(label_of "$r")" "$err"
           fi ;;
       esac
     done

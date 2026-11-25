@@ -99,7 +99,7 @@ t_claims_gh_fails() {
   claims 65
   eq exit 1 "$code"
   eq stdout "" "$out"
-  eq stderr 'claims: #65: gh: Could not resolve to an Issue with the number of 65.' "$err"
+  eq stderr 'stop: gh could not read #65: gh: Could not resolve to an Issue with the number of 65.' "$err"
 }
 
 cases=(

@@ -39,6 +39,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
+. "$here/../gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
@@ -98,8 +99,9 @@ done
 prep_args="${args[*]}"
 
 # ---------- issue ----------
-issue_json="$(gh issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state)" \
-  || gh_die "gh could not read $issue_url"
+gh_out issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state \
+  || gh_die "gh could not read $issue_url: $err"
+issue_json="$out"
 title="$(jq -r .title <<<"$issue_json")"
 sub_count="$(jq '.subIssues.nodes | length' <<<"$issue_json")"
 
@@ -159,7 +161,7 @@ fi
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"
-  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || gh_die "gh could not read #$n in $slug"; fi
+  else gh_out issue view "$n" --repo "$slug" --json number,labels || gh_die "gh could not read #$n in $slug: $err"; json="$out"; fi
   if jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null; then
     [ "$set_command" = complete-task ] || continue
   elif [ "$set_command" = complete-task ]; then
@@ -203,9 +205,10 @@ if [ -n "$mode" ]; then command_from=set; fi
 if [ "$command" = ready-pr ]; then
   # shellcheck disable=SC2016 # the $ names are GraphQL variables
   q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
-  prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
-    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
-    || gh_die "gh could not read the PRs of #$number"
+  gh_out api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
+    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url' \
+    || gh_die "gh could not read the PRs of #$number: $err"
+  prs="$out"
   pr_count="$(grep -c . <<<"$prs" || true)"
   [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
   [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
@@ -214,7 +217,8 @@ fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
-  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || gh_die "gh could not read $pr_url"
+  gh_out pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName || gh_die "gh could not read $pr_url: $err"
+  base="$out"
 else
   base="$(bash "$here/../checkout.sh" default "$slug")" || exit
 fi
@@ -227,7 +231,7 @@ path="${found#* MAIN=}"
 # The thread runs in that checkout, and /ship reads a number as an issue
 # of the repo gh sees there. A fork clone can make gh see its upstream, so
 # the URLs stay unless gh there names this repo.
-here_repo="$(cd "$path" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
+here_repo="$(cd "$path" && gh_out repo view --json nameWithOwner -q .nameWithOwner && printf '%s' "$out")" || here_repo=""
 if [ "$(lower "$here_repo")" = "$(lower "$slug")" ]; then
   if [ "$command" = ready-pr ]; then
     # A PR in another repo keeps its URL: a bare number would name a PR here.

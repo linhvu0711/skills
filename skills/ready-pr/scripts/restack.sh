@@ -39,13 +39,14 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
+. "$here/../../../shared/gh.sh"
 
 # children <branch>: the open PRs on <branch>, one line each, by number.
 children() {
   local json
-  json="$(gh pr list --repo "$repo" --base "$1" --state open --limit 101 \
-    --json number,baseRefName,headRefName,url,isCrossRepository 2>&1)" \
-    || { printf 'stop: %s\n' "$json" >&2; exit 1; }
+  gh_or_stop pr list --repo "$repo" --base "$1" --state open --limit 101 \
+    --json number,baseRefName,headRefName,url,isCrossRepository
+  json="$out"
   [ "$(jq length <<<"$json")" -le 100 ] \
     || die "more than 100 open PRs on $1; restack lists at most 100"
   jq -r 'sort_by(.number)[] | "\(.number) \(.baseRefName) \(.headRefName) \(.url) fork=\(.isCrossRepository)"' <<<"$json"

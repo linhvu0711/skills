@@ -60,6 +60,7 @@ MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../shared/gh.sh"
 usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # need_tools -> dies when a tool a Mac step needs is missing. Only a step that
@@ -122,10 +123,10 @@ cmd_up() {
   [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die_usage "$usage" "worker name: letters, digits, and - only"
   [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die_usage "$usage" "worker id: a UUID"
   need_tools
-  local dir cid id key token name state=""
+  local dir cid id key token name state="" out err
   key="${CURSOR_API_KEY:-}"
   [[ -n "$key" ]] || die "CURSOR_API_KEY is not set"
-  token=$(gh auth token 2>/dev/null) || die "gh is not signed in: run gh auth login"
+  gh_out auth token || die "gh is not signed in ($err): run gh auth login"; token="$out"
   dir=$(mktemp -d); cid="$dir/cid"
   nsc create </dev/null --machine_type mac/silicon:6x14 \
     --selectors macos.version=26.x,image.with=xcode-26 \
