@@ -75,7 +75,7 @@ fi
 
 if [ -n "$target_tab" ]; then
   new_pane="$(herdr pane split --pane "$split_pane" --direction right --ratio 0.5 --cwd "$path" --no-focus | jq -r .result.pane.pane_id)"
-  python3 "$here/equalize_columns.py" "$new_pane" >/dev/null
+  python3 "$here/placement.py" even "$new_pane" >/dev/null
   placed="split in $target_tab"
 else
   created="$(herdr tab create --workspace "$ws" --cwd "$path" --label "$label" --no-focus)"

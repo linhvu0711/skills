@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Equalize column widths in a herdr tab. Usage: equalize_columns.py <any_pane_id_in_tab>
+"""Where kickoff puts a new herdr pane, and the resizes that even its columns.
+Usage: placement.py even <pane_id>
 
 herdr resize semantics (measured): `--direction left|right` moves the divider on
 that side of the pane, preferring the left divider for `left` and the right divider
@@ -45,46 +46,49 @@ def boundary_split(lay, left_col, right_col):
     return min(cands, key=lambda s: s["rect"]["width"]) if cands else None
 
 
-def main():
-    pane_id = sys.argv[1]
-    tolerance = 2
+def next_resize(lay, tolerance=2):
+    """The one resize that fixes the leftmost column off its even width, as
+    (pane_id, direction, amount); None when the columns are even within
+    tolerance, there is one column, or no split owns that boundary."""
+    cols = columns(lay)
+    n = len(cols)
+    if n < 2:
+        return None
+    target = lay["area"]["width"] / n
+    for i in range(n - 1):
+        delta = target - cols[i]["rect"]["width"]
+        if abs(delta) <= tolerance:
+            continue
+        split = boundary_split(lay, cols[i], cols[i + 1])
+        if split is None:
+            return None
+        amount = abs(delta) / split["rect"]["width"]
+        if delta > 0:
+            return cols[i]["pane_id"], "right", amount
+        return cols[i + 1]["pane_id"], "left", amount
+    return None
+
+
+def even(pane_id):
     for attempt in range(12):
         lay = layout(pane_id)
-        cols = columns(lay)
-        n = len(cols)
-        if n < 2:
-            print("single column; nothing to equalize")
+        step = next_resize(lay)
+        if step is None:
+            print(f"even: widths={[c['rect']['width'] for c in columns(lay)]}")
             return
-        target = lay["area"]["width"] / n
-        widths = [c["rect"]["width"] for c in cols]
-        if all(abs(w - target) <= tolerance for w in widths):
-            print(f"balanced: widths={widths} target={target:.1f}")
-            return
-        # Fix the leftmost boundary that is off; later boundaries settle after it.
-        for i in range(n - 1):
-            delta = target - cols[i]["rect"]["width"]
-            if abs(delta) <= tolerance:
-                continue
-            split = boundary_split(lay, cols[i], cols[i + 1])
-            if split is None:
-                print(f"no split owns boundary {i}")
-                return
-            amount = abs(delta) / split["rect"]["width"]
-            if delta > 0:
-                pane, direction = cols[i]["pane_id"], "right"
-            else:
-                pane, direction = cols[i + 1]["pane_id"], "left"
-            subprocess.run(
-                ["herdr", "pane", "resize", "--pane", pane,
-                 "--direction", direction, "--amount", f"{amount:.4f}"],
-                capture_output=True, text=True, check=True,
-            )
-            print(f"pass {attempt}: widths={widths} -> {pane} {direction} {amount:.4f}")
-            break
-        else:
-            break
+        pane, direction, amount = step
+        subprocess.run(
+            ["herdr", "pane", "resize", "--pane", pane,
+             "--direction", direction, "--amount", f"{amount:.4f}"],
+            capture_output=True, text=True, check=True,
+        )
+        widths = [c["rect"]["width"] for c in columns(lay)]
+        print(f"pass {attempt}: widths={widths} -> {pane} {direction} {amount:.4f}")
     final = [c["rect"]["width"] for c in columns(layout(pane_id))]
     print(f"final widths={final}")
 
 
-main()
+if __name__ == "__main__":
+    if len(sys.argv) != 3 or sys.argv[1] != "even":
+        sys.exit("usage: placement.py even <pane_id>")
+    even(sys.argv[2])
