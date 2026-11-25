@@ -13,7 +13,10 @@
 #   cursor.sh repos                                        -> repos connected to this account
 #   cursor.sh release <agent>                              -> gives the agent's Mac back once its run ended
 #                                                             (mac.sh return); nothing for an agent with no Mac
-#   cursor.sh ended <agent>                                -> exit 0 when the latest run ended (mac.sh runs it)
+#   cursor.sh ended <agent>                                -> exit 0 when the latest run ended
+#   cursor.sh create <body-file> <worker>                  -> starts the agent on a Mac's worker
+#   cursor.sh send <agent> <note-file>                     -> posts the note as a new run
+#                                                             (mac.sh runs these three inside the rental)
 #   cursor.sh facts                                        -> "repo\t<url>" per connected repo, then "model\t<id>\t<name>"
 #   cursor.sh interval                                     -> the watch's poll interval, in seconds
 #
@@ -29,15 +32,14 @@
 # workspace on, so a PR the agent opens with gh on its own branch never
 # shows there. poll with --repo and --issue also asks GitHub for open
 # PRs whose head is `<type>/<issue>-…` and reports those.
-# --platform macos runs the agent on a Namespace Mac (scripts/mac.sh) with a Cursor
-# worker on it, as a My Machines agent; Cursor's own machines are Ubuntu only.
-# The Mac lives for one run: handoff.sh's watch, or its release, gives it
-# back through mac.sh return; say rents a new one before it sends, whose
-# worker takes the first worker's name and ID: Cursor sends an agent's runs to
-# the worker ID it first ran on. poll never touches it.
-# The rows, agent, worker, worker ID, repo, base, and Mac (`-` when none),
-# sit in ~/.config/dispatch/cursor-macs.tsv. A worker refuses a grok_ key, so a
-# Mac needs a personal crsr_ key. --platform windows stops: Devin has one.
+# --platform macos runs the agent on a Namespace Mac with a Cursor worker on
+# it, as a My Machines agent; Cursor's own machines are Ubuntu only. mac.sh
+# rents it, keeps its row, and gives it back: start rents it through mac.sh
+# rent, say through mac.sh renew, which keeps the worker's name and ID, since
+# Cursor sends an agent's runs to the worker ID it first ran on. The Mac lives
+# for one run: handoff.sh's watch, or its release, gives it back through
+# mac.sh return; poll never touches it. A worker refuses a grok_ key, so a Mac
+# needs a personal crsr_ key. --platform windows stops: Devin has one.
 # Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
 # leaves a stale value in a running shell). Never printed.
 set -euo pipefail
@@ -61,7 +63,9 @@ cursor.sh repos
 cursor.sh facts
 cursor.sh release <agent>
 cursor.sh interval
-cursor.sh ended <agent>    (mac.sh runs it)
+cursor.sh ended <agent>    (mac.sh runs these three)
+cursor.sh create <body-file> <worker>
+cursor.sh send <agent> <note-file>
 EOF
   exit 1
 }
@@ -154,19 +158,10 @@ mac_clear() {
   return 0
 }
 
-# mac_up WORKER REPO BASE [WID] -> "<mac>\t<worker id>"; the key goes in the environment
-mac_up() { CURSOR_API_KEY="$(key)" bash "$MAC" up "$@"; }
-
 # mac_down MAC -> mac.sh's line on stdout; exit 1, with the reason and the
 # hand command on its stderr, when the Mac still runs. Every give-back goes
 # through here, so a failed one is never thrown away.
 mac_down() { bash "$MAC" down "$1"; }
-
-# mac_key_check -> dies when the key cannot run a worker
-mac_key_check() {
-  [[ "$(key)" == grok_* ]] && die "a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY"
-  return 0
-}
 
 # create_on_mac BODY WORKER -> the create response. The create call to a
 # machine agent blocks until its run ends (proven 2026-11-02), so it gets a
@@ -200,6 +195,22 @@ repo_url() {
   printf %s "${r%.git}"
 }
 
+# agent_line CREATE_JSON -> "<agent_id>\t<url>"
+agent_line() {
+  local id url
+  id=$(jq -r '.agent.id' <<<"$1")
+  url=$(jq -r '.agent.url // empty' <<<"$1")
+  [[ -z "$url" ]] && url="https://cursor.com/agents/$id"
+  printf '%s\t%s\n' "$id" "$url"
+}
+
+# create BODY_FILE WORKER -> starts the agent on the Mac's worker; mac.sh rent runs it
+cmd_create() {
+  local res
+  res=$(create_on_mac "$(cat "${1:?body file required}")" "${2:?worker required}")
+  agent_line "$res"
+}
+
 cmd_start() {
   local file="${1:-}"; shift || true
   local title="" repo="" base="main" model="" platform=linux
@@ -220,14 +231,13 @@ cmd_start() {
   esac
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
   [[ -n "$repo" ]] || die "--repo owner/name is required"
-  [[ "$platform" == macos ]] && mac_key_check
   repo=$(repo_url "$repo")
   local connected
   connected=$(api GET /repositories | jq -r '.items[].url | sub("\\.git$"; "")')
   grep -qxF "$repo" <<<"$connected" \
     || die "Connect ${repo#https://github.com/} to Cursor first: cursor.com/dashboard, Integrations, GitHub."
   [[ -z "$title" ]] && title=$(head -c 100 "$file" | head -1)
-  local body res id url worker="" mac="" wid="" up
+  local body res id url worker="" bf
   [[ "$platform" == macos ]] && worker="ho-$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
   body=$(jq -Rs --arg t "${title:0:100}" --arg repo "$repo" --arg base "$base" --arg model "$model" --arg w "$worker" '
     { prompt: { text: . }, name: $t,
@@ -236,18 +246,15 @@ cmd_start() {
     + (if $model != "" then { model: { id: $model } } else {} end)
     + (if $w != "" then { env: { type: "machine", name: $w } } else {} end)' "$file")
   if [[ -n "$worker" ]]; then
-    up=$(mac_up "$worker" "$repo" "$base") || die "no Mac for the agent"
-    IFS=$'\t' read -r mac wid <<<"$up"
-    res=$(create_on_mac "$body" "$worker") \
-      || { mac_down "$mac" >/dev/null || echo "cursor.sh: no agent started, so no later poll gives $mac back" >&2; exit 1; }
-  else
-    res=$(api POST /agents "$body")
+    bf=$(mktemp); printf '%s' "$body" >"$bf"
+    res=$(CURSOR_API_KEY="$(key)" bash "$MAC" rent "$worker" "$repo" "$base" -- bash "$SELF" create "$bf" "$worker") \
+      || { rm -f "$bf"; exit 1; }
+    rm -f "$bf"
+    printf '%s\n' "$res"
+    return 0
   fi
-  id=$(jq -r '.agent.id' <<<"$res")
-  [[ -n "$worker" ]] && mac_set "$id" "$worker" "$wid" "$repo" "$base" "$mac"
-  url=$(jq -r '.agent.url // empty' <<<"$res")
-  [[ -z "$url" ]] && url="https://cursor.com/agents/$id"
-  printf '%s\t%s\n' "$id" "$url"
+  res=$(api POST /agents "$body")
+  agent_line "$res"
 }
 
 cmd_poll() {
@@ -285,31 +292,22 @@ cmd_say() {
   local id; id=$(aid "${1:-}")
   local file="${2:-}"
   [[ -s "$file" ]] || die "note file missing or empty: $file"
-  local res rid row w wid r b mac up text new=""
+  CURSOR_API_KEY="$(key)" bash "$MAC" renew "$id" -- bash "$SELF" send "$id" "$file"
+}
+
+# send AGENT NOTE_FILE -> posts the note as a new run; mac.sh renew runs it,
+# with MAC_NEW_BASE set when the run is on a new Mac
+cmd_send() {
+  local id; id=$(aid "${1:-}")
+  local file="${2:-}" text res rid
+  [[ -s "$file" ]] || die "note file missing or empty: $file"
   text=$(cat "$file")
-  row=$(mac_row "$id")
-  if [[ -n "$row" ]]; then
-    IFS=$'\t' read -r w wid r b mac <<<"$row"
-    if ! bash "$MAC" alive "$mac" 2>/dev/null; then
-      mac_key_check
-      # Renting now would replace the only row that names the old Mac.
-      if [[ "$mac" != "-" ]] && ! mac_down "$mac" >/dev/null; then
-        die "no note sent: $mac was not given back"
-      fi
-      up=$(mac_up "$w" "$r" "$b" "$wid") || die "no Mac for the agent"
-      IFS=$'\t' read -r new _ <<<"$up"
-      text="This run is on a new Mac: the repo is a fresh clone of $b. Before you change anything, fetch and check out the branch you worked on, and its PR's branch if one is open.
+  if [[ -n "${MAC_NEW_BASE:-}" ]]; then
+    text="This run is on a new Mac: the repo is a fresh clone of $MAC_NEW_BASE. Before you change anything, fetch and check out the branch you worked on, and its PR's branch if one is open.
 
 $text"
-    fi
   fi
-  # A new Mac not given back takes the row: the latest run is still the one
-  # that ended, so the next poll gives it back.
-  res=$(api POST "/agents/$id/runs" "$(jq -Rn --arg t "$text" '{ prompt: { text: $t } }')") \
-    || { [[ -n "$new" ]] && ! mac_down "$new" >/dev/null && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"; exit 1; }
-  # Only now, with the new run the latest, may a poll see the new Mac: one
-  # that saw it next to the ended run before would destroy it.
-  [[ -n "$new" ]] && mac_set "$id" "$w" "$wid" "$r" "$b" "$new"
+  res=$(api POST "/agents/$id/runs" "$(jq -Rn --arg t "$text" '{ prompt: { text: $t } }')")
   rid=$(jq -r '.run.id // "-"' <<<"$res")
   echo "sent to $id ($rid)"
 }
@@ -353,7 +351,7 @@ cmd_repos() {
 }
 
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|down|models|repos|facts|release|ended) key >/dev/null ;; esac
+case "${1:-}" in start|poll|say|down|models|repos|facts|release|ended|create|send) key >/dev/null ;; esac
 case "${1:-}" in
   start)  shift; cmd_start "$@" ;;
   poll)   shift; cmd_poll "$@" ;;
@@ -364,6 +362,8 @@ case "${1:-}" in
   facts)  shift; cmd_facts "$@" ;;
   release) shift; cmd_release "$@" ;;
   ended)  shift; cmd_ended "$@" ;;
+  create) shift; cmd_create "$@" ;;
+  send)   shift; cmd_send "$@" ;;
   interval) echo 60 ;;
   *) usage ;;
 esac
