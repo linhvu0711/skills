@@ -64,7 +64,8 @@ already installed in the worktree.
 Each slice's tests, the typecheck, and lint run here, in the worktree,
 with the commands under `Facts`. The full suite, the build, and the app
 never run here: after you finish, `/build-and-prove`
-runs the Gates in the run's proofbox Sandbox.
+runs in the run's proofbox Sandbox the Gates the PR's CI does not run,
+and leaves the rest to CI.
 
 With `UI: none` under `Facts`, there is no Sandbox: `/build-and-prove`
 runs the Gates on this machine and leaves the rest to the PR's CI.

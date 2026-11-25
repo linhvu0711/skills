@@ -10,8 +10,11 @@ Plan read, slug `acme-shop-42`. proofbox found. Worktree
 in. Prompt written, this session builds four slices, each test red
 then green on the local machine. After the fourth, `box.sh up` prints
 `SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from
-the base, walker in `before` mode, `before-1.png`. Gates green on
-`1a2b3c4` in the Sandbox. Round 1: walk 3 fails,
+the base, walker in `before` mode, `before-1.png`. Gates on `1a2b3c4`:
+step 8's `box.sh gates "$PROOF" --ci "$WT" -- 'pnpm test' 'pnpm lint'
+'pnpm build'` leaves `pnpm test` to CI,
+since `ci.yml` runs it on pull requests, and runs `pnpm lint` and
+`pnpm build` green in the Sandbox. Round 1: walk 3 fails,
 its screenshot shows the `Export` button disabled with rows on screen:
 an app bug, a follow-up, slice 4's code fixed, Gates again. Round 2: all
 pass. `proof.md` written, `box.sh down`, report, whose `Walk notes:`

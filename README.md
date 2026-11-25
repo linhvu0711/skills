@@ -94,7 +94,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [complete-task](skills/complete-task/) | Does a task issue's steps in your browser, and stops only for the steps that are yours. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
-| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine. For a plan with UI walks, it runs the Gates and the app in one proofbox Sandbox and has a walker film the walks as proof; a plan with no UI runs its Gates on your machine and in CI. |
+| [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine. For a plan with UI walks, it runs the app and the Gates CI does not run in one proofbox Sandbox and has a walker film the walks as proof; a plan with no UI runs its Gates on your machine and in CI. |
 | [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |

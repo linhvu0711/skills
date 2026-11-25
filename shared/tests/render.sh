@@ -67,7 +67,7 @@ t_render_local_split() {
 t_render_local_gates() {
   render local rules
   eq exit 0 "$code"
-  has "gates" "runs the Gates in the run's proofbox Sandbox" "$out"
+  has "gates" "runs in the run's proofbox Sandbox the Gates the PR's CI does not run" "$out"
   lacks "full suite" "Run the full test suite" "$out"
 }
 
