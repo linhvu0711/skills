@@ -14,7 +14,7 @@ scripts/kickoff.sh [flags] <target>
 
 Exit 0: print the script's one report line and stop. The command it started now talks to the user in the new pane. Do not watch it, read its plan, or run `/handoff` from here.
 
-Exit 1: the last stderr line starts with `stop:` and says why. Show it as is and stop. Nothing is half done: the script makes no pane until every check passed. A pane that exists but did not launch stays for the user to look at; the message names it.
+Any other exit: the last `stop:` line on stderr says why. Exit 64 is a wrong command line, and the usage follows it. Show them as they are and stop. Nothing is half done: the script makes no pane until every check passed. A pane that exists but did not launch stays for the user to look at; the message names it.
 
 What this script adds to the shared decisions, so you can answer questions about it:
 

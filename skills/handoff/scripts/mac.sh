@@ -51,12 +51,16 @@
 # names a new Mac only after the send works, and return reads the row before
 # it checks the run: so a return that sees an ended run never gives back a Mac
 # that a renew rented for the next run.
+# A wrong command line: `stop: <why>` when there is one, then the usage on
+# stderr, exit 64. The command's own exit code passes through.
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # need_tools -> dies when a tool a Mac step needs is missing. Only a step that
 # touches a Mac runs it, so an agent with no Mac needs no nsc.
@@ -102,7 +106,7 @@ row_clear() {
 
 # after_dashes ARGS -> dies unless ARGS holds "--" with a command after it
 after_dashes() {
-  [[ "${1:-}" == "--" && $# -gt 1 ]] || die "usage: mac.sh $verb ... -- <command>"
+  [[ "${1:-}" == "--" && $# -gt 1 ]] || die_usage "usage: mac.sh $verb ... -- <command>"
 }
 
 # remote INSTANCE SCRIPT -> runs SCRIPT on the Mac, with no stdin
@@ -113,9 +117,10 @@ remote_in() { nsc ssh "$1" -T -- "$2"; }
 
 cmd_up() {
   local worker="${1:-}" repo="${2:-}" base="${3:-}" wid="${4:-}"
-  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die "usage: mac.sh rent <worker> <repo-url> <base> -- <command>"
-  [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die "worker name: letters, digits, and - only"
-  [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die "worker id: a UUID"
+  local usage='usage: mac.sh rent <worker> <repo-url> <base> -- <command>'
+  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die_usage "$usage"
+  [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die_usage "$usage" "worker name: letters, digits, and - only"
+  [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die_usage "$usage" "worker id: a UUID"
   need_tools
   local dir cid id key token name state=""
   key="${CURSOR_API_KEY:-}"
@@ -194,7 +199,7 @@ cmd_rent() {
   local worker="${1:-}" repo="${2:-}" base="${3:-}" up mac wid res agent
   verb=rent; shift 3 || true; after_dashes "$@"; shift
   key_check
-  up=$(cmd_up "$worker" "$repo" "$base") || exit 1
+  up=$(cmd_up "$worker" "$repo" "$base") || exit
   IFS=$'\t' read -r mac wid <<<"$up"
   if ! res=$("$@" </dev/null); then
     cmd_down "$mac" >/dev/null || die "no agent started, so no row names $mac"
@@ -217,7 +222,7 @@ cmd_renew() {
   if [[ "$mac" != "-" ]] && ! cmd_down "$mac" >/dev/null; then
     die "no note sent: $mac was not given back"
   fi
-  up=$(cmd_up "$w" "$r" "$b" "$wid") || exit 1
+  up=$(cmd_up "$w" "$r" "$b" "$wid") || exit
   IFS=$'\t' read -r new _ <<<"$up"
   if ! MAC_NEW_BASE="$b" "$@"; then
     # A new Mac not given back takes the row, so a return finds it.
@@ -245,5 +250,5 @@ case "${1:-}" in
   rent)   shift; cmd_rent "$@" ;;
   renew)  shift; cmd_renew "$@" ;;
   return) shift; cmd_return "$@" ;;
-  *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
+  *) die_usage "$(usage_text)" ;;
 esac

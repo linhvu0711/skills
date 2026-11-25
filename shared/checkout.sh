@@ -43,6 +43,7 @@
 # Exit 0: one line,
 # `MAIN=<dir> WORKTREE=<dir> BRANCH=<b> DEFAULT=<b> STATE=<created|reused> FROM=<what>`.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
+# Exit 64: a wrong command line, its usage on stderr.
 #
 #   checkout.sh main <owner/repo>
 #
@@ -78,6 +79,7 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -193,26 +195,26 @@ default_branch() {
 # The forms that take no branch.
 case "${1:-}" in
   slug)
-    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh slug <dir>"
+    [ $# -eq 2 ] && [ -n "$2" ] || die_usage "usage: checkout.sh slug <dir>"
     s="$(origin_slug "$2")"
     [ -n "$s" ] || die "$2 has no GitHub remote"
     printf '%s\n' "$s"; exit 0 ;;
   worktrees)
-    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
+    [ $# -eq 2 ] && [ -n "$2" ] || die_usage "usage: checkout.sh worktrees <dir>"
     worktrees "$2"; exit 0 ;;
   holder)
-    [ $# -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] || die "usage: checkout.sh holder <dir> <branch>"
+    [ $# -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] || die_usage "usage: checkout.sh holder <dir> <branch>"
     listed="$(worktrees "$2")" || exit 1
     while read -r b _ _ w; do
       if [ "$b" = "BRANCH=$3" ]; then printf '%s\n' "${w#WORKTREE=}"; break; fi
     done <<<"$listed"
     exit 0 ;;
   main)
-    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh main <owner/repo>"
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh main <owner/repo>"
     find_main "$2"
     printf 'FROM=%s MAIN=%s\n' "$main_from" "$main"; exit 0 ;;
   default)
-    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh default <owner/repo>"
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh default <owner/repo>"
     find_main "$2"
     default_branch "$2" "$main" 2
     printf '%s\n' "$default"; exit 0 ;;
@@ -222,13 +224,13 @@ usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
 slug=""; branch=""; base=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base) [ -n "${2:-}" ] || die "$usage"; base="$2"; shift 2 ;;
-    -*) die "unknown flag $1" ;;
-    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die "unexpected argument: $1"; fi; shift ;;
+    --base) [ -n "${2:-}" ] || die_usage "$usage" "--base needs a ref"; base="$2"; shift 2 ;;
+    -*) die_usage "$usage" "unknown flag $1" ;;
+    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die_usage "$usage" "unexpected argument: $1"; fi; shift ;;
   esac
 done
-[ -n "$slug" ] && [ -n "$branch" ] || die "$usage"
-[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die "$usage"
+[ -n "$slug" ] && [ -n "$branch" ] || die_usage "$usage"
+[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die_usage "$usage" "not owner/repo: $slug"
 
 find_main "$slug"
 

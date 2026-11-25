@@ -470,7 +470,7 @@ t_box_gates_usage() {
   # When
   box gates "$P" --
   # Then
-  eq exit 1 "$code"
+  eq exit 64 "$code"
   has stderr "gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"

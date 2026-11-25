@@ -1318,8 +1318,8 @@ t_fs_interval_min_one() {
   # When
   fs_go timer acme/app --every 0
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: check every takes 1 minute or more" "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: check every takes 1 minute or more"$'\n'"usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "$err"
   eq every 5 "$(fs_state .timer.every)"
 }
 
@@ -1650,8 +1650,8 @@ t_fs_timer_no_task() {
   # When
   fs_go timer acme/app --task s1
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "$err"
+  eq exit 64 "$code"
+  eq stderr "usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "$err"
 }
 
 t_fs_thread_kept() {
@@ -1774,8 +1774,8 @@ t_fs_proposed_route_word() {
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
-  eq "to-epic exit" 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq "to-epic exit" 64 "$code"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
@@ -1836,8 +1836,8 @@ t_fs_proposed_bad_size() {
   # When
   fs_go proposed acme/app 42 ship --size huge
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq exit 64 "$code"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
 }
 
 t_fs_use_bad_effort() {
@@ -1846,8 +1846,8 @@ t_fs_use_bad_effort() {
   # When
   fs_go change acme/app use 42 --effort huge
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge" "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge"$'\n'"usage: orchestrate.sh change <owner/repo> use <issue>|all [--model M] [--effort E]" "$err"
 }
 
 t_fs_ship_bad_mode() {
@@ -1856,8 +1856,8 @@ t_fs_ship_bad_mode() {
   # When
   fs_go change acme/app ship full 42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <issue>|all" "$err"
+  eq exit 64 "$code"
+  eq stderr "usage: orchestrate.sh change <owner/repo> ship review|ready|merge <issue>|all" "$err"
 }
 
 t_fs_done_retro_row() {
@@ -2073,7 +2073,8 @@ t_fs_start_needs_env() {
   # When
   fs_go start acme/app --name "#42" --thread f1 42
   # Then
-  eq stderr "stop: usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
+  eq exit 64 "$code"
+  eq stderr "usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "$err"
 }
 
 t_fs_board_chips() {

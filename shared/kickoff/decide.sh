@@ -29,10 +29,11 @@
 # the target by number, or by URL when gh in the checkout sees another repo.
 # Under --command ready-pr, args is the one open PR that closes the issue,
 # and it stays a URL when that PR is in another repo.
-# Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
-# PR, no checkout. Exit 2: gh could not read GitHub. Either way the reason is
-# the last line on stderr, and nothing launched, so the caller's launch starts
-# only after every check here passed.
+# Exit 1: a stop that is this target's: no open ticket, no open PR, no
+# checkout. Exit 2: gh could not read GitHub. Exit 64: a wrong command line,
+# such as a bad flag, with the usage after the reason. Each time the reason is
+# the last `stop:` line on stderr, and nothing launched, so the caller's
+# launch starts only after every check here passed.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,6 +41,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/labels.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage="usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 gh_die() { printf 'stop: %s\n' "$*" >&2; exit 2; }
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
@@ -48,30 +51,30 @@ label=""; args=(); sizes=()
 set_model=""; set_effort=""; set_command=""; mode=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --label) label="$2"; shift 2 ;;
-    --model) [ -n "${2:-}" ] || die "--model needs a name"; set_model="$2"; shift 2 ;;
+    --label) [ -n "${2:-}" ] || die_usage "$usage" "--label needs a name"; label="$2"; shift 2 ;;
+    --model) [ -n "${2:-}" ] || die_usage "$usage" "--model needs a name"; set_model="$2"; shift 2 ;;
     --effort)
-      one_of "$effort_list" "${2:-}" || die "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
+      one_of "$effort_list" "${2:-}" || die_usage "$usage" "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die_usage "$usage" "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --mode)
-      one_of "$ship_mode_list" "${2:-}" || die "--mode must be $(spelled "$ship_mode_list"), got: ${2:-nothing}"
+      one_of "$ship_mode_list" "${2:-}" || die_usage "$usage" "--mode must be $(spelled "$ship_mode_list"), got: ${2:-nothing}"
       mode="$2"; shift 2 ;;
     --size)
-      [[ "$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')" =~ ^[0-9]+=($size_list)$ ]] || die "--size takes <n>=$size_list, got: ${2:-nothing}"
+      [[ "$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')" =~ ^[0-9]+=($size_list)$ ]] || die_usage "$usage" "--size takes <n>=$size_list, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
-    -*) die "unexpected argument: $1" ;;
+    -*) die_usage "$usage" "unexpected argument: $1" ;;
     *) args+=("$1"); shift ;;
   esac
 done
-[ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die_usage "$usage" "--mode goes only with --command ship"
+[ "${#args[@]}" -ge 1 ] || die_usage "$usage"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
-  || die "first argument must be a GitHub issue URL, got: $issue_url"
+  || die_usage "$usage" "first argument must be a GitHub issue URL, got: $issue_url"
 owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"; number="${BASH_REMATCH[3]}"
 slug="$owner/$repo"
 
@@ -82,16 +85,16 @@ while [ $i -lt "${#args[@]}" ]; do
   if [ "$a" = "on" ]; then
     pr_url="${args[$((i+1))]:-}"
     [[ "$pr_url" =~ ^https://github\.com/$owner/$repo/pull/([0-9]+)/?$ ]] \
-      || die "'on' needs a PR URL in $slug, got: ${pr_url:-nothing}"
+      || die_usage "$usage" "'on' needs a PR URL in $slug, got: ${pr_url:-nothing}"
     pr_number="${BASH_REMATCH[1]}"
     i=$((i+2))
   elif [[ "$a" =~ ^#?([0-9]+)$ ]]; then
     tickets+=("${BASH_REMATCH[1]}"); i=$((i+1))
   else
-    die "unexpected argument: $a"
+    die_usage "$usage" "unexpected argument: $a"
   fi
 done
-[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die "on takes one issue"
+[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die_usage "$usage" "on takes one issue"
 prep_args="${args[*]}"
 
 # ---------- issue ----------

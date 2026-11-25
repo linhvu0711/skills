@@ -358,8 +358,8 @@ t_cc_usage() {
   # When
   run bash "$here/../ci-covers.sh" "$T/wt" --
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: usage: ci-covers.sh <worktree> -- <command>..." "$err"
+  eq exit 64 "$code"
+  eq stderr "usage: ci-covers.sh <worktree> -- <command>..." "$err"
 }
 
 cases=(

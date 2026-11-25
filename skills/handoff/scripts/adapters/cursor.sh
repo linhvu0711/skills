@@ -39,6 +39,8 @@
 # needs a personal crsr_ key. --platform windows stops: Devin has one.
 # Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
 # leaves a stale value in a running shell). Never printed.
+# A wrong command line: `stop: <why>` when there is one, then the usage lines
+# on stderr, exit 64.
 set -euo pipefail
 
 API="${CURSOR_API_URL:-https://api.cursor.com}/v1"
@@ -47,8 +49,9 @@ MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
 SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
-usage() {
+usage_text() {
   cat <<'EOF'
 cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID] [--platform linux|macos]
 cursor.sh poll <agent> [--repo owner/name --issue N]
@@ -60,7 +63,6 @@ cursor.sh ended <agent>    (mac.sh runs these three)
 cursor.sh create <body-file> <worker>
 cursor.sh send <agent> <note-file>
 EOF
-  exit 1
 }
 
 key() {
@@ -76,7 +78,7 @@ key() {
 
 aid() {
   local s="${1:-}"
-  [[ -z "$s" ]] && die "agent id required"
+  [[ -n "$s" ]] || die_usage "$(usage_text)" "agent id required"
   s="${s%%\?*}"                      # drop a query string
   s="${s##*/}"                       # app URL -> id
   [[ "$s" == bc-* ]] || s="bc-$s"
@@ -168,7 +170,8 @@ agent_line() {
 # create BODY_FILE WORKER -> starts the agent on the Mac's worker; mac.sh rent runs it
 cmd_create() {
   local res
-  res=$(create_on_mac "$(cat "${1:?body file required}")" "${2:?worker required}")
+  [[ -n "${1:-}" && -n "${2:-}" ]] || die_usage "$(usage_text)" "create needs a body file and a worker"
+  res=$(create_on_mac "$(cat "$1")" "$2")
   agent_line "$res"
 }
 
@@ -182,16 +185,16 @@ cmd_start() {
       --base)  base="$2"; shift 2 ;;
       --model) model="$2"; shift 2 ;;
       --platform) platform="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
   case "$platform" in
     linux|macos) ;;
     windows) die "Cursor has no Windows machine: hand this one to devin" ;;
-    *) die "--platform must be linux or macos" ;;
+    *) die_usage "$(usage_text)" "--platform must be linux or macos" ;;
   esac
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
-  [[ -n "$repo" ]] || die "--repo owner/name is required"
+  [[ -n "$repo" ]] || die_usage "$(usage_text)" "--repo owner/name is required"
   repo=$(repo_url "$repo")
   local connected
   connected=$(api GET /repositories | jq -r '.items[].url | sub("\\.git$"; "")')
@@ -225,10 +228,10 @@ cmd_poll() {
     case "$1" in
       --repo) repo="$2"; shift 2 ;;
       --issue) issue="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
-  [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die "--repo and --issue go together"
+  [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die_usage "$(usage_text)" "--repo and --issue go together"
   local line ast rst rid prs url msg st ghprs all=" " p arr=()
   line=$(fetch "$id")
   IFS=$'\t' read -r ast rst rid prs url msg <<<"$line"
@@ -303,5 +306,5 @@ case "${1:-}" in
   create) shift; cmd_create "$@" ;;
   send)   shift; cmd_send "$@" ;;
   interval) echo 60 ;;
-  *) usage ;;
+  *) die_usage "$(usage_text)" ;;
 esac

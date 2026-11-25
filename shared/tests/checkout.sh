@@ -143,7 +143,8 @@ t_ck_reuses_spaced_path() {
 t_ck_base_without_value() {
   ck_setup
   resolve acme/app feat/x --base
-  eq stderr "stop: usage: checkout.sh <owner/repo> <branch> [--base <ref>]" "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: --base needs a ref"$'\n'"usage: checkout.sh <owner/repo> <branch> [--base <ref>]" "$err"
 }
 
 t_ck_alias_origin() {

@@ -44,7 +44,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## Errors
 
-- A wrong command line prints the usage line on stderr and exits non-zero: 64 for a shell script, argparse's own 2 for a Python script, and 1 through `stop()` for a Node script.
+- A wrong command line prints the usage line on stderr and exits non-zero: 64 through `die_usage <usage> [why]` for a shell script, which prints `stop: <why>` when given, then the usage; argparse's own 2 for a Python script; and 1 through `stop()` for a Node script.
 - A script whose exit code carries an answer, as `ready.sh` returns 0, 1, or 2, keeps its codes and lists them in its usage.
 - A stop message says what went wrong, what was expected, and what to try (agentskills-using-scripts).
 - A missing optional tool prints `warn: <what>` on stderr, and the script goes on.

@@ -64,9 +64,12 @@
 # Exit 1: one `<file>:<line>: <kind>: <match>` line per problem on stderr (or
 # `<path>: <problem>` for a check of a whole file or folder),
 # then `check: <n> problem(s) found`.
+# Exit 64: a wrong command line, its usage on stderr.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: check.sh [<path>... | --staged | --commit-msg <file>]'
 scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # report: print the problems and exit 1, or print `check: clean` and exit 0.
@@ -94,13 +97,13 @@ staged=0; msg=""; paths=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --staged) staged=1; shift ;;
-    --commit-msg) [ $# -ge 2 ] || die "--commit-msg takes a file"; msg="$2"; shift 2 ;;
-    -*) die "unknown flag $1" ;;
+    --commit-msg) [ $# -ge 2 ] || die_usage "$usage" "--commit-msg takes a file"; msg="$2"; shift 2 ;;
+    -*) die_usage "$usage" "unknown flag $1" ;;
     *) paths+=("$1"); shift ;;
   esac
 done
-[ "$staged" = 0 ] || [ ${#paths[@]} -eq 0 ] || die "--staged takes no paths"
-[ -z "$msg" ] || { [ "$staged" = 0 ] && [ ${#paths[@]} -eq 0 ]; } || die "--commit-msg takes no other flag or path"
+[ "$staged" = 0 ] || [ ${#paths[@]} -eq 0 ] || die_usage "$usage" "--staged takes no paths"
+[ -z "$msg" ] || { [ "$staged" = 0 ] && [ ${#paths[@]} -eq 0 ]; } || die_usage "$usage" "--commit-msg takes no other flag or path"
 if [ -n "$msg" ]; then
   [ -f "$msg" ] || die "no such file: $msg"
   case "$msg" in /*) ;; *) msg="$PWD/$msg" ;; esac

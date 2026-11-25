@@ -251,7 +251,7 @@ t_ready_bad_flag() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
   ready --bogus
   eq exit 64 "$code"
-  eq stderr "stop: unknown flag --bogus" "$err"
+  eq stderr "stop: unknown flag --bogus"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
 }
 
 t_ready_tools_flag_gone() {
@@ -261,7 +261,7 @@ t_ready_tools_flag_gone() {
   ready --tools devin
   # Then
   eq exit 64 "$code"
-  eq stderr "stop: unknown flag --tools" "$err"
+  eq stderr "stop: unknown flag --tools"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
 }
 
 t_ready_bot_check_counts() {
@@ -413,7 +413,7 @@ t_ready_watch_poll_fraction() {
   # When
   ready --watch abc1234def5678 --poll-sec 0.5
   # Then
-  eq refusal "64|stop: --poll-sec takes whole seconds: 0.5" "$code|$err"
+  eq refusal "64|stop: --poll-sec takes whole seconds: 0.5"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$code|$err"
 }
 
 t_ready_watch_poll_leading_zero() {
@@ -560,7 +560,7 @@ t_ready_wait_flag_gone() {
   fake_gh
   ready --wait abc1234def5678
   eq exit 64 "$code"
-  eq stderr "stop: unknown flag --wait" "$err"
+  eq stderr "stop: unknown flag --wait"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
 }
 
 cases=(

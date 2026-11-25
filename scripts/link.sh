@@ -50,13 +50,15 @@
 # hook file's folder, or a T3 Antigravity folder. A target something else
 # holds, and each file of an agent that agents.sh cannot render, adds, as a
 # seventh field, the words its `skip:` line gives. Any other argument: the
-# usage line on stderr, exit 2.
+# usage line on stderr, exit 64.
 set -euo pipefail
+
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 case "$#:${1:-}" in
   0:) visit=fix ;;
   1:--status) visit=record ;;
-  *) echo "usage: link.sh [--status]" >&2; exit 2 ;;
+  *) die_usage 'usage: link.sh [--status]' ;;
 esac
 
 repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"

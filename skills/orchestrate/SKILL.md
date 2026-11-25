@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the run's state file, decides what to start, and runs the watcher: a background loop that checks every few minutes with no chat turn and sends this thread `/orchestrate check` only when you must act. You start each thread with T3's tools, snooze this thread, and report. Every `orchestrate.sh` call takes the repo as `<owner/repo>`, from `gh repo view --json nameWithOwner` in this thread's folder. Exit 1 from it: the last stderr line starts with `stop:`; show it as is, and that command ends there.
+This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the run's state file, decides what to start, and runs the watcher: a background loop that checks every few minutes with no chat turn and sends this thread `/orchestrate check` only when you must act. You start each thread with T3's tools, snooze this thread, and report. Every `orchestrate.sh` call takes the repo as `<owner/repo>`, from `gh repo view --json nameWithOwner` in this thread's folder. Exit 1 from it: the last stderr line starts with `stop:`; show it as is, and that command ends there. Exit 64: a wrong command line, the usage after the `stop:` line; fix the call.
 
 ## Never
 

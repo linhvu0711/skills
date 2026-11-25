@@ -25,9 +25,13 @@
 # PAT) and `export DEVIN_ORG_ID=` win over the env (a rotated key leaves
 # a stale value in a running shell). Optional `export DEVIN_USER_ID=`
 # makes a service-user key create sessions as that user. Never printed.
+# A wrong command line: `stop: <why>` when there is one, then this header on
+# stderr, exit 64.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # zvar NAME -> value from ~/.zshrc, else env, else empty
 zvar() {
@@ -56,7 +60,7 @@ api_base() { printf '%s/v3/organizations/%s' "${DEVIN_API_URL:-https://api.devin
 
 sid() {
   local s="${1:-}"
-  [[ -z "$s" ]] && die "session id required"
+  [[ -n "$s" ]] || die_usage "$(usage_text)" "session id required"
   s="${s##*/}"                       # app URL -> id
   [[ "$s" == devin-* ]] || s="devin-$s"
   printf %s "$s"
@@ -164,7 +168,7 @@ cmd_start() {
       --title)    title="$2"; shift 2 ;;
       --platform) platform="$2"; shift 2 ;;
       --mode)     mode="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
@@ -229,5 +233,5 @@ case "${1:-}" in
   facts)   shift; cmd_facts "$@" ;;
   release) shift; sid "${1:-}" >/dev/null ;;
   interval) echo 120 ;;
-  *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
+  *) die_usage "$(usage_text)" ;;
 esac

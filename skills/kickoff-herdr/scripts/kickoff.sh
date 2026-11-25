@@ -16,6 +16,8 @@
 #
 # Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
+# Exit 2 or 64, from decide.sh: gh could not read GitHub, or a wrong command
+# line, with its `stop:` line on stderr.
 # Nothing is half done: no pane exists until every check passed.
 # The tree is left as is: /ship reads its own copy of the base.
 set -euo pipefail
@@ -26,7 +28,7 @@ die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # ---------- decide ----------
 # The shared decide script reads the target and flags; its stop line is ours.
-decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit 1
+decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit
 field() { jq -r ".$1" <<<"$decided"; }
 number="$(field number)"; title="$(field title)"; prep_args="$(field args)"
 command_from="$(field command_from)"; message="$(field message)"

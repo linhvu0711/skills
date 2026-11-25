@@ -127,9 +127,12 @@
 #
 # Exit 1, in every verb: `stop: <why>` as the last stderr line. An upload that
 # fails for another reason than a gone Sandbox is a stop too.
+# Exit 64: a wrong command line, `stop: <why>` when there is one, then the
+# usage, on stderr.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
@@ -281,7 +284,7 @@ group_stop() {
 
 case "$verb" in
   up)
-    [ $# -eq 4 ] || die "$usage"
+    [ $# -eq 4 ] || die_usage "$usage"
     dir="$1"; BOX_WORK="$2"; BOX_OS="$3"; slug="${4/\//-}"; BOX_REMADE=0
     case "$BOX_OS" in linux|macos) ;; *) die "os must be linux or macos, not $BOX_OS" ;; esac
     home="$HOME/.agents/proofbox/$slug"
@@ -297,29 +300,29 @@ case "$verb" in
     printf 'SANDBOX=%s\n' "$BOX_ID"
     ;;
   run)
-    [ $# -ge 1 ] || die "$usage"
+    [ $# -ge 1 ] || die_usage "$usage"
     dir="$1"; shift; from=""
     if [ "${1:-}" = "--from" ]; then
-      [ -d "${2:-}" ] || die "--from needs a folder"
+      [ -d "${2:-}" ] || die_usage "$usage" "--from needs a folder"
       from="$2"; shift 2
     fi
-    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
+    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die_usage "$usage"
     shift
     load
     in_box "$from" "" "$@"
     exit "$rc"
     ;;
   start)
-    [ $# -ge 1 ] || die "$usage"
+    [ $# -ge 1 ] || die_usage "$usage"
     dir="$1"; shift; from=""; url=""
     while :; do
       case "${1:-}" in
-        --from) [ -d "${2:-}" ] || die "--from needs a folder"; from="$2"; shift 2 ;;
-        --url) [ -n "${2:-}" ] || die "--url needs a URL"; url="$2"; shift 2 ;;
+        --from) [ -d "${2:-}" ] || die_usage "$usage" "--from needs a folder"; from="$2"; shift 2 ;;
+        --url) [ -n "${2:-}" ] || die_usage "$usage" "--url needs a URL"; url="$2"; shift 2 ;;
         *) break ;;
       esac
     done
-    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die "$usage"
+    [ "${1:-}" = "--" ] && [ $# -ge 2 ] || die_usage "$usage"
     shift
     load
     group_argv /tmp/app.pid /tmp/app.log "$*"
@@ -336,13 +339,13 @@ case "$verb" in
     die "$url did not answer in 120 s; the app log's last lines are above"
     ;;
   stop)
-    [ $# -ge 1 ] || die "$usage"
+    [ $# -ge 1 ] || die_usage "$usage"
     dir="$1"; shift; url=""
     if [ "${1:-}" = "--url" ]; then
-      [ -n "${2:-}" ] || die "--url needs a URL"
+      [ -n "${2:-}" ] || die_usage "$usage" "--url needs a URL"
       url="$2"; shift 2
     fi
-    [ $# -eq 0 ] || die "$usage"
+    [ $# -eq 0 ] || die_usage "$usage"
     load
     group_stop /tmp/app.pid 30
     if [ -n "$gone" ]; then printf '%s; nothing to stop\n' "$gone" >&2; exit 0; fi
@@ -353,7 +356,7 @@ case "$verb" in
     [ "$rc" -eq 0 ] || die "$url still answers after the app stopped"
     ;;
   open)
-    [ $# -ge 3 ] && [ "$2" = "--" ] || die "$usage"
+    [ $# -ge 3 ] && [ "$2" = "--" ] || die_usage "$usage"
     dir="$1"; shift 2
     load
     # proofbox runs an argument list with no shell, and the Work folder holds
@@ -365,7 +368,7 @@ case "$verb" in
     exit "$rc"
     ;;
   close)
-    [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --out ]; } || die "$usage"
+    [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --out ]; } || die_usage "$usage"
     dir="$1"; out="${3:-}"
     load
     group_stop /tmp/walk-open.pid 10
@@ -392,7 +395,7 @@ case "$verb" in
     exit "$stopped"
     ;;
   fit)
-    [ $# -eq 1 ] || die "$usage"
+    [ $# -eq 1 ] || die_usage "$usage"
     dir="$1"
     load
     if [ "$BOX_OS" = macos ]; then echo "FIT not checked on macos"; exit 0; fi
@@ -412,24 +415,24 @@ case "$verb" in
     fi
     ;;
   gates)
-    [ $# -ge 1 ] || die "$usage"
+    [ $# -ge 1 ] || die_usage "$usage"
     dir="$1"; shift; local_wt=""; ci_wt=""; on_local=(); not_run=()
     # Both options leave to CI each Gate after -- that the PR's CI runs, read
     # from ci_wt.
     case "${1:-}" in
-      --local) [ -d "${2:-}" ] || die "--local needs a worktree"; local_wt="$2"; ci_wt="$2"; shift 2 ;;
-      --ci) [ -d "${2:-}" ] || die "--ci needs a worktree"; ci_wt="$2"; shift 2 ;;
+      --local) [ -d "${2:-}" ] || die_usage "$usage" "--local needs a worktree"; local_wt="$2"; ci_wt="$2"; shift 2 ;;
+      --ci) [ -d "${2:-}" ] || die_usage "$usage" "--ci needs a worktree"; ci_wt="$2"; shift 2 ;;
     esac
     while [ $# -gt 0 ] && [ "$1" != -- ]; do
       case "$1" in
-        --on-local) [ $# -ge 2 ] || die "$usage"; on_local+=("$2"); shift 2 ;;
-        --not-run) [ $# -ge 3 ] || die "$usage"; not_run+=("$2" "$3"); shift 3 ;;
-        *) die "$usage" ;;
+        --on-local) [ $# -ge 2 ] || die_usage "$usage"; on_local+=("$2"); shift 2 ;;
+        --not-run) [ $# -ge 3 ] || die_usage "$usage"; not_run+=("$2" "$3"); shift 3 ;;
+        *) die_usage "$usage" ;;
       esac
     done
-    [ "${1:-}" = "--" ] || die "$usage"
+    [ "${1:-}" = "--" ] || die_usage "$usage"
     shift
-    [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ] || [ ${#not_run[@]} -ge 1 ] || die "$usage"
+    [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ] || [ ${#not_run[@]} -ge 1 ] || die_usage "$usage"
     [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
       || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
     # covered[i] is the workflow file that runs that Gate on the PR, or
@@ -509,7 +512,7 @@ case "$verb" in
     [ "$red" -eq 0 ] || exit 3
     ;;
   down)
-    [ $# -eq 1 ] || die "$usage"
+    [ $# -eq 1 ] || die_usage "$usage"
     dir="$1"
     load
     pb null show delete "$BOX_ID"
@@ -518,7 +521,7 @@ case "$verb" in
     printf 'REMADE=%s\n' "$BOX_REMADE"
     ;;
   auth)
-    [ $# -eq 1 ] || die "$usage"
+    [ $# -eq 1 ] || die_usage "$usage"
     case "$1" in linux|macos) ;; *) die "os must be linux or macos, not $1" ;; esac
     conf="$HOME/.config/proofbox/config"; provider=""
     [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
@@ -539,5 +542,5 @@ case "$verb" in
       *) die "proofbox auth status: $provider login is $login" ;;
     esac
     ;;
-  *) die "$usage" ;;
+  *) die_usage "$usage" ;;
 esac

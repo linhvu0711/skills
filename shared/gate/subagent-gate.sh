@@ -25,7 +25,8 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$here/../.."
-usage() { echo 'usage: subagent-gate.sh <claude|codex|antigravity> [matcher]' >&2; exit 64; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: subagent-gate.sh <claude|codex|antigravity> [matcher]'
 
 harness="${1:-}"
 case "$harness" in
@@ -35,12 +36,12 @@ case "$harness" in
     target_field=agent_type; default_target=default ;;
   antigravity) start_tools="invoke_subagent"
     edit_tools="edit_file write_file write_to_file replace_file_content multi_replace_file_content" ;;
-  *) usage ;;
+  *) die_usage "$usage" ;;
 esac
 case "${2-}" in
-  matcher) [ $# -eq 2 ] || usage; printf '%s\n' "$start_tools $edit_tools" | tr ' ' '|'; exit 0 ;;
-  '') [ $# -eq 1 ] || usage ;;
-  *) usage ;;
+  matcher) [ $# -eq 2 ] || die_usage "$usage"; printf '%s\n' "$start_tools $edit_tools" | tr ' ' '|'; exit 0 ;;
+  '') [ $# -eq 1 ] || die_usage "$usage" ;;
+  *) die_usage "$usage" ;;
 esac
 
 payload="$(cat)"

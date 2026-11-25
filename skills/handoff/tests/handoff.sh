@@ -66,8 +66,9 @@ t_unknown_executor() {
   fake_adapters
   printf '# Brief\n' > p.md
   handoff start foo p.md --issue "$issue12"
-  eq exit 1 "$code"
-  eq stderr "stop: executor must be devin or cursor" "$err"
+  eq exit 64 "$code"
+  eq "stderr line 1" "stop: executor must be devin or cursor" "${err%%$'\n'*}"
+  has stderr "handoff.sh start <executor> <prompt-file>" "$err"
 }
 
 t_failed_start_keeps_ledger() {
@@ -110,8 +111,9 @@ t_route_unknown_executor() {
   fake_adapters
   printf '%s\n' "$row_cursor12" > "$(ledger)"
   handoff route "$issue12" foo
-  eq exit 1 "$code"
-  eq stderr "stop: executor must be devin or cursor" "$err"
+  eq exit 64 "$code"
+  eq "stderr line 1" "stop: executor must be devin or cursor" "${err%%$'\n'*}"
+  has stderr "handoff.sh start <executor> <prompt-file>" "$err"
 }
 
 t_start_names_other_executor() {

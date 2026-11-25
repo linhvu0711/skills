@@ -65,8 +65,8 @@ t_mac_rent_worker_fails() {
 t_mac_rent_bad_worker() {
   fake_nsc
   mac rent 'ho 1;x' https://github.com/o/r main -- true
-  eq exit 1 "$code"
-  eq stderr "stop: worker name: letters, digits, and - only" "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: worker name: letters, digits, and - only"$'\n'"usage: mac.sh rent <worker> <repo-url> <base> -- <command>" "$err"
   [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
