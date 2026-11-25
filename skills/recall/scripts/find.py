@@ -3,17 +3,16 @@
 
     find.py <topic>
 
-Asks the shared `scan.py` which tools have a session adapter and sessions in
-the current folder and the folders below it, runs each one's adapter `find`
-on the topic, and prints one line per session that matches, newest first. A
-topic of only common words (`the`) matches nothing:
+Runs the shared `find_all.py` for the current folder and the folders below
+it, on the topic, and prints one line per session that matches, newest
+first. A topic of only common words (`the`) matches nothing:
 
     <tool> <id> <age> · <n> prompts · <title or first prompt>
 
 `<tool>` is the adapter's folder, as `claude`, `codex`, or `antigravity`. This session, every
 earlier `/recall` or `$recall` run, and Codex runs a script started
 (`codex exec`) are left out. Only the 10 newest are printed; with more, a
-last line says `Skipped <k> older sessions.` A tool whose probe says it is
+last line says `Skipped <k> older sessions.` A tool `find_all.py` says is
 not installed is not searched, and a last line says so, as in
 `Codex is not installed: Claude Code sessions only.` Exits 0.
 
@@ -36,14 +35,6 @@ def run(*args):
     return json.loads(r.stdout) if r.returncode == 0 else None
 
 
-def sessions(harness, topic):
-    """The rows the tool's adapter scores above 0 on the topic. A topic with no
-    word the finder keeps scores nothing, since the finder then lists every
-    session unscored."""
-    rows = run(SESSIONS / harness / "adapter.py", "find", "--root", ".", "--query", topic) or []
-    return [r for r in rows if not r.get("unreadable") and (r.get("score") or 0) > 0]
-
-
 def is_recall(r):
     """This session, or an earlier recall run."""
     return r.get("current") or (r.get("first_prompt") or "").startswith(("/recall", "$recall"))
@@ -58,9 +49,12 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("usage: find.py <topic>")
     topic = sys.argv[1]
-    tools = [a for a in (run(SESSIONS / "scan.py", "--root", ".") or {}).get("adapters", []) if "error" not in a]
-    found = [r for t in tools if t["installed"] and t["sessions"] for r in sessions(t["harness"], topic)]
-    found = [r for r in found if not is_recall(r)]
+    out = run(SESSIONS / "find_all.py", "--root", ".", "--query", topic) or {}
+    tools = [h for h in out.get("harnesses", []) if "error" not in h]
+    # A topic with no word the finder keeps scores nothing, since the finder
+    # then lists every session unscored.
+    found = [r for r in out.get("sessions", [])
+             if not r.get("unreadable") and (r.get("score") or 0) > 0 and not is_recall(r)]
     found.sort(key=lambda r: r["active"], reverse=True)
     for r in found[:NEWEST]:
         print(line(r))
