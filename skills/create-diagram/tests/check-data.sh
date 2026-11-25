@@ -113,6 +113,26 @@ t_cd_missing_step_label() {
   eq stdout 'steps[0]: no label' "$out"
 }
 
+t_cd_over_budget() {
+  # Given: the flowchart with 12 more nodes, 15 in all
+  cd_page graph '.nodes += [range(12) | {id: "n\(.)", label: "N\(.)", x: 0, y: (. + 1)}]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'flowchart: 15 nodes, budget 14' "$out"
+}
+
+t_cd_unknown_type() {
+  # Given: a type the catalog does not list
+  cd_page graph '.type = "flow"'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'type "flow" is not a catalog type' "$out"
+}
+
 cases=(
   "passes a good graph page|t_cd_good_graph"
   "passes a good sequence page|t_cd_good_sequence"
@@ -124,4 +144,6 @@ cases=(
   "refuses DATA that is not JSON|t_cd_not_json"
   "names a missing node label|t_cd_missing_node_label"
   "names a missing step label|t_cd_missing_step_label"
+  "names an over-budget flowchart|t_cd_over_budget"
+  "names a type not in the catalog|t_cd_unknown_type"
 )

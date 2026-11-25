@@ -35,4 +35,4 @@ Two types are right when the question has a structure half and a behavior half (
 | Component, C4 container, deployment, data flow, activity | 6 to 16 | 24 |
 | Dependency graph, component tree | 8 to 24 | 40 |
 
-Over budget means the scope is too wide for one page. Cut in this order: drop nodes with one edge that do not answer the question; collapse a cluster into one group-sized node; split into two diagrams (overview plus one zoomed in) and publish both.
+`scripts/check-data.py` reads this table: a page over the top of a range, or over the edge count, fails the check. Over budget means the scope is too wide for one page. Cut in this order: drop nodes with one edge that do not answer the question; collapse a cluster into one group-sized node; split into two diagrams (overview plus one zoomed in) and publish both.

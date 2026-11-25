@@ -4,14 +4,41 @@
     check-data.py <page .html>
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
-problem and exits 1 when it is not: an id that points at nothing, or a
-label left out.
+problem and exits 1 when it is not: a type the catalog does not list, an
+id that points at nothing, a label left out, or more than the type's node
+budget, read from references/catalog.md.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
 MARK = "const DATA = "
+CATALOG = Path(__file__).resolve().parent.parent / "references" / "catalog.md"
+
+
+def budgets():
+    """Per catalog type, its limits as (what, max) pairs, from the Node budget table."""
+    text = CATALOG.read_text(encoding="utf-8")
+    table = text.split("## Node budget", 1)[1].split("\n\n", 2)[1]
+    found = {}
+    for row in table.splitlines()[2:]:
+        kinds, nodes, edges = [cell.strip() for cell in row.strip("|").split("|")]
+        if "participants" in nodes:
+            limits = [("participants", int(re.findall(r"(\d+) participants", nodes)[0])),
+                      ("steps", int(re.findall(r"(\d+) steps", nodes)[0]))]
+        else:
+            limits = [("nodes", int(re.findall(r"\d+", nodes)[-1])), ("edges", int(edges))]
+        for kind in kinds.split(", "):
+            found[kind.lower().replace(" ", "-")] = limits
+    return found
+
+
+def budget_problems(data, limits):
+    for what, most in limits:
+        count = len(data.get(what, []))
+        if count > most:
+            yield f'{data["type"]}: {count} {what}, budget {most}'
 
 
 def read_data(text, path):
@@ -76,8 +103,13 @@ def main():
     if error:
         print(error)
         sys.exit(1)
-    sequence = data.get("type") == "sequence"
+    limits = budgets().get(data.get("type"))
+    if limits is None:
+        print(f'type "{data.get("type", "")}" is not a catalog type')
+        sys.exit(1)
+    sequence = data["type"] == "sequence"
     found = list(sequence_problems(data) if sequence else graph_problems(data))
+    found += budget_problems(data, limits)
     if found:
         print("\n".join(found))
         sys.exit(1)
