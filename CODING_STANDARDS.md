@@ -4,7 +4,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## One way for each job
 
-- Stop a script with an error: `die()` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python. Old way: `print` then `sys.exit(1)`, `raise SystemExit(1)` (#409).
+- Stop a script with an error: `die()` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python.
 - Call GitHub: `shared/gh.sh` in shell, `shared/gh.py` in Python. Old way: `gh` called directly (#409).
 - Find a script's own folder: `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`. Old way: `dirname "$0"`, `realpath` (#409).
 - Read JSON in shell: `jq`. Old way: `python3 -c` with `json.load`, `node -p`, `sed` or `grep -o` (#409).

@@ -241,11 +241,7 @@ def listing(chat: Chat, path: str, max_result_chars: int) -> str:
 
 
 def only_match(matches: list[str], session_id: str) -> str | None:
-    """The one file an id names, None for none; several print the ambiguity and exit 2."""
+    """The one file an id names, None for none; several stop with one line that lists them."""
     if len(matches) > 1:
-        print(f"Ambiguous id '{session_id}' — {len(matches)} matches:", file=sys.stderr)
-        for m in matches:
-            print(f"  {m}", file=sys.stderr)
-        print("Pass the full UUID to disambiguate.", file=sys.stderr)
-        sys.exit(2)
+        sys.exit(f"stop: id {session_id!r} matches {len(matches)} sessions: {', '.join(matches)}; pass the full UUID")
     return matches[0] if matches else None

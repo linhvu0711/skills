@@ -55,8 +55,7 @@ def main():
     except store.Unreadable:
         chat = None
     if chat is None:
-        print(f"stop: no Antigravity chat {args.session}", file=sys.stderr)
-        return 1
+        sys.exit(f"stop: no Antigravity chat {args.session}")
     print(render(chat))
     return 0
 

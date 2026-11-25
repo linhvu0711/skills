@@ -17,6 +17,17 @@ t_cce_helper_log_by_path() {
   has reply "found it" "$out"
 }
 
+t_cce_unknown_id_stops() {
+  # Given: an empty Claude projects folder
+  T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"
+  mkdir -p "$HOME/.claude/projects"
+  # When
+  run python3 "$X" nope
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: no session file found for id 'nope' under $HOME/.claude/projects: pass the full UUID or a unique prefix; list them with ls ~/.claude/projects/*/*.jsonl" "$err"
+}
+
 # cce_log: a fresh temp folder T and a Claude log at $T/s.jsonl of /p/app:
 # a prompt, a reply with thinking and an Edit of /p/app/a.py, a 600-character
 # tool result, a compaction summary, a task notification, a second prompt,
@@ -138,4 +149,5 @@ cases=(
   "extractor --max-result-chars cuts a tool result|t_cce_max_result_chars"
   "extractor --list counts the prompts|t_cce_list"
   "extractor --skeleton lists the edited files|t_cce_skeleton"
+  "extractor stops on an unknown id|t_cce_unknown_id_stops"
 )

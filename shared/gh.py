@@ -42,5 +42,4 @@ def stop(what, *args, cwd=None):
     try:
         return run(*args, cwd=cwd)
     except GhError as e:
-        print(f"stop: gh could not {what}: {e}", file=sys.stderr)
-        raise SystemExit(1)
+        sys.exit(f"stop: gh could not {what}: {e}")
