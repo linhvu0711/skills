@@ -129,6 +129,23 @@ t_restack_leaves_child_of_foreign_pr() {
   eq "origin/feat/c" "$c" "$(git rev-parse origin/feat/c)"
 }
 
+t_restack_moves_child_behind_left_fork_of_same_name() {
+  # Given: fork PR 10 and PR 11 both have the head feat/b; 12 is on feat/b
+  stack
+  printf '%s\n' "STACK=3" \
+    "10 feat/a feat/b https://github.com/o/r/pull/10 fork=true" \
+    "11 feat/a feat/b https://github.com/o/r/pull/11 fork=false" \
+    "12 feat/b feat/c https://github.com/o/r/pull/12 fork=false" > "$T/stack"
+  # When
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 11,12
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "LEFT https://github.com/o/r/pull/10" "$(printf '%s\n' "$out" | sed -n 1p)"
+  eq "line 2" "MOVED https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 2p | cut -d' ' -f1-2)"
+  eq "line 3" "MOVED https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 3p | cut -d' ' -f1-2)"
+  eq "line 4" "RESTACK=moved 2" "$(printf '%s\n' "$out" | sed -n 4p)"
+}
+
 t_restack_moves_children_bottom_first() {
   stack
   run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack"
@@ -203,6 +220,7 @@ cases=(
   "restack moves an all-owned stack|t_restack_moves_all_owned_stack"
   "restack leaves a foreign PR in the middle|t_restack_leaves_foreign_pr_in_middle"
   "restack leaves the child of a foreign PR|t_restack_leaves_child_of_foreign_pr"
+  "restack moves a child behind a left fork of the same name|t_restack_moves_child_behind_left_fork_of_same_name"
   "restack stops on a clash|t_restack_stops_on_clash"
   "restack skips an unpushed branch|t_restack_skips_unpushed_branch"
   "restack skips a dirty worktree|t_restack_skips_dirty_worktree"

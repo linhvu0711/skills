@@ -139,7 +139,11 @@ case "$cmd" in
       mine=1
       case "$left" in *" $base "*) mine=0 ;; esac
       if [ -n "$own" ]; then case "$own" in *",$num,"*) ;; *) mine=0 ;; esac; fi
-      if [ "$mine" -eq 0 ]; then left="$left$head "; printf 'LEFT %s\n' "$url"; continue; fi
+      if [ "$mine" -eq 0 ]; then
+        # A fork's head names a branch in another repo, as in walk.
+        [ "$fork" != "fork=false" ] || left="$left$head "
+        printf 'LEFT %s\n' "$url"; continue
+      fi
       if move_one; then moved=$((moved + 1)); else stopped=1; fi
       printf '%s\n' "$result"
     done
