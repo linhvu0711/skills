@@ -105,6 +105,11 @@ if [ -z "$caller" ]; then
   [ -n "$f" ] || exit 0
   home="$(bash "$repo/scripts/agents.sh" start "$harness" < "$f" 2>/dev/null)"
   case "$home" in "t3 "*) ;; *) exit 0 ;; esac
+  # One mkdir is both the check and the note, so of two starts at once only
+  # one is refused.
+  [[ "$session" =~ ^[A-Za-z0-9_-]+$ ]] || exit 0
+  notes="${TMPDIR:-/tmp}/subagent-gate/$session"
+  mkdir -p "$notes" 2>/dev/null && mkdir "$notes/$target" 2>/dev/null || exit 0
   deny "Blocked by the subagent gate: in T3, start $target on its first home, ${home#t3 }, through T3's delegate_task, per shared/facts.md § Skill agents. When no home can run, start it by name again: it then runs on its backup."
 fi
 

@@ -14,11 +14,12 @@ gate() {
   run env -u T3CODE_THREAD_ID TMPDIR="$T" bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
 }
 
-# t3_gate <harness> <payload>: gate, in T3. Set T first to reuse its notes.
+# t3_gate <harness> <payload>: gate, in T3. Its TMPDIR is NOTES when a case
+# sets it, so two calls share the gate's notes, else the fresh T.
 t3_gate() {
-  [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
+  T="$(cd "$(mktemp -d)" && pwd -P)"
   printf '%s' "$2" > "$T/payload.json"
-  run env T3CODE_THREAD_ID=t1 TMPDIR="$T" bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
+  run env T3CODE_THREAD_ID=t1 TMPDIR="${NOTES:-$T}" bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
 }
 
 # claude_main_start <agent_type>: a Claude Code payload in which the main
@@ -88,6 +89,27 @@ t_gate_claude_refuses_main_first_t3_walker() {
   # Then
   eq exit 0 "$code"
   eq stdout '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-high high')"'"}}' "$out"
+}
+
+t_gate_t3_second_walker_start_goes_through() {
+  # Given: T3 is on; the walker's first start in chat s1 was refused
+  NOTES="$(mktemp -d)"; t3_gate claude "$(claude_main_start walker)"
+  # When
+  t3_gate claude "$(claude_main_start walker)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+  [ -d "$NOTES/subagent-gate/s1/walker" ] || { echo "no note at $NOTES/subagent-gate/s1/walker" >&2; exit 1; }
+}
+
+t_gate_t3_refuses_scope_reviewer_after_walker() {
+  # Given: T3 is on; the walker's first start in chat s1 was refused
+  NOTES="$(mktemp -d)"; t3_gate claude "$(claude_main_start walker)"
+  # When
+  t3_gate claude "$(claude_main_start scope-reviewer)"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule scope-reviewer 'devin swe-2-high high')"'"' "$out"
 }
 
 t_gate_codex_refuses_main_first_t3_explorer() {
@@ -303,4 +325,6 @@ cases=(
   "gate lets a claude main agent start the walker outside T3|t_gate_claude_main_walker_outside_t3"
   "gate lets an unreadable T3 payload through|t_gate_t3_unreadable_payload"
   "gate lets a T3 start of an agent with no file through|t_gate_t3_agent_without_file"
+  "gate lets a second T3 start of the walker through|t_gate_t3_second_walker_start_goes_through"
+  "gate refuses the scope reviewer after it refused the walker|t_gate_t3_refuses_scope_reviewer_after_walker"
 )
