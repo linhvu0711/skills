@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Where kickoff puts a new herdr pane, and the resizes that even its columns.
-Usage: placement.py even <pane_id>
+Usage: placement.py pick <workspace_id> <my_tab_id>
+       placement.py even <pane_id>
+
+pick prints "<tab_id> <pane_id>" to split, or nothing for a new tab.
 
 herdr resize semantics (measured): `--direction left|right` moves the divider on
 that side of the pane, preferring the left divider for `left` and the right divider
@@ -16,12 +19,19 @@ import subprocess
 import sys
 
 
-def layout(pane_id):
+# A tab takes a new pane while it has fewer columns than this.
+MAX_COLUMNS = 3
+
+
+def herdr(*args):
     out = subprocess.run(
-        ["herdr", "pane", "layout", "--pane", pane_id],
-        capture_output=True, text=True, check=True,
+        ["herdr", *args], capture_output=True, text=True, check=True,
     ).stdout
-    return json.loads(out)["result"]["layout"]
+    return json.loads(out)["result"]
+
+
+def layout(pane_id):
+    return herdr("pane", "layout", "--pane", pane_id)["layout"]
 
 
 def columns(lay):
@@ -44,6 +54,40 @@ def boundary_split(lay, left_col, right_col):
         and s["rect"]["x"] + s["rect"]["width"] >= rr["x"] + rr["width"]
     ]
     return min(cands, key=lambda s: s["rect"]["width"]) if cands else None
+
+
+def room(lay):
+    """The columns of a tab that can take one more, else None."""
+    if lay is None:
+        return None
+    cols = columns(lay)
+    return cols if 0 < len(cols) < MAX_COLUMNS else None
+
+
+def pick(my_tab, layouts):
+    """Where to split, as (tab_id, pane_id): my_tab when it has room, else the
+    first other tab with the fewest columns that has room, else None. layouts
+    is [(tab_id, layout or None)] in herdr's tab order. The pane is the last
+    column's."""
+    mine = room(dict(layouts).get(my_tab))
+    if mine:
+        return my_tab, mine[-1]["pane_id"]
+    best = None
+    for tab, lay in layouts:
+        cols = None if tab == my_tab else room(lay)
+        if cols and (best is None or len(cols) < len(best[1])):
+            best = (tab, cols)
+    return (best[0], best[1][-1]["pane_id"]) if best else None
+
+
+def tab_layouts(workspace, my_tab):
+    """Each tab's layout, my_tab first, read through its first listed pane."""
+    first = {}
+    for p in herdr("pane", "list", "--workspace", workspace)["panes"]:
+        first.setdefault(p["tab_id"], p["pane_id"])
+    tabs = [t["tab_id"] for t in herdr("tab", "list", "--workspace", workspace)["tabs"]]
+    order = [my_tab] + [t for t in tabs if t != my_tab]
+    return [(t, layout(first[t]) if t in first else None) for t in order]
 
 
 def next_resize(lay, tolerance=2):
@@ -89,6 +133,11 @@ def even(pane_id):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3 or sys.argv[1] != "even":
-        sys.exit("usage: placement.py even <pane_id>")
-    even(sys.argv[2])
+    if len(sys.argv) == 4 and sys.argv[1] == "pick":
+        where = pick(sys.argv[3], tab_layouts(sys.argv[2], sys.argv[3]))
+        if where:
+            print(*where)
+    elif len(sys.argv) == 3 and sys.argv[1] == "even":
+        even(sys.argv[2])
+    else:
+        sys.exit("usage: placement.py pick <workspace_id> <my_tab_id> | even <pane_id>")

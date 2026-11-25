@@ -72,6 +72,30 @@ t_pl_one_column() {
   eq stdout "None" "$out"
 }
 
+t_pl_pick_two_columns() {
+  # Given: this tab w1:t1 holds two columns
+  # When
+  pl 'print(placement.pick("w1:t1", [("w1:t1", lay("w1:p1:0:100 w1:p3:100:100", "0:200"))]))'
+  # Then
+  eq stdout "('w1:t1', 'w1:p3')" "$out"
+}
+
+t_pl_pick_fewest() {
+  # Given: this tab w1:t1 holds three columns, w1:t3 two, w1:t4 one
+  # When
+  pl 'print(placement.pick("w1:t1", [("w1:t1", lay("w1:p1:0:66 w1:p8:66:67 w1:p9:133:67")), ("w1:t3", lay("w1:p5:0:100 w1:p6:100:100")), ("w1:t4", lay("w1:p7:0:200"))]))'
+  # Then
+  eq stdout "('w1:t4', 'w1:p7')" "$out"
+}
+
+t_pl_pick_full() {
+  # Given: this tab w1:t1 holds three columns, and there is no other tab
+  # When
+  pl 'print(placement.pick("w1:t1", [("w1:t1", lay("w1:p1:0:66 w1:p8:66:67 w1:p9:133:67"))]))'
+  # Then
+  eq stdout "None" "$out"
+}
+
 cases=(
   "placement imports without running|t_pl_imports"
   "next_resize shrinks a column that is too wide|t_pl_shrinks"
@@ -79,4 +103,7 @@ cases=(
   "next_resize reads a column by its widest pane, left to right|t_pl_widest_left_to_right"
   "next_resize gives nothing for even columns|t_pl_even"
   "next_resize gives nothing for one column|t_pl_one_column"
+  "pick keeps a tab of 2 columns and its right pane|t_pl_pick_two_columns"
+  "pick passes a full tab for the tab with fewest columns|t_pl_pick_fewest"
+  "pick gives nothing when every tab is full|t_pl_pick_full"
 )
