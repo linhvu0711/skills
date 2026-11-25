@@ -13,6 +13,7 @@
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #        orchestrate.sh sync <owner/repo>
+#        orchestrate.sh close-epics <owner/repo>
 #        orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]
 #
 # A run lives in ${ORCHESTRATE_HOME:-~/.agents/orchestrate}/<owner>-<repo>/<run-id>/,
@@ -43,11 +44,15 @@
 # the agent's own check still claims the starts, joins the new issues, and
 # marks what changed.
 #
+# close-epics closes, at the end of a done run, each epic of the run that is
+# still open, since the done rule waits for its sub-issues to close.
+#
 # A live run is running or paused; a repo has at most one. A stopped run goes
 # on with resume; a done run is over.
 #
 # Exit 0: one JSON line on stdout for start, check, proposed, timer, and
-# resume; one line of text for sync; nothing for started and change.
+# resume; one line of text per repo for sync and per epic for close-epics;
+# nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 set -euo pipefail
 
@@ -57,7 +62,7 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|watch <owner/repo> ..."
+usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|close-epics|watch <owner/repo> ..."
 [ $# -ge 2 ] || die "$usage"
 cmd="$1"; slug="$2"; shift 2
 [[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
@@ -698,7 +703,7 @@ observe() {
   done
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
-  # that closes one still open. The orchestrator never closes an epic itself.
+  # that closes one still open. close-epics closes such an epic once the run is done.
   done="$(jq --argjson rows "$rows" --argjson is "$issues" '
     $rows != [] and all($rows[];
       (.stage == "done" or (.stage == "epic" and all($is[.ref].subIssues.nodes[]; .state == "CLOSED")))
@@ -1070,6 +1075,18 @@ sync_one() {
   printf '%s fast-forwarded %s..%s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$old")" "$(git -C "$path" rev-parse --short=7 "$new")"
 }
 
+# ---------- close-epics ----------
+# The last check's rows hold each open epic at stage epic; a closed one is at done.
+cmd_close_epics() {
+  [ $# -eq 0 ] || die "usage: orchestrate.sh close-epics <owner/repo>"
+  newest_run
+  local r
+  for r in $(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S"); do
+    gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"
+    printf '%s closed\n' "$(label_of "$r")"
+  done
+}
+
 # ---------- watch ----------
 # wake <statuses>: send the orchestrator thread `/orchestrate check`, unless T3's statuses show it
 # busy: mid-turn, or waiting on the user, where a message would land as the
@@ -1193,6 +1210,7 @@ case "$cmd" in
   timer) cmd_timer "$@" ;;
   resume) cmd_resume "$@" ;;
   sync) cmd_sync "$@" ;;
+  close-epics) cmd_close_epics "$@" ;;
   watch) cmd_watch "$@" ;;
   *) die "$usage" ;;
 esac

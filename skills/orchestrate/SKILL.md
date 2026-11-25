@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, /ready-pr, or /complete-task. The user handles each thread; the orchestrator settles a finished /grill or /triage thread whose issue moved on. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
+description: "Run a set of GitHub issues (a list, an epic, or a rule such as assigned to me) to closed from one T3 Code thread: a background watcher checks every few minutes and wakes the thread only when it must act, and it starts one new thread for each free issue at a new stage, with /grill, /triage, /ship, /ready-pr, or /complete-task. The user handles each thread; the orchestrator settles a finished /grill or /triage thread whose issue moved on, and closes each done epic of the run at the end. Also takes /orchestrate check, /orchestrate resume, and the commands of a live run."
 disable-model-invocation: true
 ---
 
@@ -24,9 +24,10 @@ thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is
 the user's from its first turn: leave it to them. So the orchestrator starts
 a thread once, and a thread that failed or ended with no new stage
 waits for the user's `restart #n`. It writes nothing to GitHub: no
-comment, no label, no close, no merge. One exception: `resume #n` takes
+comment, no label, no close, no merge. Two exceptions: `resume #n` takes
 the `waiting` label off a task, as § Commands says, since the user
-asked for it.
+asked for it; and § Done closes each epic of the run that is still
+open, since its sub-issues are all closed (ADR 0039).
 
 ## Start
 
@@ -308,17 +309,21 @@ A check printed `"done": true`.
    <label> <title> · <stages joined by →> · PR #<n> <state> · threads <links>
    ```
 
-3. `scripts/orchestrate.sh sync <owner/repo>`, and post its lines as
+3. `scripts/orchestrate.sh close-epics <owner/repo>`, and post its
+   lines as they are, one per epic of the run that was still open. Each
+   closes that epic on GitHub as completed, since the done rule waited
+   for every sub-issue. A `not closed` line leaves that epic open; go on.
+4. `scripts/orchestrate.sh sync <owner/repo>`, and post its lines as
    they are, one per repo the run worked in. Each fast-forwards the
    default branch of that repo's main checkout to origin's, so
    prune-worktrees judges by the merged work. The retro reads
    the files of the branch that is checked out, so it sees the merged
    work only when that branch is the default one. A `not updated` line
    leaves the branch as it was; go on.
-4. From each folder in the check line's `paths` (the main checkouts),
+5. From each folder in the check line's `paths` (the main checkouts),
    run `bash ../prune-worktrees/scripts/prune-worktrees.sh` and post its
    lines as they are, as `/ship` does after its merges.
-5. The check's line has no `retro` (issues were taken out of the run):
+6. The check's line has no `retro` (issues were taken out of the run):
    post `Run ended with <label a> <label b> taken out. Start the retro yourself
    when the work is done: /retro run <run>`, with the label of each
    ref in `removed` and `run` from the line, and start no thread. Else start
