@@ -98,7 +98,7 @@ The cases for [base-copy.sh](scripts/base-copy.sh) are in [tests/base-copy.sh](t
 
 The cases for [prune.py](scripts/prune.py) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed. It reads each plan through [plan_reader.py](scripts/plan_reader.py), the same reader [build-page.py](scripts/build-page.py) uses.
 
-The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/).
+The cases for [build-page.py](scripts/build-page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/). It also runs each built page in node on a fake page and compares the map and file tree it draws with the fixture's `.page.txt`. Those files were written once, before the drawing code moved, so a move that changes what the page shows fails the test.
 
 The cases for [plan_reader.py](scripts/plan_reader.py) are in [tests/plan_reader.sh](tests/plan_reader.sh): each field's good line and the parts it gives, and each bad line and the error that names it. The reader gives the whole verdict: the builder adds no check of its own, so any caller of `problems` gets every problem line, an odd number of backticks in a page text too.
 

@@ -4,6 +4,65 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 build() { run python3 "$here/../scripts/build-page.py" "$@"; }
 page_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
+# render <html>: the built page run in node on a fake page, with text 7 px
+# wide per character. Prints what the Review panel draws: one line per
+# element of each Change map, then one line per Files row.
+render() {
+  run node - "$@" <<'EOF'
+const fs = require('node:fs'), vm = require('node:vm');
+const html = fs.readFileSync(process.argv[2], 'utf8');
+class Fake {
+  constructor(tag) { this.tag = tag; this.attrs = {}; this.children = []; this.listeners = {}; this.dataset = {}; this.text = '';
+    this.classList = { toggle() {}, add() {}, remove() {} }; }
+  get nodeType() { return 1; }
+  append(...kids) { this.children.push(...kids); }
+  setAttribute(k, v) {
+    this.attrs[k] = String(v);
+    if (k.startsWith('data-')) this.dataset[k.slice(5).replace(/-(\w)/g, (_, c) => c.toUpperCase())] = String(v);
+  }
+  addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
+  set className(v) { this.attrs.class = v; }
+  get className() { return this.attrs.class || ''; }
+  set innerHTML(v) { this.children = []; }
+  set textContent(v) { this.text = String(v); }
+  get textContent() { return this.text + this.children.map((k) => k.nodeType === 3 ? k.data : k.textContent).join(''); }
+  elements() { return this.children.filter((k) => k.nodeType === 1); }
+  querySelectorAll(sel) {
+    const tag = sel.match(/^\w+/)[0], got = [];
+    const walk = (n) => { for (const k of n.elements()) { if (k.tag === tag) got.push(k); walk(k); } };
+    walk(this);
+    return got;
+  }
+  scrollIntoView() {}
+  getContext() { return { measureText: (s) => ({ width: s.length * 7 }) }; }
+}
+const byId = {};
+const document = {
+  createElement: (tag) => new Fake(tag), createElementNS: (_, tag) => new Fake(tag),
+  createTextNode: (data) => ({ nodeType: 3, data }), querySelector: (sel) => byId[sel] ||= new Fake(sel),
+  addEventListener() {}, body: {}, title: '',
+};
+const page = { document, window: { scrollTo() {} }, history: { replaceState() {} }, location: { hash: '' },
+  navigator: {}, getComputedStyle: () => ({ fontFamily: '' }) };
+vm.createContext(page);
+for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInContext(code, page);
+const review = byId['#panels'].elements().find((s) => s.dataset.id === 'review');
+const find = (n, test, got = []) => { for (const k of n.elements()) { if (test(k)) got.push(k); find(k, test, got); } return got; };
+const maps = find(review, (k) => k.tag === 'svg' && k.attrs['aria-label'] === 'Change map');
+const rows = find(review, (k) => /\bft-row\b/.test(k.className));
+for (const svg of maps) {
+  const each = (n) => { for (const k of n.elements()) {
+    const attrs = Object.keys(k.attrs).sort().map((a) => `${a}=${k.attrs[a]}`).join(' ');
+    console.log(`${k.tag} ${attrs}${k.text ? ' | ' + k.text.replace(/\n/g, '\\n') : ''}`);
+    each(k);
+  } };
+  console.log(`svg ${svg.attrs.viewBox}`);
+  each(svg);
+}
+for (const row of rows) console.log([row.className, ...row.elements().map((k) => k.textContent)].join(' | '));
+EOF
+}
+
 t_build_ticket() {
   T="$(mktemp -d)"
   cp "$here/build-page/ticket.md" "$T/plan-acme-shop-42.md"
@@ -647,6 +706,21 @@ t_build_late_delete_slice() {
     'slices: layer 1 slice 2 deletes dead code; only slice 1 may'
 }
 
+t_build_same_drawing() {
+  # Given: the six fixtures, each built
+  T="$(mktemp -d)"
+  for f in files none-map perf run-one run ticket; do
+    cp "$here/build-page/$f.md" "$T/plan-$f.md"
+    build "$T/plan-$f.md"
+    eq "exit $f" 0 "$code"
+    # When
+    render "$T/plan-$f.html"
+    eq "render exit $f" 0 "$code"
+    # Then
+    eq "drawing $f" "$(cat "$here/build-page/$f.page.txt")" "$out"
+  done
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -732,4 +806,5 @@ cases=(
   "build-page passes an old size quoted in a note|t_build_viewport_in_note"
   "build-page refuses a Setup with no command|t_build_setup_no_command"
   "build-page passes a Setup of none|t_build_setup_none"
+  "build-page draws the same map and file tree|t_build_same_drawing"
 )

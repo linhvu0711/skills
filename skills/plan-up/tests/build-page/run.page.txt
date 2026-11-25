@@ -1,0 +1,38 @@
+svg 0 0 728 164
+defs 
+marker id=map0-new markerHeight=7 markerWidth=7 orient=auto-start-reverse refX=9 refY=5 viewBox=0 0 10 10
+path d=M0,0 L10,5 L0,10 z style=fill:var(--ok)
+marker id=map0-changed markerHeight=7 markerWidth=7 orient=auto-start-reverse refX=9 refY=5 viewBox=0 0 10 10
+path d=M0,0 L10,5 L0,10 z style=fill:var(--warn)
+marker id=map0-removed markerHeight=7 markerWidth=7 orient=auto-start-reverse refX=9 refY=5 viewBox=0 0 10 10
+path d=M0,0 L10,5 L0,10 z style=fill:var(--bad)
+marker id=map0-same markerHeight=7 markerWidth=7 orient=auto-start-reverse refX=9 refY=5 viewBox=0 0 10 10
+path d=M0,0 L10,5 L0,10 z style=fill:var(--muted)
+g 
+g 
+path d=M298,82 Q364,82 430,82 fill=none marker-end=url(#map0-new) stroke-width=2 style=stroke:var(--ok)
+g 
+g 
+title  | M1 Team entity\nsrc/teams.ts:10
+rect height=56 rx=8 stroke-width=1.5 style=fill:var(--ok-soft);stroke:var(--ok) width=190 x=104 y=54
+text font-family=var(--mono) font-size=10 style=fill:var(--muted) x=111 y=67 | M1
+text font-size=10 font-weight=700 style=fill:var(--ok) text-anchor=end x=287 y=67 | L1
+text font-size=14 font-weight=600 style=fill:var(--ink) text-anchor=middle x=199 y=83 | + Team entity
+text font-size=11.5 style=fill:var(--muted) text-anchor=middle x=199 y=100 | a team can be created
+g 
+title  | M2 Add a member\nsrc/members.ts:10
+rect height=56 rx=8 stroke-width=1.5 style=fill:var(--ok-soft);stroke:var(--ok) width=190 x=434 y=54
+text font-family=var(--mono) font-size=10 style=fill:var(--muted) x=441 y=67 | M2
+text font-size=10 font-weight=700 style=fill:var(--ok) text-anchor=end x=617 y=67 | L2
+text font-size=14 font-weight=600 style=fill:var(--ink) text-anchor=middle x=529 y=83 | + Add a member
+text font-size=11.5 style=fill:var(--muted) text-anchor=middle x=529 y=100 | a member can join a team
+g 
+rect height=20 rx=4 style=fill:var(--panel) width=108 x=310 y=72
+text font-size=12 style=fill:var(--ok) text-anchor=middle x=364 y=86
+tspan x=364 | L2 · + team id
+ft-row dir |  | src/ |  | 
+ft-row new | + | ├── teams.ts | the team entity | S1
+ft-row new | + | └── teams.test.ts | creates a team | S1
+ft-row dir |  | src/ |  | 
+ft-row new | + | ├── members.ts | adds a member to a team | S1
+ft-row new | + | └── members.test.ts | joins a team | S1
