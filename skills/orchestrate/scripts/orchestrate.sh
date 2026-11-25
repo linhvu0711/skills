@@ -92,7 +92,7 @@ to_refs_jq='def to_refs($repo):
   | (if .use then .use |= rk else . end)
   | (if .seen.issues then .seen.issues |= rk else . end);'
 
-# ref_label($home): how a person reads a ref: #n in the home repo, else repo#n.
+# ref_label($home): how a person reads a ref: #n in the run repo, else repo#n.
 # shellcheck disable=SC2016 # the $ names are jq variables
 label_jq='def ref_label($home): split("#") as [$r, $n] | if $r == $home then "#\($n)" else "\($r | split("/")[1])#\($n)" end;'
 
@@ -103,7 +103,7 @@ label_of() { jq -rn --arg r "$1" --arg h "$slug" "$label_jq"'$r | ref_label($h)'
 issue_url() { printf 'https://github.com/%s/issues/%s' "${1%#*}" "${1##*#}"; }
 
 # to_ref <word>: the ref an issue word names: n or #n in this repo,
-# owner/repo#n, or repo#n, the one repo of that name among the home repo and
+# owner/repo#n, or repo#n, the one repo of that name among the run repo and
 # the run's refs.
 to_ref() {
   local m
@@ -174,8 +174,8 @@ copy_page() {
 # ---------- GitHub ----------
 fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state repository{nameWithOwner}}} blockedBy(first:50){nodes{number state repository{nameWithOwner}}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body mergeable headRefOid}}'
 
-# read_issues <ref>...: one GraphQL call per repo, the home repo first,
-# printed as one object keyed by ref. The home repo's call failing fails it,
+# read_issues <ref>...: one GraphQL call per repo, the run repo first,
+# printed as one object keyed by ref. The run repo's call failing fails it,
 # with gh's stderr in errf. Another repo's call failing gives each of its refs
 # {error: <gh's last stderr line>}, so the rest of the run goes on.
 read_issues() {
@@ -361,19 +361,40 @@ turn_holders() {
     | select($r != null and $r.stage == "task" and ($r.status == "pending" or $r.status == "started"))]' <<<"$S"
 }
 
-# other_turn: the ref of the first other run's task that holds the turn, or
-# nothing. Another run's file that does not parse holds no turn, so it never
-# fails this check. Nor does a run whose watcher is gone, as after a restart:
-# no check of its own would ever free its turn.
-other_turn() {
-  local f turn pid
+# other_runs: what the other runs hold, from one pass over their state
+# files, as {turn, owners}. `turn` is the ref of the first other run's task
+# that holds the turn, or null. A run whose watcher is gone, as after a
+# restart, holds no turn: no check of its own would ever free it. `owners`
+# lists, per ref, each live run (running or paused) that holds it: its link,
+# its start, and whether it has a thread for it that did not fail to launch.
+# Another run's file that does not parse holds nothing, so it never fails
+# this check.
+other_runs() {
+  local f one pid turn="" owners="{}"
   while IFS= read -r -d '' f; do
-    read -r turn pid < <(jq -r "$to_refs_jq"'to_refs(.repo) | select(.status == "running" and ((.task_turn // []) != []))
-      | "\(.task_turn[0]) \(.timer.watcher.pid // "")"' "$f" 2>/dev/null) || turn=""
-    watcher_alive "${pid:-}" || turn=""
-    [ -z "$turn" ] || { echo "$turn"; return; }
+    one="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$f" 2>/dev/null)" || continue
+    if [ -z "$turn" ]; then
+      read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
+        | "\(.task_turn[0]) \(.timer.watcher.pid // "")"' <<<"$one") || turn=""
+      watcher_alive "${pid:-}" || turn=""
+    fi
+    owners="$(jq -c --argjson o "$one" 'if ($o.status == "running" or $o.status == "paused") then
+      reduce ($o.set // [])[] as $r (.; .[$r] += [{link: $o.link, started_at: $o.started_at,
+        has_thread: any(($o.threads // [])[]; .ref == $r and .status != "failed")}]) else . end' <<<"$owners")"
   done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
+  jq -cn --arg turn "$turn" --argjson owners "$owners" '{turn: (if $turn == "" then null else $turn end), owners: $owners}'
 }
+
+# owner_jq: a jq def on other_runs' value, with this run's state as $S: the
+# link of the other run that owns ref $r, or nothing. The run with a thread
+# for it owns it; while none has one, the earliest-started run that holds it
+# does, so two runs never both start it.
+# shellcheck disable=SC2016 # the $ names are jq variables
+owner_jq='def owner_of($r): (.owners[$r] // []) as $o
+  | ($o | map(select(.has_thread)) | first) as $t
+  | if $t then $t.link
+    elif any($S.threads[]; .ref == $r and .status != "failed") then empty
+    else ($o | map(select(.started_at < $S.started_at)) | sort_by(.started_at) | first | .link // empty) end;'
 
 # ---------- board ----------
 # run_part($limit): what the board shows of the run itself, from a state.
@@ -542,7 +563,7 @@ observe() {
   done < <(jq -r "$run_repos_jq"'run_repos[].path' <<<"$S")
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local r j st sk free blocked rec prop line wait ask rc gone row conf owners stages turn
+  local r j st sk free blocked rec prop line wait ask own rc gone row conf owners others stages turn
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
@@ -554,7 +575,8 @@ observe() {
   done
   holders="$(turn_holders "$stages")"
   turn="$(jq -r 'if . == [] then empty else .[0] end' <<<"$holders")"
-  [ -n "$turn" ] || turn="$(other_turn)"
+  others="$(other_runs)"
+  [ -n "$turn" ] || turn="$(jq -r '.turn // empty' <<<"$others")"
   task_turn="$holders"
   # owners: each PR's owner, the first issue in set order that it closes,
   # keyed by the PR's URL, since two repos can each have a PR #9. A
@@ -592,8 +614,10 @@ observe() {
     # A run started before proposals existed has no key; it reads as none.
     prop="$(jq -c --arg r "$r" '(.proposals // {})[$r]' <<<"$S")"
     line=""; wait=""; ask=""
+    own="$(jq -r --argjson S "$S" --arg r "$r" "$owner_jq"'owner_of($r)' <<<"$others")"
     [ "$gone" = false ] || wait="removed from the set"
-    if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
+    [ "$gone" = true ] || [ -z "$own" ] || wait="owned by $own"
+    if [ "$gone" = false ] && [ -z "$own" ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --arg r "$r" --arg s "$st" '[.threads[] | select(.ref == $r and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       if [ "$st" = task ] && [ -n "$turn" ]; then
         wait="waits for the task turn: $turn"

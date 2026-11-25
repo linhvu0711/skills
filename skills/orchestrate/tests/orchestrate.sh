@@ -746,6 +746,38 @@ t_fs_other_repo_blocker_label() {
   eq action 'blocked by lib#5' "$(fs_card 42 | jq -r .action)"
 }
 
+# fs_lib_run [thread]: a live run of acme/lib#5 that started 2026-11-01,
+# before the newest acme/app run, with a started thread for #5 when given.
+fs_lib_run() {
+  local f
+  fs_go start acme/lib --name "#5" --thread f2 --env e1 5; eq "lib start exit" 0 "$code"
+  f="$(ls -1d "$T"/orchestrate/acme-lib/*/ | sort | tail -1)state.json"
+  jq -c --arg t "${1:-}" '.started_at = "2026-11-01T00:00:00Z"
+    | if $t == "" then . else .threads += [{ref: "acme/lib#5", stage: "ticket", thread: $t, status: "started", command: "ship"}] end' \
+    "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+t_fs_owned_by_other_run() {
+  # Given: a live acme/lib run with a thread for acme/lib#5, and a later acme/app run whose epic holds it
+  fs_lib_epic; fs_lib_run t5
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  has wait 'owned by [🧭 #5](t3-thread://v1/f2)' "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .wait' <<<"$out")"
+}
+
+t_fs_two_runs_one_start() {
+  # Given: a live acme/lib run holding acme/lib#5 with no thread, and a later acme/app run whose epic holds it
+  fs_lib_epic; fs_lib_run
+  # When
+  fs_go check acme/app; local app="$out"
+  fs_go check acme/lib
+  # Then
+  eq "app starts" '[]' "$(jq -c .starts <<<"$app")"
+  eq "lib starts" '["acme/lib#5"]' "$(jq -c '[.starts[].ref]' <<<"$out")"
+}
+
 t_fs_ref_forms() {
   # Given: the run of epic acme/app#70 with part acme/lib#5
   fs_lib_epic; fs_go check acme/app
@@ -2538,6 +2570,8 @@ cases=(
   "a repo the run cannot read asks you and the rest goes on|t_fs_other_repo_unreadable_asks"
   "a repo not on the Mac asks you|t_fs_other_repo_no_checkout_asks"
   "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
+  "an issue another live run owns waits with its link|t_fs_owned_by_other_run"
+  "two runs that hold one issue start it once|t_fs_two_runs_one_start"
   "commands take #n, repo#n, and owner/repo#n|t_fs_ref_forms"
   "repo#n of a repo the run does not have stops|t_fs_ref_unknown_repo"
   "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
