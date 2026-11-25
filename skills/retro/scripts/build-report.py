@@ -14,8 +14,32 @@ from html import escape
 from pathlib import Path
 
 
+KEYS = ["repo", "scope", "window", "counts", "read", "items", "cards", "questions", "top_why"]
 STRENGTH = {"Strong": "hit-strong", "Worth exploring": "hit-amber", "Speculative": "hit-slate",
             "One-time": "hit-one", "Tip": "hit-one"}
+
+
+def problems(cards):
+    missing = [key for key in KEYS if key not in cards]
+    for key in missing:
+        yield f'cards file: no "{key}"'
+    if missing:
+        return
+    ids = set()
+    for item in cards["items"]:
+        if item["id"] in ids:
+            yield f'item "{item["id"]}": id used twice'
+        ids.add(item["id"])
+    for card in cards["cards"]:
+        name = f'card "{card.get("title")}"'
+        if card.get("badge") not in STRENGTH:
+            yield f'{name}: badge "{card.get("badge")}" is not Strong, Worth exploring, Speculative, One-time, or Tip'
+        for item in card.get("items", []) + [q.get("item") for q in card.get("quotes", [])]:
+            if item not in ids:
+                yield f'{name}: item "{item}" is not in items'
+    for n, question in enumerate(cards["questions"], 1):
+        if question.get("item") not in ids:
+            yield f'question {n}: item "{question.get("item")}" is not in items'
 
 
 def columns(cards):
@@ -257,6 +281,10 @@ def main():
         sys.exit(__doc__.strip().splitlines()[2].strip())
     path = Path(sys.argv[1])
     cards = json.loads(path.read_text(encoding="utf-8"))
+    found = list(problems(cards))
+    if found:
+        print("\n".join(found))
+        sys.exit(1)
     shell = (Path(__file__).resolve().parent.parent / "assets" / "report.html").read_text(encoding="utf-8")
     output = path.parent / "report.html"
     tmp = output.with_suffix(".html.tmp")
