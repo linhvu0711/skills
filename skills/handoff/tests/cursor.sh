@@ -152,7 +152,7 @@ t_cursor_poll_leaves_mac() {
   # Then
   eq exit 0 "$code"
   eq stdout "finished	run-2|FINISHED	-	https://cursor.com/agents/bc-1	Done" "$out"
-  [ ! -f "$T/mac.calls" ] || { echo "poll touched the Mac" >&2; exit 1; }
+  [ ! -f "$T/mac.calls" ] || eq "mac calls" "" "$(cat "$T/mac.calls")"
   eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
@@ -164,7 +164,7 @@ t_cursor_interval() {
   # Then
   eq exit 0 "$code"
   eq stdout "60" "$out"
-  [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
+  [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
 }
 
 t_cursor_facts() {

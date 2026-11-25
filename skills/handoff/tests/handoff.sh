@@ -269,7 +269,7 @@ t_release_unknown_session() {
   # Then
   eq exit 1 "$code"
   eq stderr "handoff.sh: no session bc-404 in the ledger" "$err"
-  [ ! -f "$FAKE_AD/cursor.release.calls" ] || { echo "release ran" >&2; exit 1; }
+  [ ! -f "$FAKE_AD/cursor.release.calls" ] || eq "release calls" "" "$(cat "$FAKE_AD/cursor.release.calls")"
 }
 
 t_watch_releases_once() {
@@ -327,7 +327,7 @@ t_status_never_releases() {
   # Then
   eq exit 0 "$code"
   eq "line 1" "state: finished" "$(printf '%s\n' "$out" | sed -n 1p)"
-  [ ! -f "$FAKE_AD/cursor.release.calls" ] || { echo "status released" >&2; exit 1; }
+  [ ! -f "$FAKE_AD/cursor.release.calls" ] || eq "release calls" "" "$(cat "$FAKE_AD/cursor.release.calls")"
 }
 
 cases=(
