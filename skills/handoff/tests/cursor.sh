@@ -323,7 +323,21 @@ t_cursor_interval() {
   [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
 }
 
+t_cursor_facts() {
+  # Given
+  fake_curl
+  printf '{"items":[{"url":"https://github.com/o/r.git"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
+  printf '{"items":[{"id":"claude-opus-5","displayName":"Claude Opus 5"}]}\n' > "$FAKE_CURL/GET_v1_models.json"
+  # When
+  cursor facts
+  # Then
+  eq exit 0 "$code"
+  eq stdout "repo	https://github.com/o/r
+model	claude-opus-5	Claude Opus 5" "$out"
+}
+
 cases=(
+  "cursor facts lists repos and models|t_cursor_facts"
   "cursor interval is 60|t_cursor_interval"
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"

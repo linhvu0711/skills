@@ -11,6 +11,7 @@
 #                                                             exit 1, row kept, when it still runs
 #   cursor.sh models                                       -> model ids this account can use
 #   cursor.sh repos                                        -> repos connected to this account
+#   cursor.sh facts                                        -> "repo\t<url>" per connected repo, then "model\t<id>\t<name>"
 #   cursor.sh interval                                     -> the watch's poll interval, in seconds
 #
 # <agent> is the id with or without the "bc-" prefix, or the app URL.
@@ -54,6 +55,7 @@ cursor.sh say <agent> <note-file>
 cursor.sh down <agent>
 cursor.sh models
 cursor.sh repos
+cursor.sh facts
 cursor.sh interval
 EOF
   exit 1
@@ -336,12 +338,17 @@ cmd_models() {
   api GET /models | jq -r '.items[] | "\(.id)\t\(.displayName)"'
 }
 
+cmd_facts() {
+  api GET /repositories | jq -r '.items[] | "repo\t" + (.url | sub("\\.git$"; ""))'
+  api GET /models | jq -r '.items[] | "model\t\(.id)\t\(.displayName)"'
+}
+
 cmd_repos() {
   api GET /repositories | jq -r '.items[].url'
 }
 
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|down|models|repos) key >/dev/null ;; esac
+case "${1:-}" in start|poll|say|down|models|repos|facts) key >/dev/null ;; esac
 case "${1:-}" in
   start)  shift; cmd_start "$@" ;;
   poll)   shift; cmd_poll "$@" ;;
@@ -349,6 +356,7 @@ case "${1:-}" in
   down)   shift; cmd_down "$@" ;;
   models) shift; cmd_models "$@" ;;
   repos)  shift; cmd_repos "$@" ;;
+  facts)  shift; cmd_facts "$@" ;;
   interval) echo 60 ;;
   *) usage ;;
 esac

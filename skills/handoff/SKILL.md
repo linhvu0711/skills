@@ -20,11 +20,11 @@ the order of operations: the flow once, then a section per executor
 for its own steps.
 
 `scripts/handoff.sh` is the only thing the flow runs to reach an
-executor: `route`, `start`, `status`, `say`, `watch`. Run it with no
-arguments for the usage. It keeps the handoff ledger,
+executor: `route`, `start`, `status`, `say`, `watch`, `facts`. Run it
+with no arguments for the usage. It keeps the handoff ledger,
 `~/.config/dispatch/handoff.tsv`, a row per session with its executor
-and issue, and its adapters read their own keys. The two Cursor verbs
-the module does not carry, `repos`, `models`, and `down`, run as
+and issue, and its adapters read their own keys. The one Cursor verb
+the module does not carry yet, `down`, runs as
 `scripts/adapters/cursor.sh` (§ Cursor). Nothing is posted on GitHub,
 apart from size labels the repo lacks (step 3). Sessions are never
 archived: an archived session stops answering PR comments, and that
@@ -82,8 +82,15 @@ set's, the first ticket URL. Say the pick in one line, as
    On `MISS`, match the label by eye the way
    `../../shared/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
-   carries the letter per layer. Then the executor's own facts:
-   § Cursor.
+   carries the letter per layer. Then the executor's facts:
+   `bash scripts/handoff.sh facts <executor>`. Its `repo <url>` lines
+   are the repos the executor can clone, and the repo must be one of
+   them. Missing: say `Connect owner/name to Cursor first:
+   cursor.com/dashboard, Integrations, GitHub.`, or for Devin
+   `Connect owner/name to Devin first: Devin's settings, Integrations,
+   GitHub.`, and stop. Its other lines are the executor's models,
+   `model <id> <name>` (Cursor), or modes, `mode <name>` (Devin). Then
+   § Cursor for Cursor.
 
 3. **Labels.** The PR gets a size label, XS to XL, in the repo's own
    spelling. First the bot check, on the base branch whatever the
@@ -287,15 +294,12 @@ has stopped starts it again.
 
 ## Cursor
 
-**Facts.** Step 2 adds two facts. `bash scripts/adapters/cursor.sh
-repos`: the repo must be in the list, or the agent cannot clone it.
-Missing: say `Connect owner/name to Cursor first: cursor.com/dashboard,
-Integrations, GitHub.` and stop; `start` stops with the same words. The
-`Author` line: `git config user.name` and `git config user.email`, as
-`Name <email>`.
+**Facts.** Step 2 adds the `Author` line: `git config user.name` and
+`git config user.email`, as `Name <email>`. `start` stops on a repo not
+connected, with the words of step 2.
 
 **Model.** `--model` is a model id from
-`bash scripts/adapters/cursor.sh models` (`claude-opus-5`, `gpt-5.5`,
+a `model` line of `bash scripts/handoff.sh facts cursor` (`claude-opus-5`, `gpt-5.5`,
 `composer-2.5`, …). Unknown id: print the list and stop. No flag: no
 model is sent, and the account default runs, `Auto` on 2026-11-02. On a
 personal plan Auto is its Cost mode: Cursor picks the model, and the run
@@ -407,8 +411,8 @@ user.
 **User:** `/handoff cursor https://github.com/acme/shop/issues/42 --model
 claude-opus-5` after the same `/plan-up`
 
-`Executor: cursor (named)`. `cursor.sh repos` lists `acme/shop`,
-`cursor.sh models` lists `claude-opus-5`, the `Author` line comes from
+`Executor: cursor (named)`. `handoff.sh facts cursor` lists `acme/shop`
+and `claude-opus-5`, the `Author` line comes from
 `git config`. A web app, so no `--platform`. `start cursor` with `--repo acme/shop --base main --model
 claude-opus-5`, a watch on `watch cursor <agent> --repo acme/shop
 --issue 42`. Stop.

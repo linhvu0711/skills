@@ -90,7 +90,26 @@ t_devin_interval() {
   [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
 }
 
+t_devin_facts() {
+  # Given
+  fake_curl
+  printf '{"items":[{"repo_full_name":"o/r"},{"repo_full_name":"gitlab.example.com/g/r"}],"has_next_page":false,"end_cursor":null}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_repositories.json"
+  # When
+  devin facts
+  # Then
+  eq exit 0 "$code"
+  eq stdout "repo	https://github.com/o/r
+repo	https://gitlab.example.com/g/r
+mode	normal
+mode	fast
+mode	lite
+mode	ultra
+mode	fusion" "$out"
+}
+
 cases=(
+  "devin facts lists repos and modes|t_devin_facts"
   "devin interval is 120|t_devin_interval"
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"

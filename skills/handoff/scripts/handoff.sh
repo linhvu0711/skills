@@ -9,6 +9,7 @@
 #   handoff.sh say <executor> <session> <note-file>           -> sends a follow-up
 #   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
 #                                                             -> one line per event; exits when it ends
+#   handoff.sh facts <executor>                               -> one fact a line: repo, model, or mode
 #
 # <executor> is the name of an adapter file, adapters/<executor>.sh: devin and
 # cursor now. A new file there is a new executor. HANDOFF_ADAPTERS names
@@ -114,6 +115,11 @@ cmd_say() {
   adapter "$e" say "$id" "$file"
 }
 
+cmd_facts() {
+  local e; e=$(executor "${1:-}")
+  adapter "$e" facts
+}
+
 cmd_watch() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
@@ -200,5 +206,6 @@ case "${1:-}" in
   status) shift; cmd_status "$@" ;;
   say)   shift; cmd_say "$@" ;;
   watch) shift; cmd_watch "$@" ;;
+  facts) shift; cmd_facts "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

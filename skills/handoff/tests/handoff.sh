@@ -233,7 +233,21 @@ t_watch_interval_from_adapter() {
   eq stdout "finished https://zed.test/1 :: Done" "$(unstamped)"
 }
 
+t_facts_through_adapter() {
+  # Given
+  fake_adapters
+  printf 'repo\thttps://github.com/o/r\nmodel\tgpt-5.5\tGPT-5.5\n' > "$FAKE_AD/cursor.facts.out"
+  # When
+  handoff facts cursor
+  # Then
+  eq exit 0 "$code"
+  eq stdout "repo	https://github.com/o/r
+model	gpt-5.5	GPT-5.5" "$out"
+  eq "adapter args" "" "$(cat "$FAKE_AD/cursor.facts.args")"
+}
+
 cases=(
+  "facts prints the executor's facts|t_facts_through_adapter"
   "a new adapter file adds an executor|t_new_adapter_file"
   "watch takes its interval from the adapter|t_watch_interval_from_adapter"
   "start records the session in the ledger|t_start_records_row"
