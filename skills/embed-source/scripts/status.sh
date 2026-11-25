@@ -1,32 +1,29 @@
 #!/usr/bin/env bash
 # Report every embedded library: synced ref, embedded version, installed version, idiom-file
-# and README versions, drift. Truth comes from the manifest, the .embed-source-ref marker,
+# and README versions, drift. Truth comes from the manifest, the marker,
 # the embedded package.json, the installed package.json, and file headers.
 # Usage: status.sh [repo-root]
 set -euo pipefail
 
+here="$(cd "$(dirname "$0")" && pwd -P)"
+# The sync script owns the manifest format, so the two never disagree.
+. "$here/../templates/sync-repos.sh"
+
 ROOT="${1:-.}"
 cd "$ROOT"
-MANIFEST="repos/README.md"
 
-if [[ ! -f "$MANIFEST" ]]; then
-  echo "none: no $MANIFEST found (nothing embedded yet)"
+if [[ ! -f "$EMBED_MANIFEST" ]]; then
+  echo "none: no $EMBED_MANIFEST found (nothing embedded yet)"
   exit 0
 fi
 
-# Manifest rows: | lib | package | repo | ref | version_file |
-grep -E '^\| *[A-Za-z0-9@/._-]+ *\|' "$MANIFEST" \
-  | grep -vE '^\| *lib *\|' \
-  | grep -vE '^\| *-+ *\|' \
-  | while IFS='|' read -r _ lib package repo ref vfile _; do
-    lib="$(echo "$lib" | xargs)"; package="$(echo "$package" | xargs)"
-    repo="$(echo "$repo" | xargs)"; ref="$(echo "$ref" | xargs)"; vfile="$(echo "$vfile" | xargs)"
+embed_rows | while IFS='|' read -r lib package _repo ref vfile; do
     prefix="repos/$lib"
 
     synced="no"
-    if [[ -f "$prefix/.embed-source-ref" ]]; then
+    if [[ -f "$prefix/$EMBED_MARKER" ]]; then
       synced="yes"
-      [[ "$(cat "$prefix/.embed-source-ref")" == "$ref" ]] || synced="stale"
+      [[ "$(cat "$prefix/$EMBED_MARKER")" == "$ref" ]] || synced="stale"
     fi
 
     embedded="missing"

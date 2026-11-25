@@ -3,27 +3,43 @@
 # Safe to run twice: a folder already at the right tag is left alone.
 # Never fails the install: without network it warns and exits 0.
 # Set EMBED_SOURCE_SKIP=1 to skip (for example in CI that only lints and tests).
+#
+# This file also defines the manifest and the marker for the skill's status
+# check, which sources it; a source runs only the definitions.
+
+EMBED_MANIFEST="repos/README.md"
+EMBED_MARKER=".embed-source-ref"
+
+# embed_rows: one line per lib row of the manifest, its cells trimmed and
+# joined by |, as lib|package|repo|ref|version_file. Run from the project root.
+embed_rows() {
+  grep -E '^\| *[A-Za-z0-9@/._-]+ *\|' "$EMBED_MANIFEST" \
+    | grep -vE '^\| *lib *\|' \
+    | grep -vE '^\| *-+ *\|' \
+    | while IFS='|' read -r _ lib package repo ref vfile _; do
+      printf '%s|%s|%s|%s|%s\n' "$(echo "$lib" | xargs)" "$(echo "$package" | xargs)" \
+        "$(echo "$repo" | xargs)" "$(echo "$ref" | xargs)" "$(echo "$vfile" | xargs)"
+    done
+}
+
+[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
+
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
-MANIFEST="repos/README.md"
 
 if [[ "${EMBED_SOURCE_SKIP:-}" == "1" ]]; then
   echo "sync-repos: skipped (EMBED_SOURCE_SKIP=1)"
   exit 0
 fi
-[[ -f "$MANIFEST" ]] || { echo "sync-repos: no $MANIFEST, nothing to fetch"; exit 0; }
+[[ -f "$EMBED_MANIFEST" ]] || { echo "sync-repos: no $EMBED_MANIFEST, nothing to fetch"; exit 0; }
 
-grep -E '^\| *[A-Za-z0-9@/._-]+ *\|' "$MANIFEST" \
-  | grep -vE '^\| *lib *\|' \
-  | grep -vE '^\| *-+ *\|' \
-  | while IFS='|' read -r _ lib _package repo ref _vfile _; do
-    lib="$(echo "$lib" | xargs)"; repo="$(echo "$repo" | xargs)"; ref="$(echo "$ref" | xargs)"
+embed_rows | while IFS='|' read -r lib _package repo ref _vfile; do
     dir="repos/$lib"
-    marker="$dir/.embed-source-ref"
+    marker="$dir/$EMBED_MARKER"
 
     if [[ "$ref" == *"{version}"* ]]; then
-      echo "sync-repos: $lib has an unresolved ref '$ref' in $MANIFEST, skipping"
+      echo "sync-repos: $lib has an unresolved ref '$ref' in $EMBED_MANIFEST, skipping"
       continue
     fi
     if [[ -f "$marker" && "$(cat "$marker")" == "$ref" ]]; then

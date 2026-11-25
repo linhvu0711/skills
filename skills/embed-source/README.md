@@ -24,6 +24,8 @@ Effect has a preset. Any other library works too; the skill asks for its repo UR
 lib=effect prefix=repos/effect synced=yes embedded=3.14.2 installed=3.14.2 ref=effect@3.14.2 readme=3.14.2 drift=no
 ```
 
+The sync script defines the manifest columns and the `.embed-source-ref` marker. `check` reads them from it, so the two never disagree. `tests/` holds the cases for both scripts.
+
 ## Needs
 
 - `git`, `bash`, and `node`.
