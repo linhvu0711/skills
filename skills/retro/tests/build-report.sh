@@ -149,6 +149,17 @@ t_rb_this_project_first() {
   eq homes 'id="home-acme-shop" id="home-acme-tools" ' "$(grep -o 'id="home-[a-z-]*"' "$T/report.html" | tr '\n' ' ')"
 }
 
+t_rb_counts_every_item_read() {
+  # Given: S2 read but no card came from it, and the open question cites S2
+  rb_cards '.items += [{"id": "S2", "title": "Rename the menu", "date": "2026-11-20"}] | .questions[0].item = "S2"'
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  eq exit 0 "$code"
+  eq strip "hit-strong hit-strong | 5 times in 2 of 3 items · 9 user turns · PR #40, S1" "$(rb_page strip 1)"
+  eq key "$(printf 'PR #40 · Add CSV export · 2026-11-10\nS1 · Fix the export menu · 2026-11-12')" "$(rb_page key)"
+}
+
 t_rb_refuses_unknown_item() {
   # Given: card "Name the base in the plan" names S9, an item the file does not list
   rb_cards '(.cards[] | select(.title == "Name the base in the plan") | .items) = ["S1","S9"]'
@@ -178,6 +189,7 @@ cases=(
   "draws the dot strip and item count from the card's items|t_rb_dot_strip"
   "escapes a quote's text|t_rb_escapes_quote"
   "puts this project's cards first|t_rb_this_project_first"
+  "counts every item read, and draws columns only for card items|t_rb_counts_every_item_read"
   "refuses a card that names an unknown item|t_rb_refuses_unknown_item"
   "refuses a badge it does not know|t_rb_refuses_badge"
 )

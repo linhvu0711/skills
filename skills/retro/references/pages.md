@@ -32,7 +32,7 @@ These fields are HTML: `read`, a card's `title`, `where`, and `fix`, `top_why`, 
 - `window`: the dates read.
 - `counts`: the counts read, as `12 sessions, 3 PRs, 1 issue read`.
 - `read`: the read line of SKILL.md § Read line, one HTML line per entry: what was read, each item not read or read in part with the reason, each touched PR, each `unread` line, each harness the sources keep whose finder failed, each fix dropped as already in its home, and each home whose check was skipped.
-- `items`: each session and PR any card came from, once. `id` is `S1` for a session, or `PR #40`; `ref`, for a session, is the issue it worked on, as `#25`; `title`; and `date`: a session's row `modified`, a PR's `date` from `github.py list`.
+- `items`: each session and PR read, once, whether or not a card came from it: a card's count is out of these, and an open question cites one of them. The overview's columns are the items a card came from. `id` is `S1` for a session, or `PR #40`; `ref`, for a session, is the issue it worked on, as `#25`; `title`; and `date`: a session's row `modified`, a PR's `date` from `github.py list`.
 - `cards`: one per pattern, one-time problem, or tip, most important first inside each home, as SKILL.md step 8 ranks them. Each card holds:
   - `title`: the fix, short ("Add a check for unpushed worktrees").
   - `badge`: `Strong` (three or more items, or a real cost: lost work, a bad change that shipped, or many wasted turns), `Worth exploring` (two items), `Speculative` (the fix guess is the reader's, not seen in the repo), `One-time` for a one-time problem, or `Tip` for repeated manual work whose skill the user can already type (SKILL.md § Kinds of finding); a tip's `fix` names the skill and its command.

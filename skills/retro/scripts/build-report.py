@@ -43,7 +43,9 @@ def problems(cards):
 
 
 def columns(cards):
-    return sorted(cards["items"], key=lambda item: item["date"])
+    """The items any card came from, in date order."""
+    used = {item for card in cards["cards"] for item in card["items"]}
+    return sorted((item for item in cards["items"] if item["id"] in used), key=lambda item: item["date"])
 
 
 def groups(cards):
@@ -113,10 +115,10 @@ def overview_rows(cards, cols):
     return "\n".join(rows)
 
 
-def strip(card, cols):
+def strip(card, cols, read):
     dots = "".join(f'<span class="{("dot " + c).strip()}"></span>' for c in hits(card, cols))
     names = ", ".join(item["id"] for item in cols if item["id"] in set(card["items"]))
-    parts = [f'{card["times"]} times in {len(card["items"])} of {len(cols)} items']
+    parts = [f'{card["times"]} times in {len(card["items"])} of {read} items']
     if card.get("cost"):
         parts.append(card["cost"])
     parts.append(names)
@@ -181,7 +183,7 @@ def fix_side(card):
         </div>"""
 
 
-def card_html(n, card, cols):
+def card_html(n, card, cols, read):
     where = "".join(f"<li>{line}</li>" for line in card["where"])
     fix_line = f'\n      <p><strong>Fix.</strong> {card["fix"]}</p>' if card.get("texts") else ""
     return f"""    <article id="card-{n}" class="card rounded-xl border p-6 space-y-5">
@@ -189,7 +191,7 @@ def card_html(n, card, cols):
       <div class="flex flex-wrap items-center gap-2 text-xs">
 {chips(card)}
       </div>
-{strip(card, cols)}
+{strip(card, cols, read)}
       <ul class="font-mono text-sm muted">{where}</ul>
       <div class="grid md:grid-cols-2 gap-4 items-start">
         <div class="space-y-2">
@@ -207,7 +209,7 @@ def cards_section(cards):
     for home, numbered in groups(cards):
         name = escape(home) + (" (this project)" if home == cards["repo"] else "")
         slug = home.replace("/", "-").lower()
-        body = "\n".join(card_html(n, card, cols) for n, card in numbered)
+        body = "\n".join(card_html(n, card, cols, len(cards["items"])) for n, card in numbered)
         out.append(f"""    <div id="home-{escape(slug)}" class="space-y-10">
     <h2 class="font-serif text-2xl muted">{name}</h2>
 {body}
