@@ -1,8 +1,29 @@
 #!/usr/bin/env bash
 # A Namespace Mac that runs a Cursor My Machines worker, for a Cursor agent
 # that needs macOS (Xcode, the iOS Simulator). The Cursor adapter calls it;
-# nothing else does.
+# nothing else does. It owns the whole rental: the rows and the order in
+# which a Mac is rented, named in a row, and given back.
 #
+#   mac.sh rent <worker> <repo-url> <base> -- <command>
+#                                          -> rents a Mac, runs the command that
+#                                             starts the agent on its worker and
+#                                             prints "<agent>\t...", writes the
+#                                             agent's row, prints the command's
+#                                             output; a failed command gives the
+#                                             Mac back and writes no row
+#   mac.sh renew <agent> -- <command>      -> the agent's Mac runs, or it has none:
+#                                             runs the command (the send). Else gives
+#                                             the old Mac back, rents a new one under
+#                                             the same worker name and ID, runs the
+#                                             command with MAC_NEW_BASE=<base>, and
+#                                             names the new Mac in the row only after
+#                                             it works; when it fails, gives the new
+#                                             Mac back and leaves the row
+#   mac.sh return <agent> -- <command>     -> reads the row, then runs the command
+#                                             (the run check); it passes: gives the
+#                                             Mac back, "<agent>: destroyed <id>";
+#                                             it fails: "<agent>: <id> kept, its run
+#                                             has not ended"; no Mac: "<agent>: no Mac"
 #   mac.sh up <worker> <repo-url> <base> [<worker id>]
 #                                          -> "<instance id>\t<worker id>" once the worker runs
 #   mac.sh alive <instance>                -> exit 0 when the Mac and its worker run
@@ -28,11 +49,64 @@
 # queued; a worker on a new Mac with the same name gets a new ID, and the
 # agent's runs fail, unless it starts with the old ID; the same worker ID
 # continues the agent, memory kept.
+# The rows, agent, worker, worker ID, repo, base, and Mac (`-` when none),
+# sit in ~/.config/dispatch/cursor-macs.tsv; only mac.sh writes them. A row
+# names a new Mac only after the send works, and return reads the row before
+# it checks the run: so a return that sees an ended run never gives back a Mac
+# that a renew rented for the next run.
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
+MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { echo "mac.sh: $*" >&2; exit 1; }
+
+# need_tools -> dies when a tool a Mac step needs is missing. Only a step that
+# touches a Mac runs it, so an agent with no Mac needs no nsc.
+need_tools() {
+  local c
+  for c in nsc gh; do command -v "$c" >/dev/null || die "$c is required"; done
+}
+
+# key_check -> dies when CURSOR_API_KEY cannot run a worker
+key_check() {
+  local key="${CURSOR_API_KEY:-}"
+  [[ -n "$key" ]] || die "CURSOR_API_KEY is not set"
+  [[ "$key" == grok_* ]] && die "a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY"
+  return 0
+}
+
+# row_get AGENT -> "worker<TAB>worker id<TAB>repo<TAB>base<TAB>mac", or nothing
+row_get() {
+  [[ -f "$MACS" ]] || return 0
+  awk -F'\t' -v a="$1" '$1 == a { r = $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 } END { if (r != "") print r }' "$MACS"
+}
+
+# row_set AGENT WORKER WID REPO BASE MAC -> writes the agent's row, replacing an older one
+row_set() {
+  local tmp
+  mkdir -p "$(dirname "$MACS")"; touch "$MACS"
+  tmp=$(mktemp "$MACS.XXXXXX")
+  awk -F'\t' -v a="$1" '$1 != a' "$MACS" >"$tmp"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >>"$tmp"
+  mv "$tmp" "$MACS"
+}
+
+# row_clear AGENT MAC -> marks the agent as having no Mac, only while its row
+# still names MAC: a renew that named a newer Mac meanwhile keeps its row.
+row_clear() {
+  local row w wid r b mac
+  row=$(row_get "$1")
+  [[ -n "$row" ]] || return 0
+  IFS=$'\t' read -r w wid r b mac <<<"$row"
+  [[ "$mac" == "$2" ]] && row_set "$1" "$w" "$wid" "$r" "$b" -
+  return 0
+}
+
+# after_dashes ARGS -> dies unless ARGS holds "--" with a command after it
+after_dashes() {
+  [[ "${1:-}" == "--" && $# -gt 1 ]] || die "usage: mac.sh $verb ... -- <command>"
+}
 
 # remote INSTANCE SCRIPT -> runs SCRIPT on the Mac, with no stdin
 remote() { nsc ssh "$1" -T -- "$2" </dev/null; }
@@ -45,6 +119,7 @@ cmd_up() {
   [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die "usage: mac.sh up <worker> <repo-url> <base> [<worker id>]"
   [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die "worker name: letters, digits, and - only"
   [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die "worker id: a UUID"
+  need_tools
   local dir cid id key token name state=""
   key="${CURSOR_API_KEY:-}"
   [[ -n "$key" ]] || die "CURSOR_API_KEY is not set"
@@ -93,12 +168,14 @@ cmd_up() {
 cmd_alive() {
   local id="${1:-}"
   [[ -n "$id" && "$id" != "-" ]] || return 1
+  need_tools
   remote "$id" 'pgrep -f "worker start" >/dev/null' >/dev/null 2>&1 || return 1
 }
 
 cmd_down() {
   local id="${1:-}" log why
   [[ -n "$id" && "$id" != "-" ]] || die "instance id required"
+  need_tools
   # A Mac whose worker hangs must still be destroyed, so this step may fail.
   remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
   log=$(mktemp)
@@ -116,8 +193,59 @@ cmd_down() {
   return 1
 }
 
-for c in nsc gh; do command -v "$c" >/dev/null || die "$c is required"; done
+cmd_rent() {
+  local worker="${1:-}" repo="${2:-}" base="${3:-}" up mac wid res agent
+  verb=rent; shift 3 || true; after_dashes "$@"; shift
+  key_check
+  up=$(cmd_up "$worker" "$repo" "$base") || exit 1
+  IFS=$'\t' read -r mac wid <<<"$up"
+  if ! res=$("$@" </dev/null); then
+    cmd_down "$mac" >/dev/null || echo "mac.sh: no agent started, so no row names $mac" >&2
+    exit 1
+  fi
+  IFS=$'\t' read -r agent _ <<<"$res"
+  row_set "$agent" "$worker" "$wid" "$repo" "$base" "$mac"
+  printf '%s\n' "$res"
+}
+
+cmd_renew() {
+  local agent="${1:-}" row w wid r b mac up new
+  verb=renew; shift || true; after_dashes "$@"; shift
+  row=$(row_get "$agent")
+  if [[ -z "$row" ]]; then "$@"; return; fi
+  IFS=$'\t' read -r w wid r b mac <<<"$row"
+  if cmd_alive "$mac" 2>/dev/null; then "$@"; return; fi
+  key_check
+  # Renting now would replace the only row that names the old Mac.
+  if [[ "$mac" != "-" ]] && ! cmd_down "$mac" >/dev/null; then
+    die "no note sent: $mac was not given back"
+  fi
+  up=$(cmd_up "$w" "$r" "$b" "$wid") || exit 1
+  IFS=$'\t' read -r new _ <<<"$up"
+  if ! MAC_NEW_BASE="$b" "$@"; then
+    # A new Mac not given back takes the row, so a return finds it.
+    cmd_down "$new" >/dev/null || row_set "$agent" "$w" "$wid" "$r" "$b" "$new"
+    exit 1
+  fi
+  row_set "$agent" "$w" "$wid" "$r" "$b" "$new"
+}
+
+cmd_return() {
+  local agent="${1:-}" row w wid r b mac line
+  verb=return; shift || true; after_dashes "$@"; shift
+  row=$(row_get "$agent")
+  [[ -n "$row" ]] && IFS=$'\t' read -r w wid r b mac <<<"$row"
+  if [[ -z "$row" || "$mac" == "-" ]]; then echo "$agent: no Mac"; return 0; fi
+  if ! "$@"; then echo "$agent: $mac kept, its run has not ended"; return 0; fi
+  line=$(cmd_down "$mac") || exit 1
+  row_clear "$agent" "$mac"
+  echo "$agent: $line"
+}
+
 case "${1:-}" in
+  rent)   shift; cmd_rent "$@" ;;
+  renew)  shift; cmd_renew "$@" ;;
+  return) shift; cmd_return "$@" ;;
   up)    shift; cmd_up "$@" ;;
   alive) shift; cmd_alive "$@" ;;
   down)  shift; cmd_down "$@" ;;
