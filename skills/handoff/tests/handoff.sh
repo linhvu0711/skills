@@ -192,7 +192,18 @@ t_watch_stops_on_failing_polls() {
   handoff watch devin devin-abc --interval 0
   eq exit 1 "$code"
   lacks stdout "poll failed" "$out"
-  eq "stderr last line" "stop: poll failed devin-abc :: stop: HTTP 401 on GET /sessions/devin-abc: bad key" "$(printf '%s\n' "$err" | tail -n 1)"
+  eq "stderr last line" "stop: poll failed devin-abc :: HTTP 401 on GET /sessions/devin-abc: bad key" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
+t_watch_names_why_a_poll_call_is_wrong() {
+  # Given: every poll stops on a wrong command line, its usage after the why
+  fake_adapters
+  printf 'stop: --repo and --issue go together\nusage: cursor.sh poll <agent> [--repo <owner/repo> --issue <n>]\n' > "$FAKE_AD/devin.poll.fail"
+  # When
+  handoff watch devin devin-abc --interval 0
+  # Then
+  eq exit 1 "$code"
+  eq "stderr last line" "stop: poll failed devin-abc :: --repo and --issue go together" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
 t_watch_shows_poll_warning() {
@@ -359,5 +370,6 @@ cases=(
   "watch --once exits on a new PR|t_watch_once_on_pr"
   "watch goes on after one failed poll|t_watch_survives_a_failed_poll"
   "watch stops after three failed polls in a row|t_watch_stops_on_failing_polls"
+  "watch names why a poll call is wrong, not its usage|t_watch_names_why_a_poll_call_is_wrong"
   "watch shows a warning a poll printed|t_watch_shows_poll_warning"
 )

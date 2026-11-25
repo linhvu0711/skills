@@ -142,7 +142,7 @@ cmd_watch() {
     esac
   done
   [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed=""
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed="" why
   errf=$(mktemp); relf=$(mktemp); trap "rm -f '$errf' '$relf'" EXIT
   start=$(date +%s)
   while :; do
@@ -151,7 +151,10 @@ cmd_watch() {
       # session, or an outage the caller has to see.
       fails=$((fails + 1))
       if (( fails >= 3 )); then
-        die "poll failed $last_link :: $(tail -1 "$errf")"
+        # A wrong command line prints its usage after the stop: line.
+        why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
+        [[ -n "$why" ]] || why="$(tail -1 "$errf")"
+        die "poll failed $last_link :: $why"
       fi
     else
       fails=0
