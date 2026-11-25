@@ -100,7 +100,20 @@ t_es_status_package_json() {
   has stdout "installed=3.10.2 " "$out"
 }
 
+t_es_status_no_jq() {
+  # Given: zod embedded and installed, and a PATH with no jq on it
+  es_project
+  mkdir -p "$T/nobin"
+  # When
+  run env PATH="$T/nobin" "$BASH" "$ES_STATUS" "$P"
+  # Then
+  eq exit 1 "$code"
+  eq stdout "" "$out"
+  eq stderr "stop: jq is not installed: status.sh reads package.json versions with it" "$err"
+}
+
 cases=(
+  "embed-source status: stops when jq is missing|t_es_status_no_jq"
   "embed-source status: reads a dependency's version from package.json|t_es_status_package_json"
   "embed-source status: up to date says drift=no|t_es_status_up_to_date"
   "embed-source status: a version bump says drift=yes|t_es_status_version_bump"
