@@ -253,7 +253,7 @@ t_mac_renew_old_mac_kept() {
   eq exit 1 "$code"
   eq stderr "$not_given_back
 mac.sh: no note sent: mac-1 was not given back" "$err"
-  [ ! -f "$T/sent" ] || eq "sent note" "" "$(cat "$T/sent")"
+  [ ! -e "$T/sent" ] || eq "sent note" "not sent" sent
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
