@@ -16,7 +16,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 - Name a Python file: snake_case, since only a snake_case module can be imported (pep-8). Old way: dashes, as `build-report.py` (#410).
 - Parse command-line arguments: `argparse` in Python, `util.parseArgs` in Node. Old way: `sys.argv` or `process.argv` read by hand (#410).
 - Work with file paths in Python: `os.path`. Old way: `pathlib` (#410).
-- Match a regex at the start of a string: `re.prefixmatch()` and `Pattern.prefixmatch()` (python-docs-re). Old way: `re.match()` and `Pattern.match()`, old since Python 3.15 (#410).
+- Limit a CI workflow: `timeout-minutes` on each job, a `concurrency` group that cancels the older run of the same ref, and `push` on `main` only (github-actions-workflow-syntax, github-actions-events). Old way: a job with none of the three (#411).
 - Do a job every session adapter needs (load a sibling module, skip injected context, keep the project's sessions of the last N days): a helper in `shared/sessions/adapter_lib.py`. Old way: an adapter's own `load()` or its own injected-context check (#410).
 - Set up a git repo in a test: `repo` from `scripts/test-lib.sh`. Old way: own setup code (#408).
 - Check a result in a test: `eq`, `has`, and `lacks` from `scripts/test-lib.sh`. Old way: a bare `[ -e … ] || exit 1` check (#408).
@@ -25,7 +25,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## Names
 
-- Files and folders are kebab-case; `SKILL.md`, `README.md`, `LICENSE`, and the root's `AGENTS.md`-style files are in capitals.
+- Files and folders are kebab-case, except Python files, which are snake_case per One way for each job; `SKILL.md`, `README.md`, `LICENSE`, and the root's `AGENTS.md`-style files are in capitals.
 - Shell functions and variables are lower_snake_case; env vars and constants are UPPER_SNAKE with a prefix, as `WORKTREES_ROOT`.
 - A shell test function is `t_<prefix>_<case>`.
 - Python functions and variables are snake_case, classes CapWords, and constants UPPER_SNAKE (pep-8).
@@ -44,7 +44,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## Errors
 
-- A wrong command line prints the usage line on stderr and exits 64.
+- A wrong command line to a shell script prints the usage line on stderr and exits 64; a Python script keeps argparse's own exit 2.
 - A script whose exit code carries an answer, as `ready.sh` returns 0, 1, or 2, keeps its codes and lists them in its usage.
 - A stop message says what went wrong, what was expected, and what to try (agentskills-using-scripts).
 - A missing optional tool prints `warn: <what>` on stderr, and the script goes on.
@@ -123,7 +123,6 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 ### GitHub Actions
 
 - A workflow sets top-level `permissions: contents: read` (github-actions-workflow-syntax).
-- Each job has a `timeout-minutes`, a `concurrency` group cancels the older run of the same ref, and `push` runs only on `main` (github-actions-workflow-syntax, github-actions-events).
 - An `actions/…` action is pinned to its major tag; any other action is pinned to a full commit SHA with its tag in a comment (github-actions-hardening, actions-checkout-readme).
 
 ## By folder
