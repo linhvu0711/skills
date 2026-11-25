@@ -148,8 +148,10 @@ set's, the first ticket URL. Say the pick in one line, as
    `<state> <link> :: <message>` for `blocked`, `finished`, `error`,
    `cancelled`, `expired`, or `suspended:<why>`. After three failed polls
    in a row it prints `poll failed <link> :: <error>` and exits: show it
-   and stop. It also prints each warning a working poll gives, such as
-   `mac.sh: could not destroy <id> ...`: tell the user that line as it is. On each line, tell the user the state and the message in
+   and stop. It also gives back what the session holds when a run ends
+   (a Cursor Mac), and prints each warning a poll or that give-back
+   writes, such as `mac.sh: could not destroy <id> ...`: tell the user
+   that line as it is. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
    section. When that row says the lines come together at the end, add
    `--once`: the watch exits on the first event, and you start it again
@@ -347,18 +349,19 @@ start the watch with `--follow`, which does not exit on `finished`.
 26, iOS Simulators) through `scripts/mac.sh`, starts a Cursor worker on
 it, and makes the agent a My Machines agent on that worker. The Mac
 lives for one run:
-- `start` rents it; the first poll that sees the run end destroys it.
-  So the watch is what frees it; a chat with no running watch, none started or one that stopped, runs
+- `start` rents it; the watch gives it back when it sees the run end,
+  and a status check never does. A chat with no running watch, none
+  started or one that stopped, runs
   `bash scripts/handoff.sh release <session>` once the run ends. A Mac
-  no one destroys ends by itself after 4 hours.
-- A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
-  line, which names the Mac and the hand command, and the next poll or
-  `status` tries again; `release` exits 1. Tell the user that
-  line: the Mac costs money until it goes.
+  no one gives back ends by itself after 4 hours.
+- A destroy that fails keeps the Mac's row: the watch prints `mac.sh`'s
+  line, which names the Mac and the hand command, and tries again on
+  its next poll; `release` exits 1. Tell the user that line: the Mac
+  costs money until it goes.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
-  never gets them; the ID sits in the adapter's row for the agent. The note gets a first line that tells the agent
+  never gets them; the ID sits in mac.sh's row for the agent. The note gets a first line that tells the agent
   to check its branch out again. Renting and setting up a Mac takes
   2 to 3 minutes before the run starts.
 - A run that starts while no Mac is up ends as `error` in about 20 s;
@@ -421,8 +424,8 @@ repo's `packages/helper/Package.swift` has a macOS target
 
 `Platform: macos (Package.swift with a macOS target)`. `start cursor` with
 `--repo acme/clock --base main --platform macos`; about 3 minutes later
-it prints the agent. Watch as above. On `finished` the poll destroys the
-Mac; the next `say` rents a new one.
+it prints the agent. Watch as above. On `finished` the watch gives the
+Mac back; the next `say` rents a new one.
 
 **User:** `/handoff` after a short-path `/plan-up` of #57 ended with
 `Ready for /handoff.`

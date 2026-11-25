@@ -29,8 +29,10 @@
 # keeps going past the end, for a session that gets a follow-up. At --max
 # seconds it prints `still running <link>`. A failed poll is tried again; after
 # three in a row it prints `poll failed <link> :: <the adapter's error>` and
-# exits 1. Each line a working poll writes on stderr, such as a Mac the
-# adapter could not give back, is printed too, stamped. The interval is the
+# exits 1. Each line a working poll writes on stderr is printed too, stamped.
+# When a run ends, watch runs the adapter's release, on each poll until it
+# works, and prints its stderr lines stamped, such as a Mac it could not give
+# back; status never does. The interval is the
 # adapter's `interval`. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
@@ -136,8 +138,8 @@ cmd_watch() {
     esac
   done
   [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0 w
-  errf=$(mktemp); trap "rm -f '$errf'" EXIT
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed=""
+  errf=$(mktemp); relf=$(mktemp); trap "rm -f '$errf' '$relf'" EXIT
   start=$(date +%s)
   while :; do
     if ! line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>"$errf"); then
@@ -166,6 +168,19 @@ cmd_watch() {
           esac
         done
       fi
+      # A run that ended gives back what the session holds, before its line
+      # prints, so a chat that answers the line finds it back. A release that
+      # fails is tried again on the next poll of the same run.
+      case "$st" in
+        finished|error|cancelled|expired)
+          if [[ "$key" != "$freed" ]]; then
+            if adapter "$e" release "$id" >/dev/null 2>"$relf"; then freed="$key"; fi
+            while IFS= read -r w; do
+              if [[ -n "$w" ]]; then echo "[$(date +%H:%M)] $w"; fi
+            done <"$relf"
+          fi
+          ;;
+      esac
       # An event is a new key in a state the caller acts on. The adapter
       # makes the key, so a new message or a new run counts as new.
       if [[ "$key" != "$prev_key" ]]; then

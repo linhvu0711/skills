@@ -31,11 +31,10 @@
 # PRs whose head is `<type>/<issue>-…` and reports those.
 # --platform macos runs the agent on a Namespace Mac (scripts/mac.sh) with a Cursor
 # worker on it, as a My Machines agent; Cursor's own machines are Ubuntu only.
-# The Mac lives for one run: poll destroys it when the latest run ends, and
-# say rents a new one before it sends, whose worker takes the first worker's
-# name and ID: Cursor sends an agent's runs to the worker ID it first ran on.
-# A Mac mac.sh cannot destroy keeps its row: poll prints mac.sh's line, which
-# names the Mac and the hand command, on stderr, and the next poll tries again.
+# The Mac lives for one run: handoff.sh's watch, or its release, gives it
+# back through mac.sh return; say rents a new one before it sends, whose
+# worker takes the first worker's name and ID: Cursor sends an agent's runs to
+# the worker ID it first ran on. poll never touches it.
 # The rows, agent, worker, worker ID, repo, base, and Mac (`-` when none),
 # sit in ~/.config/dispatch/cursor-macs.tsv. A worker refuses a grok_ key, so a
 # Mac needs a personal crsr_ key. --platform windows stops: Devin has one.
@@ -262,10 +261,7 @@ cmd_poll() {
     esac
   done
   [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die "--repo and --issue go together"
-  local line ast rst rid prs url msg st ghprs all=" " p arr=() row
-  # The row is read before the run state: a Mac a say rents after this read
-  # is not in it, so an ended run read here never frees a Mac newer than it.
-  row=$(mac_row "$id")
+  local line ast rst rid prs url msg st ghprs all=" " p arr=()
   line=$(fetch "$id")
   IFS=$'\t' read -r ast rst rid prs url msg <<<"$line"
   case "$rst" in
@@ -282,15 +278,6 @@ cmd_poll() {
     case "$all" in *" $p "*) ;; *) all="$all$p " ;; esac
   done
   all=$(echo $all | tr ' ' ',')
-  # 1A: a Mac lives for one run. The run that ends frees it; say rents the next.
-  local mac
-  if [[ -n "$row" && "$st" != working ]]; then
-    IFS=$'\t' read -r _ _ _ _ mac <<<"$row"
-    # A Mac not given back keeps its row, so the next poll tries again.
-    if [[ "$mac" != "-" ]] && mac_down "$mac" >/dev/null; then
-      mac_clear "$id" "$mac"
-    fi
-  fi
   printf '%s\t%s\t%s\t%s\t%s\n' "$st" "$rid|$rst" "${all:--}" "$url" "$msg"
 }
 
