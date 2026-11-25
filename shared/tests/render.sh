@@ -256,18 +256,25 @@ t_render_local_no_pane() {
 }
 
 t_render_names_box() {
+  # Given: the local rules template
+  # When
   render local rules
+  # Then
   eq exit 0 "$code"
   eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
   eq "lines with the box.sh path" 2 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
+  local f
   f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //' | sort -u)"
   [ -f "$f" ] || eq "box.sh path" "a file" "$f"
 }
 
 t_render_names_handoff() {
+  # Given: the devin and cursor prompt templates
   local ex
   for ex in devin cursor; do
+    # When
     render "$ex" prompt
+    # Then
     eq "$ex exit" 0 "$code"
     eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
     eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
