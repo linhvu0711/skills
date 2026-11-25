@@ -64,7 +64,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 - To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
-- [review-pr](skills/review-pr/) is a separate review you run by hand on any PR. [set-review-rules](skills/set-review-rules/) writes the `REVIEW.md` it reads.
+- [review-pr](skills/review-pr/) is a separate review you run by hand on any PR.
 
 ## Skills
 
@@ -115,10 +115,9 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 |---|---|
 | [review-pr](skills/review-pr/) | Reviews a pull request on three separate checks (logic, scope, standards), with your repo's own rules folded in. |
 | [validate-pr-review](skills/validate-pr-review/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
-| [set-review-rules](skills/set-review-rules/) | Writes a `REVIEW.md` for your repo: the shared three-part review plus the rules only your repo needs. |
 | [audit-coding-standards](skills/audit-coding-standards/) | Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it has one: researches your stack, reads your code, shows a report page, asks only your choices, then files tickets and writes the rules. |
 | [prune-codebase](skills/prune-codebase/) | Finds what teaches agents bad habits: bad comments, unused code, copies, and hacks. Shows them on a report page, and after your go edits comments, files tickets, and adds rules, with no code changed and nothing committed. |
-| [retro](skills/retro/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, review rules, standards, skills. |
+| [retro](skills/retro/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, standards, skills. |
 
 ### Sessions
 

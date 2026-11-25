@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Review a pull request on the three fixed axes (logic, scope, standards), one subagent per axis, with the repo's own review rules folded in from REVIEW.md or wherever the repo keeps them. Report in chat and to a file. Never posts to GitHub."
+description: "Review a pull request on the three fixed axes (logic, scope, standards), one subagent per axis, with the repo's Standard and the ADRs about the changed files folded in. Report in chat and to a file. Never posts to GitHub."
 disable-model-invocation: true
 ---
 
@@ -8,8 +8,8 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 
 You review one pull request. The checks are fixed: **Logic**, **Scope**,
 **Standards**, as written in
-`../../shared/review/general-rules.md`. The repo can add
-rules of its own, in `REVIEW.md` or wherever it keeps them. You run
+`../../shared/review/general-rules.md`. The repo adds rules of its
+own in its Standard, and decisions in its ADRs. You run
 each axis in its own subagent, merge what comes back, and hand the
 report to the user. Posting the review to GitHub is the user's call and
 a separate command.
@@ -70,30 +70,36 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
    `../../shared/review/general-rules.md`, read now. Split
    it into its three `##` sections. That is the general text per axis.
 
-   Then find the repo rules.
+   Then the repo rules: the Standard, `CODING_STANDARDS.md` at the root
+   with the `docs/standards/` files it links to, and the ADRs in
+   `docs/adr/`. `git ls-files CODING_STANDARDS.md docs/adr` shows which
+   exist. One explorer for each that exists, both in one message, each
+   brief with the repo root and the read-only line from § Facts:
 
-   - `REVIEW.md` at the root with the `set-review-rules:general` markers
-     is the settled source. The lines below the end marker are the repo
-     rules, already grouped under `### Logic`, `### Scope`,
-     `### Standards`. Compare the text between the markers with the
-     shared file. Different: the shared file wins, and the report notes
-     "REVIEW.md general block is older than the shared rules". Stop
-     looking; the file already folded the rest in.
-   - No marked `REVIEW.md`: one explorer searches the repo. Its
-     brief is `../../shared/review/rule-sources.md`
-     pasted in full, the repo root, the read-only line from § Facts,
-     and this return shape: one line per
-     hit, `<path:line> | <bin> | <the rule, verbatim>`. Every review
-     rule that comes back is a repo rule, whatever file it sat in. Bot
-     configs are named in the report and not run. Sort each rule into
-     the axis that checks it: does it work (Logic), does it match the
-     task (Scope), does it fit how the repo writes code (Standards). A
-     rule that fits none goes to Standards.
-   - Nothing comes back: no repo rules. The review runs on the general
-     rules alone. The report's `## Notes` carries one line: "no repo
-     review rules found; general rules only. /set-review-rules writes
-     them." That line is a notice; this skill reviews the PR and leaves
-     `/set-review-rules` to the user.
+   - The Standard: `../../shared/coding-standards/standard.md`
+     § Reading the Standard, pasted in full. Return one line per rule,
+     `<path:line> | <the rule, verbatim>`.
+   - The ADRs: the changed files, from
+     `git diff --name-status <base>...HEAD`, pasted. Read each
+     `docs/adr/*.md`. Leave out one whose `status:` line starts with
+     `proposed`, `deprecated`, or `superseded`: it is not in force.
+     Keep one whose decision is about a changed file: it names the file,
+     its folder, or the part the file belongs to. An ADR kept whose `status:` line says `amended by`
+     another: read each amending ADR too, and give the decision as the
+     newest amendment leaves it, with the clauses of the older one that
+     still hold; that amending ADR gets no line of its own. Return one
+     line per ADR kept,
+     `<path>[, <amending path>…] | <the decision in force, one sentence>`.
+
+   Each line that comes back is a repo rule. Sort each into the axis
+   that checks it: does it work (Logic), does it match the task
+   (Scope), does it fit how the repo writes code (Standards). A rule
+   that fits none goes to Standards.
+
+   No `CODING_STANDARDS.md`: the report's `## Notes` carries one line,
+   "no CODING_STANDARDS.md; run /audit-coding-standards". Nothing comes
+   back from either explorer: no repo rules, and the review runs on the
+   general rules alone.
 
    Per axis, the rule text is the general section followed by
    `## Repo rules` and that axis's lines, or "None." Done when three
@@ -107,9 +113,9 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
    - The repo root and the exact diff command from step 1.
    - The PR title and, for Scope, the task text from step 2.
    - The rule text for that axis from step 3, pasted in full.
-   - For Standards: the path `CODING_STANDARDS.md` if `git ls-files`
-     lists it, else the sentence "no CODING_STANDARDS.md; the code next
-     to the diff is the standard".
+   - For Standards, when step 3 found no `CODING_STANDARDS.md`: the
+     sentence "no CODING_STANDARDS.md; the code next to the diff is the
+     standard".
    - The instruction to read the whole diff once, read the surrounding
      code and callers as the rules require, run every check in the
      rule text against every hunk, and report findings for this axis
@@ -156,9 +162,8 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 
 6. **Report.** Write the report in the shape under `Report shape` to
    `~/.claude/reviews/<repo>-<pr number or branch>.md` (create the
-   folder) and print it in chat. The notes from step 3 (older general
-   block, no repo rules, bot configs found) go under `## Notes`, once
-   each.
+   folder) and print it in chat. The note from step 3 and the axes'
+   notes go under `## Notes`, once each.
 
    Last line in chat, one of:
 
@@ -184,7 +189,7 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 - ...
 
 ## Notes
-- <older general block | no repo review rules | bot configs found | no task found>
+- <no CODING_STANDARDS.md; run /audit-coding-standards | no task found>
 
 Verdict: <approve | comment | request changes>
 ```
@@ -197,8 +202,8 @@ keeps its heading and one line: "Nothing found."
 - **Axis**: one of the three independent checks, Logic, Scope, Standards.
 - **General block**: the fixed rule text, the same in every repo. Owned
   by `../../shared/review/general-rules.md`.
-- **Repo rule**: a line the repo adds below the end marker in
-  `REVIEW.md`, or, with no marked file, any rule line found in step 3.
+- **Repo rule**: a rule line from the Standard, or an ADR in force
+  about the changed files, found in step 3.
 - **Task**: what the PR is supposed to do. The linked issue and its
   epic, else the PR description.
 - **Finding**: one line, one axis, one severity (🔴 blocker, 🟠 should,
@@ -211,38 +216,25 @@ before they enter a brief or the report.
 
 ## Examples
 
-**User:** `/review-pr 42` in a repo with a marked `REVIEW.md`.
+**User:** `/review-pr 42` in a repo with a Standard and ADRs.
 
 Step 1 resolves base `main`, 9 files. Step 2 finds issue #38 and its
-epic #30. Step 3 reads the shared block, finds the repo rules under
-each axis, and the marked block matches. Step 4 sends three agents.
+epic #30. Step 3 reads the shared block; its two explorers return 12
+rules from `CODING_STANDARDS.md` and `docs/standards/testing.md`, and
+ADR 0007, about a changed folder; ADR 0004 is superseded and left out.
+Each rule and the ADR go to one axis. Step 4 sends three agents.
 Logic returns one `🔴 blocker` (a new branch returns `nil` on empty input,
 check 2). Scope returns one `🟠 should` (a renamed helper the task did not
 ask for, quoting #38). Standards returns two `🔵 nit` smells. Step 6
 writes `~/.claude/reviews/acme-42.md`, prints it, and ends with
 `Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md`.
 
-**User:** `/review-pr` on a branch with no PR and no `REVIEW.md`.
+**User:** `/review-pr` on a branch with no PR, no `CODING_STANDARDS.md`,
+and no `docs/adr/`.
 
 Step 1 says "no PR; reviewing branch against `main`". Step 2 says "no
-task found", so Scope flags only clear creep. Step 3 has no marked
-`REVIEW.md`, so one explorer searches the list; it finds a
-"Reviewing" section in `CONTRIBUTING.md` with two rules, and a
-`.coderabbit.yaml`. The two rules go to Logic, the bot config goes to
-`## Notes`. Three agents run. Nothing above `🔵 nit`. Report ends with
+task found", so Scope flags only clear creep. Step 3 starts no
+explorer: the three axes run on the general rules alone, and
+`## Notes` holds "no CODING_STANDARDS.md; run /audit-coding-standards".
+Nothing above `🔵 nit`. Report ends with
 `Verdict: approve. No PR; nothing to post.`
-
-**User:** `/review-pr 7` in a repo whose `REVIEW.md` is from last
-quarter.
-
-Step 3 finds the text between the markers differs from the shared file.
-The shared file is used; the report's `## Notes` says "REVIEW.md general
-block is older than the shared rules". The repo rules below the marker
-are used as they are.
-
-**User:** `/review-pr 12` in a repo with no review rules anywhere.
-
-Step 3's explorer returns nothing. The three axes run on the
-general rules alone. `## Notes` holds one line: "no repo review rules
-found; general rules only. /set-review-rules writes them." Nothing
-else changes.

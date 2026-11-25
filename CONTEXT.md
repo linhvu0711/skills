@@ -47,7 +47,7 @@ The title and body that every pull request opened by these skills follows. It is
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
 **Close-out**:
-The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write; when that code changes a screen, it first suggests a prototype and waits for go. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead, or take the written files into its own PR.
+The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write; when that code changes a screen, it first suggests a prototype and waits for go. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead.
 _Avoid_: wrap-up, finish
 
 **Gap check**:
@@ -329,7 +329,7 @@ A way of working that went well in two or more sessions or PRs, which a shared f
 _Avoid_: best practice, win
 
 **Setup map**:
-For one repo, the file that does each job for its agents (steering, review rules, coding standards, skills, checks and CI, docs), or none.
+For one repo, the file that does each job for its agents (steering, coding standards, skills, checks and CI, docs), or none.
 _Avoid_: config list
 
 **Home repo**:
