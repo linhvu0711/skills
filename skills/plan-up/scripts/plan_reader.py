@@ -721,59 +721,6 @@ def viewport_problems(plan):
                        f" at most {PAGE_MAX} px tall under the browser bars and the taskbar, so use 1440,795 or 390,664")
 
 
-# Raw text the page never shows: lines kept for other checks, and values a problem line already names.
-RAW = {"prose", "brief", "row", "cell", "unread", "bad"}
-TEXT_PARTS = {"Change", "Approach", "In", "Out"}
-
-
-def texts(node, path, raw=RAW):
-    if isinstance(node, str):
-        yield path, node
-    elif isinstance(node, dict):
-        for k, v in node.items():
-            if k not in raw:
-                yield from texts(v, f"{path}.{k}" if path else k, raw)
-    elif isinstance(node, (list, tuple)):
-        for i, v in enumerate(node):
-            yield from texts(v, f"{path}[{i}]", raw)
-
-
-def page_texts(plan):
-    """The plan's texts the page shows, each with its path from the plan root."""
-    for key, value in plan.items():
-        if key in RAW:
-            continue
-        if key == "reviews":
-            for i, r in enumerate(value):
-                for name in NEEDS[r["kind"]]:
-                    if name not in r["parts"]:
-                        continue
-                    where, part = f"reviews[{i}].parts.{name}", r["parts"][name]
-                    # The page joins a part's lines, so a span cut across two lines shows whole.
-                    # A Review item's `line` is the source the page shows cut into its parts.
-                    yield from [(where, " ".join(part))] if name in TEXT_PARTS else texts(part, where, RAW | {"line"})
-        elif key == "layers":
-            for i, layer in enumerate(value):
-                for k, v in layer.items():
-                    # A layer's review is the same dict as its entry in `reviews`.
-                    if k == "summary":
-                        yield f"layers[{i}].summary", " ".join(v)
-                    elif k != "review":
-                        yield from texts(v, f"layers[{i}].{k}")
-        elif key == "maps":
-            for i, m in enumerate(value):
-                # The page shows a None map as its `None:` line alone.
-                yield from [(f"maps[{i}].none", m["none"])] if m["none"] else texts(m, f"maps[{i}]")
-        else:
-            yield from texts(value, key)
-
-
-def tick_problems(plan):
-    for where, text in page_texts(plan):
-        if text.count("`") % 2:
-            yield f"{where}: odd number of backticks, one shows raw: {text[:80]}"
-
-
 def problems(plan):
     yield from prose_problems(plan["prose"])
     yield from viewport_problems(plan)
@@ -820,4 +767,3 @@ def problems(plan):
              for n, layer in enumerate(layers, 1) for walk in layer["walks"]]
     yield from md_before_problems(walks)
     yield from step_problems(layers, plan["facts"].get("ui") == "terminal")
-    yield from tick_problems(plan)

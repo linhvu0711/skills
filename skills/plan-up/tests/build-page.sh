@@ -4,6 +4,88 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 build() { run python3 "$here/../scripts/build-page.py" "$@"; }
 page_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
+# render [--fake-layout <js>] [--reads] <html>: the built page run in node on
+# a fake page, with text 7 px wide per character. Prints what the Review
+# panel draws: one line per element of each Change map, then one line per
+# Files row. --fake-layout runs <js> in place of the page's layout.js.
+# --reads draws every layer with DATA behind a Proxy and prints instead each
+# key the page reads that its object lacks, as layers[].gates.untouched.
+render() {
+  run node - "$@" <<'EOF'
+const fs = require('node:fs'), vm = require('node:vm');
+const args = process.argv.slice(2);
+const fake = args[0] === '--fake-layout' ? fs.readFileSync(args.splice(0, 2)[1], 'utf8') : null;
+const reads = args[0] === '--reads' ? args.shift() : null;
+const html = fs.readFileSync(args[0], 'utf8');
+class Fake {
+  constructor(tag) { this.tag = tag; this.attrs = {}; this.children = []; this.listeners = {}; this.dataset = {}; this.text = '';
+    this.classList = { toggle() {}, add() {}, remove() {} }; }
+  get nodeType() { return 1; }
+  append(...kids) { this.children.push(...kids); }
+  setAttribute(k, v) {
+    this.attrs[k] = String(v);
+    if (k.startsWith('data-')) this.dataset[k.slice(5).replace(/-(\w)/g, (_, c) => c.toUpperCase())] = String(v);
+  }
+  addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
+  set className(v) { this.attrs.class = v; }
+  get className() { return this.attrs.class || ''; }
+  set innerHTML(v) { this.children = []; }
+  set textContent(v) { this.text = String(v); }
+  get textContent() { return this.text + this.children.map((k) => k.nodeType === 3 ? k.data : k.textContent).join(''); }
+  elements() { return this.children.filter((k) => k.nodeType === 1); }
+  querySelectorAll(sel) {
+    const tag = sel.match(/^\w+/)[0], got = [];
+    const walk = (n) => { for (const k of n.elements()) { if (k.tag === tag) got.push(k); walk(k); } };
+    walk(this);
+    return got;
+  }
+  scrollIntoView() {}
+  getContext() { return { measureText: (s) => ({ width: s.length * 7 }) }; }
+}
+const byId = {};
+const document = {
+  createElement: (tag) => new Fake(tag), createElementNS: (_, tag) => new Fake(tag),
+  createTextNode: (data) => ({ nodeType: 3, data }), querySelector: (sel) => byId[sel] ||= new Fake(sel),
+  addEventListener() {}, body: {}, title: '',
+};
+const page = { document, window: { scrollTo() {} }, history: { replaceState() {} }, location: { hash: '' },
+  navigator: {}, getComputedStyle: () => ({ fontFamily: '' }) };
+vm.createContext(page);
+const absent = new Set();
+const watch = (o, path) => new Proxy(o, { get(t, k) {
+  const item = Array.isArray(t) && (typeof k === 'symbol' || /^\d+$/.test(k) || k in Array.prototype);
+  if (!item && typeof k !== 'symbol' && !(k in t)) absent.add(path ? `${path}.${k}` : k);
+  const v = t[k];
+  return v && typeof v === 'object' ? watch(v, item ? `${path}[]` : path ? `${path}.${k}` : k) : v;
+} });
+for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+  if (reads && code.trim().startsWith('const DATA = ')) {
+    vm.runInContext(code.replace('const DATA = ', 'var DATA = '), page);
+    page.DATA = watch(page.DATA, '');
+  } else vm.runInContext(fake !== null && /^const PlanLayout\b/m.test(code) ? fake : code, page);
+}
+if (reads) {
+  for (const b of byId['#layers'].elements().slice(1)) b.listeners.click[0]();
+  console.log([...absent].sort().join('\n'));
+  process.exit(0);
+}
+const review = byId['#panels'].elements().find((s) => s.dataset.id === 'review');
+const find = (n, test, got = []) => { for (const k of n.elements()) { if (test(k)) got.push(k); find(k, test, got); } return got; };
+const maps = find(review, (k) => k.tag === 'svg' && k.attrs['aria-label'] === 'Change map');
+const rows = find(review, (k) => /\bft-row\b/.test(k.className));
+for (const svg of maps) {
+  const each = (n) => { for (const k of n.elements()) {
+    const attrs = Object.keys(k.attrs).sort().map((a) => `${a}=${k.attrs[a]}`).join(' ');
+    console.log(`${k.tag} ${attrs}${k.text ? ' | ' + k.text.replace(/\n/g, '\\n') : ''}`);
+    each(k);
+  } };
+  console.log(`svg ${svg.attrs.viewBox}`);
+  each(svg);
+}
+for (const row of rows) console.log([row.className, ...row.elements().map((k) => k.textContent)].join(' | '));
+EOF
+}
+
 t_build_ticket() {
   T="$(mktemp -d)"
   cp "$here/build-page/ticket.md" "$T/plan-acme-shop-42.md"
@@ -163,6 +245,34 @@ t_build_no_proved_date() {
 
 t_build_odd_tick() {
   bad_ticket 's/- O1 orders export as PDF/&`/' 'layers[0].out[0]: odd number of backticks, one shows raw: orders export as PDF`'
+}
+
+t_build_proof_tick() {
+  bad_ticket 's/^| 1 | orders export as CSV |/| 1 | orders export as `CSV |/' \
+    'layers[0].proof[0].line: odd number of backticks, one shows raw: orders export as `CSV'
+}
+
+t_build_none_map_area_tick() {
+  # Given: a None map whose heading names an area with one backtick; the page never shows that area
+  T="$(mktemp -d)"
+  sed 's/^## Change map$/## Change map · `api/' "$here/build-page/none-map.md" > "$T/plan-none-map.md"
+  # When
+  build "$T/plan-none-map.md"
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
+}
+
+t_build_wrapped_tick() {
+  # Given: one backtick span cut across the two lines of the Approach part
+  T="$(mktemp -d)"
+  sed 's/^Approach: stream CSV through/Approach: stream `CSV\
+  through`/' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
+  # When
+  build "$T/plan-acme-shop-42.md"
+  # Then
+  eq exit 0 "$code"
+  eq stderr "" "$err"
 }
 
 t_build_no_date() {
@@ -647,6 +757,81 @@ t_build_late_delete_slice() {
     'slices: layer 1 slice 2 deletes dead code; only slice 1 may'
 }
 
+t_build_same_drawing() {
+  # Given: the six fixtures, each built
+  T="$(mktemp -d)"
+  for f in files none-map perf run-one run ticket; do
+    cp "$here/build-page/$f.md" "$T/plan-$f.md"
+    build "$T/plan-$f.md"
+    eq "exit $f" 0 "$code"
+    # When
+    render "$T/plan-$f.html"
+    eq "render exit $f" 0 "$code"
+    # Then
+    eq "drawing $f" "$(cat "$here/build-page/$f.page.txt")" "$out"
+  done
+}
+
+t_build_draws_layout_map() {
+  # Given: the built page of files.md, and a fake PlanLayout with one part and one flow
+  T="$(mktemp -d)"
+  cp "$here/build-page/files.md" "$T/plan-acme-shop-44.md"
+  build "$T/plan-acme-shop-44.md"
+  cat > "$T/fake.js" <<'EOF'
+const PlanLayout = {
+  map: () => ({ width: 400, height: 200, groups: [],
+    parts: [{ ref: 'M1', name: 'Orders page', job: '', change: 'same', kind: 'part', at: [], cx: 100, cy: 100, w: 190, h: 56, text: 'Fake part' }],
+    flows: [{ from: 'M1', to: 'M1', change: 'same', d: 'M1,2 L3,4', label: { x: 50, y: 60, lines: ['fake label'], box: { x1: 0, y1: 50, x2: 100, y2: 70 } } }] }),
+  fileTree: () => [],
+};
+EOF
+  # When
+  render --fake-layout "$T/fake.js" "$T/plan-acme-shop-44.html"
+  # Then
+  eq exit 0 "$code"
+  eq drawing "path d=M1,2 L3,4 fill=none marker-end=url(#map0-same) stroke-width=1.5 style=stroke:var(--muted)
+text font-size=14 font-weight=600 style=fill:var(--ink) text-anchor=middle x=100 y=106 | Fake part
+tspan x=50 | fake label" "$(printf '%s\n' "$out" | grep -E '^(path d=M1|text .*\| Fake part|tspan )')"
+  eq "flows drawn" 1 "$(printf '%s\n' "$out" | grep -c 'marker-end=')"
+  eq "boxes drawn" 1 "$(printf '%s\n' "$out" | grep -c '^rect .*rx=8 ')"
+  eq "labels drawn" 1 "$(printf '%s\n' "$out" | grep -c '^tspan ')"
+}
+
+t_build_draws_layout_files() {
+  # Given: the built page of files.md, and a fake PlanLayout whose tree is one file row
+  T="$(mktemp -d)"
+  cp "$here/build-page/files.md" "$T/plan-acme-shop-44.md"
+  build "$T/plan-acme-shop-44.md"
+  cat > "$T/fake.js" <<'EOF'
+const PlanLayout = {
+  map: () => ({ width: 400, height: 200, groups: [], parts: [], flows: [] }),
+  fileTree: () => [{ dir: false, name: 'fake.ts', branch: '└── ', file: { change: 'new', slices: [1] } }],
+};
+EOF
+  # When
+  render --fake-layout "$T/fake.js" "$T/plan-acme-shop-44.html"
+  # Then
+  eq exit 0 "$code"
+  eq rows "ft-row new | + | └── fake.ts |  | S1" "$(printf '%s\n' "$out" | grep '^ft-row')"
+}
+
+t_build_reads_emitted_fields() {
+  # Given: every fixture built, and each key path any of their DATA holds
+  T="$(mktemp -d)"
+  for f in files none-map perf run-one run ticket run-three; do
+    cp "$here/build-page/$f.md" "$T/plan-$f.md"
+    build "$T/plan-$f.md"
+    eq "exit $f" 0 "$code"
+    page_data "$T/plan-$f.html" | jq -r 'paths | map(if type == "number" then "[]" else "." + . end) | join("") | ltrimstr(".") | gsub("\\.\\[\\]"; "[]")' >> "$T/emitted"
+    # When
+    render --reads "$T/plan-$f.html"
+    eq "render exit $f" 0 "$code"
+    printf '%s\n' "$out" >> "$T/read"
+  done
+  # Then: no read of a field no fixture's DATA holds
+  eq "absent reads" "" "$(sort -u "$T/read" | grep -v '^$' | grep -vxF -f <(sort -u "$T/emitted") || true)"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -680,6 +865,9 @@ cases=(
   "build-page refuses a blank Before|t_build_blank_before"
   "build-page refuses a Proved line with no date|t_build_no_proved_date"
   "build-page refuses an odd backtick|t_build_odd_tick"
+  "build-page names an odd backtick in a Proof cell|t_build_proof_tick"
+  "build-page passes a backtick in the area of a None map|t_build_none_map_area_tick"
+  "build-page reads a backtick span cut across two lines as whole|t_build_wrapped_tick"
   "build-page refuses a plan with no Date|t_build_no_date"
   "build-page refuses a plan with no head|t_build_no_head"
   "build-page refuses a ticket with no Size|t_build_no_size"
@@ -732,4 +920,8 @@ cases=(
   "build-page passes an old size quoted in a note|t_build_viewport_in_note"
   "build-page refuses a Setup with no command|t_build_setup_no_command"
   "build-page passes a Setup of none|t_build_setup_none"
+  "build-page draws the same map and file tree|t_build_same_drawing"
+  "the page draws the map PlanLayout gives|t_build_draws_layout_map"
+  "the page draws the file rows PlanLayout gives|t_build_draws_layout_files"
+  "the page reads only fields page_data emits|t_build_reads_emitted_fields"
 )
