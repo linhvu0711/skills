@@ -20,7 +20,8 @@
 # with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
 # skipped.
 # A .md file under skills/<name>/, other than the skill's README.md, or under
-# shared/ must not say "in Claude Code" or "in Codex": a skill says each step
+# shared/ must not say "in Claude Code" or "in Codex", or name the Skill tool
+# as "with the Skill tool": a skill says each step
 # once, and shared/harness.md holds each harness's tool. A line that starts
 # with description: is skipped.
 #
@@ -325,13 +326,17 @@ done
 for f in ${files[@]+"${files[@]}"}; do
   case "$f" in skills/*/*.md|shared/*.md) ;; *) continue ;; esac
   [[ $f =~ ^skills/[^/]+/README\.md$ ]] && continue
-  while IFS=$'\t' read -r line phrase; do
-    problems+=("$f:$line: harness branch: $phrase")
+  while IFS=$'\t' read -r line kind phrase; do
+    problems+=("$f:$line: $kind: $phrase")
   done < <(awk '
     /^description:/ { next }
     match($0, /(^|[^[:alpha:]])[Ii]n (Claude Code|Codex)([^[:alpha:]]|$)/) {
       s = substr($0, RSTART, RLENGTH); sub(/^[^[:alpha:]]/, "", s); sub(/[^[:alpha:]]$/, "", s)
-      print FNR "\t" s
+      print FNR "\tharness branch\t" s
+    }
+    match($0, /(^|[^[:alpha:]])[Ww]ith the Skill tool([^[:alpha:]]|$)/) {
+      s = substr($0, RSTART, RLENGTH); sub(/^[^[:alpha:]]/, "", s); sub(/[^[:alpha:]]$/, "", s)
+      print FNR "\tharness tool\t" s
     }' "$root/$f")
 done
 
