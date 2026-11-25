@@ -2343,7 +2343,7 @@ t_fs_board_fixture_shape() {
 }
 
 # fs_page <board.json>: the board page run on a fake page with that board,
-# its {fetched, banner, hdot} line in out.
+# its {fetched, banner, hdot, nums} line in out.
 fs_page() {
   T="${T:-$(mktemp -d)}"
   run node "$here/page.cjs" "$here/../assets/board.html" "$1"
@@ -2356,6 +2356,15 @@ t_fs_page_reads_board_only() {
   fs_page "$here/fixtures/board/board-failing.json"
   # Then
   eq fetched '["board.json"]' "$(jq -c .fetched <<<"$out")"
+}
+
+t_fs_page_shows_label() {
+  # Given: the board fixture, whose lib#5 issue lives in another repo
+  # When
+  fs_page "$here/fixtures/board/board.json"
+  # Then
+  has nums '"lib#5"' "$(jq -c .nums <<<"$out")"
+  has nums '"#72"' "$(jq -c .nums <<<"$out")"
 }
 
 t_fs_page_must_act_banner() {
@@ -2712,6 +2721,7 @@ cases=(
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
   "the board page fetches only board.json|t_fs_page_reads_board_only"
+  "the board page shows each issue's label|t_fs_page_shows_label"
   "the board page says checks keep failing when the board flags it|t_fs_page_must_act_banner"
   "the board page only warns when the board does not flag it|t_fs_page_no_flag_warns"
   "the page ships no mockup data|t_fs_page_no_mockup_data"

@@ -157,11 +157,11 @@
       "ship_mode": ""
     },
     {
-      "number": 71,
-      "ref": "linhvu0711/demo#71",
-      "label": "#71",
+      "number": 5,
+      "ref": "linhvu0711/lib#5",
+      "label": "lib#5",
       "title": "Create the S3 bucket for exports",
-      "url": "https://github.com/linhvu0711/demo/issues/71",
+      "url": "https://github.com/linhvu0711/lib/issues/5",
       "column": "build",
       "chip": "task",
       "since": null,
@@ -318,11 +318,11 @@
       "chip": "feat · M",
       "since": null,
       "mark": "blocked",
-      "action": "blocked by #71 #72",
+      "action": "blocked by lib#5 #72",
       "thread": null,
       "pr": null,
       "blocked_by": [
-        "#71",
+        "lib#5",
         "#72"
       ],
       "stage": "ticket",

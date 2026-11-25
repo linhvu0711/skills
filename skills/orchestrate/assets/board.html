@@ -232,7 +232,7 @@
 
   function links(x) {
     var l = []
-    if (x.thread) l.push('<a class="ib" href="' + esc(x.thread.url) + '" title="Open the thread in T3" aria-label="Open the thread for #' + x.number + ' in T3" onclick="event.stopPropagation()">' + ICON_THREAD + '</a>')
+    if (x.thread) l.push('<a class="ib" href="' + esc(x.thread.url) + '" title="Open the thread in T3" aria-label="Open the thread for ' + esc(x.label) + ' in T3" onclick="event.stopPropagation()">' + ICON_THREAD + '</a>')
     if (x.pr) l.push('<a class="ib" href="' + esc(x.pr.url) + '" target="_blank" rel="noopener" title="Open PR #' + x.pr.number + ' on GitHub" aria-label="Open PR #' + x.pr.number + ' on GitHub" onclick="event.stopPropagation()">' + ICON_PR + '<span>#' + x.pr.number + '</span></a>')
     return l.length ? '<span class="ibs">' + l.join('') + '</span>' : ''
   }
@@ -250,9 +250,9 @@
       (x.made ? '<span class="chip made" title="joined by itself">made by run</span>' : '') +
       (x.removed ? '<span class="chip removed">removed</span>' : '')
   }
-  function num(x) { return '<a class="num" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open #' + x.number + ' on GitHub" onclick="event.stopPropagation()">#' + x.number + '</a>' }
+  function num(x) { return '<a class="num" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open ' + esc(x.label) + ' on GitHub" onclick="event.stopPropagation()">' + esc(x.label) + '</a>' }
   function card(x) {
-    return '<div class="card ' + x.mark + '" tabindex="0" role="button" data-n="' + x.number + '" aria-label="#' + x.number + ' ' + esc(x.title) + '">' +
+    return '<div class="card ' + x.mark + '" tabindex="0" role="button" data-n="' + esc(x.ref) + '" aria-label="' + esc(x.label) + ' ' + esc(x.title) + '">' +
       '<div class="meta">' + num(x) + chips(x) + '</div>' +
       '<div class="title">' + esc(x.title) + '</div>' + ownerHtml(x) + '</div>'
   }
@@ -297,7 +297,7 @@
   }
 
   // The board is drawn again on each read, so a focused card would lose its
-  // focus every 5 s; it gets it back by its number. Each column scrolls on
+  // focus every 5 s; it gets it back by its ref. Each column scrolls on
   // its own, so it gets its scroll back by its key the same way.
   function render() {
     var had = document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')
@@ -319,7 +319,7 @@
 
   // ---------- drawer ----------
   function openDrawer(n, quiet) {
-    var x = B && B.issues.filter(function (i) { return i.number === n })[0]
+    var x = B && B.issues.filter(function (i) { return i.ref === n })[0]
     if (!x) return closeDrawer()
     openN = n
     $('dhead').innerHTML = '<div class="meta">' + num(x) + chips(x) + '</div><h3 id="dtitle">' + esc(x.title) + '</h3>'
@@ -351,14 +351,14 @@
 
   document.addEventListener('click', function (e) {
     // A link on a card opens its own page, not the panel.
-    var c = !e.target.closest('a') && e.target.closest('.card'); if (c) return openDrawer(+c.getAttribute('data-n'))
+    var c = !e.target.closest('a') && e.target.closest('.card'); if (c) return openDrawer(c.getAttribute('data-n'))
     if (e.target.id === 'scrim' || e.target.id === 'x') return closeDrawer()
     if (e.target.closest('#needbtn')) { focus = !focus; top() }
   })
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && document.body.classList.contains('open')) return closeDrawer()
     var c = e.target.classList && e.target.classList.contains('card') && e.target
-    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(+c.getAttribute('data-n')) }
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(c.getAttribute('data-n')) }
   })
 
   // ---------- data ----------
