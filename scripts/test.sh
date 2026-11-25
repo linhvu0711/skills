@@ -689,6 +689,18 @@ t_link_status_names_no_holder_for_relative_dangling_link() {
     "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
 }
 
+t_link_skips_antigravity_relative_dangling_link() {
+  # Given: everything linked, then Antigravity's skill link in Claude Code's
+  # relative form, pointing to nothing; the install does not remove that form
+  # in Antigravity's folder
+  linked demo; link_sh
+  rm "$T/gskills/demo"; ln -s ../../.agents/skills/demo "$T/gskills/demo"
+  # When
+  link_sh
+  # Then
+  has stderr "skip: $T/gskills/demo is a link to nothing, not made here" "$err"
+}
+
 t_link_status_names_no_holder_for_dangling_t3_plugins_link() {
   # Given: everything linked, then the plugins folder gone
   linked demo; link_sh
@@ -1549,6 +1561,7 @@ cases=(
   "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
   "link status names no holder for its own dangling link|t_link_status_names_no_holder_for_own_dangling_link"
   "link status names no holder for Claude Code's relative dangling link|t_link_status_names_no_holder_for_relative_dangling_link"
+  "link names the holder of Antigravity's relative dangling link|t_link_skips_antigravity_relative_dangling_link"
   "link status names no holder for a T3 link to a missing plugins folder|t_link_status_names_no_holder_for_dangling_t3_plugins_link"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
