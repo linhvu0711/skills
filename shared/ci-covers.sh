@@ -16,9 +16,11 @@
 #     one line, trimmed, of a `run: |` block. A longer command, a comment, a
 #     line of a folded `run: >` block, or a run line with more on it is not
 #     the Gate.
-#   - neither the job nor the step of that run line has an `if:` line. Any
-#     `if:` counts, `if: always()` too: the script does not read what a
-#     condition means, and an `if:` can skip the run on the PR.
+#   - neither the job nor the step of that run line has an `if:` line, and
+#     no job the run's job waits on through `needs:`, at any depth, has one.
+#     Any `if:` counts, `if: always()` too: the script does not read what a
+#     condition means, and an `if:` can skip the run on the PR. A `needs:`
+#     name with no job in the file counts as one that can skip.
 # When it is not sure, the Gate runs here: no workflows folder, a file it
 # cannot read, another CI, a wrapped script.
 #
@@ -41,6 +43,7 @@ prog='
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
+function need(j, name) { nd[j, ++nn[j]] = trim(name) }
 BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0
   insteps = 0; sind = -1; step = 0; cur = 0; scol = -1 }
 {
@@ -83,12 +86,25 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
   if (ind == 0) { injobs = (line ~ /^jobs:/); jind = -1; cur = 0; next }
   if (injobs) {
     if (jind < 0) jind = ind
-    if (ind <= jind) { job++; jk = -1; insteps = 0; cur = 0 }
+    if (ind <= jind) {
+      job++; jk = -1; insteps = 0; inneeds = 0; cur = 0
+      jn = trim(t); sub(/:.*$/, "", jn); idx[jn] = job
+    }
     else {
       if (jk < 0) jk = ind
       if (ind == jk && !dash && !bare) {
-        cur = 0; insteps = (t ~ /^steps:/); sind = -1
+        cur = 0; insteps = (t ~ /^steps:/); sind = -1; inneeds = 0
         if (t ~ /^if:([ \t]|$)/) jif[job] = 1
+        if (t ~ /^needs:([ \t]|$)/) {
+          v = trim(nocomment(substr(t, 7)))
+          if (v == "") inneeds = 1
+          else if (v ~ /^\[.*\]$/) {
+            m = split(substr(v, 2, length(v) - 2), items, ",")
+            for (i = 1; i <= m; i++) need(job, items[i])
+          } else need(job, v)
+        }
+      } else if (inneeds) {
+        if (dash) need(job, nocomment(t))
       } else if (insteps) {
         # The keys of a step sit at the column right after its dash; a
         # deeper `if:`, as under `with:`, belongs to something else. A bare
@@ -107,7 +123,20 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
 }
 END {
   print (pr && !filt ? "PR" : "NOPR")
-  for (i = 1; i <= n; i++) if (!jif[rj[i]] && !sif[rs[i]]) print runs[i]
+  # A job can name a job further down the file, so the chain is closed here,
+  # pass after pass, until no job changes.
+  for (j = 1; j <= job; j++) skip[j] = jif[j]
+  do {
+    changed = 0
+    for (j = 1; j <= job; j++) {
+      if (skip[j]) continue
+      for (i = 1; i <= nn[j]; i++) {
+        m = nd[j, i]
+        if (!(m in idx) || skip[idx[m]]) { skip[j] = 1; changed = 1; break }
+      }
+    }
+  } while (changed)
+  for (i = 1; i <= n; i++) if (!skip[rj[i]] && !sif[rs[i]]) print runs[i]
 }'
 
 tmp="$(mktemp -d)"

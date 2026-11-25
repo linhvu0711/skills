@@ -192,6 +192,82 @@ t_cc_pr_inline_filter() {
   done
 }
 
+t_cc_needs_if_repro() {
+  # Given: the issue's repro
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  a:' '    if: false' '    steps:' '      - run: pnpm lint' \
+    '  t:' '    needs: a' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq exit 0 "$code"
+  eq stdout "here · pnpm test" "$out"
+}
+
+t_cc_needs_chain() {
+  # Given
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  a:' '    if: false' '    steps:' '      - run: pnpm lint' \
+    '  b:' '    needs: a' '    steps:' '      - run: pnpm build' \
+    '  t:' '    needs: b' '    steps:' '      - run: pnpm test'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
+# needs_yml <if line of job a, or empty> <needs line of job b, or empty>
+# <needs line>...: ci.yml with jobs a (step pnpm lint), b (step pnpm
+# build), and t (step pnpm test), t's needs given as one or more lines.
+needs_yml() {
+  local aif="$1" bneeds="$2"; shift 2
+  local a=('  a:') b=('  b:')
+  [ -z "$aif" ] || a+=("$aif")
+  [ -z "$bneeds" ] || b+=("$bneeds")
+  wf ci.yml 'on: pull_request' 'jobs:' "${a[@]}" '    steps:' '      - run: pnpm lint' \
+    "${b[@]}" '    steps:' '      - run: pnpm build' \
+    '  t:' "$@" '    steps:' '      - run: pnpm test'
+}
+
+# The three forms of t's needs, one a line, the block list's lines split on |.
+needs_forms=('    needs: a' '    needs: [a, b]' '    needs:|      - a|      - b')
+
+t_cc_needs_forms() {
+  local f lines
+  for f in "${needs_forms[@]}"; do
+    # Given
+    T=""; IFS='|' read -r -a lines <<<"$f"
+    needs_yml '    if: false' '' "${lines[@]}"
+    # When
+    covers 'pnpm test' 'pnpm build'
+    # Then
+    eq "stdout ($f)" "here · pnpm test
+ci ci.yml · pnpm build" "$out"
+  done
+}
+
+t_cc_needs_no_if() {
+  local f lines
+  for f in "${needs_forms[@]}"; do
+    # Given
+    T=""; IFS='|' read -r -a lines <<<"$f"
+    needs_yml '' '    needs: a' "${lines[@]}"
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($f)" "ci ci.yml · pnpm test" "$out"
+  done
+}
+
+t_cc_needs_unknown_job() {
+  # Given
+  T=""; needs_yml '' '    needs: a' '    needs: c'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
 t_cc_usage() {
   # Given
   T=""; ci_yml 'on: pull_request' '      - run: pnpm test'
@@ -218,5 +294,10 @@ cases=(
   "a step if under a bare dash sends only that step here|t_cc_step_if_bare_dash"
   "a filter under pull_request sends every Gate here|t_cc_pr_filter"
   "the issue's repro: a filter on the pull_request line sends the Gate here|t_cc_pr_inline_filter"
+  "the issue's repro: needs on a job with an if sends the Gate here|t_cc_needs_if_repro"
+  "needs through a chain to a job with an if sends the Gate here|t_cc_needs_chain"
+  "each form of needs is read|t_cc_needs_forms"
+  "needs with no if in the chain leaves the Gate to CI|t_cc_needs_no_if"
+  "needs on a job not in the file sends the Gate here|t_cc_needs_unknown_job"
   "no command after -- is a usage stop|t_cc_usage"
 )
