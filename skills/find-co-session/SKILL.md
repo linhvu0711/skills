@@ -1,6 +1,6 @@
 ---
 name: find-co-session
-description: "Find a past Codex CLI session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Fires on '/find-co-session ...' in Claude Code, '$find-co-session ...' in Codex, 'find the codex session where we fixed CI', 'which codex chat did I do X in'. Not for loading a session whose ID is already known (that is load-co-session), and not for Claude Code sessions (that is find-cc-session)."
+description: "Find a past Codex CLI session in the current project by what it was about and return its session ID. Works from Claude Code and from Codex. Not for loading a session whose ID is already known (that is load-co-session), and not for Claude Code sessions (that is find-cc-session). Use when the user types '/find-co-session ...' in Claude Code or '$find-co-session ...' in Codex, or says 'find the codex session where we fixed CI' or 'which codex chat did I do X in'."
 ---
 
 # find-co-session

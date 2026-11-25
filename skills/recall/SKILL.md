@@ -1,6 +1,6 @@
 ---
 name: recall
-description: "Rebuild where you left off on a topic: the recent Claude Code, Codex, and Antigravity sessions on it, one brief of what is done, open, and decided, the live state of each PR, and one next step."
+description: "Rebuild where you left off on a topic: the recent Claude Code, Codex, and Antigravity sessions on it, one brief of what is done, open, and decided, the live state of each PR, and one next step. Use when the user asks where they left off on a topic."
 disable-model-invocation: true
 ---
 

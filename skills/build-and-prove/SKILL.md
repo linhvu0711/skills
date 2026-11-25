@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the app and the Gates the PR's CI does not run, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. Also runs a follow-up on a branch it built, a change or review fixes, and redoes only what the change touches. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the app and the Gates the PR's CI does not run, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. Also runs a follow-up on a branch it built, a change or review fixes, and redoes only what the change touches. /ship runs it by default. Use when a /plan-up plan from this chat is ready to build on this machine, or a branch it built needs a follow-up."
 disable-model-invocation: true
 ---
 

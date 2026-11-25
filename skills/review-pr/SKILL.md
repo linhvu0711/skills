@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Review a pull request on the three fixed axes (logic, scope, standards), one subagent per axis, with the repo's Standard and the ADRs about the changed files folded in. Report in chat and to a file. Never posts to GitHub."
+description: "Review a pull request on the three fixed axes (logic, scope, standards), one subagent per axis, with the repo's Standard and the ADRs about the changed files folded in. Report in chat and to a file. Never posts to GitHub. Use when the user types /review-pr with a PR, or asks for a review of one."
 disable-model-invocation: true
 ---
 

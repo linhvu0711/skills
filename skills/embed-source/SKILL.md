@@ -1,6 +1,6 @@
 ---
 name: embed-source
-description: "Embed a dependency's full source next to the repo (fetched on install, never tracked by git) so coding agents can read real implementations and tests, then wire excludes, a CLAUDE.md block, a README section, and idiom files. Use for /embed-source <lib>, /embed-source update <lib>, /embed-source check, 'vendor the effect source', 'add <lib> for the agent to read', or 'is our embedded effect source stale'. Effect has a preset; any other library works with a repo URL."
+description: "Embed a dependency's full source next to the repo (fetched on install, never tracked by git) so coding agents can read real implementations and tests, then wire excludes, a CLAUDE.md block, a README section, and idiom files. Effect has a preset; any other library works with a repo URL. Use when the user types /embed-source <lib>, /embed-source update <lib>, or /embed-source check, or says 'vendor the effect source', 'add <lib> for the agent to read', or 'is our embedded effect source stale'."
 argument-hint: "<lib> | update <lib> | check"
 ---
 

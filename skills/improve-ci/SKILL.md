@@ -1,6 +1,6 @@
 ---
 name: improve-ci
-description: "Audit a repo's GitHub Actions CI from its past runs, merged PRs, and workflow files: what makes it slow, what lets it lie, what leaves it unsafe. Show the finds in a visual report with real times, then grill every one and file the fixes as issues."
+description: "Audit a repo's GitHub Actions CI from its past runs, merged PRs, and workflow files: what makes it slow, what lets it lie, what leaves it unsafe. Show the finds in a visual report with real times, then grill every one and file the fixes as issues. Use when the user asks why CI is slow, flaky, or unsafe, or to audit it."
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: ready-pr
-description: "Take an open PR to ready-to-merge: watch every check and thread on the head commit, CI and review bots (Devin Review, CodeRabbit, Cursor Bugbot, …) alike; look into each red check and judge each finding as it comes; once all are in, judge them together with /validate-pr-review, ask every question at once, fix, reply, resolve, rebase on a conflict, push once, and repeat until the status is green with no open thread. Never merges."
+description: "Take an open PR to ready-to-merge: watch every check and thread on the head commit, CI and review bots (Devin Review, CodeRabbit, Cursor Bugbot, …) alike; look into each red check and judge each finding as it comes; once all are in, judge them together with /validate-pr-review, ask every question at once, fix, reply, resolve, rebase on a conflict, push once, and repeat until the status is green with no open thread. Never merges. Use when the user types /ready-pr with a PR, or asks to get a PR ready to merge."
 disable-model-invocation: true
 ---
 

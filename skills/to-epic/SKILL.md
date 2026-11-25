@@ -1,6 +1,6 @@
 ---
 name: to-epic
-description: "Cut a large piece of work into a phased GitHub epic: one parent, native sub-issues, native blocked-by edges. Breakdown is approved in chat before anything is created."
+description: "Cut a large piece of work into a phased GitHub epic: one parent, native sub-issues, native blocked-by edges. Breakdown is approved in chat before anything is created. Use when the work is too big for one issue and its pieces are known."
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.

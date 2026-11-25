@@ -1,6 +1,6 @@
 ---
 name: validate-pr-review
-description: "Judge each finding in a PR review (GitHub comments, a bot review, or pasted text): is it true, did this PR cause it, is it worth fixing. One verdict and one reply line per finding. Stops at the verdict; fixes, issues, and replies happen only after the user says go."
+description: "Judge each finding in a PR review (GitHub comments, a bot review, or pasted text): is it true, did this PR cause it, is it worth fixing. One verdict and one reply line per finding. Stops at the verdict; fixes, issues, and replies happen only after the user says go. Use when the user asks which review findings on a PR are worth fixing."
 disable-model-invocation: true
 ---
 

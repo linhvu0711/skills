@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Build the prompt from the plan file /plan-up wrote in this chat (one ticket, or a run stacked as PRs), start a Devin session or a Cursor cloud agent by API, and watch it. Devin unless named, or the executor that started the issue. Also sends a follow-up note to the running session, including a new layer on its stack."
+description: "Build the prompt from the plan file /plan-up wrote in this chat (one ticket, or a run stacked as PRs), start a Devin session or a Cursor cloud agent by API, and watch it. Devin unless named, or the executor that started the issue. Also sends a follow-up note to the running session, including a new layer on its stack. Use when a /plan-up plan from this chat should be built in the cloud, or a running cloud session needs a follow-up."
 disable-model-invocation: true
 ---
 

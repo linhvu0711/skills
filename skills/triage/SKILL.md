@@ -1,6 +1,6 @@
 ---
 name: triage
-description: "Find the root cause of a bug, or the hot spot behind a slow thing, then file the fix ticket. No code fix. When a real decision is open it runs the grill skill first. A bug issue it starts from becomes the ticket. Use for 'triage', 'diagnose', 'debug this', 'why is X broken', 'why is X slow'."
+description: "Find the root cause of a bug, or the hot spot behind a slow thing, then file the fix ticket. No code fix. When a real decision is open it runs the grill skill first. A bug issue it starts from becomes the ticket. Use when the user says 'triage', 'diagnose', 'debug this', 'why is X broken', or 'why is X slow'."
 disable-model-invocation: true
 ---
 

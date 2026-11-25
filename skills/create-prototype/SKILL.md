@@ -1,6 +1,6 @@
 ---
 name: create-prototype
-description: "Build a clickable, final-fidelity HTML prototype of an agreed UI change inside the app's real shell, with a floating state panel, and open it in the browser for review."
+description: "Build a clickable, final-fidelity HTML prototype of an agreed UI change inside the app's real shell, with a floating state panel, and open it in the browser for review. Use when a UI change is agreed and the user wants to click through it before it is built."
 disable-model-invocation: true
 argument-hint: "[feature or page]"
 ---

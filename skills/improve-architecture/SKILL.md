@@ -1,6 +1,6 @@
 ---
 name: improve-architecture
-description: "Find design problems in a repo: modules too thin, parts that leak their inside, code hard to test, and parts heavier than their job. Show each as a card with a before and after diagram, talk through your choices, and after your go file the redesigns as tickets, with no code changed and nothing committed."
+description: "Find design problems in a repo: modules too thin, parts that leak their inside, code hard to test, and parts heavier than their job. Show each as a card with a before and after diagram, talk through your choices, and after your go file the redesigns as tickets, with no code changed and nothing committed. Use when the user asks where a repo's design is weak or what to redesign."
 disable-model-invocation: true
 ---
 

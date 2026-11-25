@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Answer why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs and CONTEXT.md, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source."
+description: "Answer why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs and CONTEXT.md, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source. Use when the user asks why code is the way it is."
 disable-model-invocation: true
 ---
 

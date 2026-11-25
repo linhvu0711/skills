@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Take one issue, a run or set of tickets, a whole epic, a new stack layer, or work this chat agreed on, from plan to PRs in one run. The ship mode sets how far: review waits for your go on the plan page, ready stops at ready-to-merge PRs, merge merges them. Add --review, --ready, or --merge to set it; with none, the agent picks. Add devin or cursor to build in the cloud."
+description: "Take one issue, a run or set of tickets, a whole epic, a new stack layer, or work this chat agreed on, from plan to PRs in one run. The ship mode sets how far: review waits for your go on the plan page, ready stops at ready-to-merge PRs, merge merges them. Add --review, --ready, or --merge to set it; with none, the agent picks. Add devin or cursor to build in the cloud. Use when the user types /ship with an issue, tickets, an epic, or none for the work agreed in chat."
 disable-model-invocation: true
 ---
 

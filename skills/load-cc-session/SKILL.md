@@ -1,6 +1,6 @@
 ---
 name: load-cc-session
-description: "Load another Claude Code chat session into the current conversation by its session ID, so you can reference, continue, or build on that earlier session's work. Use this skill when the user invokes '/load-cc-session ID' in Claude Code or '$load-cc-session ID' in Codex, or asks to load / pull in / import / bring in / resume / continue a Claude Code session or chat by its UUID — e.g. 'load session 6090081d-c874-49af-bde4-b70a29e56d31', 'pull that other chat into here', 'continue from session ID', 'what happened in session ID'. The argument is a Claude Code session UUID (full or a unique prefix). Do NOT trigger for loading files, datasets, web pages, env vars, or non-session 'load' requests."
+description: "Load another Claude Code chat session into the current conversation by its session ID, so you can reference, continue, or build on that earlier session's work. The argument is a Claude Code session UUID (full or a unique prefix). Do NOT trigger for loading files, datasets, web pages, env vars, or non-session 'load' requests. Use when the user invokes '/load-cc-session ID' in Claude Code or '$load-cc-session ID' in Codex, or asks to load / pull in / import / bring in / resume / continue a Claude Code session or chat by its UUID — e.g. 'load session 6090081d-c874-49af-bde4-b70a29e56d31', 'pull that other chat into here', 'continue from session ID', 'what happened in session ID'."
 ---
 
 # load-cc-session: load a Claude Code session into this chat

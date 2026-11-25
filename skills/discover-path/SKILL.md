@@ -1,6 +1,6 @@
 ---
 name: discover-path
-description: "Plan work too big for one /grill session as a map of open questions on GitHub: one parent issue, child decision tickets, resolved one per run until the way to the goal is clear, then handed to /to-epic."
+description: "Plan work too big for one /grill session as a map of open questions on GitHub: one parent issue, child decision tickets, resolved one per run until the way to the goal is clear, then handed to /to-epic. Use when the goal is clear but the way there needs more decisions than one /grill can settle."
 disable-model-invocation: true
 argument-hint: "<idea, seed url, or map url>"
 ---

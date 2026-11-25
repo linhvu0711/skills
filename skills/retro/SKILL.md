@@ -1,6 +1,6 @@
 ---
 name: retro
-description: "Look back over coding sessions from every harness, and PRs no session touched, find where the agent struggled and what worked, and turn the patterns into shared fixes to the repo's agent setup. One session by default; a time range, session IDs, a topic, or an orchestrate run reads many."
+description: "Look back over coding sessions from every harness, and PRs no session touched, find where the agent struggled and what worked, and turn the patterns into shared fixes to the repo's agent setup. One session by default; a time range, session IDs, a topic, or an orchestrate run reads many. Use when the user asks for a retro, or where agents struggled in past sessions."
 disable-model-invocation: true
 ---
 

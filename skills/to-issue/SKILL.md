@@ -1,6 +1,6 @@
 ---
 name: to-issue
-description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview. A raw idea, or a bug seen with no agreed fix, goes to capture instead."
+description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview. A raw idea, or a bug seen with no agreed fix, goes to capture instead. Use when the user asks to file the work this chat agreed on as an issue."
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.

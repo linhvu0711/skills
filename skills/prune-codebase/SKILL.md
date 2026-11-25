@@ -1,6 +1,6 @@
 ---
 name: prune-codebase
-description: "Find what teaches agents bad habits in a repo: bad comments, unused code, copies, and hacks. Show them on a report page, talk through your choices, and after your go edit comments, file tickets, and add rules, with no code changed and nothing committed."
+description: "Find what teaches agents bad habits in a repo: bad comments, unused code, copies, and hacks. Show them on a report page, talk through your choices, and after your go edit comments, file tickets, and add rules, with no code changed and nothing committed. Use when the user asks what in a repo teaches agents bad habits."
 disable-model-invocation: true
 ---
 

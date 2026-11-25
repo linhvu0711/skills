@@ -1,6 +1,6 @@
 ---
 name: semantic-code-search
-description: "Find code by meaning with semble instead of grep. Use whenever you need to locate code by what it does ('where is login expiry handled?', 'how does session renewal work?'), find a symbol by name, or find code related to a hit you already have. Any brief that says 'find', 'search', 'explore', or 'grep' for a concept is this skill."
+description: "Find code by meaning with semble instead of grep. Any brief that says 'find', 'search', 'explore', or 'grep' for a concept is this skill. Use when you need to locate code by what it does ('where is login expiry handled?', 'how does session renewal work?'), find a symbol by name, or find code related to a hit you already have."
 ---
 
 Search by meaning with `semble`: "where is X handled", "how does Y work", a symbol by name. It returns ranked snippets for far fewer tokens than grep.

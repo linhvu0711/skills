@@ -1,6 +1,6 @@
 ---
 name: grill
-description: A relentless interview to sharpen a plan or design, which also settles its docs (ADRs and glossary) to ship with the work. Fires only when the user types /grill or says "grill me on this" in so many words, or when another skill hands over a seed. A plan or design discussion with no such words stays a normal conversation.
+description: Run a relentless interview to sharpen a plan or design, which also settles its docs (ADRs and glossary) to ship with the work. Use when the user types /grill or says "grill me on this" in so many words, or when another skill hands over a seed, and not for a plan or design discussion with no such words.
 ---
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.

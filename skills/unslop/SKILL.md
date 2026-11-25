@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: "Remove AI writing patterns from prose. Use for docs, READMEs, blog posts, any non-code text that should sound human. Triggers: 'unslop', 'humanize', 'make this sound human', 'clean up this writing', 'edit for voice', 'de-AI this text'."
+description: "Remove AI writing patterns from prose. Use when docs, READMEs, blog posts, or any non-code text should sound human, or the user says 'unslop', 'humanize', 'make this sound human', 'clean up this writing', 'edit for voice', or 'de-AI this text'."
 ---
 
 # Unslop
