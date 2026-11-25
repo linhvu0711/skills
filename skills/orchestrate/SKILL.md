@@ -32,10 +32,10 @@ asked for it.
 
 `/orchestrate <set>`, in a T3 Code thread.
 
-1. **Set.** Turn the user's words into issue words, once: `#n` for an
-   issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/kickoff/target.md` § Resolving the target
-   from the session, steps 1 and 2. A list stays a list; an epic is its
-   number; a rule is a search, as `assigned to me` is
+1. **Set.** Turn the user's words into issue words, once: `n` for an
+   issue in this repo, `owner/repo#n` for one in another repo, per
+   `../../shared/kickoff/target.md` § Resolving the target from the
+   session, steps 1 and 2. A list stays a list; an epic is its number; a rule is a search, as `assigned to me` is
    `gh issue list --assignee @me --state open --json number`. Name the
    set in a few words: `#12 #14`, `epic #70 Order export`,
    `assigned to me`.
@@ -241,7 +241,8 @@ A live run takes these, said in this thread. Each runs one
 `orchestrate.sh` call, posts one line, and changes no other run state; `add`
 and the answers then run § Check. The turn ends per § Snooze. Below,
 `#n` stands for any issue word: `#n` in this repo, `repo#n`, or
-`owner/repo#n`, and `<n>` passes that word to `orchestrate.sh` as said.
+`owner/repo#n`, and `<n>` passes that word to `orchestrate.sh` in single
+quotes, as `'#12'`: a bare `#` starts a shell comment and drops the rest.
 
 - `check now`: § Check.
 - `check every <n> min`: `timer <owner/repo> --every <n>`. The watcher
