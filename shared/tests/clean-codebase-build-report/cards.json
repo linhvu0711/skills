@@ -83,7 +83,7 @@
       "card": {
         "badge": "Worth exploring",
         "tag": "in-process",
-        "before": "flowchart LR\n  K[Checkout] -. reads cache .-> P[Pricing]",
+        "before": "flowchart LR\n  K[Checkout] -.->|\"reads cache\"| P[Pricing]",
         "after": "flowchart LR\n  K[Checkout] --> P[Pricing]",
         "solution": "Checkout asks Pricing for a price and never sees the cache.",
         "wins": [

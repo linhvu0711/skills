@@ -9,6 +9,7 @@ when the rows file is bad.
 """
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -18,6 +19,18 @@ STATES = {"", "known", "came-back"}
 LABELS = {"Seen", "Inferred"}
 VIEWS = {"rows", "cards"}
 BADGES = {"Strong", "Worth exploring", "Speculative"}
+
+# The card form of skills/improve-architecture/references/cards.md: each line
+# form here was parsed by Mermaid 11, and a line outside it may not be.
+ID = r"[A-Za-z][A-Za-z0-9_]*"
+LABEL = r'(\[([A-Za-z0-9 _.,:/-]+|"[^"]+")\])'
+NODE = rf"{ID}{LABEL}?"
+ARROW = r'(-->|-\.->)(\|"[^"]+"\|)?'
+SAY = r"[A-Za-z0-9 _.,:/()'-]+"
+FLOWCHART = [rf"{NODE}", rf"{NODE}\s*{ARROW}\s*{NODE}", rf"subgraph {ID}{LABEL}?", r"end",
+             rf"classDef {ID} [A-Za-z0-9#:,.%-]+;?", rf"class {ID}(,{ID})* {ID}"]
+SEQUENCE = [rf"participant {ID}( as {SAY})?", rf"{ID}\s*(->>|-->>)\s*{ID}: {SAY}",
+            rf"Note (over|left of|right of) {ID}(,{ID})?: {SAY}", rf"(loop|alt|else|opt) {SAY}", r"end"]
 
 
 def problems(report):
@@ -69,6 +82,44 @@ def card_problems(rid, card):
     for side in ("before", "after"):
         if not card.get(side):
             yield f"row {rid}: card has no {side} diagram"
+            continue
+        for n, reason in diagram_problems(card[side]):
+            yield f"row {rid} {side} line {n}: {reason}"
+
+
+def diagram_problems(source):
+    lines = source.split("\n")
+    head = lines[0].strip()
+    if head not in ("flowchart LR", "flowchart TD", "sequenceDiagram"):
+        yield 1, "start with flowchart LR, flowchart TD, or sequenceDiagram"
+        return
+    sequence = head == "sequenceDiagram"
+    forms = SEQUENCE if sequence else FLOWCHART
+    openers = ("loop", "alt", "opt") if sequence else ("subgraph",)
+    blocks = []
+    for n, line in enumerate(lines[1:], 2):
+        line = line.strip()
+        if not line or line.startswith("%%"):
+            continue
+        if any(re.fullmatch(form, line) for form in forms):
+            word = line.split()[0]
+            if word in openers:
+                blocks.append((n, word))
+            elif word == "else" and (not blocks or blocks[-1][1] != "alt"):
+                yield n, "else outside an alt block"
+            elif word == "end" and not blocks:
+                yield n, "end with no open block"
+            elif word == "end":
+                blocks.pop()
+            continue
+        if re.search(r"-\.\s.+\s\.->", line) or re.search(r'-\.->\|[^"]', line):
+            yield n, 'write an arrow label as -.->|"text"|'
+        elif re.search(r"--\s.+\s-->", line) or re.search(r'-->\|[^"]', line):
+            yield n, 'write an arrow label as -->|"text"|'
+        else:
+            yield n, "not a card diagram line, see cards.md"
+    for n, word in blocks:
+        yield n, f"{word} with no end"
 
 
 def plural(n, one, many):

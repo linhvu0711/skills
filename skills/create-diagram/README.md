@@ -8,7 +8,7 @@ You want to see how something fits together: "diagram the checkout flow", "map h
 
 ## What you get
 
-One page that answers one question. You can pan, zoom, and search it, and clicking a box shows the `file:line` it came from. The reply names the question, how to read the picture, and what the code showed that you should know, for example:
+One page that answers one question. Before the page opens, a check reads its data and names each arrow or step that points at a box that is not there, each box or step with no label, and a diagram with more boxes than its type allows. You can pan, zoom, and search it, and clicking a box shows the `file:line` it came from. The reply names the question, how to read the picture, and what the code showed that you should know, for example:
 
 ```
 Type: sequence · Question: What happens when a shopper checks out? · Scope: shop-api · Mode: current
@@ -20,6 +20,7 @@ Ask about a planned change and the page gets a switch between the current code, 
 ## Needs
 
 - A browser, and `open` (macOS) or `xdg-open` (Linux).
+- `python3`, for the data check.
 - A way to serve a folder on `127.0.0.1`, such as `python3 -m http.server`.
 - Optional: a hidden browser the agent can drive, playwright-cli run by `npx @playwright/cli` or your harness's own, per `../../shared/harness.md`, so the agent can check the page itself. Ask to watch and it opens a window. Also the `impeccable` skill to match your design system.
 - On a machine with no browser, the `to-artifact` skill, which publishes the page instead.

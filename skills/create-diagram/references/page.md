@@ -1,6 +1,6 @@
 # Page data
 
-`assets/shell.html` draws everything from one `DATA` object. Replace the line `const DATA = {};` with the object. It takes one of two shapes: **graph** (default) and **sequence** (`type: "sequence"`).
+`assets/shell.html` draws everything from one `DATA` object. Replace the line `const DATA = {};` with the object, written as JSON. `type` names the diagram's type from the node budget table of `catalog.md`, as `flowchart`, `erd`, or `sequence`, lower case with `-` for a space. A `sequence` page takes the **sequence** shape; every other type takes the **graph** shape.
 
 ## Common fields
 
@@ -55,7 +55,7 @@ groups: [{ id, label, sub, kind, members, pad, change }]
 
 **Edge**
 
-- `label` is a verb or a message: `reads`, `POST /orders`, `emits`, `1..*`. Every edge gets one.
+- `label` is a verb or a message: `reads`, `POST /orders`, `emits`, `1..*`. An edge with no `label` draws a bare line; the type card says which edges go without one.
 - `kind`: `solid` (default), `dashed` (async, dependency, return), `dotted` (weak or optional).
 - `head`: `arrow` (default), `stick` (async), `open` (inheritance), `diamond` (aggregation), `fdiamond` (composition), `dot`, `none`. `tail` takes the same values and sits at `from`.
 - Two edges between the same pair fan out by themselves. A self edge loops on the right.
@@ -89,34 +89,38 @@ Any node, edge, group, participant, step, or frame takes `change: "add" | "remov
 
 ```js
 const DATA = {
-  title: "Order Checkout Path",
-  question: "Which services touch an order between cart and payment?",
-  scope: "shop-api · main · 4f2c1a9 · 2026-09-06",
-  guide: [
+  "type": "component",
+  "title": "Order Checkout Path",
+  "question": "Which services touch an order between cart and payment?",
+  "scope": "shop-api · main · 4f2c1a9 · 2026-09-06",
+  "guide": [
     "Start at the browser on the left; follow solid arrows to the right.",
     "Dashed arrows are events on the bus, not calls.",
     "Click a box to see the file that owns it."
   ],
-  findings: ["inventory-svc is called twice per order: once by cart, once by payment."],
-  legend: [{ mark: "solid", label: "HTTP call" }, { mark: "dashed", label: "event" }],
-  nodes: [
-    { id: "web", kind: "actor", label: "Shopper", x: 0, y: 1 },
-    { id: "cart", kind: "box", tag: "service", label: "cart-svc", sub: "src/cart", path: "src/cart/server.ts:12", x: 1, y: 1 },
-    { id: "inv", kind: "box", tag: "service", label: "inventory-svc", path: "src/inventory/server.ts:20", x: 2, y: 0 },
-    { id: "pay", kind: "box", tag: "service", label: "payment-svc", path: "src/payment/server.ts:9", x: 2, y: 2 },
-    { id: "bus", kind: "queue", label: "orders topic", path: "infra/kafka.tf:44", x: 3, y: 1 },
-    { id: "db", kind: "store", label: "orders db", sub: "postgres", x: 3, y: 2 }
+  "findings": ["inventory-svc is called twice per order: once by cart, once by payment."],
+  "legend": [
+    {"mark": "solid", "label": "HTTP call"},
+    {"mark": "dashed", "label": "event"}
   ],
-  edges: [
-    { from: "web", to: "cart", label: "POST /checkout", path: "src/cart/routes.ts:31" },
-    { from: "cart", to: "inv", label: "reserve", path: "src/cart/reserve.ts:8" },
-    { from: "cart", to: "pay", label: "charge" },
-    { from: "pay", to: "inv", label: "confirm" },
-    { from: "pay", to: "db", label: "writes" },
-    { from: "pay", to: "bus", label: "order.paid", kind: "dashed", head: "stick" }
+  "nodes": [
+    {"id": "web", "kind": "actor", "label": "Shopper", "x": 0, "y": 1},
+    {"id": "cart", "kind": "box", "tag": "service", "label": "cart-svc", "sub": "src/cart", "path": "src/cart/server.ts:12", "x": 1, "y": 1},
+    {"id": "inv", "kind": "box", "tag": "service", "label": "inventory-svc", "path": "src/inventory/server.ts:20", "x": 2, "y": 0},
+    {"id": "pay", "kind": "box", "tag": "service", "label": "payment-svc", "path": "src/payment/server.ts:9", "x": 2, "y": 2},
+    {"id": "bus", "kind": "queue", "label": "orders topic", "path": "infra/kafka.tf:44", "x": 3, "y": 1},
+    {"id": "db", "kind": "store", "label": "orders db", "sub": "postgres", "x": 3, "y": 2}
   ],
-  groups: [
-    { id: "core", kind: "boundary", label: "shop-api", sub: "k8s ns: shop", members: ["cart", "inv", "pay"] }
+  "edges": [
+    {"from": "web", "to": "cart", "label": "POST /checkout", "path": "src/cart/routes.ts:31"},
+    {"from": "cart", "to": "inv", "label": "reserve", "path": "src/cart/reserve.ts:8"},
+    {"from": "cart", "to": "pay", "label": "charge"},
+    {"from": "pay", "to": "inv", "label": "confirm"},
+    {"from": "pay", "to": "db", "label": "writes"},
+    {"from": "pay", "to": "bus", "label": "order.paid", "kind": "dashed", "head": "stick"}
+  ],
+  "groups": [
+    {"id": "core", "kind": "boundary", "label": "shop-api", "sub": "k8s ns: shop", "members": ["cart", "inv", "pay"]}
   ]
 };
 ```

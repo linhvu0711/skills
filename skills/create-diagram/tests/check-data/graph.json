@@ -1,0 +1,46 @@
+{
+  "type": "flowchart",
+  "title": "Order flow",
+  "nodes": [
+    {
+      "id": "web",
+      "label": "Web app",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "api",
+      "label": "Order API",
+      "x": 1,
+      "y": 0
+    },
+    {
+      "id": "db",
+      "label": "Orders DB",
+      "x": 2,
+      "y": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "web",
+      "to": "api",
+      "label": "POST /orders"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "label": "insert row"
+    }
+  ],
+  "groups": [
+    {
+      "id": "svc",
+      "label": "Backend",
+      "members": [
+        "api",
+        "db"
+      ]
+    }
+  ]
+}
