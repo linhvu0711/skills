@@ -12,7 +12,7 @@
 #   box.sh open <proof-dir> -- <command>...
 #   box.sh close <proof-dir> [--out <file>]
 #   box.sh fit <proof-dir>
-#   box.sh gates <proof-dir> [--local <worktree> | --pr-open <worktree>]
+#   box.sh gates <proof-dir> [--local <worktree> | --ci <worktree>]
 #                [--on-local <command>]...
 #                [--not-run <command> <why>]... -- <command>...
 #   box.sh down <proof-dir>
@@ -111,10 +111,10 @@
 # there. Its lines end `(local machine)` in place of `(sandbox)`; the rest is
 # the same, so checks.txt keeps one writer and one line shape.
 #
-# gates --pr-open <worktree> says the PR is open, so its CI runs: each Gate
-# after -- that ci-covers.sh finds in <worktree>'s workflows gets the same
-# `not run: CI runs it` line, and the rest run as above; --on-local Gates still
-# run on the local machine. It needs proofbox and loads the Sandbox only when a
+# gates --ci <worktree> leaves to the PR's CI each Gate after -- that
+# ci-covers.sh finds in <worktree>'s workflows, with the same `not run: CI runs
+# it` line, and runs the rest as above; --on-local Gates still run on the local
+# machine. It needs proofbox and loads the Sandbox only when a
 # Gate after -- is left for it; with no Sandbox up, that is a stop that names
 # `box.sh up`. The short SHA comes from <worktree>.
 #
@@ -135,7 +135,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 walk_log=/tmp/walk-browser.log
 cover="$here/../../../shared/ci-covers.sh"
 
-usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree> | --pr-open <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
+usage="usage: box.sh auth <linux|macos> | up <proof-dir> <worktree> <linux|macos> <owner/repo> | run <proof-dir> [--from <folder>] -- <command>... | start <proof-dir> [--from <folder>] [--url <url>] -- <Run line> | stop <proof-dir> [--url <url>] | open <proof-dir> -- <command>... | close <proof-dir> [--out <file>] | fit <proof-dir> | gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>... | down <proof-dir>"
 verb="${1:-}"; [ $# -gt 0 ] && shift
 # gates checks for proofbox itself, when it loads the Sandbox.
 [ "$verb" = gates ] || command -v proofbox >/dev/null || die "proofbox is not installed"
@@ -416,7 +416,7 @@ case "$verb" in
     # from ci_wt.
     case "${1:-}" in
       --local) [ -d "${2:-}" ] || die "--local needs a worktree"; local_wt="$2"; ci_wt="$2"; shift 2 ;;
-      --pr-open) [ -d "${2:-}" ] || die "--pr-open needs a worktree"; ci_wt="$2"; shift 2 ;;
+      --ci) [ -d "${2:-}" ] || die "--ci needs a worktree"; ci_wt="$2"; shift 2 ;;
     esac
     while [ $# -gt 0 ] && [ "$1" != -- ]; do
       case "$1" in
@@ -444,7 +444,7 @@ case "$verb" in
         case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
       done <<<"$cover_out"
     fi
-    # With --pr-open, a fix round where CI runs every Gate needs no Sandbox.
+    # With --ci, a call where CI runs every Gate needs no Sandbox.
     sandbox_gates=0; i=0
     for cmd in "$@"; do [ -n "${covered[$i]:-}" ] || sandbox_gates=1; i=$((i + 1)); done
     if [ -n "$local_wt" ]; then mode=local; work="$local_wt"

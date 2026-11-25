@@ -64,13 +64,13 @@ prints its usage with no arguments.
   recording, that the browser window ends above the taskbar: `FIT`,
   `TALL` with exit 3, or `FIT not checked on macos`. Like `open`, it
   neither uploads nor makes a gone Sandbox again.
-- `box.sh gates <proof-dir> [--local <worktree> | --pr-open
-  <worktree>] [--on-local '<command>']… [--not-run '<command>' '<why>']…
-  -- '<command>'…` runs each command as `run` does, keeps each one's own
+- `box.sh gates <proof-dir> [--local <worktree> | --ci <worktree>]
+  [--on-local '<command>']… [--not-run '<command>' '<why>']… --
+  '<command>'…` runs each command as `run` does, keeps each one's own
   exit code and full output in a temp file, and writes every line of
-  `<proof-dir>/checks.txt` (step 8). `--pr-open` leaves to CI each Gate
-  after `--` that the open PR's CI runs; an `--on-local` Gate still runs
-  on the local machine (§ Follow-up).
+  `<proof-dir>/checks.txt` (step 8). `--ci` leaves to CI each Gate after
+  `--` that the PR's CI runs, read from that worktree's workflows; an
+  `--on-local` Gate still runs on the local machine.
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many
   times it was made again.
 

@@ -60,6 +60,8 @@ Walks now read the console and the requests. Each video saves the page's errors 
 
 A fix round after the PR opens now passes `--pr-open` to `box.sh gates`. The script reads the PR's workflows through `ci-covers.sh` and writes `not run: CI runs it` for each Gate CI runs. Before, the agent ran `ci-covers.sh` itself and typed each of those Gates as a `--not-run` option. When CI runs every Gate, the fix round still starts no Sandbox. A Gate sent to your machine with `--on-local` still runs there, since `ci-covers.sh` does not follow `needs:` and cannot tell whether CI skips that job on this PR. Every proofbox call in `box.sh` now goes through one helper, with one test for a gone Sandbox: exit code 125 and the line `Sandbox <id> is gone`.
 
+`box.sh gates --pr-open` is now `--ci`, since a first build passes it too, before any PR is open.
+
 ## Needs
 
 - For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
