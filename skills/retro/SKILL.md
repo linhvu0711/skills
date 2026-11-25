@@ -30,7 +30,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    It prints `harnesses`, `sessions`, and `unread`. Keep the `sessions` rows whose `harness` the sources keep.
 
-   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry with an `error` is a harness not read: its error goes to the report.
+   A topic score counts words, not meaning, so read each title and drop the ones that do not match the topic, as `../find-cc-session/SKILL.md` step 2 judges. Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry the sources keep that has an `error` is a harness not read: its error goes to the report.
 
    Done when every row is kept or dropped with a reason, and every `unread` line and harness `error` is held for the report.
 
