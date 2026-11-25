@@ -5,12 +5,27 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# gate <harness> <payload>: run the gate for that harness on the payload, in
-# a fresh temp folder T.
+# gate <harness> <payload>: run the gate for that harness on the payload,
+# outside T3, in a fresh temp folder T that is also its TMPDIR. The test run
+# itself may sit in a T3 chat, so T3CODE_THREAD_ID is unset.
 gate() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   printf '%s' "$2" > "$T/payload.json"
-  run bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
+  run env -u T3CODE_THREAD_ID TMPDIR="$T" bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
+}
+
+# t3_gate <harness> <payload>: gate, in T3. Its TMPDIR is NOTES when a case
+# sets it, so two calls share the gate's notes, else the fresh T.
+t3_gate() {
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  printf '%s' "$2" > "$T/payload.json"
+  run env T3CODE_THREAD_ID=t1 TMPDIR="${NOTES:-$T}" bash "$here/../gate/subagent-gate.sh" "$1" < "$T/payload.json"
+}
+
+# claude_main_start <agent_type>: a Claude Code payload in which the main
+# agent starts that agent.
+claude_main_start() {
+  printf '{"session_id":"s1","hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"subagent_type":"%s","prompt":"x"}}' "$1"
 }
 
 # claude_start <agent_type>: a Claude Code payload in which that subagent
@@ -36,9 +51,10 @@ codex_call() {
 }
 codex_spawn='{"agent_type":"explorer","message":"x"}'
 
-# agy_gate <TypeName> <toolCall>: run the antigravity gate, in a fresh temp
-# folder T, on a call of helper chat c2. A TypeName writes the message that
-# started c2 as that agent; an empty one writes no messages folder.
+# agy_gate <TypeName> <toolCall> [t3]: run the antigravity gate, in a fresh
+# temp folder T that is also its TMPDIR, on a call of helper chat c2. A
+# TypeName writes the message that started c2 as that agent; an empty one
+# writes no messages folder. `t3` runs it in T3.
 agy_gate() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   local chat="$T/brain/c2/.system_generated"
@@ -48,7 +64,9 @@ agy_gate() {
     printf '{"id":"m1","recipient":"c2","sender":"c1","content":"x","sourceMetadata":{"tool":{"conversationId":"c1","toolCall":{"id":"k1","name":"invoke_subagent","argumentsJson":"{\\"Prompt\\":\\"x\\",\\"Role\\":\\"check\\",\\"TypeName\\":\\"%s\\"}"}}}}' "$1" > "$chat/messages/m1.json"
   fi
   printf '{"conversationId":"c2","transcriptPath":"%s/logs/transcript_full.jsonl","cwd":"/tmp","hookEventName":"PreToolUse","modelName":"m","stepIdx":3,"toolCall":%s}' "$chat" "$2" > "$T/payload.json"
-  run bash "$here/../gate/subagent-gate.sh" antigravity < "$T/payload.json"
+  local t3=(-u T3CODE_THREAD_ID)
+  [ "${3:-}" != t3 ] || t3=(T3CODE_THREAD_ID=t1)
+  run env "${t3[@]}" TMPDIR="$T" bash "$here/../gate/subagent-gate.sh" antigravity < "$T/payload.json"
 }
 agy_spawn='{"id":"k2","name":"invoke_subagent","args":{"TypeName":"explorer","Role":"facts","Prompt":"x"}}'
 
@@ -58,6 +76,111 @@ edit_rule() {
 
 start_rule() {
   printf 'Blocked by the subagent gate: %s may not start %s. Only an agent whose file lists the Agent tool may start a subagent, and only the explorer or the runner, so nesting stops at two levels.' "$1" "$2"
+}
+
+home_rule() {
+  printf 'Blocked by the subagent gate: in T3, start %s on its first home, %s, through T3'"'"'s delegate_task, per shared/facts.md § Skill agents. When no home can run, start it by name again: it then runs on its backup.' "$1" "$2"
+}
+
+t_gate_claude_refuses_main_first_t3_walker() {
+  # Given: T3 is on, and no note exists
+  # When
+  t3_gate claude "$(claude_main_start walker)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-high high')"'"}}' "$out"
+}
+
+t_gate_t3_second_walker_start_goes_through() {
+  # Given: T3 is on; the walker's first start in chat s1 was refused
+  NOTES="$(mktemp -d)"; t3_gate claude "$(claude_main_start walker)"
+  # When
+  t3_gate claude "$(claude_main_start walker)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+  [ -d "$NOTES/subagent-gate-$(id -u)/s1/walker" ] || { echo "no note at $NOTES/subagent-gate-$(id -u)/s1/walker" >&2; exit 1; }
+}
+
+t_gate_t3_refuses_scope_reviewer_after_walker() {
+  # Given: T3 is on; the walker's first start in chat s1 was refused
+  NOTES="$(mktemp -d)"; t3_gate claude "$(claude_main_start walker)"
+  # When
+  t3_gate claude "$(claude_main_start scope-reviewer)"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule scope-reviewer 'devin swe-2-high high')"'"' "$out"
+}
+
+t_gate_codex_refuses_main_first_t3_explorer() {
+  # Given: T3 is on; the Codex main agent, with no agent_id, starts the explorer
+  # When
+  t3_gate codex '{"session_id":"s1","turn_id":"t1","cwd":"/tmp","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"explorer","message":"x"}}'
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
+}
+
+# codex_log_start <originator>: outside T3's env, a Codex main agent starts
+# the explorer in a chat whose log was opened by that app.
+codex_log_start() {
+  local log; log="$(mktemp)"
+  printf '{"type":"session_meta","payload":{"id":"s1","originator":"%s"}}\n' "$1" > "$log"
+  gate codex '{"session_id":"s1","transcript_path":"'"$log"'","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"explorer","message":"x"}}'
+}
+
+t_gate_codex_refuses_main_in_t3_log() {
+  # Given: T3CODE_THREAD_ID unset; the chat log's first line names T3 Code
+  # When
+  codex_log_start 'T3 Code'
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
+}
+
+t_gate_codex_main_outside_t3_log() {
+  # Given: the same, with a chat log opened by the Codex CLI
+  # When
+  codex_log_start codex_cli_rs
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_claude_main_t3_explorer() {
+  # Given: T3 is on; the explorer's Claude home is its backup
+  # When
+  t3_gate claude "$(claude_main_start explorer)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_claude_main_walker_outside_t3() {
+  # Given: T3CODE_THREAD_ID is unset
+  # When
+  gate claude "$(claude_main_start walker)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_t3_unreadable_payload() {
+  # Given: T3 is on; a payload that is not JSON
+  # When
+  t3_gate claude 'not json'
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
+t_gate_t3_agent_without_file() {
+  # Given: T3 is on; the main agent starts an agent with no file here
+  # When
+  t3_gate claude "$(claude_main_start general-purpose)"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
 }
 
 t_gate_claude_checker_starts_explorer() {
@@ -196,6 +319,15 @@ t_gate_agy_blocks_explorer_edit() {
   has stdout '"reason":"'"$(edit_rule explorer)"'"' "$out"
 }
 
+t_gate_agy_refuses_main_first_t3_explorer() {
+  # Given: T3 is on; chat c2 has no start message, so it is the main agent
+  # When
+  agy_gate '' "$agy_spawn" t3
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"decision":"deny","reason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"}' "$out"
+}
+
 t_gate_agy_no_start_message_is_main() {
   # Given: a chat with no messages folder starts the explorer
   # When
@@ -222,4 +354,15 @@ cases=(
   "gate blocks an antigravity explorer's start|t_gate_agy_blocks_explorer_start"
   "gate blocks an antigravity explorer's edit|t_gate_agy_blocks_explorer_edit"
   "gate reads an antigravity chat with no start message as the main agent|t_gate_agy_no_start_message_is_main"
+  "gate refuses a claude main agent's first T3 start of the walker|t_gate_claude_refuses_main_first_t3_walker"
+  "gate refuses a codex main agent's first T3 start of the explorer|t_gate_codex_refuses_main_first_t3_explorer"
+  "gate lets a claude main agent start the explorer in T3|t_gate_claude_main_t3_explorer"
+  "gate lets a claude main agent start the walker outside T3|t_gate_claude_main_walker_outside_t3"
+  "gate lets an unreadable T3 payload through|t_gate_t3_unreadable_payload"
+  "gate lets a T3 start of an agent with no file through|t_gate_t3_agent_without_file"
+  "gate lets a second T3 start of the walker through|t_gate_t3_second_walker_start_goes_through"
+  "gate refuses the scope reviewer after it refused the walker|t_gate_t3_refuses_scope_reviewer_after_walker"
+  "gate refuses an antigravity main agent's first T3 start of the explorer|t_gate_agy_refuses_main_first_t3_explorer"
+  "gate refuses a codex main agent's first start of the explorer in a T3 chat log|t_gate_codex_refuses_main_in_t3_log"
+  "gate lets a codex main agent start the explorer outside T3|t_gate_codex_main_outside_t3_log"
 )

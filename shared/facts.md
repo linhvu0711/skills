@@ -41,6 +41,8 @@ A subagent's file names one or more homes and a backup for each main harness. A 
 
 **Start.** In T3, when T3's `delegate_task` is in your tools under any of its names (`harness.md` § T3), read the file's `home:` line for your harness: one home, or several joined by `, `. Try them from left to right. When a home's place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup.
 
+**Gate.** In T3, the subagent gate refuses your first start by name of a helper whose first home is not your harness with your backup's model and effort, and names the home. Start it through T3 per **Start**. When no home can run, start it by name again: the gate lets the second start through, and it runs on the backup.
+
 **Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
 
 **Next home.** A home cannot run when T3 lists its place as off, lists no such model, or refuses the start, or when its place is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then try the next home on the line. With no home left, start it by name with your own tool, on the backup. The backup is your own harness's model, so it fails only when you fail: there is no try after it.
