@@ -26,7 +26,7 @@ t_cursor_repo_not_connected() {
   printf '# Brief\n' > p.md
   cursor start p.md --repo o/r
   eq exit 1 "$code"
-  eq stderr "cursor.sh: Connect o/r to Cursor first: cursor.com/dashboard, Integrations, GitHub." "$err"
+  eq stderr "stop: Connect o/r to Cursor first: cursor.com/dashboard, Integrations, GitHub." "$err"
 }
 
 t_cursor_poll() {
@@ -64,7 +64,7 @@ t_cursor_no_key() {
   printf '# Brief\n' > p.md
   run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../scripts/adapters/cursor.sh" start p.md --repo o/r
   eq exit 1 "$code"
-  eq stderr "cursor.sh: no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)" "$err"
+  eq stderr "stop: no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)" "$err"
 }
 
 # fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
@@ -88,7 +88,7 @@ case "$1" in
           case "$rc" in
             0) echo "$a: destroyed mac-1" ;;
             1) echo "$a: mac-1 kept, its run has not ended" ;;
-            *) echo "mac.sh: could not check the run of $a, so mac-1 is kept" >&2; exit 1 ;;
+            *) echo "stop: could not check the run of $a, so mac-1 is kept" >&2; exit 1 ;;
           esac ;;
 esac
 EOF
@@ -137,7 +137,7 @@ t_cursor_start_windows() {
   printf '# Brief\n' > p.md
   cursor_mac start p.md --repo o/r --platform windows
   eq exit 1 "$code"
-  eq stderr "cursor.sh: Cursor has no Windows machine: hand this one to devin" "$err"
+  eq stderr "stop: Cursor has no Windows machine: hand this one to devin" "$err"
 }
 
 t_cursor_poll_leaves_mac() {
@@ -204,7 +204,7 @@ t_cursor_release_check_fails() {
   eq exit 1 "$code"
   eq stdout "" "$out"
   has stderr "HTTP 502 on GET /agents/bc-1/runs/run-2" "$err"
-  has stderr "mac.sh: could not check the run of bc-1, so mac-1 is kept" "$err"
+  has stderr "stop: could not check the run of bc-1, so mac-1 is kept" "$err"
 }
 
 t_cursor_release() {

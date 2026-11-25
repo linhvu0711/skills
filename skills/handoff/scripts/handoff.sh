@@ -28,8 +28,8 @@
 # the first event, for a caller that only sees the process end; --follow
 # keeps going past the end, for a session that gets a follow-up. At --max
 # seconds it prints `still running <link>`. A failed poll is tried again; after
-# three in a row it prints `poll failed <link> :: <the adapter's error>` and
-# exits 1. Each line a working poll writes on stderr is printed too, stamped.
+# three in a row it prints `stop: poll failed <link> :: <the adapter's error>` on
+# stderr and exits 1. Each line a working poll writes on stderr is printed too, stamped.
 # When a run ends, watch runs the adapter's release, on each poll until it
 # works, and prints its stderr lines stamped, such as a Mac it could not give
 # back; status never does. The interval is the
@@ -42,7 +42,7 @@ ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
 DEFAULT_EXECUTOR=devin
 
-die() { echo "handoff.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # executor NAME -> NAME, or dies naming the executors the adapter files give,
 # the default first
@@ -147,8 +147,7 @@ cmd_watch() {
       # session, or an outage the caller has to see.
       fails=$((fails + 1))
       if (( fails >= 3 )); then
-        echo "[$(date +%H:%M)] poll failed $last_link :: $(tail -1 "$errf")"
-        exit 1
+        die "poll failed $last_link :: $(tail -1 "$errf")"
       fi
     else
       fails=0

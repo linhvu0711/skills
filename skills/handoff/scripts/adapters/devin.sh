@@ -27,7 +27,7 @@
 # makes a service-user key create sessions as that user. Never printed.
 set -euo pipefail
 
-die() { echo "devin.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # zvar NAME -> value from ~/.zshrc, else env, else empty
 zvar() {

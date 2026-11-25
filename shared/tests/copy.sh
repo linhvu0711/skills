@@ -66,7 +66,7 @@ t_cp_no_tool() {
   cp_setup; WL=wayland-0
   cp_run
   eq exit 1 "$code"
-  eq stderr "copy.sh: no clipboard tool" "$err"
+  eq stderr "stop: no clipboard tool: install pbcopy, wl-copy, xclip, or clip.exe" "$err"
   eq stdout "" "$out"
   eq ".in files" "" "$(cd "$T" && ls -- *.in 2>/dev/null || true)"
 }

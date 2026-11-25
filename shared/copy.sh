@@ -14,6 +14,8 @@
 # Any other failure is the tool's: its exit code and its stderr.
 set -euo pipefail
 
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+
 if command -v pbcopy >/dev/null; then
   exec pbcopy
 elif [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null; then
@@ -23,5 +25,4 @@ elif command -v xclip >/dev/null; then
 elif command -v clip.exe >/dev/null; then
   exec clip.exe
 fi
-printf 'copy.sh: no clipboard tool\n' >&2
-exit 1
+die "no clipboard tool: install pbcopy, wl-copy, xclip, or clip.exe"

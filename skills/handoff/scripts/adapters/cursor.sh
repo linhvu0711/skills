@@ -46,7 +46,7 @@ MSG_CHARS=600
 MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
 SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
-die() { echo "cursor.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'

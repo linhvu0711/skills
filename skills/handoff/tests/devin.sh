@@ -57,7 +57,7 @@ t_devin_failed_call() {
   printf '# Brief\n' > p.md
   devin start p.md --platform mac
   eq exit 1 "$code"
-  eq stderr "devin.sh: HTTP 400 on POST /sessions: platform must be one of linux, macos" "$err"
+  eq stderr "stop: HTTP 400 on POST /sessions: platform must be one of linux, macos" "$err"
 }
 
 t_devin_no_key() {
@@ -65,7 +65,7 @@ t_devin_no_key() {
   printf '# Brief\n' > p.md
   run env -u DEVIN_API_KEY -u DEVIN_USER_ID HOME="$T/home" DEVIN_ORG_ID=org1 bash "$here/../scripts/adapters/devin.sh" start p.md
   eq exit 1 "$code"
-  eq stderr "devin.sh: no DEVIN_API_KEY in ~/.zshrc or env" "$err"
+  eq stderr "stop: no DEVIN_API_KEY in ~/.zshrc or env" "$err"
 }
 
 t_devin_keys_from_zshrc() {

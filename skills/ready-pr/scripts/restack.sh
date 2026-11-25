@@ -32,6 +32,8 @@
 # on with the next PR, and this is no stop. Without it, every PR is owned.
 set -euo pipefail
 
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
@@ -43,7 +45,7 @@ children() {
     --json number,baseRefName,headRefName,url,isCrossRepository 2>&1)" \
     || { printf 'stop: %s\n' "$json" >&2; exit 1; }
   [ "$(jq length <<<"$json")" -le 100 ] \
-    || { printf 'stop: more than 100 open PRs on %s; restack lists at most 100\n' "$1" >&2; exit 1; }
+    || die "more than 100 open PRs on $1; restack lists at most 100"
   jq -r 'sort_by(.number)[] | "\(.number) \(.baseRefName) \(.headRefName) \(.url) fork=\(.isCrossRepository)"' <<<"$json"
 }
 
@@ -128,7 +130,7 @@ case "$cmd" in
     elif [ $# -ne 4 ]; then echo "$usage" >&2; exit 64
     fi
     wt="$1"; olds_b=("$2"); olds_s=("$3"); left=" "
-    [ -f "$4" ] || { printf 'stop: no stack file %s\n' "$4" >&2; exit 1; }
+    [ -f "$4" ] || die "no stack file $4"
     lines=(); while IFS= read -r l; do lines+=("$l"); done < "$4"
     tmp="$(mktemp -d)"; trap 'drop_tmp; rm -rf "$tmp"' EXIT
     moved=0; stopped=0

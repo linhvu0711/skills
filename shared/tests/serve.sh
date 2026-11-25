@@ -48,7 +48,7 @@ t_sv_missing_file() {
   sv_setup
   run sh "$here/../serve.sh" "$T/d" nope.html
   eq exit 1 "$code"
-  eq stderr "$T/d/nope.html: not found" "$err"
+  eq stderr "stop: $T/d/nope.html: not found" "$err"
   eq stdout "" "$out"
   no_server
 }
@@ -69,7 +69,7 @@ t_sv_new_server_misses_file() {
   printf '#!/bin/sh\necho "$3 $(pwd -P)" >> "%s/python3.calls"\n' "$T" > "$T/bin/python3"
   run sh "$here/../serve.sh" "$T/d" report.html
   eq exit 1 "$code"
-  eq stderr "started a server on 8765, but it does not serve report.html" "$err"
+  eq stderr "stop: started a server on 8765, but it does not serve report.html" "$err"
   eq stdout "" "$out"
 }
 

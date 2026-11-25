@@ -56,7 +56,7 @@ set -euo pipefail
 HOURS="${HANDOFF_MAC_HOURS:-4}"
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
-die() { echo "mac.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 # need_tools -> dies when a tool a Mac step needs is missing. Only a step that
 # touches a Mac runs it, so an agent with no Mac needs no nsc.
@@ -186,7 +186,7 @@ cmd_down() {
   fi
   why=$(grep -v -e '^info:' -e '^[[:space:]]*$' "$log" | head -1 || true)
   rm -f "$log"
-  echo "mac.sh: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
+  echo "stop: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
   return 1
 }
 
@@ -197,7 +197,7 @@ cmd_rent() {
   up=$(cmd_up "$worker" "$repo" "$base") || exit 1
   IFS=$'\t' read -r mac wid <<<"$up"
   if ! res=$("$@" </dev/null); then
-    cmd_down "$mac" >/dev/null || echo "mac.sh: no agent started, so no row names $mac" >&2
+    cmd_down "$mac" >/dev/null || die "no agent started, so no row names $mac"
     exit 1
   fi
   IFS=$'\t' read -r agent _ <<<"$res"

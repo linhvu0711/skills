@@ -67,18 +67,18 @@ t_unknown_executor() {
   printf '# Brief\n' > p.md
   handoff start foo p.md --issue "$issue12"
   eq exit 1 "$code"
-  eq stderr "handoff.sh: executor must be devin or cursor" "$err"
+  eq stderr "stop: executor must be devin or cursor" "$err"
 }
 
 t_failed_start_keeps_ledger() {
   fake_adapters
   row="2026-10-01T10:00:00Z	devin	devin-a	https://app.devin.ai/sessions/a	https://github.com/o/r/issues/11	#11 Old"
   printf '%s\n' "$row" > "$(ledger)"
-  printf 'devin.sh: HTTP 400 on POST /sessions: platform must be one of linux, macos\n' > "$FAKE_AD/devin.start.fail"
+  printf 'stop: HTTP 400 on POST /sessions: platform must be one of linux, macos\n' > "$FAKE_AD/devin.start.fail"
   printf '# Brief\n' > p.md
   handoff start devin p.md --issue "$issue12" --title "#12 Export" --platform mac
   eq exit 1 "$code"
-  eq stderr "devin.sh: HTTP 400 on POST /sessions: platform must be one of linux, macos" "$err"
+  eq stderr "stop: HTTP 400 on POST /sessions: platform must be one of linux, macos" "$err"
   eq ledger "$row" "$(cat "$(ledger)")"
 }
 
@@ -111,7 +111,7 @@ t_route_unknown_executor() {
   printf '%s\n' "$row_cursor12" > "$(ledger)"
   handoff route "$issue12" foo
   eq exit 1 "$code"
-  eq stderr "handoff.sh: executor must be devin or cursor" "$err"
+  eq stderr "stop: executor must be devin or cursor" "$err"
 }
 
 t_start_names_other_executor() {
@@ -177,7 +177,7 @@ t_watch_once_on_pr() {
 
 t_watch_survives_a_failed_poll() {
   fake_adapters
-  printf 'devin.sh: HTTP 502 on GET /sessions/devin-abc\n' > "$FAKE_AD/devin.poll.1.fail"
+  printf 'stop: HTTP 502 on GET /sessions/devin-abc\n' > "$FAKE_AD/devin.poll.1.fail"
   printf 'finished\tfinished|Done\t-\thttps://app.devin.ai/sessions/abc\tDone\n' > "$FAKE_AD/devin.poll.2.out"
   handoff watch devin devin-abc --interval 0
   eq exit 0 "$code"
@@ -186,22 +186,23 @@ t_watch_survives_a_failed_poll() {
 
 t_watch_stops_on_failing_polls() {
   fake_adapters
-  printf 'devin.sh: HTTP 401 on GET /sessions/devin-abc: bad key\n' > "$FAKE_AD/devin.poll.fail"
+  printf 'stop: HTTP 401 on GET /sessions/devin-abc: bad key\n' > "$FAKE_AD/devin.poll.fail"
   handoff watch devin devin-abc --interval 0
   eq exit 1 "$code"
-  eq stdout "poll failed devin-abc :: devin.sh: HTTP 401 on GET /sessions/devin-abc: bad key" "$(unstamped)"
+  lacks stdout "poll failed" "$out"
+  eq "stderr last line" "stop: poll failed devin-abc :: stop: HTTP 401 on GET /sessions/devin-abc: bad key" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
 t_watch_shows_poll_warning() {
   # Given: a poll that works and warns of a Mac it could not give back
   fake_adapters
-  printf 'mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.poll.1.err"
+  printf 'stop: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.poll.1.err"
   printf 'finished\tfinished|Done\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.1.out"
   # When
   handoff watch cursor bc-1 --interval 0
   # Then
   eq exit 0 "$code"
-  eq stdout "mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force
+  eq stdout "stop: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force
 finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped)"
 }
 
@@ -268,7 +269,7 @@ t_release_unknown_session() {
   handoff release bc-404
   # Then
   eq exit 1 "$code"
-  eq stderr "handoff.sh: no session bc-404 in the ledger" "$err"
+  eq stderr "stop: no session bc-404 in the ledger" "$err"
   [ ! -f "$FAKE_AD/cursor.release.calls" ] || eq "release calls" "" "$(cat "$FAKE_AD/cursor.release.calls")"
 }
 
@@ -294,13 +295,13 @@ t_watch_retries_release() {
   printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
   printf 'finished\trun-2|FINISHED\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
   printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
-  printf 'mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.release.1.fail"
+  printf 'stop: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.release.1.fail"
   # When
   handoff watch cursor bc-1 --interval 0 --follow --max 2
   # Then
   eq exit 0 "$code"
   eq "release calls" 2 "$(cat "$FAKE_AD/cursor.release.calls")"
-  eq "line 1" "mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force" "$(unstamped | sed -n 1p)"
+  eq "line 1" "stop: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force" "$(unstamped | sed -n 1p)"
   eq "line 2" "finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped | sed -n 2p)"
 }
 
