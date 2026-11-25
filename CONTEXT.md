@@ -9,7 +9,7 @@ The app that runs an agent: Claude Code, Codex, or Antigravity. T3 Code is not a
 _Avoid_: provider, runtime, tool
 
 **Shared core**:
-The `shared/` folder: files that two or more skills read. A file read by more than one skill lives here, not inside one of the skills.
+The `shared/` folder: files that two or more skills read.
 _Avoid_: common, utils, lib
 
 **Skill agent**:
