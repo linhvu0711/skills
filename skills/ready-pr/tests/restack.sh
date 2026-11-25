@@ -75,6 +75,60 @@ stack() {
     "12 feat/b feat/c https://github.com/o/r/pull/12 fork=false" > "$T/stack"
 }
 
+# sibling: after `stack`, feat/d on feat/a's old tip adds d (d1), pushed, and
+# its line, PR 13, joins $T/stack after feat/c's, as `restack.sh list` orders it.
+sibling() {
+  git checkout -q -b feat/d "$A_OLD"; echo d > d; git add d; git commit -qm d1
+  git push -q origin feat/d; git checkout -q feat/a
+  printf '%s\n' "13 feat/a feat/d https://github.com/o/r/pull/13 fork=false" >> "$T/stack"
+}
+
+t_restack_moves_all_owned_stack() {
+  # Given: stack file lines 11 (feat/a to feat/b), 12 (feat/b to feat/c)
+  stack
+  # When
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 11,12
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "MOVED https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 1p | cut -d' ' -f1-2)"
+  eq "line 2" "MOVED https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 2p | cut -d' ' -f1-2)"
+  eq "line 3" "RESTACK=moved 2" "$(printf '%s\n' "$out" | sed -n 3p)"
+  eq "commits on main" "c1
+b1
+a1" "$(git log --format=%s origin/main..origin/feat/c)"
+}
+
+t_restack_leaves_foreign_pr_in_middle() {
+  # Given: stack file lines 11, 12, 13 (feat/a to feat/d); 12 is not owned
+  stack; sibling
+  c="$(git rev-parse origin/feat/c)"
+  # When
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 11,13
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "MOVED https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 1p | cut -d' ' -f1-2)"
+  eq "line 2" "LEFT https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 2p)"
+  eq "line 3" "MOVED https://github.com/o/r/pull/13" "$(printf '%s\n' "$out" | sed -n 3p | cut -d' ' -f1-2)"
+  eq "line 4" "RESTACK=moved 2" "$(printf '%s\n' "$out" | sed -n 4p)"
+  eq "origin/feat/c" "$c" "$(git rev-parse origin/feat/c)"
+}
+
+t_restack_leaves_child_of_foreign_pr() {
+  # Given: stack file lines 11, 12, 13; 11 is not owned, 12 is on it
+  stack; sibling
+  b="$(git rev-parse origin/feat/b)"; c="$(git rev-parse origin/feat/c)"
+  # When
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 12,13
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "LEFT https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 1p)"
+  eq "line 2" "LEFT https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 2p)"
+  eq "line 3" "MOVED https://github.com/o/r/pull/13" "$(printf '%s\n' "$out" | sed -n 3p | cut -d' ' -f1-2)"
+  eq "line 4" "RESTACK=moved 1" "$(printf '%s\n' "$out" | sed -n 4p)"
+  eq "origin/feat/b" "$b" "$(git rev-parse origin/feat/b)"
+  eq "origin/feat/c" "$c" "$(git rev-parse origin/feat/c)"
+}
+
 t_restack_moves_children_bottom_first() {
   stack
   run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack"
@@ -146,6 +200,9 @@ cases=(
   "restack lists the stack in order|t_restack_lists_stack_in_order"
   "restack lists nothing on a bare branch|t_restack_lists_nothing"
   "restack moves children bottom first|t_restack_moves_children_bottom_first"
+  "restack moves an all-owned stack|t_restack_moves_all_owned_stack"
+  "restack leaves a foreign PR in the middle|t_restack_leaves_foreign_pr_in_middle"
+  "restack leaves the child of a foreign PR|t_restack_leaves_child_of_foreign_pr"
   "restack stops on a clash|t_restack_stops_on_clash"
   "restack skips an unpushed branch|t_restack_skips_unpushed_branch"
   "restack skips a dirty worktree|t_restack_skips_dirty_worktree"

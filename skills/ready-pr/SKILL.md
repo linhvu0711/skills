@@ -204,8 +204,10 @@ as `cd "$WT" && …`.
      print its lines. Then `git -C "$WT" push --force-with-lease`. The
      tools re-review the new head; old threads go `outdated` and stay
      resolved. `STACK=0`: nothing more. Else
-     `bash scripts/restack.sh move "$WT" <HEAD> <OLD> <file>`, and hold
-     its lines for the report. `RESTACK=stopped`: say its `CLASH` or
+     `bash scripts/restack.sh move "$WT" <HEAD> <OLD> <file>`, with
+     `--own <n>,<n>` added when the caller names the PRs it owns: move
+     pushes only those, and prints `LEFT <url>` for each other PR and
+     each PR stacked on one. Hold its lines for the report. `RESTACK=stopped`: say its `CLASH` or
      `SKIP` line; the PRs from there up stay as they are, for the user.
      A child's conflict never goes to fix-conflicts. This PR's loop goes
      on.
@@ -256,7 +258,8 @@ as `cd "$WT" && …`.
    The second line is `Rounds: <r> · ` and the reason line of the
    `READY` verdict. One `Stack:` line per restack, in round order, each moved PR by its
    URL; a stopped one reads
-   `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. No
+   `Stack: moved <url> · CLASH <url>: src/a.ts · left <url>`. Each
+   `LEFT` line is ` · left <url>`. No
    restack: no `Stack:` line. One line per finding over every round,
    id, verdict, SHA or URL.
    `Filed: none` when nothing was filed. A PR that waits only for a
