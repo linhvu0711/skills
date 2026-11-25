@@ -62,6 +62,8 @@ lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; e
 # `api repos/…` repo, and `pr merge` pr-merge. Each
 # route counts its calls in <route>.calls and logs their args in
 # <route>.args, one line per call (a newline inside an arg becomes a space).
+# `api graphql … -F r=<r>` prints graphql.<r>.fail to stderr and fails, or
+# prints graphql.<r>.json, when one exists, so each repo can answer its own.
 # Call n of a route prints <route>.<n>.fail or <route>.fail to stderr and
 # fails when one exists. Else it prints <route>.stderr to stderr when one
 # exists, as gh prints a hint beside its answer, and
@@ -106,6 +108,14 @@ case "$args" in
 esac
 n=$(( $(cat "$FAKE_GH/$key.calls" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$FAKE_GH/$key.calls"
 printf '%s\n' "${args# }" >> "$FAKE_GH/$key.args"
+if [ "$key" = graphql ] && [[ "$args" =~ \ -F\ r=([^ ]+) ]]; then
+  r="${BASH_REMATCH[1]}"
+  if [ -f "$FAKE_GH/graphql.$r.fail" ]; then cat "$FAKE_GH/graphql.$r.fail" >&2; exit 1; fi
+  if [ -f "$FAKE_GH/graphql.$r.json" ]; then
+    if [ -n "$q" ]; then jq -r "$q" "$FAKE_GH/graphql.$r.json"; else cat "$FAKE_GH/graphql.$r.json"; fi
+    exit 0
+  fi
+fi
 for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
   if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
 done

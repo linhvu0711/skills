@@ -164,19 +164,32 @@ copy_page() {
 }
 
 # ---------- GitHub ----------
-fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state}} blockedBy(first:50){nodes{number state}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body mergeable headRefOid}}'
+fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state repository{nameWithOwner}}} blockedBy(first:50){nodes{number state repository{nameWithOwner}}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body mergeable headRefOid}}'
 
-# read_issues <ref>...: one GraphQL call for all of them, printed as one
-# object keyed by ref. A failed call leaves gh's stderr in errf.
+# read_issues <ref>...: one GraphQL call per repo, the home repo first,
+# printed as one object keyed by ref. The home repo's call failing fails it,
+# with gh's stderr in errf. Another repo's call failing gives each of its refs
+# {error: <gh's last stderr line>}, so the rest of the run goes on.
 read_issues() {
-  local q="" r n out
-  for r in "$@"; do n="${r##*#}"; q="$q i$n: issue(number: $n) { ...F }"; done
-  # shellcheck disable=SC2016 # the $ names are GraphQL variables
-  if ! out="$(gh api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
-      -F o="$owner" -F r="$repo" 2>"$errf")"; then
-    return 1
-  fi
-  jq -c --args '.data.repository as $d | [$ARGS.positional[] | {key: ., value: $d["i" + split("#")[1]]}] | from_entries' "$@" <<<"$out"
+  local all="{}" rr q r n out err
+  # shellcheck disable=SC2046 # one word per repo
+  for rr in $(printf '%s\n' "$@" | sed 's/#.*//' | awk -v h="$slug" '!s[$0]++ { if ($0 == h) print; else o = o $0 "\n" } END { printf "%s", o }'); do
+    q=""
+    for r in "$@"; do [ "${r%#*}" = "$rr" ] || continue; n="${r##*#}"; q="$q i$n: issue(number: $n) { ...F }"; done
+    # shellcheck disable=SC2016 # the $ names are GraphQL variables
+    if out="$(gh api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
+        -F o="${rr%/*}" -F r="${rr#*/}" 2>"$errf")"; then
+      all="$(jq -c --arg rr "$rr" --argjson all "$all" --args '.data.repository as $d
+        | $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: $d["i" + split("#")[1]]}] | from_entries)' "$@" <<<"$out")"
+    elif [ "$rr" = "$slug" ]; then
+      return 1
+    else
+      err="$(tail -1 "$errf")"
+      all="$(jq -c --arg rr "$rr" --arg e "$err" --argjson all "$all" --args '
+        $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: {error: $e}}] | from_entries)' "$@" <<<"null")"
+    fi
+  done
+  printf '%s\n' "$all"
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
 # decide_for write gh's stderr to errf.
@@ -297,15 +310,17 @@ decide_for() {
 # joins: a jq program on the issues just read, with the state as $S: the
 # refs they bring that are neither in the set nor removed. A follow-up is
 # a `#<n>:` line under `## Follow-ups` in the PR body, as pr-shape.md writes
-# it; /capture puts no other link on the issue.
+# it, so it names an issue in the PR's repo; /capture puts no other link on
+# the issue. An issue the read could not get brings none.
 # shellcheck disable=SC2016 # the $ names are jq variables
 joins='
   def followups: split("\n") | reduce .[] as $l ({in: false, out: []};
     if ($l | test("^## ")) then .in = ($l | test("^## Follow-ups\\s*$"))
     elif .in and ($l | test("^\\s*(?:[-*]\\s+)?#[0-9]+:")) then .out += [$l | capture("#(?<n>[0-9]+):").n]
     else . end) | .out[];
-  [ .[] | (.subIssues.nodes[] | select(.state == "OPEN") | "\($S.repo)#\(.number)"),
-          (.closedByPullRequestsReferences.nodes[] | .body // "" | followups | "\($S.repo)#\(.)") ]
+  [ .[] | select(.error == null) | (.subIssues.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"),
+          (.closedByPullRequestsReferences.nodes[] | (.url | capture("github\\.com/(?<r>[^/]+/[^/]+)/pull/").r) as $pr
+           | .body // "" | followups | "\($pr)#\(.)") ]
   | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)
   | map(select(. as $x | ($S.set | index([$x]) | not) and ($S.removed | index([$x]) | not)))'
 
@@ -536,7 +551,7 @@ observe() {
     else
       sk="$(skill "$st")"
     fi
-    blocked="$(jq -c --arg repo "$slug" '[.blockedBy.nodes[] | select(.state == "OPEN") | "\($repo)#\(.number)"]' <<<"$j")"
+    blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     rec="$(jq -c --arg r "$r" '[.threads[] | select(.ref == $r)] | last' <<<"$S")"
     # A run started before proposals existed has no key; it reads as none.

@@ -36,18 +36,23 @@ EOF
 }
 
 # fs_issue <n> <state> <labels> [blocked-by] [prs] [subs] [title]: issue #n
-# in the GraphQL answer. <labels> is a JSON list of names; the rest are JSON
-# lists of nodes, empty when left out. The title is "Export orders" unless
-# given. decide.sh's `issue view` gets the same issue.
+# in the GraphQL answer of acme/app, or of acme/$FS_REPO when that is set.
+# <labels> is a JSON list of names; the rest are JSON lists of nodes, empty
+# when left out. A blocker or sub-issue node with no repository is in the
+# issue's repo. The title is "Export orders" unless given. decide.sh's
+# `issue view` gets the same issue.
 fs_issue() {
-  local title="${7:-Export orders}"
+  local title="${7:-Export orders}" dir="$T/issues${FS_REPO:+-$FS_REPO}"
+  mkdir -p "$dir"
   jq -cn --argjson n "$1" --arg s "$2" --argjson l "$3" --argjson b "${4:-[]}" \
-    --argjson p "${5:-[]}" --argjson u "${6:-[]}" --arg t "$title" \
-    '{number: $n, title: $t, state: $s, createdAt: "2026-10-01T00:00:00Z",
-      labels: {nodes: [$l[] | {name: .}]}, subIssues: {nodes: $u},
-      blockedBy: {nodes: $b}, closedByPullRequestsReferences: {nodes: $p}}' > "$T/issues/$1.json"
-  jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$T/issues"/*.json > "$FAKE_GH/graphql.json"
-  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$T/issues/$1.json" > "$FAKE_GH/issue-view.json"
+    --argjson p "${5:-[]}" --argjson u "${6:-[]}" --arg t "$title" --arg repo "acme/${FS_REPO:-app}" \
+    'def inrepo: map(.repository //= {nameWithOwner: $repo});
+     {number: $n, title: $t, state: $s, createdAt: "2026-10-01T00:00:00Z",
+      labels: {nodes: [$l[] | {name: .}]}, subIssues: {nodes: ($u | inrepo)},
+      blockedBy: {nodes: ($b | inrepo)}, closedByPullRequestsReferences: {nodes: $p}}' > "$dir/$1.json"
+  jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$dir"/*.json \
+    > "$FAKE_GH/graphql${FS_REPO:+.$FS_REPO}.json"
+  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$dir/$1.json" > "$FAKE_GH/issue-view.json"
 }
 
 # fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
@@ -631,6 +636,55 @@ t_fs_followup_joins() {
   # Then
   has stdout '"joined":["acme/app#50"]' "$out"
   has stdout '"message":"/grill #50"' "$out"
+}
+
+# fs_lib: a checkout of acme/lib at $T/dev/lib.
+fs_lib() {
+  git init -q -b main "$T/dev/lib"
+  git -C "$T/dev/lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/lib" remote add origin https://github.com/acme/lib.git
+}
+
+# fs_lib_epic: a run of epic acme/app#70 whose open sub-issue acme/lib#5 is
+# an S ticket, with a checkout of acme/lib.
+fs_lib_epic() {
+  fs_setup; fs_lib
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]' "Order export"
+  FS_REPO=lib fs_issue 5 OPEN '["size/S"]' '[]' '[]' '[]' "Shared parser"
+  fs_start 70
+}
+
+t_fs_other_repo_part_starts() {
+  # Given: epic acme/app#70, whose open sub-issue acme/lib#5 is an S ticket
+  fs_lib_epic
+  # When
+  fs_go check acme/app
+  # Then
+  eq ref acme/lib#5 "$(jq -r '.starts[0].ref' <<<"$out")"
+  eq path "$T/dev/lib" "$(jq -r '.starts[0].path' <<<"$out")"
+  eq board '{"label":"lib#5","url":"https://github.com/acme/lib/issues/5"}' \
+    "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {label, url}')"
+}
+
+t_fs_other_repo_followup_joins() {
+  # Given: a run of #42, since closed by acme/lib's PR 9, whose Follow-ups name #12, open in acme/lib
+  local pr='{"number":9,"url":"https://github.com/acme/lib/pull/9","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n- #12: tidy\n"}'
+  fs_setup; fs_lib; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; FS_REPO=lib fs_issue 12 OPEN '["seed"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq joined '["acme/lib#12"]' "$(jq -c .joined <<<"$out")"
+}
+
+t_fs_other_repo_blocker_label() {
+  # Given: a run of #42, size/S, blocked by open acme/lib#5
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq blocked_by '["acme/lib#5"]' "$(jq -c '.issues[0].blocked_by' <<<"$out")"
+  eq action 'blocked by lib#5' "$(fs_card 42 | jq -r .action)"
 }
 
 t_fs_add_to_set() {
@@ -2397,6 +2451,9 @@ cases=(
   "a failed launch is not started again|t_fs_failed_launch_not_again"
   "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
   "a follow-up in a PR body joins|t_fs_followup_joins"
+  "an epic part in another repo starts there|t_fs_other_repo_part_starts"
+  "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
+  "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"
   "ship merge for one issue|t_fs_ship_merge_one"
