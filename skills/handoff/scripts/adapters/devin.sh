@@ -6,6 +6,9 @@
 #                                                             -> "<session_id>\t<url>"
 #   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<prs>\t<url>\t<message>"
 #   devin.sh say <session> <note-file>                        -> sends a follow-up
+#   devin.sh facts                                            -> "repo\t<url>" per repo the org can reach, then "mode\t<name>"
+#   devin.sh release <session>                                -> nothing: a session holds no machine of ours
+#   devin.sh interval                                         -> the watch's poll interval, in seconds
 #
 # <session> is the id with or without the "devin-" prefix, or the app URL.
 # --platform picks the VM: linux (default), macos, windows, or an outpost
@@ -190,6 +193,23 @@ cmd_poll() {
   done
 }
 
+# facts -> the org's repos, then the agent modes. repo_full_name is org/repo on
+# github.com and starts with its host elsewhere (docs.devin.ai, List
+# repositories), so a first part with a dot is a host.
+cmd_facts() {
+  local after="" res
+  while :; do
+    res=$(api GET "/repositories?first=100&load_indexing_status=false${after:+&after=$after}")
+    jq -r '.items[].repo_full_name | if (split("/")[0] | contains(".")) then "repo\thttps://" + . else "repo\thttps://github.com/" + . end' <<<"$res"
+    if [[ "$(jq -r '.has_next_page // false' <<<"$res")" == "true" ]]; then
+      after=$(jq -r '.end_cursor // empty' <<<"$res"); [[ -z "$after" ]] && break
+    else
+      break
+    fi
+  done
+  printf 'mode\t%s\n' normal fast lite ultra fusion
+}
+
 cmd_say() {
   local id; id=$(sid "${1:-}")
   local file="${2:-}" url
@@ -201,10 +221,13 @@ cmd_say() {
 }
 
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say) key >/dev/null; org >/dev/null ;; esac
+case "${1:-}" in start|poll|say|facts) key >/dev/null; org >/dev/null ;; esac
 case "${1:-}" in
   start)   shift; cmd_start "$@" ;;
   poll)    shift; cmd_poll "$@" ;;
   say)     shift; cmd_say "$@" ;;
+  facts)   shift; cmd_facts "$@" ;;
+  release) shift; sid "${1:-}" >/dev/null ;;
+  interval) echo 120 ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

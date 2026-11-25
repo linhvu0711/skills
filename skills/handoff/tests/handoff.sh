@@ -12,7 +12,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # <route>.calls and logs the args after the verb in <route>.args, one line per
 # call. Call n prints <route>.<n>.fail or <route>.fail to stderr and fails when
 # one exists, else prints <route>.<n>.err to stderr when it exists, then
-# <route>.<n>.out or <route>.out.
+# <route>.<n>.out or <route>.out, or nothing when neither exists.
 fake_adapters() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/adapters" "$T/ad" "$T/home"
@@ -28,7 +28,7 @@ for f in "$FAKE_AD/$key.$n.fail" "$FAKE_AD/$key.fail"; do
 done
 [ ! -f "$FAKE_AD/$key.$n.err" ] || cat "$FAKE_AD/$key.$n.err" >&2
 f="$FAKE_AD/$key.$n.out"; [ -f "$f" ] || f="$FAKE_AD/$key.out"
-cat "$f"
+[ ! -f "$f" ] || cat "$f"
 EOF
   cp "$T/adapters/devin.sh" "$T/adapters/cursor.sh"
   export HANDOFF_ADAPTERS="$T/adapters" FAKE_AD="$T/ad" HOME="$T/home"
@@ -205,7 +205,141 @@ t_watch_shows_poll_warning() {
 finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped)"
 }
 
+t_new_adapter_file() {
+  # Given: a third adapter file, zed
+  fake_adapters
+  cp "$T/adapters/devin.sh" "$T/adapters/zed.sh"
+  printf 'zed-1\thttps://zed.test/1\n' > "$FAKE_AD/zed.start.out"
+  printf '# Brief\n' > p.md
+  # When
+  handoff start zed p.md --issue "$issue12" --title "#12 Export"
+  # Then
+  eq exit 0 "$code"
+  eq ledger "zed	zed-1	https://zed.test/1	$issue12	#12 Export" "$(cut -f2- "$(ledger)")"
+}
+
+t_watch_interval_from_adapter() {
+  # Given: the zed adapter gives a 0 s interval
+  fake_adapters
+  cp "$T/adapters/devin.sh" "$T/adapters/zed.sh"
+  printf '0\n' > "$FAKE_AD/zed.interval.out"
+  printf 'finished\tfinished|Done\t-\thttps://zed.test/1\tDone\n' > "$FAKE_AD/zed.poll.out"
+  : > "$FAKE_AD/zed.release.out"
+  # When
+  handoff watch zed zed-1 --max 5
+  # Then
+  eq exit 0 "$code"
+  eq "interval calls" 1 "$(cat "$FAKE_AD/zed.interval.calls")"
+  eq stdout "finished https://zed.test/1 :: Done" "$(unstamped)"
+}
+
+t_facts_through_adapter() {
+  # Given
+  fake_adapters
+  printf 'repo\thttps://github.com/o/r\nmodel\tgpt-5.5\tGPT-5.5\n' > "$FAKE_AD/cursor.facts.out"
+  # When
+  handoff facts cursor
+  # Then
+  eq exit 0 "$code"
+  eq stdout "repo	https://github.com/o/r
+model	gpt-5.5	GPT-5.5" "$out"
+  eq "adapter args" "" "$(cat "$FAKE_AD/cursor.facts.args")"
+}
+
+t_release_through_adapter() {
+  # Given
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff release bc-1
+  # Then
+  eq exit 0 "$code"
+  eq stdout "bc-1: destroyed mac-1" "$out"
+  eq "adapter args" "bc-1" "$(cat "$FAKE_AD/cursor.release.args")"
+}
+
+t_release_unknown_session() {
+  # Given
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff release bc-404
+  # Then
+  eq exit 1 "$code"
+  eq stderr "handoff.sh: no session bc-404 in the ledger" "$err"
+  [ ! -f "$FAKE_AD/cursor.release.calls" ] || { echo "release ran" >&2; exit 1; }
+}
+
+t_watch_releases_once() {
+  # Given: the run ends on poll 2 and stays ended
+  fake_adapters
+  printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
+  printf 'finished\trun-2|FINISHED\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff watch cursor bc-1 --interval 0 --follow --max 2
+  # Then
+  eq exit 0 "$code"
+  eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls")"
+  eq "release args" "bc-1" "$(cat "$FAKE_AD/cursor.release.args")"
+  eq stdout "finished https://cursor.com/agents/bc-1 :: Done
+still running https://cursor.com/agents/bc-1" "$(unstamped)"
+}
+
+t_watch_retries_release() {
+  # Given: as t_watch_releases_once, and the first release cannot give the Mac back
+  fake_adapters
+  printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
+  printf 'finished\trun-2|FINISHED\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  printf 'mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force\n' > "$FAKE_AD/cursor.release.1.fail"
+  # When
+  handoff watch cursor bc-1 --interval 0 --follow --max 2
+  # Then
+  eq exit 0 "$code"
+  eq "release calls" 2 "$(cat "$FAKE_AD/cursor.release.calls")"
+  eq "line 1" "mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force" "$(unstamped | sed -n 1p)"
+  eq "line 2" "finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped | sed -n 2p)"
+}
+
+t_watch_once_releases_before_pr() {
+  # Given: the poll that ends the run also brings the first PR
+  fake_adapters
+  printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
+  printf 'finished\trun-2|FINISHED\thttps://github.com/o/r/pull/9\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff watch cursor bc-1 --interval 0 --once
+  # Then
+  eq exit 0 "$code"
+  eq stdout "pr https://github.com/o/r/pull/9" "$(unstamped)"
+  eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls" 2>/dev/null || echo 0)"
+}
+
+t_status_never_releases() {
+  # Given
+  fake_adapters
+  printf 'finished\trun-2|FINISHED\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  # When
+  handoff status cursor bc-1
+  # Then
+  eq exit 0 "$code"
+  eq "line 1" "state: finished" "$(printf '%s\n' "$out" | sed -n 1p)"
+  [ ! -f "$FAKE_AD/cursor.release.calls" ] || { echo "status released" >&2; exit 1; }
+}
+
 cases=(
+  "watch returns the Mac once when the run ends|t_watch_releases_once"
+  "watch tries the release again on its next poll|t_watch_retries_release"
+  "watch --once gives the Mac back before it prints a PR|t_watch_once_releases_before_pr"
+  "status never releases|t_status_never_releases"
+  "release frees the session through its executor|t_release_through_adapter"
+  "release stops on a session the ledger lacks|t_release_unknown_session"
+  "facts prints the executor's facts|t_facts_through_adapter"
+  "a new adapter file adds an executor|t_new_adapter_file"
+  "watch takes its interval from the adapter|t_watch_interval_from_adapter"
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
   "unknown executor stops|t_unknown_executor"

@@ -20,12 +20,11 @@ the order of operations: the flow once, then a section per executor
 for its own steps.
 
 `scripts/handoff.sh` is the only thing the flow runs to reach an
-executor: `route`, `start`, `status`, `say`, `watch`. Run it with no
-arguments for the usage. It keeps the handoff ledger,
-`~/.config/dispatch/handoff.tsv`, a row per session with its executor
-and issue, and its adapters read their own keys. The two Cursor verbs
-the module does not carry, `repos`, `models`, and `down`, run as
-`scripts/adapters/cursor.sh` (§ Cursor). Nothing is posted on GitHub,
+executor: `route`, `start`, `status`, `say`, `watch`, `facts`,
+`release`. Run it with no arguments for the usage. It keeps the handoff
+ledger, `~/.config/dispatch/handoff.tsv`, a row per session with its
+executor and issue, and its adapters read their own keys. Nothing is
+posted on GitHub,
 apart from size labels the repo lacks (step 3). Sessions are never
 archived: an archived session stops answering PR comments, and that
 kills the review loop.
@@ -82,8 +81,15 @@ set's, the first ticket URL. Say the pick in one line, as
    On `MISS`, match the label by eye the way
    `../../shared/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already
-   carries the letter per layer. Then the executor's own facts:
-   § Cursor.
+   carries the letter per layer. Then the executor's facts:
+   `bash scripts/handoff.sh facts <executor>`. Its `repo <url>` lines
+   are the repos the executor can clone, and the repo must be one of
+   them. Missing: say `Connect owner/name to Cursor first:
+   cursor.com/dashboard, Integrations, GitHub.`, or for Devin
+   `Connect owner/name to Devin first: Devin's settings, Integrations,
+   GitHub.`, and stop. Its other lines are the executor's models,
+   `model <id> <name>` (Cursor), or modes, `mode <name>` (Devin). Then
+   § Cursor for Cursor.
 
 3. **Labels.** The PR gets a size label, XS to XL, in the repo's own
    spelling. First the bot check, on the base branch whatever the
@@ -142,8 +148,10 @@ set's, the first ticket URL. Say the pick in one line, as
    `<state> <link> :: <message>` for `blocked`, `finished`, `error`,
    `cancelled`, `expired`, or `suspended:<why>`. After three failed polls
    in a row it prints `poll failed <link> :: <error>` and exits: show it
-   and stop. It also prints each warning a working poll gives, such as
-   `mac.sh: could not destroy <id> ...`: tell the user that line as it is. On each line, tell the user the state and the message in
+   and stop. It also gives back what the session holds when a run ends
+   (a Cursor Mac), and prints each warning a poll or that give-back
+   writes, such as `mac.sh: could not destroy <id> ...`: tell the user
+   that line as it is. On each line, tell the user the state and the message in
    one or two lines. What each state means for the executor is in its
    section. When that row says the lines come together at the end, add
    `--once`: the watch exits on the first event, and you start it again
@@ -287,15 +295,12 @@ has stopped starts it again.
 
 ## Cursor
 
-**Facts.** Step 2 adds two facts. `bash scripts/adapters/cursor.sh
-repos`: the repo must be in the list, or the agent cannot clone it.
-Missing: say `Connect owner/name to Cursor first: cursor.com/dashboard,
-Integrations, GitHub.` and stop; `start` stops with the same words. The
-`Author` line: `git config user.name` and `git config user.email`, as
-`Name <email>`.
+**Facts.** Step 2 adds the `Author` line: `git config user.name` and
+`git config user.email`, as `Name <email>`. `start` stops on a repo not
+connected, with the words of step 2.
 
 **Model.** `--model` is a model id from
-`bash scripts/adapters/cursor.sh models` (`claude-opus-5`, `gpt-5.5`,
+a `model` line of `bash scripts/handoff.sh facts cursor` (`claude-opus-5`, `gpt-5.5`,
 `composer-2.5`, …). Unknown id: print the list and stop. No flag: no
 model is sent, and the account default runs, `Auto` on 2026-11-02. On a
 personal plan Auto is its Cost mode: Cursor picks the model, and the run
@@ -344,18 +349,20 @@ start the watch with `--follow`, which does not exit on `finished`.
 26, iOS Simulators) through `scripts/mac.sh`, starts a Cursor worker on
 it, and makes the agent a My Machines agent on that worker. The Mac
 lives for one run:
-- `start` rents it; the first poll that sees the run end destroys it.
-  So the watch is what frees it; a chat with no running watch, none started or one that stopped, runs
-  `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
-  no one destroys ends by itself after 4 hours.
-- A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
-  line, which names the Mac and the hand command, and the next poll or
-  `status` tries again; `cursor.sh down` exits 1. Tell the user that
-  line: the Mac costs money until it goes.
+- `start` rents it; the watch gives it back when it sees the run end,
+  and a status check never does. A chat with no running watch, none
+  started or one that stopped, runs
+  `bash scripts/handoff.sh release <session>` once the run ends. A Mac
+  no one gives back ends by itself after 4 hours.
+- A destroy that fails keeps the Mac's row: the watch prints `mac.sh`'s
+  line, which names the Mac and the hand command, and with `--follow`
+  tries again on its next poll; `release` exits 1. Tell the user that
+  line: the Mac costs money until it goes. A watch without `--follow`
+  stops there, so run `release` again later.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
   runs to the worker ID it first ran on, so a new worker under a new ID
-  never gets them; the ID sits in the adapter's row for the agent. The note gets a first line that tells the agent
+  never gets them; the ID sits in mac.sh's row for the agent. The note gets a first line that tells the agent
   to check its branch out again. Renting and setting up a Mac takes
   2 to 3 minutes before the run starts.
 - A run that starts while no Mac is up ends as `error` in about 20 s;
@@ -407,8 +414,8 @@ user.
 **User:** `/handoff cursor https://github.com/acme/shop/issues/42 --model
 claude-opus-5` after the same `/plan-up`
 
-`Executor: cursor (named)`. `cursor.sh repos` lists `acme/shop`,
-`cursor.sh models` lists `claude-opus-5`, the `Author` line comes from
+`Executor: cursor (named)`. `handoff.sh facts cursor` lists `acme/shop`
+and `claude-opus-5`, the `Author` line comes from
 `git config`. A web app, so no `--platform`. `start cursor` with `--repo acme/shop --base main --model
 claude-opus-5`, a watch on `watch cursor <agent> --repo acme/shop
 --issue 42`. Stop.
@@ -418,8 +425,8 @@ repo's `packages/helper/Package.swift` has a macOS target
 
 `Platform: macos (Package.swift with a macOS target)`. `start cursor` with
 `--repo acme/clock --base main --platform macos`; about 3 minutes later
-it prints the agent. Watch as above. On `finished` the poll destroys the
-Mac; the next `say` rents a new one.
+it prints the agent. Watch as above. On `finished` the watch gives the
+Mac back; the next `say` rents a new one.
 
 **User:** `/handoff` after a short-path `/plan-up` of #57 ended with
 `Ready for /handoff.`

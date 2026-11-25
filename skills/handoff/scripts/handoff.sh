@@ -9,9 +9,12 @@
 #   handoff.sh say <executor> <session> <note-file>           -> sends a follow-up
 #   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
 #                                                             -> one line per event; exits when it ends
+#   handoff.sh facts <executor>                               -> one fact a line: repo, model, or mode
+#   handoff.sh release <session>                              -> frees what the session holds
 #
-# <executor> is devin or cursor. Each has an adapter, adapters/<executor>.sh;
-# HANDOFF_ADAPTERS names another folder (the tests use a fake one). Options
+# <executor> is the name of an adapter file, adapters/<executor>.sh: devin and
+# cursor now. A new file there is a new executor. HANDOFF_ADAPTERS names
+# another folder (the tests use a fake one). Options
 # start does not know go to the adapter unchanged: devin --platform and
 # --mode, cursor --repo, --base, --model, and --platform.
 # The handoff ledger, ~/.config/dispatch/handoff.tsv, holds a row per session:
@@ -26,24 +29,38 @@
 # keeps going past the end, for a session that gets a follow-up. At --max
 # seconds it prints `still running <link>`. A failed poll is tried again; after
 # three in a row it prints `poll failed <link> :: <the adapter's error>` and
-# exits 1. Each line a working poll writes on stderr, such as a Mac the
-# adapter could not give back, is printed too, stamped. The interval
-# defaults to 120s for devin and 60s for cursor. start on an issue that only another executor has prints
+# exits 1. Each line a working poll writes on stderr is printed too, stamped.
+# When a run ends, watch runs the adapter's release, on each poll until it
+# works, and prints its stderr lines stamped, such as a Mac it could not give
+# back; status never does. The interval is the
+# adapter's `interval`. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd -P)"
 ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
+DEFAULT_EXECUTOR=devin
 
 die() { echo "handoff.sh: $*" >&2; exit 1; }
 
-# executor NAME -> NAME, or dies when no adapter has that name
+# executor NAME -> NAME, or dies naming the executors the adapter files give,
+# the default first
 executor() {
-  case "${1:-}" in
-    devin|cursor) printf %s "$1" ;;
-    *) die "executor must be devin or cursor" ;;
+  if [[ "${1:-}" =~ ^[a-z0-9-]+$ && -f "$ADAPTERS/$1.sh" ]]; then
+    printf %s "$1"; return 0
+  fi
+  local f n names=("$DEFAULT_EXECUTOR") list
+  for f in "$ADAPTERS"/*.sh; do
+    n=$(basename "$f" .sh)
+    [[ "$n" == "$DEFAULT_EXECUTOR" ]] || names+=("$n")
+  done
+  case ${#names[@]} in
+    1) list="${names[0]}" ;;
+    2) list="${names[0]} or ${names[1]}" ;;
+    *) list=$(printf '%s, ' "${names[@]:0:${#names[@]}-1}"); list="${list}or ${names[${#names[@]}-1]}" ;;
   esac
+  die "executor must be $list"
 }
 
 # newest ISSUE [EXECUTOR] -> the ledger's newest row for that issue, of that executor when given
@@ -101,12 +118,16 @@ cmd_say() {
   adapter "$e" say "$id" "$file"
 }
 
+cmd_facts() {
+  local e; e=$(executor "${1:-}")
+  adapter "$e" facts
+}
+
 cmd_watch() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
   [[ -n "$id" ]] || die "session id required"
-  local interval=60 max=0 once=0 follow=0 opts=()
-  [[ "$e" == devin ]] && interval=120
+  local interval="" max=0 once=0 follow=0 opts=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --interval) interval="$2"; shift 2 ;;
@@ -116,8 +137,9 @@ cmd_watch() {
       *) opts+=("$1"); shift ;;
     esac
   done
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0 w
-  errf=$(mktemp); trap "rm -f '$errf'" EXIT
+  [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed=""
+  errf=$(mktemp); relf=$(mktemp); trap "rm -f '$errf' '$relf'" EXIT
   start=$(date +%s)
   while :; do
     if ! line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>"$errf"); then
@@ -137,6 +159,20 @@ cmd_watch() {
       done <"$errf"
       IFS=$'\t' read -r st key prs link msg <<<"$line"
       last_link="$link"
+      # A run that ended gives back what the session holds before any line
+      # prints, a PR line too, since --once exits on it: a chat that answers
+      # the line finds it back. A release that fails is tried again on the
+      # next poll of the same run, while the watch goes on.
+      case "$st" in
+        finished|error|cancelled|expired)
+          if [[ "$key" != "$freed" ]]; then
+            if adapter "$e" release "$id" >/dev/null 2>"$relf"; then freed="$key"; fi
+            while IFS= read -r w; do
+              if [[ -n "$w" ]]; then echo "[$(date +%H:%M)] $w"; fi
+            done <"$relf"
+          fi
+          ;;
+      esac
       if [[ "$prs" != "-" ]]; then
         IFS=',' read -ra arr <<<"$prs"
         for p in "${arr[@]}"; do
@@ -169,6 +205,16 @@ cmd_watch() {
   done
 }
 
+# release SESSION: the executor is the one of the session's newest ledger row
+cmd_release() {
+  local s="${1:-}" row e id
+  [[ -n "$s" ]] || die "session id required"
+  [[ -f "$LEDGER" ]] && row=$(awk -F'\t' -v s="$s" '$3 == s || $4 == s' "$LEDGER" | tail -1)
+  [[ -n "${row:-}" ]] || die "no session $s in the ledger"
+  IFS=$'\t' read -r _ e id _ <<<"$row"
+  adapter "$(executor "$e")" release "$id"
+}
+
 cmd_route() {
   local issue="${1:-}" e="" row
   [[ -n "$issue" ]] || die "issue URL required"
@@ -177,7 +223,7 @@ cmd_route() {
   if [[ -n "$row" ]]; then
     awk -F'\t' '{ print "follow " $2 " " $3 " " $4 }' <<<"$row"
   else
-    echo "start ${e:-devin}"
+    echo "start ${e:-$DEFAULT_EXECUTOR}"
   fi
 }
 
@@ -187,5 +233,7 @@ case "${1:-}" in
   status) shift; cmd_status "$@" ;;
   say)   shift; cmd_say "$@" ;;
   watch) shift; cmd_watch "$@" ;;
+  facts) shift; cmd_facts "$@" ;;
+  release) shift; cmd_release "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac
