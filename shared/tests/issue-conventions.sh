@@ -13,15 +13,9 @@ ic_setup() {
 }
 
 # conv <cmd> <args...>: the conventions command, with HOME in $T and the store
-# env vars unset, so every case reads and writes the default paths. It maps
-# each command onto today's two scripts until one shared script holds them.
+# env vars unset, so every case reads and writes the default paths.
 conv() {
-  local cmd="$1" s="$here/../../skills/to-issue/scripts/conventions.py"; shift
-  case "$cmd" in
-    priority-get|priority-set) s="$here/../../skills/capture/scripts/conventions.py" ;;
-    seed-get|seed-set|seed-forget) s="$here/../../skills/capture/scripts/conventions.py"; cmd="${cmd#seed-}" ;;
-  esac
-  run env -u GH_ISSUE_STORE -u GH_PRIORITY_STORE -u CAPTURE_STORE HOME="$T/home" python3 "$s" "$cmd" "$@"
+  run env -u GH_ISSUE_STORE -u GH_PRIORITY_STORE -u CAPTURE_STORE HOME="$T/home" python3 "$here/../issue-conventions.py" "$@"
 }
 
 set_types() { conv set O/R --style colon --xs size/XS --s size/S --m size/M --l size/L --word fix=bug --sampled 12; }
