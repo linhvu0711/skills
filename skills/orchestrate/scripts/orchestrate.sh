@@ -1084,8 +1084,11 @@ cmd_close_epics() {
   [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
   local r
   for r in $(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S"); do
-    gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"
-    printf '%s closed\n' "$(label_of "$r")"
+    if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
+      printf '%s closed\n' "$(label_of "$r")"
+    else
+      printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+    fi
   done
 }
 
