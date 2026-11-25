@@ -171,6 +171,18 @@ t_cof_window_skips_older_days() {
   eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"
 }
 
+t_cof_index_keeps_other_temp() {
+  # Given: another search's temp file beside the index, under the old fixed name
+  cof_home; co_rollout c1 /p/app "fix the export"
+  local d="$HOME/.cache/find-co-session"; mkdir -p "$d"; printf 'other\n' > "$d/codex-index.tmp"
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq "other temp" "other" "$(cat "$d/codex-index.tmp")"
+  eq files "codex-index.json codex-index.tmp" "$(cd "$d" && ls -A | tr '\n' ' ' | sed 's/ $//')"
+}
+
 # has_zstd: true when this machine can write and read a .jsonl.zst rollout.
 has_zstd() { command -v zstd >/dev/null 2>&1 || python3 -c 'import compression.zstd' 2>/dev/null; }
 
@@ -242,6 +254,7 @@ t_cof_skips_bare_agents_item() {
 }
 
 cases=(
+  "codex find: an index save keeps another search's temp file and leaves none of its own|t_cof_index_keeps_other_temp"
   "finder skips a user item the harness injected|t_cof_skips_injected_item"
   "finder rebuilds an index of an older version|t_cof_rebuilds_older_index"
   "finder skips AGENTS.md instructions with no heading mark|t_cof_skips_bare_agents_item"

@@ -46,6 +46,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import time
 
 STORE = os.environ.get("GH_ISSUE_STORE") or os.path.expanduser(
@@ -80,9 +81,10 @@ def load(store):
 
 def save(store, data):
     os.makedirs(os.path.dirname(store), exist_ok=True)
-    tmp = store + ".tmp"
+    # A name of its own, so a save that runs at the same time keeps its file.
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(store), prefix=os.path.basename(store) + ".")
     try:
-        with open(tmp, "w") as f:
+        with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=2, sort_keys=True)
             f.write("\n")
         os.replace(tmp, store)
