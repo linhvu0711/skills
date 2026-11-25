@@ -11,6 +11,7 @@
 #                                                             exit 1, row kept, when it still runs
 #   cursor.sh models                                       -> model ids this account can use
 #   cursor.sh repos                                        -> repos connected to this account
+#   cursor.sh interval                                     -> the watch's poll interval, in seconds
 #
 # <agent> is the id with or without the "bc-" prefix, or the app URL.
 # The prompt file goes whole into prompt.text: the API has no attachment
@@ -53,6 +54,7 @@ cursor.sh say <agent> <note-file>
 cursor.sh down <agent>
 cursor.sh models
 cursor.sh repos
+cursor.sh interval
 EOF
   exit 1
 }
@@ -347,5 +349,6 @@ case "${1:-}" in
   down)   shift; cmd_down "$@" ;;
   models) shift; cmd_models "$@" ;;
   repos)  shift; cmd_repos "$@" ;;
+  interval) echo 60 ;;
   *) usage ;;
 esac

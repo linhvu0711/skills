@@ -205,7 +205,37 @@ t_watch_shows_poll_warning() {
 finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped)"
 }
 
+t_new_adapter_file() {
+  # Given: a third adapter file, zed
+  fake_adapters
+  cp "$T/adapters/devin.sh" "$T/adapters/zed.sh"
+  printf 'zed-1\thttps://zed.test/1\n' > "$FAKE_AD/zed.start.out"
+  printf '# Brief\n' > p.md
+  # When
+  handoff start zed p.md --issue "$issue12" --title "#12 Export"
+  # Then
+  eq exit 0 "$code"
+  eq ledger "zed	zed-1	https://zed.test/1	$issue12	#12 Export" "$(cut -f2- "$(ledger)")"
+}
+
+t_watch_interval_from_adapter() {
+  # Given: the zed adapter gives a 0 s interval
+  fake_adapters
+  cp "$T/adapters/devin.sh" "$T/adapters/zed.sh"
+  printf '0\n' > "$FAKE_AD/zed.interval.out"
+  printf 'finished\tfinished|Done\t-\thttps://zed.test/1\tDone\n' > "$FAKE_AD/zed.poll.out"
+  : > "$FAKE_AD/zed.release.out"
+  # When
+  handoff watch zed zed-1 --max 5
+  # Then
+  eq exit 0 "$code"
+  eq "interval calls" 1 "$(cat "$FAKE_AD/zed.interval.calls")"
+  eq stdout "finished https://zed.test/1 :: Done" "$(unstamped)"
+}
+
 cases=(
+  "a new adapter file adds an executor|t_new_adapter_file"
+  "watch takes its interval from the adapter|t_watch_interval_from_adapter"
   "start records the session in the ledger|t_start_records_row"
   "start passes adapter options through|t_start_passes_options"
   "unknown executor stops|t_unknown_executor"

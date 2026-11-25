@@ -312,7 +312,19 @@ t_cursor_start_names_kept_mac() {
   eq "last line" "cursor.sh: no agent started, so no later poll gives mac-1 back" "$(printf '%s\n' "$err" | tail -1)"
 }
 
+t_cursor_interval() {
+  # Given
+  fake_curl
+  # When
+  cursor interval
+  # Then
+  eq exit 0 "$code"
+  eq stdout "60" "$out"
+  [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
+}
+
 cases=(
+  "cursor interval is 60|t_cursor_interval"
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
   "cursor poll reads the latest run|t_cursor_poll"

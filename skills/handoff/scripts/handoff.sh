@@ -10,8 +10,9 @@
 #   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
 #                                                             -> one line per event; exits when it ends
 #
-# <executor> is devin or cursor. Each has an adapter, adapters/<executor>.sh;
-# HANDOFF_ADAPTERS names another folder (the tests use a fake one). Options
+# <executor> is the name of an adapter file, adapters/<executor>.sh: devin and
+# cursor now. A new file there is a new executor. HANDOFF_ADAPTERS names
+# another folder (the tests use a fake one). Options
 # start does not know go to the adapter unchanged: devin --platform and
 # --mode, cursor --repo, --base, --model, and --platform.
 # The handoff ledger, ~/.config/dispatch/handoff.tsv, holds a row per session:
@@ -27,23 +28,35 @@
 # seconds it prints `still running <link>`. A failed poll is tried again; after
 # three in a row it prints `poll failed <link> :: <the adapter's error>` and
 # exits 1. Each line a working poll writes on stderr, such as a Mac the
-# adapter could not give back, is printed too, stamped. The interval
-# defaults to 120s for devin and 60s for cursor. start on an issue that only another executor has prints
+# adapter could not give back, is printed too, stamped. The interval is the
+# adapter's `interval`. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd -P)"
 ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
+DEFAULT_EXECUTOR=devin
 
 die() { echo "handoff.sh: $*" >&2; exit 1; }
 
-# executor NAME -> NAME, or dies when no adapter has that name
+# executor NAME -> NAME, or dies naming the executors the adapter files give,
+# the default first
 executor() {
-  case "${1:-}" in
-    devin|cursor) printf %s "$1" ;;
-    *) die "executor must be devin or cursor" ;;
+  if [[ "${1:-}" =~ ^[a-z0-9-]+$ && -f "$ADAPTERS/$1.sh" ]]; then
+    printf %s "$1"; return 0
+  fi
+  local f n names=("$DEFAULT_EXECUTOR") list
+  for f in "$ADAPTERS"/*.sh; do
+    n=$(basename "$f" .sh)
+    [[ "$n" == "$DEFAULT_EXECUTOR" ]] || names+=("$n")
+  done
+  case ${#names[@]} in
+    1) list="${names[0]}" ;;
+    2) list="${names[0]} or ${names[1]}" ;;
+    *) list=$(printf '%s, ' "${names[@]:0:${#names[@]}-1}"); list="${list}or ${names[${#names[@]}-1]}" ;;
   esac
+  die "executor must be $list"
 }
 
 # newest ISSUE [EXECUTOR] -> the ledger's newest row for that issue, of that executor when given
@@ -105,8 +118,7 @@ cmd_watch() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
   [[ -n "$id" ]] || die "session id required"
-  local interval=60 max=0 once=0 follow=0 opts=()
-  [[ "$e" == devin ]] && interval=120
+  local interval="" max=0 once=0 follow=0 opts=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --interval) interval="$2"; shift 2 ;;
@@ -116,6 +128,7 @@ cmd_watch() {
       *) opts+=("$1"); shift ;;
     esac
   done
+  [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
   local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf fails=0 w
   errf=$(mktemp); trap "rm -f '$errf'" EXIT
   start=$(date +%s)
@@ -177,7 +190,7 @@ cmd_route() {
   if [[ -n "$row" ]]; then
     awk -F'\t' '{ print "follow " $2 " " $3 " " $4 }' <<<"$row"
   else
-    echo "start ${e:-devin}"
+    echo "start ${e:-$DEFAULT_EXECUTOR}"
   fi
 }
 

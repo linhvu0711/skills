@@ -79,7 +79,19 @@ t_devin_keys_from_zshrc() {
   eq stdout "devin-abc	https://app.devin.ai/sessions/abc" "$out"
 }
 
+t_devin_interval() {
+  # Given
+  fake_curl
+  # When
+  devin interval
+  # Then
+  eq exit 0 "$code"
+  eq stdout "120" "$out"
+  [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
+}
+
 cases=(
+  "devin interval is 120|t_devin_interval"
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"
   "devin poll lists every PR of the session|t_devin_poll_every_pr"

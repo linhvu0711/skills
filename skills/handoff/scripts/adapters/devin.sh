@@ -6,6 +6,7 @@
 #                                                             -> "<session_id>\t<url>"
 #   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<prs>\t<url>\t<message>"
 #   devin.sh say <session> <note-file>                        -> sends a follow-up
+#   devin.sh interval                                         -> the watch's poll interval, in seconds
 #
 # <session> is the id with or without the "devin-" prefix, or the app URL.
 # --platform picks the VM: linux (default), macos, windows, or an outpost
@@ -206,5 +207,6 @@ case "${1:-}" in
   start)   shift; cmd_start "$@" ;;
   poll)    shift; cmd_poll "$@" ;;
   say)     shift; cmd_say "$@" ;;
+  interval) echo 120 ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac
