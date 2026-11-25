@@ -106,6 +106,25 @@ ticket map 0: 0 points in another box
 run-three map 0: 0 points in another box" "$out"
 }
 
+t_layout_lanes() {
+  # Given: a flow from the top left box to the bottom right one, with a wall of three boxes in the middle column, so every curve hits a box
+  T="$(mktemp -d)"
+  # When
+  layout "const p = (ref, x, y) => ({ ref, name: ref, job: '', change: 'same', group: '', kind: 'part', at: [], x, y, layer: '' });
+const m = PlanLayout.map({ parts: [p('A', 0, 0), p('W1', 1, 0), p('W2', 1, 1), p('W3', 1, 2), p('B', 2, 2)],
+  flows: [{ from: 'A', to: 'B', label: 'around', change: 'new', layer: '' }] }, width);
+const f = m.flows[0];
+let n = 0;
+for (const [px, py] of points(f.d)) for (const q of m.parts.filter((q) => q.ref.startsWith('W'))) {
+  const r = partBox(q);
+  if (px > r.x1 && px < r.x2 && py > r.y1 && py < r.y2) n++;
+}
+console.log((/ L/.test(f.d) ? 'lanes' : 'curve') + ', ' + n + ' points in another box');"
+  # Then
+  eq exit 0 "$code"
+  eq route "lanes, 0 points in another box" "$out"
+}
+
 # tree_rows <filter>: the rows of fileTree on files.md's files that pass <filter>, as branch, name, and / after a folder.
 tree_rows() {
   built files
@@ -145,6 +164,7 @@ cases=(
   "layout lays out a map with no page around it|t_layout_alone"
   "layout places no label over a box, a group title, or another label|t_layout_labels"
   "layout routes each flow clear of every box but its own two|t_layout_routes"
+  "layout runs a flow along the lanes when every curve hits a box|t_layout_lanes"
   "layout builds the file tree of a plan|t_layout_tree"
   "layout folds a folder that holds only one folder|t_layout_tree_fold"
 )
