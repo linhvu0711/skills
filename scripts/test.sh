@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
-# adopt.sh, link.sh and the hooks that run it, and the handoff render.sh. It sources test-lib.sh, the helpers, the
+# adopt.sh, link.sh and the hooks that run it. It sources test-lib.sh, the helpers, the
 # one fake gh, and the fake curl that every case shares, runs its own cases,
 # then sources each skills/*/tests/*.sh and shared/tests/*.sh in
 # turn and runs that file's cases.
@@ -9,7 +9,7 @@
 #
 # Each case starts in an empty temp folder with set -e on, builds its own git
 # repo in a temp folder, copies this scripts/ folder in, and runs the command
-# there; the render case reads render.sh from this checkout. Every leak string
+# there. Every leak string
 # below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
@@ -1560,27 +1560,6 @@ t_readme_hook_skips_unread_core() {
   eq commits 3 "$(git rev-list --count HEAD)"
 }
 
-t_render_names_box() {
-  T="$(mktemp -d)"
-  run bash "$here/../shared/handoff/render.sh" local rules
-  eq exit 0 "$code"
-  eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
-  eq "lines with the box.sh path" 2 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
-  f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //' | sort -u)"
-  [ -f "$f" ] || eq "box.sh path" "a file" "$f"
-}
-
-t_render_names_handoff() {
-  T="$(mktemp -d)"
-  local ex
-  for ex in devin cursor; do
-    run bash "$here/../shared/handoff/render.sh" "$ex" prompt
-    eq "$ex exit" 0 "$code"
-    eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
-    eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
-  done
-}
-
 # t_runner_keeps_cases_out_of_caller: from a caller repo with an origin,
 # run_cases runs two broken cases. One fails, then would write a marker. One
 # loses its cd behind `|| true`, then commits and pushes. Both report FAIL; the
@@ -1680,8 +1659,6 @@ cases=(
   "passes a harness command form in a description|t_passes_harness_in_description"
   "passes a harness command form in a README|t_passes_harness_in_readme"
   "hook stops a commit that adds a harness branch|t_hook_stops_harness_branch"
-  "render puts the box.sh path in local rules|t_render_names_box"
-  "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
   "passes a listed copy with its license|t_passes_copy_with_license"

@@ -35,7 +35,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 ## Structure
 
 - A file that two or more skills read lives in `shared/`, not inside one of the skills.
-- A skill names its own files by their path from its folder, as `references/plan.md`, another skill's as `../<skill>/…`, and the shared core's as `../../shared/…`, and its `SKILL.md` opens with the real-folder line.
+- A skill names its own files by their path from its folder, as `references/probes.md`, another skill's as `../<skill>/…`, and the shared core's as `../../shared/…`, and its `SKILL.md` opens with the real-folder line.
   Why: `docs/adr/0001-relative-paths.md`.
 - A skill folder holds `SKILL.md` and, when it needs them, `scripts/`, `references/`, `assets/`, `agents/`, and `tests/`; references sit one level deep (agentskills-spec).
 - A skill copied or adapted from another repo keeps its upstream's `LICENSE` in its folder, and each copied or adapted file has a row in `THIRD_PARTY_NOTICES.md`.

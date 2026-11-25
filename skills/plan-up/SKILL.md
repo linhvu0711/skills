@@ -6,18 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-The rules live in `references/`: `plan.md`, the plan rules,
-`executor.md`, and `probes.md`. Each step names the section it reads,
-as `references/plan.md` § Change map: read from that heading to the
-next heading of its level or higher, not the whole file. A heading
-inside a code fence belongs to a template, not a section. A step that
-needs a whole file says so and why. First read `references/plan.md`
-§ Vocabulary: its words run through every step. At steps 8 and 9,
-read `../../shared/plan-page.md`: where the plan is written
-and how it is shown. Before a `Decided` line adds a module or a seam, on the full
-path or the short one, read `../../shared/codebase-design.md`:
-the new one must pass its deletion test, and a seam needs two adapters.
-This file is the order of operations.
+The rules live in `../../shared/plan.md`, the plan rules, and in `references/`: `executor.md` and `probes.md`. Each step names the section it reads, as `../../shared/plan.md` § Change map: read from that heading to the next heading of its level or higher, not the whole file. A heading inside a code fence belongs to a template, not a section. A step that needs a whole file says so and why. First read `../../shared/plan.md` § Vocabulary: its words run through every step. At steps 8 and 9, read `../../shared/plan-page.md`: where the plan is written and how it is shown. Before a `Decided` line adds a module or a seam, on the full path or the short one, read `../../shared/codebase-design.md`: the new one must pass its deletion test, and a seam needs two adapters. This file is the order of operations.
 
 You plan; you do not build, and the repo is left as you found it. Facts
 come from reading, and from a probe when reading leaves a doubt the plan
@@ -393,7 +382,7 @@ two match: ask. Then go on with their URLs.
      - **Design**: run it when the plan introduces a new shape or a
        design trade-off (a new abstraction, a new seam, or logic moved
        across boundaries), or touches a part where the facts round found
-       a sign of a wrong design, per `references/plan.md` § Slices, Right
+       a sign of a wrong design, per `../../shared/plan.md` § Slices, Right
        design first, whether the plan patches that part or rebuilds it.
        Skip it when a new or moved file only copies an existing pattern
        in the repo with no design choice to make. A plan that invents a
@@ -411,7 +400,7 @@ two match: ask. Then go on with their URLs.
      the plan path, `BASE_WT`, and the full path of
      `../../shared/facts.md`. The design checker's brief adds the full
      paths of `../../shared/codebase-design.md` and
-     `references/plan.md`. When `BASE_WT` has `CODING_STANDARDS.md`
+     `../../shared/plan.md`. When `BASE_WT` has `CODING_STANDARDS.md`
      at its root, each brief also holds its full path, the repo's
      Standard. Nothing else: no notes, no reasons, no chat.
    - **Sort each finding.** Design findings first, since one can
@@ -430,7 +419,7 @@ two match: ask. Then go on with their URLs.
      once, per `../../shared/harness.md`, row Send a helper more work,
      and sort its answer the same way.
    - **Record.** A `## Plan check` block, last in the `.md`, per
-     `references/plan.md` § Plan check. The line has one part per
+     `../../shared/plan.md` § Plan check. The line has one part per
      checker, correctness first, joined by `; `. Each part is
      `<n> found · <f> fixed · <a> asked you`, `none found`,
      `skipped · <why>`, or `failed · <why>`, as

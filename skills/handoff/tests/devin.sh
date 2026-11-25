@@ -87,7 +87,7 @@ t_devin_interval() {
   # Then
   eq exit 0 "$code"
   eq stdout "120" "$out"
-  [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
+  [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
 }
 
 t_devin_facts() {
@@ -116,7 +116,7 @@ t_devin_release() {
   # Then
   eq exit 0 "$code"
   eq stdout "" "$out"
-  [ ! -f "$FAKE_CURL/calls" ] || { echo "an API call ran" >&2; exit 1; }
+  [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
 }
 
 cases=(

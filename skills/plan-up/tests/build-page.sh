@@ -156,7 +156,7 @@ bad_chat() {
   build "$T/plan-acme-shop-chat-orders-csv.md"
   eq exit 1 "$code"
   eq stdout "$2" "$out"
-  [ ! -e "$T/plan-acme-shop-chat-orders-csv.html" ]
+  [ ! -e "$T/plan-acme-shop-chat-orders-csv.html" ] || eq page "not written" written
 }
 
 t_build_chat_no_brief() {
@@ -174,8 +174,8 @@ bad_ticket() {
   eq exit 1 "$code"
   eq stdout "$2" "$out"
   eq stderr "" "$err"
-  [ ! -e "$T/plan-acme-shop-42.html" ]
-  [ ! -e "$T/plan-acme-shop-42.html.tmp" ]
+  [ ! -e "$T/plan-acme-shop-42.html" ] || eq page "not written" written
+  [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
 
 t_build_perf() {
@@ -203,8 +203,8 @@ bad_perf() {
   eq exit 1 "$code"
   eq stdout "$2" "$out"
   eq stderr "" "$err"
-  [ ! -e "$T/plan-acme-shop-42.html" ]
-  [ ! -e "$T/plan-acme-shop-42.html.tmp" ]
+  [ ! -e "$T/plan-acme-shop-42.html" ] || eq page "not written" written
+  [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
 
 t_build_perf_no_pass() {
@@ -338,7 +338,7 @@ t_build_run_one_review() {
   build "$T/plan-acme-shop-75-run.md"
   eq exit 1 "$code"
   eq stdout 'review: the .md has 1 `## Review` block(s), a run of 1 layer needs 2' "$out"
-  [ ! -e "$T/plan-acme-shop-75-run.html" ]
+  [ ! -e "$T/plan-acme-shop-75-run.html" ] || eq page "not written" written
 }
 
 t_build_stack_count() {
@@ -347,7 +347,7 @@ t_build_stack_count() {
   build "$T/plan-acme-shop-71-run.md"
   eq exit 1 "$code"
   eq stdout 'stack: 1 rows, 2 `## Layer` headings' "$out"
-  [ ! -e "$T/plan-acme-shop-71-run.html" ]
+  [ ! -e "$T/plan-acme-shop-71-run.html" ] || eq page "not written" written
 }
 
 t_build_preserves_old() {
@@ -360,8 +360,8 @@ t_build_preserves_old() {
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
   eq stdout 'review: `Blast radius` has no `Schema` line' "$out"
-  cmp "$T/old.html" "$T/plan-acme-shop-42.html"
-  [ ! -e "$T/plan-acme-shop-42.html.tmp" ]
+  cmp -s "$T/old.html" "$T/plan-acme-shop-42.html" || eq page unchanged changed
+  [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
 
 t_build_all_problems() {
@@ -519,8 +519,8 @@ bad_run() {
   eq exit 1 "$code"
   eq stdout "$2" "$out"
   eq stderr "" "$err"
-  [ ! -e "$T/plan-acme-shop-71-run.html" ]
-  [ ! -e "$T/plan-acme-shop-71-run.html.tmp" ]
+  [ ! -e "$T/plan-acme-shop-71-run.html" ] || eq page "not written" written
+  [ ! -e "$T/plan-acme-shop-71-run.html.tmp" ] || eq "temp page" gone "still there"
 }
 
 t_build_stack_identity() {

@@ -30,10 +30,9 @@ t_mac_rent_starts_worker() {
   has "keys go by stdin" "export CURSOR_API_KEY=crsr_k" "$(cat "$FAKE_NSC/stdin.2")"
   has "worker" "agent worker start --name ho-1" "$(sed -n 3,99p "$FAKE_NSC/calls")"
   has "clone at base" "--branch main https://github.com/o/r.git r" "$(sed -n 3,99p "$FAKE_NSC/calls")"
-  case "$(cat "$FAKE_NSC/calls")" in
-    *gho_secret*|*crsr_k*) echo "a key is on an nsc command line" >&2; exit 1 ;;
-    *'> ~/.cursor/agent-cli-state'*) echo "a new worker got an ID" >&2; exit 1 ;;
-  esac
+  lacks "nsc commands" gho_secret "$(cat "$FAKE_NSC/calls")"
+  lacks "nsc commands" crsr_k "$(cat "$FAKE_NSC/calls")"
+  lacks "nsc commands" '> ~/.cursor/agent-cli-state' "$(cat "$FAKE_NSC/calls")"
 }
 
 t_mac_renew_keeps_worker_id() {
@@ -68,7 +67,7 @@ t_mac_rent_bad_worker() {
   mac rent 'ho 1;x' https://github.com/o/r main -- true
   eq exit 1 "$code"
   eq stderr "mac.sh: worker name: letters, digits, and - only" "$err"
-  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
 t_mac_return_deletes_keys() {
@@ -147,7 +146,7 @@ t_mac_rent_create_fails() {
   eq exit 1 "$code"
   eq stderr "cursor.sh: HTTP 500 on POST /agents" "$err"
   eq "last nsc call" "destroy mac-1 --force" "$(tail -1 "$FAKE_NSC/calls")"
-  [ ! -s "$T/home/.config/dispatch/cursor-macs.tsv" ] || { echo "a row was written" >&2; exit 1; }
+  [ ! -s "$T/home/.config/dispatch/cursor-macs.tsv" ] || eq "mac rows" "" "$(cat "$T/home/.config/dispatch/cursor-macs.tsv")"
 }
 
 t_mac_rent_names_kept_mac() {
@@ -172,7 +171,7 @@ t_mac_rent_grok_key() {
   # Then
   eq exit 1 "$code"
   eq stderr "mac.sh: a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY" "$err"
-  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
 t_mac_renew_no_row() {
@@ -183,7 +182,7 @@ t_mac_renew_no_row() {
   # Then
   eq exit 0 "$code"
   eq stdout "sent same" "$out"
-  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
 t_mac_renew_alive() {
@@ -254,7 +253,7 @@ t_mac_renew_old_mac_kept() {
   eq exit 1 "$code"
   eq stderr "$not_given_back
 mac.sh: no note sent: mac-1 was not given back" "$err"
-  [ ! -f "$T/sent" ] || { echo "a note was sent" >&2; exit 1; }
+  [ ! -e "$T/sent" ] || eq "sent note" "not sent" sent
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
@@ -285,7 +284,7 @@ t_mac_return_run_goes() {
   # Then
   eq exit 0 "$code"
   eq stdout "bc-1: mac-1 kept, its run has not ended" "$out"
-  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
@@ -300,7 +299,7 @@ t_mac_return_check_fails() {
   eq stdout "" "$out"
   eq stderr "cursor.sh: HTTP 502 on GET /agents/bc-1/runs/run-2
 mac.sh: could not check the run of bc-1, so mac-1 is kept" "$err"
-  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+  [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 

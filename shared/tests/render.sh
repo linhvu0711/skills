@@ -255,6 +255,32 @@ t_render_local_no_pane() {
   done
 }
 
+t_render_names_box() {
+  # Given: the local rules template
+  # When
+  render local rules
+  # Then
+  eq exit 0 "$code"
+  eq "lines with ~/.agents or {{skills}}" 0 "$(printf '%s\n' "$out" | grep -cE '~/\.agents|\{\{skills\}\}' || true)"
+  eq "lines with the box.sh path" 2 "$(printf '%s\n' "$out" | grep -c '/build-and-prove/scripts/box.sh' || true)"
+  local f
+  f="$(printf '%s\n' "$out" | grep -o 'bash [^ ]*/build-and-prove/scripts/box.sh' | sed 's/^bash //' | sort -u)"
+  [ -f "$f" ] || eq "box.sh path" "a file" "$f"
+}
+
+t_render_names_handoff() {
+  # Given: the devin and cursor prompt templates
+  local ex
+  for ex in devin cursor; do
+    # When
+    render "$ex" prompt
+    # Then
+    eq "$ex exit" 0 "$code"
+    eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
+    eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
+  done
+}
+
 cases=(
   "local templates name no pane and no QUESTION line|t_render_local_no_pane"
   "local rules start no Sandbox for a plan with no UI|t_render_local_no_ui"
@@ -290,4 +316,6 @@ cases=(
   "cloud rules leave the look-change stop out|t_render_cloud_no_look_change"
   "local rules run a slice's e2e specs in the Sandbox|t_render_local_e2e"
   "cloud rules leave the per-slice e2e rule out|t_render_cloud_no_e2e"
+  "render puts the box.sh path in local rules|t_render_names_box"
+  "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
 )

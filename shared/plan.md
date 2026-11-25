@@ -1,20 +1,20 @@
 # Plan rules
 
-The plan is what the executor follows; `executor.md` says what it has,
+The plan is what the executor follows; `../skills/plan-up/references/executor.md` says what it has,
 what it lacks, and how it works a plan. Every decision that needs
 judgment is made here.
 
 ## Vocabulary
 
 - **Seam**: where a module's interface lives, per
-  `../../shared/codebase-design.md`. A plan's seams are external
+  `codebase-design.md`. A plan's seams are external
   ones: the public place a caller and a test both cross, a function, a
   route, a command, a screen. Tests live at seams, never inside.
 - **Slice**: one change and the tests that prove it. One seam, one
   change, one commit. Each test has one `Then`. A test that needs no
   change of its own rides in the slice whose change covers it.
 - **Probe**: a small run, outside the repo's tree, that settles a fact
-  reading cannot, per `references/probes.md`. Its answer is a `Proved` line.
+  reading cannot, per `../skills/plan-up/references/probes.md`. Its answer is a `Proved` line.
 - **Stale doc**: a doc that says what the code did before the change: a
   README section, a guide, a `CHANGELOG`, an ADR, `--help` text, an
   `.env.example`. A doc the change needs and nobody wrote is stale too.
@@ -60,7 +60,7 @@ judgment is made here.
 Write every block in this order. Drop a block only when no probe ran
 (`Proved`), no Done-when line is on a screen (`UI walks`, `Videos`),
 nothing was decided (`Decided`), or the issue is not a `perf` (`Perf`).
-`Plan check` is never written in steps 4 to 7: only `SKILL.md` step 8
+`Plan check` is never written in steps 4 to 7: only `../skills/plan-up/SKILL.md` step 8
 adds it, after a check ran (§ Plan check).
 
 ```markdown
@@ -190,10 +190,10 @@ By: plan-correctness-checker · <n> round(s); plan-design-checker · <n> round(s
 
 ## Chat plan
 
-A chat plan (`SKILL.md` § Six forms) has no issue. It takes the shape
+A chat plan (`../skills/plan-up/SKILL.md` § Six forms) has no issue. It takes the shape
 of one ticket, with two changes. The head line has no number:
 `# Plan: <brief title>`. And a `## Brief` block comes after Out of
-scope, last but for a `## Plan check` block: the brief's `Task` and `Done when` lines from `SKILL.md`
+scope, last but for a `## Plan check` block: the brief's `Task` and `Done when` lines from `../skills/plan-up/SKILL.md`
 step 2, word for word, since there is no issue for the build prompt to
 quote.
 
@@ -296,7 +296,7 @@ block above, and the Done rule holds whole.
   or file a Step adds; the data the Steps read and write, with where
   its type is defined and its other writers; the dead code in the area
   the Steps touch, and the design of each part the Steps touch, as
-  `SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
+  `../skills/plan-up/SKILL.md` step 4 asks. Every field of `Facts` is filled. No probe, unless an `Open`
   line needs one.
 - **Docs.** Each stale doc is a `Docs` line in the slice of the step
   that makes it stale. The Steps need not name it.
@@ -335,7 +335,7 @@ Two things end the short path:
   stop. The issue gets fixed, not the plan.
 - **A choice.** A step that needs a decision the issue did not make
   means the label was wrong. Say which step and why, then plan the
-  ticket on the full path from SKILL.md step 4, with the Steps as input.
+  ticket on the full path from `../skills/plan-up/SKILL.md` step 4, with the Steps as input.
 
 In a run, a labelled layer is built the same way.
 
@@ -345,9 +345,9 @@ The shape above proves new behavior works, as a `feat` needs. Three
 types need other proof: a `fix` proves the old bug is gone, a `refactor`
 proves nothing changed, and a `perf` proves a number moved. The type is
 the leading word of the issue's title, per
-`../../shared/issue-rules.md` § Types. A repo that writes
+`issue-rules.md` § Types. A repo that writes
 another word for a type keeps it in the `words` map of `python3
-../../shared/issue-conventions.py get <owner/repo>`, as `bug` for
+issue-conventions.py get <owner/repo>`, as `bug` for
 `fix`; that word is read as the type it stands for. A `fix`, `refactor`,
 or `perf` issue adds the rules of its type below to every other rule in
 this file, on the full path and the short one. In a run, each layer
@@ -407,7 +407,7 @@ The structure changes and the behavior does not.
 
 ### perf
 
-Read `../../shared/benchmark.md` first: it says when a speed
+Read `benchmark.md` first: it says when a speed
 number can be trusted.
 
 - The `Perf` block sits after `Facts`. Its `Metric`, `Command`, and
@@ -427,10 +427,10 @@ number can be trusted.
 ## Filling the blocks
 
 Write plain marks: no long dash and no curly quote outside backticks.
-`scripts/build-page.py` refuses each one and names its line.
+`../skills/plan-up/scripts/build-page.py` refuses each one and names its line.
 
 Each Review part, map name, job, flow label, and count has a limit, and
-`scripts/build-page.py` names any line over its limit.
+`../skills/plan-up/scripts/build-page.py` names any line over its limit.
 
 ### Summary
 
@@ -508,7 +508,7 @@ after the slices and before the Review.
 
 A run writes the block in each layer, after the layer's Review. The page
 draws it as a file tree under Blast radius.
-`scripts/build-page.py` refuses a plan with no block, a row with an
+`../skills/plan-up/scripts/build-page.py` refuses a plan with no block, a row with an
 unknown change, a moved row with no `→`, a row with no slice or a slice
 the layer lacks, a row whose slice does not name it (a generated row is
 not checked), and a file listed twice.
@@ -519,14 +519,14 @@ Every command is read from CI config, package scripts, or the
 README, never guessed. `Open` says how the executor reaches the UI from a
 fresh machine: a URL after `Run`, a window that appears, a command to
 type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as
-`executor.md` describes it; its screen is 1024x768, so a wide layout
+`../skills/plan-up/references/executor.md` describes it; its screen is 1024x768, so a wide layout
 needs a scroll or zoom step in the walk. A web walk on the linux
 Sandbox opens its page with the browser starter, `walk-browser <url>
 --viewport-size=1440,795`, at laptop size, and
 `--viewport-size=390,664` at phone size, the page of an iPhone 13
 or 14. The 900 px screen loses 85 px to the browser bars and 20 px to
 the taskbar, so a taller page runs under the taskbar or off the screen,
-and the video hides its bottom. `scripts/build-page.py` refuses a
+and the video hides its bottom. `../skills/plan-up/scripts/build-page.py` refuses a
 `--viewport-size` taller than 795.
 
 ### Proved
@@ -556,7 +556,7 @@ about 1 s with no hook to hold it (§ UI walks): its UI walk column says
 A seam is public: something a caller, a user, or a client
 reaches without knowing the inside. Prefer the seam the repo already
 tests. A new seam goes under `Decided`, with the seam it copies. A new
-seam that is a public API is hard to undo: sort it per `SKILL.md`
+seam that is a public API is hard to undo: sort it per `../skills/plan-up/SKILL.md`
 step 5. A new seam that swaps one thing
 for another (an interface, a port, a client passed in) needs
 two adapters, such as the real one and the test fake. One adapter is a
@@ -586,7 +586,7 @@ its complexity comes back in its callers. A module that only passes a
 call on fails it; the callers call the code under it. Its `Decided` line
 says what it hides. A job the repo has never done gets a new thing; that is the
 plain case, and `Decided` says so in one clause. A new dependency is
-never the plain case: it is a big fork, per `SKILL.md` step 5, asked and
+never the plain case: it is a big fork, per `../skills/plan-up/SKILL.md` step 5, asked and
 answered before the `Change` names it.
 Unhappy paths are tests like any other, usually in the same slice as the
 happy path of their seam. Two seams miss them most, so name their cases
@@ -679,7 +679,7 @@ design is wrong: a flag or a branch for one case, the same logic in two
 places, a caller that works around the part, a new need that fits only
 at the side. The design fits: the plan extends it by the simplest change
 that keeps the code clear. The design does not fit: the part is rebuilt,
-a big fork per `SKILL.md` step 5, where the patch is the lower option
+a big fork per `../skills/plan-up/SKILL.md` step 5, where the patch is the lower option
 with what it costs later. A rebuild is slices in this order: the new
 form, each caller moved to it, and last the old form deleted, all in the
 same PR. The simplest path then decides how: the fewest parts moved,
@@ -771,7 +771,7 @@ slice that needs the data adds a seed command beside the repo's e2e
 helpers. A login is a saved session the starter loads with `--storage
 <file>`, made by a Setup command, or the login written as `Steps`. A
 walk that opens its own page puts the `walk-browser` command last.
-`scripts/build-page.py` refuses a `Setup` with no backtick command that
+`../skills/plan-up/scripts/build-page.py` refuses a `Setup` with no backtick command that
 is not `none`. Each `See` item is visible at the walk's `Screen`
 size in the state its `Setup` makes: a row the seed or fixture holds, on
 the screen the steps reach, with no scroll or filter the steps do not
@@ -791,7 +791,7 @@ it is often what the screenshot cannot show: `no console error` and
 `no failed request`, which the walker reads from the browser log each
 video saves. In a terminal walk it is text the screen
 shows or must not show, as in `no line starting Error:`, never `stderr`
-or `stdout`, which a terminal shows mixed; `scripts/build-page.py`
+or `stdout`, which a terminal shows mixed; `../skills/plan-up/scripts/build-page.py`
 refuses those words there. One walk per row on a screen, happy and unhappy. No two
 walks end in the same picture: the screenshot is the proof, so a walk
 whose `See` matches another walk's proves nothing on its own. Change the
@@ -803,7 +803,7 @@ with `Return`. Text to type, a command or a value, sits in backticks
 right after the word `type`. A command stands alone: never two joined
 with `;` or `&&`, never two in one step, and never `clear` first, since
 a viewer of the video must see each command and its result.
-`scripts/build-page.py` refuses a step that breaks this, naming the walk
+`../skills/plan-up/scripts/build-page.py` refuses a step that breaks this, naming the walk
 or video and the step. In a terminal:
 
 ```markdown
@@ -853,12 +853,12 @@ executor keeps them green rather than editing them.
 
 Every small fork, one line each, so the user can veto any
 with one word. A choice the user made in a question goes here too, marked
-`(user)`. A hard-to-undo pick with a clear winner, per `SKILL.md`
+`(user)`. A hard-to-undo pick with a clear winner, per `../skills/plan-up/SKILL.md`
 step 5, ends `(hard to undo)`.
 
 ### Plan check
 
-Written by `SKILL.md` step 8, only when a checker ran and did not
+Written by `../skills/plan-up/SKILL.md` step 8, only when a checker ran and did not
 fail, and always last in the file. The head line names each checker
 that ran and how many rounds it ran, joined by `; `. Then one line per
 finding: the correctness findings first, each as `Correctness F<n>`,

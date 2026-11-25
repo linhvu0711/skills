@@ -50,17 +50,13 @@ t_restack_lists_nothing() {
   eq stdout "STACK=0" "$out"
 }
 
-# stack [clash]: a temp folder T with a bare origin and R, its clone; cd into R.
+# stack [clash]: repo, with a bare origin.
 # main has f=a; feat/a adds p (a1); feat/b on it adds b (b1, which also sets
 # f=b with `clash`); feat/c on it adds c (c1); all pushed. Then main sets f=main,
 # and feat/a is rebased onto it and force-pushed, R left on it. A_OLD is feat/a's
 # tip before that; $T/stack holds `restack.sh list` lines for feat/b and feat/c.
 stack() {
-  T="$(cd "$(mktemp -d)" && pwd -P)"; R="$T/repo"
-  git init -q --bare "$T/origin.git"
-  git clone -q "$T/origin.git" "$R"; cd "$R"
-  git config user.email "t""@""example.invalid"; git config user.name t
-  git config commit.gpgsign false; git config core.hooksPath .no-hooks
+  repo; git init -q --bare "$T/origin.git"; git remote add origin "$T/origin.git"
   echo a > f; git add f; git commit -qm base; git branch -M main; git push -q origin main
   git checkout -qb feat/a; echo p > p; git add p; git commit -qm a1
   git checkout -qb feat/b; echo b > b; if [ "${1:-}" = clash ]; then echo b > f; fi

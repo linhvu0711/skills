@@ -174,7 +174,7 @@ Steps.
 - **Ready to build**: `ready-to-build`, on every ticket that carries Steps (see
   Size). It says the Steps are final. `plan-up` reads it as "trust the
   Steps" and takes its short path
-  (`../skills/plan-up/references/plan.md` § Ready-to-build); the ticket
+  (`plan.md` § Ready-to-build); the ticket
   still gets a plan before it goes to an executor. Created on first use. Never on a
   `task`, even though a task always carries Steps: the label means code
   steps a plan can be built from.
