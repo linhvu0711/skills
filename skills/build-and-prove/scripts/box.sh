@@ -134,6 +134,8 @@ set -euo pipefail
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
+scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
+
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -167,9 +169,11 @@ create() {
 # save: write the state under a temp name, then move it into place, so a stop
 # mid-write leaves the old file whole.
 save() {
+  local t
+  t="$(mktemp "$dir/.box.env.XXXXXX")"; tmps+=("$t")
   printf 'BOX_ID=%s\nBOX_OS=%s\nBOX_WORK=%s\nBOX_SETUP=%s\nBOX_ENV=%s\nBOX_REMADE=%s\nBOX_SIZE=%s\nBOX_TREE=%s\n' \
-    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" "$BOX_SIZE" "$BOX_TREE" > "$dir/box.env.tmp"
-  mv "$dir/box.env.tmp" "$dir/box.env"
+    "$BOX_ID" "$BOX_OS" "$BOX_WORK" "$BOX_SETUP" "$BOX_ENV" "$BOX_REMADE" "$BOX_SIZE" "$BOX_TREE" > "$t"
+  mv "$t" "$dir/box.env"
 }
 
 # load: read the state as text, its eight keys only; the file never runs.
@@ -197,12 +201,12 @@ load() {
 pb() {
   local out="$1" err="$2" copy keepf="" src
   shift 2
-  copy="$(mktemp)"; src="$copy"
+  copy="$(mktemp "$scratch/pb.XXXXXX")"; src="$copy"
   case "$out" in
     stdout) exec 3>&1 ;;
     stderr) exec 3>&2 ;;
     null) exec 3>/dev/null ;;
-    keep) keepf="$(mktemp)"; exec 3>"$keepf" ;;
+    keep) keepf="$(mktemp "$scratch/keep.XXXXXX")"; exec 3>"$keepf" ;;
     *) exec 3>"$out" ;;
   esac
   set +e
@@ -215,9 +219,8 @@ pb() {
   exec 3>&-
   why="$(tail -n 1 "$src")"; said=""; got=""; gone=""
   [ "$err" != keep ] || said="$(cat "$copy")"
-  [ -z "$keepf" ] || { got="$(cat "$keepf")"; rm -f "$keepf"; }
+  [ -z "$keepf" ] || got="$(cat "$keepf")"
   if [ -n "${BOX_ID:-}" ] && [ "$rc" -eq 125 ] && grep -q "Sandbox $BOX_ID is gone" "$src"; then gone="$why"; fi
-  rm -f "$copy"
 }
 
 # attempt <from> <log> <command>...: upload <from>, or the worktree when it is
@@ -375,19 +378,20 @@ case "$verb" in
     [ -z "$gone" ] || exit "$rc"
     stopped="$rc"
     if [ -n "$out" ]; then
-      pb "$out.tmp" keep exec "$BOX_ID" -- cat "$walk_log"
+      t="$(mktemp "$(dirname "$out")/.$(basename "$out").XXXXXX")"; tmps+=("$t")
+      pb "$t" keep exec "$BOX_ID" -- cat "$walk_log"
       if [ -n "$gone" ]; then
         [ -z "$said" ] || printf '%s\n' "$said" >&2
-        rm -f "$out.tmp"; exit 125
+        exit 125
       fi
       # The walker fails the walk's console and request checks on this line,
       # so close still exits 0 and the walk goes on.
       if [ "$rc" -ne 0 ]; then
-        printf 'missing: %s\n' "$walk_log" >"$out.tmp"
-      elif [ ! -s "$out.tmp" ]; then
-        printf 'none\n' >"$out.tmp"
+        printf 'missing: %s\n' "$walk_log" >"$t"
+      elif [ ! -s "$t" ]; then
+        printf 'none\n' >"$t"
       fi
-      mv "$out.tmp" "$out"
+      mv "$t" "$out"
     fi
     # The next video's browser starts a new log, so its file holds only its own lines.
     bare rm -f "$walk_log"
@@ -441,9 +445,8 @@ case "$verb" in
     # would run the Gate.
     covered=()
     if [ -n "$ci_wt" ] && [ $# -ge 1 ]; then
-      cerr="$(mktemp)"
+      cerr="$(mktemp "$scratch/cerr.XXXXXX")"
       cover_out="$(bash "$cover" "$ci_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
-      rm -f "$cerr"
       while IFS= read -r v; do
         v="${v%% · *}"
         case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
@@ -464,8 +467,7 @@ case "$verb" in
     tmpd="${TMPDIR:-/tmp}"; logs="$(mktemp -d "${tmpd%/}/box-gates.XXXXXX")"
     sha="$(git -C "$work" rev-parse --short HEAD)"
     # checks.txt is moved into place whole, so a stop leaves the old one.
-    tmp="$dir/checks.txt.tmp"
-    trap 'rm -f "$tmp"' EXIT
+    tmp="$(mktemp "$dir/.checks.txt.XXXXXX")"; tmps+=("$tmp")
     : > "$tmp"
     n=0; red=0
 

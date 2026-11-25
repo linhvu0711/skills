@@ -77,7 +77,7 @@ t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
 claude_settings="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 codex_hooks="${CODEX_HOOKS_FILE:-$HOME/.codex/hooks.json}"
 gate="$repo/shared/gate/subagent-gate.sh"
-scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
+scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
 # points to no file and whose target is one of the prefixes plus its name. A
@@ -316,7 +316,7 @@ fix() {
       to="$path"
       if [ -L "$to" ] && t="$(realpath "$to" 2>/dev/null)"; then to="$t"; fi
       mkdir -p "$(dirname "$to")"
-      t="$(mktemp "$(dirname "$to")/.link.XXXXXX")"; cat "$want" > "$t"
+      t="$(mktemp "$(dirname "$to")/.$(basename "$to").XXXXXX")"; tmps+=("$t"); cat "$want" > "$t"
       mv "$t" "$to"; printf 'wrote %s\n' "$to" ;;
   esac
 }

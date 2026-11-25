@@ -41,9 +41,11 @@ case "${1:-}" in
       || die "could not fetch $base from origin"
     sha="$(git -C "$checkout" rev-parse --verify "refs/remotes/origin/$base^{commit}")"
     tmp="$(mktemp -d "${TMPDIR:-/tmp}/base-tree.XXXXXX")"
+    kept=""; trap '[ -n "$kept" ] || rm -rf "$tmp"' EXIT
     dir="$(cd "$tmp" && pwd -P)/base"
     git -C "$checkout" worktree add --quiet --detach "$dir" "$sha" \
-      || { rm -rf "$tmp"; die "could not add a worktree at $dir"; }
+      || die "could not add a worktree at $dir"
+    kept=1
     printf 'BASE_TREE=%s BASE_SHA=%s\n' "$dir" "$sha"
     ;;
 esac

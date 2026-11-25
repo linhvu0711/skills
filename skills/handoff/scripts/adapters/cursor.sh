@@ -52,6 +52,7 @@ SELF="$here/$(basename "${BASH_SOURCE[0]}")"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 . "$here/../../../../shared/gh.sh"
+scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
 
 usage_text() {
   cat <<'EOF'
@@ -90,7 +91,7 @@ aid() {
 # api METHOD PATH [JSON]  -> body on stdout, dies on non-2xx
 api() {
   local method="$1" path="$2" data="${3:-}" out code
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   if [[ -n "$data" ]]; then
     code=$(curl -sS -o "$out" -w '%{http_code}' -X "$method" \
       -H "Authorization: Bearer $(key)" -H 'Content-Type: application/json' \
@@ -102,9 +103,9 @@ api() {
   if [[ "$code" != 2* ]]; then
     local why; why=$(jq -r '.error.code // empty' "$out" 2>/dev/null || true)
     local msg; msg=$(jq -r '.error.message // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on $method $path${why:+: $why}${msg:+ ($msg)}"
+    die "HTTP $code on $method $path${why:+: $why}${msg:+ ($msg)}"
   fi
-  cat "$out"; rm -f "$out"
+  cat "$out"
 }
 
 # summary AGENT_JSON RUN_JSON -> "agent<TAB>run<TAB>run_id<TAB>prs<TAB>url<TAB>last message (one line, cut)"
@@ -134,16 +135,15 @@ fetch() {
 # name, which no other agent has.
 create_on_mac() {
   local body="$1" worker="$2" out code rc=0 i found
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   code=$(curl -sS --max-time 20 -o "$out" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer $(key)" -H 'Content-Type: application/json' \
     -d "$body" "$API/agents" 2>/dev/null) || rc=$?
-  if [[ $rc -eq 0 && "$code" == 2* ]]; then cat "$out"; rm -f "$out"; return 0; fi
+  if [[ $rc -eq 0 && "$code" == 2* ]]; then cat "$out"; return 0; fi
   if [[ $rc -eq 0 ]]; then
     local why; why=$(jq -r '.error.code // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on POST /agents${why:+: $why}"
+    die "HTTP $code on POST /agents${why:+: $why}"
   fi
-  rm -f "$out"
   [[ $rc -eq 28 ]] || die "POST /agents failed (curl exit $rc)"
   for i in 1 2 3; do
     found=$(api GET "/agents?limit=20" | jq -c --arg w "$worker" \
@@ -212,10 +212,9 @@ cmd_start() {
     + (if $model != "" then { model: { id: $model } } else {} end)
     + (if $w != "" then { env: { type: "machine", name: $w } } else {} end)' "$file")
   if [[ -n "$worker" ]]; then
-    bf=$(mktemp); printf '%s' "$body" >"$bf"
+    bf=$(mktemp "$scratch/body.XXXXXX"); printf '%s' "$body" >"$bf"
     res=$(CURSOR_API_KEY="$(key)" bash "$MAC" rent "$worker" "$repo" "$base" -- bash "$SELF" create "$bf" "$worker") \
-      || { rm -f "$bf"; exit 1; }
-    rm -f "$bf"
+      || exit 1
     printf '%s\n' "$res"
     return 0
   fi

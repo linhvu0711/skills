@@ -686,6 +686,24 @@ ci_only_fixture() {
   sha="$(git -C "$R" rev-parse --short HEAD)"
 }
 
+t_box_gates_cover_fails_no_temp() {
+  # Given: ci-covers stops, since the tail that reads a workflow's run lines
+  # fails, and a mktemp that logs each path it makes
+  ci_only_fixture
+  mkdir -p "$T/failbin"
+  printf '%s\n' '#!/usr/bin/env bash' 'case "$*" in "-n +2 "*) exit 1 ;; esac' 'exec /usr/bin/tail "$@"' > "$T/failbin/tail"
+  printf '%s\n' '#!/usr/bin/env bash' 'p="$(/usr/bin/mktemp "$@")" || exit' "printf '%s\\n' \"\$p\" >> '$T/made'" "printf '%s\\n' \"\$p\"" > "$T/failbin/mktemp"
+  chmod +x "$T/failbin/tail" "$T/failbin/mktemp"
+  export PATH="$T/failbin:$PATH"
+  # When
+  box gates "$P" --ci "$R" -- 'pnpm test'
+  # Then
+  eq exit 1 "$code"
+  local left="" f
+  while IFS= read -r f; do [ ! -e "$f" ] || left="$left $f"; done < "$T/made"
+  eq "temp files left" "" "$left"
+}
+
 t_box_gates_ci_no_sandbox() {
   # Given
   ci_only_fixture
@@ -1160,6 +1178,7 @@ cases=(
   "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --ci leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_ci"
+  "gates leaves no temp file when ci-covers stops|t_box_gates_cover_fails_no_temp"
   "gates --ci needs no Sandbox when CI runs every Gate|t_box_gates_ci_no_sandbox"
   "gates --ci needs no proofbox when CI runs every Gate|t_box_gates_ci_no_proofbox"
   "gates --ci runs an --on-local Gate on the local machine though CI names it|t_box_gates_ci_on_local"

@@ -61,6 +61,7 @@ MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../shared/gh.sh"
+scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # need_tools -> dies when a tool a Mac step needs is missing. Only a step that
@@ -88,7 +89,7 @@ row_get() {
 row_set() {
   local tmp
   mkdir -p "$(dirname "$MACS")"; touch "$MACS"
-  tmp=$(mktemp "$MACS.XXXXXX")
+  tmp=$(mktemp "$(dirname "$MACS")/.$(basename "$MACS").XXXXXX"); tmps+=("$tmp")
   awk -F'\t' -v a="$1" '$1 != a' "$MACS" >"$tmp"
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >>"$tmp"
   mv "$tmp" "$MACS"
@@ -127,13 +128,13 @@ cmd_up() {
   key="${CURSOR_API_KEY:-}"
   [[ -n "$key" ]] || die "CURSOR_API_KEY is not set"
   gh_out auth token || die "gh is not signed in ($err): run gh auth login"; token="$out"
-  dir=$(mktemp -d); cid="$dir/cid"
+  dir=$(mktemp -d "$scratch/create.XXXXXX"); cid="$dir/cid"
   nsc create </dev/null --machine_type mac/silicon:6x14 \
     --selectors macos.version=26.x,image.with=xcode-26 \
     --duration "${HOURS}h" --purpose "handoff $worker" \
     --cidfile "$cid" --wait_timeout 5m >"$dir/create.log" 2>&1 \
-    || { tail -3 "$dir/create.log" >&2; rm -rf "$dir"; die "nsc create failed"; }
-  id=$(cat "$cid"); rm -rf "$dir"
+    || { tail -3 "$dir/create.log" >&2; die "nsc create failed"; }
+  id=$(cat "$cid")
   [[ -n "$id" ]] || die "nsc create printed no instance id"
   # From here on, a failure must not leave a rented Mac behind.
   name="${repo##*/}"
@@ -181,17 +182,16 @@ cmd_down() {
   need_tools
   # A Mac whose worker hangs must still be destroyed, so this step may fail.
   remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
-  log=$(mktemp)
+  log=$(mktemp "$scratch/destroy.XXXXXX")
   if nsc destroy "$id" --force </dev/null >"$log" 2>&1; then
-    rm -f "$log"; echo "destroyed $id"; return 0
+    echo "destroyed $id"; return 0
   fi
   # Proven 2026-11-12: nsc destroy of an ID Namespace does not hold exits 1
   # with "Failed: <id>: does not exist.", so that Mac costs nothing.
   if grep -q 'does not exist\.' "$log"; then
-    rm -f "$log"; echo "already gone $id"; return 0
+    echo "already gone $id"; return 0
   fi
   why=$(grep -v -e '^info:' -e '^[[:space:]]*$' "$log" | head -1 || true)
-  rm -f "$log"
   echo "stop: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
   return 1
 }

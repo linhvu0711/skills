@@ -171,9 +171,13 @@ def save_index(idx: dict) -> None:
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             tmp = os.path.splitext(path)[0] + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as h:
-                json.dump(idx, h, ensure_ascii=False)
-            os.replace(tmp, path)
+            try:
+                with open(tmp, "w", encoding="utf-8") as h:
+                    json.dump(idx, h, ensure_ascii=False)
+                os.replace(tmp, path)
+            finally:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
             return
         except OSError as e:
             last = e

@@ -180,7 +180,7 @@ lock_claims() { take_lock "$home/.claims.lock" "another run's check is busy: it 
 put() {
   local file="$1" tmp
   shift
-  tmp="$(mktemp "$(dirname "$file")/.$(basename "$file").XXXXXX")"
+  tmp="$(mktemp "$(dirname "$file")/.$(basename "$file").XXXXXX")"; tmps+=("$tmp")
   "$@" > "$tmp"
   mv "$tmp" "$file"
 }
@@ -229,7 +229,7 @@ read_issues() {
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
 # decide_for write gh's stderr to errf.
-errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); trap 'rm -f "$errf" "$obsf"; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
+errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); tmps=(); trap 'rm -f "$errf" "$obsf" ${tmps[@]+"${tmps[@]}"}; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
 
 # size_label <issue json>: the issue's size, from its first size label.
 size_label() {

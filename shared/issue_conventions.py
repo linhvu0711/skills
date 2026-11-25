@@ -81,10 +81,14 @@ def load(store):
 def save(store, data):
     os.makedirs(os.path.dirname(store), exist_ok=True)
     tmp = store + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=2, sort_keys=True)
-        f.write("\n")
-    os.replace(tmp, store)
+    try:
+        with open(tmp, "w") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+            f.write("\n")
+        os.replace(tmp, store)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 def with_priority(repo, entry):

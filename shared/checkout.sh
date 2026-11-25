@@ -83,6 +83,7 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/gh.sh"
+tmps=(); trap 'rm -f ${tmps[@]+"${tmps[@]}"}' EXIT
 
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
@@ -155,7 +156,8 @@ find_main() {
         main="$cand"; main_from="map"
       else
         printf 'map entry for %s is stale (%s), dropping it\n' "$slug" "$cand" >&2
-        tmp="$(mktemp)"; awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
+        tmp="$(mktemp "$(dirname "$map")/.$(basename "$map").XXXXXX")"; tmps+=("$tmp")
+        awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
       fi
     fi
   fi
@@ -293,10 +295,11 @@ copy_included() {
     # -e is false for a dangling link; that link is the worktree's own, so keep it.
     [ ! -e "$wt/$f" ] && [ ! -L "$wt/$f" ] || continue
     # Written under a temp name and moved, so a cut-off copy never looks whole.
-    if mkdir -p "$(dirname "$wt/$f")" && cp -p "$main/$f" "$wt/$f.tmp.$$" 2>/dev/null && mv "$wt/$f.tmp.$$" "$wt/$f"; then
+    if mkdir -p "$(dirname "$wt/$f")" && t="$(mktemp "$(dirname "$wt/$f")/.$(basename "$f").XXXXXX")" && tmps+=("$t") \
+       && cp -p "$main/$f" "$t" 2>/dev/null && mv "$t" "$wt/$f"; then
       copied+=("$f")
     else
-      rm -f "$wt/$f.tmp.$$"; failed+=("$f")
+      failed+=("$f")
     fi
   done < <(git -C "$main" ls-files -z -o -i --exclude-from="$list")
   # A pattern may match nothing on purpose; only a plain path is named.
