@@ -58,7 +58,7 @@
 # usage, on stderr.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
 . "$core/kickoff/labels.sh"
 . "$core/gh.sh"
@@ -209,8 +209,7 @@ fields='number title state createdAt labels(first:50){nodes{name}} subIssues(fir
 # of its refs {error: <that line>}, so the rest of the run goes on.
 read_issues() {
   local all="{}" rr q r n out err
-  # shellcheck disable=SC2046 # one word per repo
-  for rr in $(printf '%s\n' "$@" | sed 's/#.*//' | awk -v h="$slug" '!s[$0]++ { if ($0 == h) print; else o = o $0 "\n" } END { printf "%s", o }'); do
+  while IFS= read -r rr; do
     q=""
     for r in "$@"; do [ "${r%#*}" = "$rr" ] || continue; n="${r##*#}"; q="$q i$n: issue(number: $n) { ...F }"; done
     # shellcheck disable=SC2016 # the $ names are GraphQL variables
@@ -225,7 +224,7 @@ read_issues() {
       all="$(jq -c --arg rr "$rr" --arg e "$err" --argjson all "$all" --args '
         $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: {error: $e}}] | from_entries)' "$@" <<<"null")"
     fi
-  done
+  done < <(printf '%s\n' "$@" | sed 's/#.*//' | awk -v h="$slug" '!s[$0]++ { if ($0 == h) print; else o = o $0 "\n" } END { printf "%s", o }')
   printf '%s\n' "$all"
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
@@ -597,12 +596,12 @@ observe() {
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
-  for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
+  while IFS= read -r r; do
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$j" != null ] || continue
     if jq -e .error <<<"$j" >/dev/null; then st=unread; else st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; fi
     stages="$(jq -c --arg r "$r" --arg s "$st" '.[$r] = $s' <<<"$stages")"
-  done
+  done < <(jq -r '.set[], .removed[]' <<<"$S")
   holders="$(turn_holders "$stages")"
   turn="$(jq -r 'if . == [] then empty else .[0] end' <<<"$holders")"
   others="$(other_runs)"
@@ -615,7 +614,7 @@ observe() {
   owners="$(jq -c --argjson set "$(jq -c .set <<<"$S")" \
     '. as $is | [$set[] | . as $i | $is[$i] // empty | select(.error == null)
       | .closedByPullRequestsReferences.nodes[] | {key: .url, value: $i}] | reverse | from_entries' <<<"$issues")"
-  for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
+  while IFS= read -r r; do
     gone="$(jq --arg r "$r" '.removed | index([$r]) != null' <<<"$S")"
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
@@ -704,7 +703,7 @@ observe() {
            + (if $wait == "" then {} else {wait: $wait} end) + (if $ask == "" then {} else {ask: $ask} end)')"
     if [ "$gone" = true ]; then gone_rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$gone_rows")"
     else rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"; fi
-  done
+  done < <(jq -r '.set[], .removed[]' <<<"$S")
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
   # that closes one still open. An open sub-issue that is an epic of the run
@@ -1101,11 +1100,11 @@ cmd_close_epics() {
   while [ -n "$pending" ]; do
     # shellcheck disable=SC2086 # one word per ref
     if ! got="$(read_issues $pending)"; then
-      for r in $pending; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done
+      while IFS= read -r r; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done <<<"$pending"
       return 0
     fi
     closed=0; left=""
-    for r in $pending; do
+    while IFS= read -r r; do
       IFS=$'\t' read -r kind val < <(jq -r --arg r "$r" '.[$r] as $i
         | if $i == null then ["error", "not found"]
           elif $i.error then ["error", $i.error]
@@ -1127,7 +1126,7 @@ cmd_close_epics() {
             printf '%s not closed: %s\n' "$(label_of "$r")" "$err"
           fi ;;
       esac
-    done
+    done <<<"$pending"
     if [ "$closed" -eq 0 ]; then
       for r in $left; do printf '%s not closed: %s is still open\n' "$(label_of "${r%%=*}")" "$(label_of "${r#*=}")"; done
       return 0

@@ -22,7 +22,8 @@ usage='usage: adopt.sh <name>'
 name="$1"
 [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die_usage "$usage" "not a skill name: $name"
 home="${SKILLS_HOME:-$HOME/.agents/skills}"
-repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo="$(git -C "$here/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
 
 [ ! -L "$home/$name" ] || die "$home/$name is already a link"
 [ -d "$home/$name" ] || die "no skill named $name in $home"

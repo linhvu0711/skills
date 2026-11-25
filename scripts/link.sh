@@ -61,7 +61,8 @@ case "$#:${1:-}" in
   *) die_usage 'usage: link.sh [--status]' ;;
 esac
 
-repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo="$(git -C "$here/.." rev-parse --show-toplevel)"
 git_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-dir)" && pwd -P)"
 common_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)" && pwd -P)"
 [ "$git_dir" = "$common_dir" ] || exit 0

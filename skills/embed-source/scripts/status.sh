@@ -5,7 +5,7 @@
 # Usage: status.sh [repo-root]
 set -euo pipefail
 
-here="$(CDPATH= cd "$(dirname "$0")" && pwd -P)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # The sync script owns the manifest format, so the two never disagree.
 . "$here/../templates/sync-repos.sh"
 

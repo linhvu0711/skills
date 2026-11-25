@@ -6,12 +6,12 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 - Stop a script with an error: `die()` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python.
 - Call GitHub: `shared/gh.sh` in shell, `shared/gh.py` in Python.
-- Find a script's own folder: `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`. Old way: `dirname "$0"`, `realpath` (#409).
+- Find a script's own folder: `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`.
 - Read JSON in shell: `jq`. Old way: `python3 -c` with `json.load`, `node -p`, `sed` or `grep -o` (#409).
 - Write JSON in shell: literal text for a fixed fixture, `jq -n --arg` when a value comes from a variable. Old way: a hand-written string with a variable in it (#409).
 - Clean up temp files: a `trap … EXIT` in shell, `try`/`finally` in Python (bash-manual). Old way: `rm` after use (#409).
 - Replace a file: write a temp file in the same folder, then `mv`; Python: `os.replace`. Old way: a temp file in another folder, an own `.tmp.$$` name (#409).
-- Loop over a command's output lines: `while IFS= read -r`. Old way: `for x in $(…)` (#409).
+- Loop over a command's output lines: `while IFS= read -r`.
 - Test a condition in shell: `[ ]` with quoted values for a plain test, `[[ ]]` for `=~` and patterns.
 - Name a Python file: snake_case, since only a snake_case module can be imported (pep-8). Old way: dashes, as `build-report.py` (#410).
 - Parse command-line arguments: `argparse` in Python, `util.parseArgs` in Node. Old way: `sys.argv` or `process.argv` read by hand (#410).

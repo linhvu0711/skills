@@ -78,7 +78,7 @@ t_cursor_no_key() {
 fake_mac() {
   cat > "$T/mac.sh" <<'EOF'
 #!/usr/bin/env bash
-d="$(dirname "$0")"
+d="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 printf '%s\n' "$*" >> "$d/mac.calls"
 case "$1" in
   rent) shift 5; "$@" ;;

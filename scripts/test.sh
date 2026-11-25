@@ -17,7 +17,7 @@
 # `<p> passed, <f> failed`. Exit 1 when any case failed.
 set -euo pipefail
 
-here="$(cd "$(dirname "$0")" && pwd -P)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/test-lib.sh"
 mac_home="/Us""ers/alice"
 linux_home="/ho""me/bob"

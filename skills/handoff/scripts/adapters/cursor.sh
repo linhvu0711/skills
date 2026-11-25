@@ -45,12 +45,13 @@ set -euo pipefail
 
 API="${CURSOR_API_URL:-https://api.cursor.com}/v1"
 MSG_CHARS=600
-MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
-SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+MAC="${HANDOFF_MAC:-$here/../mac.sh}"
+SELF="$here/$(basename "${BASH_SOURCE[0]}")"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../../shared/gh.sh"
+. "$here/../../../../shared/gh.sh"
 
 usage_text() {
   cat <<'EOF'
@@ -244,7 +245,7 @@ cmd_poll() {
   if [[ -n "$repo" ]]; then
     if gh_out pr list -R "$repo" --state all --limit 50 --json url,headRefName \
       -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"; then ghprs="$out"; else ghprs=""; fi
-    for p in $ghprs; do arr+=("$p"); done
+    while IFS= read -r p; do [[ -z "$p" ]] || arr+=("$p"); done <<<"$ghprs"
   fi
   for p in ${arr[@]+"${arr[@]}"}; do
     case "$all" in *" $p "*) ;; *) all="$all$p " ;; esac

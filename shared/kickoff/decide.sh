@@ -36,7 +36,7 @@
 # launch starts only after every check here passed.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
 . "$here/../gh.sh"

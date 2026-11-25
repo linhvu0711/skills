@@ -39,7 +39,7 @@
 # stderr, exit 64. An adapter's exit code passes through.
 set -euo pipefail
 
-here="$(cd "$(dirname "$0")" && pwd -P)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
 DEFAULT_EXECUTOR=devin

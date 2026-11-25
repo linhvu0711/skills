@@ -22,7 +22,7 @@
 # The tree is left as is: /ship reads its own copy of the base.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 

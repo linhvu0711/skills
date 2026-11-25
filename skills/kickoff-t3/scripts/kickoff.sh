@@ -20,7 +20,7 @@
 # line, with its `stop:` line on stderr.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # ---------- T3 ----------
 # The shared T3 lookup names the chat's t3 command, or stops outside T3.

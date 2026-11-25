@@ -26,7 +26,7 @@ embed_rows() {
 
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [[ "${EMBED_SOURCE_SKIP:-}" == "1" ]]; then
   echo "sync-repos: skipped (EMBED_SOURCE_SKIP=1)"
