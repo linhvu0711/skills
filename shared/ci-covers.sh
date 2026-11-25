@@ -18,6 +18,8 @@
 #     the Gate.
 #   - neither the job nor the step of that run line has an `if:` line, and
 #     no job the run's job waits on through `needs:`, at any depth, has one.
+#     A quoted key, as `"if":` or `'if':`, counts like a bare one, for
+#     `jobs:`, `steps:`, `needs:`, and `if:`.
 #     Any `if:` counts, `if: always()` too: the script does not read what a
 #     condition means, and an `if:` can skip the run on the PR. A `needs:`
 #     name with no job in the file counts as one that can skip.
@@ -41,6 +43,13 @@ wt="$1"; shift 2
 # It keeps to POSIX awk, so BSD awk on macOS and mawk on CI read it the same.
 prog='
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+# unq(s): s with the quotes taken off a leading key, as "if": or \047if\047:,
+# since YAML reads a quoted key the same as a bare one.
+function unq(s) {
+  if (s ~ /^"[a-z-]+"[ \t]*:/) { sub(/^"/, "", s); sub(/"[ \t]*:/, ":", s) }
+  else if (s ~ /^\047[a-z-]+\047[ \t]*:/) { sub(/^\047/, "", s); sub(/\047[ \t]*:/, ":", s) }
+  return s
+}
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
 function need(j, name) { nd[j, ++nn[j]] = trim(name) }
@@ -101,10 +110,7 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
       if (jk < 0) jk = ind
       if (ind == jk && !dash && !bare) {
         cur = 0; insteps = (t ~ /^steps:/); sind = -1; inneeds = 0
-        # YAML reads a quoted key, as "needs":, the same as a bare one.
-        kt = t
-        if (kt ~ /^"[a-z-]+"[ \t]*:/) { sub(/^"/, "", kt); sub(/"[ \t]*:/, ":", kt) }
-        else if (kt ~ /^\047[a-z-]+\047[ \t]*:/) { sub(/^\047/, "", kt); sub(/\047[ \t]*:/, ":", kt) }
+        kt = unq(t)
         if (kt ~ /^if:([ \t]|$)/) jif[job] = 1
         if (kt ~ /^needs:([ \t]|$)/) {
           v = trim(nocomment(substr(kt, 7)))
@@ -122,7 +128,7 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
         if ((dash || bare) && sind < 0) sind = ind
         if ((dash || bare) && ind == sind) { cur = ++step; scol = (bare ? -1 : col) }
         else if (cur && scol < 0) scol = col
-        if (cur && col == scol && t ~ /^if:([ \t]|$)/) sif[cur] = 1
+        if (cur && col == scol && unq(t) ~ /^if:([ \t]|$)/) sif[cur] = 1
       }
     }
   }

@@ -305,6 +305,18 @@ t_cc_job_quoted_keys() {
   done
 }
 
+t_cc_quoted_step_keys() {
+  local k
+  for k in '"if": false' "'if': false" '"if" : false'; do
+    # Given
+    T=""; wf ci.yml 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' "        $k"
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($k)" "here · pnpm test" "$out"
+  done
+}
+
 t_cc_needs_unknown_job() {
   # Given
   T=""; needs_yml '' '    needs: a' '    needs: c'
@@ -347,6 +359,7 @@ cases=(
   "needs with no if in the chain leaves the Gate to CI|t_cc_needs_no_if"
   "a needs name on the line under the key, bare or after a bare dash, is read|t_cc_needs_next_line"
   "a quoted needs or if key on a job counts|t_cc_job_quoted_keys"
+  "a quoted if, steps, or jobs key counts|t_cc_quoted_step_keys"
   "needs on a job not in the file sends the Gate here|t_cc_needs_unknown_job"
   "no command after -- is a usage stop|t_cc_usage"
 )
