@@ -40,7 +40,7 @@ t_prune_old_chat_plan() {
   eq exit 0 "$code"
   eq stdout "$(printf 'pruned acme-shop-chat-orders-csv\npruned 1, kept 0')" "$out"
   eq left "" "$(ls "$PLAN_DIR")"
-  [ ! -e "$FAKE_GH/issue-list.calls" ]
+  [ ! -e "$FAKE_GH/issue-list.calls" ] || eq "issue list calls" "" "$(cat "$FAKE_GH/issue-list.calls")"
 }
 
 t_prune_keeps_new_chat_plan() {

@@ -51,7 +51,7 @@ t_base_copy_installs_pnpm() {
   eq stdout "BASE_WT=$dir BASE_SHA=$(git rev-parse main)" "$out"
   eq stderr "" "$err"
   eq "tool log" "$dir pnpm install --frozen-lockfile --ignore-scripts" "$(cat "$T/tool.log")"
-  [ -e "$dir/node_modules/.fake" ]
+  [ -e "$dir/node_modules/.fake" ] || eq packages installed none
 }
 
 t_base_copy_lockfile_commands() {
@@ -85,8 +85,8 @@ t_base_copy_no_lockfile() {
   eq exit 0 "$code"
   eq stdout "BASE_WT=$dir BASE_SHA=$(git rev-parse main)" "$out"
   eq stderr "" "$err"
-  [ ! -e "$T/tool.log" ]
-  [ ! -e "$dir/node_modules" ]
+  [ ! -e "$T/tool.log" ] || eq "install calls" "" "$(cat "$T/tool.log")"
+  [ ! -e "$dir/node_modules" ] || eq node_modules gone "still there"
 }
 
 t_base_copy_install_fails() {
@@ -123,14 +123,14 @@ t_base_copy_remove_with_packages() {
   origin pnpm-lock.yaml
   copy main
   local dir; dir="$(dir_of)"
-  [ -e "$dir/node_modules/.fake" ]
+  [ -e "$dir/node_modules/.fake" ] || eq packages installed none
   # When
   copy --remove "$dir"
   # Then
   eq exit 0 "$code"
   eq stdout "removed $dir" "$out"
-  [ ! -e "$(dirname "$dir")" ]
-  case "$(git worktree list)" in *"$dir"*) echo "worktree list still names $dir" >&2; exit 1 ;; esac
+  [ ! -e "$(dirname "$dir")" ] || eq "temp folder" gone "still there"
+  lacks "worktree list" "$dir" "$(git worktree list)"
 }
 
 cases=(
