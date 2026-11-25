@@ -9,7 +9,9 @@
 #   - its top-level `on:` names `pull_request`: `on: pull_request`, a list
 #     such as `on: [push, pull_request]`, or a `pull_request:` key or
 #     `- pull_request` item under `on:`. A filter under that key, such as
-#     `branches:` or `paths:`, can skip the PR, so the Gate runs here.
+#     `branches:` or `paths:`, or a value on the key's own line, such as
+#     `pull_request: {branches: [main]}`, can skip the PR, so the Gate runs
+#     here.
 #   - the Gate is exactly a run command: the value of a one-line `run:`, or
 #     one line, trimmed, of a `run: |` block. A longer command, a comment, a
 #     line of a folded `run: >` block, or a run line with more on it is not
@@ -55,9 +57,11 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
     if (ind > 0) {
       if (child < 0) child = ind
       if (ind == child) {
-        k = trim(line); sub(/^-[ \t]*/, "", k); k = nocomment(k); sub(/:.*$/, "", k)
+        k = trim(line); sub(/^-[ \t]*/, "", k); k = nocomment(k)
+        rest = ""; c = index(k, ":"); if (c) { rest = trim(substr(k, c + 1)); k = substr(k, 1, c - 1) }
         prk = (trim(k) == "pull_request")
         if (prk) pr = 1
+        if (prk && rest != "") filt = 1
       } else if (prk) filt = 1
       next
     }

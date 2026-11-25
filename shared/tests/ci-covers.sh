@@ -179,6 +179,19 @@ here · pnpm test" "$out"
   done
 }
 
+t_cc_pr_inline_filter() {
+  local v
+  for v in '{branches: [main]}' '{types: [opened]}'; do
+    # Given: the issue's repro
+    T=""
+    wf ci.yml 'on:' "  pull_request: $v" 'jobs:' '  t:' '    steps:' '      - run: pnpm test'
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($v)" "here · pnpm test" "$out"
+  done
+}
+
 t_cc_usage() {
   # Given
   T=""; ci_yml 'on: pull_request' '      - run: pnpm test'
@@ -204,5 +217,6 @@ cases=(
   "a step if, before or after its run, sends only that step here|t_cc_step_if"
   "a step if under a bare dash sends only that step here|t_cc_step_if_bare_dash"
   "a filter under pull_request sends every Gate here|t_cc_pr_filter"
+  "the issue's repro: a filter on the pull_request line sends the Gate here|t_cc_pr_inline_filter"
   "no command after -- is a usage stop|t_cc_usage"
 )
