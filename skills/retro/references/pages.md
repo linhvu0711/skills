@@ -41,7 +41,7 @@ These fields are HTML: `read`, a card's `title`, `where`, and `fix`, `top_why`, 
   - `open`: the number of the home's open issue for it, when there is one. `did_not_hold`: the number of the closed issue whose problem came back.
   - `items`: the ids of the items it came from. `times`: its moments. `cost`: the sum of its `Cost` lines, empty for a worth-sharing card.
   - `where`: one HTML line per file, the file from the setup map or `none: add one with /<skill>`, and the skill that owns it.
-  - `quotes`: one per moment, manual-steps line, or worth-sharing line, each with `text`, `item`, and `where`. The two that show the moment best come first.
+  - `quotes`: one per moment, manual-steps line, or worth-sharing line, each with `text`, `item`, one of the card's `items`, and `where`. The two that show the moment best come first.
   - `texts`: only for a fix that changes text in a file on this machine: per file, `file`, `place`, `now`, the lines as they are, and `after`, the same lines after the fix.
   - `fix`: one sentence that names the moment it would have stopped, by item and `Where`.
 - `questions`: one per open question, with `text`, what was seen, and its `item` and `where`. None: an empty list.

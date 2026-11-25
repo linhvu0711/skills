@@ -34,9 +34,12 @@ def problems(cards):
         name = f'card "{card.get("title")}"'
         if card.get("badge") not in STRENGTH:
             yield f'{name}: badge "{card.get("badge")}" is not Strong, Worth exploring, Speculative, One-time, or Tip'
-        for item in card.get("items", []) + [q.get("item") for q in card.get("quotes", [])]:
+        for item in card.get("items", []):
             if item not in ids:
                 yield f'{name}: item "{item}" is not in items'
+        for q in card.get("quotes", []):
+            if q.get("item") not in card.get("items", []):
+                yield f'{name}: quote item "{q.get("item")}" is not one of the card\'s items'
     for n, question in enumerate(cards["questions"], 1):
         if question.get("item") not in ids:
             yield f'question {n}: item "{question.get("item")}" is not in items'

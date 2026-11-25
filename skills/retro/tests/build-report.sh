@@ -171,6 +171,16 @@ t_rb_refuses_unknown_item() {
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
+t_rb_refuses_quote_off_card() {
+  # Given: card "Name the base in the plan" came from S1, but its quote cites PR #40
+  rb_cards '(.cards[] | select(.title == "Name the base in the plan") | .quotes[0].item) = "PR #40"'
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'card "Name the base in the plan": quote item "PR #40" is not one of the card'"'"'s items' "$out"
+}
+
 t_rb_refuses_badge() {
   # Given: card "Name the base in the plan" with a badge the report does not know
   rb_cards '(.cards[] | select(.title == "Name the base in the plan") | .badge) = "Great"'
@@ -191,5 +201,6 @@ cases=(
   "puts this project's cards first|t_rb_this_project_first"
   "counts every item read, and draws columns only for card items|t_rb_counts_every_item_read"
   "refuses a card that names an unknown item|t_rb_refuses_unknown_item"
+  "refuses a quote from an item not on its card|t_rb_refuses_quote_off_card"
   "refuses a badge it does not know|t_rb_refuses_badge"
 )
