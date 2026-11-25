@@ -44,6 +44,13 @@ function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
 function nocomment(s) { sub(/[ \t]+#.*$/, "", s); return s }
 function indent(s) { match(s, /^ */); return RLENGTH }
 function need(j, name) { nd[j, ++nn[j]] = trim(name) }
+# needs(j, v): v is one job name or a flow list, as `[a, b]`.
+function needs(j, v,   m, i, items) {
+  v = trim(v)
+  if (v !~ /^\[.*\]$/) { need(j, v); return }
+  m = split(substr(v, 2, length(v) - 2), items, ",")
+  for (i = 1; i <= m; i++) need(j, items[i])
+}
 BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injobs = 0; jind = -1; jk = -1; job = 0
   insteps = 0; sind = -1; step = 0; cur = 0; scol = -1 }
 {
@@ -102,15 +109,12 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
         if (kt ~ /^needs:([ \t]|$)/) {
           v = trim(nocomment(substr(kt, 7)))
           if (v == "") inneeds = 1
-          else if (v ~ /^\[.*\]$/) {
-            m = split(substr(v, 2, length(v) - 2), items, ",")
-            for (i = 1; i <= m; i++) need(job, items[i])
-          } else need(job, v)
+          else needs(job, v)
         }
       } else if (inneeds) {
-        # A name can sit after a dash, on its own line under the key, or on
-        # the line under a bare dash.
-        if (!bare) need(job, nocomment(t))
+        # A name or a list can sit after a dash, on its own line under the key,
+        # or on the line under a bare dash.
+        if (!bare) needs(job, nocomment(t))
       } else if (insteps) {
         # The keys of a step sit at the column right after its dash; a
         # deeper `if:`, as under `with:`, belongs to something else. A bare

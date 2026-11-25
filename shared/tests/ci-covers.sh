@@ -241,8 +241,8 @@ needs_yml() {
     '  t:' "$@" '    steps:' '      - run: pnpm test'
 }
 
-# The three forms of t's needs, one a line, the block list's lines split on |.
-needs_forms=('    needs: a' '    needs: [a, b]' '    needs:|      - a|      - b')
+# The forms of t's needs, one a line, the block list's lines split on |.
+needs_forms=('    needs: a' '    needs: [a, b]' '    needs:|      - a|      - b' '    needs:|      [a, b]')
 
 t_cc_needs_forms() {
   local f lines
