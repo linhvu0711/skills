@@ -8,7 +8,7 @@ G="$here/../scripts/github.py"
 gh_dir() { fake_gh; D="$T/transcripts"; mkdir -p "$D"; }
 
 # nums <key>: the numbers in the JSON on stdout under <key>, space-joined.
-nums() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(str(r["number"]) for r in json.load(sys.stdin)[sys.argv[1]]))' "$1"; }
+nums() { printf '%s' "$out" | jq -r --arg k "$1" '[.[$k][].number | tostring] | join(" ")'; }
 
 t_gh_list_skips_touched_pr() {
   # Given: PRs 43 (head feat/a) and 44 (head feat/b); a transcript names PR 43's URL

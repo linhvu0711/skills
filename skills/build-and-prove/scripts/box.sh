@@ -289,7 +289,7 @@ case "$verb" in
   up)
     [ $# -eq 4 ] || die_usage "$usage"
     dir="$1"; BOX_WORK="$2"; BOX_OS="$3"; slug="${4/\//-}"; BOX_REMADE=0
-    case "$BOX_OS" in linux|macos) ;; *) die "os must be linux or macos, not $BOX_OS" ;; esac
+    case "$BOX_OS" in linux|macos) ;; *) die_usage "$usage" "os must be linux or macos, not $BOX_OS" ;; esac
     home="$HOME/.agents/proofbox/$slug"
     BOX_SETUP="$home/setup-$BOX_OS.sh"
     [ -f "$BOX_SETUP" ] || die "no setup script at $BOX_SETUP"
@@ -524,13 +524,13 @@ case "$verb" in
     ;;
   auth)
     [ $# -eq 1 ] || die_usage "$usage"
-    case "$1" in linux|macos) ;; *) die "os must be linux or macos, not $1" ;; esac
-    conf="$HOME/.config/proofbox/config"; provider=""
-    [ ! -f "$conf" ] || provider="$(sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([a-z]*\)\".*/\1/p" "$conf" | head -n 1)"
-    provider="${provider:-namespace}"
+    case "$1" in linux|macos) ;; *) die_usage "$usage" "os must be linux or macos, not $1" ;; esac
     pb keep keep click --help
     grep -q -- '--mark' <<<"$got" || die "proofbox is too old: run proofbox update"
     command -v jq >/dev/null || die "jq is not installed: box.sh auth reads proofbox's login JSON with it"
+    conf="$HOME/.config/proofbox/config"; provider=""
+    [ ! -f "$conf" ] || provider="$(jq -r --arg k "$1" '.[$k] // empty' "$conf")"
+    provider="${provider:-namespace}"
     pb keep keep auth status --json
     [ "$rc" -eq 0 ] || die "proofbox auth status failed"
     item="$(jq -r --arg p "$provider" 'map(select(.provider == $p))[0] // empty | [.login, (.env // "")] | @tsv' <<<"$got")" \

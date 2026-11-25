@@ -27,7 +27,7 @@ embed_rows | while IFS='|' read -r lib package _repo ref vfile; do
     fi
 
     embedded="missing"
-    [[ -f "$prefix/$vfile" ]] && embedded="$(node -p "require('./$prefix/$vfile').version" 2>/dev/null || echo unknown)"
+    [[ -f "$prefix/$vfile" ]] && embedded="$(jq -r .version "$prefix/$vfile" 2>/dev/null || echo unknown)"
 
     # Installed: root node_modules, then the pnpm store and workspace node_modules, then manifests.
     installed="absent"
@@ -35,12 +35,12 @@ embed_rows | while IFS='|' read -r lib package _repo ref vfile; do
               node_modules/.pnpm/"${package//\//+}"@*/node_modules/"$package"/package.json \
               packages/*/node_modules/"$package"/package.json apps/*/node_modules/"$package"/package.json; do
       [[ -f "$pj" ]] || continue
-      installed="$(node -p "require('./$pj').version" 2>/dev/null || echo unknown)"; break
+      installed="$(jq -r .version "$pj" 2>/dev/null || echo unknown)"; break
     done
     if [[ "$installed" == "absent" ]]; then
       for pj in package.json packages/*/package.json apps/*/package.json; do
         [[ -f "$pj" ]] || continue
-        v="$(node -p "(p=>((p.dependencies||{})['$package']||(p.devDependencies||{})['$package']||'absent').replace(/^[\^~]/,''))(require('./$pj'))" 2>/dev/null || echo unknown)"
+        v="$(jq -r --arg p "$package" '(.dependencies[$p] // .devDependencies[$p] // "absent") | sub("^[\\^~]"; "")' "$pj" 2>/dev/null || echo unknown)"
         [[ "$v" != "absent" ]] && { installed="$v"; break; }
       done
     fi

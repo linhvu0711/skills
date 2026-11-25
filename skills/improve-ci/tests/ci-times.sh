@@ -32,8 +32,8 @@ two_runs() {
   jobs 2 test success 11:00:00 11:00:10 11:04:10 "$(step 1 'Set up job' 11:00:10 11:00:13),$(step 2 'Run tests' 11:00:13 11:04:10)"
 }
 
-# field <python expression on j>: the value from the JSON on stdout.
-field() { printf '%s' "$out" | python3 -c 'import json,sys; j=json.load(sys.stdin); print(json.dumps(eval(sys.argv[1]), separators=(", ", ": ")))' "$1"; }
+# field <jq filter>: the value from the JSON on stdout, one compact line.
+field() { printf '%s' "$out" | jq -c "$1"; }
 
 t_ci_times_splits_a_job() {
   # Given: two runs of CI's job `test`, waits 4 s and 10 s, totals 200 s and 240 s
@@ -42,7 +42,7 @@ t_ci_times_splits_a_job() {
   run python3 "$G" acme/app
   # Then
   eq exit 0 "$code"
-  eq job '{"workflow": "CI", "workflow_id": 11, "job": "test", "runs": 2, "wait": {"p50": 4, "p95": 10}, "setup": {"p50": 2, "p95": 3}, "work": {"p50": 198, "p95": 237}, "total": {"p50": 200, "p95": 240}, "slowest": 240, "steps": [{"name": "Set up job", "p50": 2, "p95": 3}, {"name": "Run tests", "p50": 198, "p95": 237}]}' "$(field 'j["jobs"][0]')"
+  eq job '{"workflow":"CI","workflow_id":11,"job":"test","runs":2,"wait":{"p50":4,"p95":10},"setup":{"p50":2,"p95":3},"work":{"p50":198,"p95":237},"total":{"p50":200,"p95":240},"slowest":240,"steps":[{"name":"Set up job","p50":2,"p95":3},{"name":"Run tests","p50":198,"p95":237}]}' "$(field '.jobs[0]')"
 }
 
 t_ci_times_named_setup_step() {
@@ -51,8 +51,8 @@ t_ci_times_named_setup_step() {
   # When
   run python3 "$G" acme/app --setup "Run tests"
   # Then
-  eq setup '{"p50": 200, "p95": 240}' "$(field 'j["jobs"][0]["setup"]')"
-  eq work '{"p50": 0, "p95": 0}' "$(field 'j["jobs"][0]["work"]')"
+  eq setup '{"p50":200,"p95":240}' "$(field '.jobs[0].setup')"
+  eq work '{"p50":0,"p95":0}' "$(field '.jobs[0].work')"
 }
 
 t_ci_times_skips_skipped_jobs() {
@@ -65,8 +65,8 @@ t_ci_times_skips_skipped_jobs() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq runs 2 "$(field 'j["jobs"][0]["runs"]')"
-  eq total_p95 240 "$(field 'j["jobs"][0]["total"]["p95"]')"
+  eq runs 2 "$(field '.jobs[0].runs')"
+  eq total_p95 240 "$(field '.jobs[0].total.p95')"
 }
 
 t_ci_times_fewer_runs_than_asked() {
@@ -75,7 +75,7 @@ t_ci_times_fewer_runs_than_asked() {
   # When
   run python3 "$G" acme/app --runs 150
   # Then
-  eq counts '[150, 2]' "$(field '[j["asked"], j["runs"]]')"
+  eq counts '[150,2]' "$(field '[.asked, .runs]')"
 }
 
 t_ci_times_no_runs() {
@@ -86,7 +86,7 @@ t_ci_times_no_runs() {
   run python3 "$G" acme/app
   # Then
   eq exit 0 "$code"
-  eq empty '[0, []]' "$(field '[j["runs"], j["jobs"]]')"
+  eq empty '[0,[]]' "$(field '[.runs, .jobs]')"
 }
 
 t_ci_times_gh_fails() {
@@ -112,7 +112,7 @@ t_ci_times_pr_commit() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq pr_result '{"results": 1, "p50": 210, "p95": 210}' "$(field 'j["pr_result"]')"
+  eq pr_result '{"results":1,"p50":210,"p95":210}' "$(field '.pr_result')"
 }
 
 t_ci_times_ready_after_draft() {
@@ -124,7 +124,7 @@ t_ci_times_ready_after_draft() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq pr_result '{"results": 2, "p50": 120, "p95": 210}' "$(field 'j["pr_result"]')"
+  eq pr_result '{"results":2,"p50":120,"p95":210}' "$(field '.pr_result')"
 }
 
 t_ci_times_ready_before_draft_ends() {
@@ -136,7 +136,7 @@ t_ci_times_ready_before_draft_ends() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq pr_result '{"results": 2, "p50": 180, "p95": 210}' "$(field 'j["pr_result"]')"
+  eq pr_result '{"results":2,"p50":180,"p95":210}' "$(field '.pr_result')"
 }
 
 t_ci_times_rerun() {
@@ -148,7 +148,7 @@ t_ci_times_rerun() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq reruns '[{"run": 7, "workflow": "CI", "attempts": 2, "conclusion": "success", "failed_first": ["test"]}]' "$(field 'j["reruns"]')"
+  eq reruns '[{"run":7,"workflow":"CI","attempts":2,"conclusion":"success","failed_first":["test"]}]' "$(field '.reruns')"
 }
 
 t_ci_times_no_rerun() {
@@ -157,7 +157,7 @@ t_ci_times_no_rerun() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq reruns '[]' "$(field 'j["reruns"]')"
+  eq reruns '[]' "$(field '.reruns')"
   eq attempt_calls no "$([ -e "$FAKE_GH/attempt-jobs.calls" ] && echo yes || echo no)"
 }
 t_ci_times_jobs_past_one_page() {
@@ -170,7 +170,7 @@ t_ci_times_jobs_past_one_page() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq names '["job", "last"]' "$(field '[r["job"] for r in j["jobs"]]')"
+  eq names '["job","last"]' "$(field '[.jobs[].job]')"
   eq pages 'api repos/acme/app/actions/runs/1/jobs?per_page=100&page=2' "$(sed -n 2p "$FAKE_GH/run-jobs.args")"
 }
 t_ci_times_same_named_workflows() {
@@ -182,7 +182,7 @@ t_ci_times_same_named_workflows() {
   # When
   run python3 "$G" acme/app
   # Then
-  eq rows '[[11, 1, 200], [21, 1, 240]]' "$(field '[[r["workflow_id"], r["runs"], r["slowest"]] for r in j["jobs"]]')"
+  eq rows '[[11,1,200],[21,1,240]]' "$(field '[.jobs[] | [.workflow_id, .runs, .slowest]]')"
 }
 
 cases=(
