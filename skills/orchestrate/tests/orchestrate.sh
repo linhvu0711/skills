@@ -1238,6 +1238,40 @@ t_fs_close_epics_sub_reopened() {
   eq "close calls" no "$([ -e "$FAKE_GH/issue-close.calls" ] && echo yes || echo no)"
 }
 
+# fs_nested_epic: a run of epic #70 "Order export", whose open sub-issue is
+# epic #71 "Inner", whose one sub-issue #72 is closed.
+fs_nested_epic() {
+  fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"OPEN"}]' "Order export"
+  fs_issue 71 OPEN '[]' '[]' '[]' '[{"number":72,"state":"CLOSED"}]' "Inner"
+  fs_issue 72 CLOSED '["size/S"]'; fs_start 70
+}
+
+t_fs_nested_epic_done() {
+  # Given: epic #70 over epic #71 over closed #72
+  fs_nested_epic
+  # When
+  fs_go check acme/app
+  # Then
+  has stdout '"done":true' "$out"
+}
+
+t_fs_close_epics_inner_first() {
+  # Given: the done run of epic #70 over epic #71 over closed #72; the
+  # second read of the close shows #71 closed, as GitHub would after its close
+  local n
+  fs_nested_epic; fs_go check acme/app; printf '' > "$FAKE_GH/issue-close.json"
+  n="$(cat "$FAKE_GH/graphql.calls")"
+  cp "$FAKE_GH/graphql.json" "$T/graphql.keep"
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"}]' "Order export"
+  fs_issue 71 CLOSED '[]' '[]' '[]' '[{"number":72,"state":"CLOSED"}]' "Inner"
+  mv "$FAKE_GH/graphql.json" "$FAKE_GH/graphql.$((n + 2)).json"; mv "$T/graphql.keep" "$FAKE_GH/graphql.json"
+  # When
+  fs_go close-epics acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(printf '#71 closed\n#70 closed')" "$out"
+}
+
 t_fs_epic_done() {
   # Given: a run of epic #70, open, whose sub-issues #71 and #72 are closed
   fs_setup; fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":71,"state":"CLOSED"},{"number":72,"state":"CLOSED"}]' "Order export"
@@ -2744,6 +2778,8 @@ cases=(
   "close-epics stops on a run that is not done|t_fs_close_epics_not_done"
   "close-epics reports a refused close and exits 0|t_fs_close_epics_refused"
   "close-epics leaves an epic whose sub-issue opened again|t_fs_close_epics_sub_reopened"
+  "an epic whose child epic is done ends the run|t_fs_nested_epic_done"
+  "close-epics closes an inner epic before its parent|t_fs_close_epics_inner_first"
   "an open manual task keeps the run open|t_fs_manual_keeps_open"
   "an unmerged PR keeps the run open|t_fs_unmerged_pr_keeps_open"
   "start sets a 5 minute timer|t_fs_timer_five_min"

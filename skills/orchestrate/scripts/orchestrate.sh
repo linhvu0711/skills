@@ -703,10 +703,15 @@ observe() {
   done
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
-  # that closes one still open. close-epics closes such an epic once the run is done.
+  # that closes one still open. An open sub-issue that is an epic of the run
+  # counts once its own sub-issues are, since nothing but close-epics closes
+  # it. close-epics closes such an epic once the run is done.
   done="$(jq --argjson rows "$rows" --argjson is "$issues" '
+    [$rows[] | select(.stage == "epic") | .ref] as $epics
+    | def ready($r): all($is[$r].subIssues.nodes[];
+        .state == "CLOSED" or ("\(.repository.nameWithOwner)#\(.number)" as $c | ($epics | index([$c])) != null and ready($c)));
     $rows != [] and all($rows[];
-      (.stage == "done" or (.stage == "epic" and all($is[.ref].subIssues.nodes[]; .state == "CLOSED")))
+      (.stage == "done" or (.stage == "epic" and ready(.ref)))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
   # propose: the unlabeled issues with no proposal yet.
   propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.ref] == null)) | .ref]' <<<"$S")"
