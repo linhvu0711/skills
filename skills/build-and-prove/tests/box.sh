@@ -188,7 +188,7 @@ t_box_down() {
   box down "$P"
   eq exit 0 "$code"
   eq log "delete ns:us:abc" "$(cat "$FAKE_PB/log")"
-  [ ! -e "$P/box.env" ] || { echo "box.env still there" >&2; exit 1; }
+  [ ! -e "$P/box.env" ] || eq box.env gone "still there"
 }
 
 t_box_no_proofbox() {
@@ -206,7 +206,7 @@ t_box_create_fails() {
   box up "$P" "$R" linux acme/shop
   eq exit 1 "$code"
   has stderr "stop: Namespace refused the Sandbox: 4 of 4 in use" "$err"
-  [ ! -e "$P/box.env" ] || { echo "box.env written" >&2; exit 1; }
+  [ ! -e "$P/box.env" ] || eq box.env gone "still there"
 }
 
 t_box_login() {
@@ -296,7 +296,7 @@ t_box_up_size_not_offered() {
   box up "$P" "$R" linux acme/shop
   eq exit 1 "$code"
   eq "last stderr line" "stop: Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" "$(printf '%s\n' "$err" | tail -n 1)"
-  [ ! -e "$P/box.env" ] || { echo "box.env written" >&2; exit 1; }
+  [ ! -e "$P/box.env" ] || eq box.env gone "still there"
   eq log "create --os linux --work $R --setup $SETUP --size 3x3 --idle 30m" "$(cat "$FAKE_PB/log")"
 }
 
@@ -328,7 +328,7 @@ t_box_state_not_run() {
   box down "$P"
   eq exit 0 "$code"
   eq log 'delete $(touch '"$T"'/pwned)' "$(cat "$FAKE_PB/log")"
-  [ ! -e "$T/pwned" ] || { echo "box.env ran as shell" >&2; exit 1; }
+  [ ! -e "$T/pwned" ] || eq "box.env as shell" "not run" ran
 }
 
 t_box_auth_not_logged_in() {
@@ -461,7 +461,7 @@ t_box_gates_gone_twice() {
   eq exit 1 "$code"
   has stderr "stop: Sandbox ns:us:abc is gone" "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
-  [ ! -e "$P/checks.txt.tmp" ] || { echo "checks.txt.tmp left" >&2; exit 1; }
+  [ ! -e "$P/checks.txt.tmp" ] || eq "checks.txt.tmp" gone "still there"
 }
 
 t_box_gates_usage() {
