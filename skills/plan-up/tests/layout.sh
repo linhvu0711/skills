@@ -114,15 +114,18 @@ t_layout_lanes() {
 const m = PlanLayout.map({ parts: [p('A', 0, 0), p('W1', 1, 0), p('W2', 1, 1), p('W3', 1, 2), p('B', 2, 2)],
   flows: [{ from: 'A', to: 'B', label: 'around', change: 'new', layer: '' }] }, width);
 const f = m.flows[0];
-let n = 0;
-for (const [px, py] of points(f.d)) for (const q of m.parts.filter((q) => q.ref.startsWith('W'))) {
-  const r = partBox(q);
-  if (px > r.x1 && px < r.x2 && py > r.y1 && py < r.y2) n++;
+let n = 0, off = 0;
+for (const [px, py] of points(f.d)) {
+  if (px < 0 || py < 0 || px > m.width || py > m.height) off++;
+  for (const q of m.parts.filter((q) => q.ref.startsWith('W'))) {
+    const r = partBox(q);
+    if (px > r.x1 && px < r.x2 && py > r.y1 && py < r.y2) n++;
+  }
 }
-console.log((/ L/.test(f.d) ? 'lanes' : 'curve') + ', ' + n + ' points in another box');"
+console.log((/ L/.test(f.d) ? 'lanes' : 'curve') + ', ' + n + ' points in another box, ' + off + ' off the map');"
   # Then
   eq exit 0 "$code"
-  eq route "lanes, 0 points in another box" "$out"
+  eq route "lanes, 0 points in another box, 0 off the map" "$out"
 }
 
 # tree_rows <filter>: the rows of fileTree on files.md's files that pass <filter>, as branch, name, and / after a folder.
