@@ -242,7 +242,8 @@ needs_yml() {
 }
 
 # The forms of t's needs, one a line, the block list's lines split on |.
-needs_forms=('    needs: a' '    needs: [a, b]' '    needs:|      - a|      - b' '    needs:|      [a, b]')
+# Each list names a last, so a reader that keeps only the first name fails.
+needs_forms=('    needs: a' '    needs: [b, a]' '    needs:|      - b|      - a' '    needs:|      [b, a]')
 
 t_cc_needs_forms() {
   local f lines
