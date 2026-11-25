@@ -8,7 +8,7 @@ You want to see how something fits together: "diagram the checkout flow", "map h
 
 ## What you get
 
-One page that answers one question. Before the page opens, a check reads its data and names each arrow or step that points at a box that is not there, each box or step with no label, and a diagram with more boxes than its type allows. You can pan, zoom, and search it, and clicking a box shows the `file:line` it came from. The reply names the question, how to read the picture, and what the code showed that you should know, for example:
+One page that answers one question. Before the page opens, a check reads its data and names each arrow or step that points at a box that is not there, each box or step with no label, each id used twice or left out, and a diagram with more boxes than its type allows. You can pan, zoom, and search it, and clicking a box shows the `file:line` it came from. The reply names the question, how to read the picture, and what the code showed that you should know, for example:
 
 ```
 Type: sequence · Question: What happens when a shopper checks out? · Scope: shop-api · Mode: current

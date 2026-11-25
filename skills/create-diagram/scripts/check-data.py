@@ -5,8 +5,8 @@
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
 problem and exits 1 when it is not: a type the catalog does not list, an
-id that points at nothing, a label left out, or more than the type's node
-budget, read from references/catalog.md.
+id that points at nothing, an id used twice or left out, a label left out,
+or more than the type's node budget, read from references/catalog.md.
 """
 import json
 import re
@@ -52,15 +52,28 @@ def read_data(text, path):
     return data, None
 
 
+def id_problems(kind, items, seen):
+    for i, item in enumerate(items):
+        if "id" not in item:
+            yield f'{kind}[{i}]: no id'
+        elif item["id"] in seen:
+            yield f'{kind}[{i}]: id "{item["id"]}" is used twice'
+        else:
+            seen.add(item["id"])
+
+
 def graph_problems(data):
-    nodes = {n.get("id") for n in data.get("nodes", [])}
+    seen = set()
+    yield from id_problems("nodes", data.get("nodes", []), seen)
+    yield from id_problems("groups", data.get("groups", []), seen)
+    nodes = {n["id"] for n in data.get("nodes", []) if "id" in n}
     for node in data.get("nodes", []):
         if "label" not in node:
             yield f'node "{node.get("id")}": no label'
     for group in data.get("groups", []):
         if "label" not in group:
             yield f'group "{group.get("id")}": no label'
-    groups = {g.get("id") for g in data.get("groups", [])}
+    groups = {g["id"] for g in data.get("groups", []) if "id" in g}
     for i, edge in enumerate(data.get("edges", [])):
         for end in ("from", "to"):
             if edge.get(end) not in nodes:
@@ -72,7 +85,8 @@ def graph_problems(data):
 
 
 def sequence_problems(data):
-    people = {p.get("id") for p in data.get("participants", [])}
+    yield from id_problems("participants", data.get("participants", []), set())
+    people = {p["id"] for p in data.get("participants", []) if "id" in p}
     for person in data.get("participants", []):
         if "label" not in person:
             yield f'participant "{person.get("id")}": no label'
