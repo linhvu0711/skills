@@ -69,7 +69,7 @@ read_antigravity() {
       [ -z "$caller" ] || break
     done
   fi
-  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self", ""] | join("\u001f")' <<<"$payload"
+  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self", .conversationId // ""] | join("\u001f")' <<<"$payload"
 }
 
 reader=read_hook; [ "$harness" != antigravity ] || reader=read_antigravity

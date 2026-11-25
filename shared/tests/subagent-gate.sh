@@ -293,6 +293,15 @@ t_gate_agy_blocks_explorer_edit() {
   has stdout '"reason":"'"$(edit_rule explorer)"'"' "$out"
 }
 
+t_gate_agy_refuses_main_first_t3_explorer() {
+  # Given: T3 is on; chat c2 has no start message, so it is the main agent
+  # When
+  agy_gate '' "$agy_spawn" t3
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"decision":"deny","reason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"}' "$out"
+}
+
 t_gate_agy_no_start_message_is_main() {
   # Given: a chat with no messages folder starts the explorer
   # When
@@ -327,4 +336,5 @@ cases=(
   "gate lets a T3 start of an agent with no file through|t_gate_t3_agent_without_file"
   "gate lets a second T3 start of the walker through|t_gate_t3_second_walker_start_goes_through"
   "gate refuses the scope reviewer after it refused the walker|t_gate_t3_refuses_scope_reviewer_after_walker"
+  "gate refuses an antigravity main agent's first T3 start of the explorer|t_gate_agy_refuses_main_first_t3_explorer"
 )
