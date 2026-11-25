@@ -24,26 +24,22 @@
 #                                             Mac back, "<agent>: destroyed <id>";
 #                                             it fails: "<agent>: <id> kept, its run
 #                                             has not ended"; no Mac: "<agent>: no Mac"
-#   mac.sh up <worker> <repo-url> <base> [<worker id>]
-#                                          -> "<instance id>\t<worker id>" once the worker runs
-#   mac.sh alive <instance>                -> exit 0 when the Mac and its worker run
-#   mac.sh down <instance>                 -> deletes the keys and destroys the Mac:
-#                                             "destroyed <id>", or "already gone <id>";
-#                                             exit 1, with the hand command on stderr,
-#                                             when the Mac still runs
 #
-# up rents a Mac (macOS 26, Xcode 26) for at most HANDOFF_MAC_HOURS hours
-# (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
+# Giving a Mac back deletes the keys and destroys it: "destroyed <id>", or
+# "already gone <id>"; when the Mac still runs, exit 1 with the hand command
+# on stderr.
+# rent and renew rent a Mac (macOS 26, Xcode 26) for at most
+# HANDOFF_MAC_HOURS hours (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
 # the user's GitHub login (`gh auth token`) through stdin into a file only the
 # Mac's user reads, never on a command line, installs the Cursor CLI, clones
 # the repo at <base>, and starts `agent worker start --name <worker>` in it.
 # Cursor sends an agent's runs to the worker ID it first ran on, not to the
 # name, and the CLI keeps that ID per name in ~/.cursor/agent-cli-state.json.
-# So up prints the worker's ID, and an up given that ID writes it there
-# before the worker starts: the new Mac takes the old worker's place.
+# So rent keeps the worker's ID in the row, and renew writes it there
+# before the new worker starts: the new Mac takes the old worker's place.
 # Cursor's dashboard secrets never reach a worker, so the worker's own
 # environment carries GH_TOKEN, and git pushes with it. A Mac that fails to
-# come up is destroyed before up exits.
+# come up is destroyed before mac.sh exits.
 # Proven 2026-11-02: a create call to a machine agent blocks until its run
 # ends; a run sent while no worker runs ends as ERROR in about 20 s, not
 # queued; a worker on a new Mac with the same name gets a new ID, and the
@@ -116,7 +112,7 @@ remote_in() { nsc ssh "$1" -T -- "$2"; }
 
 cmd_up() {
   local worker="${1:-}" repo="${2:-}" base="${3:-}" wid="${4:-}"
-  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die "usage: mac.sh up <worker> <repo-url> <base> [<worker id>]"
+  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die "usage: mac.sh rent <worker> <repo-url> <base> -- <command>"
   [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die "worker name: letters, digits, and - only"
   [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die "worker id: a UUID"
   need_tools
@@ -246,8 +242,5 @@ case "${1:-}" in
   rent)   shift; cmd_rent "$@" ;;
   renew)  shift; cmd_renew "$@" ;;
   return) shift; cmd_return "$@" ;;
-  up)    shift; cmd_up "$@" ;;
-  alive) shift; cmd_alive "$@" ;;
-  down)  shift; cmd_down "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

@@ -7,10 +7,6 @@
 #                   [--platform linux|macos]               -> "<agent_id>\t<url>"
 #   cursor.sh poll <agent> [--repo owner/name --issue N]   -> "<state>\t<run_id>|<run state>\t<prs>\t<url>\t<message>"
 #   cursor.sh say <agent> <note-file>                      -> sends a follow-up (a new run on the agent)
-#   cursor.sh down <agent>                                 -> destroys the agent's Mac, if one runs;
-#                                                             exit 1, row kept, when it still runs
-#   cursor.sh models                                       -> model ids this account can use
-#   cursor.sh repos                                        -> repos connected to this account
 #   cursor.sh release <agent>                              -> gives the agent's Mac back once its run ended
 #                                                             (mac.sh return); nothing for an agent with no Mac
 #   cursor.sh ended <agent>                                -> exit 0 when the latest run ended
@@ -47,7 +43,6 @@ set -euo pipefail
 API="${CURSOR_API_URL:-https://api.cursor.com}/v1"
 MSG_CHARS=600
 MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
-MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
 die() { echo "cursor.sh: $*" >&2; exit 1; }
@@ -57,9 +52,6 @@ usage() {
 cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID] [--platform linux|macos]
 cursor.sh poll <agent> [--repo owner/name --issue N]
 cursor.sh say <agent> <note-file>
-cursor.sh down <agent>
-cursor.sh models
-cursor.sh repos
 cursor.sh facts
 cursor.sh release <agent>
 cursor.sh interval
@@ -130,38 +122,6 @@ fetch() {
   [[ -n "$rid" ]] && r=$(api GET "/agents/$id/runs/$rid")
   summary "$a" "$r"
 }
-
-# mac_row AGENT -> "worker<TAB>worker id<TAB>repo<TAB>base<TAB>mac" of a Mac agent, or nothing
-mac_row() {
-  [[ -f "$MACS" ]] || return 0
-  awk -F'\t' -v a="$1" '$1 == a { r = $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 } END { if (r != "") print r }' "$MACS"
-}
-
-# mac_set AGENT WORKER WID REPO BASE MAC -> writes the agent's row, replacing an older one
-mac_set() {
-  local tmp
-  mkdir -p "$(dirname "$MACS")"; touch "$MACS"
-  tmp=$(mktemp "$MACS.XXXXXX")
-  awk -F'\t' -v a="$1" '$1 != a' "$MACS" >"$tmp"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >>"$tmp"
-  mv "$tmp" "$MACS"
-}
-
-# mac_clear AGENT MAC -> marks the agent as having no Mac, only while its row
-# still names MAC: a say that rented a newer Mac meanwhile keeps its row.
-mac_clear() {
-  local row w wid r b mac
-  row=$(mac_row "$1")
-  [[ -n "$row" ]] || return 0
-  IFS=$'\t' read -r w wid r b mac <<<"$row"
-  [[ "$mac" == "$2" ]] && mac_set "$1" "$w" "$wid" "$r" "$b" -
-  return 0
-}
-
-# mac_down MAC -> mac.sh's line on stdout; exit 1, with the reason and the
-# hand command on its stderr, when the Mac still runs. Every give-back goes
-# through here, so a failed one is never thrown away.
-mac_down() { bash "$MAC" down "$1"; }
 
 # create_on_mac BODY WORKER -> the create response. The create call to a
 # machine agent blocks until its run ends (proven 2026-11-02), so it gets a
@@ -312,23 +272,6 @@ $text"
   echo "sent to $id ($rid)"
 }
 
-cmd_down() {
-  local id; id=$(aid "${1:-}")
-  local row w wid r b mac
-  row=$(mac_row "$id")
-  [[ -n "$row" ]] || die "$id has no Mac"
-  IFS=$'\t' read -r w wid r b mac <<<"$row"
-  if [[ "$mac" == "-" ]]; then echo "$id: no Mac running"; return 0; fi
-  local line
-  line=$(mac_down "$mac") || exit 1
-  mac_set "$id" "$w" "$wid" "$r" "$b" -
-  echo "$id: $line"
-}
-
-cmd_models() {
-  api GET /models | jq -r '.items[] | "\(.id)\t\(.displayName)"'
-}
-
 cmd_ended() {
   local id; id=$(aid "${1:-}")
   local rst
@@ -346,19 +289,12 @@ cmd_facts() {
   api GET /models | jq -r '.items[] | "model\t\(.id)\t\(.displayName)"'
 }
 
-cmd_repos() {
-  api GET /repositories | jq -r '.items[].url'
-}
-
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|down|models|repos|facts|release|ended|create|send) key >/dev/null ;; esac
+case "${1:-}" in start|poll|say|facts|release|ended|create|send) key >/dev/null ;; esac
 case "${1:-}" in
   start)  shift; cmd_start "$@" ;;
   poll)   shift; cmd_poll "$@" ;;
   say)    shift; cmd_say "$@" ;;
-  down)   shift; cmd_down "$@" ;;
-  models) shift; cmd_models "$@" ;;
-  repos)  shift; cmd_repos "$@" ;;
   facts)  shift; cmd_facts "$@" ;;
   release) shift; cmd_release "$@" ;;
   ended)  shift; cmd_ended "$@" ;;

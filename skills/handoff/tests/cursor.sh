@@ -68,10 +68,7 @@ t_cursor_no_key() {
 }
 
 # fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
-# call's args to $T/mac.calls; `up` prints mac-<n> and wid-1, n its call count, and
-# `alive` exits with the content of $T/mac.alive (1 when missing), and `down`
-# runs $T/mac.on-down first when it exists, then, when $T/mac.down-fail
-# exists, prints it on stderr and exits 1, as a Mac it could not destroy.
+# call's args to $T/mac.calls.
 # `rent <worker> <repo> <base> -- <command>` runs the command and prints its
 # output; `renew <agent> -- <command>` runs the command, with MAC_NEW_BASE from
 # $T/mac.new when that file exists.
@@ -84,11 +81,6 @@ fake_mac() {
 d="$(dirname "$0")"
 printf '%s\n' "$*" >> "$d/mac.calls"
 case "$1" in
-  up) n=$(( $(cat "$d/mac.n" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$d/mac.n"; printf 'mac-%s\twid-1\n' "$n" ;;
-  alive) exit "$(cat "$d/mac.alive" 2>/dev/null || echo 1)" ;;
-  down) [ ! -f "$d/mac.on-down" ] || bash "$d/mac.on-down"
-        if [ -f "$d/mac.down-fail" ]; then cat "$d/mac.down-fail" >&2; exit 1; fi
-        echo "destroyed $2" ;;
   rent) shift 5; "$@" ;;
   renew) shift 3
          if [ -f "$d/mac.new" ]; then MAC_NEW_BASE="$(cat "$d/mac.new")" "$@"; else "$@"; fi ;;
@@ -157,24 +149,6 @@ t_cursor_poll_leaves_mac() {
   eq exit 0 "$code"
   eq stdout "finished	run-2|FINISHED	-	https://cursor.com/agents/bc-1	Done" "$out"
   [ ! -f "$T/mac.calls" ] || { echo "poll touched the Mac" >&2; exit 1; }
-  eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1" "$(macs)"
-}
-
-# The line mac.sh prints when it cannot destroy mac-1.
-not_given_back="mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force"
-
-t_cursor_down_keeps_row() {
-  # Given
-  fake_curl; fake_mac
-  mkdir -p "$T/home/.config/dispatch"
-  printf 'bc-1\tho-1\twid-1\thttps://github.com/o/r\tmain\tmac-1\n' > "$T/home/.config/dispatch/cursor-macs.tsv"
-  printf '%s\n' "$not_given_back" > "$T/mac.down-fail"
-  # When
-  cursor_mac down bc-1
-  # Then
-  eq exit 1 "$code"
-  eq stdout "" "$out"
-  eq stderr "$not_given_back" "$err"
   eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
@@ -273,5 +247,4 @@ cases=(
   "cursor start on macos finds the agent when create hangs|t_cursor_start_macos_timeout"
   "cursor start on windows stops|t_cursor_start_windows"
   "cursor poll leaves the Mac when the run ended|t_cursor_poll_leaves_mac"
-  "cursor down keeps the row when the Mac is not given back|t_cursor_down_keeps_row"
 )
