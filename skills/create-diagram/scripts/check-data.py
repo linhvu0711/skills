@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 
-MARK = "const DATA = "
+MARK = re.compile(r"const DATA\s*=\s*")
 CATALOG = Path(__file__).resolve().parent.parent / "references" / "catalog.md"
 
 
@@ -42,11 +42,11 @@ def budget_problems(data, limits):
 
 
 def read_data(text, path):
-    at = text.find(MARK)
-    if at < 0:
-        return None, f'no "{MARK}" in {path}'
+    found = MARK.search(text)
+    if not found:
+        return None, f'no "const DATA =" in {path}'
     try:
-        data, _ = json.JSONDecoder().raw_decode(text, at + len(MARK))
+        data, _ = json.JSONDecoder().raw_decode(text, found.end())
     except json.JSONDecodeError as e:
         return None, f"DATA is not JSON: {e.msg}, line {e.lineno} column {e.colno}"
     return data, None

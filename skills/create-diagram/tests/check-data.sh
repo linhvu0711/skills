@@ -93,6 +93,17 @@ t_cd_not_json() {
   has stdout "DATA is not JSON: Expecting property name enclosed in double quotes" "$out"
 }
 
+t_cd_data_on_next_line() {
+  # Given: the graph page with a line break and spaces between "const DATA =" and its object
+  cd_page graph .
+  python3 -c 'import sys; p=sys.argv[1]; s=open(p).read(); open(p,"w").write(s.replace("const DATA = {", "const DATA = \n    {", 1))' "$T/diagram-t.html"
+  # When
+  cd_check
+  # Then
+  eq exit 0 "$code"
+  eq stdout "ok: flowchart, 3 nodes, 2 edges" "$out"
+}
+
 t_cd_missing_node_label() {
   # Given: node db has no label key
   cd_page graph 'del(.nodes[2].label)'
@@ -136,6 +147,7 @@ t_cd_unknown_type() {
 cases=(
   "passes a good graph page|t_cd_good_graph"
   "passes a good sequence page|t_cd_good_sequence"
+  "reads DATA that starts on the next line|t_cd_data_on_next_line"
   "names an unknown edge end|t_cd_unknown_edge_end"
   "names an unknown group member|t_cd_unknown_group_member"
   "names an unknown step participant|t_cd_unknown_step_participant"
