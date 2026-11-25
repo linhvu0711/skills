@@ -122,6 +122,16 @@ t_cd_node_without_id() {
   eq stdout 'nodes[3]: no id' "$out"
 }
 
+t_cd_node_without_id_and_edge_without_from() {
+  # Given: a fourth node with no id, and a third edge with no from
+  cd_page graph '.nodes += [{label: "X", x: 3, y: 0}] | .edges += [{to: "web"}]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout "$(printf 'nodes[3]: no id\nedges[2]: from "None" is not a node')" "$out"
+}
+
 t_cd_not_json() {
   # Given: DATA written as a JavaScript object with a bare key
   cd_page graph .
@@ -197,6 +207,7 @@ cases=(
   "names a node id used twice|t_cd_duplicate_node"
   "names a group id a node holds|t_cd_duplicate_node_and_group"
   "names a node with no id|t_cd_node_without_id"
+  "names an edge end beside a node with no id|t_cd_node_without_id_and_edge_without_from"
   "refuses DATA that is not JSON|t_cd_not_json"
   "names a missing node label|t_cd_missing_node_label"
   "names a missing step label|t_cd_missing_step_label"

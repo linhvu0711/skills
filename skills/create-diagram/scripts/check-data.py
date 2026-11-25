@@ -66,14 +66,14 @@ def graph_problems(data):
     seen = set()
     yield from id_problems("nodes", data.get("nodes", []), seen)
     yield from id_problems("groups", data.get("groups", []), seen)
-    nodes = {n.get("id") for n in data.get("nodes", [])}
+    nodes = {n["id"] for n in data.get("nodes", []) if "id" in n}
     for node in data.get("nodes", []):
         if "label" not in node:
             yield f'node "{node.get("id")}": no label'
     for group in data.get("groups", []):
         if "label" not in group:
             yield f'group "{group.get("id")}": no label'
-    groups = {g.get("id") for g in data.get("groups", [])}
+    groups = {g["id"] for g in data.get("groups", []) if "id" in g}
     for i, edge in enumerate(data.get("edges", [])):
         for end in ("from", "to"):
             if edge.get(end) not in nodes:
@@ -86,7 +86,7 @@ def graph_problems(data):
 
 def sequence_problems(data):
     yield from id_problems("participants", data.get("participants", []), set())
-    people = {p.get("id") for p in data.get("participants", [])}
+    people = {p["id"] for p in data.get("participants", []) if "id" in p}
     for person in data.get("participants", []):
         if "label" not in person:
             yield f'participant "{person.get("id")}": no label'
