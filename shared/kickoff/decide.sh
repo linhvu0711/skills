@@ -27,7 +27,8 @@
 # thread's first prompt, as `/ship --merge #42`, which every launcher sends
 # as it is. The message names
 # the target by number, or by URL when gh in the checkout sees another repo.
-# Under --command ready-pr, args is the one open PR that closes the issue.
+# Under --command ready-pr, args is the one open PR that closes the issue,
+# and it stays a URL when that PR is in another repo.
 # Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
 # PR, no checkout. Exit 2: gh could not read GitHub. Either way the reason is
 # the last line on stderr, and nothing launched, so the caller's launch starts
@@ -225,7 +226,9 @@ path="${found#* MAIN=}"
 # the URLs stay unless gh there names this repo.
 here_repo="$(cd "$path" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
 if [ "$(lower "$here_repo")" = "$(lower "$slug")" ]; then
-  if [ "$command" = ready-pr ]; then prep_args="#${prs##*/}"
+  if [ "$command" = ready-pr ]; then
+    # A PR in another repo keeps its URL: a bare number would name a PR here.
+    [ "$(lower "${prs%/pull/*}")" != "$(lower "https://github.com/$slug")" ] || prep_args="#${prs##*/}"
   else
     prep_args="#$number"
     for t in ${tickets[@]+"${tickets[@]}"}; do prep_args="$prep_args #$t"; done

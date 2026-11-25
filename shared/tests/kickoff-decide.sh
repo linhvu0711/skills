@@ -293,6 +293,17 @@ t_kd_ready_pr_row() {
   eq stdout "$(kd_line ready-pr medium "command ready-pr" '#43')" "$out"
 }
 
+t_kd_ready_pr_other_repo() {
+  # Given: #42 size/L, one open PR in acme/lib closes it
+  kd_setup '[{"name":"size/L"}]'; kd_clone "$T/dev/app"
+  kd_prs '{"url":"https://github.com/acme/lib/pull/9","state":"OPEN"}'
+  # When
+  kd_run --command ready-pr https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kd_line ready-pr medium "command ready-pr" 'https://github.com/acme/lib/pull/9')" "$out"
+}
+
 t_kd_ready_pr_no_pr() {
   # Given: #42 size/S, only a merged PR closes it
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -472,6 +483,7 @@ cases=(
   "a bad mode names the three values|t_kd_bad_mode"
   "model and effort win over a command row|t_kd_overrides_command_row"
   "ready-pr takes the opus medium row and the open PR|t_kd_ready_pr_row"
+  "ready-pr keeps the URL of a PR in another repo|t_kd_ready_pr_other_repo"
   "ready-pr with no open PR stops|t_kd_ready_pr_no_pr"
   "ready-pr with two open PRs stops|t_kd_ready_pr_two_prs"
 )
