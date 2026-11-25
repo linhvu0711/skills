@@ -292,7 +292,7 @@ applies. No summary of the body, no next steps.
 - **User wants a fresh read.** `--relearn` or the word "relearn" in the
   request forces step 3 to run again.
 - **Saved entry has no `bug_label`.** It was learned before bugs existed
-  here. Use `bug` for this run; `set` again with `--bug-label` when the
+  here. Use `bug` for this run; `seed-set` again with `--bug-label` when the
   repo's own label differs.
 
 ## Examples
