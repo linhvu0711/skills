@@ -666,6 +666,33 @@ t_fs_other_repo_part_starts() {
     "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {label, url}')"
 }
 
+t_fs_other_repo_unreadable_asks() {
+  # Given: epic acme/app#70 with part acme/lib#5, and #71 an S ticket in the set; acme/lib will not read
+  fs_setup; fs_lib
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'
+  fs_start 70 71
+  echo "HTTP 404: Could not resolve to a Repository" > "$FAKE_GH/graphql.lib.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  eq starts '["acme/app#71"]' "$(jq -c '[.starts[].ref]' <<<"$out")"
+  eq card '{"mark":"you","action":"could not read acme/lib: HTTP 404: Could not resolve to a Repository"}' \
+    "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {mark, action}')"
+}
+
+t_fs_other_repo_no_checkout_asks() {
+  # Given: epic acme/app#70, whose part acme/lib#5 is an S ticket, and no checkout of acme/lib
+  fs_lib_epic; rm -rf "$T/dev/lib"
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  eq mark you "$(fs_board -r '.issues[] | select(.ref == "acme/lib#5") | .mark')"
+  has action "no checkout of acme/lib under" "$(fs_board -r '.issues[] | select(.ref == "acme/lib#5") | .action')"
+}
+
 t_fs_other_repo_followup_joins() {
   # Given: a run of #42, since closed by acme/lib's PR 9, whose Follow-ups name #12, open in acme/lib
   local pr='{"number":9,"url":"https://github.com/acme/lib/pull/9","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n- #12: tidy\n"}'
@@ -2452,6 +2479,8 @@ cases=(
   "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
   "a follow-up in a PR body joins|t_fs_followup_joins"
   "an epic part in another repo starts there|t_fs_other_repo_part_starts"
+  "a repo the run cannot read asks you and the rest goes on|t_fs_other_repo_unreadable_asks"
+  "a repo not on the Mac asks you|t_fs_other_repo_no_checkout_asks"
   "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
   "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
   "add puts an issue in the set|t_fs_add_to_set"

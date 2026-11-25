@@ -388,6 +388,7 @@ board='
   def owner($rec; $t):
     (.prs | map(select(.state == "OPEN")) | first) as $pr
     | if .stage == "done" then {mark: "done", action: "closed"}
+      elif .ask then you(.ask)
       elif .blocked_by != [] then held("blocked by " + (.blocked_by | map(ref_label($S.repo)) | join(" ")))
       elif $rec.status == "failed" then you("Launch failed: say restart \(.label)")
       elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)")
@@ -515,19 +516,20 @@ observe() {
   if [ "$(jq '.removed | length' <<<"$S")" -gt 0 ]; then
     # shellcheck disable=SC2046 # one word per number
     got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || got="{}"
-    issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null)))' <<<"$issues")"
+    issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null and .value.error == null)))' <<<"$issues")"
   fi
   t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "$(tail -1 "$errf")"
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local r j st sk free blocked rec prop line wait rc gone row conf owners stages turn
+  local r j st sk free blocked rec prop line wait ask rc gone row conf owners stages turn
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
   for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$j" != null ] || continue
-    stages="$(jq -c --arg r "$r" --arg s "$(stage "$j" "$(jq -r .started_at <<<"$S")")" '.[$r] = $s' <<<"$stages")"
+    if jq -e .error <<<"$j" >/dev/null; then st=unread; else st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; fi
+    stages="$(jq -c --arg r "$r" --arg s "$st" '.[$r] = $s' <<<"$stages")"
   done
   holders="$(turn_holders "$stages")"
   turn="$(jq -r 'if . == [] then empty else .[0] end' <<<"$holders")"
@@ -538,13 +540,26 @@ observe() {
   # shared PR's conflict goes only to its owner's thread, so no two threads
   # rebase one branch, even when the owner's thread is busy or just starting.
   owners="$(jq -c --argjson set "$(jq -c .set <<<"$S")" \
-    '. as $is | [$set[] | . as $i | $is[$i] // empty
+    '. as $is | [$set[] | . as $i | $is[$i] // empty | select(.error == null)
       | .closedByPullRequestsReferences.nodes[] | {key: .url, value: $i}] | reverse | from_entries' <<<"$issues")"
   for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
     gone="$(jq --arg r "$r" '.removed | index([$r]) != null' <<<"$S")"
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
     st="$(jq -r --arg r "$r" '.[$r]' <<<"$stages")"
+    rec="$(jq -c --arg r "$r" '[.threads[] | select(.ref == $r)] | last' <<<"$S")"
+    # An issue its repo would not give: the user must settle it, and it
+    # starts nothing until a check reads it.
+    if [ "$st" = unread ]; then
+      row="$(jq -cn --arg r "$r" --arg label "$(label_of "$r")" --arg url "$(issue_url "$r")" \
+        --arg ask "could not read ${r%#*}: $(jq -r .error <<<"$j")" --argjson rec "$rec" --argjson ts "$statuses" \
+        '{ref: $r, number: ($r | split("#")[1] | tonumber), repo: ($r | split("#")[0]), label: $label, url: $url,
+          title: $label, stage: "unread", free: false, blocked_by: [], skill: null,
+          thread: $rec.thread, thread_status: (if $rec.thread then $ts[$rec.thread].status else null end),
+          claim: $rec.status, why: $rec.why, prs: [], proposal: null, answer: null, ask: $ask}')"
+      rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"
+      continue
+    fi
     # The stage stays unlabeled; the user's answer only picks the skill.
     if [ "$st" = unlabeled ]; then
       sk="$(answer_skill "$(jq -r --arg r "$r" '(.proposals // {})[$r].answer // empty' <<<"$S")")"
@@ -553,10 +568,9 @@ observe() {
     fi
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
-    rec="$(jq -c --arg r "$r" '[.threads[] | select(.ref == $r)] | last' <<<"$S")"
     # A run started before proposals existed has no key; it reads as none.
     prop="$(jq -c --arg r "$r" '(.proposals // {})[$r]' <<<"$S")"
-    line=""; wait=""
+    line=""; wait=""; ask=""
     [ "$gone" = false ] || wait="removed from the set"
     if [ "$gone" = false ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --arg r "$r" --arg s "$st" '[.threads[] | select(.ref == $r and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
@@ -569,6 +583,8 @@ observe() {
         if [ "$rc" -ne 0 ]; then
           wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
           [ "$rc" -ne 2 ] || die "$wait"
+          # The repo is not on this Mac: only the user can clone it.
+          case "$wait" in "no checkout of "*) ask="$wait"; wait="" ;; esac
         elif [ "$st" = task ]; then
           turn="$r"; task_turn="$(jq -c --arg r "$r" '. + [$r]' <<<"$task_turn")"
         fi
@@ -601,7 +617,7 @@ observe() {
     fi
     cards="$(jq -c --arg r "$r" --arg chip "$(chip "$j")" '.[$r] = {chip: $chip}' <<<"$cards")"
     row="$(jq -cn --argjson j "$j" --arg st "$st" --arg sk "$sk" --argjson free "$free" --argjson b "$blocked" \
-      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --argjson prop "$prop" \
+      --argjson rec "$rec" --argjson ts "$statuses" --arg wait "$wait" --arg ask "$ask" --argjson prop "$prop" \
       --arg r "$r" --arg label "$(label_of "$r")" --arg url "$(issue_url "$r")" \
       '{ref: $r, number: $j.number, repo: ($r | split("#")[0]), label: $label, url: $url,
              title: $j.title, stage: $st, free: $free, blocked_by: $b,
@@ -610,7 +626,7 @@ observe() {
              claim: $rec.status, why: $rec.why,
              prs: [$j.closedByPullRequestsReferences.nodes[] | {number, url, state}],
              proposal: $prop.route, answer: $prop.answer}
-           + (if $wait == "" then {} else {wait: $wait} end)')"
+           + (if $wait == "" then {} else {wait: $wait} end) + (if $ask == "" then {} else {ask: $ask} end)')"
     if [ "$gone" = true ]; then gone_rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$gone_rows")"
     else rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"; fi
   done

@@ -111,7 +111,8 @@ label is `#n` in this repo and `repo#n` in another, as each issue's
 ```
 
 `<what happens>` is the started thread's link and `/<skill>`, the
-issue's `wait`, `blocked by` and the label of each `blocked_by` ref, its thread's link and
+issue's `ask` (only the user can settle it: a repo not read, or not on
+this Mac), its `wait`, `blocked by` and the label of each `blocked_by` ref, its thread's link and
 `thread_status`, `launch failed: <why>; say restart <label>` when
 `claim` is `failed`, or `done`. A `task` thread's line reads
 `/complete-task`, and the thread waits for the user's `go`. A `waiting`
