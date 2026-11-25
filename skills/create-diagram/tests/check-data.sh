@@ -162,6 +162,17 @@ t_cd_frame_step_below_zero_or_text() {
   eq stdout "$(printf 'frames[0]: from -1 is not a step\nframes[0]: to "a" is not a step')" "$out"
 }
 
+t_cd_frame_step_true_or_float() {
+  # Given: the frame starts at true and ends at 1.0, written into the page as is, since jq may print 1.0 as 1
+  cd_page sequence '.frames[0].from = true | .frames[0].to = 9'
+  python3 -c 'import sys; p=sys.argv[1]; s=open(p).read(); open(p,"w").write(s.replace("\"to\":9", "\"to\":1.0", 1))' "$T/diagram-t.html"
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout "$(printf 'frames[0]: from true is not a step\nframes[0]: to 1.0 is not a step')" "$out"
+}
+
 t_cd_frame_without_to() {
   # Given: the frame has no to key
   cd_page sequence 'del(.frames[0].to)'
@@ -281,6 +292,7 @@ cases=(
   "names a frame and a note past the last step|t_cd_frame_and_note_past_last_step"
   "names a frame end past the last step|t_cd_frame_past_last_step"
   "names a frame end below 0 or text|t_cd_frame_step_below_zero_or_text"
+  "names a frame end of true or 1.0|t_cd_frame_step_true_or_float"
   "names a frame with no to|t_cd_frame_without_to"
   "names a note after past the last step|t_cd_note_past_last_step"
   "names a note after that is not whole|t_cd_note_step_not_whole"
