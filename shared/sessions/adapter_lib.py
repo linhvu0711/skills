@@ -52,6 +52,51 @@ class Harness:
         self.current, self.extract_flags = current, extract_flags
 
 
+def first_day(days: int | None) -> dt.date | None:
+    """The first day of the last N days, today counted as the first."""
+    return dt.date.today() - dt.timedelta(days=days - 1) if days else None
+
+
+class Scope:
+    """Which sessions a find keeps: those whose cwd is a root, or below one
+    with subdirs (roots None: every project), and whose last activity falls
+    from since to until, in local days, both ends kept."""
+
+    # A plain class, not a dataclass: most loaders run this file without
+    # putting it in sys.modules, and a dataclass fails that way on Python 3.11
+    # and older.
+    def __init__(self, roots, subdirs: bool = False, since: dt.date | None = None,
+                 until: dt.date | None = None):
+        self.roots = None if roots is None else tuple(os.path.abspath(os.path.expanduser(r)) for r in roots)
+        self.subdirs, self.since, self.until = subdirs, since, until
+
+    @classmethod
+    def last_days(cls, roots, subdirs: bool, days: int | None) -> "Scope":
+        return cls(roots, subdirs, first_day(days))
+
+    def days(self) -> int | None:
+        """The window as the day count a finder's flag takes."""
+        return (dt.date.today() - self.since).days + 1 if self.since else None
+
+    def in_roots(self, cwd) -> bool:
+        if self.roots is None:
+            return True
+        if not cwd:
+            return False
+        c = os.path.normpath(os.path.expanduser(cwd))
+        return any(c == r or (self.subdirs and c.startswith(r.rstrip(os.sep) + os.sep)) for r in self.roots)
+
+    def in_window(self, when: float) -> bool:
+        d = dt.date.fromtimestamp(when)
+        return not (self.since and d < self.since) and not (self.until and d > self.until)
+
+
+def scope_of(args) -> Scope:
+    """A find's scope. Subfolders count, since every adapter asks its finder
+    for them."""
+    return Scope(None if args.all_projects else args.root, True, args.since, args.until)
+
+
 def age(mtime: float) -> str:
     """The row's "age": how long ago mtime was, as "3h ago"."""
     mins = max(0.0, time.time() - mtime) / 60
@@ -107,13 +152,12 @@ def installed(h: Harness) -> bool:
 
 
 def find(h: Harness, args) -> list[dict]:
-    roots = None if args.all_projects else [os.path.abspath(os.path.expanduser(r)) for r in args.root]
-    days = (dt.date.today() - args.since).days + 1 if args.since else None
-    if days is not None and days < 1:
+    scope = scope_of(args)
+    if scope.since and scope.since > dt.date.today():
         return []
     query = getattr(args, "query", "")
     ids = getattr(args, "id", [])
-    cmd = [sys.executable, h.finder, query, *h.flags(roots, days)]
+    cmd = [sys.executable, h.finder, query, *h.flags(None if scope.roots is None else list(scope.roots), scope.days())]
     if not query:
         cmd.append("--all")
     done = subprocess.run(cmd, capture_output=True, text=True)
@@ -127,9 +171,9 @@ def find(h: Harness, args) -> list[dict]:
     rows = []
     current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):
-        modified = dt.date.fromtimestamp(float(s["modified"]))
-        if args.until and modified > args.until:
+        if not scope.in_window(float(s["modified"])):
             continue
+        modified = dt.date.fromtimestamp(float(s["modified"]))
         if ids and not any(str(s.get("id", "")).startswith(i) for i in ids):
             continue
         rows.append({"harness": h.name, "id": s.get("id"), "modified": modified.isoformat(),
@@ -141,9 +185,9 @@ def find(h: Harness, args) -> list[dict]:
     # An unreadable session's id and project are inside it; its file name holds
     # the id, and the finder already kept it to the window's start.
     for u in out.get("unreadable", []):
-        modified = dt.date.fromtimestamp(float(u["modified"]))
-        if args.until and modified > args.until:
+        if not scope.in_window(float(u["modified"])):
             continue
+        modified = dt.date.fromtimestamp(float(u["modified"]))
         if ids and not any(i in os.path.basename(u["path"]) for i in ids):
             continue
         rows.append({"harness": h.name, "id": None, "modified": modified.isoformat(), "cwd": None, "title": None,

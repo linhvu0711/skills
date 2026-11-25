@@ -15,7 +15,6 @@ Prints {"harnesses": [{"harness", "label", "installed"}, plus "error" when its f
 """
 
 import argparse
-import datetime as dt
 import importlib.util
 import json
 import os
@@ -35,7 +34,7 @@ lib = load("adapter_lib", os.path.join(HERE, "adapter_lib.py"))
 
 
 def unread(args):
-    since = args.since
+    scope = lib.scope_of(args)
     out = []
     with open(os.path.join(HERE, "no-adapter.tsv"), encoding="utf-8") as h:
         for line in h:
@@ -44,10 +43,10 @@ def unread(args):
             name, rel = line.rstrip("\n").split("\t")
             path = os.path.join(os.path.expanduser("~"), rel)
             try:
-                changed = dt.date.fromtimestamp(os.path.getmtime(path))
+                changed = os.path.getmtime(path)
             except OSError:
                 continue
-            if since and changed < since:
+            if not scope.in_window(changed):
                 continue
             out.append({"harness": name, "path": path, "line": f"found {name} sessions, cannot read them yet"})
     return out
