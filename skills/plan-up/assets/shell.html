@@ -566,7 +566,7 @@ const DATA = {};
 
   function walksView(L) {
     if (!(L.walks || []).length) return empty('No screen in this ticket. No walks.');
-    return el('div', {}, L.walks.map((w, i) => card(`W${i + 1}`, `Walk ${i + 1} · ${w.title || w.where || ''}`, provesText(w.proves),
+    return el('div', {}, L.walks.map((w, i) => card(`W${i + 1}`, `Walk ${i + 1} · ${w.where || ''}`, provesText(w.proves),
       el('dl', { class: 'kv' },
         el('dt', {}, 'Setup'), el('dd', {}, R(w.setup)),
         el('dt', {}, 'Where'), el('dd', {}, R(w.where)),
@@ -589,13 +589,12 @@ const DATA = {};
     const g = L.gates || {};
     return el('div', {},
       el('div', { class: 'note' }, el('b', {}, 'Slice done'), R(g.slice || 'its test green, typecheck green.')),
-      el('div', { class: 'note' }, el('b', {}, 'Task done'), R(g.task || 'every Proof row has its artifact, full suite green, lint green, build green.'),
-        (g.untouched || []).length ? el('div', {}, el('div', { style: 'margin-top:8px;color:var(--muted);font-size:13px' }, 'Existing tests that stay untouched and green:'), el('ul', { class: 'plain' }, g.untouched.map((t) => el('li', {}, R(code(t)))))) : null));
+      el('div', { class: 'note' }, el('b', {}, 'Task done'), R(g.task || 'every Proof row has its artifact, full suite green, lint green, build green.')));
   }
 
   function decidedView(L) {
     if (!(L.decided || []).length) return empty('Nothing decided. The issue and the repo left no small forks.');
-    return el('ul', { class: 'plain decided' }, L.decided.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `D${i + 1}`), ' ', R(`**${x.what}**`), el('span', { class: 'why', html: rich(`${x.why}${x.at ? ' — ' + code(x.at) : ''}`) }))));
+    return el('ul', { class: 'plain decided' }, L.decided.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `D${i + 1}`), ' ', R(`**${x.what}**`), el('span', { class: 'why', html: rich(x.why) }))));
   }
 
   function listView(items, prefix) {

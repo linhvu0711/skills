@@ -4,15 +4,18 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 build() { run python3 "$here/../scripts/build-page.py" "$@"; }
 page_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
-# render [--fake-layout <js>] <html>: the built page run in node on a fake
-# page, with text 7 px wide per character. Prints what the Review panel
-# draws: one line per element of each Change map, then one line per Files
-# row. --fake-layout runs <js> in place of the page's layout.js.
+# render [--fake-layout <js>] [--reads] <html>: the built page run in node on
+# a fake page, with text 7 px wide per character. Prints what the Review
+# panel draws: one line per element of each Change map, then one line per
+# Files row. --fake-layout runs <js> in place of the page's layout.js.
+# --reads draws every layer with DATA behind a Proxy and prints instead each
+# key the page reads that its object lacks, as layers[].gates.untouched.
 render() {
   run node - "$@" <<'EOF'
 const fs = require('node:fs'), vm = require('node:vm');
 const args = process.argv.slice(2);
 const fake = args[0] === '--fake-layout' ? fs.readFileSync(args.splice(0, 2)[1], 'utf8') : null;
+const reads = args[0] === '--reads' ? args.shift() : null;
 const html = fs.readFileSync(args[0], 'utf8');
 class Fake {
   constructor(tag) { this.tag = tag; this.attrs = {}; this.children = []; this.listeners = {}; this.dataset = {}; this.text = '';
@@ -48,8 +51,24 @@ const document = {
 const page = { document, window: { scrollTo() {} }, history: { replaceState() {} }, location: { hash: '' },
   navigator: {}, getComputedStyle: () => ({ fontFamily: '' }) };
 vm.createContext(page);
-for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
-  vm.runInContext(fake !== null && /^const PlanLayout\b/m.test(code) ? fake : code, page);
+const absent = new Set();
+const watch = (o, path) => new Proxy(o, { get(t, k) {
+  const item = Array.isArray(t) && (typeof k === 'symbol' || /^\d+$/.test(k) || k in Array.prototype);
+  if (!item && typeof k !== 'symbol' && !(k in t)) absent.add(path ? `${path}.${k}` : k);
+  const v = t[k];
+  return v && typeof v === 'object' ? watch(v, item ? `${path}[]` : path ? `${path}.${k}` : k) : v;
+} });
+for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+  if (reads && code.trim().startsWith('const DATA = ')) {
+    vm.runInContext(code.replace('const DATA = ', 'var DATA = '), page);
+    page.DATA = watch(page.DATA, '');
+  } else vm.runInContext(fake !== null && /^const PlanLayout\b/m.test(code) ? fake : code, page);
+}
+if (reads) {
+  for (const b of byId['#layers'].elements().slice(1)) b.listeners.click[0]();
+  console.log([...absent].sort().join('\n'));
+  process.exit(0);
+}
 const review = byId['#panels'].elements().find((s) => s.dataset.id === 'review');
 const find = (n, test, got = []) => { for (const k of n.elements()) { if (test(k)) got.push(k); find(k, test, got); } return got; };
 const maps = find(review, (k) => k.tag === 'svg' && k.attrs['aria-label'] === 'Change map');
@@ -768,6 +787,23 @@ EOF
   eq rows "ft-row new | + | └── fake.ts |  | S1" "$(printf '%s\n' "$out" | grep '^ft-row')"
 }
 
+t_build_reads_emitted_fields() {
+  # Given: every fixture built, and each key path any of their DATA holds
+  T="$(mktemp -d)"
+  for f in files none-map perf run-one run ticket run-three; do
+    cp "$here/build-page/$f.md" "$T/plan-$f.md"
+    build "$T/plan-$f.md"
+    eq "exit $f" 0 "$code"
+    page_data "$T/plan-$f.html" | jq -r 'paths | map(if type == "number" then "[]" else "." + . end) | join("") | ltrimstr(".") | gsub("\\.\\[\\]"; "[]")' >> "$T/emitted"
+    # When
+    render --reads "$T/plan-$f.html"
+    eq "render exit $f" 0 "$code"
+    printf '%s\n' "$out" >> "$T/read"
+  done
+  # Then: no read of a field no fixture's DATA holds
+  eq "absent reads" "" "$(sort -u "$T/read" | grep -v '^$' | grep -vxF -f <(sort -u "$T/emitted") || true)"
+}
+
 cases=(
   "build-page builds a ticket page from its .md|t_build_ticket"
   "build-page builds a run page from its .md|t_build_run"
@@ -856,4 +892,5 @@ cases=(
   "build-page draws the same map and file tree|t_build_same_drawing"
   "the page draws the map PlanLayout gives|t_build_draws_layout_map"
   "the page draws the file rows PlanLayout gives|t_build_draws_layout_files"
+  "the page reads only fields page_data emits|t_build_reads_emitted_fields"
 )
