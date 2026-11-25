@@ -221,7 +221,9 @@ def main():
         prios[repo] = {"p0": a.p0, "p1": a.p1, "p2": a.p2, "p3": a.p3}
         save(PRIORITY_STORE, prios)
 
-        show(with_priority(repo, seeds[repo]))
+        merged = dict(seeds[repo])
+        merged["priority"] = prios[repo]
+        show(merged)
         return
 
     if a.cmd == "seed-forget":
