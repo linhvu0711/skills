@@ -213,6 +213,16 @@ t_cd_note_without_after() {
   eq stdout "ok: sequence, 3 participants, 3 steps" "$out"
 }
 
+t_cd_note_after_null() {
+  # Given: the note's after is null, which the page draws above the first step as for no after
+  cd_page sequence '.notes[0].after = null'
+  # When
+  cd_check
+  # Then
+  eq exit 0 "$code"
+  eq stdout "ok: sequence, 3 participants, 3 steps" "$out"
+}
+
 t_cd_not_json() {
   # Given: DATA written as a JavaScript object with a bare key
   cd_page graph .
@@ -297,6 +307,7 @@ cases=(
   "names a note after past the last step|t_cd_note_past_last_step"
   "names a note after that is not whole|t_cd_note_step_not_whole"
   "passes a note with no after|t_cd_note_without_after"
+  "passes a note with after null|t_cd_note_after_null"
   "refuses DATA that is not JSON|t_cd_not_json"
   "names a missing node label|t_cd_missing_node_label"
   "names a missing step label|t_cd_missing_step_label"

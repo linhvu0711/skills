@@ -116,7 +116,7 @@ def sequence_problems(data):
             yield f'notes[{i}]: at "{note.get("at")}" is not a participant'
         if "text" not in note:
             yield f'notes[{i}]: no text'
-        if "after" in note and not is_step(note["after"]):
+        if note.get("after") is not None and not is_step(note["after"]):
             yield f'notes[{i}]: after {json.dumps(note["after"])} is not a step'
 
 
