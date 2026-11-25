@@ -2,7 +2,8 @@
 // a fake page and a fake fetch, so a test checks what the page fetches and
 // draws, not its source text. The fake fetch answers board.json with the
 // file's text and any other name with 404. After the first read settles, it
-// prints one JSON line: {fetched, banner, hdot}.
+// prints one JSON line: {fetched, banner, hdot, nums}, nums the text of each
+// drawn `.num` link, in order.
 'use strict'
 const fs = require('fs')
 const vm = require('vm')
@@ -51,5 +52,6 @@ function fetch(name) {
 vm.runInNewContext(script, { document, fetch, setInterval: () => 0, console })
 setTimeout(() => {
   const get = (id) => els[id] || element()
-  process.stdout.write(JSON.stringify({ fetched, banner: get('banner').innerHTML, hdot: get('hdot').className }) + '\n')
+  const nums = [...get('board').innerHTML.matchAll(/<a class="num"[^>]*>([^<]*)<\/a>/g)].map((m) => m[1])
+  process.stdout.write(JSON.stringify({ fetched, banner: get('banner').innerHTML, hdot: get('hdot').className, nums }) + '\n')
 }, 50)

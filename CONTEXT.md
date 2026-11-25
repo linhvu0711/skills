@@ -374,8 +374,16 @@ _Avoid_: factory, autopilot, scheduler
 One orchestrator pass over one Set, from `/orchestrate` until every issue in the Set is closed or the user stops it. One live Run for each repo.
 _Avoid_: session, job, batch
 
+**Run repo**:
+The repo a Run starts in. Its issues show as `#n`; issues from other repos show as `repo#n`.
+_Avoid_: home repo (that is a retro card's repo), main repo
+
+**Owner run**:
+The Run that took an issue first. Another Run that holds the same issue only shows it and waits.
+_Avoid_: first run, main run
+
 **Set**:
-The issues a Run must close. It is fixed at the start, from a list, an epic, or a rule such as "assigned to me". The user adds or removes issues. Issues the Run makes (sub-issues, follow-ups) join by themselves.
+The issues a Run must close. It is fixed at the start, from a list, an epic, or a rule such as "assigned to me". The user adds or removes issues. Issues the Run makes (sub-issues, follow-ups) join by themselves. Its issues can live in any repo.
 _Avoid_: queue, backlog, scope
 
 **Stage**:

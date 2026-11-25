@@ -6,7 +6,7 @@ Looks back over your coding sessions, from every harness it can read, and over t
 
 A session felt harder than it should have, the same kind of trouble keeps coming back, or you want to know what to change after a stretch of work. Type `/retro` for the session you are in. Name a range, IDs, a topic, or sources to read more: `/retro today`, `/retro last 3 days`, `/retro from 2026-10-01 to 2026-10-05`, `/retro the handoff sessions this week`, `/retro only claude sessions`, `/retro PRs from last week`, `/retro last 3 days, all projects`. Many sessions and PRs show what one cannot: the same mistake, the same slow search, the same review comment, the same correction you keep typing, the same good habit.
 
-[orchestrate](../orchestrate/) starts it for you when a run is done, as `/retro run <run folder>`.
+[orchestrate](../orchestrate/) starts it for you when a run is done, as `/retro run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
 
 ## What you get
 

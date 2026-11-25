@@ -49,14 +49,15 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 scripts/github.py list <owner/repo> --transcripts <scratch> --since D [--until D]
    ```
 
-   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues`, into a second folder:
+   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues` of each repo, into a second folder, under one folder per repo, so two repos' PR 12 stay apart:
 
    ```bash
-   python3 scripts/github.py pr <owner/repo> <n> > <github>/pr-<n>.md
-   python3 scripts/github.py issues <owner/repo> <n>... > <github>/issues.md
+   mkdir -p <github>/<owner>/<repo>
+   python3 scripts/github.py pr <owner/repo> <n> > <github>/<owner>/<repo>/pr-<n>.md
+   python3 scripts/github.py issues <owner/repo> <n>... > <github>/<owner>/<repo>/issues.md
    ```
 
-   Count the readers: one per session, one per PR, one for the issues. More than 20: print `<s> sessions, <p> PRs, <i> issues: <r> readers. Say go.` and wait for `go`; any other answer narrows the scope, and you go back to step 1. Done when every untouched PR and issue has its bundle, and the count is 20 or less or the user said `go`.
+   Count the readers: one per session, one per PR, one per issues bundle. More than 20: print `<s> sessions, <p> PRs, <i> issues: <r> readers. Say go.` and wait for `go`; any other answer narrows the scope, and you go back to step 1. Done when every untouched PR and issue has its bundle, and the count is 20 or less or the user said `go`.
 
 5. **Read.** One reader per session, per PR, and one for the issues, per `references/reader.md`: up to ten readers in one message, the next ten after those return. Each returns one evidence list. A reader that fails or returns no `# Evidence list`: send it once more; still nothing, that item is **not read**. Done when every item has an evidence list or is marked not read.
 
@@ -102,10 +103,10 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
 ## Run scope
 
-`/retro run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread`.
+`/retro run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread` and `threads[].path`. `set` and `removed` hold refs, `owner/repo#n`; an old run's bare number is an issue in the run's `repo`.
 
-- **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <path> --since <started_at day> --id <session>`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip `find_all.py`, and keep its `unread` lines out.
-- **GitHub.** `scripts/github.py list <repo> --transcripts <scratch> --issues <set minus removed>`.
+- **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <folder> --since <started_at day> --id <session>`, with one `--root` for each distinct folder: the run's `path` and each `threads[].path`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip `find_all.py`, and keep its `unread` lines out.
+- **GitHub.** `scripts/github.py list <repo> --transcripts <scratch> --issues <numbers>`, once per repo in the set minus removed, with that repo's numbers; the lists join.
 - **No stop.** The run set the scope, so step 4 does not wait for `go`.
 
 The rest of the steps run as written.

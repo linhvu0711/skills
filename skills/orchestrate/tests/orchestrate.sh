@@ -9,8 +9,11 @@ F="$here/../scripts/orchestrate.sh"
 
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
 # one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
-# `thread list` prints $T/t3-threads.json, or fails with the text of
-# $T/t3.fail when that file exists. Its `thread send` adds its arguments as
+# `thread list --project <path>` prints $T/t3-threads.<folder name>.json when
+# that file exists, else $T/t3-threads.json, or fails with the text of
+# $T/t3.fail when that file exists, or when $T/no-project lists the path.
+# Its `project add <path>` logs `project add <path>` to $T/t3.log and takes
+# the path off $T/no-project. Its `thread send` adds its arguments as
 # one line to $T/t3-sends.log, or fails with the text of $T/t3-send.fail
 # when that file exists. Issues go in with fs_issue.
 fs_setup() {
@@ -24,7 +27,15 @@ fs_setup() {
 #!/usr/bin/env bash
 set -euo pipefail
 case "$1 $2" in
-  "thread list") if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi; cat "$FAKE_T3_DIR/t3-threads.json" ;;
+  "thread list")
+    if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi
+    if grep -qxF "$4" "$FAKE_T3_DIR/no-project" 2>/dev/null; then echo "no project at $4" >&2; exit 1; fi
+    f="$FAKE_T3_DIR/t3-threads.$(basename "$4").json"; [ -f "$f" ] || f="$FAKE_T3_DIR/t3-threads.json"
+    cat "$f" ;;
+  "project add")
+    echo "project add $3" >> "$FAKE_T3_DIR/t3.log"
+    grep -vxF "$3" "$FAKE_T3_DIR/no-project" > "$FAKE_T3_DIR/no-project.new" || true
+    mv "$FAKE_T3_DIR/no-project.new" "$FAKE_T3_DIR/no-project" ;;
   "thread send") if [ -e "$FAKE_T3_DIR/t3-send.fail" ]; then cat "$FAKE_T3_DIR/t3-send.fail" >&2; exit 1; fi; echo "$*" >> "$FAKE_T3_DIR/t3-sends.log" ;;
   *) printf 'fake t3: no route for %s\n' "$*" >&2; exit 2 ;;
 esac
@@ -36,18 +47,23 @@ EOF
 }
 
 # fs_issue <n> <state> <labels> [blocked-by] [prs] [subs] [title]: issue #n
-# in the GraphQL answer. <labels> is a JSON list of names; the rest are JSON
-# lists of nodes, empty when left out. The title is "Export orders" unless
-# given. decide.sh's `issue view` gets the same issue.
+# in the GraphQL answer of acme/app, or of acme/$FS_REPO when that is set.
+# <labels> is a JSON list of names; the rest are JSON lists of nodes, empty
+# when left out. A blocker or sub-issue node with no repository is in the
+# issue's repo. The title is "Export orders" unless given. decide.sh's
+# `issue view` gets the same issue.
 fs_issue() {
-  local title="${7:-Export orders}"
+  local title="${7:-Export orders}" dir="$T/issues${FS_REPO:+-$FS_REPO}"
+  mkdir -p "$dir"
   jq -cn --argjson n "$1" --arg s "$2" --argjson l "$3" --argjson b "${4:-[]}" \
-    --argjson p "${5:-[]}" --argjson u "${6:-[]}" --arg t "$title" \
-    '{number: $n, title: $t, state: $s, createdAt: "2026-10-01T00:00:00Z",
-      labels: {nodes: [$l[] | {name: .}]}, subIssues: {nodes: $u},
-      blockedBy: {nodes: $b}, closedByPullRequestsReferences: {nodes: $p}}' > "$T/issues/$1.json"
-  jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$T/issues"/*.json > "$FAKE_GH/graphql.json"
-  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$T/issues/$1.json" > "$FAKE_GH/issue-view.json"
+    --argjson p "${5:-[]}" --argjson u "${6:-[]}" --arg t "$title" --arg repo "acme/${FS_REPO:-app}" \
+    'def inrepo: map(.repository //= {nameWithOwner: $repo});
+     {number: $n, title: $t, state: $s, createdAt: "2026-10-01T00:00:00Z",
+      labels: {nodes: [$l[] | {name: .}]}, subIssues: {nodes: ($u | inrepo)},
+      blockedBy: {nodes: ($b | inrepo)}, closedByPullRequestsReferences: {nodes: $p}}' > "$dir/$1.json"
+  jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$dir"/*.json \
+    > "$FAKE_GH/graphql${FS_REPO:+.$FS_REPO}.json"
+  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$dir/$1.json" > "$FAKE_GH/issue-view.json"
 }
 
 # fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
@@ -102,7 +118,21 @@ t_fs_start_writes_run() {
   # Then
   eq exit 0 "$code"
   eq runs 1 "$(ls -1 "$T/orchestrate/acme-app" | wc -l | tr -d ' ')"
-  eq state '{"set":[42],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
+  eq state '{"set":["acme/app#42"],"status":"running","every":5,"threads":[]}' "$(fs_state '{set, status, every: .timer.every, threads}')"
+}
+
+t_fs_old_state_converted() {
+  # Given: a run of #42 after one check, its state rewritten as a run from
+  # before refs left it: bare numbers in the set, the threads, and the keys
+  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_go check acme/app
+  fs_set_state '.set = [42] | .threads = [{number: 42, stage: "ticket", thread: "t1", link: "[i42](t3-thread://v1/t1)", status: "started", why: null, command: "ship"}] | .proposals = {"42": {route: "ship"}}'
+  # When: two checks
+  fs_go check acme/app; local first="$out"
+  fs_go check acme/app
+  # Then
+  eq state '{"set":["acme/app#42"],"thread":"acme/app#42","proposals":["acme/app#42"]}' \
+    "$(fs_state -c '{set, thread: .threads[0].ref, proposals: (.proposals | keys)}')"
+  eq starts '[] []' "$(jq -c .starts <<<"$first") $(jq -c .starts <<<"$out")"
 }
 
 t_fs_ticket_starts_ship() {
@@ -126,7 +156,7 @@ t_fs_second_check_starts_nothing() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  eq threads '[{"number":42,"stage":"ticket","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+  eq threads '[{"ref":"acme/app#42","stage":"ticket","status":"pending"}]' "$(fs_state '[.threads[] | {ref, stage, status}]')"
 }
 
 t_fs_recorded_thread_not_again() {
@@ -160,11 +190,11 @@ fs_record() {
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
-# fs_set_state <jq program>: change the newest run's state, as a run from an
+# fs_set_state [jq flags] <jq program>: change the newest run's state, as a run from an
 # older orchestrate.sh left it.
 fs_set_state() {
   local f; f="$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1)state.json"
-  jq "$1" "$f" > "$f.new" && mv "$f.new" "$f"
+  jq "$@" "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
 # fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
@@ -241,9 +271,9 @@ t_fs_conflict_listed() {
   fs_go watch acme/app --once
   # Then
   eq exit 0 "$code"
-  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
-  eq state '[{"number":42,"pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {number, pr, head, thread}]')"
+  eq state '[{"ref":"acme/app#42","pr":43,"head":"aaa111","thread":"t42"}]' "$(fs_state '[.conflicts[] | {ref, pr, head, thread}]')"
 }
 
 t_fs_conflict_once_per_head() {
@@ -264,7 +294,7 @@ t_fs_conflict_new_head() {
   # When
   fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43,"thread":"t42"}]' "$(jq -c .sent <<<"$out")"
   eq state '["aaa111","bbb222"]' "$(fs_state '[.conflicts[] | .head]')"
 }
 
@@ -312,7 +342,7 @@ t_fs_conflict_shared_pr() {
   # When
   fs_go watch acme/app --once
   # Then
-  eq line '[{"number":42,"pr":43}]' "$(jq -c '[.sent[] | {number, pr}]' <<<"$out")"
+  eq line '[{"ref":"acme/app#42","pr":43}]' "$(jq -c '[.sent[] | {ref, pr}]' <<<"$out")"
   eq sends "thread send t42 /ready-pr https://github.com/acme/app/pull/43" "$(fs_sends)"
 }
 
@@ -393,9 +423,9 @@ t_fs_second_task_waits() {
   # When
   fs_go check acme/app
   # Then
-  eq starts '[42]' "$(jq -c '[.starts[] | .number]' <<<"$out")"
+  eq starts '["acme/app#42"]' "$(jq -c '[.starts[] | .ref]' <<<"$out")"
   has stdout '"wait":"waits for the task turn: acme/app#42"' "$out"
-  eq state '[42]' "$(fs_state '.task_turn')"
+  eq state '["acme/app#42"]' "$(fs_state '.task_turn')"
 }
 
 # fs_other_run <status> [watcher-pid]: a run of acme/web whose state holds the
@@ -457,7 +487,7 @@ t_fs_failed_task_launch_frees_turn() {
   # Given: a run of #42, manual, claimed by a check, so it holds the turn
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42
   fs_go check acme/app
-  eq "turn held" '[42]' "$(fs_state '.task_turn')"
+  eq "turn held" '["acme/app#42"]' "$(fs_state '.task_turn')"
   # When
   fs_go started acme/app 42 task --failed "no reply"
   # Then
@@ -535,7 +565,7 @@ t_fs_closed_seed_done() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"number":42,"title":"Export orders","stage":"done"' "$out"
+  has stdout '"label":"#42","url":"https://github.com/acme/app/issues/42","title":"Export orders","stage":"done"' "$out"
 }
 
 t_fs_open_blocker_holds() {
@@ -545,7 +575,7 @@ t_fs_open_blocker_holds() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"free":false,"blocked_by":[41]' "$out"
+  has stdout '"free":false,"blocked_by":["acme/app#41"]' "$out"
 }
 
 t_fs_closed_blockers_free() {
@@ -577,8 +607,8 @@ t_fs_restart_fresh_thread() {
   eq "restart exit" 0 "$code"
   fs_go check acme/app
   # Then
-  has stdout '"starts":[{"number":42' "$out"
-  eq threads '[{"number":42,"status":"pending"}]' "$(fs_state '[.threads[] | {number, status}]')"
+  has stdout '"ref":"acme/app#42","stage":"ticket"' "$out"
+  eq threads '[{"ref":"acme/app#42","status":"pending"}]' "$(fs_state '[.threads[] | {ref, status}]')"
 }
 
 t_fs_failed_launch_not_again() {
@@ -601,10 +631,10 @@ t_fs_epic_brings_subs() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"joined":[71]' "$out"
-  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
-  has stdout '"starts":[{"number":71' "$out"
-  eq set '[70,71]' "$(fs_state .set)"
+  has stdout '"joined":["acme/app#71"]' "$out"
+  has stdout '"label":"#70","url":"https://github.com/acme/app/issues/70","title":"Order export","stage":"epic"' "$out"
+  has stdout '"ref":"acme/app#71","stage":"ticket"' "$out"
+  eq set '["acme/app#70","acme/app#71"]' "$(fs_state .set)"
 }
 
 t_fs_followup_joins() {
@@ -615,8 +645,204 @@ t_fs_followup_joins() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"joined":[50]' "$out"
+  has stdout '"joined":["acme/app#50"]' "$out"
   has stdout '"message":"/grill #50"' "$out"
+}
+
+# fs_lib: a checkout of acme/lib at $T/dev/lib.
+fs_lib() {
+  git init -q -b main "$T/dev/lib"
+  git -C "$T/dev/lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/lib" remote add origin https://github.com/acme/lib.git
+}
+
+# fs_lib_epic: a run of epic acme/app#70 whose open sub-issue acme/lib#5 is
+# an S ticket, with a checkout of acme/lib.
+fs_lib_epic() {
+  fs_setup; fs_lib
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]' "Order export"
+  FS_REPO=lib fs_issue 5 OPEN '["size/S"]' '[]' '[]' '[]' "Shared parser"
+  fs_start 70
+}
+
+t_fs_other_repo_part_starts() {
+  # Given: epic acme/app#70, whose open sub-issue acme/lib#5 is an S ticket
+  fs_lib_epic
+  # When
+  fs_go check acme/app
+  # Then
+  eq ref acme/lib#5 "$(jq -r '.starts[0].ref' <<<"$out")"
+  eq path "$T/dev/lib" "$(jq -r '.starts[0].path' <<<"$out")"
+  eq board '{"label":"lib#5","url":"https://github.com/acme/lib/issues/5"}' \
+    "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {label, url}')"
+}
+
+t_fs_other_repo_adds_project() {
+  # Given: epic acme/app#70, whose part acme/lib#5 is an S ticket, in a folder that is no T3 project yet
+  fs_lib_epic; echo "$T/dev/lib" > "$T/no-project"
+  # When
+  fs_go check acme/app
+  # Then
+  has log "project add $T/dev/lib" "$(cat "$T/t3.log")"
+  eq ref acme/lib#5 "$(jq -r '.starts[0].ref' <<<"$out")"
+}
+
+t_fs_other_repo_thread_status() {
+  # Given: acme/lib#5's thread t9 started in acme/lib's project, where T3 shows it waiting
+  fs_lib_epic; fs_go check acme/app
+  fs_go started acme/app acme/lib#5 ticket t9 link9; eq started 0 "$code"
+  echo '[{"threadId":"t9","status":"waiting"}]' > "$T/t3-threads.lib.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq status waiting "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .thread_status' <<<"$out")"
+}
+
+t_fs_other_repo_unreadable_asks() {
+  # Given: epic acme/app#70 with part acme/lib#5, and #71 an S ticket in the set; acme/lib will not read
+  fs_setup; fs_lib
+  fs_issue 70 OPEN '[]' '[]' '[]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]' "Order export"
+  fs_issue 71 OPEN '["size/S"]'
+  fs_start 70 71
+  echo "HTTP 404: Could not resolve to a Repository" > "$FAKE_GH/graphql.lib.fail"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  eq starts '["acme/app#71"]' "$(jq -c '[.starts[].ref]' <<<"$out")"
+  eq card '{"mark":"you","action":"could not read acme/lib: HTTP 404: Could not resolve to a Repository"}' \
+    "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {mark, action}')"
+}
+
+t_fs_other_repo_no_checkout_asks() {
+  # Given: epic acme/app#70, whose part acme/lib#5 is an S ticket, and no checkout of acme/lib
+  fs_lib_epic; rm -rf "$T/dev/lib"
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  eq mark you "$(fs_board -r '.issues[] | select(.ref == "acme/lib#5") | .mark')"
+  has action "no checkout of acme/lib under" "$(fs_board -r '.issues[] | select(.ref == "acme/lib#5") | .action')"
+}
+
+t_fs_other_repo_followup_joins() {
+  # Given: a run of #42, since closed by acme/lib's PR 9, whose Follow-ups name #12, open in acme/lib
+  local pr='{"number":9,"url":"https://github.com/acme/lib/pull/9","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Follow-ups\n- #12: tidy\n"}'
+  fs_setup; fs_lib; fs_issue 42 OPEN '["size/S"]'; fs_start 42
+  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"; FS_REPO=lib fs_issue 12 OPEN '["seed"]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq joined '["acme/lib#12"]' "$(jq -c .joined <<<"$out")"
+}
+
+t_fs_other_repo_blocker_label() {
+  # Given: a run of #42, size/S, blocked by open acme/lib#5
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":5,"state":"OPEN","repository":{"nameWithOwner":"acme/lib"}}]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq blocked_by '["acme/lib#5"]' "$(jq -c '.issues[0].blocked_by' <<<"$out")"
+  eq action 'blocked by lib#5' "$(fs_card 42 | jq -r .action)"
+}
+
+# fs_lib_run [thread] [started_at]: a live run of acme/lib#5 that started
+# 2026-11-01, or at the given time, with a started thread for #5 when the
+# thread is not "".
+fs_lib_run() {
+  local f
+  fs_go start acme/lib --name "#5" --thread f2 --env e1 5; eq "lib start exit" 0 "$code"
+  f="$(ls -1d "$T"/orchestrate/acme-lib/*/ | sort | tail -1)state.json"
+  jq -c --arg t "${1:-}" --arg at "${2:-2026-11-01T00:00:00Z}" '.started_at = $at
+    | if $t == "" then . else .threads += [{ref: "acme/lib#5", stage: "ticket", thread: $t, status: "started", command: "ship"}] end' \
+    "$f" > "$f.new" && mv "$f.new" "$f"
+}
+
+t_fs_owned_by_other_run() {
+  # Given: a live acme/lib run with a thread for acme/lib#5, and a later acme/app run whose epic holds it
+  fs_lib_epic; fs_lib_run t5
+  # When
+  fs_go check acme/app
+  # Then
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  has wait 'owned by [🧭 #5](t3-thread://v1/f2)' "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .wait' <<<"$out")"
+}
+
+t_fs_two_runs_one_start() {
+  # Given: a live acme/lib run holding acme/lib#5 with no thread, and a later acme/app run whose epic holds it
+  fs_lib_epic; fs_lib_run
+  # When
+  fs_go check acme/app; local app="$out"
+  fs_go check acme/lib
+  # Then
+  eq "app starts" '[]' "$(jq -c .starts <<<"$app")"
+  eq "lib starts" '["acme/lib#5"]' "$(jq -c '[.starts[].ref]' <<<"$out")"
+}
+
+t_fs_same_second_runs_one_owner() {
+  # Given: a paused acme/app run whose epic holds acme/lib#5, after a check; an
+  # acme/lib run of #5, started the same second, with no thread for it
+  fs_lib_epic; fs_go timer acme/app pause; fs_go check acme/app
+  fs_lib_run "" "$(fs_state -r .started_at)"
+  # When
+  fs_go check acme/lib
+  # Then: acme/app sorts first, so the lib run waits on it
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  has wait 'owned by [🧭 #70]' "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .wait' <<<"$out")"
+}
+
+t_fs_check_waits_for_claims_lock() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5; another run's check holds the claims lock
+  local holder done=""
+  fs_lib_epic
+  # The check must really wait, so the fake no-op sleep goes.
+  rm "$T/bin/sleep"
+  /bin/sleep 30 & holder=$!
+  mkdir "$T/orchestrate/.claims.lock"; echo "$holder" > "$T/orchestrate/.claims.lock/pid"
+  # When
+  ( fs_go check acme/app; echo "$code" > "$T/check.code"; printf '%s' "$out" > "$T/check.out" ) &
+  # A check alone takes about a second here; it must still wait at 3.
+  /bin/sleep 3
+  [ -e "$T/check.code" ] || done=no
+  rm -rf "$T/orchestrate/.claims.lock"; kill "$holder"
+  wait
+  # Then
+  eq "waited" no "$done"
+  eq exit 0 "$(cat "$T/check.code")"
+  eq starts '["acme/lib#5"]' "$(jq -c '[.starts[].ref]' "$T/check.out")"
+}
+
+t_fs_ref_forms() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app add acme/lib#6; eq "owner/repo#n" 0 "$code"
+  fs_go change acme/app add lib#7; eq "repo#n" 0 "$code"
+  fs_go change acme/app add 8
+  # Then
+  eq exit 0 "$code"
+  eq set '["acme/lib#6","acme/lib#7","acme/app#8"]' "$(fs_state '.set[-3:]')"
+}
+
+t_fs_ref_any_case() {
+  # Given: the run of epic acme/app#70, whose part acme/lib#5 joined by GitHub's spelling
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app remove Acme/Lib#5
+  # Then
+  eq exit 0 "$code"
+  eq set '["acme/app#70"]' "$(fs_state .set)"
+  eq removed '["acme/lib#5"]' "$(fs_state .removed)"
+}
+
+t_fs_ref_unknown_repo() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5
+  fs_lib_epic; fs_go check acme/app
+  # When
+  fs_go change acme/app add zed#6
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: no single repo named zed in this run; say owner/zed#6" "$(tail -1 <<<"$err")"
 }
 
 t_fs_add_to_set() {
@@ -626,7 +852,7 @@ t_fs_add_to_set() {
   fs_go change acme/app add 43
   # Then
   eq exit 0 "$code"
-  eq set '[42,43]' "$(fs_state .set)"
+  eq set '["acme/app#42","acme/app#43"]' "$(fs_state .set)"
 }
 
 t_fs_removed_never_rejoins() {
@@ -640,7 +866,7 @@ t_fs_removed_never_rejoins() {
   fs_go check acme/app
   # Then
   has stdout '"joined":[]' "$out"
-  eq sets '{"set":[70],"removed":[71]}' "$(fs_state '{set, removed}')"
+  eq sets '{"set":["acme/app#70"],"removed":["acme/app#71"]}' "$(fs_state '{set, removed}')"
 }
 
 t_fs_ship_merge_one() {
@@ -662,7 +888,7 @@ t_fs_ship_merge_all() {
   fs_go change acme/app ship merge all
   # Then
   eq exit 0 "$code"
-  eq ship '{"42":"","default":"merge"}' "$(fs_state .ship)"
+  eq ship '{"acme/app#42":"","default":"merge"}' "$(fs_state .ship)"
 }
 
 t_fs_ship_started() {
@@ -771,6 +997,7 @@ t_fs_all_closed_done() {
   has stdout '"done":true' "$out"
   has stdout '"number":42,"title":"Export orders","stages":["bug","ticket"]' "$out"
   has stdout '"url":"https://github.com/acme/app/pull/43","state":"MERGED"' "$out"
+  has stdout "\"paths\":[\"$T/dev/app\"]" "$out"
   eq status done "$(fs_state -r .status)"
 }
 
@@ -796,7 +1023,7 @@ t_fs_done_removed_no_retro() {
   fs_go check acme/app
   # Then
   has stdout '"done":true' "$out"
-  has stdout '"removed":[44]' "$out"
+  has stdout '"removed":["acme/app#44"]' "$out"
   eq line false "$(jq -c 'has("retro")' <<<"$out")"
 }
 
@@ -809,8 +1036,32 @@ t_fs_sync_fast_forwards() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
   eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
+}
+
+t_fs_sync_each_repo() {
+  # Given: a run with threads in acme/app and acme/lib; each origin's main is one commit ahead
+  fs_setup; fs_lib; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  git clone -q --bare "$T/dev/lib" "$T/remote-lib.git"
+  git -C "$T/dev/lib" config url."$T/remote-lib.git".insteadOf https://github.com/acme/lib.git
+  git -C "$T/dev/lib" fetch -q origin
+  git clone -q "$T/remote-lib.git" "$T/other-lib"
+  fs_set_state --arg app "$T/dev/app" --arg lib "$T/dev/lib" '.threads += [
+    {ref: "acme/app#42", repo: "acme/app", path: $app, stage: "ticket", thread: "t1", status: "started"},
+    {ref: "acme/lib#5", repo: "acme/lib", path: $lib, stage: "ticket", thread: "t2", status: "started"}]'
+  local was_app was_lib
+  was_app="$(fs_short "$T/dev/app" main)"; was_lib="$(fs_short "$T/dev/lib" main)"
+  fs_push a.txt one
+  printf 'two\n' > "$T/other-lib/b.txt"; git -C "$T/other-lib" add b.txt
+  git -C "$T/other-lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m two
+  git -C "$T/other-lib" push -q origin main
+  # When
+  fs_go sync acme/app
+  # Then
+  eq exit 0 "$code"
+  eq stdout "app: main fast-forwarded $was_app..$(fs_short "$T/other" main)
+lib: main fast-forwarded $was_lib..$(fs_short "$T/other-lib" main)" "$out"
 }
 
 t_fs_sync_fetch_fails() {
@@ -824,7 +1075,7 @@ t_fs_sync_fetch_fails() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  has stdout "main not updated: fetch failed: " "$out"
+  has stdout "app: main not updated: fetch failed: " "$out"
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -835,7 +1086,7 @@ t_fs_sync_up_to_date() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main up to date at $(fs_short "$T/dev/app" main)" "$out"
+  eq stdout "app: main up to date at $(fs_short "$T/dev/app" main)" "$out"
 }
 
 t_fs_sync_own_commits() {
@@ -848,7 +1099,7 @@ t_fs_sync_own_commits() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: it has commits origin/main lacks" "$out"
+  eq stdout "app: main not updated: it has commits origin/main lacks" "$out"
   eq main "$mine" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -865,7 +1116,7 @@ t_fs_sync_edits_in_the_way() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq stdout "app: main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
   eq edit mine "$(cat "$T/dev/app/a.txt")"
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -883,7 +1134,7 @@ t_fs_sync_edits_in_the_way_autostash() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
+  eq stdout "app: main not updated: error: Your local changes to the following files would be overwritten by merge:" "$out"
   eq main "$one" "$(git -C "$T/dev/app" rev-parse main)"
 }
 
@@ -899,7 +1150,7 @@ t_fs_sync_ignored_file_in_the_way() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  has stdout "main not updated: " "$out"
+  has stdout "app: main not updated: " "$out"
   eq file mine "$(cat "$T/dev/app/b.txt")"
   eq main "$was" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -915,7 +1166,7 @@ t_fs_sync_narrow_fetch_refspec() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
 }
 
 t_fs_sync_other_branch() {
@@ -928,7 +1179,7 @@ t_fs_sync_other_branch() {
   fs_go sync acme/app
   # Then
   eq exit 0 "$code"
-  eq stdout "main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
+  eq stdout "app: main fast-forwarded $was..$(fs_short "$T/other" main)" "$out"
   eq branch feat/x "$(git -C "$T/dev/app" branch --show-current)"
   eq main "$(git -C "$T/other" rev-parse main)" "$(git -C "$T/dev/app" rev-parse main)"
 }
@@ -941,7 +1192,7 @@ t_fs_epic_done() {
   fs_go check acme/app
   # Then
   has stdout '"done":true' "$out"
-  has stdout '"number":70,"title":"Order export","stage":"epic"' "$out"
+  has stdout '"label":"#70","url":"https://github.com/acme/app/issues/70","title":"Order export","stage":"epic"' "$out"
 }
 
 t_fs_manual_keeps_open() {
@@ -1336,7 +1587,7 @@ t_fs_lock_live_stops() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: the run of acme/app is busy: another orchestrate.sh holds its lock" "$err"
-  eq set '[42]' "$(fs_state .set)"
+  eq set '["acme/app#42"]' "$(fs_state .set)"
 }
 
 t_fs_lock_dead_taken() {
@@ -1348,7 +1599,7 @@ t_fs_lock_dead_taken() {
   fs_go change acme/app add 43
   # Then
   eq exit 0 "$code"
-  eq set '[42,43]' "$(fs_state .set)"
+  eq set '["acme/app#42","acme/app#43"]' "$(fs_state .set)"
   eq lock no "$([ -e "$(fs_run)/.lock" ] && echo yes || echo no)"
 }
 
@@ -1416,7 +1667,7 @@ t_fs_unlabeled_listed() {
   # Then
   eq exit 0 "$code"
   has stdout '"proposal":null,"answer":null' "$out"
-  has stdout '"propose":[42]' "$out"
+  has stdout '"propose":["acme/app#42"]' "$out"
   has stdout '"starts":[]' "$out"
 }
 
@@ -1426,7 +1677,7 @@ t_fs_added_unlabeled_listed() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"propose":[43]' "$out"
+  has stdout '"propose":["acme/app#43"]' "$out"
   has stdout '"message":"/ship #42"' "$out"
 }
 
@@ -1436,12 +1687,12 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
   eq "second exit" 0 "$code"
-  eq proposals '{"42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"unsure","answer":null}}' "$(fs_state .proposals)"
   fs_go check acme/app
   # Then
   has stdout '"propose":[]' "$out"
@@ -1455,8 +1706,8 @@ t_fs_proposed_prints_row() {
   fs_go proposed acme/app 42 ship --size M
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
-  eq proposals '{"42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"ship","size":"M","model":"opus","effort":"high"}' "$out"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":null,"size":"M"}}' "$(fs_state .proposals)"
 }
 
 t_fs_proposed_use_wins() {
@@ -1467,7 +1718,7 @@ t_fs_proposed_use_wins() {
   fs_go proposed acme/app 42 grill
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"grill","size":null,"model":"opus","effort":"max"}' "$out"
 }
 
 t_fs_proposed_ship_needs_size() {
@@ -1498,7 +1749,7 @@ t_fs_proposed_bad_size() {
   fs_go proposed acme/app 42 ship --size huge
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "stop: usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
 }
 
 t_fs_use_bad_effort() {
@@ -1518,7 +1769,7 @@ t_fs_ship_bad_mode() {
   fs_go change acme/app ship full 42
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <n>|all" "$err"
+  eq stderr "stop: usage: orchestrate.sh change <owner/repo> ship review|ready|merge <issue>|all" "$err"
 }
 
 t_fs_done_retro_row() {
@@ -1539,7 +1790,7 @@ t_fs_proposed_no_model() {
   fs_go proposed acme/app 42 close
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"close","size":null,"model":null,"effort":null}' "$out"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"close","size":null,"model":null,"effort":null}' "$out"
 }
 
 t_fs_proposed_decide_stop() {
@@ -1550,8 +1801,8 @@ t_fs_proposed_decide_stop() {
   fs_go proposed acme/app 42 ready-pr
   # Then
   eq exit 0 "$code"
-  eq stdout '{"number":42,"route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
-  eq route '"ready-pr"' "$(fs_state '.proposals["42"].route')"
+  eq stdout '{"ref":"acme/app#42","label":"#42","route":"ready-pr","size":null,"model":null,"effort":null,"why":"#42 has no open PR"}' "$out"
+  eq route '"ready-pr"' "$(fs_state '.proposals["acme/app#42"].route')"
 }
 
 t_fs_answer_keeps_size() {
@@ -1561,7 +1812,7 @@ t_fs_answer_keeps_size() {
   fs_go change acme/app answer 42 yes
   # Then
   eq exit 0 "$code"
-  eq proposals '{"42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
 }
 
 t_fs_ship_proposal_size_launches() {
@@ -1604,7 +1855,7 @@ t_fs_grill_answer_starts() {
   # Then
   has stdout '"message":"/grill #42"' "$out"
   has stdout '"stage":"unlabeled"' "$out"
-  eq threads '[{"number":42,"stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {number, stage, status}]')"
+  eq threads '[{"ref":"acme/app#42","stage":"unlabeled","status":"pending"}]' "$(fs_state '[.threads[] | {ref, stage, status}]')"
 }
 
 t_fs_ship_answer_starts() {
@@ -1626,7 +1877,7 @@ t_fs_all_yes() {
   fs_go change acme/app answer all yes
   # Then
   eq exit 0 "$code"
-  eq answers '{"42":"grill","43":"close","44":null}' "$(fs_state '.proposals | map_values(.answer)')"
+  eq answers '{"acme/app#42":"grill","acme/app#43":"close","acme/app#44":null}' "$(fs_state '.proposals | map_values(.answer)')"
 }
 
 t_fs_yes_on_unsure() {
@@ -1646,7 +1897,7 @@ t_fs_answered_waits_blocker() {
   fs_go check acme/app
   # Then
   has stdout '"starts":[]' "$out"
-  has stdout '"blocked_by":[41]' "$out"
+  has stdout '"blocked_by":["acme/app#41"]' "$out"
   has stdout '"answer":"grill"' "$out"
 }
 
@@ -2056,7 +2307,7 @@ t_fs_removed_starts_nothing() {
   # When
   fs_go check acme/app
   # Then
-  eq started '[42]' "$(fs_state '[.threads[] | .number]')"
+  eq started '["acme/app#42"]' "$(fs_state '[.threads[] | .ref]')"
 }
 
 t_fs_check_records_time() {
@@ -2162,7 +2413,7 @@ t_fs_board_fixture_shape() {
 }
 
 # fs_page <board.json>: the board page run on a fake page with that board,
-# its {fetched, banner, hdot} line in out.
+# its {fetched, banner, hdot, nums} line in out.
 fs_page() {
   T="${T:-$(mktemp -d)}"
   run node "$here/page.cjs" "$here/../assets/board.html" "$1"
@@ -2175,6 +2426,15 @@ t_fs_page_reads_board_only() {
   fs_page "$here/fixtures/board/board-failing.json"
   # Then
   eq fetched '["board.json"]' "$(jq -c .fetched <<<"$out")"
+}
+
+t_fs_page_shows_label() {
+  # Given: the board fixture, whose lib#5 issue lives in another repo
+  # When
+  fs_page "$here/fixtures/board/board.json"
+  # Then
+  has nums '"lib#5"' "$(jq -c .nums <<<"$out")"
+  has nums '"#72"' "$(jq -c .nums <<<"$out")"
 }
 
 t_fs_page_must_act_banner() {
@@ -2244,7 +2504,7 @@ t_fs_settle_triage_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq line '{"settles":[{"number":42,"stage":"bug","command":"triage","thread":"t42","link":"[i42](t3-thread://v1/t42)","status":"completed","run":"r1","now":"ticket"}],"changed":true}' \
+  eq line '{"settles":[{"ref":"acme/app#42","label":"#42","stage":"bug","command":"triage","thread":"t42","link":"[i42](t3-thread://v1/t42)","status":"completed","run":"r1","now":"ticket"}],"changed":true}' \
     "$(jq -c '{settles, changed}' <<<"$out")"
 }
 
@@ -2255,7 +2515,7 @@ t_fs_settle_grill_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq settles '[{"number":44,"command":"grill","run":"r7","now":"ticket"}]' "$(jq -c '[.settles[] | {number, command, run, now}]' <<<"$out")"
+  eq settles '[{"ref":"acme/app#44","command":"grill","run":"r7","now":"ticket"}]' "$(jq -c '[.settles[] | {ref, command, run, now}]' <<<"$out")"
 }
 
 t_fs_settle_not_listed() {
@@ -2280,7 +2540,7 @@ t_fs_settle_failed_listed() {
   # When
   fs_go check acme/app
   # Then
-  eq settles '[{"number":42,"status":"failed"}]' "$(jq -c '[.settles[] | {number, status}]' <<<"$out")"
+  eq settles '[{"ref":"acme/app#42","status":"failed"}]' "$(jq -c '[.settles[] | {ref, status}]' <<<"$out")"
 }
 
 t_fs_settle_paused() {
@@ -2354,6 +2614,7 @@ t_fs_watch_wakes_settle() {
 
 cases=(
   "start writes the run and its set|t_fs_start_writes_run"
+  "an old run's bare numbers become refs|t_fs_old_state_converted"
   "a free ticket starts ship|t_fs_ticket_starts_ship"
   "a second check starts nothing|t_fs_second_check_starts_nothing"
   "a recorded thread is not started again|t_fs_recorded_thread_not_again"
@@ -2382,6 +2643,20 @@ cases=(
   "a failed launch is not started again|t_fs_failed_launch_not_again"
   "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
   "a follow-up in a PR body joins|t_fs_followup_joins"
+  "an epic part in another repo starts there|t_fs_other_repo_part_starts"
+  "a repo folder with no T3 project is added|t_fs_other_repo_adds_project"
+  "a thread in another repo's project shows its status|t_fs_other_repo_thread_status"
+  "a repo the run cannot read asks you and the rest goes on|t_fs_other_repo_unreadable_asks"
+  "a repo not on the Mac asks you|t_fs_other_repo_no_checkout_asks"
+  "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
+  "an issue another live run owns waits with its link|t_fs_owned_by_other_run"
+  "two runs that hold one issue start it once|t_fs_two_runs_one_start"
+  "two runs started in the same second have one owner|t_fs_same_second_runs_one_owner"
+  "a check waits while another run's check holds the claims lock|t_fs_check_waits_for_claims_lock"
+  "commands take #n, repo#n, and owner/repo#n|t_fs_ref_forms"
+  "an issue word names a run's repo in any case|t_fs_ref_any_case"
+  "repo#n of a repo the run does not have stops|t_fs_ref_unknown_repo"
+  "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"
   "add puts an issue in the set|t_fs_add_to_set"
   "a removed issue never rejoins|t_fs_removed_never_rejoins"
   "ship merge for one issue|t_fs_ship_merge_one"
@@ -2402,6 +2677,7 @@ cases=(
   "the retro gets the analysis row|t_fs_done_retro_row"
   "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
+  "sync fast-forwards each repo the run worked in|t_fs_sync_each_repo"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
   "sync leaves an up-to-date default branch|t_fs_sync_up_to_date"
   "sync leaves a default branch with its own commits|t_fs_sync_own_commits"
@@ -2519,6 +2795,7 @@ cases=(
   "the journey lists each stage and its thread|t_fs_board_journey"
   "the walk fixture has the board's shape|t_fs_board_fixture_shape"
   "the board page fetches only board.json|t_fs_page_reads_board_only"
+  "the board page shows each issue's label|t_fs_page_shows_label"
   "the board page says checks keep failing when the board flags it|t_fs_page_must_act_banner"
   "the board page only warns when the board does not flag it|t_fs_page_no_flag_warns"
   "the page ships no mockup data|t_fs_page_no_mockup_data"
