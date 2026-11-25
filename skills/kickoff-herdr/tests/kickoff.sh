@@ -32,8 +32,12 @@ ko_run() {
 }
 
 # ko_herdr: ko_setup, one checkout of acme/app, and a fake herdr first on
-# PATH. herdr logs each call as one line in $T/herdr.log and answers a
-# workspace with no tabs, so kickoff makes a new tab w1:t2 with pane w1:p2;
+# PATH. herdr logs each call as one line in $T/herdr.log. It answers from a
+# file in $FAKE_HERDR when one is there: <route>.<n>.json for the nth call,
+# else <route>.json, where the route is the first two words joined by -, and
+# `pane layout` adds its --pane, `:` made `_`, so each pane has its own
+# layouts and count. With no file it answers a workspace with no tabs, so
+# kickoff makes a new tab w1:t2 with pane w1:p2; a split also makes w1:p2;
 # an agent is working once prompted.
 ko_herdr() {
   ko_setup; ko_clone "$T/dev/app"
@@ -41,18 +45,55 @@ ko_herdr() {
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_HERDR_LOG"
+key="$1-$2"
+if [ "$1 $2" = "pane layout" ]; then
+  pane=""; prev=""
+  for a in "$@"; do [ "$prev" = --pane ] && pane="$a"; prev="$a"; done
+  key="$key.${pane//:/_}"
+fi
+n=$(( $(cat "$FAKE_HERDR/$key.calls" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$FAKE_HERDR/$key.calls"
+for f in "$FAKE_HERDR/$key.$n.json" "$FAKE_HERDR/$key.json"; do
+  if [ -f "$f" ]; then cat "$f"; exit 0; fi
+done
 case "$1 $2" in
   "agent list") echo '{"result":{"agents":[]}}' ;;
   "pane list") echo '{"result":{"panes":[]}}' ;;
   "tab list") echo '{"result":{"tabs":[]}}' ;;
   "tab create") echo '{"result":{"root_pane":{"pane_id":"w1:p2"},"tab":{"tab_id":"w1:t2"}}}' ;;
+  "pane split") echo '{"result":{"pane":{"pane_id":"w1:p2"}}}' ;;
   "agent get") echo '{"result":{"agent":{"agent_status":"working"}}}' ;;
-  "pane rename"|"agent start"|"agent prompt") echo '{}' ;;
+  "pane rename"|"pane resize"|"agent start"|"agent prompt") echo '{}' ;;
   *) printf 'fake herdr: no route for %s\n' "$*" >&2; exit 2 ;;
 esac
 EOF
   chmod +x "$T/bin/herdr"
-  export FAKE_HERDR_LOG="$T/herdr.log"
+  export FAKE_HERDR_LOG="$T/herdr.log" FAKE_HERDR="$T/herdr"
+  mkdir -p "$FAKE_HERDR"
+}
+
+# ko_layout <pane> <n> <panes> <splits>: the fake herdr's answer to the nth
+# `pane layout --pane <pane>`, on an area 200 wide. <panes> is a space list
+# of id:x:width, <splits> a space list of x:width, each split to the right.
+ko_layout() {
+  local p panes="[]" splits="[]" id x w
+  for p in $3; do
+    w="${p##*:}"; p="${p%:*}"; x="${p##*:}"; id="${p%:*}"
+    panes="$(jq -c --arg id "$id" --argjson x "$x" --argjson w "$w" '. + [{pane_id: $id, rect: {x: $x, width: $w}}]' <<<"$panes")"
+  done
+  for p in $4; do
+    splits="$(jq -c --argjson x "${p%%:*}" --argjson w "${p##*:}" '. + [{direction: "right", rect: {x: $x, width: $w}}]' <<<"$splits")"
+  done
+  jq -cn --argjson p "$panes" --argjson s "$splits" '{result: {layout: {area: {width: 200}, panes: $p, splits: $s}}}' \
+    > "$FAKE_HERDR/pane-layout.${1//:/_}.$2.json"
+}
+
+# ko_panes <pane:tab>...: the fake herdr's `pane list`, in this order.
+ko_panes() {
+  local p list="[]"
+  for p in "$@"; do
+    list="$(jq -c --arg id "${p%%=*}" --arg t "${p#*=}" '. + [{pane_id: $id, tab_id: $t}]' <<<"$list")"
+  done
+  jq -cn --argjson l "$list" '{result: {panes: $l}}' > "$FAKE_HERDR/pane-list.json"
 }
 
 # ko_issue <labels-json>: issue #42 "Export orders", no sub-issues, with these
@@ -230,6 +271,70 @@ t_ko_runs_by_path() {
   eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
 }
 
+t_ko_one_column() {
+  # Given: this tab w1:t1 holds one column, pane w1:p1
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  ko_panes w1:p1=w1:t1
+  ko_layout w1:p1 1 'w1:p1:0:200' ''
+  ko_layout w1:p2 1 'w1:p1:0:100 w1:p2:100:100' '0:200'
+  # When
+  ko_go https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  has split "pane split --pane w1:p1 --direction right --ratio 0.5 --cwd $T/dev/app --no-focus" "$(cat "$T/herdr.log")"
+  lacks resize "pane resize" "$(cat "$T/herdr.log")"
+  has report " · split in w1:t1" "$out"
+}
+
+t_ko_two_columns() {
+  # Given: this tab w1:t1 holds two columns, w1:p1 and w1:p3; after the
+  # split w1:p3 is cut in half, and one resize evens the three columns
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  ko_panes w1:p1=w1:t1 w1:p3=w1:t1
+  ko_layout w1:p1 1 'w1:p1:0:100 w1:p3:100:100' '0:200'
+  ko_layout w1:p2 1 'w1:p1:0:100 w1:p3:100:50 w1:p2:150:50' '0:200 100:100'
+  ko_layout w1:p2 2 'w1:p1:0:67 w1:p3:67:67 w1:p2:134:66' '0:200 67:133'
+  # When
+  ko_go https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  has split "pane split --pane w1:p3 --direction right --ratio 0.5 --cwd $T/dev/app --no-focus" "$(cat "$T/herdr.log")"
+  eq resizes "pane resize --pane w1:p3 --direction left --amount 0.1667" "$(grep '^pane resize' "$T/herdr.log")"
+  has report " · split in w1:t1" "$out"
+}
+
+t_ko_three_columns() {
+  # Given: this tab w1:t1 holds three columns, w1:t3 two, w1:t4 one
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  printf '{"result":{"tabs":[{"tab_id":"w1:t1"},{"tab_id":"w1:t3"},{"tab_id":"w1:t4"}]}}\n' > "$FAKE_HERDR/tab-list.json"
+  ko_panes w1:p1=w1:t1 w1:p5=w1:t3 w1:p7=w1:t4
+  ko_layout w1:p1 1 'w1:p1:0:66 w1:p8:66:67 w1:p9:133:67' '0:200 66:134'
+  ko_layout w1:p5 1 'w1:p5:0:100 w1:p6:100:100' '0:200'
+  ko_layout w1:p7 1 'w1:p7:0:200' ''
+  ko_layout w1:p2 1 'w1:p7:0:100 w1:p2:100:100' '0:200'
+  # When
+  ko_go https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  has split "pane split --pane w1:p7 --direction right --ratio 0.5 --cwd $T/dev/app --no-focus" "$(cat "$T/herdr.log")"
+  lacks resize "pane resize" "$(cat "$T/herdr.log")"
+  has report " · split in w1:t4" "$out"
+}
+
+t_ko_room_reads_no_other_tab() {
+  # Given: this tab w1:t1 holds one column; tab w1:t3's layout read fails
+  ko_herdr; ko_issue '[{"name":"size/S"}]'
+  printf '{"result":{"tabs":[{"tab_id":"w1:t1"},{"tab_id":"w1:t3"}]}}\n' > "$FAKE_HERDR/tab-list.json"
+  ko_panes w1:p1=w1:t1 w1:p5=w1:t3
+  ko_layout w1:p1 1 'w1:p1:0:200' ''
+  ko_layout w1:p2 1 'w1:p1:0:100 w1:p2:100:100' '0:200'
+  # When
+  ko_go https://github.com/acme/app/issues/42
+  # Then
+  eq exit 0 "$code"
+  lacks "w1:t3 read" "pane layout --pane w1:p5" "$(cat "$T/herdr.log")"
+}
+
 cases=(
   "kickoff stops when no checkout is found|t_ko_no_checkout"
   "kickoff stops on two checkouts|t_ko_two_checkouts"
@@ -250,4 +355,8 @@ cases=(
   "the pane is named by numbers|t_ko_on_name"
   "dry-run is gone|t_ko_no_dry_run"
   "kickoff runs by path|t_ko_runs_by_path"
+  "a tab of 1 column is split in place|t_ko_one_column"
+  "a tab of 2 columns is split and evened|t_ko_two_columns"
+  "a tab of 3 columns sends the pane to the tab with fewest|t_ko_three_columns"
+  "a tab with room reads no other tab|t_ko_room_reads_no_other_tab"
 )

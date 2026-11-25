@@ -48,7 +48,7 @@ Your tree stays as it is: any branch, edits or not.
 ## Fits with
 
 - Starts [ship](../ship/) in the new thread. It sets a ship mode only when you name one; else the `/ship` run picks it.
-- [kickoff-herdr](../kickoff-herdr/) does the same in a herdr pane. Both run the shared decide script, `../../shared/kickoff/decide.sh`, and read `../../shared/kickoff/target.md`.
+- [kickoff-herdr](../kickoff-herdr/) does the same in a herdr pane. Both run the shared decide script, `../../shared/kickoff/decide.sh`, which gives the command as the thread runs it, as `/ship --merge`, in its own field. Both read `../../shared/kickoff/target.md`.
 - Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way: [orchestrate](../orchestrate/) does.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
 

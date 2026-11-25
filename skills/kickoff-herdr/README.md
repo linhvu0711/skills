@@ -52,9 +52,9 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - Starts [ship](../ship/) in the new pane. It sets a ship mode only when you name one; else the `/ship` run picks it.
 - Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
-- It runs the shared decide script, `../../shared/kickoff/decide.sh`, and reads its target rules in `../../shared/kickoff/target.md`, as [kickoff-t3](../kickoff-t3/) does in a T3 Code thread.
+- It runs the shared decide script, `../../shared/kickoff/decide.sh`, which gives the command as the pane runs it, as `/ship --merge`, in its own field. It reads its target rules in `../../shared/kickoff/target.md`, as [kickoff-t3](../kickoff-t3/) does in a T3 Code thread.
 - It finds the repo through the shared checkout resolver, `../../shared/checkout.sh`, as [ready-pr](../ready-pr/) and [ship](../ship/) do.
 
 ## Tests
 
-The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup and the model, effort, command, and name it picks, are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `herdr` of its own. The cases for the shared decide script are in `../../shared/tests/kickoff-decide.sh`. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup, the model, effort, command, and name it picks, and where it puts the pane for a tab of 1, 2, and 3 columns, are in [tests/kickoff.sh](tests/kickoff.sh). They run on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh), and on a fake `herdr` of their own that answers each pane's layout from the case. The cases for [placement.py](scripts/placement.py), the part that picks where a pane goes and how its columns are evened, are in [tests/placement.sh](tests/placement.sh). They run on layouts with no herdr. The cases for the shared decide script are in `../../shared/tests/kickoff-decide.sh`. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
