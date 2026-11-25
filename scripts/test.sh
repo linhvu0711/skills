@@ -627,6 +627,30 @@ t_link_status_names_foreign_manifest() {
     "$(grep manifest <<<"$out")"
 }
 
+t_link_status_matches_install_skips() {
+  # Given: everything linked, then a target of every kind held by something
+  # else, and a second agent with no Codex backup
+  linked demo; agent demo helper; with_gate; link_sh
+  rm "$T/claude/demo"; mkdir "$T/claude/demo"
+  printf 'mine\n' > "$T/codex/helper.toml"
+  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
+  printf 'not json\n' > "$T/claude-settings.json"
+  rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
+  agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  # When: the install, then --status
+  link_sh
+  local skips whys want
+  skips="$(sed -n 's/^skip: //p' <<<"$err" | LC_ALL=C sort -u)"
+  link_sh scripts/link.sh --status
+  whys="$(awk -F '\t' '$NF ~ / / { print $NF }' <<<"$out" | LC_ALL=C sort -u)"
+  # Then
+  want="$(printf '%s\n' "$T/claude-settings.json is not JSON" "$T/claude/demo is not this repo's demo" \
+    "$T/codex/helper.toml is not this repo's helper.toml" "$T/gplugins/skills/plugin.json is not this repo's plugin.json" \
+    "$T/t3/p1/config/plugins is not this repo's plugins" "skills/demo/agents/helper2.md: missing backup for codex")"
+  eq "install skips" "$want" "$skips"
+  eq "status whys" "$want" "$whys"
+}
+
 t_link_status_writes_nothing() {
   # Given: everything linked, then Claude Code's skill link gone
   linked demo; agent demo helper; with_gate; link_sh
@@ -1472,6 +1496,7 @@ cases=(
   "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
   "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
   "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
+  "link status gives the skip words of the install|t_link_status_matches_install_skips"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
