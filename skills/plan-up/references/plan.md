@@ -347,7 +347,7 @@ proves nothing changed, and a `perf` proves a number moved. The type is
 the leading word of the issue's title, per
 `../../shared/issue-rules.md` § Types. A repo that writes
 another word for a type keeps it in the `words` map of `python3
-../to-issue/scripts/conventions.py get <owner/repo>`, as `bug` for
+../../shared/issue-conventions.py get <owner/repo>`, as `bug` for
 `fix`; that word is read as the type it stands for. A `fix`, `refactor`,
 or `perf` issue adds the rules of its type below to every other rule in
 this file, on the full path and the short one. In a run, each layer
