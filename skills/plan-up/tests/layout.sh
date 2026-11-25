@@ -106,8 +106,45 @@ ticket map 0: 0 points in another box
 run-three map 0: 0 points in another box" "$out"
 }
 
+# tree_rows <filter>: the rows of fileTree on files.md's files that pass <filter>, as branch, name, and / after a folder.
+tree_rows() {
+  built files
+  layout "for (const r of PlanLayout.fileTree(data.files.layers[0].files.filter($1))) console.log(r.branch + r.name + (r.dir ? '/' : ''));" files
+}
+
+t_layout_tree() {
+  # Given: the files of files.md
+  # When
+  tree_rows '() => true'
+  # Then
+  eq exit 0 "$code"
+  eq rows "src/
+├── orders/
+│   ├── formats/
+│   │   └── json.ts
+│   ├── __snapshots__/
+│   │   └── export.test.ts.snap
+│   ├── csv.ts
+│   ├── export.ts
+│   ├── json-only.ts
+│   └── export.test.ts
+└── README.md" "$out"
+}
+
+t_layout_tree_fold() {
+  # Given: the one deleted file of files.md, src/orders/json-only.ts
+  # When
+  tree_rows "(f) => f.change === 'deleted'"
+  # Then
+  eq exit 0 "$code"
+  eq rows "src/orders/
+└── json-only.ts" "$out"
+}
+
 cases=(
   "layout lays out a map with no page around it|t_layout_alone"
   "layout places no label over a box, a group title, or another label|t_layout_labels"
   "layout routes each flow clear of every box but its own two|t_layout_routes"
+  "layout builds the file tree of a plan|t_layout_tree"
+  "layout folds a folder that holds only one folder|t_layout_tree_fold"
 )

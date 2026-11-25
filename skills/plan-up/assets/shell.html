@@ -391,42 +391,16 @@ const DATA = {};
         el('label', { class: 'ft-gen' }, el('input', { type: 'checkbox', checked: st.gen ? '' : null, onchange: (e) => { st.gen = e.target.checked; draw(); } }), 'show generated files')));
       const shown = pool.filter((f) => st.kind == null || f.change === st.kind);
       if (!shown.length) { box.append(empty('No file of this kind.')); return; }
-      const root = { dirs: new Map(), files: [] };
-      for (const f of shown) {
-        const parts = f.path.split('/');
-        let n = root;
-        for (const p of parts.slice(0, -1)) {
-          if (!n.dirs.has(p)) n.dirs.set(p, { dirs: new Map(), files: [] });
-          n = n.dirs.get(p);
-        }
-        n.files.push({ ...f, name: parts[parts.length - 1] });
-      }
-      const rows = [];
-      const walk = (n, pre) => {
-        const kids = [...[...n.dirs].map(([name, d]) => ({ dir: true, name, d })), ...n.files];
-        kids.forEach((k, i) => {
-          const last = i === kids.length - 1;
-          const branch = pre === null ? '' : pre + (last ? '└── ' : '├── ');
-          const next = pre === null ? '' : pre + (last ? '    ' : '│   ');
-          if (k.dir) {
-            // A folder that holds only one folder folds into one row, as src/orders/.
-            let name = k.name, d = k.d;
-            while (!d.files.length && d.dirs.size === 1) { const [[sub, dd]] = [...d.dirs]; name += '/' + sub; d = dd; }
-            rows.push(el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), name + '/'), el('span', {}), el('span', {})));
-            walk(d, next);
-          } else {
-            rows.push(el('div', { class: 'ft-row ' + k.change + (k.generated ? ' gen' : '') },
-              el('span', { class: 'mk ' + k.change, title: k.change }, MARKS[k.change] || '?'),
-              el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, branch), el('span', { class: 'ft-nm' }, k.name)),
-              el('span', { class: 'ft-note' },
-                [k.from ? ['from ', el('span', { class: 'ft-was' }, k.from)] : null, k.note || null, k.generated ? 'generated' : null]
-                  .filter(b => b != null).map((b, j) => j ? [' · ', b] : b)),
-              el('span', { class: 'ft-sl' }, (k.slices || []).map((n, j) => el('button', {
-                class: 'ref' + (j ? '' : ' first'), title: `open slice ${n}`, onclick: () => openSlice(li, n) }, 'S' + n)))));
-          }
-        });
-      };
-      walk(root, null);
+      const rows = PlanLayout.fileTree(shown).map((r) => r.dir
+        ? el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, r.branch), r.name + '/'), el('span', {}), el('span', {}))
+        : el('div', { class: 'ft-row ' + r.file.change + (r.file.generated ? ' gen' : '') },
+          el('span', { class: 'mk ' + r.file.change, title: r.file.change }, MARKS[r.file.change] || '?'),
+          el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, r.branch), el('span', { class: 'ft-nm' }, r.name)),
+          el('span', { class: 'ft-note' },
+            [r.file.from ? ['from ', el('span', { class: 'ft-was' }, r.file.from)] : null, r.file.note || null, r.file.generated ? 'generated' : null]
+              .filter(b => b != null).map((b, j) => j ? [' · ', b] : b)),
+          el('span', { class: 'ft-sl' }, (r.file.slices || []).map((n, j) => el('button', {
+            class: 'ref' + (j ? '' : ' first'), title: `open slice ${n}`, onclick: () => openSlice(li, n) }, 'S' + n)))));
       box.append(el('div', { class: 'ft' }, rows));
     };
     draw();

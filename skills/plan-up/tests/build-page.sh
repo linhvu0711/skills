@@ -735,6 +735,7 @@ const PlanLayout = {
   map: () => ({ width: 400, height: 200, groups: [],
     parts: [{ ref: 'M1', name: 'Orders page', job: '', change: 'same', kind: 'part', at: [], cx: 100, cy: 100, w: 190, h: 56, text: 'Fake part' }],
     flows: [{ from: 'M1', to: 'M1', change: 'same', d: 'M1,2 L3,4', label: { x: 50, y: 60, lines: ['fake label'], box: { x1: 0, y1: 50, x2: 100, y2: 70 } } }] }),
+  fileTree: () => [],
 };
 EOF
   # When
@@ -747,6 +748,24 @@ tspan x=50 | fake label" "$(printf '%s\n' "$out" | grep -E '^(path d=M1|text .*\
   eq "flows drawn" 1 "$(printf '%s\n' "$out" | grep -c 'marker-end=')"
   eq "boxes drawn" 1 "$(printf '%s\n' "$out" | grep -c '^rect .*rx=8 ')"
   eq "labels drawn" 1 "$(printf '%s\n' "$out" | grep -c '^tspan ')"
+}
+
+t_build_draws_layout_files() {
+  # Given: the built page of files.md, and a fake PlanLayout whose tree is one file row
+  T="$(mktemp -d)"
+  cp "$here/build-page/files.md" "$T/plan-acme-shop-44.md"
+  build "$T/plan-acme-shop-44.md"
+  cat > "$T/fake.js" <<'EOF'
+const PlanLayout = {
+  map: () => ({ width: 400, height: 200, groups: [], parts: [], flows: [] }),
+  fileTree: () => [{ dir: false, name: 'fake.ts', branch: '└── ', file: { change: 'new', slices: [1] } }],
+};
+EOF
+  # When
+  render --fake-layout "$T/fake.js" "$T/plan-acme-shop-44.html"
+  # Then
+  eq exit 0 "$code"
+  eq rows "ft-row new | + | └── fake.ts |  | S1" "$(printf '%s\n' "$out" | grep '^ft-row')"
 }
 
 cases=(
@@ -836,4 +855,5 @@ cases=(
   "build-page passes a Setup of none|t_build_setup_none"
   "build-page draws the same map and file tree|t_build_same_drawing"
   "the page draws the map PlanLayout gives|t_build_draws_layout_map"
+  "the page draws the file rows PlanLayout gives|t_build_draws_layout_files"
 )

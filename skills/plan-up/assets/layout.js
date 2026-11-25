@@ -1,4 +1,5 @@
-// layout.js: where the plan page draws each Change map box, flow, and label.
+// layout.js: where the plan page draws each Change map box, flow, and label,
+// and the rows of its Files tree.
 // No page calls: build-page.py puts this file into the page, and the node
 // tests in tests/layout.sh run it alone.
 const PlanLayout = (() => {
@@ -152,5 +153,39 @@ const PlanLayout = (() => {
     };
   }
 
-  return { map };
+  // The Files tree as rows, folders first in each folder. A folder that holds
+  // only one folder folds into one row, as src/orders/.
+  function fileTree(files) {
+    const root = { dirs: new Map(), files: [] };
+    for (const f of files) {
+      const parts = f.path.split('/');
+      let n = root;
+      for (const p of parts.slice(0, -1)) {
+        if (!n.dirs.has(p)) n.dirs.set(p, { dirs: new Map(), files: [] });
+        n = n.dirs.get(p);
+      }
+      n.files.push({ name: parts[parts.length - 1], file: f });
+    }
+    const rows = [];
+    const walk = (n, pre) => {
+      const kids = [...[...n.dirs].map(([name, d]) => ({ dir: true, name, d })), ...n.files];
+      kids.forEach((k, i) => {
+        const last = i === kids.length - 1;
+        const branch = pre === null ? '' : pre + (last ? '└── ' : '├── ');
+        const next = pre === null ? '' : pre + (last ? '    ' : '│   ');
+        if (k.dir) {
+          let name = k.name, d = k.d;
+          while (!d.files.length && d.dirs.size === 1) { const [[sub, dd]] = [...d.dirs]; name += '/' + sub; d = dd; }
+          rows.push({ dir: true, name, branch });
+          walk(d, next);
+        } else {
+          rows.push({ dir: false, name: k.name, branch, file: k.file });
+        }
+      });
+    };
+    walk(root, null);
+    return rows;
+  }
+
+  return { map, fileTree };
 })();
