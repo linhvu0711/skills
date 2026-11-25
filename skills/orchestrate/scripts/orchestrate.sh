@@ -338,6 +338,14 @@ thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 # shellcheck disable=SC2016 # the $ names are jq variables
 turn_jq='def take_turn($holders): .task_turn = $holders; def free_turn($r): .task_turn = ((.task_turn // []) - [$r]);'
 
+# run_repos: a jq def on the state: the distinct {repo, path} pairs the run
+# works in, its own first, then each thread's that did not fail to launch. A
+# thread from before threads named their folder has no path, and is in the
+# run's own.
+# shellcheck disable=SC2016 # the $ names are jq variables
+run_repos_jq='def run_repos: [{repo, path}] + [.threads[] | select(.path != null and .status != "failed") | {repo, path}]
+  | reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end);'
+
 # turn_holders <stages>: the task issues of this run that hold the turn.
 turn_holders() {
   jq -c --argjson st "$1" '. as $S | [.set[] | select($st[.] == "task") | . as $i
@@ -518,7 +526,12 @@ observe() {
     got="$(read_issues $(jq -r '.removed[]' <<<"$S"))" || got="{}"
     issues="$(jq -c --argjson g "$got" '. + ($g | with_entries(select(.value != null and .value.error == null)))' <<<"$issues")"
   fi
-  t3list="$("$t3" thread list --project "$(jq -r .path <<<"$S")" --json 2>"$errf")" || die "$(tail -1 "$errf")"
+  local p one
+  t3list="[]"
+  while IFS= read -r p; do
+    one="$("$t3" thread list --project "$p" --json 2>"$errf")" || die "$(tail -1 "$errf")"
+    t3list="$(jq -c --argjson one "$one" '. + $one' <<<"$t3list")"
+  done < <(jq -r "$run_repos_jq"'run_repos[].path' <<<"$S")
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
   local r j st sk free blocked rec prop line wait ask rc gone row conf owners stages turn
@@ -594,7 +607,7 @@ observe() {
       starts="$(jq -c --argjson l "$line" --arg st "$st" --arg r "$r" --arg label "$(label_of "$r")" \
         '. + [$l + {ref: $r, label: $label, stage: $st, thread_title: "\($l.heading) \($l.title)"}]' <<<"$starts")"
       claims="$(jq -c --arg r "$r" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        '. + [{ref: $r, stage: $st, thread: null, link: null, status: "pending", why: null,
+        '. + [{ref: $r, repo: ($r | split("#")[0]), path: $l.path, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
     # A conflict goes back to the thread that works on the issue, and only
@@ -697,8 +710,16 @@ cmd_check() {
   in_t3
   newest_run
   [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
-  local obs seen
+  local obs seen sr sp why
   read_run check_at_limit
+  # A thread launches in its repo's T3 project, so a start's folder becomes
+  # one first. A folder T3 will not take fails that claim alone.
+  while IFS=$'\t' read -r sr sp; do
+    bash "$core/kickoff/project.sh" "$sp" >/dev/null 2>"$errf" && continue
+    why="$(tail -1 "$errf" | sed 's/^stop: //')"
+    obs="$(jq -c --arg r "$sr" --arg why "$why" '.starts |= map(select(.ref != $r))
+      | .claims |= map(if .ref == $r then .status = "failed" | .why = $why else . end)' <<<"$obs")"
+  done < <(jq -r '.starts[] | [.ref, .path] | @tsv' <<<"$obs")
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.

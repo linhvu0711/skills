@@ -20,11 +20,9 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-
 # ---------- T3 ----------
 # The shared T3 lookup names the chat's t3 command, or stops outside T3.
-t3="$(bash "$here/../../../shared/t3-cli.sh")" || exit 1
+bash "$here/../../../shared/t3-cli.sh" >/dev/null || exit 1
 
 # ---------- decide ----------
 # The shared decide script reads the target and flags; its stop line is ours.
@@ -32,15 +30,7 @@ decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit 1
 path="$(jq -r .path <<<"$decided")"
 
 # ---------- project ----------
-# `t3 thread list --project` fails for a folder that is no T3 project, so it
-# checks before the add, and a second run adds nothing.
-is_project() { "$t3" thread list --project "$path" --json >/dev/null 2>&1; }
-project=found
-if ! is_project; then
-  err="$("$t3" project add "$path" 2>&1 >/dev/null)" || die "could not add $path as a T3 project: $(tail -1 <<<"$err")"
-  is_project || die "could not add $path as a T3 project: t3 still finds no project there"
-  project=added
-fi
+project="$(bash "$here/../../../shared/kickoff/project.sh" "$path")" || exit 1
 
 jq -c --arg project "$project" \
   '. + {thread_title: "\(.heading) \(.title)", project: $project}' \

@@ -9,8 +9,11 @@ F="$here/../scripts/orchestrate.sh"
 
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),
 # one checkout of acme/app at $T/dev/app, and a fake t3 in $T/bin. t3's
-# `thread list` prints $T/t3-threads.json, or fails with the text of
-# $T/t3.fail when that file exists. Its `thread send` adds its arguments as
+# `thread list --project <path>` prints $T/t3-threads.<folder name>.json when
+# that file exists, else $T/t3-threads.json, or fails with the text of
+# $T/t3.fail when that file exists, or when $T/no-project lists the path.
+# Its `project add <path>` logs `project add <path>` to $T/t3.log and takes
+# the path off $T/no-project. Its `thread send` adds its arguments as
 # one line to $T/t3-sends.log, or fails with the text of $T/t3-send.fail
 # when that file exists. Issues go in with fs_issue.
 fs_setup() {
@@ -24,7 +27,15 @@ fs_setup() {
 #!/usr/bin/env bash
 set -euo pipefail
 case "$1 $2" in
-  "thread list") if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi; cat "$FAKE_T3_DIR/t3-threads.json" ;;
+  "thread list")
+    if [ -e "$FAKE_T3_DIR/t3.fail" ]; then cat "$FAKE_T3_DIR/t3.fail" >&2; exit 1; fi
+    if grep -qxF "$4" "$FAKE_T3_DIR/no-project" 2>/dev/null; then echo "no project at $4" >&2; exit 1; fi
+    f="$FAKE_T3_DIR/t3-threads.$(basename "$4").json"; [ -f "$f" ] || f="$FAKE_T3_DIR/t3-threads.json"
+    cat "$f" ;;
+  "project add")
+    echo "project add $3" >> "$FAKE_T3_DIR/t3.log"
+    grep -vxF "$3" "$FAKE_T3_DIR/no-project" > "$FAKE_T3_DIR/no-project.new" || true
+    mv "$FAKE_T3_DIR/no-project.new" "$FAKE_T3_DIR/no-project" ;;
   "thread send") if [ -e "$FAKE_T3_DIR/t3-send.fail" ]; then cat "$FAKE_T3_DIR/t3-send.fail" >&2; exit 1; fi; echo "$*" >> "$FAKE_T3_DIR/t3-sends.log" ;;
   *) printf 'fake t3: no route for %s\n' "$*" >&2; exit 2 ;;
 esac
@@ -664,6 +675,27 @@ t_fs_other_repo_part_starts() {
   eq path "$T/dev/lib" "$(jq -r '.starts[0].path' <<<"$out")"
   eq board '{"label":"lib#5","url":"https://github.com/acme/lib/issues/5"}' \
     "$(fs_board '.issues[] | select(.ref == "acme/lib#5") | {label, url}')"
+}
+
+t_fs_other_repo_adds_project() {
+  # Given: epic acme/app#70, whose part acme/lib#5 is an S ticket, in a folder that is no T3 project yet
+  fs_lib_epic; echo "$T/dev/lib" > "$T/no-project"
+  # When
+  fs_go check acme/app
+  # Then
+  has log "project add $T/dev/lib" "$(cat "$T/t3.log")"
+  eq ref acme/lib#5 "$(jq -r '.starts[0].ref' <<<"$out")"
+}
+
+t_fs_other_repo_thread_status() {
+  # Given: acme/lib#5's thread t9 started in acme/lib's project, where T3 shows it waiting
+  fs_lib_epic; fs_go check acme/app
+  fs_go started acme/app acme/lib#5 ticket t9 link9; eq started 0 "$code"
+  echo '[{"threadId":"t9","status":"waiting"}]' > "$T/t3-threads.lib.json"
+  # When
+  fs_go check acme/app
+  # Then
+  eq status waiting "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .thread_status' <<<"$out")"
 }
 
 t_fs_other_repo_unreadable_asks() {
@@ -2479,6 +2511,8 @@ cases=(
   "an epic in the set brings its open sub-issues|t_fs_epic_brings_subs"
   "a follow-up in a PR body joins|t_fs_followup_joins"
   "an epic part in another repo starts there|t_fs_other_repo_part_starts"
+  "a repo folder with no T3 project is added|t_fs_other_repo_adds_project"
+  "a thread in another repo's project shows its status|t_fs_other_repo_thread_status"
   "a repo the run cannot read asks you and the rest goes on|t_fs_other_repo_unreadable_asks"
   "a repo not on the Mac asks you|t_fs_other_repo_no_checkout_asks"
   "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
