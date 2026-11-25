@@ -235,6 +235,16 @@ t_cb_refuses_sequence_blocks() {
   eq stdout "$(printf 'row R3 before line 3: else outside an alt block\nrow R3 before line 4: loop with no end')" "$out"
 }
 
+t_cb_builds_nested_sequence() {
+  # Given: R3's before diagram with a loop inside an alt, then the alt's else
+  cb_cards '(.rows[] | select(.id == "R3") | .card.before) = "sequenceDiagram\n  alt sent\n  loop retry 3\n  S->>Q: send\n  end\n  else failed\n  Q-->>S: error\n  end"'
+  # When
+  cb_build "$T/clean-improve-architecture-acme-shop.json"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "page: $T/clean-improve-architecture-acme-shop.html" "$out"
+}
+
 t_cb_builds_sequence_card() {
   # Given: R3's before diagram as a sequence
   cb_cards '(.rows[] | select(.id == "R3") | .card.before) = "sequenceDiagram\n  participant S as SMS sender\n  S->>Q: send (retry 3)\n  Q-->>S: ok"'
@@ -266,5 +276,6 @@ cases=(
   "refuses a card diagram line it does not know|t_cb_refuses_card_line"
   "refuses a subgraph with no end|t_cb_refuses_unclosed_subgraph"
   "refuses an else outside alt and a loop with no end|t_cb_refuses_sequence_blocks"
+  "builds a loop inside an alt with its else|t_cb_builds_nested_sequence"
   "builds a sequence card|t_cb_builds_sequence_card"
 )
