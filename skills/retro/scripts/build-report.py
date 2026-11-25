@@ -14,8 +14,29 @@ from html import escape
 from pathlib import Path
 
 
+STRENGTH = {"Strong": "hit-strong", "Worth exploring": "hit-amber", "Speculative": "hit-slate",
+            "One-time": "hit-one", "Tip": "hit-one"}
+
+
 def columns(cards):
     return sorted(cards["items"], key=lambda item: item["date"])
+
+
+def groups(cards):
+    """The cards by home, this project first, each with its page number."""
+    here = cards["repo"].lower()
+    homes = {}
+    for card in cards["cards"]:
+        mine = card.get("home_unknown") or card.get("home", "").lower() == here
+        homes.setdefault(cards["repo"] if mine else card["home"], []).append(card)
+    order = sorted(homes, key=lambda home: home != cards["repo"])
+    n = 0
+    for home in order:
+        numbered = []
+        for card in homes[home]:
+            n += 1
+            numbered.append((n, card))
+        yield home, numbered
 
 
 def column_head(item):
@@ -46,6 +67,53 @@ def header(cards):
 """
 
 
+def hits(card, cols):
+    """Per column, the card's strength class when the card came from that item, else ""."""
+    have = set(card["items"])
+    return [STRENGTH[card["badge"]] if item["id"] in have else "" for item in cols]
+
+
+def overview_rows(cards, cols):
+    rows = []
+    for home, numbered in groups(cards):
+        rows.append(f'          <tr class="ov-home"><td></td><td colspan="{len(cols) + 1}" '
+                    f'class="pt-3 pb-1 text-xs uppercase tracking-wider muted">{escape(home)}</td></tr>')
+        for n, card in numbered:
+            tds = "".join(f'<td class="p-1 text-center"><span class="{("cell " + c).strip()}"></span></td>'
+                          for c in hits(card, cols))
+            rows.append(f'          <tr class="ov-row">\n'
+                        f'            <td class="pr-3 py-1 text-right font-mono muted">{n}</td>\n'
+                        f'            <td class="pr-4 py-1"><a class="ov-link" href="#card-{n}">{card["title"]}</a></td>\n'
+                        f'            {tds}\n'
+                        f'          </tr>')
+    return "\n".join(rows)
+
+
+def strip(card, cols):
+    dots = "".join(f'<span class="{("dot " + c).strip()}"></span>' for c in hits(card, cols))
+    names = ", ".join(item["id"] for item in cols if item["id"] in set(card["items"]))
+    parts = [f'{card["times"]} times in {len(card["items"])} of {len(cols)} items']
+    if card.get("cost"):
+        parts.append(card["cost"])
+    parts.append(names)
+    return f"""      <div class="flex items-center gap-3">
+        <div class="flex gap-1">{dots}</div>
+        <span class="text-xs muted">{escape(" · ".join(parts))}</span>
+      </div>"""
+
+
+def cards_section(cards):
+    cols = columns(cards)
+    out = []
+    for home, numbered in groups(cards):
+        for n, card in numbered:
+            out.append(f"""    <article id="card-{n}" class="card rounded-xl border p-6 space-y-5">
+      <h3 class="font-serif text-2xl">{n}. {card["title"]}</h3>
+{strip(card, cols)}
+    </article>""")
+    return '\n  <section id="cards" class="space-y-12">\n' + "\n".join(out) + "\n  </section>\n"
+
+
 def overview(cards):
     cols = columns(cards)
     heads = "\n".join(f"            {column_head(item)}" for item in cols)
@@ -66,6 +134,7 @@ def overview(cards):
           </tr>
         </thead>
         <tbody>
+{overview_rows(cards, cols)}
         </tbody>
       </table>
     </div>
@@ -75,7 +144,7 @@ def overview(cards):
 
 
 def page(cards, shell):
-    body = header(cards) + overview(cards)
+    body = header(cards) + overview(cards) + cards_section(cards)
     return shell.replace("{{repo name}}", escape(cards["repo"])).replace("  <!-- REPORT -->\n", body)
 
 

@@ -112,7 +112,27 @@ t_rb_builds_twice() {
   eq same "same" "$(cmp -s "$T/first" "$T/report.html" && echo same || echo differs)"
 }
 
+t_rb_overview_cells() {
+  # Given: the fixture cards file; card 2 came from S1 only
+  rb_cards .
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  eq cells "- hit-amber" "$(rb_page cells 2)"
+}
+
+t_rb_dot_strip() {
+  # Given: the fixture cards file; card 1 came from S1 and PR #40
+  rb_cards .
+  # When
+  rb_build "$T/cards.json"
+  # Then
+  eq strip "hit-strong hit-strong | 5 times in 2 of 2 items · 9 user turns · PR #40, S1" "$(rb_page strip 1)"
+}
+
 cases=(
   "draws the key in date order|t_rb_key_in_date_order"
   "builds the same page twice|t_rb_builds_twice"
+  "draws each overview cell from the card's items|t_rb_overview_cells"
+  "draws the dot strip and item count from the card's items|t_rb_dot_strip"
 )
