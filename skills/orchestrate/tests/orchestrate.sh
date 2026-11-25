@@ -746,13 +746,14 @@ t_fs_other_repo_blocker_label() {
   eq action 'blocked by lib#5' "$(fs_card 42 | jq -r .action)"
 }
 
-# fs_lib_run [thread]: a live run of acme/lib#5 that started 2026-11-01,
-# before the newest acme/app run, with a started thread for #5 when given.
+# fs_lib_run [thread] [started_at]: a live run of acme/lib#5 that started
+# 2026-11-01, or at the given time, with a started thread for #5 when the
+# thread is not "".
 fs_lib_run() {
   local f
   fs_go start acme/lib --name "#5" --thread f2 --env e1 5; eq "lib start exit" 0 "$code"
   f="$(ls -1d "$T"/orchestrate/acme-lib/*/ | sort | tail -1)state.json"
-  jq -c --arg t "${1:-}" '.started_at = "2026-11-01T00:00:00Z"
+  jq -c --arg t "${1:-}" --arg at "${2:-2026-11-01T00:00:00Z}" '.started_at = $at
     | if $t == "" then . else .threads += [{ref: "acme/lib#5", stage: "ticket", thread: $t, status: "started", command: "ship"}] end' \
     "$f" > "$f.new" && mv "$f.new" "$f"
 }
@@ -776,6 +777,39 @@ t_fs_two_runs_one_start() {
   # Then
   eq "app starts" '[]' "$(jq -c .starts <<<"$app")"
   eq "lib starts" '["acme/lib#5"]' "$(jq -c '[.starts[].ref]' <<<"$out")"
+}
+
+t_fs_same_second_runs_one_owner() {
+  # Given: a paused acme/app run whose epic holds acme/lib#5, after a check; an
+  # acme/lib run of #5, started the same second, with no thread for it
+  fs_lib_epic; fs_go timer acme/app pause; fs_go check acme/app
+  fs_lib_run "" "$(fs_state -r .started_at)"
+  # When
+  fs_go check acme/lib
+  # Then: acme/app sorts first, so the lib run waits on it
+  eq starts '[]' "$(jq -c .starts <<<"$out")"
+  has wait 'owned by [🧭 #70]' "$(jq -r '.issues[] | select(.ref == "acme/lib#5") | .wait' <<<"$out")"
+}
+
+t_fs_check_waits_for_claims_lock() {
+  # Given: the run of epic acme/app#70 with part acme/lib#5; another run's check holds the claims lock
+  local holder done=""
+  fs_lib_epic
+  # The check must really wait, so the fake no-op sleep goes.
+  rm "$T/bin/sleep"
+  /bin/sleep 30 & holder=$!
+  mkdir "$T/orchestrate/.claims.lock"; echo "$holder" > "$T/orchestrate/.claims.lock/pid"
+  # When
+  ( fs_go check acme/app; echo "$code" > "$T/check.code"; printf '%s' "$out" > "$T/check.out" ) &
+  # A check alone takes about a second here; it must still wait at 3.
+  /bin/sleep 3
+  [ -e "$T/check.code" ] || done=no
+  rm -rf "$T/orchestrate/.claims.lock"; kill "$holder"
+  wait
+  # Then
+  eq "waited" no "$done"
+  eq exit 0 "$(cat "$T/check.code")"
+  eq starts '["acme/lib#5"]' "$(jq -c '[.starts[].ref]' "$T/check.out")"
 }
 
 t_fs_ref_forms() {
@@ -2606,6 +2640,8 @@ cases=(
   "a follow-up in another repo's PR joins as that repo's issue|t_fs_other_repo_followup_joins"
   "an issue another live run owns waits with its link|t_fs_owned_by_other_run"
   "two runs that hold one issue start it once|t_fs_two_runs_one_start"
+  "two runs started in the same second have one owner|t_fs_same_second_runs_one_owner"
+  "a check waits while another run's check holds the claims lock|t_fs_check_waits_for_claims_lock"
   "commands take #n, repo#n, and owner/repo#n|t_fs_ref_forms"
   "repo#n of a repo the run does not have stops|t_fs_ref_unknown_repo"
   "a blocker in another repo shows as repo#n|t_fs_other_repo_blocker_label"

@@ -127,23 +127,32 @@ newest_run() {
   run="$d"; lock_run; S="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$run/state.json")"
 }
 
-# lock_run: the run's lock, held until this script exits, so the watcher
-# and the agent's commands never write state.json at once. mkdir is the
-# atomic step; the pid inside lets a later command take over the lock of a
-# process that died holding it. A holder that has not written its pid yet
-# counts as alive.
-lock_run() {
+# take_lock <dir> <busy line>: a lock held until this script exits. mkdir
+# is the atomic step; the pid inside lets a later command take over the lock
+# of a process that died holding it. A holder that has not written its pid
+# yet counts as alive.
+take_lock() {
   local i pid
   for i in $(seq 600); do
-    if mkdir "$run/.lock" 2>/dev/null; then
-      echo $$ > "$run/.lock/pid"; locked="$run/.lock"; return
+    if mkdir "$1" 2>/dev/null; then
+      echo $$ > "$1/pid"; locked+=("$1"); return
     fi
-    pid="$(cat "$run/.lock/pid" 2>/dev/null || true)"
-    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$run/.lock"; continue; fi
+    pid="$(cat "$1/pid" 2>/dev/null || true)"
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$1"; continue; fi
     sleep 0.2
   done
-  die "the run of $slug is busy: another orchestrate.sh holds its lock"
+  die "$2"
 }
+
+# lock_run: the run's lock, so the watcher and the agent's commands never
+# write state.json at once.
+lock_run() { take_lock "$run/.lock" "the run of $slug is busy: another orchestrate.sh holds its lock"; }
+
+# lock_claims: one lock for the checks of every run, of any repo, taken
+# after the run's own. A check decides which issues this run owns from the
+# other runs' saved files, so no other check may decide and save in between,
+# or two runs could each start one issue.
+lock_claims() { take_lock "$home/.claims.lock" "another run's check is busy: it holds the claims lock"; }
 
 # put <file> <command>...: the command's output as <file>, written under a
 # temp name next to it, then renamed into place, so a crash never leaves half
@@ -201,7 +210,7 @@ read_issues() {
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
 # decide_for write gh's stderr to errf.
-errf="$(mktemp)"; obsf="$(mktemp)"; locked=""; trap 'rm -f "$errf" "$obsf"; [ -z "$locked" ] || rm -rf "$locked"' EXIT
+errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); trap 'rm -f "$errf" "$obsf"; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
 
 # size_label <issue json>: the issue's size, from its first size label.
 size_label() {
@@ -379,7 +388,7 @@ other_runs() {
       watcher_alive "${pid:-}" || turn=""
     fi
     owners="$(jq -c --argjson o "$one" 'if ($o.status == "running" or $o.status == "paused") then
-      reduce ($o.set // [])[] as $r (.; .[$r] += [{link: $o.link, started_at: $o.started_at,
+      reduce ($o.set // [])[] as $r (.; .[$r] += [{link: $o.link, started_at: $o.started_at, repo: $o.repo,
         has_thread: any(($o.threads // [])[]; .ref == $r and .status != "failed")}]) else . end' <<<"$owners")"
   done < <(find "$home" -mindepth 3 -maxdepth 3 -name state.json ! -path "$run/state.json" -print0 2>/dev/null | sort -z)
   jq -cn --arg turn "$turn" --argjson owners "$owners" '{turn: (if $turn == "" then null else $turn end), owners: $owners}'
@@ -388,13 +397,14 @@ other_runs() {
 # owner_jq: a jq def on other_runs' value, with this run's state as $S: the
 # link of the other run that owns ref $r, or nothing. The run with a thread
 # for it owns it; while none has one, the earliest-started run that holds it
-# does, so two runs never both start it.
+# does, so two runs never both start it. Two runs started in the same second
+# go by repo name.
 # shellcheck disable=SC2016 # the $ names are jq variables
 owner_jq='def owner_of($r): (.owners[$r] // []) as $o
   | ($o | map(select(.has_thread)) | first) as $t
   | if $t then $t.link
     elif any($S.threads[]; .ref == $r and .status != "failed") then empty
-    else ($o | map(select(.started_at < $S.started_at)) | sort_by(.started_at) | first | .link // empty) end;'
+    else ($o | map(select([.started_at, .repo] < [$S.started_at, $S.repo])) | sort_by([.started_at, .repo]) | first | .link // empty) end;'
 
 # ---------- board ----------
 # run_part($limit): what the board shows of the run itself, from a state.
@@ -743,6 +753,7 @@ cmd_check() {
   newest_run
   [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
   local obs seen sr sp why
+  lock_claims
   read_run check_at_limit
   # A thread launches in its repo's T3 project, so a start's folder becomes
   # one first. A folder T3 will not take fails that claim alone.
