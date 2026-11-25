@@ -83,8 +83,8 @@ None of these: no priority. Continue with the kind's label only.
 ### 3. Load or learn the repo convention
 
 ```bash
-CONV="scripts/conventions.py"
-python3 "$CONV" get owner/repo
+CONV="../../shared/issue-conventions.py"
+python3 "$CONV" seed-get owner/repo
 ```
 
 **Hit** (exit 0, prints JSON with `prefix`, `seed_label`, `bug_label`, and
@@ -102,7 +102,7 @@ It reads and writes both; leave the files to it.
 learn it now, once.
 
 ```bash
-python3 "$CONV" forget owner/repo   # only for --relearn
+python3 "$CONV" seed-forget owner/repo   # only for --relearn
 gh issue list --repo owner/repo --state all --limit 30 --json title -q '.[].title'
 gh label list --repo owner/repo --limit 200 --json name -q '.[].name'
 ```
@@ -133,7 +133,7 @@ Priority label names, from what the repo already has:
 Save it:
 
 ```bash
-python3 "$CONV" set owner/repo --prefix "[seed] " --seed-label seed --bug-label bug \
+python3 "$CONV" seed-set owner/repo --prefix "[seed] " --seed-label seed --bug-label bug \
   --p0 p0 --p1 p1 --p2 p2 --p3 p3 --sampled <number of titles seen>
 ```
 
@@ -259,7 +259,7 @@ once:
   § Repo convention; change them there first.
 
 - The missing label is anything else (the repo renamed or deleted it): the
-  saved convention is stale. Run `forget`, redo step 3, retry.
+  saved convention is stale. Run `seed-forget`, redo step 3, retry.
 
 If the retry also fails, show the error and stop.
 
@@ -292,7 +292,7 @@ applies. No summary of the body, no next steps.
 - **User wants a fresh read.** `--relearn` or the word "relearn" in the
   request forces step 3 to run again.
 - **Saved entry has no `bug_label`.** It was learned before bugs existed
-  here. Use `bug` for this run; `set` again with `--bug-label` when the
+  here. Use `bug` for this run; `seed-set` again with `--bug-label` when the
   repo's own label differs.
 
 ## Examples

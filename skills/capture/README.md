@@ -21,7 +21,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Needs
 
 - `gh`, signed in. Screenshots need `--attach` on `gh issue create` (see `gh issue create --help`); without it the issue is still filed, with a sentence in place of each screenshot.
-- `python3`, for `scripts/conventions.py`, which stores each repo's title style in `~/.config/capture/conventions.json` and its priority labels in `~/.config/gh-issues/priority-labels.json`.
+- `python3`, for the shared core's [issue-conventions.py](../../shared/issue-conventions.py), which stores each repo's title style in `~/.config/capture/conventions.json` and its priority labels in `~/.config/gh-issues/priority-labels.json`.
 - A clipboard tool, optional, for the URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md), which owns the label names and colors and the rules for writing for a stranger.
 
@@ -29,7 +29,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [to-issue](../to-issue/), which rewrite the `[bug]` into the ticket in place.
 - Called by [to-issue](../to-issue/) when the chat holds only a loose idea or a bug with no agreed fix, by [ready-pr](../ready-pr/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff](../handoff/) to file a bug.
-- Named by [kickoff-herdr](../kickoff-herdr/) and [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the priority labels through its `scripts/conventions.py`.
+- Named by [kickoff-herdr](../kickoff-herdr/) and [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the same priority labels through that script.
 
 ## Credits
 

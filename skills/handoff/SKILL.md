@@ -78,7 +78,7 @@ set's, the first ticket URL. Say the pick in one line, as
    the `What to build`, `Done when`, and `Scope` sections verbatim. The
    issue's size letter, XS to L: its size label, read through the repo
    convention's `size` map,
-   `python3 ../to-issue/scripts/conventions.py get owner/repo`.
+   `python3 ../../shared/issue-conventions.py get owner/repo`.
    On `MISS`, match the label by eye the way
    `../../shared/issue-rules.md` § Repo convention
    does. No size label: `none`. A run: the plan's Stack table already

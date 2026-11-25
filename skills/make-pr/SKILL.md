@@ -151,7 +151,7 @@ and stop before step 7.
 10. **Label.** Find the repo's size labels the way
     `../../shared/issue-rules.md` § Repo convention reads its
     `size` line: the saved map from `python3
-    ../to-issue/scripts/conventions.py get <owner/repo>`, else the labels
+    ../../shared/issue-conventions.py get <owner/repo>`, else the labels
     that clearly name a size (`size/S`, `Size: Small`, `effort-large`,
     bare `S`) in `gh label list --limit 200 --json name -q '.[].name'`,
     plus an XL label when the repo has one. Size the diff with
