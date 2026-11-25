@@ -221,12 +221,17 @@ One recording per video under `Videos`, in order:
 3. For each numbered step: do its first action with `--mark 'step <k>:
    <the step>'`, cut to 60 characters, and `--screenshot
    <scratch>/look.png`, as in `proofbox click <id> 640 360 --mark 'step
-   3: click Save' --screenshot <scratch>/look.png`; a command step marks
-   its `proofbox type`. Read the shot: it is your look after this step
-   and before the next. The step's later actions, as the `key Return`
-   after a `type`, carry no mark. One mark per step, so the mark's
-   number is the step's number; a timed run keeps this with its own
-   mark and empty marks (§ How you see and act). The shot shows a page
+   3: click Save' --screenshot <scratch>/look.png`. Read the shot: it
+   is your look after this step and before the next. The step's later
+   actions, as the `key Return` after a `type`, carry no mark. Two
+   steps set their mark with `proofbox mark <id> 'step <k>: <the
+   step>'` alone, so the mark still comes first: a command step that
+   brings the terminal to the front, marked before the `xdotool`
+   call, so the last step's screenshot still shows the app; and a step
+   whose target is not on the screen, marked before you go on. One
+   mark per step, so the mark's number is the step's number; a timed
+   run keeps this with its own mark and empty marks (§ How you see and
+   act). The shot shows a page
    still loading: look once more, `proofbox screenshot <id> --out
    <scratch>/look.png`. To wait for something slow, as a page that
    loads for 20 s: first `proofbox mark <id> 'wait: <why>' --wait`, which names the wait in the video and does
