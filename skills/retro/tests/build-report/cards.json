@@ -1,0 +1,45 @@
+{
+  "repo": "acme/shop",
+  "scope": "this project",
+  "window": "2026-11-10 to 2026-11-24",
+  "counts": "1 session, 1 PR, 0 issues read",
+  "read": ["Read 1 session and 1 PR."],
+  "items": [
+    {"id": "S1", "ref": "#25", "title": "Fix the export menu", "date": "2026-11-12"},
+    {"id": "PR #40", "title": "Add CSV export", "date": "2026-11-10"}
+  ],
+  "cards": [
+    {
+      "title": "Add a check for unpushed worktrees",
+      "badge": "Strong",
+      "kind": "automated check",
+      "home": "acme/shop",
+      "items": ["S1", "PR #40"],
+      "times": 5,
+      "cost": "9 user turns",
+      "where": ["<code>scripts/check.sh</code> · audit-coding-standards"],
+      "quotes": [
+        {"text": "push <main> first", "item": "S1", "where": "turn 14"},
+        {"text": "forgot to push", "item": "PR #40", "where": "review 2"},
+        {"text": "pushed again", "item": "S1", "where": "turn 30"}
+      ],
+      "fix": "A check in <code>scripts/check.sh</code> stops S1 turn 14."
+    },
+    {
+      "title": "Name the base in the plan",
+      "badge": "Worth exploring",
+      "kind": "skill problem",
+      "home": "acme/tools",
+      "open": 12,
+      "items": ["S1"],
+      "times": 2,
+      "cost": "",
+      "where": ["<code>skills/plan-up/SKILL.md</code> · plan-up"],
+      "quotes": [{"text": "which base?", "item": "S1", "where": "turn 3"}],
+      "texts": [{"file": "skills/plan-up/SKILL.md", "place": "step 1", "now": "The base:", "after": "The base, by name:"}],
+      "fix": "Naming the base stops S1 turn 3."
+    }
+  ],
+  "questions": [{"text": "Why did the base move?", "item": "S1", "where": "turn 40"}],
+  "top_why": "It cost the most turns."
+}

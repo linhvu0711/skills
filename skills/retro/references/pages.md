@@ -1,12 +1,13 @@
 # Pages
 
-Retro shows one page: the report, after reading. It is a copy of `assets/report.html`, filled in, served on this machine, so it opens the same way in every harness. In the copy, replace every `{{…}}` placeholder and the example cards and rows. The head, the tokens, and the classes stay as they are; a new colour is a token, set in both themes.
+Retro shows one page: the report, after reading. `scripts/build-report.py` builds it from one cards file, so each fact the page shows in more than one place, such as which items a card came from, is written once. The page is served on this machine, so it opens the same way in every harness. The head, the tokens, and the classes of `assets/report.html` stay as they are; a new colour is a token, set in both themes.
 
 The page shows; it takes no pick. The pick comes back in chat, as card numbers (SKILL.md step 9).
 
 ## Writing and showing it
 
-- Folder: `$HOME/.agents/artifacts/retro/<owner>-<repo>-<YYYYMMDD-HHMM>/`, made for this run and holding only the page, since the server shares the whole folder. Transcripts and bundles stay in the scratch folders. File: `report.html`.
+- Folder: `$HOME/.agents/artifacts/retro/<owner>-<repo>-<YYYYMMDD-HHMM>/`, made for this run and holding only `cards.json` and `report.html`, since the server shares the whole folder. Transcripts and bundles stay in the scratch folders.
+- Build the page: `python3 scripts/build-report.py <folder>/cards.json`. It prints `page: <path>`. Problem lines name each fault in the cards file: fix the file and build again.
 - Tailwind, from its play CDN in the scaffold's head, is the only script.
 - The layout works at phone width: the scaffold's 16px side gutter, no horizontal page scroll; the overview table scrolls inside its own box.
 - Serve and open it:
