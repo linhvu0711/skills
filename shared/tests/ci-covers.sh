@@ -259,6 +259,19 @@ t_cc_needs_no_if() {
   done
 }
 
+t_cc_needs_next_line() {
+  local f lines
+  for f in '    needs:|      a' '    needs:|      -|        a'; do
+    # Given
+    T=""; IFS='|' read -r -a lines <<<"$f"
+    needs_yml '    if: false' '' "${lines[@]}"
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($f)" "here · pnpm test" "$out"
+  done
+}
+
 t_cc_needs_unknown_job() {
   # Given
   T=""; needs_yml '' '    needs: a' '    needs: c'
@@ -298,6 +311,7 @@ cases=(
   "needs through a chain to a job with an if sends the Gate here|t_cc_needs_chain"
   "each form of needs is read|t_cc_needs_forms"
   "needs with no if in the chain leaves the Gate to CI|t_cc_needs_no_if"
+  "a needs name on the line under the key, bare or after a bare dash, is read|t_cc_needs_next_line"
   "needs on a job not in the file sends the Gate here|t_cc_needs_unknown_job"
   "no command after -- is a usage stop|t_cc_usage"
 )

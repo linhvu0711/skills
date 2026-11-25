@@ -104,7 +104,9 @@ BEGIN { pr = 0; filt = 0; prk = 0; n = 0; in_on = 0; child = -1; blk = -1; injob
           } else need(job, v)
         }
       } else if (inneeds) {
-        if (dash) need(job, nocomment(t))
+        # A name can sit after a dash, on its own line under the key, or on
+        # the line under a bare dash.
+        if (!bare) need(job, nocomment(t))
       } else if (insteps) {
         # The keys of a step sit at the column right after its dash; a
         # deeper `if:`, as under `with:`, belongs to something else. A bare
