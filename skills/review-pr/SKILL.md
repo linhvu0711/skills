@@ -82,10 +82,14 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
    - The ADRs: the changed files, from
      `git diff --name-status <base>...HEAD`, pasted. Read each
      `docs/adr/*.md`. Leave out one whose `status:` line starts with
-     `proposed`, `deprecated`, or `superseded`: it is not in force. Keep one whose decision is about a
-     changed file: it names the file, its folder, or the part the file
-     belongs to. Return one line per ADR kept,
-     `<path> | <the decision, one sentence>`.
+     `proposed`, `deprecated`, or `superseded`: it is not in force.
+     Keep one whose decision is about a changed file: it names the file,
+     its folder, or the part the file belongs to. An ADR kept whose `status:` line says `amended by`
+     another: read each amending ADR too, and give the decision as the
+     newest amendment leaves it, with the clauses of the older one that
+     still hold; that amending ADR gets no line of its own. Return one
+     line per ADR kept,
+     `<path>[, <amending path>…] | <the decision in force, one sentence>`.
 
    Each line that comes back is a repo rule. Sort each into the axis
    that checks it: does it work (Logic), does it match the task
