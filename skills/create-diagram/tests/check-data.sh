@@ -132,6 +132,76 @@ t_cd_node_without_id_and_edge_without_from() {
   eq stdout "$(printf 'nodes[3]: no id\nedges[2]: from "None" is not a node')" "$out"
 }
 
+t_cd_frame_and_note_past_last_step() {
+  # Given: the good sequence of 3 steps, its frame and note on step 40
+  cd_page sequence '.frames[0].to = 40 | .notes[0].after = 40'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout "$(printf 'frames[0]: to 40 is not a step\nnotes[0]: after 40 is not a step')" "$out"
+}
+
+t_cd_frame_past_last_step() {
+  # Given: the frame ends at 3, one past the last step index 2
+  cd_page sequence '.frames[0].to = 3'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'frames[0]: to 3 is not a step' "$out"
+}
+
+t_cd_frame_step_below_zero_or_text() {
+  # Given: the frame starts at -1 and ends at "a"
+  cd_page sequence '.frames[0].from = -1 | .frames[0].to = "a"'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout "$(printf 'frames[0]: from -1 is not a step\nframes[0]: to "a" is not a step')" "$out"
+}
+
+t_cd_frame_without_to() {
+  # Given: the frame has no to key
+  cd_page sequence 'del(.frames[0].to)'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'frames[0]: to null is not a step' "$out"
+}
+
+t_cd_note_past_last_step() {
+  # Given: the note sits after step 3, one past the last
+  cd_page sequence '.notes[0].after = 3'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'notes[0]: after 3 is not a step' "$out"
+}
+
+t_cd_note_step_not_whole() {
+  # Given: the note sits after step 1.5
+  cd_page sequence '.notes[0].after = 1.5'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'notes[0]: after 1.5 is not a step' "$out"
+}
+
+t_cd_note_without_after() {
+  # Given: the note has no after key, so the page draws it above the first step
+  cd_page sequence 'del(.notes[0].after)'
+  # When
+  cd_check
+  # Then
+  eq exit 0 "$code"
+  eq stdout "ok: sequence, 3 participants, 3 steps" "$out"
+}
+
 t_cd_not_json() {
   # Given: DATA written as a JavaScript object with a bare key
   cd_page graph .
@@ -208,6 +278,13 @@ cases=(
   "names a group id a node holds|t_cd_duplicate_node_and_group"
   "names a node with no id|t_cd_node_without_id"
   "names an edge end beside a node with no id|t_cd_node_without_id_and_edge_without_from"
+  "names a frame and a note past the last step|t_cd_frame_and_note_past_last_step"
+  "names a frame end past the last step|t_cd_frame_past_last_step"
+  "names a frame end below 0 or text|t_cd_frame_step_below_zero_or_text"
+  "names a frame with no to|t_cd_frame_without_to"
+  "names a note after past the last step|t_cd_note_past_last_step"
+  "names a note after that is not whole|t_cd_note_step_not_whole"
+  "passes a note with no after|t_cd_note_without_after"
   "refuses DATA that is not JSON|t_cd_not_json"
   "names a missing node label|t_cd_missing_node_label"
   "names a missing step label|t_cd_missing_step_label"
