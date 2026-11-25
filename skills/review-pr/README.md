@@ -8,7 +8,7 @@ You want a review before you merge. `/review-pr 42` reviews PR 42; `/review-pr` 
 
 ## What you get
 
-A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a severity (🔴 blocker, 🟠 should, 🔵 nit), a `path:line`, the rule it breaks, and a one-line fix. The rules come from your Standard, `CODING_STANDARDS.md` and the `docs/standards/` files it links to, each sent to the check it belongs to. The ADRs in `docs/adr/` that are in force and about the changed files go along too, so a change that goes against a decision is a finding. A deprecated or superseded ADR is left out. Scope is judged against the linked issue and its epic. It never posts to GitHub; the last line gives you the command to do it yourself:
+A report in chat and in `~/.claude/reviews/<repo>-<pr>.md`. Each finding has a severity (🔴 blocker, 🟠 should, 🔵 nit), a `path:line`, the rule it breaks, and a one-line fix. The rules come from your Standard, `CODING_STANDARDS.md` and the `docs/standards/` files it links to, each sent to the check it belongs to. The ADRs in `docs/adr/` that are in force and about the changed files go along too, so a change that goes against a decision is a finding. A proposed, deprecated, or superseded ADR is left out, since it is not in force. Scope is judged against the linked issue and its epic. It never posts to GitHub; the last line gives you the command to do it yourself:
 
 ```
 Verdict: request changes. To post: gh pr review 42 --request-changes -F ~/.claude/reviews/acme-42.md

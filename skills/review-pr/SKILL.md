@@ -82,7 +82,7 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
    - The ADRs: the changed files, from
      `git diff --name-status <base>...HEAD`, pasted. Read each
      `docs/adr/*.md`. Leave out one whose `status:` line starts with
-     `deprecated` or `superseded`. Keep one whose decision is about a
+     `proposed`, `deprecated`, or `superseded`: it is not in force. Keep one whose decision is about a
      changed file: it names the file, its folder, or the part the file
      belongs to. Return one line per ADR kept,
      `<path> | <the decision, one sentence>`.
