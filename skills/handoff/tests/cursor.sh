@@ -72,6 +72,9 @@ t_cursor_no_key() {
 # `alive` exits with the content of $T/mac.alive (1 when missing), and `down`
 # runs $T/mac.on-down first when it exists, then, when $T/mac.down-fail
 # exists, prints it on stderr and exits 1, as a Mac it could not destroy.
+# `return <agent> -- <command>` runs the command and prints
+# `<agent>: destroyed mac-1` when it passes, else `<agent>: mac-1 kept, its run
+# has not ended`.
 fake_mac() {
   cat > "$T/mac.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -83,6 +86,8 @@ case "$1" in
   down) [ ! -f "$d/mac.on-down" ] || bash "$d/mac.on-down"
         if [ -f "$d/mac.down-fail" ]; then cat "$d/mac.down-fail" >&2; exit 1; fi
         echo "destroyed $2" ;;
+  return) a="$2"; shift 3
+          if "$@"; then echo "$a: destroyed mac-1"; else echo "$a: mac-1 kept, its run has not ended"; fi ;;
 esac
 EOF
   export HANDOFF_MAC="$T/mac.sh"
@@ -336,7 +341,34 @@ t_cursor_facts() {
 model	claude-opus-5	Claude Opus 5" "$out"
 }
 
+t_cursor_release_run_goes() {
+  # Given
+  fake_curl; fake_mac
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"RUNNING"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  # When
+  cursor_mac release bc-1
+  # Then
+  eq exit 0 "$code"
+  eq stdout "bc-1: mac-1 kept, its run has not ended" "$out"
+}
+
+t_cursor_release() {
+  # Given
+  fake_curl; fake_mac
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"FINISHED","result":"Done"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  # When
+  cursor_mac release bc-1
+  # Then
+  eq exit 0 "$code"
+  eq stdout "bc-1: destroyed mac-1" "$out"
+  has "mac call" "return bc-1 -- bash " "$(cat "$T/mac.calls")"
+}
+
 cases=(
+  "cursor release keeps the Mac while the run goes|t_cursor_release_run_goes"
+  "cursor release hands the run check to mac.sh return|t_cursor_release"
   "cursor facts lists repos and models|t_cursor_facts"
   "cursor interval is 60|t_cursor_interval"
   "cursor start sends the prompt and prints the agent|t_cursor_start"

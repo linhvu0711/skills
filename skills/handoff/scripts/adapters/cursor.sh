@@ -11,6 +11,9 @@
 #                                                             exit 1, row kept, when it still runs
 #   cursor.sh models                                       -> model ids this account can use
 #   cursor.sh repos                                        -> repos connected to this account
+#   cursor.sh release <agent>                              -> gives the agent's Mac back once its run ended
+#                                                             (mac.sh return); nothing for an agent with no Mac
+#   cursor.sh ended <agent>                                -> exit 0 when the latest run ended (mac.sh runs it)
 #   cursor.sh facts                                        -> "repo\t<url>" per connected repo, then "model\t<id>\t<name>"
 #   cursor.sh interval                                     -> the watch's poll interval, in seconds
 #
@@ -44,6 +47,7 @@ API="${CURSOR_API_URL:-https://api.cursor.com}/v1"
 MSG_CHARS=600
 MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
+SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
 die() { echo "cursor.sh: $*" >&2; exit 1; }
 
@@ -56,7 +60,9 @@ cursor.sh down <agent>
 cursor.sh models
 cursor.sh repos
 cursor.sh facts
+cursor.sh release <agent>
 cursor.sh interval
+cursor.sh ended <agent>    (mac.sh runs it)
 EOF
   exit 1
 }
@@ -338,6 +344,18 @@ cmd_models() {
   api GET /models | jq -r '.items[] | "\(.id)\t\(.displayName)"'
 }
 
+cmd_ended() {
+  local id; id=$(aid "${1:-}")
+  local rst
+  IFS=$'\t' read -r _ rst _ <<<"$(fetch "$id")"
+  case "$rst" in FINISHED|ERROR|CANCELLED|EXPIRED) return 0 ;; *) return 1 ;; esac
+}
+
+cmd_release() {
+  local id; id=$(aid "${1:-}")
+  CURSOR_API_KEY="$(key)" bash "$MAC" return "$id" -- bash "$SELF" ended "$id"
+}
+
 cmd_facts() {
   api GET /repositories | jq -r '.items[] | "repo\t" + (.url | sub("\\.git$"; ""))'
   api GET /models | jq -r '.items[] | "model\t\(.id)\t\(.displayName)"'
@@ -348,7 +366,7 @@ cmd_repos() {
 }
 
 for c in curl jq; do command -v "$c" >/dev/null || die "$c is required"; done
-case "${1:-}" in start|poll|say|down|models|repos|facts) key >/dev/null ;; esac
+case "${1:-}" in start|poll|say|down|models|repos|facts|release|ended) key >/dev/null ;; esac
 case "${1:-}" in
   start)  shift; cmd_start "$@" ;;
   poll)   shift; cmd_poll "$@" ;;
@@ -357,6 +375,8 @@ case "${1:-}" in
   models) shift; cmd_models "$@" ;;
   repos)  shift; cmd_repos "$@" ;;
   facts)  shift; cmd_facts "$@" ;;
+  release) shift; cmd_release "$@" ;;
+  ended)  shift; cmd_ended "$@" ;;
   interval) echo 60 ;;
   *) usage ;;
 esac

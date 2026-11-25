@@ -7,6 +7,7 @@
 #   devin.sh poll <session>                                   -> "<state>\t<state>|<message>\t<prs>\t<url>\t<message>"
 #   devin.sh say <session> <note-file>                        -> sends a follow-up
 #   devin.sh facts                                            -> "repo\t<url>" per repo the org can reach, then "mode\t<name>"
+#   devin.sh release <session>                                -> nothing: a session holds no machine of ours
 #   devin.sh interval                                         -> the watch's poll interval, in seconds
 #
 # <session> is the id with or without the "devin-" prefix, or the app URL.
@@ -226,6 +227,7 @@ case "${1:-}" in
   poll)    shift; cmd_poll "$@" ;;
   say)     shift; cmd_say "$@" ;;
   facts)   shift; cmd_facts "$@" ;;
+  release) shift; sid "${1:-}" >/dev/null ;;
   interval) echo 120 ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

@@ -246,7 +246,35 @@ model	gpt-5.5	GPT-5.5" "$out"
   eq "adapter args" "" "$(cat "$FAKE_AD/cursor.facts.args")"
 }
 
+t_release_through_adapter() {
+  # Given
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff release bc-1
+  # Then
+  eq exit 0 "$code"
+  eq stdout "bc-1: destroyed mac-1" "$out"
+  eq "adapter args" "bc-1" "$(cat "$FAKE_AD/cursor.release.args")"
+}
+
+t_release_unknown_session() {
+  # Given
+  fake_adapters
+  printf '%s\n%s\n' "$row_devin12" "$row_cursor12" > "$(ledger)"
+  printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
+  # When
+  handoff release bc-404
+  # Then
+  eq exit 1 "$code"
+  eq stderr "handoff.sh: no session bc-404 in the ledger" "$err"
+  [ ! -f "$FAKE_AD/cursor.release.calls" ] || { echo "release ran" >&2; exit 1; }
+}
+
 cases=(
+  "release frees the session through its executor|t_release_through_adapter"
+  "release stops on a session the ledger lacks|t_release_unknown_session"
   "facts prints the executor's facts|t_facts_through_adapter"
   "a new adapter file adds an executor|t_new_adapter_file"
   "watch takes its interval from the adapter|t_watch_interval_from_adapter"

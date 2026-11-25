@@ -10,6 +10,7 @@
 #   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
 #                                                             -> one line per event; exits when it ends
 #   handoff.sh facts <executor>                               -> one fact a line: repo, model, or mode
+#   handoff.sh release <session>                              -> frees what the session holds
 #
 # <executor> is the name of an adapter file, adapters/<executor>.sh: devin and
 # cursor now. A new file there is a new executor. HANDOFF_ADAPTERS names
@@ -188,6 +189,16 @@ cmd_watch() {
   done
 }
 
+# release SESSION: the executor is the one of the session's newest ledger row
+cmd_release() {
+  local s="${1:-}" row e id
+  [[ -n "$s" ]] || die "session id required"
+  [[ -f "$LEDGER" ]] && row=$(awk -F'\t' -v s="$s" '$3 == s || $4 == s' "$LEDGER" | tail -1)
+  [[ -n "${row:-}" ]] || die "no session $s in the ledger"
+  IFS=$'\t' read -r _ e id _ <<<"$row"
+  adapter "$(executor "$e")" release "$id"
+}
+
 cmd_route() {
   local issue="${1:-}" e="" row
   [[ -n "$issue" ]] || die "issue URL required"
@@ -207,5 +218,6 @@ case "${1:-}" in
   say)   shift; cmd_say "$@" ;;
   watch) shift; cmd_watch "$@" ;;
   facts) shift; cmd_facts "$@" ;;
+  release) shift; cmd_release "$@" ;;
   *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
 esac

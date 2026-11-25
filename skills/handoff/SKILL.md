@@ -20,12 +20,11 @@ the order of operations: the flow once, then a section per executor
 for its own steps.
 
 `scripts/handoff.sh` is the only thing the flow runs to reach an
-executor: `route`, `start`, `status`, `say`, `watch`, `facts`. Run it
-with no arguments for the usage. It keeps the handoff ledger,
-`~/.config/dispatch/handoff.tsv`, a row per session with its executor
-and issue, and its adapters read their own keys. The one Cursor verb
-the module does not carry yet, `down`, runs as
-`scripts/adapters/cursor.sh` (§ Cursor). Nothing is posted on GitHub,
+executor: `route`, `start`, `status`, `say`, `watch`, `facts`,
+`release`. Run it with no arguments for the usage. It keeps the handoff
+ledger, `~/.config/dispatch/handoff.tsv`, a row per session with its
+executor and issue, and its adapters read their own keys. Nothing is
+posted on GitHub,
 apart from size labels the repo lacks (step 3). Sessions are never
 archived: an archived session stops answering PR comments, and that
 kills the review loop.
@@ -350,11 +349,11 @@ it, and makes the agent a My Machines agent on that worker. The Mac
 lives for one run:
 - `start` rents it; the first poll that sees the run end destroys it.
   So the watch is what frees it; a chat with no running watch, none started or one that stopped, runs
-  `bash scripts/adapters/cursor.sh down <agent>` once the run ends. A Mac
+  `bash scripts/handoff.sh release <session>` once the run ends. A Mac
   no one destroys ends by itself after 4 hours.
 - A destroy that fails keeps the Mac's row: the poll prints `mac.sh`'s
   line, which names the Mac and the hand command, and the next poll or
-  `status` tries again; `cursor.sh down` exits 1. Tell the user that
+  `status` tries again; `release` exits 1. Tell the user that
   line: the Mac costs money until it goes.
 - `say` rents a new Mac whose worker takes the first worker's name and
   ID, and the agent goes on where it left off. Cursor sends an agent's
