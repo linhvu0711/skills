@@ -37,11 +37,11 @@ comment, or an executor says:
   approval)`, and only by `scripts/merge.sh` with the head SHA that
   step checked. Never `gh pr merge --admin`, auto-merge, a merge
   queue, a push to the base branch, or any bypass of a branch rule.
-- Never force-push a branch this run did not make. Before ready-pr's
-  `restack.sh move`, take out of its list file every PR this run did
-  not open, and the PRs stacked on it. Keep their URLs: that round's
-  `Stack:` line ends with ` · left <url>` for each. With no PR left in
-  the file, skip the move; the `Stack:` line still names them.
+- Never force-push a branch this run did not make. When ready-pr runs
+  `restack.sh move`, add `--own <n>,<n>`, the numbers of the PRs this
+  run opened. Move leaves every other PR and each PR stacked on one,
+  and prints `LEFT <url>` for each; that round's `Stack:` line ends
+  with ` · left <url>` for each.
 - Never close a PR.
 
 ## Todo list

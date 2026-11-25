@@ -2,7 +2,8 @@
 # restack.sh: keep the PRs stacked on a branch on its tip across a force push.
 #
 #   restack.sh list <owner/repo> <branch>                       before the push
-#   restack.sh move <checkout> <branch> <old-sha> <stack-file>  after it
+#   restack.sh move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]
+#                                                               after it
 #
 # list: every open PR whose base is <branch>, then the PRs on each of their
 # heads, depth first, a parent before its children and siblings by number. A
@@ -26,9 +27,12 @@
 #   SKIP <url>: push refused: <git's last line>
 # then `LEFT <url>` for each PR after a stop. Last line `RESTACK=moved <n>`
 # (exit 0) or `RESTACK=stopped` (exit 1). Nothing after a stop is pushed.
+# --own: the numbers of the PRs the caller owns. Each other PR, and each PR
+# stacked on a left one, prints `LEFT <url>` and is not pushed; the move goes
+# on with the next PR, and this is no stop. Without it, every PR is owned.
 set -euo pipefail
 
-usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file>'
+usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
 
@@ -119,16 +123,27 @@ case "$cmd" in
     [ "${#stack[@]}" -eq 0 ] || printf '%s\n' "${stack[@]}"
     ;;
   move)
-    [ $# -eq 4 ] || { echo "$usage" >&2; exit 64; }
-    wt="$1"; olds_b=("$2"); olds_s=("$3")
+    own=""
+    if [ $# -eq 6 ] && [ "$5" = --own ]; then own=",$6,"
+    elif [ $# -ne 4 ]; then echo "$usage" >&2; exit 64
+    fi
+    wt="$1"; olds_b=("$2"); olds_s=("$3"); left=" "
     [ -f "$4" ] || { printf 'stop: no stack file %s\n' "$4" >&2; exit 1; }
     lines=(); while IFS= read -r l; do lines+=("$l"); done < "$4"
     tmp="$(mktemp -d)"; trap 'drop_tmp; rm -rf "$tmp"' EXIT
     moved=0; stopped=0
     for line in ${lines[@]+"${lines[@]}"}; do
       case "$line" in ''|STACK=*) continue ;; esac
-      read -r _ base head url fork <<<"$line"
+      read -r num base head url fork <<<"$line"
       if [ "$stopped" -eq 1 ]; then printf 'LEFT %s\n' "$url"; continue; fi
+      mine=1
+      case "$left" in *" $base "*) mine=0 ;; esac
+      if [ -n "$own" ]; then case "$own" in *",$num,"*) ;; *) mine=0 ;; esac; fi
+      if [ "$mine" -eq 0 ]; then
+        # A fork's head names a branch in another repo, as in walk.
+        [ "$fork" != "fork=false" ] || left="$left$head "
+        printf 'LEFT %s\n' "$url"; continue
+      fi
       if move_one; then moved=$((moved + 1)); else stopped=1; fi
       printf '%s\n' "$result"
     done
