@@ -38,7 +38,19 @@ t_gp_run_hint_kept_out() {
   eq answer "0|[]" "$code|$out"
 }
 
+t_gp_stop_gh_cannot_start() {
+  # Given: the only gh on PATH cannot be run
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  mkdir -p "$T/bin"; printf '#!/bin/sh\n' > "$T/bin/gh"; chmod -x "$T/bin/gh"
+  export PATH="$T/bin:/usr/bin:/bin"
+  # When
+  gp_run 'gh.stop("list runs", "run", "list")'
+  # Then
+  eq stop "1|stop: gh could not list runs: gh: could not start: Permission denied" "$code|$err"
+}
+
 cases=(
+  "stop shows a gh that cannot start as a stop line|t_gp_stop_gh_cannot_start"
   "stop shows gh's last error line|t_gp_stop_last_line"
   "run keeps a hint out of the answer|t_gp_run_hint_kept_out"
 )
