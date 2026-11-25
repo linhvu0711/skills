@@ -1080,6 +1080,8 @@ sync_one() {
 cmd_close_epics() {
   [ $# -eq 0 ] || die "usage: orchestrate.sh close-epics <owner/repo>"
   newest_run
+  # An epic stays at stage epic all run long, with open sub-issues; only a done run makes the close safe.
+  [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
   local r
   for r in $(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S"); do
     gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"
