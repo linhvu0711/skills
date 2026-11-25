@@ -20,15 +20,18 @@ def flags(roots, days):
     return where + (["--days", str(days)] if days else []) + ["--json", "--limit", "0"]
 
 
+HARNESS = lib.Harness(
+    name=os.path.basename(here),
+    label="Claude Code",
+    data=[os.path.expanduser("~/.claude/projects")],
+    finder=os.path.join(here, "find_sessions.py"),
+    extractor=os.path.join(here, "extract_session.py"),
+    flags=flags,
+    title=lambda s: s.get("title") or s.get("first_prompt") or "",
+    current="CLAUDE_CODE_SESSION_ID",
+    extract_flags=("--summary", "--after-compact", "--max-result-chars"),
+)
+
+
 if __name__ == "__main__":
-    raise SystemExit(lib.main(lib.Harness(
-        name=os.path.basename(here),
-        label="Claude Code",
-        data=[os.path.expanduser("~/.claude/projects")],
-        finder=os.path.join(here, "find_sessions.py"),
-        extractor=os.path.join(here, "extract_session.py"),
-        flags=flags,
-        title=lambda s: s.get("title") or s.get("first_prompt") or "",
-        current="CLAUDE_CODE_SESSION_ID",
-        extract_flags=("--summary", "--after-compact", "--max-result-chars"),
-    )))
+    raise SystemExit(lib.main(HARNESS))

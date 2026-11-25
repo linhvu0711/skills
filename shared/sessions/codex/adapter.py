@@ -30,15 +30,18 @@ def flags(roots, days):
     return where + ["--interactive"] + (["--active-days", str(days)] if days else []) + ["--json", "--limit", "0"]
 
 
+HARNESS = lib.Harness(
+    name=os.path.basename(here),
+    label="Codex",
+    data=rollout_io.data_folders(),
+    finder=os.path.join(here, "find_session.py"),
+    extractor=os.path.join(here, "extract_session.py"),
+    flags=flags,
+    title=lambda s: s.get("first_prompt") or "",
+    current="CODEX_THREAD_ID",
+    extract_flags=("--summary", "--max-result-chars"),
+)
+
+
 if __name__ == "__main__":
-    raise SystemExit(lib.main(lib.Harness(
-        name=os.path.basename(here),
-        label="Codex",
-        data=rollout_io.data_folders(),
-        finder=os.path.join(here, "find_session.py"),
-        extractor=os.path.join(here, "extract_session.py"),
-        flags=flags,
-        title=lambda s: s.get("first_prompt") or "",
-        current="CODEX_THREAD_ID",
-        extract_flags=("--summary", "--max-result-chars"),
-    )))
+    raise SystemExit(lib.main(HARNESS))

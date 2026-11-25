@@ -72,19 +72,22 @@ def _day(value: str) -> dt.date:
         raise argparse.ArgumentTypeError(f"not a YYYY-MM-DD date: {value}")
 
 
+def find_args(p: argparse.ArgumentParser) -> None:
+    """The arguments of a find: where, when, and what."""
+    where = p.add_mutually_exclusive_group(required=True)
+    where.add_argument("--root", action="append", help="a project folder; repeat for several, subfolders count")
+    where.add_argument("--all-projects", action="store_true")
+    p.add_argument("--since", type=_day, help="first day of last activity, YYYY-MM-DD")
+    p.add_argument("--until", type=_day, help="last day of last activity, YYYY-MM-DD")
+    p.add_argument("--query", default="", help="keywords the finder scores")
+    p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
+
+
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="One harness's sessions, in the shape every adapter shares.")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for cmd in ("probe", "find"):
-        p = sub.add_parser(cmd)
-        where = p.add_mutually_exclusive_group(required=True)
-        where.add_argument("--root", action="append", help="a project folder; repeat for several, subfolders count")
-        where.add_argument("--all-projects", action="store_true")
-        p.add_argument("--since", type=_day, help="first day of last activity, YYYY-MM-DD")
-        p.add_argument("--until", type=_day, help="last day of last activity, YYYY-MM-DD")
-        if cmd == "find":
-            p.add_argument("--query", default="", help="keywords the finder scores")
-            p.add_argument("--id", action="append", default=[], help="keep sessions whose id starts with this")
+        find_args(sub.add_parser(cmd))
     p = sub.add_parser("extract")
     p.add_argument("path", help="a session id or the path of its file")
     p.add_argument("--summary", action="store_true", help="only the prompts and the replies")
@@ -94,7 +97,16 @@ def _parser() -> argparse.ArgumentParser:
     return ap
 
 
-def _find(h: Harness, args) -> list[dict]:
+class Failed(Exception):
+    """A finder that printed no JSON."""
+
+
+def installed(h: Harness) -> bool:
+    """With none of its folders here the harness is not installed, and its finder is not run."""
+    return any(os.path.isdir(d) for d in h.data)
+
+
+def find(h: Harness, args) -> list[dict]:
     roots = None if args.all_projects else [os.path.abspath(os.path.expanduser(r)) for r in args.root]
     days = (dt.date.today() - args.since).days + 1 if args.since else None
     if days is not None and days < 1:
@@ -109,7 +121,7 @@ def _find(h: Harness, args) -> list[dict]:
         out = json.loads(done.stdout)
     except ValueError:
         last = (done.stderr or done.stdout).strip().splitlines()[-1:] or ["no output"]
-        raise SystemExit(f"stop: {h.name} finder failed: {last[0]}")
+        raise Failed(f"{h.name} finder failed: {last[0]}")
     if out.get("error"):
         return []
     rows = []
@@ -150,12 +162,14 @@ def main(h: Harness) -> int:
         if "--max-result-chars" in h.extract_flags:
             asked += ["--max-result-chars", str(args.max_result_chars)]
         return subprocess.run([sys.executable, h.extractor, args.path, *asked]).returncode
-    # With none of its folders here the harness is not installed, and its finder is not run.
-    installed = any(os.path.isdir(d) for d in h.data)
-    rows = _find(h, args) if installed else []
+    here = installed(h)
+    try:
+        rows = find(h, args) if here else []
+    except Failed as e:
+        raise SystemExit(f"stop: {e}")
     if args.cmd == "probe":
         print(json.dumps({"harness": h.name, "label": h.label,
-                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": installed}))
+                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": here}))
     else:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
     return 0

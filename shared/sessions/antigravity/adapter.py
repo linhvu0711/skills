@@ -32,16 +32,19 @@ def flags(roots, days):
     return where + (["--active-days", str(days)] if days else [])
 
 
+HARNESS = lib.Harness(
+    name=os.path.basename(here),
+    label="Antigravity",
+    data=store.folders(),
+    finder=os.path.join(here, "find_session.py"),
+    extractor=os.path.join(here, "extract_session.py"),
+    flags=flags,
+    title=lambda s: s.get("title") or s.get("first_prompt") or "",
+    # agy sets no environment variable with the chat's id, so no row is this session.
+    current="",
+    extract_flags=(),
+)
+
+
 if __name__ == "__main__":
-    raise SystemExit(lib.main(lib.Harness(
-        name=os.path.basename(here),
-        label="Antigravity",
-        data=store.folders(),
-        finder=os.path.join(here, "find_session.py"),
-        extractor=os.path.join(here, "extract_session.py"),
-        flags=flags,
-        title=lambda s: s.get("title") or s.get("first_prompt") or "",
-        # agy sets no environment variable with the chat's id, so no row is this session.
-        current="",
-        extract_flags=(),
-    )))
+    raise SystemExit(lib.main(HARNESS))
