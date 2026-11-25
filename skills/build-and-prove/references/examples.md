@@ -11,7 +11,8 @@ in. Prompt written, this session builds four slices, each test red
 then green on the local machine. After the fourth, `box.sh up` prints
 `SANDBOX=ns:us:abc`. Walk 1's `Before` names steps: app started from
 the base, walker in `before` mode, `before-1.png`. Gates on `1a2b3c4`:
-step 8's `box.sh gates "$PROOF" --ci "$WT"` leaves `pnpm test` to CI,
+step 8's `box.sh gates "$PROOF" --ci "$WT" -- 'pnpm test' 'pnpm lint'
+'pnpm build'` leaves `pnpm test` to CI,
 since `ci.yml` runs it on pull requests, and runs `pnpm lint` and
 `pnpm build` green in the Sandbox. Round 1: walk 3 fails,
 its screenshot shows the `Export` button disabled with rows on screen:
