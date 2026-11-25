@@ -326,7 +326,10 @@ done.
    fresh, one line per command: the command, the short SHA, the last
    line of its output, and where it ran, as in `pnpm test · 1a2b3c4 ·
    116 pass, 0 fail (sandbox)`. A repo with no CI runs every Gate in the
-   Sandbox. Write no Gate line by hand. `/make-pr` counts
+   Sandbox. A Build that CI runs leaves no build output in the Sandbox,
+   so the plan's `Run` line builds what the app needs, as `pnpm build &&
+   pnpm preview` does; the before shots and a Sandbox made again start
+   with no build output too. Write no Gate line by hand. `/make-pr` counts
    these lines and runs none of them again. Exit 3 means a red Gate:
    stderr has `red: <command> · exit <code> · output <file>` for each.
    A red Gate is the builder's: a follow-up per `render.sh local
