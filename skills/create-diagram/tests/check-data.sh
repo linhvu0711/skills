@@ -93,6 +93,26 @@ t_cd_not_json() {
   has stdout "DATA is not JSON: Expecting property name enclosed in double quotes" "$out"
 }
 
+t_cd_missing_node_label() {
+  # Given: node db has no label key
+  cd_page graph 'del(.nodes[2].label)'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'node "db": no label' "$out"
+}
+
+t_cd_missing_step_label() {
+  # Given: the first step has no label key
+  cd_page sequence 'del(.steps[0].label)'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'steps[0]: no label' "$out"
+}
+
 cases=(
   "passes a good graph page|t_cd_good_graph"
   "passes a good sequence page|t_cd_good_sequence"
@@ -102,4 +122,6 @@ cases=(
   "names an unknown frame participant|t_cd_unknown_frame_participant"
   "names an unknown note participant|t_cd_unknown_note_participant"
   "refuses DATA that is not JSON|t_cd_not_json"
+  "names a missing node label|t_cd_missing_node_label"
+  "names a missing step label|t_cd_missing_step_label"
 )

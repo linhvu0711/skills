@@ -55,7 +55,7 @@ groups: [{ id, label, sub, kind, members, pad, change }]
 
 **Edge**
 
-- `label` is a verb or a message: `reads`, `POST /orders`, `emits`, `1..*`. Every edge gets one.
+- `label` is a verb or a message: `reads`, `POST /orders`, `emits`, `1..*`. An edge with no `label` draws a bare line; the type card says which edges go without one.
 - `kind`: `solid` (default), `dashed` (async, dependency, return), `dotted` (weak or optional).
 - `head`: `arrow` (default), `stick` (async), `open` (inheritance), `diamond` (aggregation), `fdiamond` (composition), `dot`, `none`. `tail` takes the same values and sits at `from`.
 - Two edges between the same pair fan out by themselves. A self edge loops on the right.

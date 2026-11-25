@@ -4,7 +4,8 @@
     check-data.py <page .html>
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
-problem and exits 1 when it is not: an id that points at nothing.
+problem and exits 1 when it is not: an id that points at nothing, or a
+label left out.
 """
 import json
 import sys
@@ -26,6 +27,12 @@ def read_data(text, path):
 
 def graph_problems(data):
     nodes = {n.get("id") for n in data.get("nodes", [])}
+    for node in data.get("nodes", []):
+        if "label" not in node:
+            yield f'node "{node.get("id")}": no label'
+    for group in data.get("groups", []):
+        if "label" not in group:
+            yield f'group "{group.get("id")}": no label'
     groups = {g.get("id") for g in data.get("groups", [])}
     for i, edge in enumerate(data.get("edges", [])):
         for end in ("from", "to"):
@@ -39,17 +46,26 @@ def graph_problems(data):
 
 def sequence_problems(data):
     people = {p.get("id") for p in data.get("participants", [])}
+    for person in data.get("participants", []):
+        if "label" not in person:
+            yield f'participant "{person.get("id")}": no label'
     for i, step in enumerate(data.get("steps", [])):
         for end in ("from", "to"):
             if step.get(end) not in people:
                 yield f'steps[{i}]: {end} "{step.get(end)}" is not a participant'
+        if "label" not in step:
+            yield f'steps[{i}]: no label'
     for i, frame in enumerate(data.get("frames", [])):
+        if "label" not in frame:
+            yield f'frames[{i}]: no label'
         for p in frame.get("participants", []):
             if p not in people:
                 yield f'frames[{i}]: participant "{p}" is not a participant'
     for i, note in enumerate(data.get("notes", [])):
         if note.get("at") not in people:
             yield f'notes[{i}]: at "{note.get("at")}" is not a participant'
+        if "text" not in note:
+            yield f'notes[{i}]: no text'
 
 
 def main():
