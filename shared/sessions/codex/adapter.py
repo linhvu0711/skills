@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Codex CLI's adapter: probe, find, and extract, per ../adapter_lib.py.
+"""Codex CLI's adapter: find and extract, per ../adapter_lib.py.
 
 Reads ~/.codex/sessions/ and ~/.codex/archived_sessions/ through
 find_session.py and extract_session.py, next to this file. Headless

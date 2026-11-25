@@ -345,7 +345,7 @@ A PR that a session in scope names by number or URL. Retro does not read it.
 _Avoid_: covered PR
 
 **Session adapter**:
-The scripts in `shared/sessions/<harness>/` that probe, find, and extract one harness's sessions.
+The scripts in `shared/sessions/<harness>/` that find and extract one harness's sessions. `shared/sessions/find_all.py` runs every adapter's find in one call.
 _Avoid_: translator, parser
 
 ## Ship

@@ -2,15 +2,13 @@
 
 A harness folder with an ``adapter.py`` is one harness retro can read. Its
 adapter calls this module's ``main`` with the harness's own finder and
-extractor, and gets the same three subcommands as every other adapter:
+extractor, and gets the same two subcommands as every other adapter:
 
-    adapter.py probe   --root R... | --all-projects  [--since D] [--until D]
     adapter.py find    --root R... | --all-projects  [--since D] [--until D] [--query Q] [--id PREFIX]...
     adapter.py extract <id or path> [--summary] [--after-compact] [--max-result-chars N]
 
-``probe`` prints {"harness", "label", "sessions", "installed"}; "installed" is
-false when the harness keeps none of its folders on this machine, and then
-``find`` prints []. ``find`` prints a JSON list of rows
+A harness that keeps none of its folders on this machine is not installed,
+and its ``find`` prints []. ``find`` prints a JSON list of rows
 {"harness", "id", "modified", "cwd", "title", "size", "path", "subagents",
 "score", "current", "prompts", "first_prompt", "age", "active"}, plus
 "unreadable" on a row the harness could not read. Dates are local YYYY-MM-DD
@@ -21,7 +19,9 @@ last activity in epoch seconds, for sorting. ``extract --summary`` renders
 only the prompts and the replies; ``--after-compact`` starts at the last
 compaction summary in a harness that has one, and a harness with none renders
 the whole session. The finders keep their own flags and keys for the skills
-that call them direct; this hides those differences.
+that call them direct; this hides those differences. find_all.py, next to
+this file, runs every adapter's find in one call through ``find`` and
+``installed``.
 """
 
 from __future__ import annotations
@@ -131,8 +131,7 @@ def find_args(p: argparse.ArgumentParser) -> None:
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="One harness's sessions, in the shape every adapter shares.")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for cmd in ("probe", "find"):
-        find_args(sub.add_parser(cmd))
+    find_args(sub.add_parser("find"))
     p = sub.add_parser("extract")
     p.add_argument("path", help="a session id or the path of its file")
     p.add_argument("--summary", action="store_true", help="only the prompts and the replies")
@@ -206,14 +205,9 @@ def main(h: Harness) -> int:
         if "--max-result-chars" in h.extract_flags:
             asked += ["--max-result-chars", str(args.max_result_chars)]
         return subprocess.run([sys.executable, h.extractor, args.path, *asked]).returncode
-    here = installed(h)
     try:
-        rows = find(h, args) if here else []
+        rows = find(h, args) if installed(h) else []
     except Failed as e:
         raise SystemExit(f"stop: {e}")
-    if args.cmd == "probe":
-        print(json.dumps({"harness": h.name, "label": h.label,
-                          "sessions": sum(1 for r in rows if not r.get("unreadable")), "installed": here}))
-    else:
-        print(json.dumps(rows, indent=2, ensure_ascii=False))
+    print(json.dumps(rows, indent=2, ensure_ascii=False))
     return 0

@@ -28,14 +28,6 @@ t_cca_find_in_window() {
   eq row "claude s1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
 }
 
-t_cca_probe_counts_window() {
-  # Given: s1 changed today, s2 changed 30 days ago
-  cca_session s1 "fix the export"; cca_session s2 "tidy the docs" 30
-  # When
-  run python3 "$A" probe --root /p/app --since "$(days_ago 7)"
-  # Then
-  eq stdout '{"harness": "claude", "label": "Claude Code", "sessions": 1, "installed": true}' "$out"
-}
 
 t_cca_until_drops_newer() {
   # Given: s1 changed today, s2 changed 10 days ago
@@ -67,7 +59,6 @@ t_cca_extract_summary() {
 
 cases=(
   "adapter finds a session in the window|t_cca_find_in_window"
-  "probe counts the sessions in the window|t_cca_probe_counts_window"
   "adapter rows carry the score, current flag, and prompt count|t_cca_rows_carry_query_fields"
   "adapter extract renders the summary after the last compaction|t_cca_extract_summary"
   "adapter drops sessions after --until|t_cca_until_drops_newer"

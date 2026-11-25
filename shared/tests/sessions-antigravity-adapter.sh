@@ -100,14 +100,6 @@ t_aga_keeps_root_and_window() {
 a2" "$(rows id | sort)"
 }
 
-t_aga_probe_not_installed() {
-  # Given: a fresh HOME with no .gemini and no .t3 folder
-  T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"; mkdir -p "$HOME"
-  # When
-  run python3 "$A" probe --root /p/app
-  # Then
-  eq stdout '{"harness": "antigravity", "label": "Antigravity", "sessions": 0, "installed": false}' "$out"
-}
 
 cases=(
   "adapter finds a terminal chat in the window|t_aga_find_in_window"
@@ -117,5 +109,4 @@ cases=(
   "adapter reads a T3 chat|t_aga_reads_t3_chat"
   "adapter extract renders the prompts and replies|t_aga_extract"
   "adapter keeps chats below the root and in the window|t_aga_keeps_root_and_window"
-  "probe says Antigravity is not installed|t_aga_probe_not_installed"
 )

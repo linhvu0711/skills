@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code's adapter: probe, find, and extract, per ../adapter_lib.py.
+"""Claude Code's adapter: find and extract, per ../adapter_lib.py.
 
 Reads ~/.claude/projects/ through find_sessions.py and extract_session.py,
 next to this file.

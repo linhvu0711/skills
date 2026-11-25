@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Antigravity's adapter: probe, find, and extract, per ../adapter_lib.py.
+"""Antigravity's adapter: find and extract, per ../adapter_lib.py.
 
 Reads the chats in store.folders() through find_session.py and
 extract_session.py, next to this file.
