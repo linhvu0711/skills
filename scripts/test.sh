@@ -652,6 +652,18 @@ t_link_status_matches_install_skips() {
   eq "status whys" "$want" "$whys"
 }
 
+t_link_status_names_held_link_under_held_shared() {
+  # Given: everything linked, then folders of the user's own in place of the
+  # shared skill link and of Claude Code's
+  linked demo; link_sh
+  rm "$T/agents/demo" "$T/claude/demo"; mkdir "$T/agents/demo" "$T/claude/demo"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq claude "$(printf 'stale\tskill\tclaude\tdemo\t%s\t%s\t%s' "$T/claude/demo" "$T/claude" "$T/claude/demo is not this repo's demo")" \
+    "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
+}
+
 t_link_status_writes_nothing() {
   # Given: everything linked, then Claude Code's skill link gone
   linked demo; agent demo helper; with_gate; link_sh
@@ -1498,6 +1510,7 @@ cases=(
   "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
   "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
   "link status gives the skip words of the install|t_link_status_matches_install_skips"
+  "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"

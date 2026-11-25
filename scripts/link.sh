@@ -224,8 +224,9 @@ each_target() {
       if [ "$h" = claude ]; then d="$claude"; else d="$antigravity"; fi
       path="$d/$n"; folder="$d"; want="$agents/$n"
       link_state "$d" "$n" "$want"
-      # A link to a shared link that is not this repo's reaches no skill.
-      if [ "$shared" = stale ]; then st=stale; why=""; fi
+      # A link to a shared link that is not this repo's reaches no skill. It
+      # keeps its own why, so a folder of the user's own here is named too.
+      if [ "$shared" = stale ]; then st=stale; fi
       "$1"
     done
   done
