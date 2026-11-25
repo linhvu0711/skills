@@ -99,7 +99,7 @@ t_gate_t3_second_walker_start_goes_through() {
   # Then
   eq exit 0 "$code"
   eq stdout "" "$out"
-  [ -d "$NOTES/subagent-gate/s1/walker" ] || { echo "no note at $NOTES/subagent-gate/s1/walker" >&2; exit 1; }
+  [ -d "$NOTES/subagent-gate-$(id -u)/s1/walker" ] || { echo "no note at $NOTES/subagent-gate-$(id -u)/s1/walker" >&2; exit 1; }
 }
 
 t_gate_t3_refuses_scope_reviewer_after_walker() {
