@@ -43,12 +43,14 @@
 # on every run.
 #
 # --status writes nothing and prints one line per target, its fields joined
-# by a tab: `<state> <kind> <harness> <name> <path>`, the state `ok`,
+# by a tab: `<state> <kind> <harness> <name> <path> <folder>`, the state `ok`,
 # `missing`, or `stale`, the kind `skill`, `agent`, `manifest`, `gate`, or
-# `plugins`, and the harness `shared` for the first skills folder. A target
-# something else holds, and each file of an agent that agents.sh cannot
-# render, adds, as a sixth field, the words its `skip:` line gives. Any other
-# argument: the usage line on stderr, exit 2.
+# `plugins`, the harness `shared` for the first skills folder, and the folder
+# the setting names for it: a skills or agents folder, the plugins folder, a
+# hook file's folder, or a T3 Antigravity folder. A target something else
+# holds, and each file of an agent that agents.sh cannot render, adds, as a
+# seventh field, the words its `skip:` line gives. Any other argument: the
+# usage line on stderr, exit 2.
 set -euo pipefail
 
 case "$#:${1:-}" in
@@ -144,6 +146,15 @@ sweep() {
   done
 }
 
+# agent_folder <harness>: the folder the harness's agent files sit in.
+agent_folder() {
+  case "$1" in
+    claude) printf '%s' "$claude_agents" ;;
+    codex) printf '%s' "$codex_agents" ;;
+    antigravity) printf '%s' "$plugins" ;;
+  esac
+}
+
 # agent_path <harness> <name>: the harness's file for the agent.
 agent_path() {
   case "$1" in
@@ -197,20 +208,21 @@ hook_state() {
 }
 
 # each_target <visit>: work out the state of every target, in order, and call
-# <visit> on each with st, kind, h, name, path, and why set, and want: the
-# link's target for a skill or plugins target, else a scratch file that holds
-# what the target should hold.
+# <visit> on each with st, kind, h, name, path, folder, and why set, and want:
+# the link's target for a skill or plugins target, else a scratch file that
+# holds what the target should hold. folder is the one the setting names for
+# the target, so a reader finds it without cutting the path.
 each_target() {
   local f n src err shared d any=""
   kind=skill
   for f in "$repo"/skills/*/SKILL.md; do
     [ -f "$f" ] || continue
     n="$(basename "$(dirname "$f")")"; name="$n"
-    h=shared; path="$agents/$n"; want="$repo/skills/$n"
+    h=shared; path="$agents/$n"; folder="$agents"; want="$repo/skills/$n"
     link_state "$agents" "$n" "$want"; shared="$st"; "$1"
     for h in claude antigravity; do
       if [ "$h" = claude ]; then d="$claude"; else d="$antigravity"; fi
-      path="$d/$n"; want="$agents/$n"
+      path="$d/$n"; folder="$d"; want="$agents/$n"
       link_state "$d" "$n" "$want"
       # A link to a shared link that is not this repo's reaches no skill.
       if [ "$shared" = stale ]; then st=stale; why=""; fi
@@ -224,14 +236,14 @@ each_target() {
     src="${f#"$repo"/}"; name="$(basename "$f" .md)"
     if ! err="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
       for h in claude codex antigravity; do
-        path="$(agent_path "$h" "$name")"; want=""; why="$src: $err"
+        path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want=""; why="$src: $err"
         if [ -e "$path" ] || [ -L "$path" ]; then st=stale; else st=missing; fi
         "$1"
       done
       continue
     fi
     for h in claude codex antigravity; do
-      path="$(agent_path "$h" "$name")"; want="$scratch/$h-$name"
+      path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want="$scratch/$h-$name"
       bash "$repo/scripts/agents.sh" render "$h" "$(mark "$src")" < "$f" > "$want" 2>/dev/null || continue
       put_state "$path" "$want"; "$1"
     done
@@ -239,7 +251,8 @@ each_target() {
   done
 
   if [ -n "$any" ]; then
-    kind=manifest; h=antigravity; name=plugin.json; path="$plugins/skills/plugin.json"; want="$scratch/plugin.json"
+    kind=manifest; h=antigravity; name=plugin.json; path="$plugins/skills/plugin.json"; folder="$plugins"
+    want="$scratch/plugin.json"
     printf '%s\n' '{
   "name": "skills",
   "description": "The skill agents of the skills repo, written by its scripts/link.sh."
@@ -249,12 +262,12 @@ each_target() {
 
   if [ -f "$gate" ]; then
     kind=gate; name=subagent-gate
-    h=claude; path="$claude_settings"; want="$scratch/claude-hooks.json"; hook_state "$path" claude; "$1"
-    h=codex; path="$codex_hooks"; want="$scratch/codex-hooks.json"; hook_state "$path" codex; "$1"
+    h=claude; path="$claude_settings"; folder="$(dirname "$path")"; want="$scratch/claude-hooks.json"; hook_state "$path" claude; "$1"
+    h=codex; path="$codex_hooks"; folder="$(dirname "$path")"; want="$scratch/codex-hooks.json"; hook_state "$path" codex; "$1"
     if [ -n "$any" ]; then
       # The "skills" plugin's hooks.json holds the gate under its own key, so
       # every other key stays.
-      h=antigravity; path="$plugins/skills/hooks.json"; want="$scratch/antigravity-hooks.json"
+      h=antigravity; path="$plugins/skills/hooks.json"; folder="$plugins"; want="$scratch/antigravity-hooks.json"
       json_state "$path" '.["subagent-gate"] = {PreToolUse: [$e]}' "$(gate_entry antigravity)"; "$1"
     fi
   fi
@@ -264,7 +277,7 @@ each_target() {
   kind=plugins; h=antigravity; name=plugins; want="$plugins"
   for d in "$t3"/*/; do
     [ -d "$d" ] || continue
-    d="${d%/}"; path="$d/config/plugins"
+    d="${d%/}"; path="$d/config/plugins"; folder="$d"
     link_state "$d/config" plugins "$plugins"; "$1"
   done
 }
@@ -272,7 +285,7 @@ each_target() {
 # record: the --status line of the target the pass is on.
 record() {
   local IFS=$'\t'
-  set -- "$st" "$kind" "$h" "$name" "$path"
+  set -- "$st" "$kind" "$h" "$name" "$path" "$folder"
   [ -z "$why" ] || set -- "$@" "$why"
   printf '%s\n' "$*"
 }
