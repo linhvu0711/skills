@@ -24,6 +24,19 @@ t_gh_list_skips_touched_pr() {
   has touched '{"kind": "pr", "number": 43, "by": "1-main.md"}' "$out"
 }
 
+t_gh_list_other_repo_same_number() {
+  # Given: PR 43 of acme/app; a transcript names acme/lib's PR 43, not this one
+  gh_dir
+  printf '%s' '[{"number":43,"url":"https://github.com/acme/app/pull/43","title":"A","headRefName":"feat/a","closingIssuesReferences":[]}]' > "$FAKE_GH/pr-list..json"
+  printf '[]' > "$FAKE_GH/issue-list.json"
+  printf 'opened https://github.com/acme/lib/pull/43 for review\n' > "$D/1-main.md"
+  # When
+  run python3 "$G" list acme/app --transcripts "$D" --since 2026-10-01
+  # Then
+  eq exit 0 "$code"
+  eq read_prs "43" "$(nums read_prs)"
+}
+
 t_gh_list_run_issues() {
   # Given: issue 42 is closed by PR 45; no transcript names either
   gh_dir
@@ -219,6 +232,7 @@ t_gh_list_pr_date() {
 
 cases=(
   "list skips a PR a transcript names|t_gh_list_skips_touched_pr"
+  "list reads a PR whose number a transcript names only in another repo|t_gh_list_other_repo_same_number"
   "list takes the PRs that close the run's issues|t_gh_list_run_issues"
   "gh failure stops with a stop line|t_gh_list_stops_on_gh_failure"
   "pr bundle holds reviews, threads, and the failed log|t_gh_pr_bundle"

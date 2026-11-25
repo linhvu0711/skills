@@ -83,8 +83,14 @@ def named_by(texts, patterns):
     return None
 
 
-def pr_patterns(pr):
-    pats = [re.compile(rf"/pull/{pr['number']}(?!\d)")]
+def url_pattern(repo, kind, n):
+    # A run can span repos, so another repo's PR or issue with the same number
+    # is not this one. GitHub reads the repo path in any case.
+    return re.compile(rf"github\.com/{re.escape(repo)}/{kind}/{n}(?!\d)", re.IGNORECASE)
+
+
+def pr_patterns(repo, pr):
+    pats = [url_pattern(repo, "pull", pr["number"])]
     if pr.get("headRefName"):
         pats.append(re.compile(rf"(?<![\w/.-]){re.escape(pr['headRefName'])}(?![\w/.-])"))
     return pats
@@ -124,7 +130,7 @@ def cmd_list(args):
         closed = {i["number"] for pr in prs for i in pr.get("closingIssuesReferences") or []}
     read_prs, read_issues, touched = [], [], []
     for pr in prs:
-        by = named_by(texts, pr_patterns(pr))
+        by = named_by(texts, pr_patterns(repo, pr))
         if by:
             touched.append({"kind": "pr", "number": pr["number"], "by": by})
         else:
@@ -133,7 +139,7 @@ def cmd_list(args):
     for i in issues:
         if i["number"] in closed:
             continue
-        by = named_by(texts, [re.compile(rf"/issues/{i['number']}(?!\d)")])
+        by = named_by(texts, [url_pattern(repo, "issues", i["number"])])
         if by:
             touched.append({"kind": "issue", "number": i["number"], "by": by})
         else:
