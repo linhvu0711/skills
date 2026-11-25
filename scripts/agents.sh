@@ -6,6 +6,7 @@
 #   agents.sh check < skills/<name>/agents/<agent>.md
 #   agents.sh render <harness> <marker> < skills/<name>/agents/<agent>.md
 #   agents.sh models < skills/<name>/agents/<agent>.md
+#   agents.sh start <harness> < skills/<name>/agents/<agent>.md
 #
 # A shared agent, shared/agents/<agent>.md, is read the same way.
 #
@@ -48,6 +49,10 @@
 # models: one line per home and backup, <map> <harness> <place> <model>, in
 # file order, exit 0. The map is home for the first home, home<n> for the
 # n-th, and backup, whose place is its harness. sync-harnesses reads it.
+# start: how the main agent of <harness> starts the agent in T3, exit 0:
+# `name` when its first home is <harness> on the backup's model and effort,
+# else `t3 <place> <model> <effort>`, its first home. The subagent gate reads
+# it.
 # The Antigravity form maps the Claude Code tools to
 # Antigravity's, as agy's own migration skill does: Read, Grep, Glob to
 # read_file; Bash to run_command and manage_task; Edit to edit_file; Write
@@ -65,7 +70,10 @@ case "$mode" in
   render) [ $# -eq 3 ] || { echo "usage: agents.sh render <harness> <marker>" >&2; exit 2; }
           harness="$2"; marker="$3"
           case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
-  *) echo "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models" >&2; exit 2 ;;
+  start) [ $# -eq 2 ] || { echo "usage: agents.sh start <harness>" >&2; exit 2; }
+         harness="$2"; marker=""
+         case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
+  *) echo "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness>" >&2; exit 2 ;;
 esac
 
 LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
@@ -151,6 +159,12 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
         if (k[1] == "home") { nh = split(entry[k[1], k[2]], items, ",")
           for (j = 1; j <= nh; j++) { split(items[j], w, " "); print (j == 1 ? "home" : "home" j), k[2], w[1], w[2] } }
         else { split(entry[k[1], k[2]], w, " "); print k[1], k[2], k[2], w[1] } }
+      exit 0 }
+    if (mode == "start") {
+      split(entry["home", harness], items, ","); split(items[1], w, " ")
+      split(entry["backup", harness], b, " ")
+      if (w[1] == harness && w[2] == b[1] && w[3] == b[2]) print "name"
+      else print "t3", w[1], w[2], w[3]
       exit 0 }
     if (fm_block["name"]) problem("name on more than one line")
     if (fm_block["description"]) problem("description on more than one line")

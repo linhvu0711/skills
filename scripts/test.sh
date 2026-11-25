@@ -363,6 +363,28 @@ t_agents_lists_every_tool_without_tools_line() {
   eq stdout "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent" "$out"
 }
 
+t_agents_start_names_first_home() {
+  # Given: an agent whose Claude home is devin swe-2-high high and whose
+  # Claude backup is claude-haiku-5-5 high
+  repo; agent demo helper
+  # When
+  run bash scripts/agents.sh start claude < skills/demo/agents/helper.md
+  # Then
+  eq exit 0 "$code"
+  eq stdout "t3 devin swe-2-high high" "$out"
+}
+
+t_agents_start_by_name_when_home_is_backup() {
+  # Given: the same agent with its Claude home on the backup's model and effort
+  repo; agent demo helper
+  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: claude claude-haiku-5-5 high/' skills/demo/agents/helper.md
+  # When
+  run bash scripts/agents.sh start claude < skills/demo/agents/helper.md
+  # Then
+  eq exit 0 "$code"
+  eq stdout "name" "$out"
+}
+
 t_agents_lists_models_in_order() {
   # Given: an agent with two Claude homes, and a comment and a blank line in
   # its home map
@@ -1499,6 +1521,8 @@ cases=(
   "agents.sh lists an agent's tools|t_agents_lists_tools"
   "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
   "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
+  "agents.sh start names the first home off the backup|t_agents_start_names_first_home"
+  "agents.sh start says name when the home is the backup|t_agents_start_by_name_when_home_is_backup"
   "link writes the antigravity start tool|t_link_writes_antigravity_start_tool"
   "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
