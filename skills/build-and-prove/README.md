@@ -60,11 +60,13 @@ Walks now read the console and the requests. Each video saves the page's errors 
 
 A fix round after the PR opens now passes `--pr-open` to `box.sh gates`. The script reads the PR's workflows through `ci-covers.sh` and writes `not run: CI runs it` for each Gate CI runs. Before, the agent ran `ci-covers.sh` itself and typed each of those Gates as a `--not-run` option. When CI runs every Gate, the fix round still starts no Sandbox. A Gate sent to your machine with `--on-local` still runs there, since `ci-covers.sh` does not follow `needs:` and cannot tell whether CI skips that job on this PR. Every proofbox call in `box.sh` now goes through one helper, with one test for a gone Sandbox: exit code 125 and the line `Sandbox <id> is gone`.
 
+A run with walks now checks, before any code is written, that proofbox's actions take `--mark`. An older proofbox stops the run with `proofbox is too old: run proofbox update`, and the command goes on your clipboard.
+
 `box.sh gates --pr-open` is now `--ci`, since a first build passes it too, before any PR is open. A plan with walks now passes `--ci` on its first build, so its Sandbox runs only the Gates the PR's CI does not run (ADR 0038). On dressup, whose CI runs all four Gates on every PR, the Sandbox runs none. A Build that CI runs leaves no build output in the Sandbox, so a plan's `Run` line builds what the app needs, as `pnpm build && pnpm preview` does.
 
 ## Needs
 
-- For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
+- For a plan with UI walks: [proofbox](https://github.com/linhvu0711/proofbox), installed and logged in to its Provider, and new enough that its actions take `--mark`, since the walker sets each step's caption with it. Run `proofbox update` for an older one; step 2 stops on it. Its own config, `~/.config/proofbox/config`, picks the Provider per OS. No Windows.
 - `jq` on the local machine, for a plan with UI walks: `box.sh auth` reads proofbox's login list as JSON with it.
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.

@@ -148,7 +148,7 @@ done.
 2. **proofbox.** `UI: none`: mark it `2. proofbox. skip: no UI` and
    go to step 3. Else `command -v proofbox`. Missing: say `proofbox is not
    installed: https://github.com/linhvu0711/proofbox` and stop. Then
-   the login, before any work:
+   its version and the login, before any work:
 
    ```bash
    bash scripts/box.sh auth <os>
@@ -157,6 +157,8 @@ done.
    - `stop: log in first: <command>`: show the command, copy it with
      `../../shared/copy.sh` (any other exit than 0: say
      `Clipboard copy skipped.`), and stop. Coding has not started.
+   - `stop: proofbox is too old: run proofbox update`: show it, copy
+     `proofbox update` the same way, and stop. Coding has not started.
    - Any other `stop:`: show it, stop.
 
 3. **Worktree.** The branch follows the PR shape § Branch

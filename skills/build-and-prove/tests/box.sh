@@ -56,6 +56,10 @@ EOF
 
 box() { run bash "$here/../scripts/box.sh" "$@"; }
 
+# new_proofbox: the fake proofbox's `click --help` lists --mark, as a proofbox
+# new enough for the walker's one-call steps does.
+new_proofbox() { printf '  --mark text\n' > "$FAKE_PB/click.out"; }
+
 # state <id> [<remade>] [<size>] [<secrets>] [<os>]: an up Sandbox, without
 # running up. The OS is linux unless named.
 state() {
@@ -329,6 +333,7 @@ t_box_state_not_run() {
 
 t_box_auth_not_logged_in() {
   fake_proofbox
+  new_proofbox
   echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
@@ -337,6 +342,7 @@ t_box_auth_not_logged_in() {
 
 t_box_auth_expired() {
   fake_proofbox
+  new_proofbox
   echo '[{"provider":"namespace","login":"expired","from":"saved","expires":"2026-10-01T00:00:00Z"}]' > "$FAKE_PB/auth.out"
   box auth macos
   eq exit 1 "$code"
@@ -345,6 +351,7 @@ t_box_auth_expired() {
 
 t_box_auth_rejected() {
   fake_proofbox
+  new_proofbox
   echo '[{"provider":"namespace","login":"rejected","from":"env","env":"PROOFBOX_NAMESPACE_TOKEN"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 1 "$code"
@@ -353,16 +360,32 @@ t_box_auth_rejected() {
 
 t_box_auth_ok() {
   fake_proofbox
+  new_proofbox
   echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
   box auth linux
   eq exit 0 "$code"
   eq stdout "PROVIDER=namespace" "$out"
-  eq log "auth status --json" "$(cat "$FAKE_PB/log")"
+  eq log "click --help
+auth status --json" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_auth_too_old() {
+  # Given: a logged-in Provider, and a proofbox whose click takes no --mark
+  fake_proofbox
+  printf '  --glide text\n  --settle text\n' > "$FAKE_PB/click.out"
+  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
+  # When
+  box auth linux
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: proofbox is too old: run proofbox update" "$err"
+  eq log "click --help" "$(cat "$FAKE_PB/log")"
 }
 
 t_box_auth_no_jq() {
   # Given: the logged-in case, on a PATH with every tool auth uses but jq
   fake_proofbox
+  new_proofbox
   echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
   mkdir -p "$T/nojq"
   for t in bash dirname sed head mktemp tail cat rm grep; do ln -s "$(command -v "$t")" "$T/nojq/$t"; done
@@ -376,6 +399,7 @@ t_box_auth_no_jq() {
 
 t_box_auth_config() {
   fake_proofbox
+  new_proofbox
   mkdir -p "$HOME/.config/proofbox"
   echo '{ "linux": "docker", "macos": "namespace" }' > "$HOME/.config/proofbox/config"
   echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
@@ -1184,6 +1208,7 @@ cases=(
   "auth passes a logged-in Provider|t_box_auth_ok"
   "auth names jq when jq is missing|t_box_auth_no_jq"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
+  "auth stops when proofbox does not know --mark|t_box_auth_too_old"
   "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
   "up notes the branch|t_box_up_notes_branch"
   "start runs the Run line in its own group on linux and waits for the URL|t_box_start_linux"
