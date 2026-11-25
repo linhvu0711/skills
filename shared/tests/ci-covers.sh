@@ -272,6 +272,26 @@ t_cc_needs_next_line() {
   done
 }
 
+t_cc_job_quoted_keys() {
+  local k
+  for k in '"needs": a' "'needs': a"; do
+    # Given
+    T=""; needs_yml '    if: false' '' "    $k"
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($k)" "here · pnpm test" "$out"
+  done
+  for k in '"if": false' "'if': false"; do
+    # Given
+    T=""; needs_yml "    $k" '' '    needs: a'
+    # When
+    covers 'pnpm test'
+    # Then
+    eq "stdout ($k)" "here · pnpm test" "$out"
+  done
+}
+
 t_cc_needs_unknown_job() {
   # Given
   T=""; needs_yml '' '    needs: a' '    needs: c'
@@ -312,6 +332,7 @@ cases=(
   "each form of needs is read|t_cc_needs_forms"
   "needs with no if in the chain leaves the Gate to CI|t_cc_needs_no_if"
   "a needs name on the line under the key, bare or after a bare dash, is read|t_cc_needs_next_line"
+  "a quoted needs or if key on a job counts|t_cc_job_quoted_keys"
   "needs on a job not in the file sends the Gate here|t_cc_needs_unknown_job"
   "no command after -- is a usage stop|t_cc_usage"
 )
