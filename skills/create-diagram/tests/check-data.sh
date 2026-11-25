@@ -82,6 +82,46 @@ t_cd_unknown_note_participant() {
   eq stdout 'notes[0]: at "queue" is not a participant' "$out"
 }
 
+t_cd_duplicate_participant() {
+  # Given: the good sequence with a fourth participant "api"
+  cd_page sequence '.participants += [.participants[1]]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'participants[3]: id "api" is used twice' "$out"
+}
+
+t_cd_duplicate_node() {
+  # Given: the good flowchart with a fourth node "web"
+  cd_page graph '.nodes += [.nodes[0]]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'nodes[3]: id "web" is used twice' "$out"
+}
+
+t_cd_duplicate_node_and_group() {
+  # Given: a node with the id of group "svc"
+  cd_page graph '.nodes += [{id: "svc", label: "Services", x: 3, y: 0}]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'groups[0]: id "svc" is used twice' "$out"
+}
+
+t_cd_node_without_id() {
+  # Given: a fourth node with no id key
+  cd_page graph '.nodes += [{label: "X", x: 3, y: 0}]'
+  # When
+  cd_check
+  # Then
+  eq exit 1 "$code"
+  eq stdout 'nodes[3]: no id' "$out"
+}
+
 t_cd_not_json() {
   # Given: DATA written as a JavaScript object with a bare key
   cd_page graph .
@@ -153,6 +193,10 @@ cases=(
   "names an unknown step participant|t_cd_unknown_step_participant"
   "names an unknown frame participant|t_cd_unknown_frame_participant"
   "names an unknown note participant|t_cd_unknown_note_participant"
+  "names a participant id used twice|t_cd_duplicate_participant"
+  "names a node id used twice|t_cd_duplicate_node"
+  "names a group id a node holds|t_cd_duplicate_node_and_group"
+  "names a node with no id|t_cd_node_without_id"
   "refuses DATA that is not JSON|t_cd_not_json"
   "names a missing node label|t_cd_missing_node_label"
   "names a missing step label|t_cd_missing_step_label"
