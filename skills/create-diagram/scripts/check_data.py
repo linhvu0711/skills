@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a diagram page's DATA before the page is shown.
 
-    check-data.py <page .html>
+    check_data.py <page .html>
 
 Prints `ok: <type>, <counts>` and exits 0 when DATA is sound. Prints each
 problem and exits 1 when it is not: a type the catalog does not list, an
@@ -9,18 +9,20 @@ id that points at nothing, an id used twice or left out, a step number
 that is not a step, a label left out, or more than the type's node budget,
 read from references/catalog.md.
 """
+import argparse
 import json
+import os
 import re
 import sys
-from pathlib import Path
 
 MARK = re.compile(r"const DATA\s*=\s*")
-CATALOG = Path(__file__).resolve().parent.parent / "references" / "catalog.md"
+CATALOG = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "references", "catalog.md")
 
 
 def budgets():
     """Per catalog type, its limits as (what, max) pairs, from the Node budget table."""
-    text = CATALOG.read_text(encoding="utf-8")
+    with open(CATALOG, encoding="utf-8") as f:
+        text = f.read()
     table = text.split("## Node budget", 1)[1].split("\n\n", 2)[1]
     found = {}
     for row in table.splitlines()[2:]:
@@ -121,10 +123,11 @@ def sequence_problems(data):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2].strip())
-    path = sys.argv[1]
-    data, error = read_data(Path(path).read_text(encoding="utf-8"), path)
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("page", help="the page .html")
+    path = ap.parse_args().page
+    with open(path, encoding="utf-8") as f:
+        data, error = read_data(f.read(), path)
     if error:
         print(error)
         sys.exit(1)

@@ -300,10 +300,10 @@ Reach for the code only when the chat leaves a size fact or a Context fact unkno
 
 `owner/repo` in this file is the repo the gate's Where line found. Every `gh` command here names it with `--repo`, so a run in one checkout files into another.
 
-Load once per repo, with `issue-conventions.py`, the script next to this file:
+Load once per repo, with `issue_conventions.py`, the script next to this file:
 
 ```bash
-CONV="issue-conventions.py"
+CONV="issue_conventions.py"
 python3 "$CONV" get owner/repo
 ```
 
@@ -317,7 +317,7 @@ gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\
 - `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no pattern gives `bracket`.
 - `words`: when the repo's titles use a different word for one of our types (`bug` for `fix`, `feature` for `feat`), record it.
 - `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS to its smallest. A repo with none: `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL label, when the repo has one, is the PR-only label the handoff skills own; it stays out of the map.
-- Priority: the shared store. `python3 issue-conventions.py priority-get owner/repo`. On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or `priority: …` family, or words: p0 = critical else high, p1 = high, p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created on demand) and save with `priority-set`.
+- Priority: the shared store. `python3 issue_conventions.py priority-get owner/repo`. On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or `priority: …` family, or words: p0 = critical else high, p1 = high, p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created on demand) and save with `priority-set`.
 
 Save with `set` only when at least 5 titles were seen; otherwise use the defaults for this run and leave the store empty so the repo is learned later.
 

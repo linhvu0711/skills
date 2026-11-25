@@ -10,18 +10,15 @@ found: `stop: no Antigravity chat <session>` on stderr, exit 1.
 
 import argparse
 import datetime as dt
-import importlib.util
 import os
 import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
-# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-spec = importlib.util.spec_from_file_location("store", os.path.join(here, "store.py"))
-store = importlib.util.module_from_spec(spec)
-# Registered before it runs: dataclasses looks a module up in sys.modules, and
-# Python 3.11 and older fail on store.py's Chat without it.
-sys.modules["store"] = store
-spec.loader.exec_module(store)
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
+
+store = adapter_lib.load("store", os.path.join(here, "store.py"))
 
 LABEL = {"user": "## 🧑 User", "assistant": "## 🤖 Antigravity"}
 

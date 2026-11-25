@@ -15,6 +15,7 @@ Prints nothing and exits 0 when no issue has a claim. When a gh call
 fails, prints `claims: #<n>: <gh's error line>` to stderr, nothing to
 stdout, and exits 1.
 """
+import argparse
 import json
 import subprocess
 import sys
@@ -85,11 +86,15 @@ def claims(number, me, assignees, linked):
 
 
 def main():
-    if len(sys.argv) < 3 or "/" not in sys.argv[1]:
-        sys.exit(__doc__.split("\n\n")[1].strip())
-    owner, name = sys.argv[1].split("/", 1)
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("repo", help="owner/repo")
+    ap.add_argument("numbers", nargs="+", metavar="n", help="an issue number")
+    args = ap.parse_args()
+    if "/" not in args.repo:
+        ap.error("repo must be owner/repo")
+    owner, name = args.repo.split("/", 1)
     out = []
-    for number in sys.argv[2:]:
+    for number in args.numbers:
         try:
             out += claims(number, *read(owner, name, number))
         except RuntimeError as e:

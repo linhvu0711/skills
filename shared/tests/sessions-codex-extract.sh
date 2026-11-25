@@ -125,7 +125,26 @@ t_coe_skeleton() {
   has patched '- `a.py`' "$out"
 }
 
+
+t_coe_drops_injected_item() {
+  # Given: a rollout with no user events, whose first user item is AGENTS.md
+  T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"
+  {
+    printf '{"type":"session_meta","payload":{"id":"c1","cwd":"/p/app","timestamp":"2026-10-01T10:00:00Z","source":"cli"}}\n'
+    printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md instructions for /p/app\\n\\nbe brief"}]}}\n'
+    printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"add the flag"}]}}\n'
+    printf '{"type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ok"}]}}\n'
+  } > "$T/r.jsonl"
+  # When
+  run python3 "$X" "$T/r.jsonl" --summary
+  # Then
+  eq exit 0 "$code"
+  lacks injected "be brief" "$out"
+  has prompt "add the flag" "$out"
+}
+
 cases=(
+  "extractor drops a user item the harness injected|t_coe_drops_injected_item"
   "extractor reads a rollout by path|t_coe_rollout_by_path"
   "extractor reads a compressed rollout by path|t_coe_zst_by_path"
   "extractor takes event prompts over item prompts|t_coe_event_over_item"

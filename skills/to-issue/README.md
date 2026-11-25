@@ -28,7 +28,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Needs
 
 - `gh`, signed in.
-- `python3`, for the shared core's [issue-conventions.py](../../shared/issue-conventions.py), which remembers each repo's title style and size labels.
+- `python3`, for the shared core's [issue_conventions.py](../../shared/issue_conventions.py), which remembers each repo's title style and size labels.
 - Readers for the lookup round, per the reader job in `../../shared/facts.md` (Codex reads the files itself).
 - A clipboard tool, optional, for the URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - From the shared core: [issue-rules.md](../../shared/issue-rules.md) (gate, types, body template, labels) and [size.md](../../shared/size.md), the size ruler.

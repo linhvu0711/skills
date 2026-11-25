@@ -1,5 +1,5 @@
 # layout.sh: the cases for assets/layout.js, run by node on the page data
-# build-page.py builds from each fixture.
+# build_page.py builds from each fixture.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # built <fixture>...: each fixture built in T, its DATA at $T/<fixture>.json.
@@ -7,7 +7,7 @@ built() {
   T="$(mktemp -d)"
   for f in "$@"; do
     cp "$here/build-page/$f.md" "$T/plan-$f.md"
-    python3 "$here/../scripts/build-page.py" "$T/plan-$f.md" >/dev/null
+    python3 "$here/../scripts/build_page.py" "$T/plan-$f.md" >/dev/null
     sed -n 's/^const DATA = \(.*\);$/\1/p' "$T/plan-$f.html" > "$T/$f.json"
   done
 }

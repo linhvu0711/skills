@@ -1,8 +1,8 @@
-# ci-times.sh: the cases for improve-ci's scripts/ci-times.py. The repo's
+# ci-times.sh: the cases for improve-ci's scripts/ci_times.py. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-G="$here/../scripts/ci-times.py"
+G="$here/../scripts/ci_times.py"
 
 # run_row <id> <workflow> <attempt> <event> <sha> <created> <updated> [conclusion] [workflow id]: one run
 # of run-list. The workflow id is 11 for CI, 12 for Lint, and 10 for any other name, unless given.

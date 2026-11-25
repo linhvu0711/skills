@@ -50,11 +50,11 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
 ## Steps
 
-1. **Plan.** A plan this chat made (§ No issue): skip this step. Else read `../plan-up/SKILL.md` and follow its steps 1 to 9 whole: base copy, issue, gate, facts, forks, plan, done rule, check, page. Its stop points are yours: a base that cannot be fetched, a gate that fails, a `manual` ticket, a claimed ticket you do not build anyway, a stale step, and every big fork (one question per message, wait), the plan check's questions included. Step 9 changes: run `build-page.py` on the `.md` and fix its problem lines, as plan-up says, but serve, open, publish, print, and wait for nothing yet; step 2 does that.
+1. **Plan.** A plan this chat made (§ No issue): skip this step. Else read `../plan-up/SKILL.md` and follow its steps 1 to 9 whole: base copy, issue, gate, facts, forks, plan, done rule, check, page. Its stop points are yours: a base that cannot be fetched, a gate that fails, a `manual` ticket, a claimed ticket you do not build anyway, a stale step, and every big fork (one question per message, wait), the plan check's questions included. Step 9 changes: run `build_page.py` on the `.md` and fix its problem lines, as plan-up says, but serve, open, publish, print, and wait for nothing yet; step 2 does that.
 
    A worktree or branch an earlier ticket left goes only through `bash ../prune-worktrees/scripts/prune-worktrees.sh`, run from the session's folder. It removes a clean worktree whose PR merged at its last commit, and also one with no PR whose tip is in the default branch, as a worktree another ticket just made is. So run it only when no other ticket is building in this repo; when you cannot tell, leave the old worktree for step 8 or the end of the run. One it keeps stays, with its reason in the report. Never remove one by hand, with `git worktree remove` or `git branch -D`.
 
-   Done when the plan `.md` exists, `build-page.py` printed no problem line, and you hold its path.
+   Done when the plan `.md` exists, `build_page.py` printed no problem line, and you hold its path.
 
 2. **Ship mode.** Set the mode, then show the plan.
 
@@ -149,7 +149,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 `/ship` with no issue named, words after it or none. You judge whether the words name an issue or point at work in this chat. The first case that holds picks the start; the option and `devin` or `cursor` are taken off first, as in § Forms.
 
 1. **A build this chat started.** The words are a follow-up. A local build: follow `../build-and-prove/SKILL.md` § Follow-up in its worktree with the words as the change, and `--layer` and `--base` for a layer of a stack; its stop points are yours. Then go on from step 6: make-pr opens the PR, or updates the open one from `PROOF`. A cloud session: handoff § Follow-up. No words: say `A build from this chat is open; say what to change.` and stop.
-2. **A plan this chat made**, by `/plan-up` or by this skill's step 1, with no build yet. Hold its `.md`, the path its summary names, and say `Plan: <path>`. Words with it are an edit to the plan: change the `.md` and run `build-page.py` on it, with no page and no wait. Then step 2 sets the ship mode and removes the base copy, per plan-up step 1, unless the mode is `review`. When it is `review`:
+2. **A plan this chat made**, by `/plan-up` or by this skill's step 1, with no build yet. Hold its `.md`, the path its summary names, and say `Plan: <path>`. Words with it are an edit to the plan: change the `.md` and run `build_page.py` on it, with no page and no wait. Then step 2 sets the ship mode and removes the base copy, per plan-up step 1, unless the mode is `review`. When it is `review`:
    - The plan got `go` already, as `/plan-up` alone ends, and no words came with it: nothing waits. Remove the base copy and go on to step 3.
    - The plan got `go` already and words came with it, so the edit changed it: show the summary with the page URL and wait for `go` again, as step 2 does.
    - It has no go yet: run `../../shared/serve.sh` again for its page, print its summary with the URL and the `Say go` line, and wait as step 2 does. Its base copy stays until `go` or `stop`.

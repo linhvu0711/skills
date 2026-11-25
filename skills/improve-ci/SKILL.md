@@ -29,7 +29,7 @@ Read `../../shared/facts.md` first: you are the brain, explorers retrieve, short
 2. **Measure.**
 
    ```bash
-   python3 scripts/ci-times.py <REPO>
+   python3 scripts/ci_times.py <REPO>
    ```
 
    It reads the last 150 completed runs and prints JSON: per job the wait, setup, work, total, slowest, and each step, at p50 and p95; the PR result time; and every re-run with the jobs that failed first. `stop:` on stderr: show it and stop.

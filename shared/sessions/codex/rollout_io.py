@@ -12,18 +12,18 @@ a caller can list the file as not read instead of skipping it silently.
 from __future__ import annotations
 
 import contextlib
+import os
 import shutil
 import subprocess
-from pathlib import Path
 
 SUFFIXES = (".jsonl", ".jsonl.zst")
 NO_ZSTD = "needs Python 3.14+ or zstd"
 
 
-def data_folders() -> list[Path]:
+def data_folders() -> list[str]:
     """The folders Codex keeps rollouts in, read at call time so HOME counts."""
-    codex = Path.home() / ".codex"
-    return [codex / "sessions", codex / "archived_sessions"]
+    codex = os.path.join(os.path.expanduser("~"), ".codex")
+    return [os.path.join(codex, "sessions"), os.path.join(codex, "archived_sessions")]
 
 
 class NoZstd(Exception):

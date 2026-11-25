@@ -99,7 +99,24 @@ t_ccf_finds_skill_started_chat() {
   eq prompt "/ship 237" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessions"][0]["first_prompt"])')"
 }
 
+
+t_ccf_skips_injected_text() {
+  # Given: s1's first user row is a command's output, then a prompt
+  ccf_home
+  local f="$HOME/.claude/projects/-p-app/s1.jsonl"
+  mkdir -p "$(dirname "$f")"
+  printf '{"type":"user","message":{"role":"user","content":"<local-command-stdout>built ok</local-command-stdout>"},"cwd":"/p/app"}\n' > "$f"
+  printf '{"type":"user","message":{"role":"user","content":"fix the export"},"cwd":"/p/app"}\n' >> "$f"
+  printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"done"}]},"cwd":"/p/app"}\n' >> "$f"
+  # When
+  run python3 "$F" --project-dir /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq prompt "fix the export" "$(printf '%s' "$out" | jq -r '.sessions[0].first_prompt')"
+}
+
 cases=(
+  "finder skips text the harness injected|t_ccf_skips_injected_text"
   "finder ranks a chat a skill started by its agent's work|t_ccf_finds_skill_started_chat"
   "finder lists a project session|t_ccf_lists_project_session"
   "finder keeps apart two projects with the same folder name|t_ccf_name_clash"

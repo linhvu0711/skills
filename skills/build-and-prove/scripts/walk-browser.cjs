@@ -27,10 +27,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
+const { parseArgs } = require('node:util');
 
 const usage = 'usage: walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>] [--log <file>]';
-const opts = { size: '1440,795', storage: undefined, clock: undefined, log: process.env.WALK_BROWSER_LOG || undefined };
-const flags = { '--viewport-size': 'size', '--storage': 'storage', '--clock': 'clock', '--log': 'log' };
+const options = { 'viewport-size': { type: 'string' }, storage: { type: 'string' }, clock: { type: 'string' }, log: { type: 'string' } };
+// Loose, so --log still names the log when another flag is wrong and stop() can say so there.
+const { values, positionals } = parseArgs({ options, allowPositionals: true, strict: false });
+const given = (name) => (typeof values[name] === 'string' ? values[name] : undefined);
+const opts = { size: given('viewport-size') ?? '1440,795', storage: given('storage'), clock: given('clock'), log: given('log') ?? (process.env.WALK_BROWSER_LOG || undefined) };
 
 const oneLine = (text) => String(text).replace(/\s*\n\s*/g, ' ');
 const write = (line) => fs.appendFileSync(opts.log, `${oneLine(line)}\n`);
@@ -39,21 +43,8 @@ const stop = (why) => {
   process.exit(1);
 };
 
-let url;
-let bad = false;
-const args = process.argv.slice(2);
-for (let i = 0; i < args.length; i++) {
-  const [flag, inline] = args[i].split(/=(.*)/s, 2);
-  if (flag in flags) {
-    const value = inline !== undefined ? inline : args[++i];
-    if (value === undefined) bad = true;
-    else opts[flags[flag]] = value;
-  } else if (url === undefined && !args[i].startsWith('--')) {
-    url = args[i];
-  } else {
-    bad = true;
-  }
-}
+const url = positionals[0];
+const bad = positionals.length !== 1 || Object.entries(values).some(([name, value]) => !(name in options) || typeof value !== 'string');
 const size = /^(\d+),(\d+)$/.exec(opts.size);
 // stop() writes to the log, so with no log it can only use stderr.
 if (opts.log === undefined) {

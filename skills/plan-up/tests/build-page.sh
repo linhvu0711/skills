@@ -1,7 +1,7 @@
 # build-page.sh: Markdown in, the built page's DATA out.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-build() { run python3 "$here/../scripts/build-page.py" "$@"; }
+build() { run python3 "$here/../scripts/build_page.py" "$@"; }
 page_data() { sed -n 's/^const DATA = \(.*\);$/\1/p' "$1" | jq -S .; }
 
 # render [--fake-layout <js>] [--reads] <html>: the built page run in node on

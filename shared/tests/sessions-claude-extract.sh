@@ -110,7 +110,25 @@ t_cce_skeleton() {
   has edited '- `/p/app/a.py`' "$out"
 }
 
+
+t_cce_drops_injected_text() {
+  # Given: a log whose first user row is a command's output, then a prompt
+  T="$(cd "$(mktemp -d)" && pwd -P)"; export HOME="$T/home"
+  {
+    printf '{"type":"user","message":{"role":"user","content":"<local-command-stdout>built ok</local-command-stdout>"},"cwd":"/p/app","sessionId":"s1","timestamp":"2026-10-01T10:00:00Z"}\n'
+    printf '{"type":"user","message":{"role":"user","content":"fix the export"}}\n'
+    printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"done"}]}}\n'
+  } > "$T/s.jsonl"
+  # When
+  run python3 "$X" "$T/s.jsonl" --summary
+  # Then
+  eq exit 0 "$code"
+  lacks injected "built ok" "$out"
+  has prompt "fix the export" "$out"
+}
+
 cases=(
+  "extractor drops text the harness injected|t_cce_drops_injected_text"
   "extractor reads a helper log by path|t_cce_helper_log_by_path"
   "extractor marks a compaction summary|t_cce_compaction"
   "extractor turns a task notification into one line|t_cce_task_notification"

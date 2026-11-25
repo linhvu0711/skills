@@ -1,7 +1,7 @@
 # build-report.sh: a cards file in, the retro report page out.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-rb_build() { run python3 "$here/../scripts/build-report.py" "$@"; }
+rb_build() { run python3 "$here/../scripts/build_report.py" "$@"; }
 
 # rb_cards <jq filter>: the fixture cards file, changed by the filter, at $T/cards.json
 rb_cards() {

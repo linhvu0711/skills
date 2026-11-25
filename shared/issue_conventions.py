@@ -20,23 +20,23 @@ Three stores, one per kind of fact. An env var moves each one.
     An entry saved before bug_label existed reads back with "bug".
 
 Usage:
-  issue-conventions.py get <owner/repo>
+  issue_conventions.py get <owner/repo>
       The issue type entry, with "priority" merged in when the repo has
       priority labels, as JSON (exit 0), or "MISS" (exit 3).
-  issue-conventions.py set <owner/repo> --style bracket|colon
+  issue_conventions.py set <owner/repo> --style bracket|colon
       --xs L --s L --m L --l L [--word fix=bug ...] [--sampled N]
-  issue-conventions.py forget <owner/repo>
+  issue_conventions.py forget <owner/repo>
       Remove the issue type entry only.
-  issue-conventions.py priority-get <owner/repo>
+  issue_conventions.py priority-get <owner/repo>
       Only the priority labels as JSON (exit 0), or "MISS" (exit 3).
-  issue-conventions.py priority-set <owner/repo> --p0 L0 --p1 L1 --p2 L2 --p3 L3
-  issue-conventions.py seed-get <owner/repo>
+  issue_conventions.py priority-set <owner/repo> --p0 L0 --p1 L1 --p2 L2 --p3 L3
+  issue_conventions.py seed-get <owner/repo>
       The seed entry, with "priority" merged in, as JSON (exit 0), or "MISS"
       (exit 3). A hit needs the seed entry; priority may be absent.
-  issue-conventions.py seed-set <owner/repo> --prefix P --seed-label L [--bug-label B] \
+  issue_conventions.py seed-set <owner/repo> --prefix P --seed-label L [--bug-label B] \
       --p0 L0 --p1 L1 --p2 L2 --p3 L3 [--sampled N]
       Save the seed entry and the priority labels. Prints the merged entry.
-  issue-conventions.py seed-forget <owner/repo>
+  issue_conventions.py seed-forget <owner/repo>
       Remove the repo's seed entry and its priority labels. Always exits 0.
 
 A corrupt store is moved aside to <name>.bak-<timestamp> and treated as

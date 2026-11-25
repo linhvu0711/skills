@@ -1,7 +1,7 @@
 # check-data.sh: a diagram page in, the DATA check's verdict out.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-cd_check() { run python3 "$here/../scripts/check-data.py" "$T/diagram-t.html"; }
+cd_check() { run python3 "$here/../scripts/check_data.py" "$T/diagram-t.html"; }
 
 # cd_page <fixture> <jq filter>: the shell at $T/diagram-t.html, its DATA the
 # fixture check-data/<fixture>.json changed by the filter.

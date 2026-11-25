@@ -15,21 +15,13 @@ Prints {"harnesses": [{"harness", "label", "installed"}, plus "error" when its f
 """
 
 import argparse
-import importlib.util
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-
-def load(name, path):
-    # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-lib = load("adapter_lib", os.path.join(HERE, "adapter_lib.py"))
+# `python3 -I` leaves the script's folder off sys.path, so it goes on it here.
+sys.path.insert(0, HERE)
+import adapter_lib as lib  # noqa: E402
 
 
 def unread(args):
@@ -58,7 +50,7 @@ def main():
     folders = sorted(f for f in os.listdir(HERE) if os.path.isfile(os.path.join(HERE, f, "adapter.py")))
     harnesses, rows = [], []
     for folder in folders:
-        h = load(f"{folder}_adapter", os.path.join(HERE, folder, "adapter.py")).HARNESS
+        h = lib.load(f"{folder}_adapter", os.path.join(HERE, folder, "adapter.py")).HARNESS
         entry = {"harness": h.name, "label": h.label, "installed": lib.installed(h)}
         if entry["installed"]:
             try:

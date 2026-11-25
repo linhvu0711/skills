@@ -29,33 +29,23 @@ Usage:
 """
 import argparse
 import glob
-import importlib.util
 import json
 import os
 import re
 import sys
 
-# Loaded by path: `python3 -I` leaves the script's folder off sys.path.
-_spec = importlib.util.spec_from_file_location(
-    "rank", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rank.py"))
-rank = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rank)
-_spec = importlib.util.spec_from_file_location(
-    "adapter_lib", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "adapter_lib.py"))
-adapter_lib = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(adapter_lib)
-_spec = importlib.util.spec_from_file_location(
-    "chat_log", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat_log.py"))
-chat_log = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chat_log)
+here = os.path.dirname(os.path.abspath(__file__))
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
 
-WRAP_PREFIXES = (
-    "<local-command-caveat>",
+rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
+chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
+
+COMMAND_TAGS = (
     "<command-name>",
     "<command-message>",
     "<command-args>",
-    "<command-stdout>",
-    "<local-command-stdout>",
     "<task-notification>",  # harness re-invocation when background work finishes — not a human prompt
 )
 BODY_CAP = 200_000  # cap chars indexed per session for scoring (keeps big files fast)
@@ -109,7 +99,7 @@ def strip_wrappers(text):
         return ""
     stripped = text.strip()
     # Whole message is just command/caveat/reminder scaffolding -> not a human prompt.
-    if stripped.startswith(WRAP_PREFIXES):
+    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped):
         # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
         if not m:

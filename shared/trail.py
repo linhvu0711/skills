@@ -34,6 +34,7 @@ yet.` and exits 0, with no gh call. The first gh call that fails ends the gh
 calls: that commit and the later ones get no PR lines, and the last line is
 `GitHub: not reached: <gh's error line>. Commits from <sha7> on are git only.`
 """
+import argparse
 import importlib.util
 import json
 import os
@@ -181,15 +182,20 @@ def parse(target):
     start, _, end = lines.partition("-")
     start, end = int(start), int(end or start)
     if not path or start < 1 or end < start:
-        sys.exit(__doc__.split("\n\n")[1].strip())
+        raise ValueError(target)
     return path, start, end
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.split("\n\n")[1].strip())
-    target = sys.argv[1]
-    path, start, end = parse(target)
+    ap = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        epilog="Exits 0, or 2 with `No such code: <target>`, or 2 on a wrong command line.")
+    ap.add_argument("target", help="<file>[:<start>[-<end>]]")
+    target = ap.parse_args().target
+    try:
+        path, start, end = parse(target)
+    except ValueError:
+        ap.error(f"bad line range: {target}")
     disk, head = lines_in(path)
     known = disk if disk is not None else head
     if known is None or (end or 0) > known:

@@ -21,7 +21,8 @@ compaction summary in a harness that has one, and a harness with none renders
 the whole session. The finders keep their own flags and keys for the skills
 that call them direct; this hides those differences. find_all.py, next to
 this file, runs every adapter's find in one call through ``find`` and
-``installed``.
+``installed``. ``load`` loads a sibling module by its path, and ``injected`` says whether
+a user message is text a harness put there.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from __future__ import annotations
 import argparse
 import codecs
 import datetime as dt
+import importlib.util
 import json
 import os
 import subprocess
@@ -109,6 +111,43 @@ def age(mtime: float) -> str:
     if days < 14:
         return f"{int(days)}d ago"
     return f"{int(days / 7)}w ago"
+
+
+def load(name, path):
+    """The module at path, under name."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    # Registered before it runs: dataclasses looks a module up in sys.modules, and
+    # Python 3.11 and older fail on a dataclass in it without this.
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+# What a harness puts at the start of a user message the user did not type:
+# Claude Code's command output and shell wrappers, then Codex's instructions
+# and context blocks.
+INJECTED = (
+    "<local-command-caveat>",
+    "<local-command-stdout>",
+    "<command-stdout>",
+    "<bash-stdout>",
+    "<bash-input>",
+    "# AGENTS.md instructions",
+    "AGENTS.md instructions for",
+    "<INSTRUCTIONS>",
+    "<environment_context>",
+    "<user_instructions>",
+    "# Collaboration Mode",
+    "<user_shell_environment>",
+    "<recommended_plugins>",
+    "========= MEMORY_SUMMARY BEGINS =========",
+)
+
+
+def injected(text: str) -> bool:
+    """True when a user message is text a harness injected, not a prompt."""
+    return text.lstrip().startswith(INJECTED)
 
 
 def _day(value: str) -> dt.date:

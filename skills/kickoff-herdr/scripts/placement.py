@@ -14,9 +14,9 @@ split that owns that boundary; the sign comes from the direction (negatives are
 absoluted). One resize per fresh layout read — a resize shifts every pane to its
 right, so widths read before it are stale.
 """
+import argparse
 import json
 import subprocess
-import sys
 
 
 # A tab takes a new pane while it has fewer columns than this.
@@ -135,11 +135,16 @@ def even(pane_id):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4 and sys.argv[1] == "pick":
-        where = pick(sys.argv[3], tab_layouts(sys.argv[2], sys.argv[3]))
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("pick", help="print the tab and pane to split, or nothing for a new tab")
+    p.add_argument("workspace_id")
+    p.add_argument("my_tab_id")
+    sub.add_parser("even", help="even the columns of the pane's tab").add_argument("pane_id")
+    args = ap.parse_args()
+    if args.cmd == "pick":
+        where = pick(args.my_tab_id, tab_layouts(args.workspace_id, args.my_tab_id))
         if where:
             print(*where)
-    elif len(sys.argv) == 3 and sys.argv[1] == "even":
-        even(sys.argv[2])
     else:
-        sys.exit("usage: placement.py pick <workspace_id> <my_tab_id> | even <pane_id>")
+        even(args.pane_id)

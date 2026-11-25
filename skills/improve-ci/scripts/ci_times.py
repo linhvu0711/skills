@@ -3,7 +3,7 @@
 how long its setup, its work, each step, and the whole job take, how long
 a PR commit waits for its last result, and which runs needed a re-run.
 
-    ci-times.py <owner/repo> [--runs N] [--setup <step name>]...
+    ci_times.py <owner/repo> [--runs N] [--setup <step name>]...
 
 Reads the last N completed runs (default 150) with `gh`, then each run's
 jobs. Prints one JSON object:

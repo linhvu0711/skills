@@ -42,45 +42,29 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import importlib.util
 import json
 import os
 import re
 import sys
-from pathlib import Path
 
-# Loaded by path: `python3 -I` leaves this folder off sys.path.
-_spec = importlib.util.spec_from_file_location("rollout_io", Path(__file__).with_name("rollout_io.py"))
-rollout_io = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rollout_io)
-_spec = importlib.util.spec_from_file_location("rank", Path(__file__).parent.parent / "rank.py")
-rank = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(rank)
-_spec = importlib.util.spec_from_file_location("adapter_lib", Path(__file__).parent.parent / "adapter_lib.py")
-adapter_lib = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(adapter_lib)
-_spec = importlib.util.spec_from_file_location("chat_log", Path(__file__).parent.parent / "chat_log.py")
-chat_log = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chat_log)
+here = os.path.dirname(os.path.abspath(__file__))
+# `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
+sys.path.insert(0, os.path.dirname(here))
+import adapter_lib  # noqa: E402
+
+rollout_io = adapter_lib.load("rollout_io", os.path.join(here, "rollout_io.py"))
+rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
+chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 INDEX_PATHS = (
-    Path.home() / ".cache" / "find-co-session" / "codex-index.json",
-    Path("/tmp") / "find-co-session" / "codex-index.json",  # Codex sandbox fallback
+    os.path.join(os.path.expanduser("~"), ".cache", "find-co-session", "codex-index.json"),
+    os.path.join("/tmp", "find-co-session", "codex-index.json"),  # Codex sandbox fallback
 )
-INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
+INDEX_VERSION = 7  # 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
 
-# Injected context, not a human prompt.
-BLOB_MARKERS = (
-    "<INSTRUCTIONS>",
-    "<environment_context>",
-    "AGENTS.md instructions for",
-    "========= MEMORY_SUMMARY BEGINS =========",
-    "<user_instructions>",
-    "<recommended_plugins>",
-)
 BLOB_LEN = 20_000
 
 # A word the user typed says what they steered toward; the agent's replies
@@ -91,10 +75,10 @@ WEIGHTS = {"prompts": 2.0, "body": 1.0}
 # ---------------------------------------------------------------- parsing
 
 def is_blob(text: str) -> bool:
-    return len(text) > BLOB_LEN or any(m in text for m in BLOB_MARKERS)
+    return len(text) > BLOB_LEN or adapter_lib.injected(text)
 
 
-def read_meta(path: Path) -> dict | None:
+def read_meta(path: str) -> dict | None:
     """Line 1 only: id, cwd, timestamp. Cheap enough to run over every rollout."""
     try:
         with rollout_io.open_rollout(path) as h:
@@ -118,7 +102,7 @@ def read_meta(path: Path) -> dict | None:
             "source": source if isinstance(source, str) else None}
 
 
-def parse_content(path: Path) -> dict:
+def parse_content(path: str) -> dict:
     """Full parse: user prompts and assistant text."""
     first = last = None
     n_user = 0
@@ -171,7 +155,7 @@ def parse_content(path: Path) -> dict:
 def load_index() -> dict:
     for path in INDEX_PATHS:
         try:
-            with path.open("r", encoding="utf-8") as h:
+            with open(path, encoding="utf-8") as h:
                 idx = json.load(h)
             if idx.get("version") == INDEX_VERSION:
                 return idx
@@ -185,9 +169,9 @@ def save_index(idx: dict) -> None:
     last = None
     for path in INDEX_PATHS:
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".tmp")
-            with tmp.open("w", encoding="utf-8") as h:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = os.path.splitext(path)[0] + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as h:
                 json.dump(idx, h, ensure_ascii=False)
             os.replace(tmp, path)
             return
@@ -206,21 +190,21 @@ def rollout_paths(day: dt.date | None, days: int | None):
             for name in names:
                 if not rollout_io.is_rollout_name(name):
                     continue
-                path = Path(dp) / name
+                path = os.path.join(dp, name)
                 if first is None or first <= (start_day(path) or dt.date.min) <= last:
                     yield path
 
 
-def start_day(path: Path) -> dt.date | None:
+def start_day(path: str) -> dt.date | None:
     """The day a rollout started: its YYYY/MM/DD folder, or in the flat
     archive the rollout-YYYY-MM-DD stamp of its name."""
     try:
-        y, m, d = path.parts[-4:-1]
+        y, m, d = os.path.normpath(path).split(os.sep)[-4:-1]
         return dt.date(int(y), int(m), int(d))
     except (ValueError, TypeError):
         pass
     try:
-        return dt.date.fromisoformat(path.name[len("rollout-"):len("rollout-YYYY-MM-DD")])
+        return dt.date.fromisoformat(os.path.basename(path)[len("rollout-"):len("rollout-YYYY-MM-DD")])
     except ValueError:
         return None
 
@@ -243,7 +227,7 @@ def collect(paths, scope, idx: dict,
     for p in paths:
         key = str(p)
         try:
-            st = p.stat()
+            st = os.stat(p)
         except OSError:
             continue
         ent = files.get(key)
@@ -322,7 +306,7 @@ def show_session(id_prefix: str, idx: dict) -> int:
         return 1
     key, e = hits[0]
     if "prompts" not in e:
-        e.update(parse_content(Path(key)))
+        e.update(parse_content(key))
     print(f"{e['id']}  cwd={e.get('cwd')}  started={e.get('timestamp')}  prompts={e.get('n_prompts')}")
     print(f"path: {key}\n")
     for i, p in enumerate(e["prompts"], 1):
@@ -356,8 +340,8 @@ def main() -> int:
         return show_session(args.show, idx)
 
     folders = rollout_io.data_folders()
-    if not any(f.is_dir() for f in folders):
-        print(f"No Codex sessions under {' or '.join(str(f) for f in folders)}")
+    if not any(os.path.isdir(f) for f in folders):
+        print(f"No Codex sessions under {' or '.join(folders)}")
         return 1
     roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
     target = "all projects" if args.all_projects else ", ".join(roots)
@@ -379,7 +363,7 @@ def main() -> int:
         picked = []
         for p in paths:
             try:
-                st = p.stat()
+                st = os.stat(p)
             except OSError:
                 continue
             if keep(str(p), st):

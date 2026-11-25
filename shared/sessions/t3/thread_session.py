@@ -18,10 +18,10 @@ in the order the logs name them, older file first, or
 no session. Exit 0.
 """
 
+import argparse
 import json
 import os
 import re
-import sys
 
 PROVIDERS = {"claudeAgent": "claude", "codex": "codex"}
 PROVIDER = re.compile(r'"provider":"(claudeAgent|codex)"')
@@ -48,7 +48,9 @@ def sessions(thread):
 
 
 def main():
-    for thread in sys.argv[1:]:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("threads", nargs="*", metavar="thread", help="a T3 Code thread id")
+    for thread in ap.parse_args().threads:
         for row in sessions(thread):
             print(json.dumps(row))
 
