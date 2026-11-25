@@ -47,12 +47,12 @@ payload="$(cat)"
 us=$'\x1f'
 
 # read_hook, for Claude Code and Codex, and read_antigravity: caller, tool
-# name, target, and chat id, one unit separator apart. The caller is empty
-# for the main agent.
+# name, target, chat id, and chat log path, one unit separator apart. The
+# caller is empty for the main agent.
 read_hook() {
   jq -r --arg f "$target_field" --arg d "$default_target" \
     '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
-      .tool_name // "", .tool_input[$f] // $d, .session_id // ""] | join("\u001f")' <<<"$payload"
+      .tool_name // "", .tool_input[$f] // $d, .session_id // "", .transcript_path // ""] | join("\u001f")' <<<"$payload"
 }
 # Antigravity puts no agent name in the payload. A helper chat's own folder
 # keeps the message that started it, and that message names the agent; a chat
@@ -69,12 +69,12 @@ read_antigravity() {
       [ -z "$caller" ] || break
     done
   fi
-  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self", .conversationId // ""] | join("\u001f")' <<<"$payload"
+  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self", .conversationId // "", ""] | join("\u001f")' <<<"$payload"
 }
 
 reader=read_hook; [ "$harness" != antigravity ] || reader=read_antigravity
 fields="$("$reader" 2>/dev/null)" || exit 0
-IFS="$us" read -r caller tool target session <<<"$fields"
+IFS="$us" read -r caller tool target session log <<<"$fields"
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
 action=other
@@ -99,8 +99,18 @@ deny() {
   exit 0
 }
 
+# in_t3: whether this chat runs in T3. T3 gives Claude Code and Antigravity
+# its thread id, but starts Codex through one shared app server without it,
+# so a Codex chat is read from its log, whose first line names the app that
+# opened it.
+in_t3() {
+  [ -n "${T3CODE_THREAD_ID:-}" ] && return 0
+  [ "$harness" = codex ] && [ -f "$log" ] && \
+    [ "$(head -1 "$log" | jq -r '.payload.originator // ""' 2>/dev/null)" = "T3 Code" ]
+}
+
 if [ -z "$caller" ]; then
-  [ -n "${T3CODE_THREAD_ID:-}" ] && [ "$action" = start ] || exit 0
+  [ "$action" = start ] && in_t3 || exit 0
   f="$(agent_file "$target")"
   [ -n "$f" ] || exit 0
   home="$(bash "$repo/scripts/agents.sh" start "$harness" < "$f" 2>/dev/null)"

@@ -121,6 +121,32 @@ t_gate_codex_refuses_main_first_t3_explorer() {
   has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
 }
 
+# codex_log_start <originator>: outside T3's env, a Codex main agent starts
+# the explorer in a chat whose log was opened by that app.
+codex_log_start() {
+  local log; log="$(mktemp)"
+  printf '{"type":"session_meta","payload":{"id":"s1","originator":"%s"}}\n' "$1" > "$log"
+  gate codex '{"session_id":"s1","transcript_path":"'"$log"'","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"explorer","message":"x"}}'
+}
+
+t_gate_codex_refuses_main_in_t3_log() {
+  # Given: T3CODE_THREAD_ID unset; the chat log's first line names T3 Code
+  # When
+  codex_log_start 'T3 Code'
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
+}
+
+t_gate_codex_main_outside_t3_log() {
+  # Given: the same, with a chat log opened by the Codex CLI
+  # When
+  codex_log_start codex_cli_rs
+  # Then
+  eq exit 0 "$code"
+  eq stdout "" "$out"
+}
+
 t_gate_claude_main_t3_explorer() {
   # Given: T3 is on; the explorer's Claude home is its backup
   # When
@@ -337,4 +363,6 @@ cases=(
   "gate lets a second T3 start of the walker through|t_gate_t3_second_walker_start_goes_through"
   "gate refuses the scope reviewer after it refused the walker|t_gate_t3_refuses_scope_reviewer_after_walker"
   "gate refuses an antigravity main agent's first T3 start of the explorer|t_gate_agy_refuses_main_first_t3_explorer"
+  "gate refuses a codex main agent's first start of the explorer in a T3 chat log|t_gate_codex_refuses_main_in_t3_log"
+  "gate lets a codex main agent start the explorer outside T3|t_gate_codex_main_outside_t3_log"
 )
