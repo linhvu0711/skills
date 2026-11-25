@@ -57,4 +57,4 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 ## Tests
 
-The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup and the model, effort, command, and name it picks, are in [tests/kickoff.sh](tests/kickoff.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `herdr` of its own. The cases for the shared decide script are in `../../shared/tests/kickoff-decide.sh`. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [kickoff.sh](scripts/kickoff.sh), the checkout lookup, the model, effort, command, and name it picks, and where it puts the pane for a tab of 1, 2, and 3 columns, are in [tests/kickoff.sh](tests/kickoff.sh). They run on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh), and on a fake `herdr` of their own that answers each pane's layout from the case. The cases for the shared decide script are in `../../shared/tests/kickoff-decide.sh`. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
