@@ -65,15 +65,6 @@ INDEX_VERSION = 6  # 6: body keeps 50k chars; 5: meta keeps the parent of a help
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
 
-# Injected context, not a human prompt.
-BLOB_MARKERS = (
-    "<INSTRUCTIONS>",
-    "<environment_context>",
-    "AGENTS.md instructions for",
-    "========= MEMORY_SUMMARY BEGINS =========",
-    "<user_instructions>",
-    "<recommended_plugins>",
-)
 BLOB_LEN = 20_000
 
 # A word the user typed says what they steered toward; the agent's replies
@@ -84,7 +75,7 @@ WEIGHTS = {"prompts": 2.0, "body": 1.0}
 # ---------------------------------------------------------------- parsing
 
 def is_blob(text: str) -> bool:
-    return len(text) > BLOB_LEN or any(m in text for m in BLOB_MARKERS)
+    return len(text) > BLOB_LEN or adapter_lib.injected(text)
 
 
 def read_meta(path: str) -> dict | None:

@@ -74,18 +74,6 @@ def load(path):
     return rows
 
 
-def is_noise_string(s):
-    """Slash-command plumbing / injected wrappers we don't want verbatim."""
-    s = s.lstrip()
-    return s.startswith((
-        "<local-command-caveat>",
-        "<local-command-stdout>",
-        "<command-stdout>",
-        "<bash-stdout>",
-        "<bash-input>",
-    ))
-
-
 def parse_task_notification(s):
     """Condense a <task-notification> (background task finished) to one line."""
     if not s.lstrip().startswith("<task-notification>"):
@@ -139,7 +127,7 @@ def read(rows):
     messages = []
 
     def add_user_text(txt, is_compact):
-        if not txt or is_noise_string(txt):
+        if not txt or adapter_lib.injected(txt):
             return
         if is_compact:
             messages.append(printer.Message("compact", txt.strip()))

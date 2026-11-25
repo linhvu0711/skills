@@ -57,17 +57,6 @@ WORDS = printer.Words(
     cli="Codex CLI",
 )
 
-# Prefixes that mark injected context (AGENTS.md, environment, instructions)
-# rather than a real human turn — used only in the response_item fallback path.
-INJECTION_MARKERS = (
-    "# AGENTS.md instructions",
-    "<INSTRUCTIONS>",
-    "<environment_context>",
-    "<user_instructions>",
-    "# Collaboration Mode",
-    "<user_shell_environment>",
-)
-
 
 def locate(session_id):
     """Return rollout file paths matching the id (exact uuid, then prefix), or
@@ -263,7 +252,7 @@ def read(rows):
                 if role == "assistant":
                     messages.append(printer.Message("assistant", txt))
                 elif role == "user" and not have_event_users:
-                    if not txt.lstrip().startswith(INJECTION_MARKERS):
+                    if not adapter_lib.injected(txt):
                         messages.append(printer.Message("user", txt))
                 # developer/system roles are skipped
             elif pt == "reasoning":
@@ -294,7 +283,7 @@ def read(rows):
             p = r.get("payload") or {}
             if r.get("type") == "response_item" and p.get("type") == "message" and p.get("role") == "user":
                 txt = chat_log.text_of(p.get("content"), "[image]").strip()
-                if txt and not txt.startswith(INJECTION_MARKERS):
+                if txt and not adapter_lib.injected(txt):
                     first_user = txt
                     break
     src = meta.get("source")

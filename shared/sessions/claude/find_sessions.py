@@ -42,13 +42,10 @@ import adapter_lib  # noqa: E402
 rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
 chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
-WRAP_PREFIXES = (
-    "<local-command-caveat>",
+COMMAND_TAGS = (
     "<command-name>",
     "<command-message>",
     "<command-args>",
-    "<command-stdout>",
-    "<local-command-stdout>",
     "<task-notification>",  # harness re-invocation when background work finishes — not a human prompt
 )
 BODY_CAP = 200_000  # cap chars indexed per session for scoring (keeps big files fast)
@@ -102,7 +99,7 @@ def strip_wrappers(text):
         return ""
     stripped = text.strip()
     # Whole message is just command/caveat/reminder scaffolding -> not a human prompt.
-    if stripped.startswith(WRAP_PREFIXES):
+    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped):
         # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
         if not m:

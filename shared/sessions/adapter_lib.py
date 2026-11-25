@@ -21,7 +21,8 @@ compaction summary in a harness that has one, and a harness with none renders
 the whole session. The finders keep their own flags and keys for the skills
 that call them direct; this hides those differences. find_all.py, next to
 this file, runs every adapter's find in one call through ``find`` and
-``installed``. ``load`` loads a sibling module by its path.
+``installed``. ``load`` loads a sibling module by its path, and ``injected`` says whether
+a user message is text a harness put there.
 """
 
 from __future__ import annotations
@@ -121,6 +122,31 @@ def load(name, path):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+# What a harness puts at the start of a user message the user did not type:
+# Claude Code's command output and shell wrappers, then Codex's instructions
+# and context blocks.
+INJECTED = (
+    "<local-command-caveat>",
+    "<local-command-stdout>",
+    "<command-stdout>",
+    "<bash-stdout>",
+    "<bash-input>",
+    "# AGENTS.md instructions",
+    "<INSTRUCTIONS>",
+    "<environment_context>",
+    "<user_instructions>",
+    "# Collaboration Mode",
+    "<user_shell_environment>",
+    "<recommended_plugins>",
+    "========= MEMORY_SUMMARY BEGINS =========",
+)
+
+
+def injected(text: str) -> bool:
+    """True when a user message is text a harness injected, not a prompt."""
+    return text.lstrip().startswith(INJECTED)
 
 
 def _day(value: str) -> dt.date:
