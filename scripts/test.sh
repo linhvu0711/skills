@@ -1438,6 +1438,83 @@ t_marked_change_runs_header_check() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
+# subject_msg <n>: the line the commit-msg hook prints for an <n>-character subject.
+subject_msg() { printf 'commit subject too long: %s characters (limit: 50)' "$1"; }
+
+t_subject_hook_stops_long_subject() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "$(times 51 a)"
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(subject_msg 51)" "$err"
+  eq commits 1 "$(git rev-list --count HEAD)"
+}
+
+t_subject_hook_passes_50() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "$(times 50 a)"
+  # Then
+  eq exit 0 "$code"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_subject_hook_counts_characters() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "$(times 49 a)é"
+  # Then
+  eq exit 0 "$code"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_subject_hook_passes_merge() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "Merge branch '$(times 50 a)'"
+  # Then
+  eq exit 0 "$code"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_subject_hook_passes_revert() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "Revert \"$(times 50 a)\""
+  # Then
+  eq exit 0 "$code"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_subject_hook_passes_git_merge() {
+  # Given: a branch with a 50-character name, one commit ahead
+  local b; b="$(times 50 a)"
+  hooked; git switch -qc "$b"; printf 'x\n' > a.md; git add a.md; git commit -qm a
+  git switch -q -; printf 'y\n' > b.md; git add b.md; git commit -qm b
+  # When: git writes the subject `Merge branch '<b>'`
+  run git merge --no-ff --no-edit "$b"
+  # Then
+  eq exit 0 "$code"
+  eq commits 4 "$(git rev-list --count HEAD)"
+}
+
+t_marked_change_runs_subject_check() {
+  # Given
+  hooked; printf 'x\n' > a.md; git add a.md
+  # When
+  run git commit -m "$(times 51 a)" -m 'Readme: unchanged'
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(subject_msg 51)" "$err"
+  eq commits 1 "$(git rev-list --count HEAD)"
+}
+
 # core: a shared core with two top-level files, and a handoff/ folder whose
 # rules.md includes ../size.md.
 core() {
@@ -1622,6 +1699,13 @@ cases=(
   "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"
   "Readme: unchanged still runs the leak check|t_marked_change_runs_leak_check"
   "Readme: unchanged still runs the header check|t_marked_change_runs_header_check"
+  "commit hook stops a 51-character subject|t_subject_hook_stops_long_subject"
+  "commit hook passes a 50-character subject|t_subject_hook_passes_50"
+  "commit hook counts characters, not bytes|t_subject_hook_counts_characters"
+  "commit hook lets a long Merge subject through|t_subject_hook_passes_merge"
+  "commit hook lets a long Revert subject through|t_subject_hook_passes_revert"
+  "commit hook lets the subject of a git merge through|t_subject_hook_passes_git_merge"
+  "Readme marker does not skip the subject check|t_marked_change_runs_subject_check"
   "readme hook asks a skill that names a changed core file|t_readme_hook_asks_named_core"
   "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
   "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"

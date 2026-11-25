@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-# commit-msg: stop a commit that changes a skill without its README. Installed by
-# `git config core.hooksPath scripts/hooks`; `git commit --no-verify` skips it.
+# commit-msg: stop a commit whose subject is over 50 characters, or that
+# changes a skill without its README. Installed by `git config core.hooksPath
+# scripts/hooks`; `git commit --no-verify` skips it.
 exec bash "$(git rev-parse --show-toplevel)/scripts/check.sh" --commit-msg "$1"

@@ -5,7 +5,7 @@
 #   check.sh <path>...     scan every file under these paths, tracked or not
 #   check.sh --staged      scan only the lines and paths the index adds (the pre-commit hook)
 #   check.sh --commit-msg <file>
-#                          the README check only, on the index and that message (the commit-msg hook)
+#                          the subject and README checks only, on the index and that message (the commit-msg hook)
 #
 # Checks: an absolute home path, an email address unless it is on the allow
 # list below, and each pattern in the owner's private word list,
@@ -43,6 +43,11 @@
 # file name without `.md`, a `description` that is not empty, and a home and a
 # backup entry for each harness in a form that harness takes, as
 # `scripts/agents.sh` says.
+#
+# With --commit-msg, the subject check comes first: the first message line that
+# is not blank or `#` is the subject, and over 50 characters is a problem,
+# unless it starts `Merge ` or `Revert `. `Readme: unchanged` and a merge skip
+# only the README check.
 #
 # The README check runs only with --commit-msg: a commit that changes a file
 # under `skills/<name>/` needs `skills/<name>/README.md` in it too, unless a line
@@ -124,6 +129,10 @@ agent_files() {
     awk -F/ '($1 == "skills" && NF == 4) || ($1 == "shared" && NF == 3)'
 }
 
+# chars_awk: awk's chars(s), the characters of s. Under LC_ALL=C awk counts
+# bytes, so the UTF-8 continuation bytes come off.
+chars_awk='function chars(s,  t) { t = s; return length(s) - gsub(/[\200-\277]/, "", t) }'
+
 # frontmatter_problems [--limits] <want> <what>: the problems of the
 # frontmatter on stdin, one per line: no frontmatter, a `name` that is not <want> (the
 # <what> it should match), or an empty `description`. frontmatter.awk reads
@@ -135,10 +144,7 @@ frontmatter_problems() {
   local limits=0
   if [ "$1" = --limits ]; then limits=1; shift; fi
   local want="$1" what="$2"
-  LC_ALL=C awk -v want="$want" -v what="$what" -v limits="$limits" -f "$scripts/frontmatter.awk" -f <(cat <<'AWK'
-    # chars: the characters of s. Under LC_ALL=C awk counts bytes, so the
-    # UTF-8 continuation bytes come off.
-    function chars(s,  t) { t = s; return length(s) - gsub(/[\200-\277]/, "", t) }
+  LC_ALL=C awk -v want="$want" -v what="$what" -v limits="$limits" -f "$scripts/frontmatter.awk" -f <(printf '%s\n' "$chars_awk") -f <(cat <<'AWK'
     END { if (!fm_closed) { print "missing frontmatter"; exit }
           name = fm["name"]; desc = fm["description"]; body = fm_nbody
           if (name != want) print "name does not match " what ": " (name == "" ? "(none)" : name)
@@ -149,6 +155,20 @@ frontmatter_problems() {
           if (chars(name) > 64) print "name too long: " chars(name) " characters (limit: 64)" }
 AWK
 )
+}
+
+# subject_problems <file>: `commit subject too long` when the subject of the
+# message <file> is over 50 characters, git's limit. The subject is the first
+# line that is not blank or a `#` comment; git strips trailing blanks on save.
+# A `Merge ` or `Revert ` subject is git's own and passes.
+subject_problems() {
+  LC_ALL=C awk -f <(printf '%s\n' "$chars_awk") -f <(cat <<'AWK'
+    /^[[:space:]]*$/ || /^#/ { next }
+    { s = $0; sub(/[ \t\r]+$/, "", s)
+      if (s !~ /^(Merge|Revert) / && chars(s) > 50) print "commit subject too long: " chars(s) " characters (limit: 50)"
+      exit }
+AWK
+) "$1"
 }
 
 # refs <file> <text>: each relative path that <file> names, read from the file
@@ -199,10 +219,12 @@ under() {
                 { for (k in r) if ($1 == k || index($1, k "/") == 1) { print; next } }' "$1" "$2"
 }
 
-# --commit-msg: the README check alone; the pre-commit hook ran the rest. Each
-# skill the commit changes needs its README in the commit too, unless a message
-# line is `Readme: unchanged`. A merge is skipped: each side's commits passed.
+# --commit-msg: the subject check, then the README check; the pre-commit hook
+# ran the rest. Each skill the commit changes needs its README in the commit
+# too, unless a message line is `Readme: unchanged`. A merge skips the README
+# check: each side's commits passed.
 if [ -n "$msg" ]; then
+  while IFS= read -r p; do problems+=("$p"); done < <(subject_problems "$msg")
   if grep -qE '^Readme: unchanged[[:space:]]*$' "$msg" || git rev-parse -q --verify MERGE_HEAD >/dev/null; then
     report
   fi

@@ -16,7 +16,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 - Name a Python file: snake_case, since only a snake_case module can be imported (pep-8). Old way: dashes, as `build-report.py` (#410).
 - Parse command-line arguments: `argparse` in Python, `util.parseArgs` in Node. Old way: `sys.argv` or `process.argv` read by hand (#410).
 - Work with file paths in Python: `os.path`. Old way: `pathlib` (#410).
-- Limit a CI workflow: `timeout-minutes` on each job, a `concurrency` group that cancels the older run of the same ref, and `push` on `main` only (github-actions-workflow-syntax, github-actions-events). Old way: a job with none of the three (#411).
+- Limit a CI workflow: `timeout-minutes` on each job, a `concurrency` group that cancels the older run of the same ref, and `push` on `main` only (github-actions-workflow-syntax, github-actions-events).
 - Do a job every session adapter needs (load a sibling module, skip injected context, keep the project's sessions of the last N days): a helper in `shared/sessions/adapter_lib.py`. Old way: an adapter's own `load()` or its own injected-context check (#410).
 - Set up a git repo in a test: `repo` from `scripts/test-lib.sh`. Old way: own setup code (#408).
 - Check a result in a test: `eq`, `has`, and `lacks` from `scripts/test-lib.sh`. Old way: a bare `[ -e … ] || exit 1` check (#408).
@@ -64,7 +64,6 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 ## Commits
 
 - A commit subject follows Conventional Commits, `<type>(<scope>)!: <subject>`, with `!` for a breaking change (conventional-commits).
-- A commit subject is 50 characters or fewer (git-commit-docs) [commit-msg hook, after #411].
 - The subject is in the imperative mood, with one blank line before the body (git-pro-book).
 - A commit is one logical change, and a pull request has one purpose (git-pro-book, github-pr-docs).
 - A branch is `<type>/<issue>-<slug>`.
