@@ -159,7 +159,13 @@ def find(h: Harness, args) -> list[dict]:
     cmd = [sys.executable, h.finder, query, *h.flags(None if scope.roots is None else list(scope.roots), scope.days())]
     if not query:
         cmd.append("--all")
-    done = subprocess.run(cmd, capture_output=True, text=True)
+    # Both ends pinned to UTF-8: an inherited PYTHONIOENCODING or locale would
+    # make the finder write in one encoding and this side read in another.
+    try:
+        done = subprocess.run(cmd, capture_output=True, encoding="utf-8",
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    except UnicodeDecodeError:
+        raise Failed(f"{h.name} finder failed: output is not UTF-8")
     try:
         out = json.loads(done.stdout)
     except ValueError:

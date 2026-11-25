@@ -102,10 +102,33 @@ sys.exit(1)'
   eq result '0 {"harness": "fake", "label": "Fake", "installed": true, "error": "fake finder failed: boom"} claude True s1' "$code $(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps([h for h in json.load(sys.stdin)["harnesses"] if h["harness"] == "fake"][0]))') $(harnesses | grep '^claude ')"
 }
 
+t_fa_not_utf8() {
+  # Given: a fake harness whose finder prints bytes that are not UTF-8, and a Claude session
+  fa_home
+  fa_fake 'import sys
+sys.stdout.buffer.write(b"caf\xe9\n")'
+  # When
+  run python3 "$T/sessions/find_all.py" --root /p/app
+  # Then
+  eq result '0 {"harness": "fake", "label": "Fake", "installed": true, "error": "fake finder failed: output is not UTF-8"} claude True s1' "$code $(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps([h for h in json.load(sys.stdin)["harnesses"] if h["harness"] == "fake"][0]))') $(harnesses | grep '^claude ')"
+}
+
+t_fa_other_io_encoding() {
+  # Given: a Claude session whose prompt has an é, and a Latin-1 PYTHONIOENCODING
+  fa_home
+  printf '{"type":"user","message":{"role":"user","content":"export café"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s1"}\n' > "$HOME/.claude/projects/-p-app/s1.jsonl"
+  # When
+  PYTHONIOENCODING=latin-1 run python3 "$S" --root /p/app
+  # Then
+  eq prompt "export café" "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="latin-1"))["sessions"][0]["first_prompt"])' "$T/out")"
+}
+
 cases=(
   "find-all lists every harness and its sessions|t_fa_lists_harnesses"
   "find-all keeps to the window|t_fa_window"
   "find-all names a harness with data and no adapter|t_fa_names_no_adapter_harness"
   "find-all runs each harness's finder once|t_fa_finder_runs_once"
   "find-all keeps a failed harness's error and lists the rest|t_fa_failed_harness"
+  "find-all fails only the harness whose finder output is not UTF-8|t_fa_not_utf8"
+  "find-all reads a finder's UTF-8 under another PYTHONIOENCODING|t_fa_other_io_encoding"
 )
