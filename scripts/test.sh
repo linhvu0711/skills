@@ -571,11 +571,12 @@ t_link_status_names_every_target_ok() {
   # Then
   eq exit 0 "$code"
   eq stderr "" "$err"
-  eq stdout "$(status_lines "ok skill shared demo $T/agents/demo" "ok skill claude demo $T/claude/demo" \
-    "ok skill antigravity demo $T/gskills/demo" "ok agent claude helper $T/cagents/helper.md" \
-    "ok agent codex helper $T/codex/helper.toml" "ok agent antigravity helper $T/gplugins/skills/agents/helper.md" \
-    "ok manifest antigravity plugin.json $T/gplugins/skills/plugin.json" "ok gate claude subagent-gate $T/claude-settings.json" "ok gate codex subagent-gate $T/codex-hooks.json" \
-    "ok gate antigravity subagent-gate $T/gplugins/skills/hooks.json" "ok plugins antigravity plugins $T/t3/p1/config/plugins")" "$out"
+  eq stdout "$(status_lines "ok skill shared demo $T/agents/demo $T/agents" "ok skill claude demo $T/claude/demo $T/claude" \
+    "ok skill antigravity demo $T/gskills/demo $T/gskills" "ok agent claude helper $T/cagents/helper.md $T/cagents" \
+    "ok agent codex helper $T/codex/helper.toml $T/codex" "ok agent antigravity helper $T/gplugins/skills/agents/helper.md $T/gplugins" \
+    "ok manifest antigravity plugin.json $T/gplugins/skills/plugin.json $T/gplugins" "ok gate claude subagent-gate $T/claude-settings.json $T" \
+    "ok gate codex subagent-gate $T/codex-hooks.json $T" "ok gate antigravity subagent-gate $T/gplugins/skills/hooks.json $T/gplugins" \
+    "ok plugins antigravity plugins $T/t3/p1/config/plugins $T/t3/p1")" "$out"
 }
 
 t_link_status_names_missing_and_held() {
@@ -586,9 +587,9 @@ t_link_status_names_missing_and_held() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "lines 2, 5, 8" "$(printf 'missing\tskill\tclaude\tdemo\t%s\n' "$T/claude/demo"
-    printf 'stale\tagent\tcodex\thelper\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex/helper.toml is not this repo's helper.toml"
-    printf 'stale\tgate\tclaude\tsubagent-gate\t%s\t%s\n' "$T/claude-settings.json" "$T/claude-settings.json is not JSON")" \
+  eq "lines 2, 5, 8" "$(printf 'missing\tskill\tclaude\tdemo\t%s\t%s\n' "$T/claude/demo" "$T/claude"
+    printf 'stale\tagent\tcodex\thelper\t%s\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex" "$T/codex/helper.toml is not this repo's helper.toml"
+    printf 'stale\tgate\tclaude\tsubagent-gate\t%s\t%s\t%s\n' "$T/claude-settings.json" "$T" "$T/claude-settings.json is not JSON")" \
     "$(sed -n '2p;5p;8p' <<<"$out")"
 }
 
@@ -599,8 +600,8 @@ t_link_status_names_agent_it_cannot_render() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "helper2 lines" "$(for p in "claude $T/cagents/helper2.md" "codex $T/codex/helper2.toml" "antigravity $T/gplugins/skills/agents/helper2.md"; do
-      printf 'missing\tagent\t%s\thelper2\t%s\tskills/demo/agents/helper2.md: missing backup for codex\n' "${p%% *}" "${p#* }"; done)" \
+  eq "helper2 lines" "$(for l in "claude $T/cagents/helper2.md $T/cagents" "codex $T/codex/helper2.toml $T/codex" "antigravity $T/gplugins/skills/agents/helper2.md $T/gplugins"; do
+      read -r h p f <<<"$l"; printf 'missing\tagent\t%s\thelper2\t%s\t%s\tskills/demo/agents/helper2.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
     "$(grep helper2 <<<"$out")"
 }
 
@@ -611,8 +612,8 @@ t_link_status_names_installed_agent_it_cannot_render() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "helper lines" "$(for p in "claude $T/cagents/helper.md" "codex $T/codex/helper.toml" "antigravity $T/gplugins/skills/agents/helper.md"; do
-      printf 'stale\tagent\t%s\thelper\t%s\tskills/demo/agents/helper.md: missing backup for codex\n' "${p%% *}" "${p#* }"; done)" \
+  eq "helper lines" "$(for l in "claude $T/cagents/helper.md $T/cagents" "codex $T/codex/helper.toml $T/codex" "antigravity $T/gplugins/skills/agents/helper.md $T/gplugins"; do
+      read -r h p f <<<"$l"; printf 'stale\tagent\t%s\thelper\t%s\t%s\tskills/demo/agents/helper.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
     "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
 }
 
@@ -623,8 +624,44 @@ t_link_status_names_foreign_manifest() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq manifest "$(printf 'stale\tmanifest\tantigravity\tplugin.json\t%s\t%s' "$T/gplugins/skills/plugin.json" "$T/gplugins/skills/plugin.json is not this repo's plugin.json")" \
+  eq manifest "$(printf 'stale\tmanifest\tantigravity\tplugin.json\t%s\t%s\t%s' "$T/gplugins/skills/plugin.json" "$T/gplugins" "$T/gplugins/skills/plugin.json is not this repo's plugin.json")" \
     "$(grep manifest <<<"$out")"
+}
+
+t_link_status_matches_install_skips() {
+  # Given: everything linked, then a target of every kind held by something
+  # else, and a second agent with no Codex backup
+  linked demo; agent demo helper; with_gate; link_sh
+  rm "$T/claude/demo"; mkdir "$T/claude/demo"
+  printf 'mine\n' > "$T/codex/helper.toml"
+  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
+  printf 'not json\n' > "$T/claude-settings.json"
+  rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
+  agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  # When: the install, then --status
+  link_sh
+  local skips whys want
+  skips="$(sed -n 's/^skip: //p' <<<"$err" | LC_ALL=C sort -u)"
+  link_sh scripts/link.sh --status
+  whys="$(awk -F '\t' '$NF ~ / / { print $NF }' <<<"$out" | LC_ALL=C sort -u)"
+  # Then
+  want="$(printf '%s\n' "$T/claude-settings.json is not JSON" "$T/claude/demo is not this repo's demo" \
+    "$T/codex/helper.toml is not this repo's helper.toml" "$T/gplugins/skills/plugin.json is not this repo's plugin.json" \
+    "$T/t3/p1/config/plugins is not this repo's plugins" "skills/demo/agents/helper2.md: missing backup for codex")"
+  eq "install skips" "$want" "$skips"
+  eq "status whys" "$want" "$whys"
+}
+
+t_link_status_names_held_link_under_held_shared() {
+  # Given: everything linked, then folders of the user's own in place of the
+  # shared skill link and of Claude Code's
+  linked demo; link_sh
+  rm "$T/agents/demo" "$T/claude/demo"; mkdir "$T/agents/demo" "$T/claude/demo"
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq claude "$(printf 'stale\tskill\tclaude\tdemo\t%s\t%s\t%s' "$T/claude/demo" "$T/claude" "$T/claude/demo is not this repo's demo")" \
+    "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
 }
 
 t_link_status_writes_nothing() {
@@ -1472,6 +1509,8 @@ cases=(
   "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
   "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
   "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
+  "link status gives the skip words of the install|t_link_status_matches_install_skips"
+  "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
   "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"

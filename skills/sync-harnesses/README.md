@@ -8,7 +8,7 @@ You added a skill, set up a harness, or updated T3, or a skill acts as if a help
 
 ## What you get
 
-First it runs the repo's [link.sh](../../scripts/link.sh), which makes every missing link and agent file. Each one it makes shows as a `fixed:` line, as `fixed: linked ~/.claude/skills/demo`. Each one it finds but cannot own, such as an agent file you wrote by hand, shows as a `problem:` line in link.sh's words. Then it asks link.sh, with `--status`, where each link and file is, so the check reads the folders link.sh wrote, even when one of link.sh's env settings moves a folder. link.sh does nothing in a worktree, so run the skill from its installed copy, which points at the main checkout.
+First it runs the repo's [link.sh](../../scripts/link.sh), which makes every missing link and agent file. Each one it makes shows as a `fixed:` line, as `fixed: linked ~/.claude/skills/demo`. Each one it finds but cannot own, such as an agent file you wrote by hand, shows as a `problem:` line in link.sh's words. Then it asks link.sh, with `--status`, where each link and file is and which folder holds it. So the check reads the folders link.sh wrote, the plugins folder and each T3 Antigravity folder too, even when one of link.sh's env settings moves a folder. link.sh does nothing in a worktree, so run the skill from its installed copy, which points at the main checkout.
 
 Then one line per harness, then one line for Devin in T3. On a Mac where all is well:
 

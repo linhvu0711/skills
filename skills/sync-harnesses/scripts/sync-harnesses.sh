@@ -64,9 +64,9 @@ fi
 # given, are ok. A target with no why gets a problem line here; one with a
 # why gets its own below.
 count_targets() {
-  local n=0 total=0 t st kind h name path why
+  local n=0 total=0 t st kind h name path folder why
   for t in ${targets[@]+"${targets[@]}"}; do
-    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    IFS=$'\t' read -r st kind h name path folder why <<< "$t"
     [ "$kind" = "$2" ] && [ "$h" = "${4:-$1}" ] || continue
     total=$((total + 1))
     if [ "$st" = ok ]; then n=$((n + 1))
@@ -75,16 +75,16 @@ count_targets() {
   got="$n/$total"
 }
 
-# target <kind> <harness>: set path and why to those of the first target of
-# that kind and harness, or empty.
+# target <kind> <harness>: set path, folder, and why to those of the first
+# target of that kind and harness, or empty.
 target() {
   local t st kind h name
-  path=""; why=""
+  path=""; folder=""; why=""
   for t in ${targets[@]+"${targets[@]}"}; do
-    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    IFS=$'\t' read -r st kind h name path folder why <<< "$t"
     [ "$kind" = "$1" ] && [ "$h" = "$2" ] && return 0
   done
-  path=""; why=""
+  path=""; folder=""; why=""
 }
 
 # commands <file>...: every hook command in the files, one per line.
@@ -146,22 +146,22 @@ check_codex() {
 }
 
 # Antigravity, and each private folder T3 runs it from. Antigravity reads the
-# hooks.json of every plugin in its plugins folder, two levels above the
-# skills plugin's, and T3 keeps its plugins link at <folder>/config/plugins.
+# hooks.json of every plugin in its plugins folder, and link.sh's status
+# line names that folder and each T3 folder.
 check_antigravity() {
   local t st kind h name
   count_targets antigravity skill skill; s="$got"
   count_targets antigravity agent subagent; a="$got"
-  target gate antigravity; plugins="${path%/skills/hooks.json}"
+  target gate antigravity; plugins="$folder"
   # The gates sit in many plugins' hooks.json, so one file link.sh could not
   # read hides no gate's line.
   count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates subagent-gate session-rules; g="$got"
   r=0; rt=1
   if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
   for t in ${targets[@]+"${targets[@]}"}; do
-    IFS=$'\t' read -r st kind h name path why <<< "$t"
+    IFS=$'\t' read -r st kind h name path folder why <<< "$t"
     [ "$kind" = plugins ] || continue
-    d="${path%/config/plugins}"; rt=$((rt + 1))
+    d="$folder"; rt=$((rt + 1))
     # A T3 link loads the rules only through GEMINI.md, whose problem is named above.
     if [ -L "$d/GEMINI.md" ] && [ "$(readlink "$d/GEMINI.md")" = "$gemini_md" ]; then
       if imports_rules "$gemini_md"; then r=$((r + 1)); fi
@@ -193,7 +193,7 @@ is_absent() {
 # An agent link.sh cannot render gives the same why for each harness, so a
 # why already named is not named again.
 for t in ${targets[@]+"${targets[@]}"}; do
-  IFS=$'\t' read -r st kind h name path why <<< "$t"
+  IFS=$'\t' read -r st kind h name path folder why <<< "$t"
   [ -n "$why" ] && ! is_absent "$h" || continue
   l="problem: $(tilde "$why")"
   for x in ${link_problems[@]+"${link_problems[@]}"}; do [ "$x" = "$l" ] && continue 2; done
