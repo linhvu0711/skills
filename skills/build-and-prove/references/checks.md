@@ -1,8 +1,10 @@
 # Local checks
 
 The Gates and the perf measure of a plan with `UI: none`, which starts
-no Sandbox (ADR 0019). SKILL.md step 8 reads this file, on a first
-build and on a follow-up (SKILL.md § Follow-up). Paths start at the
+no Sandbox (ADR 0019). A plan with walks leaves CI's Gates to CI by the
+same rule, in SKILL.md step 8's `gates --ci` call (ADR 0038). SKILL.md
+step 8 reads this file for a plan with no UI, on a first build and on a
+follow-up (SKILL.md § Follow-up). Paths start at the
 skill folder.
 `WT`, `BASE`, `PERF`, and `PROOF` are the ones SKILL.md holds. The
 checks run on the head commit.

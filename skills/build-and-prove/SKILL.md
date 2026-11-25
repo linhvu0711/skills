@@ -1,6 +1,6 @@
 ---
 name: build-and-prove
-description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the Gates and the app, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. Also runs a follow-up on a branch it built, a change or review fixes, and redoes only what the change touches. /ship runs it by default."
+description: "Build a /plan-up plan on this machine and prove it: Coding runs on the local machine, then, for a plan with UI walks, one proofbox Sandbox runs the app and the Gates the PR's CI does not run, and a walker subagent films the walks like a test user. A plan with no UI starts no Sandbox: its Gates run on this machine and in the PR's CI. Ends at a branch with one commit per slice and a proof folder for /make-pr. Also runs a follow-up on a branch it built, a change or review fixes, and redoes only what the change touches. /ship runs it by default."
 disable-model-invocation: true
 ---
 
@@ -28,8 +28,8 @@ no other `box.sh` call runs. The rest of this section is for a plan
 with UI walks.
 
 One run of a plan with walks has one proofbox Sandbox. It starts after Coding and runs
-the Gates, the app, the before shots, and the walks (ADR 0011 in this
-repo). A slice test that needs a tool the local machine lacks,
+the Gates the PR's CI does not run, the app, the before shots, and the
+walks (ADR 0011 and ADR 0038 in this repo). A slice test that needs a tool the local machine lacks,
 or a slice's e2e spec files, start it early, and the run keeps it. `scripts/box.sh` holds the Sandbox; it
 prints its usage with no arguments.
 
@@ -316,13 +316,17 @@ done.
    each command in single quotes, a `none` line left out:
 
    ```bash
-   bash scripts/box.sh gates "$PROOF" -- '<Test>' '<Typecheck>' '<Lint>' '<Build>' '<check>'
+   bash scripts/box.sh gates "$PROOF" --ci "$WT" -- '<Test>' '<Typecheck>' '<Lint>' '<Build>' '<check>'
    ```
 
-   It runs each one in the Sandbox and writes `$PROOF/checks.txt` fresh,
-   one line per command: the command, the short SHA, the last line of
-   its output, and where it ran, as in `pnpm test · 1a2b3c4 · 116 pass,
-   0 fail (sandbox)`. Write no Sandbox line by hand. `/make-pr` counts
+   It asks `../../shared/ci-covers.sh` which Gates the PR's CI runs
+   (ADR 0038). Each of those runs on the PR, not here, and its line is
+   `<command> · <short SHA> · not run: CI runs it (<workflow file>)`. It
+   runs each other Gate in the Sandbox and writes `$PROOF/checks.txt`
+   fresh, one line per command: the command, the short SHA, the last
+   line of its output, and where it ran, as in `pnpm test · 1a2b3c4 ·
+   116 pass, 0 fail (sandbox)`. A repo with no CI runs every Gate in the
+   Sandbox. Write no Gate line by hand. `/make-pr` counts
    these lines and runs none of them again. Exit 3 means a red Gate:
    stderr has `red: <command> · exit <code> · output <file>` for each.
    A red Gate is the builder's: a follow-up per `render.sh local
@@ -389,7 +393,7 @@ done.
 
     ```
     Built: #42 Export orders as CSV · feat/42-export-orders-csv · 4 commits
-    Checks: pnpm test, pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox
+    Checks: pnpm lint, pnpm build green on 1a2b3c4 in the Sandbox · pnpm test: CI
     Walks: 3 passed in round 2 · videos: 2 · built by: session
     Walk notes:
     - after round 1 · walk 2: FAIL · step 3: no `Save` button; the screen shows `Save changes` · fail-2.png · video 1 @ step 3
@@ -460,18 +464,11 @@ updates the PR from `PROOF`.
 - **Step 7.** Only the walks with no `before-<walk>.png` in `PROOF`.
 - **Step 8.** Every Gate line of `checks.txt` names HEAD's short SHA
   and none is red: the Gates stand, and no `gates` call runs. The perf
-  line is not a Gate line: it keeps the SHA it was measured on. Else,
-  with no open PR, step 8 as written. The PR is open when `gh pr list -R <REPO>
-  --head <branch> --state open --json url -q '.[0].url'` prints a URL;
-  then only the Gates CI does not run run here. `UI: none`: step 8 as
-  written, since `gates --local` already leaves CI's Gates to CI. A
-  plan with walks: step 8's `gates` call with `--pr-open "$WT"` first,
-  and the build's `--on-local` and `--not-run` Gates as before. It
-  leaves to CI each Gate after `--` that the PR's CI runs, runs the
-  rest in the Sandbox, and needs no Sandbox when none is left. The
-  `--on-local` Gates still run on the local machine. A stop `no Sandbox
-  for <PROOF>; run box.sh up first`: `box.sh up` (step 6), then the
-  call again.
+  line is not a Gate line: it keeps the SHA it was measured on. Else
+  step 8 as written, with the build's `--on-local` and `--not-run`
+  Gates as before. Its call leaves CI's Gates to CI and needs no Sandbox
+  when none is left. A stop `no Sandbox for <PROOF>; run box.sh up
+  first`: `box.sh up` (step 6), then the call again.
   With a `PERF` block, the measure runs again only when `git -C "$WT"
   diff --name-only <its line's SHA> HEAD` names a file its `Command`
   runs. Else copy its line out of `checks.txt` before the `gates` call
