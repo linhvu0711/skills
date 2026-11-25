@@ -190,8 +190,7 @@ join.
 
 None holds: you know the fix. Skip the grill and file.
 
-The seed block, verbatim, filled in: `Invoke the grill skill with the Skill
-tool. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
+The seed block, verbatim, filled in: `Start the grill skill. Seed: <the report>, bug issue <#n or none>. Open decisions: <the
 list>. Close out: text. Then continue at step 11.` The grill owns the
 interview and the doc text; step 11 files the ticket with it. You wait
 for `Grill done.`

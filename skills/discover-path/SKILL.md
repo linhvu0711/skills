@@ -60,7 +60,7 @@ work already decided. The map comes first.
 
 ## Chart
 
-1. **Destination.** Invoke the `grill` skill with the Skill tool. Seed: the
+1. **Destination.** Start the `grill` skill. Seed: the
    idea. Open decisions: what reaching the end of this map looks like (a
    spec to hand off, a decision to lock, a change made in place); what is
    near but out. Close out: text. Then continue at step 2. Keep the doc
@@ -130,7 +130,7 @@ work already decided. The map comes first.
 
 4. **Resolve**, by type. Read a closed ticket in full only when the question
    rests on it.
-   - **grill**: invoke `grill` with the Skill tool. Seed: the ticket's
+   - **grill**: start the `grill` skill. Seed: the ticket's
      question, the map's Destination, and Decisions so far. Open decisions:
      the question and the terms it touches. Close out: text. Then continue
      at step 5 with the doc entries it hands back.

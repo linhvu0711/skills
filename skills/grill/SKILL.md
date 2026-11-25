@@ -51,14 +51,14 @@ After `Grill done.` and the settled list, place the doc text the grill kept: the
 **No line**, the default:
 
 - Work follows, code to build. When the settled work changes what a person sees or clicks (a screen, a page, a dialog, a control), first say `Run /create-prototype <the feature or page>, or say go to file the work.` and wait. A change the user makes while reviewing the prototype is a decision: add it to the settled list, and to each doc entry it changes. A change that adds or alters a user action reopens its branch of the design tree: ask its frontier until `grilling.md` § Done holds again, with no second gap check. On `go`, file. Work that changes no screen files at once. File it in the shape the work takes, with as few tickets as the work allows:
-  - One ticket: invoke the to-issue skill with the Skill tool.
+  - One ticket: start the `to-issue` skill.
   - A few tickets that do not depend on each other: invoke to-issue once per ticket.
   - Tickets that depend on each other, or more than one ticket from a seed issue: invoke to-epic.
 
   With more than one ticket, the message that asks the user to confirm shared understanding (`../../shared/grilling.md` § Done) names the shape, as `3 issues` or `an epic with 4 children`. The seed issue, when there is one, is the origin: it becomes the ticket or the parent, per `../../shared/issue-rules.md` § Origin seed, and is never closed. Every doc entry goes under `## Docs to write`, word for word, per the same file § Docs to write; one that is true already rides on the first code ticket. No docs PR.
 - No work follows (the answer was "we will not build X", or a term for code that exists): the docs are true now, so they ship now. Write them, then:
   1. Check the tree. `git status --short` on the files you wrote. Nothing changed: say so and stop. No PR.
-  2. Invoke the make-pr skill with the Skill tool, with its four caller settings:
+  2. Start the `make-pr` skill, with its four caller settings:
      - Branch: `docs/grill-<seed>-<slug>`, or `docs/grill-<slug>` when the grill started from an idea in chat. Already on a non-main branch that the user made for this work: that branch.
      - Files: only the grill files, in one `docs:` commit.
      - Issue line: `Closes #<seed>` for a seed issue. A grill that started from an idea in chat has no issue, so no line.

@@ -16,7 +16,7 @@ report. This file is the order of operations.
    - **Raw**: nobody has decided what to build, or how a broken thing must
      behave after the fix: a loose idea, or a bug seen with no agreed fix.
      And the chat names no origin, per the rules file § Duplicates and
-     seeds. Invoke the capture skill with the Skill tool, with the thing in
+     seeds. Start the `capture` skill, with the thing in
      the chat's words. After its `Captured:` line, add one line,
      `Not a ticket yet: <the gate's first gap>.`, and stop.
    - **Decided**: anything else, such as agreed work with a missing
