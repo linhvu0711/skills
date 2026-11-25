@@ -15,7 +15,7 @@ Sibling: **find-cc-session** does the same for Claude Code sessions. Both run in
 
 1. **Run the finder.**
    `python3 ../../shared/sessions/codex/find_session.py "<description>"`
-   Turn a relative date in the description into a flag first: "yesterday" is `--date yesterday`, "last week" is `--days 7`. No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--cwd <path>`; a parent folder: add `--include-subdirs`. `--help` lists the other flags. The first run in a project parses its rollouts once and caches them under `~/.cache/find-co-session/`, or `/tmp/find-co-session/` when the Codex sandbox makes the home cache read-only; later runs take under a second.
+   Turn a relative date in the description into a flag first: "yesterday" is `--date yesterday`, "last week" is `--days 7`. No description: ask for one, or run `--all` to list recent sessions for the user to pick from. Another project: `--cwd <path>`; a parent folder: add `--include-subdirs`. `--help` lists the other flags. The first run in a project parses its rollouts once and caches them under `~/.cache/find-co-session/`, or `/tmp/find-co-session/` when the home cache is read-only, as in a sandbox; later runs take under a second.
 
 2. **Judge the candidates.** The score counts words, not meaning, so read each opening prompt and snippet. A wide gap between #1 and #2 is one match. A tight cluster is an ambiguous description. A low top score that shares only incidental words is no match. `--show <id>` prints one candidate's user prompts, and only those, so it stays small. The session you are in can be a rollout too; set it aside unless the description clearly names it.
 

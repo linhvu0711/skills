@@ -58,6 +58,6 @@ Rules: only what the files show; quote, never paraphrase, in Quote. A smooth ite
 
 ## Return
 
-Claude Code: the Explore agent returns the evidence list. Codex: the `explorer` reply carries it inline, from the `# Evidence list` heading to the end.
+The explorer's reply carries the evidence list inline, from the `# Evidence list` heading to the end.
 
 Any other reply, or one with no `# Evidence list`, is a failure; SKILL.md step 5 says what follows. A `Read:` line under the total means the reader read only part: the report marks that item "read in part".
