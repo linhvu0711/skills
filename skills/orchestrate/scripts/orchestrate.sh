@@ -210,6 +210,9 @@ skill() {
 # shellcheck disable=SC2016 # the $ names are jq variables
 ship_mode_jq='def ship_mode($n): .ship[$n] // .ship.default // "";'
 
+# Failed Checks in a row before the user must act (ADR 0018).
+fail_limit=3
+
 # A check that read the run ends the failure streak and keeps its time.
 # shellcheck disable=SC2016 # the $ names are jq variables
 good_check_jq='def good_check($at): .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at;'
@@ -377,18 +380,7 @@ cmd_start() {
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
 }
 
-# ---------- check ----------
-# fail_check <line>: a check that read too little to start anything. Only the
-# failure count of the state as it was is written; after 3 in a row the user
-# must act.
-fail_check() {
-  local fails
-  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"; save
-  fails="$(jq .timer.fails <<<"$S")"
-  if [ "$fails" -ge 3 ]; then die "check failed $fails times in a row: $1. You must act, then say check now."; fi
-  die "check failed: $1"
-}
-
+# ---------- run read ----------
 # observe: the Run read: the run as it is now, from the state in S, GitHub,
 # and T3, for check and for a watcher check, so the two never read a run two
 # ways. Its callers run it in a subshell with set -e on, so nothing it sets
@@ -558,15 +550,46 @@ observe() {
     '$ARGS.named'
 }
 
+# read_run <at-limit>: the Run read into the caller's obs. A read that fails
+# adds one to the failure streak and keeps why; at fail_limit in a row it runs
+# <at-limit> <why>, which may change S and stop, the stop line. Then the state
+# is saved and the command stops.
+read_run() {
+  local rc=0 why
+  # A call under `||` would turn set -e off inside observe, so it runs as the
+  # repo's test runner runs a case.
+  set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
+  [ "$rc" -ne 0 ] || return 0
+  why="$(tail -1 "$obsf" | sed 's/^stop: //')"
+  S="$(jq -c --arg why "$why" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"
+  stop="check failed: $why"
+  # Run in this shell, not in $( ), so the step's S and stop reach save and die.
+  [ "$(jq .timer.fails <<<"$S")" -lt "$fail_limit" ] || "$1" "$why"
+  save
+  die "$stop"
+}
+
+# check_at_limit <why>: no one wakes the agent's own check; its stop line says
+# the user must act.
+check_at_limit() {
+  stop="check failed $(jq .timer.fails <<<"$S") times in a row: $1. You must act, then say check now."
+}
+
+# watch_at_limit <why>: no one reads a watcher's stop line, so it wakes the
+# orchestrator thread, once a streak. A failed read hands back no T3 statuses.
+watch_at_limit() {
+  if [ "$(jq '.timer.alerted != true' <<<"$S")" = true ] && [ "$(wake '{}')" = true ]; then
+    S="$(jq -c '.timer.alerted = true' <<<"$S")"
+  fi
+}
+
+# ---------- check ----------
 cmd_check() {
   in_t3
   newest_run
   [ "$(jq -r .status <<<"$S")" != stopped ] || die "the run in $slug is stopped; say /orchestrate resume"
-  local obs rc seen
-  # A call under `||` would turn set -e off inside observe, so it runs as the
-  # repo's test runner runs a case.
-  rc=0; set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
-  [ "$rc" -eq 0 ] || fail_check "$(tail -1 "$obsf" | sed 's/^stop: //')"
+  local obs seen
+  read_run check_at_limit
 
   # seen: the rows and status of this check, so the next one can tell the
   # timer whether anything moved. A run from before it has none: all changed.
@@ -852,19 +875,6 @@ cmd_sync() {
 }
 
 # ---------- watch ----------
-# watch_fail <line>: a watcher check that read too little. It counts the
-# failure as fail_check does; at 3 in a row it wakes the orchestrator thread,
-# once a streak, since no one reads a watcher's stop line.
-watch_fail() {
-  S="$(jq -c --arg why "$1" '.timer.fails += 1 | .timer.why = $why' <<<"$S")"
-  # A failed read hands back no T3 statuses.
-  if [ "$(jq '.timer.fails >= 3 and .timer.alerted != true' <<<"$S")" = true ] && [ "$(wake '{}')" = true ]; then
-    S="$(jq -c '.timer.alerted = true' <<<"$S")"
-  fi
-  save
-  die "check failed: $1"
-}
-
 # wake <statuses>: send the orchestrator thread `/orchestrate check`, unless T3's statuses show it
 # busy: mid-turn, or waiting on the user, where a message would land as the
 # answer to its question. Prints true when it sent. A failed send is left on
@@ -955,10 +965,8 @@ cmd_watch() {
   newest_run
   [ "$(jq -r .status <<<"$S")" = running ] || exit 3
   [ $# -eq 1 ] || [ "$(jq -r '.timer.watcher.token // ""' <<<"$S")" = "$3" ] || exit 3
-  local obs rc at view reasons woke=false
-  # Run as cmd_check runs it, so set -e holds inside observe.
-  rc=0; set +e; obs="$(set -euo pipefail; observe 2>"$obsf")"; rc=$?; set -e
-  [ "$rc" -eq 0 ] || watch_fail "$(tail -1 "$obsf" | sed 's/^stop: //')"
+  local obs at view reasons woke=false
+  read_run watch_at_limit
   at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   view="$(jq -c --arg at "$at" "$good_check_jq"'.state | good_check($at)' <<<"$obs")"
   # A conflict is claimed before it is sent, so a failed send is never tried
