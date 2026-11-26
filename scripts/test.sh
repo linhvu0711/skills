@@ -566,6 +566,29 @@ t_link_keeps_user_agent_in_old_plugin() {
   eq files "$T/gplugins/skills/agents/mine.md" "$(find "$T/gplugins/skills" -type f)"
 }
 
+# no_jq: $T/nojq, a bin folder with every command on PATH but jq.
+no_jq() {
+  local d f n dirs; mkdir -p "$T/nojq"; IFS=: read -ra dirs <<<"$PATH"
+  for d in "${dirs[@]}"; do
+    for f in "$d"/*; do
+      n="$(basename "$f")"
+      [ -x "$f" ] && [ "$n" != jq ] && [ ! -e "$T/nojq/$n" ] || continue
+      ln -s "$f" "$T/nojq/$n"
+    done
+  done
+}
+
+t_link_stops_without_jq() {
+  # Given: the old skills plugin, and no jq on PATH
+  linked demo; agent demo helper; with_gate; old_plugin; no_jq
+  # When
+  PATH="$T/nojq" link_sh
+  # Then
+  eq exit 1 "$code"
+  has stderr 'stop: link.sh needs jq to read and write hook files; install it, as with brew install jq' "$err"
+  eq hooks '{"subagent-gate":{"PreToolUse":[]}}' "$(cat "$T/gplugins/skills/hooks.json")"
+}
+
 t_link_links_plugins_into_each_t3() {
   # Given: two T3 Antigravity folders and no plugins folder yet
   linked demo; mkdir -p "$T/t3/p2/config"
@@ -1712,6 +1735,7 @@ cases=(
   "link keeps a key of the user's own in the old plugin hooks|t_link_keeps_user_key_in_old_plugin_hooks"
   "link keeps a plugin.json of the user's own|t_link_keeps_user_manifest_in_old_plugin"
   "link keeps an agent file of the user's own in the old plugin|t_link_keeps_user_agent_in_old_plugin"
+  "link stops when jq is missing|t_link_stops_without_jq"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "link status names every target ok|t_link_status_names_every_target_ok"
