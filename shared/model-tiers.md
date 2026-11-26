@@ -4,12 +4,12 @@ Each subagent's file names a tier, 1 to 4, and a checker line, yes or no. The ta
 
 ## Tiers
 
-**Tier 1: fast and cheap** (Haiku, Luna).
+**Tier 1: fast and cheap** (Haiku, Terra low).
 Can do: follow clear steps, pull out facts, sort things into named kinds, run tools in a loop.
 Slips on: vague goals, long reasoning, spotting what is missing, very long briefs.
 Example job: "Read this log and say which test failed."
 
-**Tier 2: the steady worker** (Sonnet, Terra, SWE-2.1 high).
+**Tier 2: the steady worker** (Sonnet, Terra medium, SWE-2.1 high).
 Can do: read and judge real code, apply a long list of rules, run long multi-step work without losing the thread.
 Slips on: open problems with no frame, subtle bugs that need deep tracing.
 Example job: "Check this file against these 30 rules."
@@ -38,10 +38,10 @@ Example job: "Is this the right shape for code that does not exist yet?"
 
 ```tsv
 tier	claude	codex	antigravity	devin
-1	claude-haiku-5-5 high	gpt-6-luna xhigh	none	none
-2	claude-sonnet-5-5 high	gpt-6.1-terra high	gemini-4-neon low	swe-2-1-medium high
-3	claude-opus-5-5 high	gpt-6.2-sol high	gemini-4-neon medium	swe-2-1-medium xhigh
-4	claude-fable-5-2 high	gpt-6.2-astra xhigh	gemini-4-neon high	none
+1	claude-haiku-5-5 high	gpt-6.1-terra low	none	none
+2	claude-sonnet-5-5 high	gpt-6.1-terra medium	gemini-4-neon low	swe-2-1-medium high
+3	claude-opus-5-5 high	gpt-6.2-sol medium	gemini-4-neon medium	swe-2-1-medium xhigh
+4	claude-fable-5-2 high	gpt-6.2-astra high	gemini-4-neon high	none
 ```
 
 ## Try order

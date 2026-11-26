@@ -287,7 +287,7 @@ t_link_writes_last_try() {
   has "claude model" "model: claude-opus-5-5
 effort: high" "$(cat "$T/cagents/helper.md")"
   has "codex model" 'model = "gpt-6.2-sol"
-model_reasoning_effort = "high"' "$(cat "$T/codex/helper.toml")"
+model_reasoning_effort = "medium"' "$(cat "$T/codex/helper.toml")"
 }
 
 t_link_writes_claude_form() {
@@ -319,8 +319,8 @@ t_link_writes_codex_form() {
   has stdout "wrote $T/codex/helper.toml" "$out"
   eq "codex form" "$(printf '%s\n' \
     '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
-    'name = "helper"' 'description = "Reviews one \"demo\" diff."' 'model = "gpt-6-luna"' \
-    'model_reasoning_effort = "xhigh"' 'developer_instructions = """' 'Review the diff.' \
+    'name = "helper"' 'description = "Reviews one \"demo\" diff."' 'model = "gpt-6.1-terra"' \
+    'model_reasoning_effort = "low"' 'developer_instructions = """' 'Review the diff.' \
     'Match \\d+ in "x".' '"""')" "$(cat "$T/codex/helper.toml")"
   link_sh
   eq "second run" "" "$out$err"
@@ -357,7 +357,7 @@ t_link_writes_codex_form_when_claude_try_fails() {
   link_sh
   # Then
   eq exit 0 "$code"
-  has "codex/helper.toml" 'model = "gpt-6-luna"' "$(cat "$T/codex/helper.toml")"
+  has "codex/helper.toml" 'model = "gpt-6.1-terra"' "$(cat "$T/codex/helper.toml")"
   [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
 }
 
