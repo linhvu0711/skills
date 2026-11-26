@@ -1618,6 +1618,32 @@ t_readme_hook_asks_core_named_bare_at_end() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
+t_readme_hook_asks_core_named_bare_deleted() {
+  # Given: skill demo reads shared/y.md, which names its sibling x.md bare
+  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+  # When: the commit deletes x.md
+  git rm -q shared/x.md
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_core_named_bare_staged_only() {
+  # Given: as above
+  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+  # When: an edit to x.md is staged, then its working copy is removed
+  printf 'more\n' >> shared/x.md; git add -A; rm shared/x.md
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
 t_readme_hook_skips_bare_name_in_other_folder() {
   # Given: skill demo reads shared/kit/a.md, which names size.md bare;
   # there is no shared/kit/size.md, only shared/size.md
@@ -1763,6 +1789,8 @@ cases=(
   "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
   "readme hook asks a skill whose core file names the changed file bare|t_readme_hook_asks_core_named_bare"
   "readme hook follows a bare core name that ends a sentence|t_readme_hook_asks_core_named_bare_at_end"
+  "readme hook asks a skill whose bare-named core file the commit deletes|t_readme_hook_asks_core_named_bare_deleted"
+  "readme hook follows a bare core name the work tree lacks but the commit holds|t_readme_hook_asks_core_named_bare_staged_only"
   "readme hook resolves a bare core name in its own folder only|t_readme_hook_skips_bare_name_in_other_folder"
   "passes a block description after a blank line|t_passes_block_after_blank"
   "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
