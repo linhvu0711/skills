@@ -63,7 +63,7 @@ t_cof_each_cwd() {
   co_rollout c1 /p/app "fix the export"
   co_rollout c2 /wt/o/app/feat-x "add the button"
   co_rollout c3 /p/other "tidy the docs"
-  run python3 "$F" --cwd /p/app --cwd /wt/o/app --include-subdirs --days 1 --all --json --limit 0
+  run python3 "$F" --cwd /p/app --cwd /wt/o/app --include-subdirs --active-days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1 c2" "$(ids)"
 }
@@ -73,7 +73,7 @@ t_cof_every_project() {
   co_rollout c1 /p/app "fix the export"
   co_rollout c2 /wt/o/app/feat-x "add the button"
   co_rollout c3 /p/other "tidy the docs"
-  run python3 "$F" --all-projects --days 1 --all --json --limit 0
+  run python3 "$F" --all-projects --active-days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1 c2 c3" "$(ids)"
 }
@@ -98,10 +98,10 @@ t_cof_archived_only() {
 }
 
 t_cof_archived_by_start_day() {
-  # Given: rollout a1 of /p/app, archived as rollout-2026-10-01T10-00-00-a1.jsonl
+  # Given: rollout a1 of /p/app, archived as rollout-2026-10-01T10-00-00-a1.jsonl and used today
   cof_home; co_rollout a1 /p/app "fix the export"; co_archive a1
   # When
-  run python3 "$F" --cwd /p/app --date 2026-10-01 --all --json
+  run python3 "$F" --cwd /p/app --active-days 1 --all --json
   # Then
   eq ids "a1" "$(ids)"
 }
@@ -143,8 +143,8 @@ t_cof_nested_helpers() {
 t_cof_helper_next_day() {
   cof_home
   co_rollout c1 /p/app "fix the export"; co_move c1 2026/10/01
-  co_rollout h1 /p/app "read the config" "$(helper c1)"; co_move h1 2026/10/02
-  run python3 "$F" --cwd /p/app --date 2026-10-01 --all --json --limit 0
+  co_rollout h1 /p/app "read the config" "$(helper c1)"; co_move h1 2026/10/02; old h1 2026/10/02
+  run python3 "$F" --cwd /p/app --active-days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
   eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(helpers)"
@@ -163,9 +163,9 @@ t_cof_resumed_keeps_old_helpers() {
 
 t_cof_window_skips_older_days() {
   cof_home
-  co_rollout z1 /p/app "tidy the docs"; co_move z1 2026/01/01
+  co_rollout z1 /p/app "tidy the docs"; co_move z1 2026/01/01; old z1 2026/01/01
   co_rollout c1 /p/app "fix the export"
-  run python3 "$F" --cwd /p/app --days 1 --all --json --limit 0
+  run python3 "$F" --cwd /p/app --active-days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
   eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"

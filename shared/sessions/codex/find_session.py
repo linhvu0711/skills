@@ -31,10 +31,8 @@ Usage:
     find_session.py --all                                  # newest first
     find_session.py "..." --cwd /path/to/proj              # other project
     find_session.py "..." --cwd A --cwd B --include-subdirs # several roots and below
-    find_session.py --all-projects --days 3 --all          # every project, last 3 days
-    find_session.py "..." --date yesterday | --days 30     # narrow by start day
+    find_session.py --all-projects --active-days 3 --all   # every project, used in the last 3 days
     find_session.py "..." --active-days 3                  # used in the last 3 days
-    find_session.py --show 01a0900b                        # one session's prompts
     find_session.py "..." --json                           # machine output
 """
 
@@ -186,19 +184,13 @@ def save_index(idx: dict) -> None:
     print(f"warning: could not save index: {last}", file=sys.stderr)
 
 
-def rollout_paths(day: dt.date | None, days: int | None):
-    """Every rollout in Codex's data folders, or with a window, those that
-    started in it."""
-    first = day or adapter_lib.first_day(days)
-    last = day or (dt.date.today() if days else None)
+def rollout_paths():
+    """Every rollout in Codex's data folders."""
     for root in rollout_io.data_folders():
         for dp, _, names in os.walk(root):
             for name in names:
-                if not rollout_io.is_rollout_name(name):
-                    continue
-                path = os.path.join(dp, name)
-                if first is None or first <= (start_day(path) or dt.date.min) <= last:
-                    yield path
+                if rollout_io.is_rollout_name(name):
+                    yield os.path.join(dp, name)
 
 
 def start_day(path: str) -> dt.date | None:
@@ -289,39 +281,6 @@ def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
 
 # ---------------------------------------------------------------- cli
 
-def resolve_day(value: str | None) -> dt.date | None:
-    if not value:
-        return None
-    v = value.lower()
-    if v == "today":
-        return dt.date.today()
-    if v == "yesterday":
-        return dt.date.today() - dt.timedelta(days=1)
-    return dt.date.fromisoformat(value)
-
-
-def show_session(id_prefix: str, idx: dict) -> int:
-    """Print the user prompts of one session (by id prefix) for verification."""
-    hits = [(k, e) for k, e in idx["files"].items()
-            if (e.get("id") or "").startswith(id_prefix)]
-    if not hits:
-        print(f"No indexed session id starts with {id_prefix!r}. Run a search for its project first.")
-        return 1
-    if len(hits) > 1:
-        print("Ambiguous prefix:", ", ".join(e["id"] for _, e in hits))
-        return 1
-    key, e = hits[0]
-    if "prompts" not in e:
-        e.update(parse_content(key))
-    print(f"{e['id']}  cwd={e.get('cwd')}  started={e.get('timestamp')}  prompts={e.get('n_prompts')}")
-    print(f"path: {key}\n")
-    for i, p in enumerate(e["prompts"], 1):
-        head = f"[{i}] "
-        lines = [ln[:600] + ("…" if len(ln) > 600 else "") for ln in p.split("\n")]
-        print(head + ("\n" + " " * len(head)).join(lines))
-    return 0
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="Find Codex sessions for a project by description.")
     ap.add_argument("query", nargs="?", default="", help="natural-language description to match")
@@ -330,20 +289,15 @@ def main() -> int:
     ap.add_argument("--include-subdirs", action="store_true", help="also match sessions started below --cwd")
     ap.add_argument("--interactive", action="store_true", help="leave out headless `codex exec` runs")
     ap.add_argument("--all", action="store_true", help="list every session newest first, no scoring")
-    ap.add_argument("--date", help="one local calendar day: today, yesterday, or YYYY-MM-DD")
-    ap.add_argument("--days", type=int, help="only the last N days (default: all time)")
     ap.add_argument("--active-days", type=int,
                     help="only sessions used in the last N days, wherever they started (by the rollout's mtime)")
     # The caller judges the list by meaning, and judges well once the session is
     # in it; 20 holds the right one far more often than 8 for a word search.
     ap.add_argument("--limit", type=int, default=20, help="max candidates to show (default 20, 0 for all)")
-    ap.add_argument("--show", metavar="ID", help="print the user prompts of one session (id or prefix)")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()
 
     idx = load_index()
-    if args.show:
-        return show_session(args.show, idx)
 
     folders = rollout_io.data_folders()
     if not any(os.path.isdir(f) for f in folders):
@@ -351,21 +305,19 @@ def main() -> int:
         return 1
     roots = [os.path.normpath(os.path.expanduser(c)) for c in (args.cwd or [os.getcwd()])]
     target = "all projects" if args.all_projects else ", ".join(roots)
-    day = resolve_day(args.date)
-    started = {str(p) for p in rollout_paths(day, args.days)} if (day or args.days) else None
     # A resumed rollout stays in its start-day folder, so --active-days goes by
     # the file's mtime instead of the folder.
     scope = adapter_lib.Scope.last_days(None if args.all_projects else roots, args.include_subdirs, args.active_days)
 
     def keep(key, st):
-        return (started is None or key in started) and scope.in_window(st.st_mtime)
+        return scope.in_window(st.st_mtime)
 
     # Helpers can sit outside the window (filed under a later day, or older than
     # a resumed parent), but a helper never starts before its parent. So read
     # every folder from the earliest day a picked session started; with no
     # window, that is every folder.
-    paths = list(rollout_paths(None, None))
-    if started is not None or scope.since is not None:
+    paths = list(rollout_paths())
+    if scope.since is not None:
         picked = []
         for p in paths:
             try:
