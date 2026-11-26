@@ -16,7 +16,8 @@
 # under skills/ or shared/ must point to a file: a path in a skill
 # starts at the skill's folder, a path in the shared core at the file's own
 # folder, and `$here/` in a script at the script's folder. A path is read when
-# it starts with `../` or its first folder exists there; a path that starts
+# it starts with `../`, when its first folder exists there, or when it is a
+# bare file name, with no `/`, of a file there; a path that starts
 # with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
 # skipped.
 # A .md file under skills/<name>/, other than the skill's README.md, or under
@@ -188,19 +189,20 @@ refs() {
   esac
   case "$f" in *.md|*.sh|*.py) ;; *) return 0 ;; esac
   while IFS=$'\t' read -r line tok; do
+    while [ "${tok%.}" != "$tok" ]; do tok="${tok%.}"; done
     case "$tok" in
       '$here/'*) case "$f" in *.sh) ;; *) continue ;; esac
                  p="${tok#\$here/}"; from="$(dirname "$f")" ;;
       /*|./*) continue ;;
       ../*) p="$tok"; from="$base" ;;
-      *) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+      */*) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+      *) [ -f "$base/$tok" ] || continue; p="$tok"; from="$base" ;;
     esac
     case "$p" in *[\<\>{}*\$~]*) continue ;; esac
-    while [ "${p%.}" != "$p" ]; do p="${p%.}"; done
     case "$nl$allowed_paths$nl" in *"$nl$base $p$nl"*) continue ;; esac
     printf '%s\t%s\t%s\n' "$line" "$p" "$from/$p"
   done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
-                  for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$text")
+                  for (i = 1; i <= n; i++) if (w[i] ~ /\// || w[i] ~ /\.(md|sh|py)\.*$/) print FNR "\t" w[i] }' "$text")
 }
 
 # core_refs: the shared core paths that the index files named on stdin name,

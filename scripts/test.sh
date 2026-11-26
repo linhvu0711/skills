@@ -814,6 +814,16 @@ t_reads_core_path_from_own_folder() {
   eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
 }
 
+t_passes_bare_name_of_no_file() {
+  # Given: a shared file that names notes.md bare, and no shared/notes.md
+  repo; mkdir -p shared; printf 'see notes.md\n' > shared/y.md
+  # When
+  run bash scripts/check.sh shared
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
 t_skips_placeholders_and_other_folders() {
   repo; mkdir -p skills/demo/references; printf 'hi\n' > skills/demo/references/a.md
   printf 'see `references/types/<type>.md`, `./src/x.md`, and `scripts/sync-repos.sh`\n' > skills/demo/SKILL.md
@@ -1582,6 +1592,45 @@ t_readme_hook_skips_unread_core() {
   eq commits 3 "$(git rev-list --count HEAD)"
 }
 
+t_readme_hook_asks_core_named_bare() {
+  # Given: skill demo reads shared/y.md, which names its sibling x.md bare
+  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+  # When
+  printf 'more\n' >> shared/x.md; git add -A
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_asks_core_named_bare_at_end() {
+  # Given: as above, with the bare name at the end of a sentence
+  hooked; core; printf 'see x.md.\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+  # When
+  printf 'more\n' >> shared/x.md; git add -A
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "$(readme_msg skills/demo)" "$err"
+  eq commits 2 "$(git rev-list --count HEAD)"
+}
+
+t_readme_hook_skips_bare_name_in_other_folder() {
+  # Given: skill demo reads shared/kit/a.md, which names size.md bare;
+  # there is no shared/kit/size.md, only shared/size.md
+  hooked; core; mkdir -p shared/kit; printf 'see size.md\n' > shared/kit/a.md
+  skill demo 'read `../../shared/kit/a.md`'; git add -A; git commit -qm skill
+  # When
+  printf 'more\n' >> shared/size.md; git add -A
+  run git commit -m test
+  # Then
+  eq exit 0 "$code"
+  eq commits 3 "$(git rev-list --count HEAD)"
+}
+
 # t_runner_keeps_cases_out_of_caller: from a caller repo with an origin,
 # run_cases runs two broken cases. One fails, then would write a marker. One
 # loses its cd behind `|| true`, then commits and pushes. Both report FAIL; the
@@ -1672,6 +1721,7 @@ cases=(
   "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
   "flags a missing path to another skill|t_flags_missing_skill_path"
   "reads a shared core path from its own folder|t_reads_core_path_from_own_folder"
+  "passes a bare name of no file in the shared core|t_passes_bare_name_of_no_file"
   "skips placeholders and folders a skill does not have|t_skips_placeholders_and_other_folders"
   "allows a listed path in the user's repo|t_allows_listed_path"
   "flags a missing path after \$here in a script|t_flags_missing_here_path"
@@ -1711,6 +1761,9 @@ cases=(
   "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
   "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"
   "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
+  "readme hook asks a skill whose core file names the changed file bare|t_readme_hook_asks_core_named_bare"
+  "readme hook follows a bare core name that ends a sentence|t_readme_hook_asks_core_named_bare_at_end"
+  "readme hook resolves a bare core name in its own folder only|t_readme_hook_skips_bare_name_in_other_folder"
   "passes a block description after a blank line|t_passes_block_after_blank"
   "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
   "flags a null description|t_flags_null_description"
