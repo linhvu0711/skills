@@ -1,0 +1,5 @@
+interface:
+  display_name: "Audit Coding Standards"
+  short_description: "Make or check a repo's CODING_STANDARDS.md"
+policy:
+  allow_implicit_invocation: false

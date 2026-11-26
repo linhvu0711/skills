@@ -2,3 +2,5 @@ interface:
   display_name: "Prep"
   short_description: "Turn one ready issue into a plan an executor can follow cold"
   default_prompt: "$plan-up"
+policy:
+  allow_implicit_invocation: false

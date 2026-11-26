@@ -2,3 +2,5 @@ interface:
   display_name: "Orchestrate"
   short_description: "Run a set of issues to closed from one T3 Code thread"
   default_prompt: "$orchestrate"
+policy:
+  allow_implicit_invocation: false
