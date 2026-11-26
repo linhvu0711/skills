@@ -265,18 +265,17 @@ each_target() {
   for f in "$repo"/skills/*/agents/*.md "$repo"/shared/agents/*.md; do
     [ -f "$f" ] || continue
     src="${f#"$repo"/}"; name="$(basename "$f" .md)"
-    if ! err="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
-      for h in claude codex; do
-        path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want=""; why="$src:$err"
-        if [ -e "$path" ] || [ -L "$path" ]; then st=stale; else st=missing; fi
-        "$1"
-      done
-      continue
-    fi
+    # Each harness renders on its own try list, so one may fail while the
+    # other renders.
     for h in claude codex; do
       path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want="$scratch/$h-$name"
-      bash "$repo/scripts/agents.sh" render "$h" "$(mark "$src")" < "$f" > "$want" 2>/dev/null || continue
-      put_state "$path" "$want"; "$1"
+      if err="$(bash "$repo/scripts/agents.sh" render "$h" "$(mark "$src")" < "$f" 2>&1 >"$want")"; then
+        put_state "$path" "$want"
+      else
+        want=""; why="$src:$err"
+        if [ -e "$path" ] || [ -L "$path" ]; then st=stale; else st=missing; fi
+      fi
+      "$1"
     done
   done
 

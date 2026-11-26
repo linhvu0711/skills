@@ -349,6 +349,30 @@ t_link_keeps_agent_on_tier_model_none() {
   has "cagents/helper.md" "model: claude-haiku-5-5" "$(cat "$T/cagents/helper.md")"
 }
 
+t_link_writes_codex_form_when_claude_try_fails() {
+  # Given: an agent whose tier-1 Claude model is none and whose Codex model is good
+  linked demo; agent demo helper
+  awk -F '\t' -v OFS='\t' 'NR == 41 { $2 = "none" } { print }' shared/model-tiers.md > shared/model-tiers.md.new; mv shared/model-tiers.md.new shared/model-tiers.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has "codex/helper.toml" 'model = "gpt-6-luna"' "$(cat "$T/codex/helper.toml")"
+  [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
+}
+
+t_link_status_names_codex_form_it_cannot_render() {
+  # Given: everything linked, then the tier-1 Codex model set to none
+  linked demo; agent demo helper; with_gate; link_sh
+  awk -F '\t' -v OFS='\t' 'NR == 41 { $3 = "none" } { print }' shared/model-tiers.md > shared/model-tiers.md.new; mv shared/model-tiers.md.new shared/model-tiers.md
+  # When
+  link_sh scripts/link.sh --status
+  # Then
+  eq "agent lines" "$(printf 'ok\tagent\tclaude\thelper\t%s\t%s\n' "$T/cagents/helper.md" "$T/cagents"
+    printf 'stale\tagent\tcodex\thelper\t%s\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex" "skills/demo/agents/helper.md:5: tier 1 for codex: none is no model it can run")" \
+    "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
+}
+
 t_link_skips_agent_without_tier() {
   # Given: an agent file with no tier line
   linked demo; agent demo helper
@@ -1751,6 +1775,8 @@ cases=(
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
   "link skips an agent file with no tier line|t_link_skips_agent_without_tier"
   "link keeps an agent whose tier model is none|t_link_keeps_agent_on_tier_model_none"
+  "link writes the Codex form when the Claude try fails|t_link_writes_codex_form_when_claude_try_fails"
+  "link status names a Codex form it cannot render|t_link_status_names_codex_form_it_cannot_render"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
