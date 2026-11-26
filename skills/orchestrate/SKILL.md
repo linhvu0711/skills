@@ -86,10 +86,11 @@ A kept thread stays in the user's thread list, which is the signal, so it does n
 
 ## Snooze
 
-A snoozed thread leaves the user's thread list until it wakes, so the user sees the board, not this thread. T3 unsnoozes it when the user sends a message. Every turn in this thread ends with this choice, before you post: the watcher's checks, § Start, § Resume, the commands, and any talk with the user.
+A snoozed thread leaves the user's thread list until it wakes, so the user sees the board, not this thread. T3 unsnoozes it when the user sends a message. Every turn in this thread ends with the first case below that holds, before you post: the watcher's checks, § Start, § Resume, the commands, and any talk with the user.
 
-- The run needs the user: a `stop:` line, an issue at `unlabeled` with no `answer` (a proposal to make or one not answered yet), an issue whose `claim` is `failed`, a start recorded `--failed`, or `"done": true`. Each waits on words said only in this thread, so a later turn with none of them new still keeps it in view. `t3_thread_organize` with `action: unsnooze`, no `threadId`.
-- The talk is still open: this turn asks the user a question or leaves a choice for them, or the user is partway through a request across turns. Judge by reading the talk; no fixed words. For example, "#72 can be archived, or kept for later. Which?" is open. Unsnooze, as above.
+- The talk is still open: this turn asks the user a question or leaves a choice for them, or the user is partway through a request across turns. Judge by reading the talk; no fixed words. For example, "#72 can be archived, or kept for later. Which?" is open. `t3_thread_organize` with `action: unsnooze`, no `threadId`. This holds in a done run too, so the user sees the question.
+- The run is done: a check printed `"done": true`, in this turn or an earlier one. `t3_thread_organize` with `action: unsnooze`, then with `action: settle`, both with no `threadId`. The settle applies when the turn ends, and T3 then shows this thread as done. It holds for every later turn too: after "close it" is done and said, settle again.
+- The run needs the user: a `stop:` line, an issue at `unlabeled` with no `answer` (a proposal to make or one not answered yet), an issue whose `claim` is `failed`, or a start recorded `--failed`. Each waits on words said only in this thread, so a later turn with none of them new still keeps it in view. Unsnooze, as above.
 - Any other turn: `t3_thread_organize` with `action: snooze`, no `threadId`, and `snoozedUntil` 24 hours from now, in UTC ISO form. A request done and reported in full is such a turn: after "archive #72's thread" is done and said, snooze.
 
 T3 still alerts on a turn in a snoozed thread today; once it stops, the quiet turns are silent too.
@@ -159,7 +160,7 @@ A live run takes these, said in this thread. Each runs one `orchestrate.sh` call
 
 A check printed `"done": true`.
 
-1. Unsnooze this thread, per § Snooze. The watcher ends by itself, since the run is done.
+1. End this turn per § Snooze: the run is done, so it settles this thread. The watcher ends by itself, since the run is done.
 2. Post one summary, one line per item of `summary`:
 
    ```
