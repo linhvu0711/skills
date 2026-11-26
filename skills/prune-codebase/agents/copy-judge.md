@@ -2,6 +2,8 @@
 name: copy-judge
 description: "Judges groups of repeated code for /prune-codebase: which are the same code in two or more places, and whether each is new since the span start. Spawned only by prune-codebase. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 1
+checker: no
 home:
   claude: claude claude-sonnet-5-5 high
   codex: claude claude-sonnet-5-5 high

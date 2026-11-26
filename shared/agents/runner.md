@@ -2,6 +2,8 @@
 name: runner
 description: "Runs a command a skill names and judges the result only by the brief's pass rule. Installs nothing and edits no repo file."
 tools: Bash, Read, Grep, Glob
+tier: 1
+checker: no
 home:
   claude: claude claude-haiku-5-5 high
   codex: claude claude-haiku-5-5 high

@@ -2,6 +2,8 @@
 name: plan-design-checker
 description: "Checks the code design of a finished /plan-up plan with fresh eyes, before the user sees it: a part it patches but should rebuild, an empty module, a seam with one adapter, logic in the wrong place, tests that reach inside, parts the work does not need, a second way for a job the Standard names one way for. Spawned only by plan-up step 8, beside plan-correctness-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash, Agent
+tier: 4
+checker: yes
 home:
   claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
   codex: claude claude-fable-5-2 high

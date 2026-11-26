@@ -2,6 +2,8 @@
 name: hack-judge
 description: "Finds hacks in about ten files for /prune-codebase: code that goes around a problem and does not solve it, read with the history of its line, and whether each is new since the span start. Spawned only by prune-codebase. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 2
+checker: no
 home:
   claude: claude claude-sonnet-5-5 high
   codex: claude claude-sonnet-5-5 high

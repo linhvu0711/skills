@@ -205,10 +205,16 @@ link_sh() { run env SKILLS_HOME="$T/agents" CLAUDE_SKILLS_HOME="$T/claude" CLAUD
 # with_gate: this checkout's shared/gate/ in the repo, so link.sh wires it.
 with_gate() { mkdir -p shared && cp -R "$scripts_dir/../shared/gate" shared/; }
 
+# with_tiers: this checkout's shared/model-tiers.md in the repo, which every
+# agent file needs for its models.
+with_tiers() { mkdir -p shared && cp "$scripts_dir/../shared/model-tiers.md" shared/; }
+
 # full_agent: the frontmatter lines of a skill agent `helper` with every field.
 full_agent='name: helper
 description: Reviews one "demo" diff.
 tools: Read, Grep, Glob, Bash
+tier: 1
+checker: no
 home:
   claude: devin swe-2-high high
   codex: claude claude-opus-5-5 xhigh
@@ -220,6 +226,7 @@ backup:
 # agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
 # full_agent under that name, with a two-line body.
 agent() {
+  [ -f shared/model-tiers.md ] || with_tiers
   mkdir -p "skills/$1/agents"
   printf -- '---\n%s\n---\nReview the diff.\nMatch \\d+ in "x".\n' "${full_agent/name: helper/name: $2}" > "skills/$1/agents/$2.md"
 }
@@ -355,6 +362,33 @@ t_agents_lists_every_tool_without_tools_line() {
   # Then
   eq exit 0 "$code"
   eq stdout "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent" "$out"
+}
+
+t_agents_tries_lists_checker() {
+  # Given: a tier-3 checker
+  repo; agent demo helper
+  sed -i.bak -e 's/^tier: 1$/tier: 3/' -e 's/^checker: no$/checker: yes/' skills/demo/agents/helper.md
+  # When
+  run bash scripts/agents.sh tries claude < skills/demo/agents/helper.md
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(printf '%s\n' 'devin swe-2-1-medium xhigh' 'antigravity gemini-4-neon medium' 'claude claude-opus-5-5 high')" "$out"
+}
+
+t_agents_tries_follow_tier_cell() {
+  # Given: two tier-2 agents, one a checker, and the tier-2 Claude cell
+  # changed to claude-opus-5-5 medium
+  repo; agent demo helper; agent demo helper2
+  sed -i.bak 's/^tier: 1$/tier: 2/' skills/demo/agents/helper.md skills/demo/agents/helper2.md
+  sed -i.bak 's/^checker: no$/checker: yes/' skills/demo/agents/helper2.md
+  sed -i.bak "s/^2$(printf '\t')claude-sonnet-5-5 high$(printf '\t')/2$(printf '\t')claude-opus-5-5 medium$(printf '\t')/" shared/model-tiers.md
+  want="$(printf '%s\n' 'devin swe-2-1-medium high' 'claude claude-opus-5-5 medium')"
+  # When
+  run bash scripts/agents.sh tries claude < skills/demo/agents/helper.md
+  # Then
+  eq "helper stdout" "$want" "$out"
+  run bash scripts/agents.sh tries claude < skills/demo/agents/helper2.md
+  eq "helper2 stdout" "$want" "$out"
 }
 
 t_agents_start_names_first_home() {
@@ -1729,6 +1763,8 @@ cases=(
   "agents.sh lists an agent's tools|t_agents_lists_tools"
   "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
   "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
+  "agents.sh lists a tier-3 checker's try list|t_agents_tries_lists_checker"
+  "agents.sh moves every agent of a tier when one cell changes|t_agents_tries_follow_tier_cell"
   "agents.sh start names the first home off the backup|t_agents_start_names_first_home"
   "agents.sh start says name when the home is the backup|t_agents_start_by_name_when_home_is_backup"
   "link writes no Antigravity plugin|t_link_writes_no_antigravity_plugin"

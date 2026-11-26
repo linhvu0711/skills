@@ -7,8 +7,17 @@
 #   agents.sh render <harness> <marker> < skills/<name>/agents/<agent>.md
 #   agents.sh models < skills/<name>/agents/<agent>.md
 #   agents.sh start <harness> < skills/<name>/agents/<agent>.md
+#   agents.sh tries <harness> < skills/<name>/agents/<agent>.md
 #
 # A shared agent, shared/agents/<agent>.md, is read the same way.
+#
+# An agent file also names its `tier:`, 1 to 4, and its `checker:`, yes or
+# no. shared/model-tiers.md, or the file $MODEL_TIERS names, joins the two
+# into a try list for each main harness. Its three fenced `tsv` tables are
+# found by the first cell of their header row: `tier` (the model and effort
+# each company runs at each tier), `row` (the companies a subagent tries, in
+# order, for `<tier> <checker>` and each main harness), and `company`
+# (whether each company is in use).
 #
 # After `name`, `description`, and an optional `tools` line, an agent file
 # holds two maps, each key two spaces in: a home entry per main harness, and
@@ -48,6 +57,9 @@
 # models: one line per home and backup, <map> <harness> <place> <model>, in
 # file order, exit 0. The map is home for the first home, home<n> for the
 # n-th, and backup, whose place is its harness. sync-harnesses reads it.
+# tries: the agent's try list for the main agent of <harness>, claude,
+# codex, or antigravity, one `<company> <model> <effort>` line per try, in
+# order, exit 0.
 # start: how the main agent of <harness>, claude or codex, starts the agent
 # in T3, exit 0:
 # `name` when its first home is <harness> on the backup's model and effort,
@@ -59,6 +71,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+tiers="${MODEL_TIERS:-$here/../shared/model-tiers.md}"
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 mode="${1:-}"
@@ -68,15 +81,44 @@ case "$mode" in
           [ $# -eq 3 ] || die_usage "$u"
           harness="$2"; marker="$3"
           case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
+  tries) u='usage: agents.sh tries <harness>'
+         [ $# -eq 2 ] || die_usage "$u"
+         harness="$2"; marker=""
+         case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
   start) u='usage: agents.sh start <harness>'
          [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
          case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
-  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness>" ;;
+  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness> | agents.sh tries <harness>" ;;
 esac
 
-LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
+LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers="$tiers" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
   function problem(s) { probs[++np] = s }
+  # read_tiers: the three tables of the tier file. getline keeps stdin for
+  # frontmatter.awk. tt_rows[t] counts the rows of table t, whose header is
+  # tt_head[t, i] and whose row r is tt_cell[t, r, i].
+  function read_tiers(  line, n, c, k, t, in_t, r) {
+    while ((getline line < tiers) > 0) {
+      if (line ~ /^```tsv[ \t]*$/) { in_t = 1; t = ""; continue }
+      if (in_t && line ~ /^```[ \t]*$/) { in_t = 0; continue }
+      if (!in_t) continue
+      k = split(line, c, "\t")
+      if (t == "") { t = c[1]; tt_cols[t] = k; for (n = 1; n <= k; n++) tt_head[t, n] = c[n]; continue }
+      r = ++tt_rows[t]
+      for (n = 1; n <= k; n++) tt_cell[t, r, n] = c[n]
+    }
+    close(tiers)
+    for (r = 1; r <= tt_rows["tier"]; r++) for (n = 2; n <= tt_cols["tier"]; n++)
+      tier_model[tt_cell["tier", r, 1], tt_head["tier", n]] = tt_cell["tier", r, n]
+    for (r = 1; r <= tt_rows["row"]; r++) for (n = 2; n <= tt_cols["row"]; n++)
+      try_order[tt_cell["row", r, 1], tt_head["row", n]] = tt_cell["row", r, n]
+  }
+  # tries(h, t, c): fills tries_out[1..n] with the try list of tier t and
+  # checker c under main harness h, `<company> <model> <effort>` each; returns n.
+  function tries(h, t, c,  cs, n, i) {
+    n = split(try_order[t " " c, h], cs, /, */)
+    for (i = 1; i <= n; i++) tries_out[i] = cs[i] " " tier_model[t, cs[i]]
+    return n }
   function model_ok(place, sec, m) {
     if (place == "claude") return m ~ /^claude-[a-z]+-[0-9]+-[0-9]+$/
     if (place == "codex") return m ~ /^gpt-[0-9]+(\.[0-9]+)?-[a-z]+$/
@@ -135,6 +177,8 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       if (k[1] != "home" && k[1] != "backup") continue
       entry[k[1], k[2]] = fm_map[k[1], k[2]]; seen[k[1], k[2]] = 1; order[++ne] = fm_keys[i] }
     if (mode == "tools") { print claude_tools(tools); exit 0 }
+    read_tiers()
+    if (mode == "tries") { n = tries(harness, fm["tier"], fm["checker"]); for (i = 1; i <= n; i++) print tries_out[i]; exit 0 }
     split("claude codex antigravity", hs, " ")
     for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
     for (i = 1; i <= 2; i++) if (!seen["backup", hs[i]]) problem("missing backup for " hs[i])

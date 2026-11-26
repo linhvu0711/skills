@@ -2,6 +2,8 @@
 name: gap-checker
 description: "Checks the decisions a /grill settled with fresh eyes, once, before grill files an epic: missing pieces, and decisions that rest on a fact the code contradicts. Spawned only by grill § Gap check. Reads the brief and the code; changes nothing."
 tools: Read, Grep, Glob, Bash
+tier: 3
+checker: yes
 home:
   claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
   codex: claude claude-opus-5-5 xhigh

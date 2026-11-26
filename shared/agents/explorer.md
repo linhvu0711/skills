@@ -2,6 +2,8 @@
 name: explorer
 description: "Fetches facts for a skill: reads code and docs, and the web when the brief asks, and cites a source for each fact. Read-only."
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+tier: 1
+checker: no
 home:
   claude: claude claude-haiku-5-5 high
   codex: claude claude-haiku-5-5 high

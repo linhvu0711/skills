@@ -2,6 +2,8 @@
 name: rule-judge
 description: "Judges about ten files against a repo's coding rules for /audit-coding-standards: each line that breaks a rule, how the code does each job no rule covers, and whether each place is new since the span start. Spawned only by audit-coding-standards. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 2
+checker: no
 home:
   claude: claude claude-sonnet-5-5 high
   codex: claude claude-sonnet-5-5 high

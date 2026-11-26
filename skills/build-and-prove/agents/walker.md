@@ -2,6 +2,8 @@
 name: walker
 description: Walks a plan's UI walks on a proofbox Sandbox the way a test user would, films each video, and reports what passed and what broke with screenshots. Spawned only by /build-and-prove, after it started the app. Never reads or changes code.
 tools: Bash, Read
+tier: 2
+checker: no
 home:
   claude: devin swe-2-high high
   codex: devin swe-2-high high

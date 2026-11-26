@@ -2,6 +2,8 @@
 name: way-judge
 description: "Lists, for about ten files, each job the code does and each way it does it, with a count, for /audit-coding-standards: a package, a language feature, or own code that redoes one. Spawned only by audit-coding-standards. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 2
+checker: no
 home:
   claude: claude claude-sonnet-5-5 high
   codex: claude claude-sonnet-5-5 high

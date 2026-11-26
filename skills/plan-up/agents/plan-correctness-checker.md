@@ -2,6 +2,8 @@
 name: plan-correctness-checker
 description: "Checks a finished /plan-up plan for correctness with fresh eyes, before the user sees it: wrong facts, missed callers or cases, steps that break, tests that cannot pass, a step that breaks the repo's Standard. Spawned only by plan-up step 8, beside plan-design-checker. Reads the issue, the plan, and the code; changes nothing."
 tools: Read, Grep, Glob, Bash, Agent
+tier: 3
+checker: yes
 home:
   claude: antigravity gemini-4-neon medium, devin gemini-4-neon-high medium
   codex: claude claude-opus-5-5 high

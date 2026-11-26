@@ -2,6 +2,8 @@
 name: design-judge
 description: "Judges about ten files for /improve-architecture: modules too thin, parts that leak their inside, code hard to test, and parts heavier than their job, and whether each is new since the span start. Spawned only by improve-architecture. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 3
+checker: no
 home:
   claude: claude claude-sonnet-5-5 high
   codex: claude claude-sonnet-5-5 high

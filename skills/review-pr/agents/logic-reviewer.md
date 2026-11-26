@@ -2,6 +2,8 @@
 name: logic-reviewer
 description: "Reviews one PR diff on the Logic axis for /review-pr, the correctness of each changed branch: a wrong condition, a missed case, a broken caller. Spawned only by review-pr, beside the other two axis reviewers. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 3
+checker: yes
 home:
   claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
   codex: claude claude-opus-5-5 xhigh

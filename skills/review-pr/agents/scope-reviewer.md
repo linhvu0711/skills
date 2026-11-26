@@ -2,6 +2,8 @@
 name: scope-reviewer
 description: "Reviews one PR diff on the Scope axis for /review-pr, whether each hunk serves a line of the task, and whether a task line has no hunk. Spawned only by review-pr, beside the other two axis reviewers. Read-only."
 tools: Read, Grep, Glob, Bash
+tier: 2
+checker: yes
 home:
   claude: devin swe-2-high high
   codex: devin swe-2-high high
