@@ -1134,6 +1134,56 @@ header() {
   run bash scripts/check.sh
 }
 
+# invocation <lock line> <yaml text>: repo with skills/demo, its README
+# headings, a SKILL.md with <lock line> in its frontmatter when not empty, and
+# skills/demo/agents/openai.yaml of <yaml text> when not empty, committed;
+# then run check.sh.
+invocation() {
+  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  { printf -- '---\nname: demo\ndescription: A demo skill.\n'
+    [ -z "$1" ] || printf '%s\n' "$1"
+    printf -- '---\n'; } > skills/demo/SKILL.md
+  if [ -n "$2" ]; then mkdir -p skills/demo/agents; printf '%s\n' "$2" > skills/demo/agents/openai.yaml; fi
+  git add -A; git commit -qm files
+  run bash scripts/check.sh
+}
+
+t_passes_locked_in_both() {
+  # Given: SKILL.md and the Codex file both lock the skill
+  # When
+  invocation 'disable-model-invocation: true' "$(printf 'policy:\n  allow_implicit_invocation: false')"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "check: clean" "$out"
+}
+
+t_flags_locked_without_codex_file() {
+  # Given: SKILL.md locks the skill, and it has no Codex file
+  # When
+  invocation 'disable-model-invocation: true' ''
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/openai.yaml: missing file: SKILL.md sets disable-model-invocation: true" "$err"
+}
+
+t_flags_locked_codex_free() {
+  # Given: SKILL.md locks the skill, and its Codex file has no policy
+  # When
+  invocation 'disable-model-invocation: true' "$(printf 'interface:\n  display_name: "Demo"')"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/openai.yaml: allow_implicit_invocation is not false, but SKILL.md sets disable-model-invocation: true" "$err"
+}
+
+t_flags_only_codex_locked() {
+  # Given: the Codex file locks the skill, and SKILL.md does not
+  # When
+  invocation '' "$(printf 'policy:\n  allow_implicit_invocation: false')"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/openai.yaml: allow_implicit_invocation is false, but SKILL.md does not set disable-model-invocation: true" "$err"
+}
+
 # agent_md <frontmatter lines>: header's repo with a good SKILL.md, and
 # skills/demo/agents/helper.md of `---`, these lines, `---`, committed; then
 # run check.sh.
@@ -1844,6 +1894,10 @@ cases=(
   "flags a SKILL.md with no frontmatter|t_flags_no_frontmatter"
   "flags a SKILL.md name that is not its folder|t_flags_name_not_folder"
   "flags a SKILL.md with an empty description|t_flags_empty_description"
+  "passes a skill locked in both files|t_passes_locked_in_both"
+  "flags a locked skill with no Codex file|t_flags_locked_without_codex_file"
+  "flags a locked skill that Codex lets start|t_flags_locked_codex_free"
+  "flags a skill only Codex locks|t_flags_only_codex_locked"
   "readme hook stops a skill change without its README|t_readme_hook_stops_skill_change"
   "readme hook passes a skill change marked Readme: unchanged|t_readme_hook_passes_marked_change"
   "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"

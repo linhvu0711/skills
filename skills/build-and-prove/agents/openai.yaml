@@ -1,0 +1,5 @@
+interface:
+  display_name: "Build and Prove"
+  short_description: "Build a plan on this machine and prove it works"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Complete Task"
+  short_description: "Do a manual task issue in your own browser and Mac apps"
+policy:
+  allow_implicit_invocation: false

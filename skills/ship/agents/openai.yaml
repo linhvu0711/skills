@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ship"
+  short_description: "Take an issue from plan to PR in one run"
+policy:
+  allow_implicit_invocation: false

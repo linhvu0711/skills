@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ready PR"
+  short_description: "Take an open PR to ready-to-merge"
+policy:
+  allow_implicit_invocation: false

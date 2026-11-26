@@ -1,0 +1,5 @@
+interface:
+  display_name: "Sync Harnesses"
+  short_description: "Check each harness has the repo's skills, rules, gates, and subagents"
+policy:
+  allow_implicit_invocation: false

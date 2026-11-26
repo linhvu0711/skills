@@ -44,7 +44,10 @@
 # the runner in `shared/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
 # file name without `.md`, a `description` that is not empty, and a `tier:`
 # and a `checker:` line, and shared/model-tiers.md well-formed tables, as
-# `scripts/agents.sh` says.
+# `scripts/agents.sh` says. Each skill's SKILL.md and its agents/openai.yaml
+# agree on who may start it: disable-model-invocation: true in SKILL.md needs
+# policy.allow_implicit_invocation: false in agents/openai.yaml, and the other
+# way round.
 #
 # With --commit-msg, the subject check comes first: the first message line that
 # is not blank or `#` is the subject, and over 50 characters is a problem,
@@ -427,6 +430,24 @@ if [ ${#paths[@]} -eq 0 ]; then
     while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | frontmatter_problems "$(basename "$f" .md)" file)
     while IFS= read -r p; do problems+=("$f:$p"); done < <(git show ":$f" | bash "$scripts/agents.sh" check)
   done < <(agent_files)
+
+  # Claude Code and Antigravity read disable-model-invocation in SKILL.md, and
+  # Codex reads policy.allow_implicit_invocation in agents/openai.yaml, so the two must agree.
+  while IFS= read -r skill; do
+    yaml="$skill/agents/openai.yaml"
+    lock="$(git show ":$skill/SKILL.md" | LC_ALL=C awk -f "$scripts/frontmatter.awk" -f <(printf '%s\n' 'END { print fm["disable-model-invocation"] }'))"
+    codex=""
+    if in_index "$yaml"; then
+      codex="$({ printf -- '---\n'; git show ":$yaml"; } | LC_ALL=C awk -f "$scripts/frontmatter.awk" -f <(printf '%s\n' 'END { print fm_map["policy", "allow_implicit_invocation"] }'))"
+    fi
+    if [ "$lock" = true ] && ! in_index "$yaml"; then
+      problems+=("$yaml: missing file: SKILL.md sets disable-model-invocation: true")
+    elif [ "$lock" = true ] && [ "$codex" != false ]; then
+      problems+=("$yaml: allow_implicit_invocation is not false, but SKILL.md sets disable-model-invocation: true")
+    elif [ "$lock" != true ] && [ "$codex" = false ]; then
+      problems+=("$yaml: allow_implicit_invocation is false, but SKILL.md does not set disable-model-invocation: true")
+    fi
+  done < <(skill_dirs)
 fi
 if [ -n "$words" ]; then
   scan "private word" "" -iE -f "$words"

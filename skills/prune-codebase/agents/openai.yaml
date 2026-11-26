@@ -1,0 +1,5 @@
+interface:
+  display_name: "Prune Codebase"
+  short_description: "Find comments, unused code, copies, and hacks that teach agents bad habits"
+policy:
+  allow_implicit_invocation: false

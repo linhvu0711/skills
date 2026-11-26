@@ -1,6 +1,8 @@
 # frontmatter.awk: the one reader of a skill's or an agent's frontmatter.
 # check.sh and agents.sh load it with `awk -f` before their own program,
-# which holds only functions and an END block that reads these:
+# which holds only functions and an END block that reads these. check.sh also
+# reads a skill's agents/openai.yaml through it, with a `---` line put first,
+# for its `policy:` map.
 #
 #   fm_closed     1 when line 1 is `---` and a later `---` line closes it
 #   fm[k]         the value of the top-level key k, by val. A block scalar's
