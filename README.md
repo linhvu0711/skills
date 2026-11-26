@@ -117,7 +117,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [clarify](skills/clarify/) | Explains what the agent said when you did not follow it, from the session first. |
 | [unslop](skills/unslop/) | Edits prose so it stops sounding like an AI wrote it. |
 | [write-for-agents](skills/write-for-agents/) | A reference for writing documents agents read: skills, `AGENTS.md`, `CLAUDE.md`. |
-| [semantic-code-search](skills/semantic-code-search/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
+| [search-by-meaning](skills/search-by-meaning/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
 | [embed-source](skills/embed-source/) | Puts a library's full source next to your repo, at the version you install, so agents read real code. |
 | [use-mac](skills/use-mac/) | Works in the desktop apps on your Mac in the background: opens, reads, clicks, and types across apps, and proves each step. |
 | [sync-harnesses](skills/sync-harnesses/) | Checks that every harness on your Mac has the skills, subagents, rules, and gates, remakes missing links, and reports the rest. |
@@ -153,7 +153,7 @@ Optional, only for the skills that name them:
 - Xcode's iOS simulator and AXe: [use-mac](skills/use-mac/), to check a web page on an iPhone.
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
 - A tool with screens and flows from real apps, such as the Mobbin MCP: [create-prototype](skills/create-prototype/), for references.
-- `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
+- `semble`: [search-by-meaning](skills/search-by-meaning/) and [embed-source](skills/embed-source/).
 
 ## Credits
 

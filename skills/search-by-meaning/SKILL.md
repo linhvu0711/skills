@@ -1,5 +1,5 @@
 ---
-name: semantic-code-search
+name: search-by-meaning
 description: "Find code by meaning with semble instead of grep. Any brief that says 'find', 'search', 'explore', or 'grep' for a concept is this skill. Use when you need to locate code by what it does ('where is login expiry handled?', 'how does session renewal work?'), find a symbol by name, or find code related to a hit you already have."
 ---
 

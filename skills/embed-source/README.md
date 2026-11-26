@@ -34,4 +34,4 @@ The sync script defines the manifest columns and the `.embed-source-ref` marker.
 
 ## Fits with
 
-- [semantic-code-search](../semantic-code-search/) searches the embedded source with `semble`; this skill warms that index after each add.
+- [search-by-meaning](../search-by-meaning/) searches the embedded source with `semble`; this skill warms that index after each add.

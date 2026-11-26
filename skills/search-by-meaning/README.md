@@ -1,4 +1,4 @@
-# semantic-code-search
+# search-by-meaning
 
 Finds code by what it does, with `semble`, before the agent falls back to grep.
 
