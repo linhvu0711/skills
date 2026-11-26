@@ -1,6 +1,6 @@
 # State brief
 
-Used by `recall`. A research agent writes the brief; the main agent tags its PRs and branches with their live state, shows it, and waits.
+Used by `recall`. A research agent writes the brief; the main agent tags its PRs and branches with their live state and shows it.
 
 ## Dispatch
 
