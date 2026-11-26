@@ -31,13 +31,6 @@ name: helper
 description: Helps.
 tier: 2
 checker: no
-home:
-  claude: devin swe-2-high high
-  codex: claude claude-haiku-5-5 high
-  antigravity: antigravity gemini-4-neon high
-backup:
-  claude: claude-haiku-5-5 high
-  codex: gpt-6-luna high
 ---
 You help.
 AGENT

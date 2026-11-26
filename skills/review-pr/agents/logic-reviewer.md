@@ -4,13 +4,6 @@ description: "Reviews one PR diff on the Logic axis for /review-pr, the correctn
 tools: Read, Grep, Glob, Bash
 tier: 3
 checker: yes
-home:
-  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
-  codex: claude claude-opus-5-5 xhigh
-  antigravity: claude claude-opus-5-5 xhigh
-backup:
-  claude: claude-opus-5-5 xhigh
-  codex: gpt-6.2-sol xhigh
 ---
 
 You review one axis of one pull request: Logic.

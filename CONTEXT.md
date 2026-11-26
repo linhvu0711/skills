@@ -13,19 +13,19 @@ The `shared/` folder: files that two or more skills read.
 _Avoid_: common, utils, lib
 
 **Skill agent**:
-A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models for each main harness, and a backup model for Claude Code and for Codex. `link.sh` installs it into Claude Code and Codex. The explorer and the runner are not skill agents; the shared core owns them.
+A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names its tier and whether it is a checker. `link.sh` installs it into Claude Code and Codex. The explorer and the runner are not skill agents; the shared core owns them.
 _Avoid_: subagent config, custom agent, agent file
 
-**Home model**:
-A model a subagent tries in T3. Its file lists one or more for each main harness, and T3 tries them from left to right: by the main agent's own tool when that tool runs it as written, else by T3. A checker's home models come from another company than the main agent's. Every other subagent's is the model its job needs.
-_Avoid_: default model
+**Tier**:
+How much a subagent's job needs from a model, from 1 to 4: 1 follows clear steps, 2 judges real code against a list, 3 reasons through unclear problems, 4 makes open design calls. `shared/model-tiers.md` names each company's model at each tier.
+_Avoid_: level, model size
 
-**Backup model**:
-The model a subagent runs on when none of its home models can run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for Claude Code and one for Codex. Antigravity has none, so there a subagent with no home left fails.
-_Avoid_: fallback
+**Try order**:
+The companies a subagent tries, in order, for its tier, its checker line, and the main agent's harness. In T3 each try runs in turn until one starts; outside T3 only the last one runs, the main agent's own company.
+_Avoid_: home models, fallback chain
 
 **Checker**:
-A subagent that judges work the main agent's model family made: the logic reviewer, the plan-correctness checker, the plan-design checker, and the gap checker.
+A subagent whose file says `checker: yes`: it judges work the main agent's model family made, such as a plan, the grill's decisions, or a PR. Its try order puts another company before the main agent's own.
 
 **Explorer**:
 The read-only subagent that fetches facts for a skill. The repo ships it, with the same name in every harness.

@@ -4,13 +4,6 @@ description: "Checks the code design of a finished /plan-up plan with fresh eyes
 tools: Read, Grep, Glob, Bash, Agent
 tier: 4
 checker: yes
-home:
-  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high
-  codex: claude claude-fable-5-2 high
-  antigravity: claude claude-fable-5-2 high
-backup:
-  claude: claude-fable-5-2 high
-  codex: gpt-6.2-astra xhigh
 ---
 
 You check the design of a plan that someone else wrote. An executor will build it cold, from the plan alone, so a wrong shape in the plan becomes code that every later change has to work around.

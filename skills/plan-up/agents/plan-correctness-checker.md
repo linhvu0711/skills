@@ -4,13 +4,6 @@ description: "Checks a finished /plan-up plan for correctness with fresh eyes, b
 tools: Read, Grep, Glob, Bash, Agent
 tier: 3
 checker: yes
-home:
-  claude: antigravity gemini-4-neon medium, devin gemini-4-neon-high medium
-  codex: claude claude-opus-5-5 high
-  antigravity: claude claude-opus-5-5 high
-backup:
-  claude: claude-opus-5-5 high
-  codex: gpt-6.2-sol high
 ---
 
 You check a plan that someone else wrote. An executor will build it cold, from the plan alone, so every wrong fact in it becomes wrong code.

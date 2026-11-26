@@ -355,9 +355,9 @@ t_sync_follows_link_env() {
 }
 
 t_sync_names_agent_link_cannot_render() {
-  # Given: a second agent with no Codex backup
+  # Given: a second agent with no tier line
   mac
-  sed -e 's/^name: helper$/name: helper2/' -e '/^  codex: gpt-6-luna high$/d' \
+  sed -e 's/^name: helper$/name: helper2/' -e '/^tier: 2$/d' \
     "$T/mac/repo/skills/demo/agents/helper.md" > "$T/mac/repo/skills/demo/agents/helper2.md"
   # When
   sync_mac
@@ -366,7 +366,7 @@ t_sync_names_agent_link_cannot_render() {
   has claude 'claude       skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
   has codex 'codex        skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
   has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 2/2' "$out"
-  eq problems 'problem: skills/demo/agents/helper2.md: missing backup for codex' "$(grep '^problem:' <<<"$out")"
+  eq problems 'problem: skills/demo/agents/helper2.md:5: no tier line' "$(grep '^problem:' <<<"$out")"
 }
 
 t_sync_names_gates_beside_unread_plugin_hooks() {
@@ -398,7 +398,7 @@ cases=(
   "sync names a tier model T3 no longer offers|t_sync_names_stale_tier_model"
   "sync skips the models of a company not in use|t_sync_skips_models_of_company_not_in_use"
   "sync names a try order that reaches a company not in use|t_sync_names_try_order_not_in_use"
-  "sync skips the home models of a place that is off|t_sync_skips_models_of_place_off"
+  "sync skips the models of a place that is off|t_sync_skips_models_of_place_off"
   "sync warns when Devin is off in T3|t_sync_warns_devin_off"
   "sync warns when SWE-2 is refused|t_sync_warns_swe2_refused"
   "sync skips a harness that is not installed|t_sync_skips_harness_not_installed"

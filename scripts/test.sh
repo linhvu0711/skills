@@ -214,14 +214,7 @@ full_agent='name: helper
 description: Reviews one "demo" diff.
 tools: Read, Grep, Glob, Bash
 tier: 1
-checker: no
-home:
-  claude: devin swe-2-high high
-  codex: claude claude-opus-5-5 xhigh
-  antigravity: claude claude-opus-5-5 xhigh
-backup:
-  claude: claude-haiku-5-5 high
-  codex: gpt-6-luna xhigh'
+checker: no'
 
 # agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
 # full_agent under that name, with a two-line body.
@@ -344,15 +337,15 @@ t_link_leaves_other_codex_agent() {
   eq "own file" 'name = "mine"' "$(cat "$T/codex/helper.toml")"
 }
 
-t_link_skips_agent_without_claude_backup() {
-  # Given: an agent file with no Claude Code backup
+t_link_skips_agent_without_tier() {
+  # Given: an agent file with no tier line
   linked demo; agent demo helper
-  grep -v '^  claude: claude-haiku-5-5 high$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  grep -v '^tier: 1$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
   # When
   link_sh
   # Then
   eq exit 0 "$code"
-  has stderr "skip: skills/demo/agents/helper.md: missing backup for claude" "$err"
+  has stderr "skip: skills/demo/agents/helper.md:6: no tier line" "$err"
   [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
 }
 
@@ -682,38 +675,38 @@ t_link_status_names_missing_and_held() {
 }
 
 t_link_status_names_agent_it_cannot_render() {
-  # Given: everything linked, then a second agent with no Codex backup
+  # Given: everything linked, then a second agent with no tier line
   linked demo; agent demo helper; with_gate; link_sh
-  agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
   # When
   link_sh scripts/link.sh --status
   # Then
   eq "helper2 lines" "$(for l in "claude $T/cagents/helper2.md $T/cagents" "codex $T/codex/helper2.toml $T/codex"; do
-      read -r h p f <<<"$l"; printf 'missing\tagent\t%s\thelper2\t%s\t%s\tskills/demo/agents/helper2.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
+      read -r h p f <<<"$l"; printf 'missing\tagent\t%s\thelper2\t%s\t%s\tskills/demo/agents/helper2.md:6: no tier line\n' "$h" "$p" "$f"; done)" \
     "$(grep helper2 <<<"$out")"
 }
 
 t_link_status_names_installed_agent_it_cannot_render() {
-  # Given: everything linked, then the agent's Codex backup taken out
+  # Given: everything linked, then the agent's tier line taken out
   linked demo; agent demo helper; with_gate; link_sh
-  grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  grep -v '^tier: 1$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
   # When
   link_sh scripts/link.sh --status
   # Then
   eq "helper lines" "$(for l in "claude $T/cagents/helper.md $T/cagents" "codex $T/codex/helper.toml $T/codex"; do
-      read -r h p f <<<"$l"; printf 'stale\tagent\t%s\thelper\t%s\t%s\tskills/demo/agents/helper.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
+      read -r h p f <<<"$l"; printf 'stale\tagent\t%s\thelper\t%s\t%s\tskills/demo/agents/helper.md:6: no tier line\n' "$h" "$p" "$f"; done)" \
     "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
 }
 
 t_link_status_matches_install_skips() {
   # Given: everything linked, then a target of every kind held by something
-  # else, and a second agent with no Codex backup
+  # else, and a second agent with no tier line
   linked demo; agent demo helper; with_gate; link_sh
   rm "$T/claude/demo"; mkdir "$T/claude/demo"
   printf 'mine\n' > "$T/codex/helper.toml"
   printf 'not json\n' > "$T/claude-settings.json"
   rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
-  agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
   # When: the install, then --status
   link_sh
   local skips whys want
@@ -723,7 +716,7 @@ t_link_status_matches_install_skips() {
   # Then
   want="$(printf '%s\n' "$T/claude-settings.json is not JSON" "$T/claude/demo is not this repo's demo" \
     "$T/codex/helper.toml is not this repo's helper.toml" "$T/t3/p1/config/plugins is not this repo's plugins" \
-    "skills/demo/agents/helper2.md: missing backup for codex")"
+    "skills/demo/agents/helper2.md:6: no tier line")"
   eq "install skips" "$want" "$skips"
   eq "status whys" "$want" "$whys"
 }
@@ -1109,7 +1102,7 @@ header() {
 # skills/demo/agents/helper.md of `---`, these lines, `---`, committed; then
 # run check.sh.
 agent_md() {
-  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+  repo; with_tiers; readme "Use it when" "What you get" "Needs" "Fits with"
   printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
   mkdir -p skills/demo/agents; printf -- '---\n%s\n---\n' "$1" > skills/demo/agents/helper.md
   git add -A; git commit -qm files
@@ -1138,35 +1131,8 @@ t_flags_agent_empty_description() {
   has stderr "skills/demo/agents/helper.md: empty description" "$err"
 }
 
-t_flags_agent_no_codex_backup() {
-  # Given: every field but the Codex backup
-  # When
-  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^  codex: gpt-6-luna xhigh$')"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: missing backup for codex" "$err"
-}
 
-t_passes_agent_with_blank_and_comment_in_map() {
-  # Given: a blank line, an indented comment, and a comment at the line start inside home:
-  # When
-  agent_md "$(printf '%s\n' "$full_agent" | sed 's/^  claude: devin swe-2-high high$/&\
-\
-  # Codex next\
-# then Antigravity/')"
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
 
-t_flags_agent_no_antigravity_home() {
-  # Given: every field but the Antigravity home
-  # When
-  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^  antigravity: claude claude-opus-5-5 xhigh$')"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: missing home for antigravity" "$err"
-}
 
 t_flags_agent_block_description() {
   # Given: every field, with the description as a block
@@ -1175,7 +1141,7 @@ t_flags_agent_block_description() {
   Reviews one diff.}"
   # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: description on more than one line" "$err"
+  has stderr "skills/demo/agents/helper.md:3: description on more than one line" "$err"
 }
 
 t_flags_agent_block_name() {
@@ -1185,93 +1151,94 @@ t_flags_agent_block_name() {
   helper}"
   # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: name on more than one line" "$err"
+  has stderr "skills/demo/agents/helper.md:2: name on more than one line" "$err"
 }
 
-t_flags_agent_unknown_harness() {
-  # Given: every field, and a backup for a harness that is not one
-  # When
-  agent_md "$(printf '%s\n  cursor: gpt-6-luna high' "$full_agent")"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: unknown harness: cursor" "$err"
-}
 
-t_flags_backup_model_of_other_harness() {
-  # Given: every field, with a Claude model as the Codex backup
-  # When
-  agent_md "${full_agent/  codex: gpt-6-luna xhigh/  codex: claude-haiku-5-5 high}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: backup for codex: claude-haiku-5-5 is not a model codex takes" "$err"
-}
 
-t_flags_antigravity_backup() {
-  # Given: every field, and an Antigravity backup
-  # When
-  agent_md "$(printf '%s\n  antigravity: inherit' "$full_agent")"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: backup for antigravity: Antigravity takes no backup" "$err"
-}
 
-t_flags_effort_place_cannot_take() {
-  # Given: every field, with an effort Devin has not for the Claude home
-  # When
-  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: devin swe-2-high ultra}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: home for claude: ultra is not an effort devin takes" "$err"
-}
 
-t_flags_home_in_unknown_place() {
-  # Given: every field, with the Codex home in a place T3 does not start
-  # When
-  agent_md "${full_agent/  codex: claude claude-opus-5-5 xhigh/  codex: cursor composer-2 high}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: home for codex: unknown place: cursor" "$err"
-}
 
-t_passes_agent_with_two_homes() {
-  # Given: every field, with Antigravity Neon then Devin Neon as the Claude home
-  # When
-  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high high}"
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
 
-t_flags_bad_second_home() {
-  # Given: two Claude homes, the second with an effort Devin has not
-  # When
-  agent_md "${full_agent/  claude: devin swe-2-high high/  claude: antigravity gemini-4-neon high, devin gemini-4-neon-high ultra}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: home 2 for claude: ultra is not an effort devin takes" "$err"
-}
 
-t_flags_empty_home() {
-  # Given: every field, with an empty Claude home
-  # When
-  agent_md "${full_agent/  claude: devin swe-2-high high/  claude:}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: home for claude: unknown place: " "$err"
-}
 
-t_flags_shared_agent_no_codex_backup() {
-  # Given: a good skill, and the shared explorer with every field but the Codex backup
-  repo; readme "Use it when" "What you get" "Needs" "Fits with"
+t_flags_shared_agent_no_tier() {
+  # Given: a good skill, and the shared explorer with every field but the tier line
+  repo; with_tiers; readme "Use it when" "What you get" "Needs" "Fits with"
   printf -- '---\nname: demo\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md
   mkdir -p shared/agents
-  printf -- '---\n%s\n---\n' "$(printf '%s\n' "${full_agent/name: helper/name: explorer}" | grep -v '^  codex: gpt-6-luna xhigh$')" > shared/agents/explorer.md
+  printf -- '---\n%s\n---\n' "$(printf '%s\n' "${full_agent/name: helper/name: explorer}" | grep -v '^tier: 1$')" > shared/agents/explorer.md
   git add -A; git commit -qm files
   # When
   run bash scripts/check.sh
   # Then
   eq exit 1 "$code"
-  has stderr "shared/agents/explorer.md: missing backup for codex" "$err"
+  has stderr "shared/agents/explorer.md:6: no tier line" "$err"
+}
+
+t_flags_agent_no_tier() {
+  # Given: every field but the tier line
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^tier: 1$')"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md:6: no tier line" "$err"
+}
+
+t_flags_agent_no_checker() {
+  # Given: every field but the checker line
+  # When
+  agent_md "$(printf '%s\n' "$full_agent" | grep -v '^checker: no$')"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md:6: no checker line" "$err"
+}
+
+t_flags_unknown_tier() {
+  # Given: every field, with a tier the tier file has no row for
+  # When
+  agent_md "${full_agent/tier: 1/tier: 5}"
+  # Then
+  eq exit 1 "$code"
+  has stderr "skills/demo/agents/helper.md:5: unknown tier: 5" "$err"
+}
+
+# tier_line <n> <line>: line <n> of shared/model-tiers.md replaced by <line>,
+# its `\t` read as tabs, and committed; then run check.sh.
+tier_line() {
+  awk -v n="$1" -v l="$(printf '%b' "$2")" 'NR == n { print l; next } { print }' shared/model-tiers.md > "$T/tiers"
+  mv "$T/tiers" shared/model-tiers.md; git add -A; git commit -qm tiers
+  run bash scripts/check.sh
+}
+
+t_flags_tier_row_bad_format() {
+  # Given: a good agent, and a tier-models row cut to four cells
+  agent_md "$full_agent"
+  # When
+  tier_line 42 '2\tclaude-sonnet-5-5 high\tgpt-6.1-terra high\tgemini-4-neon low'
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/model-tiers.md:42: row has 4 cells, its header has 5" "$err"
+}
+
+t_flags_try_cell_no_model_at_tier() {
+  # Given: a good agent, and a tier-4 Claude try cell that names Devin, which has no tier-4 model
+  agent_md "$full_agent"
+  # When
+  tier_line 60 '4 yes\tdevin, claude\tclaude, codex\tclaude, antigravity'
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/model-tiers.md:60: 4 yes for claude: devin has no model at tier 4" "$err"
+}
+
+t_flags_claude_try_list_ending_elsewhere() {
+  # Given: a good agent, and a Claude try cell whose last try is Devin
+  agent_md "$full_agent"
+  # When
+  tier_line 55 '2 no\tclaude, devin\tdevin, codex\tdevin, antigravity'
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/model-tiers.md:55: 2 no for claude: the last try is devin, not claude" "$err"
 }
 
 t_passes_agent_with_all_fields() {
@@ -1749,7 +1716,7 @@ cases=(
   "link does nothing in a worktree|t_link_skips_worktree"
   "link.sh runs from outside the repo|t_link_runs_from_outside_repo"
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
-  "link skips an agent file with no Claude Code backup|t_link_skips_agent_without_claude_backup"
+  "link skips an agent file with no tier line|t_link_skips_agent_without_tier"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
@@ -1859,21 +1826,16 @@ cases=(
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"
-  "flags an agent file with no Codex backup|t_flags_agent_no_codex_backup"
-  "passes an agent file with a blank line and comments in a map|t_passes_agent_with_blank_and_comment_in_map"
-  "flags an agent file with no Antigravity home|t_flags_agent_no_antigravity_home"
   "flags an agent file with a block description|t_flags_agent_block_description"
   "flags an agent file with a block name|t_flags_agent_block_name"
-  "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
-  "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
-  "flags an Antigravity backup|t_flags_antigravity_backup"
-  "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
-  "flags a home in an unknown place|t_flags_home_in_unknown_place"
-  "passes an agent file with two homes|t_passes_agent_with_two_homes"
-  "flags a bad second home by its place|t_flags_bad_second_home"
-  "flags an empty home|t_flags_empty_home"
+  "flags an agent file with no tier line|t_flags_agent_no_tier"
+  "flags an agent file with no checker line|t_flags_agent_no_checker"
+  "flags an unknown tier|t_flags_unknown_tier"
+  "flags a tier row in a bad format|t_flags_tier_row_bad_format"
+  "flags a try cell with no model at its tier|t_flags_try_cell_no_model_at_tier"
+  "flags a Claude try list that ends on another company|t_flags_claude_try_list_ending_elsewhere"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
-  "flags a shared agent with no Codex backup|t_flags_shared_agent_no_codex_backup"
+  "flags a shared agent with no tier line|t_flags_shared_agent_no_tier"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )
 

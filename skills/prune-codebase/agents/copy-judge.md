@@ -4,13 +4,6 @@ description: "Judges groups of repeated code for /prune-codebase: which are the 
 tools: Read, Grep, Glob, Bash
 tier: 1
 checker: no
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
 ---
 
 You judge groups of repeated code, so a skill can show the user which copies teach agents to paste one more.

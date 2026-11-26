@@ -153,7 +153,7 @@ check_codex() {
 # Antigravity, and each private folder T3 runs it from. Antigravity reads the
 # hooks.json of every plugin in its plugins folder, and link.sh's status
 # lines name each T3 folder. It has no subagents: it runs only in T3, which
-# starts each helper on its home model.
+# starts each helper on its try list.
 check_antigravity() {
   local t st kind h name
   count_targets antigravity skill skill; s="$got"

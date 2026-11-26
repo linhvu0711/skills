@@ -4,13 +4,6 @@ description: "Lists, for about ten files, each job the code does and each way it
 tools: Read, Grep, Glob, Bash
 tier: 2
 checker: no
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
 ---
 
 You list how a few files do their jobs, so a skill can show the user each job the code does in two or more ways.

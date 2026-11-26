@@ -4,13 +4,6 @@ description: "Judges about ten files against a repo's coding rules for /audit-co
 tools: Read, Grep, Glob, Bash
 tier: 2
 checker: no
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
 ---
 
 You judge a few files against a repo's coding rules, so a skill can show the user where code breaks a rule and how the code does the jobs no rule covers.

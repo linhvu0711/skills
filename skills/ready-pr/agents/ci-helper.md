@@ -4,13 +4,6 @@ description: "Reads the failed CI logs of one group of red checks for /ready-pr 
 tools: Read, Grep, Glob, Bash
 tier: 1
 checker: no
-home:
-  claude: claude claude-haiku-5-5 high
-  codex: claude claude-haiku-5-5 high
-  antigravity: claude claude-haiku-5-5 high
-backup:
-  claude: claude-haiku-5-5 high
-  codex: gpt-6-luna high
 ---
 
 You find why one group of CI checks failed.

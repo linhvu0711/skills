@@ -4,13 +4,6 @@ description: "Judges one group of review findings for /validate-pr-review, each 
 tools: Read, Grep, Glob, Bash
 tier: 3
 checker: no
-home:
-  claude: claude claude-opus-5-5 high
-  codex: codex gpt-6.2-sol medium
-  antigravity: antigravity gemini-4-neon medium
-backup:
-  claude: claude-opus-5-5 high
-  codex: gpt-6.2-sol medium
 ---
 
 You judge the review findings of one group of files.

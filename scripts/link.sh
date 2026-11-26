@@ -267,7 +267,7 @@ each_target() {
     src="${f#"$repo"/}"; name="$(basename "$f" .md)"
     if ! err="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
       for h in claude codex; do
-        path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want=""; why="$src: $err"
+        path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want=""; why="$src:$err"
         if [ -e "$path" ] || [ -L "$path" ]; then st=stale; else st=missing; fi
         "$1"
       done

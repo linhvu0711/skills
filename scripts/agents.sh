@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# agents.sh: the one reader of a skill agent's home and backup models.
+# agents.sh: the one reader of a skill agent's tier and of the tier file.
 # check.sh asks it for a file's problems; link.sh asks it for the file each
 # harness reads.
 #
@@ -9,48 +9,37 @@
 #   agents.sh tries <harness> < skills/<name>/agents/<agent>.md
 #   agents.sh orders <harness>
 #   agents.sh in-use
+#   agents.sh tiers
 #
 # A shared agent, shared/agents/<agent>.md, is read the same way.
 #
-# An agent file also names its `tier:`, 1 to 4, and its `checker:`, yes or
-# no. shared/model-tiers.md, or the file $MODEL_TIERS names, joins the two
+# After `name`, `description`, and an optional `tools` line, an agent file
+# names its `tier:`, a row of the tier-models table, and its `checker:`, yes
+# or no. shared/model-tiers.md, or the file $MODEL_TIERS names, joins the two
 # into a try list for each main harness. Its three fenced `tsv` tables are
 # found by the first cell of their header row: `tier` (the model and effort
 # each company runs at each tier), `row` (the companies a subagent tries, in
 # order, for `<tier> <checker>` and each main harness), and `company`
-# (whether each company is in use).
-#
-# After `name`, `description`, and an optional `tools` line, an agent file
-# holds two maps, each key two spaces in: a home entry per main harness, and
-# a backup entry for Claude Code and Codex. Antigravity has no backup: it runs
-# only inside T3, and link.sh installs no agent file there.
-#
-#   home:
-#     claude: <place> <model> <effort>[, <place> <model> <effort>]...
-#     codex: <place> <model> <effort>
-#     antigravity: <place> <model> <effort>
-#   backup:
-#     claude: <model> <effort>
-#     codex: <model> <effort>
-#
-# A blank line or a `#` comment line is skipped, so it ends no map.
-# A home is a model T3 starts the agent on; its place is where T3 starts
-# it: claude, codex, antigravity, or devin. A home entry may list more homes
-# after the first, joined by `, `, and T3 tries them from left to right.
-# check names a problem in the n-th home, from the second, as
-# `home <n> for <harness>:`. A backup runs in the harness
-# itself, so its place is its harness. Each place takes models of one form
-# and a set of efforts, as T3 and each harness list them on 2026-11-20:
+# (whether each company is in use). A tier-models cell is `none` or
+# `<model> <effort>`, and each company takes models of one form and a set of
+# efforts, as T3 and each harness list them on 2026-11-20:
 #
 #   claude       claude-<family>-<n>-<n>     low medium high xhigh max
 #   codex        gpt-<n>[.<n>]-<name>        low medium high xhigh max ultra
 #   antigravity  gemini-<n>[.<n>]-<name>     low medium high xhigh
 #   devin        a T3 Devin id, as swe-2-high  none low medium high xhigh max
 #
+# A try-order cell lists companies joined by `, `, each with a model at the
+# row's tier, and a claude or codex cell ends on that harness, since outside
+# T3 only the last try runs.
+#
 # `name` and `description` are check.sh's to check; the `description:` line
 # is copied as written, so it must be one line.
 #
-# check: one problem per line on stdout, nothing for a good file. Exit 0.
+# check: one `<line>: <problem>` line per problem on stdout, nothing for a
+# good file. A missing tier or checker line is named at the closing `---`.
+# Exit 0.
+# tiers: the same for the tier file, exit 0. It reads no agent file.
 # render: the file of <harness> on stdout, on the model and effort of the
 # last try of its try list, <marker> in a comment at its top,
 # exit 0; or the first problem on stderr, exit 1. <harness> is claude or
@@ -67,6 +56,8 @@
 # in T3, exit 0:
 # `name` when its first try is <harness> itself, else
 # `t3 <company> <model> <effort>`, its first try. The subagent gate reads it.
+# tries and start, like render, print the first problem on stderr and exit 1
+# for a file check names.
 # Any other command line: its usage on stderr, exit 64.
 # The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
 # the description becomes `\"`, and a `"""` in the body becomes `""\"`.
@@ -78,7 +69,7 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 
 mode="${1:-}"
 case "$mode" in
-  check|tools|in-use) harness=""; marker="" ;;
+  check|tools|in-use|tiers) harness=""; marker="" ;;
   orders) u='usage: agents.sh orders <harness>'
           [ $# -eq 2 ] || die_usage "$u"
           harness="$2"; marker=""
@@ -95,29 +86,31 @@ case "$mode" in
          [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
          case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
-  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh start <harness> | agents.sh tries <harness> | agents.sh orders <harness> | agents.sh in-use" ;;
+  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh start <harness> | agents.sh tries <harness> | agents.sh orders <harness> | agents.sh in-use | agents.sh tiers" ;;
 esac
-# orders and in-use read no agent file, so a caller's stdin stays its own.
-case "$mode" in orders|in-use) exec </dev/null ;; esac
+# orders, in-use, and tiers read no agent file, so a caller's stdin stays its own.
+case "$mode" in orders|in-use|tiers) exec </dev/null ;; esac
 
 LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers="$tiers" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
-  function problem(s) { probs[++np] = s }
+  function problem(n, s) { probs[++np] = n ": " s }
   # read_tiers: the three tables of the tier file. getline keeps stdin for
   # frontmatter.awk. tt_rows[t] counts the rows of table t, whose header is
-  # tt_head[t, i] and whose row r is tt_cell[t, r, i].
-  function read_tiers(  line, n, c, k, t, in_t, r) {
-    while ((getline line < tiers) > 0) {
+  # tt_head[t, i] and whose row r is tt_cell[t, r, i], of tt_n[t, r] cells at
+  # line tt_nr[t, r].
+  function read_tiers(  line, ln, n, c, k, t, in_t, r) {
+    while ((getline line < tiers) > 0) { ln++
       if (line ~ /^```tsv[ \t]*$/) { in_t = 1; t = ""; continue }
       if (in_t && line ~ /^```[ \t]*$/) { in_t = 0; continue }
       if (!in_t) continue
       k = split(line, c, "\t")
       if (t == "") { t = c[1]; tt_cols[t] = k; for (n = 1; n <= k; n++) tt_head[t, n] = c[n]; continue }
-      r = ++tt_rows[t]
+      r = ++tt_rows[t]; tt_n[t, r] = k; tt_nr[t, r] = ln
       for (n = 1; n <= k; n++) tt_cell[t, r, n] = c[n]
     }
     close(tiers)
-    for (r = 1; r <= tt_rows["tier"]; r++) for (n = 2; n <= tt_cols["tier"]; n++)
-      tier_model[tt_cell["tier", r, 1], tt_head["tier", n]] = tt_cell["tier", r, n]
+    for (r = 1; r <= tt_rows["tier"]; r++) { known_tier[tt_cell["tier", r, 1]] = 1
+      for (n = 2; n <= tt_cols["tier"]; n++) tier_model[tt_cell["tier", r, 1], tt_head["tier", n]] = tt_cell["tier", r, n] }
+    for (n = 2; n <= tt_cols["tier"]; n++) company[tt_head["tier", n]] = 1
     for (r = 1; r <= tt_rows["row"]; r++) for (n = 2; n <= tt_cols["row"]; n++)
       try_order[tt_cell["row", r, 1], tt_head["row", n]] = tt_cell["row", r, n]
   }
@@ -127,11 +120,52 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
     n = split(try_order[t " " c, h], cs, /, */)
     for (i = 1; i <= n; i++) tries_out[i] = cs[i] " " tier_model[t, cs[i]]
     return n }
-  function model_ok(place, sec, m) {
+  function model_ok(place, m) {
     if (place == "claude") return m ~ /^claude-[a-z]+-[0-9]+-[0-9]+$/
     if (place == "codex") return m ~ /^gpt-[0-9]+(\.[0-9]+)?-[a-z]+$/
     if (place == "antigravity") return m ~ /^gemini-[0-9]+(\.[0-9]+)?-[a-z]+$/
     return m ~ /^[a-z0-9][a-z0-9.-]*$/ }
+  function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
+  # tier_problems: the problems of the tier file, each at its row's line.
+  # A row with the wrong cell count gets no other check.
+  function tier_problems(  t, r, i, n, at, w, k, cs, last, row, rw) {
+    split("tier row company", ts, " "); split("tier models|try order|in use", tn, "|")
+    for (i = 1; i <= 3; i++) if (!(ts[i] in tt_cols)) problem(1, "no " tn[i] " table")
+    for (i = 1; i <= 3; i++) { t = ts[i]
+      for (r = 1; r <= tt_rows[t]; r++) if (tt_n[t, r] != tt_cols[t]) { bad[t, r] = 1
+        problem(tt_nr[t, r], "row has " tt_n[t, r] " cells, its header has " tt_cols[t]) } }
+    for (r = 1; r <= tt_rows["tier"]; r++) { if (bad["tier", r]) continue
+      for (i = 2; i <= tt_cols["tier"]; i++) {
+        k = tt_head["tier", i]; v = tt_cell["tier", r, i]; at = "tier " tt_cell["tier", r, 1] " for " k ": "
+        if (v == "none") continue
+        n = split(v, w, " ")
+        if (!model_ok(k, w[1])) problem(tt_nr["tier", r], at w[1] " is not a model " k " takes")
+        else if (n < 2) problem(tt_nr["tier", r], at "no effort")
+        else if (!effort_ok(k, w[2])) problem(tt_nr["tier", r], at w[2] " is not an effort " k " takes")
+        else if (n > 2) problem(tt_nr["tier", r], at "one effort, then nothing") } }
+    for (r = 1; r <= tt_rows["row"]; r++) { if (bad["row", r]) continue
+      row = tt_cell["row", r, 1]; split(row, rw, " ")
+      for (i = 2; i <= tt_cols["row"]; i++) {
+        h = tt_head["row", i]; at = row " for " h ": "
+        n = split(tt_cell["row", r, i], cs, /, */)
+        for (k = 1; k <= n; k++)
+          if (!(cs[k] in company)) problem(tt_nr["row", r], at "unknown company: " cs[k])
+          else if (tier_model[rw[1], cs[k]] == "none" || tier_model[rw[1], cs[k]] == "") problem(tt_nr["row", r], at cs[k] " has no model at tier " rw[1])
+        last = cs[n]
+        if ((h == "claude" || h == "codex") && last != h) problem(tt_nr["row", r], at "the last try is " last ", not " h) } }
+    for (r = 1; r <= tt_rows["company"]; r++) { if (bad["company", r]) continue
+      v = tt_cell["company", r, 2]
+      if (v != "yes" && v != "no") problem(tt_nr["company", r], "in use for " tt_cell["company", r, 1] " is yes or no, not " v) }
+  }
+  # agent_problems: the problems of the agent file, each at its line.
+  function agent_problems() {
+    if (fm_block["name"]) problem(fm_nr["name"], "name on more than one line")
+    if (fm_block["description"]) problem(fm_nr["description"], "description on more than one line")
+    if (!("tier" in fm_nr)) problem(fm_end, "no tier line")
+    else if (!(fm["tier"] in known_tier)) problem(fm_nr["tier"], "unknown tier: " fm["tier"])
+    if (!("checker" in fm_nr)) problem(fm_end, "no checker line")
+    else if (fm["checker"] != "yes" && fm["checker"] != "no") problem(fm_nr["checker"], "checker is yes or no, not " fm["checker"])
+  }
   # toml(s, body): s as the inside of a TOML basic string, or of a multi-line
   # one when body is set.
   function toml(s, body,  i, c, o) {
@@ -148,67 +182,34 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
     gsub(/,/, " ", t); gsub(/\[/, " ", t); gsub(/\]/, " ", t); n = split(t, w, " ")
     for (i = 1; i <= n; i++) out = out (out == "" ? "" : " ") w[i]
     return out }
-  function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
-  # entry_problems(sec, h): the problems of the entry for harness h in map sec.
-  # A home entry is a list joined by `,`; its n-th home, from the second, is
-  # named `home <n>`.
-  function entry_problems(sec, h,  items, k, i) {
-    if (sec != "home") { item_problems(sec, h, entry[sec, h], sec " for " h ": "); return }
-    k = split(entry[sec, h], items, ",")
-    if (k == 0) { items[1] = ""; k = 1 }
-    for (i = 1; i <= k; i++) item_problems(sec, h, items[i], (i == 1 ? "home" : "home " i) " for " h ": ")
-  }
-  # item_problems(sec, h, v, at): the problems of one home or backup v, each
-  # line starting with at.
-  function item_problems(sec, h, v, at,  w, n, place, m, e, want) {
-    n = split(v, w, " ")
-    if (sec == "home") { place = w[1]; m = w[2]; e = w[3]; want = 3
-      if (!(place in efforts)) { problem(at "unknown place: " place); return } }
-    else { place = h; m = w[1]; e = w[2]; want = 2 }
-    if (!model_ok(place, sec, m)) { problem(at m " is not a model " place " takes"); return }
-    if (n < want) { problem(at "no effort"); return }
-    if (!effort_ok(place, e)) { problem(at e " is not an effort " place " takes"); return }
-    if (n > want) problem(at "one effort, then nothing")
-  }
   BEGIN { efforts["claude"] = "low medium high xhigh max"
           efforts["codex"] = "low medium high xhigh max ultra"
           efforts["antigravity"] = "low medium high xhigh"
           efforts["devin"] = "none low medium high xhigh max" }
   END {
-    if (mode == "orders" || mode == "in-use") { read_tiers()
+    if (mode == "orders" || mode == "in-use" || mode == "tiers") { read_tiers()
+      if (mode == "tiers") { tier_problems(); for (i = 1; i <= np; i++) print probs[i]; exit 0 }
       if (mode == "in-use") { for (r = 1; r <= tt_rows["company"]; r++) if (tt_cell["company", r, 2] == "yes") print tt_cell["company", r, 1]; exit 0 }
       for (r = 1; r <= tt_rows["row"]; r++) { row = tt_cell["row", r, 1]; split(row, rw, " ")
         n = tries(harness, rw[1], rw[2]); for (i = 1; i <= n; i++) print row, tries_out[i] }
       exit 0 }
     if (!fm_closed) {
-      if (mode == "render" || mode == "tools") { print "missing frontmatter" > "/dev/stderr"; exit 1 }
+      if (mode != "check") { print "1: missing frontmatter" > "/dev/stderr"; exit 1 }
       exit 0
     }
     name = fm["name"]; desc = fm["description"]; tools = fm["tools"]
     rawname = fm_raw["name"]; rawdesc = fm_raw["description"]; rawtools = fm_raw["tools"]
-    for (i = 1; i <= fm_nkeys; i++) { split(fm_keys[i], k, SUBSEP)
-      if (k[1] != "home" && k[1] != "backup") continue
-      entry[k[1], k[2]] = fm_map[k[1], k[2]]; seen[k[1], k[2]] = 1; order[++ne] = fm_keys[i] }
     if (mode == "tools") { print claude_tools(tools); exit 0 }
-    read_tiers()
-    if (mode == "tries") { n = tries(harness, fm["tier"], fm["checker"]); for (i = 1; i <= n; i++) print tries_out[i]; exit 0 }
-    split("claude codex antigravity", hs, " ")
-    for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
-    for (i = 1; i <= 2; i++) if (!seen["backup", hs[i]]) problem("missing backup for " hs[i])
-    if (mode == "start") {
-      tries(harness, fm["tier"], fm["checker"]); split(tries_out[1], w, " ")
+    read_tiers(); agent_problems()
+    if (mode == "check") { for (i = 1; i <= np; i++) print probs[i]; exit 0 }
+    if (np) { print probs[1] > "/dev/stderr"; exit 1 }
+    n = tries(harness, fm["tier"], fm["checker"])
+    if (mode == "tries") { for (i = 1; i <= n; i++) print tries_out[i]; exit 0 }
+    if (mode == "start") { split(tries_out[1], w, " ")
       if (w[1] == harness) print "name"
       else print "t3", w[1], w[2], w[3]
       exit 0 }
-    if (fm_block["name"]) problem("name on more than one line")
-    if (fm_block["description"]) problem("description on more than one line")
-    for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP)
-      if (k[2] != "claude" && k[2] != "codex" && k[2] != "antigravity") problem("unknown harness: " k[2])
-      else if (k[1] == "backup" && k[2] == "antigravity") problem("backup for antigravity: Antigravity takes no backup")
-      else entry_problems(k[1], k[2]) }
-    if (mode == "check") { for (i = 1; i <= np; i++) print probs[i]; exit 0 }
-    if (np) { print probs[1] > "/dev/stderr"; exit 1 }
-    n = tries(harness, fm["tier"], fm["checker"]); split(tries_out[n], w, " "); b[1] = w[2]; b[2] = w[3]
+    split(tries_out[n], w, " "); b[1] = w[2]; b[2] = w[3]
     if (harness == "claude") {
       print "---"; print "# " marker; print rawname; print rawdesc
       if (rawtools != "") print rawtools

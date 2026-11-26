@@ -4,13 +4,6 @@ description: "Reviews one PR diff on the Scope axis for /review-pr, whether each
 tools: Read, Grep, Glob, Bash
 tier: 2
 checker: yes
-home:
-  claude: devin swe-2-high high
-  codex: devin swe-2-high high
-  antigravity: devin swe-2-high high
-backup:
-  claude: claude-haiku-5-5 high
-  codex: gpt-6-luna xhigh
 ---
 
 You review one axis of one pull request: Scope.

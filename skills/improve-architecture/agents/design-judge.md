@@ -4,13 +4,6 @@ description: "Judges about ten files for /improve-architecture: modules too thin
 tools: Read, Grep, Glob, Bash
 tier: 3
 checker: no
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
 ---
 
 You judge the design of a few files, so a skill can show the user which shapes teach agents to add one more layer, reach into another part, or build more than the job needs.
