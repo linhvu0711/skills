@@ -131,7 +131,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 |---|---|
 | [write-for-agents](skills/write-for-agents/) | A reference for writing documents agents read: skills, `AGENTS.md`, `CLAUDE.md`. |
 | [unslop](skills/unslop/) | Edits prose so it stops sounding like an AI wrote it. |
-| [explain-again](skills/explain-again/) | Rewrites the agent's last answer in plain words, with the same meaning. |
+| [clarify](skills/clarify/) | Explains what the agent said when you did not follow it, from the session first. |
 | [semantic-code-search](skills/semantic-code-search/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
 | [embed-source](skills/embed-source/) | Puts a library's full source next to your repo, at the version you install, so agents read real code. |
 
