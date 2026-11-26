@@ -422,6 +422,50 @@ t_kd_label_refused() {
   eq stdout "" "$out"
 }
 
+# kd_epic <call> <subIssues-json>: the fake gh's answer to its <call>th
+# `issue view`, the epic #70 "Order export" with these sub-issues.
+kd_epic() {
+  printf '{"number":70,"title":"Order export","labels":[],"subIssues":{"nodes":%s},"state":"OPEN"}\n' "$2" > "$FAKE_GH/issue-view.$1.json"
+}
+
+t_kd_run_all_ready() {
+  # Given: epic #70 with open #71 ready-to-build size/XS and #73 ready-to-build size/S
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"OPEN"},{"number":73,"state":"OPEN"}]'
+  kd_view 2 71 '[{"name":"ready-to-build"},{"name":"size/XS"}]'
+  kd_view 3 73 '[{"name":"ready-to-build"},{"name":"size/S"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70 '#71' '#73'
+  # Then
+  eq exit 0 "$code"
+  eq "row message heading" "opus medium ready-to-build of 2 tickets|/ship #70 #71 #73|#71 #73" "$(jq -r '"\(.model) \(.effort) \(.reason)|\(.message)|\(.heading)"' <<<"$out")"
+}
+
+t_kd_epic_open_not_manual() {
+  # Given: epic #70 with #71 open size/S, #72 closed, #74 open manual
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"},{"number":74,"state":"OPEN"}]'
+  kd_view 2 71 '[{"name":"size/S"}]'
+  kd_view 3 74 '[{"name":"manual"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70
+  # Then
+  eq exit 0 "$code"
+  eq "row message" "opus medium size S|/ship #70" "$(jq -r '"\(.model) \(.effort) \(.reason)|\(.message)"' <<<"$out")"
+  eq "issue view calls" 3 "$(cat "$FAKE_GH/issue-view.calls")"
+}
+
+t_kd_epic_none_open() {
+  # Given: epic #70 whose only sub-issue #71 is closed
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"CLOSED"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #70 has no open ticket for an agent" "$err"
+}
+
 t_kd_on_one_issue() {
   # Given: #42 size/S, PR #80 on feat/79-teams, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
@@ -470,6 +514,9 @@ cases=(
   "the message names the target by number|t_kd_message_numbers"
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
   "the heading is # and the numbers|t_kd_heading_forms"
+  "a run of all ready-to-build tickets takes the ready-to-build row|t_kd_run_all_ready"
+  "an epic counts its open tickets that are not manual|t_kd_epic_open_not_manual"
+  "an epic with no open ticket stops|t_kd_epic_none_open"
   "on takes one issue|t_kd_on_one_issue"
   "a named heading is kept as typed|t_kd_heading_as_given"
   "--label is refused|t_kd_label_refused"
