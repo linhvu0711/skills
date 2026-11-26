@@ -74,7 +74,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [grill](skills/grill/) | Interviews you on a plan or a design, one question at a time, and writes the glossary and ADRs as answers settle. |
 | [discover-path](skills/discover-path/) | Turns an idea too big for one grill into a map on GitHub: a parent issue whose child tickets are the questions to settle. |
 | [triage](skills/triage/) | Finds the root cause of a bug, or the hot spot behind something slow, then turns the bug into a fix ticket. |
-| [why](skills/why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
+| [explain-why](skills/explain-why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
 | [create-prototype](skills/create-prototype/) | Builds a clickable HTML prototype of a UI change inside your app's real shell, before anyone writes the real code. |
 | [create-diagram](skills/create-diagram/) | Draws a diagram of your code as an interactive HTML page, built only from facts found in the code. |
 | [file-issue](skills/file-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |

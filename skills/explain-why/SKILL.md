@@ -1,10 +1,10 @@
 ---
-name: why
+name: explain-why
 description: "Answer why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs and CONTEXT.md, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source. Use when the user asks why code is the way it is."
 disable-model-invocation: true
 ---
 
-# why
+# explain-why
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
@@ -47,7 +47,7 @@ The answer comes from the record, never from what the code looks like it might b
    python3 ../../shared/sessions/find_all.py --root <top> --root <wt> --query "<words>"
    ```
 
-   From its `sessions` rows, drop a row with `unreadable`, a row whose `current` is true, or one whose `first_prompt` starts with `/why` or `$why`, then keep the first 3 of each tool, in the order `find_all.py` gives; `<tool>` is the row's `harness`. Render each one kept with `python3 ../../shared/sessions/<tool>/adapter.py extract <path> --summary > <out>`. `<out>` is `<scratch>/why-<id8>.md`, where `<scratch>` is the scratch folder that `../../shared/harness.md` names for your harness. Run `grep -n -i` on each `<out>` for the words and read the lines around each hit.
+   From its `sessions` rows, drop a row with `unreadable`, a row whose `current` is true, or one whose `first_prompt` starts with `/explain-why` or `$explain-why`, then keep the first 3 of each tool, in the order `find_all.py` gives; `<tool>` is the row's `harness`. Render each one kept with `python3 ../../shared/sessions/<tool>/adapter.py extract <path> --summary > <out>`. `<out>` is `<scratch>/why-<id8>.md`, where `<scratch>` is the scratch folder that `../../shared/harness.md` names for your harness. Run `grep -n -i` on each `<out>` for the words and read the lines around each hit.
 
 5. **Answer.** This template, and nothing else:
 

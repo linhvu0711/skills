@@ -25,7 +25,7 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - `gh`, signed in, for the tickets and the Known check. Without it the run stops at the change list.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server. `python3` also runs `scripts/copies.py`, which finds repeated lines. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - An agent that can start subagents, for the helpers, one per kind, each reading about ten files at a time: comment-judge, unused-judge, copy-judge, and hack-judge.
-- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [trail.py](../../shared/trail.py) reads a hack's history, the same script [why](../why/) runs, and [facts.md](../../shared/facts.md) says how facts are fetched.
+- The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [trail.py](../../shared/trail.py) reads a hack's history, the same script [explain-why](../explain-why/) runs, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - [grill](../grill/) for the talk, and [file-issue](../file-issue/) and [capture](../capture/) for the tickets and seeds.
 
 ## Fits with
@@ -35,5 +35,5 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - [ship](../ship/) can fix a ticket it filed later: `/ship #42`.
 - Two ways to do one job go to [audit-coding-standards](../audit-coding-standards/); the same code twice stays here.
 - A wait or a retry in a test or CI goes to [improve-ci](../improve-ci/).
-- Shares its history script with [why](../why/).
+- Shares its history script with [explain-why](../explain-why/).
 - A module that only passes calls on goes to [improve-architecture](../improve-architecture/).

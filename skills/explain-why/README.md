@@ -1,10 +1,10 @@
-# why
+# explain-why
 
 Answers why code is the way it is from the record: git history, the PR and its reviews, the issue, the ADRs, `CONTEXT.md`, and past Claude Code, Codex, and Antigravity sessions. Each reason carries an evidence label and its source.
 
 ## Use it when
 
-You look at odd code and want the reason before you change it. Type `/why src/app.py:40`, `/why src/app.py:40-52`, a symbol, or a question such as `/why is ids a set?` (`$why ...` in Codex). `/why src/app.py` asks about the whole file, and its history follows renames. It only runs when you call it.
+You look at odd code and want the reason before you change it. Type `/explain-why src/app.py:40`, `/explain-why src/app.py:40-52`, a symbol, or a question such as `/explain-why is ids a set?` (`$explain-why ...` in Codex). `/explain-why src/app.py` asks about the whole file, and its history follows renames. It only runs when you call it.
 
 ## What you get
 
@@ -42,8 +42,8 @@ It only reads: no change to the repo, no comment on GitHub.
 
 ## Fits with
 
-- [triage](../triage/) finds the root cause of a bug; `/why` gives the reason for code that works.
-- [grill](../grill/): a reason `/why` finds can settle a question in a grill.
+- [triage](../triage/) finds the root cause of a bug; `/explain-why` gives the reason for code that works.
+- [grill](../grill/): a reason `/explain-why` finds can settle a question in a grill.
 
 ## Tests
 
@@ -51,4 +51,4 @@ The cases for [trail.py](../../shared/trail.py), in the shared core since prune-
 
 ## Credits
 
-The idea of `/why` and of its sorted evidence takes an idea from the `why` skill and its `references/epistemics.md` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+The idea of `/explain-why` and of its sorted evidence takes an idea from the `why` skill and its `references/epistemics.md` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
