@@ -9,8 +9,8 @@ Explain the part of what you said that the user did not follow.
 
 ## What to explain
 
-- No words after the command: your last completed answer before this request.
-- Words after it: only the thing they name, and nothing else. The user names it any way: a term (`/clarify home`), a quoted line (`/clarify "the gate refused the first start"`), or a pointer to an earlier answer (`/clarify your answer about the session skills`). Work out which part of the session it means.
+- The request names nothing, as a bare `/clarify` or "I don't get it": your last completed answer before this request.
+- The request names something: only that thing, and nothing else. The user names it any way: a term (`/clarify home`, "what do you mean by home?"), a quoted line (`/clarify "the gate refused the first start"`), or a pointer to an earlier answer (`/clarify your answer about the session skills`). Work out which part of the session it means.
 
 ## Where the context comes from
 
