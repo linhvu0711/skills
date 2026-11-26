@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-opus-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You judge the review findings of one group of files.

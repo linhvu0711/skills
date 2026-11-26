@@ -215,8 +215,7 @@ home:
   antigravity: claude claude-opus-5-5 xhigh
 backup:
   claude: claude-haiku-5-5 high
-  codex: gpt-6-luna xhigh
-  antigravity: inherit'
+  codex: gpt-6-luna xhigh'
 
 # agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
 # full_agent under that name, with a two-line body.
@@ -391,8 +390,7 @@ t_agents_lists_models_in_order() {
   run bash scripts/agents.sh models < skills/demo/agents/helper.md
   # Then
   eq stdout "$(printf '%s\n' 'home claude devin swe-2-high' 'home2 claude codex gpt-6-luna' 'home codex claude claude-opus-5-5' \
-    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna' \
-    'backup antigravity antigravity inherit')" "$out"
+    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna')" "$out"
 }
 
 t_link_removes_renamed_agent_forms() {
@@ -1149,13 +1147,13 @@ t_flags_backup_model_of_other_harness() {
   has stderr "skills/demo/agents/helper.md: backup for codex: claude-haiku-5-5 is not a model codex takes" "$err"
 }
 
-t_flags_exact_antigravity_backup() {
-  # Given: every field, with an exact model as the Antigravity backup
+t_flags_antigravity_backup() {
+  # Given: every field, and an Antigravity backup
   # When
-  agent_md "${full_agent/  antigravity: inherit/  antigravity: gemini-4-neon low}"
+  agent_md "$(printf '%s\n  antigravity: inherit' "$full_agent")"
   # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: backup for antigravity: gemini-4-neon is not a model antigravity takes" "$err"
+  has stderr "skills/demo/agents/helper.md: backup for antigravity: Antigravity takes no backup" "$err"
 }
 
 t_flags_effort_place_cannot_take() {
@@ -1806,7 +1804,7 @@ cases=(
   "flags an agent file with a block name|t_flags_agent_block_name"
   "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
   "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
-  "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"
+  "flags an Antigravity backup|t_flags_antigravity_backup"
   "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
   "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with two homes|t_passes_agent_with_two_homes"

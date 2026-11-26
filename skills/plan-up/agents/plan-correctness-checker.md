@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-opus-5-5 high
   codex: gpt-6.2-sol high
-  antigravity: inherit
 ---
 
 You check a plan that someone else wrote. An executor will build it cold, from the plan alone, so every wrong fact in it becomes wrong code.

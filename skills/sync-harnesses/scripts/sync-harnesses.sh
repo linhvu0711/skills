@@ -239,12 +239,10 @@ t3_on() {
 offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&1; }
 
 # Models: a home against the T3 list of its place, a Claude Code backup
-# against T3's Claude list, a Codex backup against Codex's own list. An
-# Antigravity backup names no exact model, so it has no list. A backup of a
-# harness the Mac lacks never runs, so it is not checked.
+# against T3's Claude list, a Codex backup against Codex's own list. A
+# backup of a harness the Mac lacks never runs, so it is not checked.
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
-  [ "$model" = inherit ] && continue
   label="$map"; case "$map" in home?*) label="home ${map#home}" ;; esac
   if [ "${map#home}" != "$map" ]; then
     t3_id "$place"; [ -n "$id" ] || continue

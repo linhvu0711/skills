@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-haiku-5-5 high
   codex: gpt-6-luna xhigh
-  antigravity: inherit
 ---
 
 You review one axis of one pull request: Scope.

@@ -37,7 +37,7 @@ The runner installs nothing, so before its brief goes out, the lead puts every p
 
 ### Skill agents
 
-A subagent's file names one or more homes and a backup for each main harness. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
+A subagent's file names one or more homes for each main harness, and a backup for Claude Code and for Codex. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
 
 **Start.** In T3, when T3's `delegate_task` is in your tools under any of its names (`harness.md` § T3), read the file's `home:` line for your harness: one home, or several joined by `, `. Try them from left to right. When a home's place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup. Antigravity has no agent files, so there a helper starts only through T3.
 

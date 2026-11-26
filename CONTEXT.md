@@ -13,7 +13,7 @@ The `shared/` folder: files that two or more skills read.
 _Avoid_: common, utils, lib
 
 **Skill agent**:
-A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models and a backup model for each main harness. `link.sh` installs it into Claude Code and Codex. The explorer and the runner are not skill agents; the shared core owns them.
+A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models for each main harness, and a backup model for Claude Code and for Codex. `link.sh` installs it into Claude Code and Codex. The explorer and the runner are not skill agents; the shared core owns them.
 _Avoid_: subagent config, custom agent, agent file
 
 **Home model**:
@@ -21,7 +21,7 @@ A model a subagent tries in T3. Its file lists one or more for each main harness
 _Avoid_: default model
 
 **Backup model**:
-The model a subagent runs on when none of its home models can run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for each harness.
+The model a subagent runs on when none of its home models can run, and every time outside T3. It comes from the main agent's own harness, so it fails only when the main agent fails. The subagent's file names one for Claude Code and one for Codex. Antigravity has none, so there a subagent with no home left fails.
 _Avoid_: fallback
 
 **Checker**:

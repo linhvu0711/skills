@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-fable-5-2 high
   codex: gpt-6.2-astra xhigh
-  antigravity: inherit
 ---
 
 You check the design of a plan that someone else wrote. An executor will build it cold, from the plan alone, so a wrong shape in the plan becomes code that every later change has to work around.

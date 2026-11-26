@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You judge a few files against a repo's coding rules, so a skill can show the user where code breaks a rule and how the code does the jobs no rule covers.
