@@ -17,19 +17,12 @@ are encrypted on disk, so only their count is surfaced. The rollout is read
 into a list of messages, and ../printer.py prints them.
 
 Usage:
-    extract_session.py <session-id | path> [--full] [--summary] [--tail N]
-                                    [--max-result-chars N] [--list]
+    extract_session.py <session-id | path> [--summary] [--max-result-chars N]
 
 Modes (default = balanced: prompts + assistant text in full, tool calls as
 one-liners, tool results truncated):
     --summary           only user prompts + assistant text (most compact)
-    --full              full tool results, no truncation
-    --tail N            only the last N user turns
     --max-result-chars  per tool-result truncation cap (default 500)
-    --list              just print located file path + metadata, no transcript
-    --skeleton          the deterministic state skeleton (first prompt, last reply,
-                        files patched) followed by the last N user turns in summary
-                        mode (N = --tail, default 3)
 """
 import argparse
 import glob
@@ -50,10 +43,7 @@ chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 WORDS = printer.Words(
     transcript="Loaded Codex session transcript",
-    skeleton="Codex session skeleton (deterministic, from the rollout)",
     assistant="Codex",
-    last_reply="Last Codex reply",
-    edits="Files patched (apply_patch)",
     cli="Codex CLI",
 )
 
@@ -259,8 +249,7 @@ def read(rows):
                 n_reasoning += 1
             elif pt == "function_call":
                 messages.append(printer.Message(
-                    "call", f"{p.get('name')}({summarize_call(p.get('name'), p.get('arguments'))})",
-                    files=tuple(patched_files(p))))
+                    "call", f"{p.get('name')}({summarize_call(p.get('name'), p.get('arguments'))})"))
             elif pt == "custom_tool_call":
                 name = p.get("name")
                 if name == "apply_patch":
@@ -269,7 +258,7 @@ def read(rows):
                     arg = summarize_exec_input(p.get("input"))
                 else:
                     arg = str(p.get("input"))[:200]
-                messages.append(printer.Message("call", f"{name}({arg})", files=tuple(patched_files(p))))
+                messages.append(printer.Message("call", f"{name}({arg})"))
             elif pt in ("function_call_output", "custom_tool_call_output"):
                 res, failed = clean_output(p.get("output"))
                 res = res.strip()
@@ -277,27 +266,6 @@ def read(rows):
                     messages.append(printer.Message("result", res, error=failed))
 
     git = meta.get("git") or {}
-    first_user = next((m for m in (user_message_of(r) for r in rows) if m), None)
-    if first_user is None:
-        for r in rows:
-            p = r.get("payload") or {}
-            if r.get("type") == "response_item" and p.get("type") == "message" and p.get("role") == "user":
-                txt = chat_log.text_of(p.get("content"), "[image]").strip()
-                if txt and not adapter_lib.injected(txt):
-                    first_user = txt
-                    break
-    src = meta.get("source")
-    sub = src.get("subagent") if isinstance(src, dict) else None
-    # An older rollout names its helper kind as a plain string, with no spawn record.
-    spawn = sub.get("thread_spawn") if isinstance(sub, dict) else None
-    if spawn:
-        thread = f"subagent '{spawn.get('agent_nickname')}' ({spawn.get('agent_role')}) of parent {spawn.get('parent_thread_id')}"
-    else:
-        thread = f"{meta.get('thread_source') or 'user'} via {meta.get('originator') or src}"
-    facts = [("id", meta.get("id")), ("cwd", meta.get("cwd"))]
-    if git.get("branch"):
-        facts.append(("branch", git.get("branch")))
-    facts += [("thread", thread), ("prompt", first_user.splitlines()[0][:100] if first_user else "")]
     return printer.Chat(
         messages=messages, words=WORDS,
         session_id=meta.get("id", "?"), cwd=meta.get("cwd"), branch=git.get("branch"),
@@ -306,7 +274,7 @@ def read(rows):
         effort=turn_ctx.get("collaboration_mode", {}).get("settings", {}).get("reasoning_effort"),
         cli=meta.get("cli_version"),
         span=(min(timestamps), max(timestamps)) if timestamps else None,
-        reasoning=n_reasoning, facts=tuple(facts), lines=len(rows),
+        reasoning=n_reasoning,
     )
 
 
@@ -316,24 +284,11 @@ def patch_files(text):
     return list(dict.fromkeys(f.strip() for f in files))
 
 
-def patched_files(p):
-    """File paths an apply_patch touched, whether direct or wrapped in an exec JS call."""
-    name = p.get("name")
-    src = p.get("input") if isinstance(p.get("input"), str) else ""
-    if name == "apply_patch" or (name == "exec" and "apply_patch" in src):
-        return patch_files(src)
-    return []
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("session_id")
-    ap.add_argument("--full", action="store_true")
     ap.add_argument("--summary", action="store_true")
-    ap.add_argument("--tail", type=int, default=0)
     ap.add_argument("--max-result-chars", type=int, default=500)
-    ap.add_argument("--list", action="store_true")
-    ap.add_argument("--skeleton", action="store_true")
     args = ap.parse_args()
 
     matches = locate(args.session_id)
@@ -346,17 +301,8 @@ def main():
         sys.exit(f"stop: {path} {e}")
 
     chat = read(rows)
-
-    if args.list:
-        print(printer.listing(chat, path, args.max_result_chars))
-        return
-
-    if args.skeleton:
-        print(printer.skeleton(chat, args.tail))
-        return
-
-    mode = "summary" if args.summary else "full" if args.full else "balanced"
-    print(printer.transcript(chat, mode, args.tail, args.max_result_chars))
+    mode = "summary" if args.summary else "balanced"
+    print(printer.transcript(chat, mode, args.max_result_chars))
 
 
 if __name__ == "__main__":

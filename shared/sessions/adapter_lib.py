@@ -18,8 +18,8 @@ in, "prompts" counts its prompts, "age" reads as "3h ago", and "active" is its
 last activity in epoch seconds, for sorting. ``extract --summary`` renders
 only the prompts and the replies; ``--after-compact`` starts at the last
 compaction summary in a harness that has one, and a harness with none renders
-the whole session. The finders keep their own flags and keys for the skills
-that call them direct; this hides those differences. find_all.py, next to
+the whole session. The finders keep their own flags and keys; this hides
+those differences. find_all.py, next to
 this file, runs every adapter's find in one call through ``find`` and
 ``installed``. ``load`` loads a sibling module by its path, and ``injected`` says whether
 a user message is text a harness put there.

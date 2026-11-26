@@ -7,23 +7,14 @@ prefix), reads it into a list of messages, and ../printer.py prints them as a
 markdown transcript suitable for loading into another Claude Code conversation.
 
 Usage:
-    extract_session.py <session-id | path> [--full] [--summary] [--tail N]
-                                    [--after-compact] [--max-result-chars N] [--list]
+    extract_session.py <session-id | path> [--summary] [--after-compact] [--max-result-chars N]
 
 Modes (default = balanced: prompts + assistant text in full, tool calls as
 one-liners, tool results truncated, thinking omitted):
     --summary           only user prompts + assistant text (most compact)
-    --full              include thinking, full tool results, no truncation
-    --tail N            only the last N user turns
     --after-compact     start at the last compaction summary (it already covers
                         everything before it), dropping the pre-compact history
     --max-result-chars  per tool-result truncation cap (default 500)
-    --list              print the located file path, metadata and the rendered
-                        size of each mode, no transcript
-    --skeleton          the deterministic state skeleton (title, first prompt, last
-                        reply, files edited, PR link, recap rows) followed by the
-                        last N user turns in summary mode (N = --tail, default 3);
-                        implies --after-compact
 """
 import argparse
 import glob
@@ -43,10 +34,7 @@ chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
 WORDS = printer.Words(
     transcript="Loaded session transcript",
-    skeleton="Session skeleton (deterministic, from the log)",
     assistant="Assistant",
-    last_reply="Last assistant reply",
-    edits="Files edited (Edit/Write)",
     cli="",
 )
 
@@ -122,7 +110,7 @@ def summarize_tool_input(name, inp):
 def read(rows):
     """The log as a printer.Chat: every block in order, and the chat's facts."""
     meta = {}
-    title = pr = away = None
+    title = None
     timestamps = []
     messages = []
 
@@ -153,10 +141,6 @@ def read(rows):
                 meta[k] = r[k]
         if t == "ai-title":
             title = r.get("aiTitle") or title
-        elif t == "pr-link":
-            pr = r.get("prUrl") or pr
-        elif t == "system" and r.get("subtype") == "away_summary":
-            away = r.get("content") or away
         elif t == "user":
             if r.get("isMeta"):
                 continue
@@ -191,52 +175,23 @@ def read(rows):
                 elif bt == "thinking":
                     messages.append(printer.Message("thinking", b.get("thinking", "").strip()))
                 elif bt == "tool_use":
-                    files = ()
-                    if b.get("name") in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
-                        fp = (b.get("input") or {}).get("file_path") or (b.get("input") or {}).get("notebook_path")
-                        files = (fp,) if fp else ()
                     messages.append(printer.Message(
-                        "call", f"{b.get('name')}({summarize_tool_input(b.get('name'), b.get('input'))})", files=files))
+                        "call", f"{b.get('name')}({summarize_tool_input(b.get('name'), b.get('input'))})"))
 
-    compacts = [m.text for m in messages if m.kind == "compact"]
     return printer.Chat(
         messages=messages, words=WORDS,
         session_id=meta.get("sessionId"), cwd=meta.get("cwd"), branch=meta.get("gitBranch"),
-        pr=pr, title=title, away=away,
-        recap=compact_recap(compacts[-1]) if compacts else None,
+        title=title,
         span=(min(timestamps), max(timestamps)) if timestamps else None,
-        facts=(("title", next((r.get("aiTitle") for r in reversed(rows) if r.get("type") == "ai-title"), None)),
-               ("cwd", next((r.get("cwd") for r in rows if r.get("cwd")), None))),
-        lines=len(rows),
     )
-
-
-COMPACT_SECTIONS = ("Pending Tasks", "Current Work", "Optional Next Step")
-
-
-def compact_recap(text):
-    """Pull the forward-looking sections out of a compaction summary."""
-    parts = re.split(r"^\s*\d+\.\s+(?=[A-Z][^:\n]{2,40}:)", text, flags=re.M)
-    keep = []
-    for part in parts:
-        head = part.split(":", 1)[0].strip()
-        if head in COMPACT_SECTIONS:
-            # the last section carries the harness boilerplate that follows the summary; drop it
-            part = re.split(r"^\s*(?:If you need specific details|Continue the conversation)", part, flags=re.M)[0]
-            keep.append(part.strip())
-    return "\n".join(keep) if keep else text[:1500].strip()
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("session_id")
-    ap.add_argument("--full", action="store_true")
     ap.add_argument("--summary", action="store_true")
-    ap.add_argument("--tail", type=int, default=0)
     ap.add_argument("--after-compact", action="store_true")
     ap.add_argument("--max-result-chars", type=int, default=500)
-    ap.add_argument("--list", action="store_true")
-    ap.add_argument("--skeleton", action="store_true")
     args = ap.parse_args()
 
     matches = locate(args.session_id)
@@ -245,17 +200,8 @@ def main():
     path = printer.only_match(matches, args.session_id)
     rows = load(path)
     chat = read(rows)
-
-    if args.list:
-        print(printer.listing(chat, path, args.max_result_chars))
-        return
-
-    if args.skeleton:
-        print(printer.skeleton(chat, args.tail))
-        return
-
-    mode = "summary" if args.summary else "full" if args.full else "balanced"
-    print(printer.transcript(chat, mode, args.tail, args.max_result_chars, args.after_compact))
+    mode = "summary" if args.summary else "balanced"
+    print(printer.transcript(chat, mode, args.max_result_chars, args.after_compact))
 
 
 if __name__ == "__main__":
