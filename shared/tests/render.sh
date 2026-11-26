@@ -39,6 +39,7 @@ t_render_demo_after_summary() {
   eq "item 3" '3. **`## Demo`**' "$(printf '%s\n' "$item" | sed -n 1p | cut -c1-16)"
   eq "screenshots then videos" "Screenshots,Videos" "$(printf '%s\n' "$item" | sed -nE 's/^   - (Screenshots|Videos), under .*/\1/p' | paste -sd, -)"
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^3\. \*\*`## Demo`\*\*')"
+  eq "media only" 1 "$(printf '%s\n' "$item" | grep -c 'Only a PR with screenshots or videos has it')"
 }
 
 t_render_proof_seen_in() {
