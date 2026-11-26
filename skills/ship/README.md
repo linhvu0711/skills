@@ -15,7 +15,7 @@ You have a ready issue and want the whole path done without starting each step b
 - `/ship` with no issue named, and words after it or none. What the chat holds picks the start:
   - a build this chat started: the words are an answer or a follow-up for it. [build-and-prove](../build-and-prove/) builds the follow-up and does again only what it touches, then [make-pr](../make-pr/) opens or updates the PR;
   - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
-  - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.
+  - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [file-issue](../file-issue/) first.
 
 Put `--review`, `--ready`, or `--merge` first to set the ship mode, as in `/ship --merge <issue>`. It only runs when you call it.
 

@@ -4,7 +4,7 @@ Files a raw idea or a bug you just noticed as a small GitHub issue, so it isn't 
 
 ## Use it when
 
-Something crossed your mind and you want it parked in ten seconds. Type `/capture` followed by the thing (`$capture` in Codex), or say "capture this", "park this", "log this bug", "track this for later". Add `p0` to `p3` or a word like "urgent" if you want a priority label. When you want a real, typed ticket, use [to-issue](../to-issue/) instead.
+Something crossed your mind and you want it parked in ten seconds. Type `/capture` followed by the thing (`$capture` in Codex), or say "capture this", "park this", "log this bug", "track this for later". Add `p0` to `p3` or a word like "urgent" if you want a priority label. When you want a real, typed ticket, use [file-issue](../file-issue/) instead.
 
 ## What you get
 
@@ -27,8 +27,8 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 ## Fits with
 
-- A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [to-issue](../to-issue/), which rewrite the `[bug]` into the ticket in place.
-- Called by [to-issue](../to-issue/) when the chat holds only a loose idea or a bug with no agreed fix, by [ready-pr](../ready-pr/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff](../handoff/) to file a bug.
+- A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [file-issue](../file-issue/), which rewrite the `[bug]` into the ticket in place.
+- Called by [file-issue](../file-issue/) when the chat holds only a loose idea or a bug with no agreed fix, by [ready-pr](../ready-pr/) and [validate-pr-review](../validate-pr-review/) for each `fix later` finding, and by [handoff](../handoff/) to file a bug.
 - Named by [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the same priority labels through that script.
 
 ## Credits

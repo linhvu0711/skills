@@ -20,7 +20,7 @@ gh label create "discovery/task"       --color F8BBD0 --description "Manual work
 
 `<prefix><text>`, under 70 characters, no trailing period. The prefix is the type word in the repo's title style. The prefix and the label agree.
 
-**Learn the style once per run**, before the first `gh issue create`, by the rule `to-issue` uses (`../../shared/issue-rules.md` § Repo convention): most existing titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives `bracket`.
+**Learn the style once per run**, before the first `gh issue create`, by the rule `file-issue` uses (`../../shared/issue-rules.md` § Repo convention): most existing titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no titles, or no pattern, gives `bracket`.
 
 ```bash
 gh issue list --state all --limit 30 --json title -q '.[].title'

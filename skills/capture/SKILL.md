@@ -1,6 +1,6 @@
 ---
 name: capture
-description: "Capture a raw idea or a noticed bug as a lightweight GitHub issue so it is not lost, without diagnosing, planning, or typing it. The issue is a seed (an idea that may grow into work or be dropped) or a bug (a thing seen broken, not yet defined as a fix). Works in any repo. Priority (p0 to p3) is optional: when the user gives one it becomes a label, otherwise none. Use when the user invokes '$capture' in Codex or '/capture' in Claude Code followed by the thing, or says things like 'capture this', 'park this', 'seed this', 'log this bug', 'track this for later', 'note this as an issue', 'just log it, no plan'. Do NOT trigger for 'create an issue', 'write a fix ticket', 'open a feature request', or any request that wants a proper, triaged issue with a real type; those go through /to-issue."
+description: "Capture a raw idea or a noticed bug as a lightweight GitHub issue so it is not lost, without diagnosing, planning, or typing it. The issue is a seed (an idea that may grow into work or be dropped) or a bug (a thing seen broken, not yet defined as a fix). Works in any repo. Priority (p0 to p3) is optional: when the user gives one it becomes a label, otherwise none. Use when the user invokes '$capture' in Codex or '/capture' in Claude Code followed by the thing, or says things like 'capture this', 'park this', 'seed this', 'log this bug', 'track this for later', 'note this as an issue', 'just log it, no plan'. Do NOT trigger for 'create an issue', 'write a fix ticket', 'open a feature request', or any request that wants a proper, triaged issue with a real type; those go through /file-issue."
 ---
 
 # capture
@@ -10,7 +10,7 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 Write one small GitHub issue that holds a raw thing. Two kinds:
 
 - a **seed**: an idea. A feature, a refactor, a cleanup, anything that could be done. Nobody has decided to do it. It may be dropped.
-- a **bug**: a thing seen broken. Behaviour that is wrong today. Nobody has decided how it must behave after a fix; that is what `/to-issue` writes when it turns the bug into a `fix` ticket.
+- a **bug**: a thing seen broken. Behaviour that is wrong today. Nobody has decided how it must behave after a fix; that is what `/file-issue` writes when it turns the bug into a `fix` ticket.
 
 Both are raw: neither is a typed ticket, and `[bug]` is not `[fix]`. The point is speed and low noise. File it and get out.
 
@@ -155,7 +155,7 @@ Same as a seed.
 
 ## Status
 Bug only. Not triaged, not planned. Becomes a `fix` ticket through
-/to-issue once the behaviour after the fix is written.
+/file-issue once the behaviour after the fix is written.
 ```
 
 The Repro comes only from what the chat ran or saw. Never invent a command or a result. When the chat holds no repro, the section is one line: `Not known yet.` A screenshot the chat already has goes into `## Bug` or `## Repro` as `![alt](./file.png)` and is uploaded in step 6.
@@ -183,7 +183,7 @@ When the body references a screenshot or recording, first check that this `gh` c
 
   ```bash
   gh label create --repo owner/repo "seed" --color C5DEF5 --description "Captured idea. Not triaged. May be dropped."
-  gh label create --repo owner/repo "bug"  --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."
+  gh label create --repo owner/repo "bug"  --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through file-issue."
   gh label create --repo owner/repo "p1"   --color D93F0B --description "Priority 1"
   ```
 
@@ -240,4 +240,4 @@ A bug. `## Repro`: the environment line, the commands from the chat with the VM 
 
 **User:** "write the fix ticket for the login bug"
 
-Not this skill. That asks for a real, typed issue: a `fix` through `/to-issue`, which writes what the behaviour must be after the fix. A `[bug]` that already exists is its origin; `/to-issue` rewrites it into the `fix` ticket.
+Not this skill. That asks for a real, typed issue: a `fix` through `/file-issue`, which writes what the behaviour must be after the fix. A `[bug]` that already exists is its origin; `/file-issue` rewrites it into the `fix` ticket.

@@ -57,7 +57,7 @@ So you can answer questions about it:
 
 ## Resolving the target from the session
 
-The user seldom pastes a URL. They name issues by number or in words, most often ones this session made or talked about: `12`, `12 and 14`, `all of P1 in this epic`, `on this`, or nothing right after `/to-issue`. Before you run the script, do these steps.
+The user seldom pastes a URL. They name issues by number or in words, most often ones this session made or talked about: `12`, `12 and 14`, `all of P1 in this epic`, `on this`, or nothing right after `/file-issue`. Before you run the script, do these steps.
 
 1. **Repo.** Take it from the session: the issues made or linked here, or the repo of the current folder (`gh repo view --json nameWithOwner`). Two repos fit, or none: ask.
 2. **Issues.** Find each issue the user means. A number is an issue in that repo. Words point back into the session: "this", "that issue", "the one we just made", a link pasted earlier, the PR the work sits on. A phase, as in "P1 of this epic", is the `### Phase 1` section under `## Phases` in the epic's body; take its open tickets, top to bottom (`gh issue view <epic> --json body,subIssues`). None or several match: say what you found, name the candidates, and ask.

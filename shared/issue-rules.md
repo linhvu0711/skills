@@ -1,6 +1,6 @@
 # Issue rules
 
-Shared by `to-issue` and `to-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
+Shared by `file-issue` and `to-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
 
 ## Vocabulary
 
@@ -30,7 +30,7 @@ A ticket can be written only when all three hold, from the conversation alone:
 
 For a `task`, "what" is the thing that must exist at the end, "done" is the code ticket being able to use it, and "where" is the platform and account on top of the repo. Unhappy paths do not apply.
 
-Any one missing: stop. List the gaps in one short block, each as the question whose answer would close it. Name `/grill` as the way to close many at once, or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet known. Write nothing on GitHub, except the `capture` issue that `to-issue` step 1 files for a raw thing.
+Any one missing: stop. List the gaps in one short block, each as the question whose answer would close it. Name `/grill` as the way to close many at once, or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet known. Write nothing on GitHub, except the `capture` issue that `file-issue` step 1 files for a raw thing.
 
 ## Types
 
@@ -70,7 +70,7 @@ Priority and size never appear in the title. They are labels.
 
 The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
 
-XL in `to-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut it further.
+XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut it further.
 
 A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
 
@@ -361,7 +361,7 @@ gh issue list --repo owner/repo --state closed --search "<2 or 3 keywords>" --li
 
 ### Origin bug
 
-A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `to-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
+A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `file-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
 gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label bug] \

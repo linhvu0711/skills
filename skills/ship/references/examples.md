@@ -56,7 +56,7 @@ No build, no plan: § No issue case 3. Plan-up's chat form prints `Brief: [feat]
 
 **User:** `/ship devin` after the same chat.
 
-Case 3 again, then Route: `A chat plan has no issue, so it cannot build in the cloud. Run /to-issue first.` Stop.
+Case 3 again, then Route: `A chat plan has no issue, so it cannot build in the cloud. Run /file-issue first.` Stop.
 
 **User:** `/ship https://github.com/acme/shop/issues/61` where the issue has no Done-when list.
 

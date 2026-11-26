@@ -1,5 +1,5 @@
 ---
-name: to-issue
+name: file-issue
 description: "Turn the current conversation into one typed, sized GitHub issue an agent can pick up cold. No interview. A raw idea, or a bug seen with no agreed fix, goes to capture instead. Use when the user asks to file the work this chat agreed on as an issue."
 ---
 
@@ -37,30 +37,30 @@ Read `../../shared/issue-rules.md` first. It holds the gate, types, sizes, label
 
 ## Examples
 
-**User:** `/to-issue` after a chat that settled how order export should work, named `src/orders/export.ts:40`, and said "p1".
+**User:** `/file-issue` after a chat that settled how order export should work, named `src/orders/export.ts:40`, and said "p1".
 
 Title `[feat] Export orders as CSV from the orders page`. Labels `size/M`, `p1`. Body: What to build in two sentences, six Done-when boxes (four happy, one for the empty list, one for a failed export copying the toast at `ErrorToast.tsx:12`), Scope with the PDF export and "no permission" named as out, Context with the file and the glossary term `Order`. One line back with the URL.
 
-**User:** `/to-issue` after a chat that found the CSV export writes dates as epoch numbers, and pinned it to `src/orders/export.ts:57` and the `formatDate` helper in `src/lib/date.ts:12`.
+**User:** `/file-issue` after a chat that found the CSV export writes dates as epoch numbers, and pinned it to `src/orders/export.ts:57` and the `formatDate` helper in `src/lib/date.ts:12`.
 
 Size XS: one file, one test. Title `[FIX] CSV export shows dates as epoch numbers`. Labels `size/XS`, `ready-to-build`. Body has Expected, Actual, Repro, two Done-when boxes, and three Steps: wrap the value at `export.ts:57` in `formatDate` like `export.ts:49` already does, add case `formats createdAt as ISO date` to `export.test.ts`, run `pnpm test export`. One line back with the URL.
 
-**User:** `/to-issue` after a chat that found why `[bug] Checkout button does nothing` (#42) fails in Safari.
+**User:** `/file-issue` after a chat that found why `[bug] Checkout button does nothing` (#42) fails in Safari.
 
 #42 is the origin bug. Same fix body as above, but `gh issue edit 42`: new title `[FIX] Checkout button does nothing in Safari`, `bug` label off, size label on, the old body kept under Original report. One line back with the URL of #42.
 
-**User:** `/to-issue` after a chat that noticed the Retry button does nothing when the server returns 500, and moved on without deciding what it should do.
+**User:** `/file-issue` after a chat that noticed the Retry button does nothing when the server returns 500, and moved on without deciding what it should do.
 
 Gate fails on "done": nobody said what Retry must do after the fix. Raw: a bug seen with no agreed fix, and no bug issue named. The capture skill files `[bug] Retry button does nothing on a 500 response`. Two lines back: `Captured: <url> (on your clipboard)` and `Not a ticket yet: what must Retry do after a 500?`
 
-**User:** `/to-issue` after a chat that settled order export as CSV, but never said what an empty orders list exports, and the repo has no empty-state pattern to copy.
+**User:** `/file-issue` after a chat that settled order export as CSV, but never said what an empty orders list exports, and the repo has no empty-state pattern to copy.
 
 Gate fails on "done": the empty state changes the work. Decided: the work is agreed and one fact is missing. Reply lists one gap: "What does Export give for an empty list: a CSV with only the header row, or a message and no file?" Nothing is created.
 
-**User:** `/to-issue` after a chat that settled that sign-in with X needs an X developer app, and named the code ticket #5 that will read the credentials.
+**User:** `/file-issue` after a chat that settled that sign-in with X needs an X developer app, and named the code ticket #5 that will read the credentials.
 
 Type `task`. Title `task: create the X developer app for sign-in`. Label `manual`. Lookup, a reader whose brief asks for the web, fetches the X developer portal pages: the Projects page, the OAuth 2.0 settings, the callback URL field, the review wait. Body: What to build with Where (developer.x.com, the Perch account), Bring (the X login and 2FA), Lead time (about 3 days, app review), Hand back (`X_CLIENT_ID`, `X_CLIENT_SECRET` with the secret warning). Three Done-when boxes, five Steps from the docs, Context with the doc URLs and `Blocks #5`. One line back with the URL.
 
-**User:** `/to-issue` for "move all services to the new config loader".
+**User:** `/file-issue` for "move all services to the new config loader".
 
 Lookup counts 41 files across 6 packages. Size is XL. Reply names the count and the packages, and says the work needs `to-epic`.

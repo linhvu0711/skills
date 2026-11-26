@@ -50,7 +50,7 @@ Your tree stays as it is: any branch, edits or not.
 - Starts [ship](../ship/) in the new thread. It sets a ship mode only when you name one; else the `/ship` run picks it.
 - Runs the shared decide script, `../../shared/kickoff/decide.sh`, which gives the command as the thread runs it, as `/ship --merge`, in its own field, and reads `../../shared/kickoff/target.md`.
 - Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way: [orchestrate](../orchestrate/) does.
-- Often follows [to-issue](../to-issue/) or [capture](../capture/), which make the issue.
+- Often follows [file-issue](../file-issue/) or [capture](../capture/), which make the issue.
 
 ## Tests
 

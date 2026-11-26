@@ -9,7 +9,7 @@ Read `../../shared/issue-rules.md` first. Every sub-issue obeys it. This file ad
 
 ## Steps
 
-1. **Gate.** The readiness gate, applied to the whole piece of work. Fail: list the gaps, stop. Then the mirror check: work that fits one ticket under the ceiling stops here, with `to-issue` named as the tool.
+1. **Gate.** The readiness gate, applied to the whole piece of work. Fail: list the gaps, stop. Then the mirror check: work that fits one ticket under the ceiling stops here, with `file-issue` named as the tool.
 
 2. **Repo convention.** Load or learn. Done when `style`, `size`, and (if named) the priority label are known.
 

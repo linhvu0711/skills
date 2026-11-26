@@ -1,10 +1,10 @@
-# to-issue
+# file-issue
 
 Turns what the conversation already settled into one typed, sized GitHub issue that an agent can pick up cold. No interview.
 
 ## Use it when
 
-You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/to-issue` (`$to-issue` in Codex). If the chat holds only a loose idea, or a bug nobody has decided how to fix, it files it through [capture](../capture/) as a seed or a bug, and tells you in one line what a real ticket still needs. If the work is agreed but one fact is missing, like what an empty list shows or which repo, it lists the gaps as questions and stops. [grill](../grill/) closes them, or [triage](../triage/) for a bug whose cause is unknown.
+You've talked a piece of work through, a feature, a fix, a refactor, and it's ready to be written down as a ticket. Type `/file-issue` (`$file-issue` in Codex). If the chat holds only a loose idea, or a bug nobody has decided how to fix, it files it through [capture](../capture/) as a seed or a bug, and tells you in one line what a real ticket still needs. If the work is agreed but one fact is missing, like what an empty list shows or which repo, it lists the gaps as questions and stops. [grill](../grill/) closes them, or [triage](../triage/) for a bug whose cause is unknown.
 
 ## What you get
 

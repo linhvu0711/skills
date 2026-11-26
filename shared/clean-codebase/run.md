@@ -140,8 +140,8 @@ In no-GitHub mode, print the list, then `GitHub cannot be reached: nothing filed
 After the go, in this order:
 
 1. **Tickets.** First, so each `path:line` still matches the commit GitHub has. The skill's § Apply says which rows are tickets and which are seeds; the change list says which rows share a ticket.
-   - A ticket: start the `to-issue` skill, with the ticket as the chat's last words: its title and type, the checkout path, and for each row its name, its places, and the fix. The issue body names every row and its places, so a later run's § Known and Came back search finds it by any row. Each ADR or doc entry for that work goes in it, under `## Docs to write`, per `../issue-rules.md` § Docs to write. It files a ticket, or, when it prints a `Captured:` line, it filed the ticket through capture itself.
-   - A seed row, or a to-issue gate stop with no `Captured:` line: start the `capture` skill, with the row or the ticket as the seed.
+   - A ticket: start the `file-issue` skill, with the ticket as the chat's last words: its title and type, the checkout path, and for each row its name, its places, and the fix. The issue body names every row and its places, so a later run's § Known and Came back search finds it by any row. Each ADR or doc entry for that work goes in it, under `## Docs to write`, per `../issue-rules.md` § Docs to write. It files a ticket, or, when it prints a `Captured:` line, it filed the ticket through capture itself.
+   - A seed row, or a file-issue gate stop with no `Captured:` line: start the `capture` skill, with the row or the ticket as the seed.
    - One line per ticket in chat: `R2, R5, R7 → #123 (ticket)` or `R4 → #124 (seed)`.
    - Each row's ticket is the issue its ticket filed. An edit or a rule that links a row's ticket, as a `see #<n>` comment or an `Old way: moment (#<n>)` mark, links that number.
    - A ticket that cannot be filed: stop before any file is written. Say `Not filed: <ticket>, <the error line>. Nothing written.` and list the tickets filed so far.

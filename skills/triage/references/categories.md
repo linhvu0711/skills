@@ -15,4 +15,4 @@ The first question is "where does it work, and where does it not". The answer pl
 
 When two categories fit, take the cheaper one to test first. Local env is cheaper to rule out than our code. Dependency is cheaper than data.
 
-The external row is the one people miss. Many "bugs" are a state the code never had a line for: the vendor timed out, the list came back empty. The issue that follows is the unhappy-path line that `to-issue` asks for.
+The external row is the one people miss. Many "bugs" are a state the code never had a line for: the vendor timed out, the list came back empty. The issue that follows is the unhappy-path line that `file-issue` asks for.

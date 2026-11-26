@@ -16,7 +16,7 @@ flowchart LR
   grill -->|a bug| triage
   grill -->|too big| discover[discover-path]
   discover -->|each question| grill
-  grill --> toissue[to-issue]
+  grill --> toissue[file-issue]
   grill --> toepic[to-epic]
   discover --> toissue
   discover --> toepic
@@ -29,7 +29,7 @@ flowchart LR
 - [discover-path](skills/discover-path/) takes work too big for one grill and splits it into questions, each one settled by grill.
 - [improve-architecture](skills/improve-architecture/) finds code that needs a new design, then talks you through the choices.
 - [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
-- The work ends as one ticket from [to-issue](skills/to-issue/), or as a phased epic from [to-epic](skills/to-epic/).
+- The work ends as one ticket from [file-issue](skills/file-issue/), or as a phased epic from [to-epic](skills/to-epic/).
 
 ### 2. Build and ship
 
@@ -77,7 +77,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [why](skills/why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
 | [create-prototype](skills/create-prototype/) | Builds a clickable HTML prototype of a UI change inside your app's real shell, before anyone writes the real code. |
 | [create-diagram](skills/create-diagram/) | Draws a diagram of your code as an interactive HTML page, built only from facts found in the code. |
-| [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
+| [file-issue](skills/file-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
 | [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |
 
 ### Build and ship

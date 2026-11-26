@@ -4,7 +4,7 @@ Cuts a large piece of work into a phased GitHub epic: one parent issue, native s
 
 ## Use it when
 
-The work is settled but too big for one PR. [to-issue](../to-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/to-epic` in the same chat (`$to-epic` in Codex). If the work actually fits one ticket, it says so and points you back to to-issue.
+The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/to-epic` in the same chat (`$to-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
 
 ## What you get
 
@@ -37,7 +37,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 ## Fits with
 
-- Fed by [discover-path](../discover-path/) and [grill](../grill/). [to-issue](../to-issue/) sends XL work here, and this skill sends a one-ticket job back.
+- Fed by [discover-path](../discover-path/) and [grill](../grill/). [file-issue](../file-issue/) sends XL work here, and this skill sends a one-ticket job back.
 - Its phases are run as a stack of PRs by [plan-up](../plan-up/) and [ship](../ship/), one ticket per layer.
 
 ## Credits

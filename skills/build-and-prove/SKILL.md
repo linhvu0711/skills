@@ -56,7 +56,7 @@ Mark each item in progress as it starts and done as it ends. A step the run does
    - a `## Stack` block and no `--layer`: `A run: /ship builds it layer by layer, or name --layer <n>.`
    - `Platform: windows`: `proofbox has no Windows. Use Devin: /ship
      <issue-url> devin?` and wait for the answer. A chat plan (no
-     `#<n>` in its `# Plan:` line) has no issue for Devin: `proofbox has no Windows, and the cloud needs an issue. Run /to-issue first.` and stop.
+     `#<n>` in its `# Plan:` line) has no issue for Devin: `proofbox has no Windows, and the cloud needs an issue. Run /file-issue first.` and stop.
 
    Hold `REPO` (the `Repo:` line), `BASE` (`--base`, else the `Base:` line), the issue number `N`, `UI` (the `UI:` line), the OS (`linux`, or `macos` for `macos-outpost`), `PERF` (the plan's `Perf` block, or none), and the layer's blocks: for a run, only the blocks under `## Layer <n>`, and `PERF` is the layer's. The slug is `<owner>-<repo>-<N>`. A chat plan (`../../shared/plan.md` § Chat plan) has no `N`: its slug is the plan file's, `plan-<slug>.md`. `PROOF` is `$HOME/.agents/artifacts/proof/<slug>`. Make it.
 

@@ -88,12 +88,12 @@ Everything else you find first and ask second. One question per message, with yo
 
 10. **Grill.** Test the report against § When grill fits. It fits: write the seed block in the same message, right after the report, and invoke read `../grill/SKILL.md` and follow it. The seed is the report, and the bug issue when there is one; the open decisions are the choices you found; `Close out: text.`, since step 11 files the ticket. After `Grill done.`, go to step 11 with the doc entries it handed back. It does not fit: go to step 11, with no question to the user. The report is the agreement.
 
-11. **File.** Read `../to-issue/SKILL.md` and follow it, in the same turn. Do not ask first, and do not end with `Ready for /to-issue`.
+11. **File.** Read `../file-issue/SKILL.md` and follow it, in the same turn. Do not ask first, and do not end with `Ready for /file-issue`.
 
     - Cause found: the ticket is the Exit of the category in `references/categories.md`: its type and its work, or nothing when the exit says so. A perf hot spot is a `perf` ticket. Only the code part of an exit is filed; the user's part stays in the report. The ticket's `## Context` carries the report's `Also at:` line, each place as a permalink per `../../shared/issue-rules.md` § Written for a stranger, and `none found` with its search word for word. Carry the settled decisions after a grill, and its doc entries under `## Docs to write`, per `../../shared/issue-rules.md` § Docs to write.
     - Nothing to file: say why in one line and stop. The bug issue from step 1, if any, stays as it is. The grill handed back doc entries: they are true now, so write them and open the docs PR per `../grill/SKILL.md` § Close out, no work, with `Refs #<bug>`.
 
-    The bug issue from step 1 is the origin: to-issue rewrites it into the ticket, per `../../shared/issue-rules.md` § Origin bug. No new issue, nothing closed. The to-issue gate fails: show its gaps, or its `Captured:` line when it filed the bug through capture, and stop. The report stays in chat.
+    The bug issue from step 1 is the origin: file-issue rewrites it into the ticket, per `../../shared/issue-rules.md` § Origin bug. No new issue, nothing closed. The file-issue gate fails: show its gaps, or its `Captured:` line when it filed the bug through capture, and stop. The report stays in chat.
 
 ## Blocked
 
@@ -125,15 +125,15 @@ Logs, env dumps, and configs carry secrets. Redact before they enter the chat or
 
 **User:** `/triage the CSV export shows dates as big numbers`
 
-Gate passes. An explorer fetches `src/orders/export.ts`, the date helper, its callers, the export test. Reading shows `export.ts:57` writes the raw `createdAt` and never calls `formatDate`, unlike line 49. One probe: the existing test with an ISO assertion fails on that field. Report with Category `Our code`. One fix, no open decision: no grill. Invoke to-issue right away; it creates an XS `fix` ticket.
+Gate passes. An explorer fetches `src/orders/export.ts`, the date helper, its callers, the export test. Reading shows `export.ts:57` writes the raw `createdAt` and never calls `formatDate`, unlike line 49. One probe: the existing test with an ISO assertion fails on that field. Report with Category `Our code`. One fix, no open decision: no grill. Invoke file-issue right away; it creates an XS `fix` ticket.
 
 **User:** `/triage orders page is slow`
 
-Gate passes. Metric and baseline are not stated: measure the page, p95 is 1.2 s. Target is the user's: one question, default "under 300 ms". Then a timer around the handler shows the orders query runs 41 times per page, 900 of the 1200 ms. Hot spot found. The fix is a trade-off, batch the query or cache it. Report, then the seed block with open decision "batch or cache", and invoke the grill skill. After `Grill done.`, list the settled decision and invoke to-issue for the `perf` ticket.
+Gate passes. Metric and baseline are not stated: measure the page, p95 is 1.2 s. Target is the user's: one question, default "under 300 ms". Then a timer around the handler shows the orders query runs 41 times per page, 900 of the 1200 ms. Hot spot found. The fix is a trade-off, batch the query or cache it. Report, then the seed block with open decision "batch or cache", and invoke the grill skill. After `Grill done.`, list the settled decision and invoke file-issue for the `perf` ticket.
 
 **User:** `/triage login fails on my machine`
 
-Where does it work: CI is green, a teammate is fine. Category `Local env`. Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code issue. Fix command on the clipboard. Invoke to-issue for a `docs` ticket only if the setup docs never mention the variable; else nothing to file.
+Where does it work: CI is green, a teammate is fine. Category `Local env`. Diff the env: `.env` lacks `AUTH_SECRET` that `.env.example` names. No code issue. Fix command on the clipboard. Invoke file-issue for a `docs` ticket only if the setup docs never mention the variable; else nothing to file.
 
 **User:** `/triage downloads through the helper sometimes never end`
 
@@ -141,7 +141,7 @@ Gate passes. The helper's logs show the download gets almost every byte, then st
 
 **User:** `/triage #42`
 
-Read issue 42 with its comments. The body says "checkout button does nothing"; the last comment says it only fails in Safari. Gate passes, and "where it does not work" is already Safari. Go on at step 2. At step 11, to-issue rewrites #42 into the `fix` ticket: new title, new body, the old body kept under Original report. Same number, nothing closed.
+Read issue 42 with its comments. The body says "checkout button does nothing"; the last comment says it only fails in Safari. Gate passes, and "where it does not work" is already Safari. Go on at step 2. At step 11, file-issue rewrites #42 into the `fix` ticket: new title, new body, the old body kept under Original report. Same number, nothing closed.
 
 **User:** `/triage something is off`
 

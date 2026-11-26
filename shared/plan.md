@@ -199,7 +199,7 @@ A single ticket prepped `on` an open stack is a run of one layer whose Base is `
 
 ## Ready-to-build
 
-An issue with `ready-to-build` carries Steps that `to-issue` checked line by line: every `file:line` was seen, no choice is open. The plan trusts them. This is the **short path**: the repo is read only for what the Steps do not say, and no step is re-planned. The plan still has every block above, and the Done rule holds whole.
+An issue with `ready-to-build` carries Steps that `file-issue` checked line by line: every `file:line` was seen, no choice is open. The plan trusts them. This is the **short path**: the repo is read only for what the Steps do not say, and no step is re-planned. The plan still has every block above, and the Done rule holds whole.
 
 - **Slices.** Each step that changes code is one slice, in step order. Its `file:line` is the `Change`; the pattern the step names to copy stays in `Change` when it follows the Standard. A step that only adds or edits a test case is not a slice; it is a test in the slice whose change it proves. Dead code the round found goes first, in a delete slice per § Slices; the Steps' slices follow it, and no step is re-planned.
 - **Tests.** The last step names the test file, the case, and the command. `Given`, `When`, `Then` come from the Done-when line the case proves; `Then` is the literal the issue gives (`116 pass`, the ISO date). No literal in the issue: the explorer round reads the test file and the code, and the plan writes one.
