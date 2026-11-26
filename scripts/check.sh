@@ -16,9 +16,10 @@
 # under skills/ or shared/ must point to a file: a path in a skill
 # starts at the skill's folder, a path in the shared core at the file's own
 # folder, and `$here/` in a script at the script's folder. A path is read when
-# it starts with `../` or its first folder exists there; a path that starts
-# with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
-# skipped.
+# it starts with `../`, when its first folder exists there, or when it is a
+# bare `.md`, `.sh`, or `.py` file name, with no `/`, of a file there; a path
+# that starts with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list
+# below is skipped.
 # A .md file under skills/<name>/, other than the skill's README.md, or under
 # shared/ must not say "in Claude Code" or "in Codex", or name the Skill tool
 # as "with the Skill tool": a skill says each step
@@ -56,7 +57,8 @@
 # the README of each skill that reads it. A skill reads a core file when one of
 # its files names it or a folder that holds it, when it reads another file in
 # the same core subfolder, or when a core file it reads names or includes it. A
-# merge commit is skipped. The change is the index against HEAD, and git tells
+# bare name there is a file of the commit, or of HEAD when the commit deletes
+# it. A merge commit is skipped. The change is the index against HEAD, and git tells
 # a hook nothing about an amend, so an amend is judged by what it adds to the
 # commit it replaces.
 #
@@ -175,12 +177,13 @@ AWK
 ) "$1"
 }
 
-# refs <file> <text>: each relative path that <file> names, read from the file
-# <text>, as `<line>\t<path>\t<from>/<path>`, by the rules in the header. Prints
-# nothing for a file outside skills/ and shared/, or not `.md`, `.sh`,
-# or `.py`.
+# refs <file> <text> [<files>]: each relative path that <file> names, read from
+# the file <text>, as `<line>\t<path>\t<from>/<path>`, by the rules in the
+# header. Prints nothing for a file outside skills/ and shared/, or not `.md`,
+# `.sh`, or `.py`. A bare file name is looked up in <files>, one path per line
+# with a newline at each end, when given, else in the work tree.
 refs() {
-  local f="$1" text="$2" base line tok p from nl=$'\n'
+  local f="$1" text="$2" files="${3:-}" base line tok p from nl=$'\n'
   case "$f" in
     skills/*/*) base="${f#skills/}"; base="skills/${base%%/*}" ;;
     shared/*) base="$(dirname "$f")" ;;
@@ -188,27 +191,34 @@ refs() {
   esac
   case "$f" in *.md|*.sh|*.py) ;; *) return 0 ;; esac
   while IFS=$'\t' read -r line tok; do
+    while [ "${tok%.}" != "$tok" ]; do tok="${tok%.}"; done
     case "$tok" in
       '$here/'*) case "$f" in *.sh) ;; *) continue ;; esac
                  p="${tok#\$here/}"; from="$(dirname "$f")" ;;
       /*|./*) continue ;;
       ../*) p="$tok"; from="$base" ;;
-      *) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+      */*) [ -d "$base/${tok%%/*}" ] || continue; p="$tok"; from="$base" ;;
+      *) if [ -n "$files" ]; then
+           case "$files" in *"$nl$base/$tok$nl"*) ;; *) continue ;; esac
+         else
+           [ -f "$base/$tok" ] || continue
+         fi
+         p="$tok"; from="$base" ;;
     esac
     case "$p" in *[\<\>{}*\$~]*) continue ;; esac
-    while [ "${p%.}" != "$p" ]; do p="${p%.}"; done
     case "$nl$allowed_paths$nl" in *"$nl$base $p$nl"*) continue ;; esac
     printf '%s\t%s\t%s\n' "$line" "$p" "$from/$p"
   done < <(awk '{ s = $0; gsub(/[^A-Za-z0-9_.\/<>{}*$~-]/, " ", s); n = split(s, w, " ")
-                  for (i = 1; i <= n; i++) if (w[i] ~ /\//) print FNR "\t" w[i] }' "$text")
+                  for (i = 1; i <= n; i++) if (w[i] ~ /\// || w[i] ~ /\.(md|sh|py)\.*$/) print FNR "\t" w[i] }' "$text")
 }
 
-# core_refs: the shared core paths that the index files named on stdin name,
-# one per line, `.` and `..` folded. A path inside a core subfolder becomes that
-# subfolder, since the files of one subfolder work as one unit.
+# core_refs <files>: the shared core paths that the index files named on stdin
+# name, one per line, `.` and `..` folded, with bare names looked up in <files>,
+# as refs takes it. A path inside a core subfolder becomes that subfolder, since
+# the files of one subfolder work as one unit.
 core_refs() {
   local f
-  while IFS= read -r f; do refs "$f" <(git show ":$f"); done | cut -f3 | awk -F/ '
+  while IFS= read -r f; do refs "$f" <(git show ":$f") "$1"; done | cut -f3 | awk -F/ '
     { n = 0; for (i = 1; i <= NF; i++) { if ($i == "" || $i == ".") continue
                                          if ($i == "..") { if (n) n--; continue }
                                          p[++n] = $i }
@@ -238,11 +248,14 @@ if [ -n "$msg" ]; then
   # skill's files names it or its subfolder, or a core file the skill reads does.
   grep '^shared/' "$tmp/changed" > "$tmp/core" || true
   if [ -s "$tmp/core" ]; then
+    # A bare name links to a file the commit holds, or one HEAD holds that the
+    # commit deletes, whatever the work tree has.
+    files=$'\n'"$({ git -c core.quotePath=false ls-files; git -c core.quotePath=false ls-tree -r --name-only HEAD 2>/dev/null || true; } | sort -u)"$'\n'
     while IFS= read -r f; do
-      printf '%s\n' "$f" | core_refs | awk -v f="$f" '{ print f "\t" $0 }'
+      printf '%s\n' "$f" | core_refs "$files" | awk -v f="$f" '{ print f "\t" $0 }'
     done < <(git ls-files -- shared) > "$tmp/edges"
     while IFS= read -r skill; do
-      git ls-files -- "$skill/" | core_refs > "$tmp/reads"
+      git ls-files -- "$skill/" | core_refs "$files" > "$tmp/reads"
       while :; do
         { cat "$tmp/reads"; under "$tmp/reads" "$tmp/edges" | cut -f2; } | sort -u > "$tmp/next"
         cmp -s "$tmp/next" "$tmp/reads" && break
