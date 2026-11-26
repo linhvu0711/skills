@@ -12,7 +12,9 @@
 # still missing or a model no list offers, and one `skip:` line per check it
 # could not run. Exit 1 when a problem line printed, else 0. Every install
 # path comes from link.sh's status lines, so its env settings hold; the
-# rules files and the model lists come from HOME.
+# rules files and the model lists come from HOME. The Antigravity gates are
+# read from the plugins folder link.sh links into each T3 folder, through
+# the same setting link.sh reads, since no status line names that folder.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -22,10 +24,11 @@ shared_rules="$HOME/.agents/rules/shared.md"
 claude_md="$HOME/.claude/CLAUDE.md"
 codex_md="$HOME/.codex/AGENTS.md"
 gemini_md="$HOME/.gemini/GEMINI.md"
+plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
 
-# The owner's personal gates, wired in every harness, and the repo's
-# subagent gate. Antigravity also runs session-rules, since T3 starts its
-# chats without the rules file.
+# The owner's personal gates, wired in every harness. Claude Code and Codex
+# also run the repo's subagent gate, and Antigravity runs session-rules in
+# its place, since T3 starts its chats without the rules file.
 personal_gates="write-for-agents-gate unslop-gate unslop-commit-gate question-gate plain-style"
 
 problems=(); fixed=(); link_problems=()
@@ -147,15 +150,14 @@ check_codex() {
 
 # Antigravity, and each private folder T3 runs it from. Antigravity reads the
 # hooks.json of every plugin in its plugins folder, and link.sh's status
-# line names that folder and each T3 folder.
+# lines name each T3 folder. It has no subagents: it runs only in T3, which
+# starts each helper on its home model.
 check_antigravity() {
   local t st kind h name
   count_targets antigravity skill skill; s="$got"
-  count_targets antigravity agent subagent; a="$got"
-  target gate antigravity; plugins="$folder"
-  # The gates sit in many plugins' hooks.json, so one file link.sh could not
-  # read hides no gate's line.
-  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates subagent-gate session-rules; g="$got"
+  # The gates sit in many plugins' hooks.json, so one file that is not JSON
+  # hides no gate's line.
+  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates session-rules; g="$got"
   r=0; rt=1
   if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
   for t in ${targets[@]+"${targets[@]}"}; do
@@ -167,7 +169,7 @@ check_antigravity() {
       if imports_rules "$gemini_md"; then r=$((r + 1)); fi
     else problem "antigravity rules: $d has no GEMINI.md link: T3 makes it at the next Antigravity chat"; fi
   done
-  got="skills $s · subagents $a · gates $g · rules $r/$rt"
+  got="skills $s · gates $g · rules $r/$rt"
 }
 
 # harness <name> <cli>: the harness's report line, or skipped when its CLI is

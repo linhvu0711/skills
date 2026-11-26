@@ -1,6 +1,6 @@
 # sync-harnesses
 
-Checks that Claude Code, Codex, and Antigravity on your Mac have the repo's skills and subagents and your rules and gates, and that Devin in T3 answers on SWE-2.
+Checks that Claude Code, Codex, and Antigravity on your Mac have the repo's skills, your rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.
 
 ## Use it when
 
@@ -8,22 +8,22 @@ You added a skill, set up a harness, or updated T3, or a skill acts as if a help
 
 ## What you get
 
-First it runs the repo's [link.sh](../../scripts/link.sh), which makes every missing link and agent file. Each one it makes shows as a `fixed:` line, as `fixed: linked ~/.claude/skills/demo`. Each one it finds but cannot own, such as an agent file you wrote by hand, shows as a `problem:` line in link.sh's words. Then it asks link.sh, with `--status`, where each link and file is and which folder holds it. So the check reads the folders link.sh wrote, the plugins folder and each T3 Antigravity folder too, even when one of link.sh's env settings moves a folder. link.sh does nothing in a worktree, so run the skill from its installed copy, which points at the main checkout.
+First it runs the repo's [link.sh](../../scripts/link.sh), which makes every missing link and agent file. Each one it makes shows as a `fixed:` line, as `fixed: linked ~/.claude/skills/demo`. Each one it finds but cannot own, such as an agent file you wrote by hand, shows as a `problem:` line in link.sh's words. Then it asks link.sh, with `--status`, where each link and file is and which folder holds it. So the check reads the folders link.sh wrote, each T3 Antigravity folder too, even when one of link.sh's env settings moves a folder. It reads the Antigravity gates from the plugins folder that link.sh links into each T3 folder, `ANTIGRAVITY_PLUGINS_HOME` when you set it. link.sh does nothing in a worktree, so run the skill from its installed copy, which points at the main checkout.
 
 Then one line per harness, then one line for Devin in T3. On a Mac where all is well:
 
 ```
 claude       skills 41/41 · subagents 11/11 · gates 6/6 · rules 1/1
 codex        skills 41/41 · subagents 11/11 · gates 6/6 · rules 1/1
-antigravity  skills 41/41 · subagents 11/11 · gates 7/7 · rules 2/2
+antigravity  skills 41/41 · gates 6/6 · rules 2/2
 devin in T3  on · swe-2-high answers
 ```
 
 Each count is what the harness has out of what it should have:
 
 - `skills` counts the repo's skills linked into the harness's skills folder: `~/.claude/skills`, `~/.agents/skills` for Codex, and `~/.gemini/config/skills` for Antigravity.
-- `subagents` counts the repo's skill agents, and the explorer and the runner, that have their file in the harness's agents folder.
-- `gates` counts the gates a hook command runs: your five personal gates (write-for-agents, the two unslop gates, the question gate, and the plain-style reminder) and the repo's subagent gate. Antigravity has a seventh, the start-of-chat gate that loads your rules, since T3 starts its chats without them.
+- `subagents` counts the repo's skill agents, and the explorer and the runner, that have their file in the harness's agents folder. Antigravity has no `subagents` count: it runs only inside T3, which starts each helper on its home model, so link.sh installs no agent there.
+- `gates` counts the gates a hook command runs: your five personal gates (write-for-agents, the two unslop gates, the question gate, and the plain-style reminder), plus the repo's subagent gate in Claude Code and Codex. Antigravity has the start-of-chat gate that loads your rules in its place, since T3 starts its chats without them.
 - `rules` counts the files that load `~/.agents/rules/shared.md`, and is 0 while that file is missing or empty. Claude Code's `CLAUDE.md` imports it. Codex's `AGENTS.md` holds a copy of it. Antigravity's `GEMINI.md` includes it, and each private Antigravity folder T3 keeps adds one more: its `GEMINI.md` link.
 
 A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, with its backup models and the links under its own folders, and the run does not fail for it.
