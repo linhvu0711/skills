@@ -17,9 +17,9 @@
 # starts at the skill's folder, a path in the shared core at the file's own
 # folder, and `$here/` in a script at the script's folder. A path is read when
 # it starts with `../`, when its first folder exists there, or when it is a
-# bare file name, with no `/`, of a file there; a path that starts
-# with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list below is
-# skipped.
+# bare `.md`, `.sh`, or `.py` file name, with no `/`, of a file there; a path
+# that starts with `./`, holds `<`, `{`, `*`, or `$`, or is on the allow list
+# below is skipped.
 # A .md file under skills/<name>/, other than the skill's README.md, or under
 # shared/ must not say "in Claude Code" or "in Codex", or name the Skill tool
 # as "with the Skill tool": a skill says each step
