@@ -26,5 +26,5 @@ The plan is written for an executor: a coding agent that gets the plan as one pr
 - Existing tests under `Gates` stay untouched and green.
 - `Decided` and `Out of scope` are closed. It builds what the slices say and nothing more.
 - When every slice of a layer is green: full suite, typecheck, lint, build; then each video under `Videos` once, its steps in order, and at each `Shows` step a screenshot of that walk's `See`. So every walk must end in its own picture, and every walk must sit in a video.
-- One PR per layer. The PR carries a Proof table, one row per Done-when line, with the test, the screenshot it names, and the video step. A row with nothing in it is a gap the plan left. The screenshots follow the table, each one once, and a walk with a before shot shows it next to the after shot. The videos come last.
+- One PR per layer. The PR shows the screenshots and videos first, in a Demo part after its Summary: each screenshot once, a walk with a before shot next to its after shot, then the videos. Its Proof table has one row per Done-when line, with the test and where the Demo shows the line. A row with nothing in it is a gap the plan left.
 - A run: layers in stack order, each PR on the branch of the layer below. A `layer n, slice m` pointer in the plan means code that earlier layer made; it is on that branch under the name the plan gives.

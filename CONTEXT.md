@@ -46,6 +46,10 @@ _Avoid_: per-harness branch
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared/pr-shape.md`.
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
+**Demo**:
+The PR part right after Summary that shows the change: before and after screenshots, then videos. Only a PR with screenshots or videos has one.
+_Avoid_: media section
+
 **Close-out**:
 The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write; when that code changes a screen, it first suggests a prototype and waits for go. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead.
 _Avoid_: wrap-up, finish

@@ -28,9 +28,22 @@ t_render_media_once() {
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^ *### Screenshots$')"
 }
 
+t_render_demo_after_summary() {
+  # Given: the PR shape and the devin rules that paste it
+  local item
+  item="$(sed -n '/^3\. /,/^4\. /p' "$here/../pr-shape.md")"
+  # When
+  render devin rules
+  # Then
+  eq exit 0 "$code"
+  eq "item 3" '3. **`## Demo`**' "$(printf '%s\n' "$item" | sed -n 1p | cut -c1-16)"
+  eq "screenshots then videos" "Screenshots,Videos" "$(printf '%s\n' "$item" | sed -nE 's/^   - (Screenshots|Videos), under .*/\1/p' | paste -sd, -)"
+  eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^3\. \*\*`## Demo`\*\*')"
+}
+
 t_render_risk_line() {
   local item
-  item="$(sed -n '/^3\. \*\*`## Where to look`\*\*/,/^4\. /p' "$here/../pr-shape.md")"
+  item="$(sed -n '/^4\. \*\*`## Where to look`\*\*/,/^5\. /p' "$here/../pr-shape.md")"
   eq "risk line" 1 "$(printf '%s\n' "$item" | grep -c '^   First line, always: `Risk: <door> door, blast radius: <what>.`$')"
   eq "one place" 1 "$(printf '%s\n' "$item" | grep -c 'keeps only the `Risk`')"
 }
@@ -287,6 +300,7 @@ cases=(
   "local rules run every command through box.sh|t_render_local_box"
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
+  "pr-shape puts Demo right after Summary|t_render_demo_after_summary"
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
   "cloud rules carry the Risk line once|t_render_cloud_risk_once"
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
