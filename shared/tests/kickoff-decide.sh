@@ -452,7 +452,9 @@ t_kd_epic_open_not_manual() {
   # Then
   eq exit 0 "$code"
   eq "row message" "opus medium size S|/ship #70" "$(jq -r '"\(.model) \(.effort) \(.reason)|\(.message)"' <<<"$out")"
-  eq "issues looked up" "70 71 74" "$(cut -d' ' -f3 "$FAKE_GH/issue-view.args" | tr '\n' ' ' | sed 's/ $//')"
+  local looked="" n
+  while IFS=' ' read -r _ _ n _; do looked="${looked:+$looked }$n"; done < "$FAKE_GH/issue-view.args"
+  eq "issues looked up" "70 71 74" "$looked"
 }
 
 t_kd_epic_none_open() {
