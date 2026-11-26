@@ -19,7 +19,7 @@ Each candidate is a card. A card shows the advice (fix, or keep and mark), the c
 
 The parts of the code that changed most in the repo's last 200 commits come first, and cards with new lines sit under Still spreading at the top. A card that needs your choice stands out, and buttons filter the cards by advice. A card an open ticket already covers shows as Known and gets no question.
 
-Then it asks only about the cards that need you, one question at a time, through [grill](../grill/). For a deepening it asks what the new module must hold, which dependencies sit behind its seam, its shape, and which tests stay. Ask to see other interfaces for a deepening, and three or more agents each design one under a different constraint, scored on points named before the designs come back. Then it prints one change list in chat: the tickets, the new rules, and the ADRs. Small redesigns of one type that one PR would do together share a ticket, such as two thin modules in one folder, and a big one gets a ticket of its own. Say `go`, or name a line to change, such as `split R2 out of Ticket 1`.
+Then it asks only about the cards that need you, one question at a time, through [grill](../grill/). For a deepening it asks what the new module must hold, which dependencies sit behind its seam, its shape, and which tests stay. Then it prints one change list in chat: the tickets, the new rules, and the ADRs. Small redesigns of one type that one PR would do together share a ticket, such as two thin modules in one folder, and a big one gets a ticket of its own. Say `go`, or name a line to change, such as `split R2 out of Ticket 1`.
 
 After the go it files the redesigns as tickets typed `refactor`, so [plan-up](../plan-up/) plans it with a lock test where no test covers the code. A design you keep on purpose gets an ADR, and the next run leaves it out. It adds each rule to `CODING_STANDARDS.md` and one line to the Run table in `docs/standards/runs.md`. Nothing is committed. The last line is `Ready for a pull request` when a file changed.
 
@@ -30,7 +30,7 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - `gh`, signed in, for the tickets and the Known check. Without it the run stops at the change list.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Mermaid, which draws the diagrams. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - `git`, for the change counts.
-- An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files, and the `interface-designer` agent for the three designs. [link.sh](../../scripts/link.sh) installs both into Claude Code, Codex, and Antigravity.
+- An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files. [link.sh](../../scripts/link.sh) installs it into Claude Code, Codex, and Antigravity.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [codebase-design.md](../../shared/codebase-design.md) holds the vocabulary and the deletion test, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets and seeds.
 
@@ -44,6 +44,6 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 
 ## Credits
 
-Adapted from the `improve-codebase-architecture` and `codebase-design` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. `codebase-design.md` and `references/deepening.md` are copied as they are, with only their links to each other changed, and `references/design-it-twice.md` started as a copy and is now rewritten in parts; `codebase-design.md` lives in the shared core, so plan-up reads it too.
+Adapted from the `improve-codebase-architecture` and `codebase-design` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. `codebase-design.md` and `references/deepening.md` are copied as they are, with only their links to each other changed; `codebase-design.md` lives in the shared core, so plan-up reads it too.
 
 The caller-first brief, the scoring points named before the designs come back, and the rule to reframe a wild split instead of averaging it take ideas from the `architect` and `arena` skills in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
