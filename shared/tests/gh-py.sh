@@ -5,9 +5,9 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # gp_run <code>: run <code> with the module gh.py loaded by path as `gh`, as a
-# caller loads it.
+# caller loads it. A case that sets gp_path runs python3 with that PATH.
 gp_run() {
-  run python3 -I -c '
+  run env ${gp_path:+PATH="$gp_path"} python3 -I -c '
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("gh", sys.argv[1])
 gh = importlib.util.module_from_spec(spec)
@@ -38,7 +38,22 @@ t_gp_run_hint_kept_out() {
   eq answer "0|[]" "$code|$out"
 }
 
+t_gp_stop_gh_cannot_start() {
+  # Given: a PATH that holds python3 and a gh that cannot be run, and no
+  # system folder, where a real gh would be found next
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  mkdir -p "$T/bin"; printf '#!/bin/sh\n' > "$T/bin/gh"; chmod -x "$T/bin/gh"
+  # The interpreter itself: a shim such as pyenv's needs bash from PATH.
+  ln -s "$(python3 -I -c 'import sys; print(sys.executable)')" "$T/bin/python3"
+  local gp_path="$T/bin"
+  # When
+  gp_run 'gh.stop("list runs", "run", "list")'
+  # Then
+  eq stop "1|stop: gh could not list runs: gh: could not start: Permission denied" "$code|$err"
+}
+
 cases=(
+  "stop shows a gh that cannot start as a stop line|t_gp_stop_gh_cannot_start"
   "stop shows gh's last error line|t_gp_stop_last_line"
   "run keeps a hint out of the answer|t_gp_run_hint_kept_out"
 )

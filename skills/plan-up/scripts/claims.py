@@ -12,13 +12,18 @@ linked PR is read, and prints one line per claim it finds:
 Closed and merged PRs are not claims. Comments are not read here.
 
 Prints nothing and exits 0 when no issue has a claim. When a gh call
-fails, prints `claims: #<n>: <gh's error line>` to stderr, nothing to
-stdout, and exits 1.
+fails, prints `stop: gh could not read #<n>: <gh's error line>` to stderr,
+nothing to stdout, and exits 1.
 """
 import argparse
+import importlib.util
 import json
-import subprocess
-import sys
+import os
+
+# gh.py sits in the shared core, off sys.path, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 PR = "number title url state author { login }"
 PAGE = "pageInfo { hasNextPage endCursor }"
@@ -39,17 +44,13 @@ QUERY = f"""query($owner: String!, $name: String!, $number: Int!, $prAfter: Stri
 
 
 def ask(owner, name, number, cursors):
-    """The `data` of one page of the query, or raise RuntimeError with gh's error line."""
-    args = ["gh", "api", "graphql", "-F", f"owner={owner}", "-F", f"name={name}",
+    """The `data` of one page of the query; a gh failure stops the script."""
+    args = ["api", "graphql", "-F", f"owner={owner}", "-F", f"name={name}",
             "-F", f"number={number}", "-f", f"query={QUERY}"]
     for key, cursor in cursors.items():
         if cursor:
             args += ["-f", f"{key}={cursor}"]
-    r = subprocess.run(args, capture_output=True, text=True)
-    if r.returncode != 0:
-        lines = [l for l in r.stderr.splitlines() if l.strip()]
-        raise RuntimeError(lines[-1] if lines else f"gh exited {r.returncode}")
-    return json.loads(r.stdout)["data"]
+    return json.loads(GH.stop(f"read #{number}", *args))["data"]
 
 
 def read(owner, name, number):
@@ -95,11 +96,7 @@ def main():
     owner, name = args.repo.split("/", 1)
     out = []
     for number in args.numbers:
-        try:
-            out += claims(number, *read(owner, name, number))
-        except RuntimeError as e:
-            print(f"claims: #{number}: {e}", file=sys.stderr)
-            sys.exit(1)
+        out += claims(number, *read(owner, name, number))
     for line in out:
         print(line)
 

@@ -16,18 +16,19 @@
 #
 # Exit 0: the pane is running the command, one report line on stdout.
 # Exit 1: something stopped us; the reason is the last line on stderr.
+# Exit 2 or 64, from decide.sh: gh could not read GitHub, or a wrong command
+# line, with its `stop:` line on stderr.
 # Nothing is half done: no pane exists until every check passed.
 # The tree is left as is: /ship reads its own copy of the base.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-say() { printf '%s\n' "$*" >&2; }
 
 # ---------- decide ----------
 # The shared decide script reads the target and flags; its stop line is ours.
-decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit 1
+decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit
 field() { jq -r ".$1" <<<"$decided"; }
 number="$(field number)"; title="$(field title)"; prep_args="$(field args)"
 command_from="$(field command_from)"; message="$(field message)"
@@ -38,7 +39,9 @@ reason="$(field reason)"; base="$(field base)"; path="$(field path)"; label="$(f
 
 # ---------- herdr ----------
 [ "${HERDR_ENV:-}" = 1 ] || die "not inside herdr"
-ws="${HERDR_WORKSPACE_ID:?}"; my_tab="${HERDR_TAB_ID:?}"
+[ -n "${HERDR_WORKSPACE_ID:-}" ] && [ -n "${HERDR_TAB_ID:-}" ] \
+  || die "not inside a herdr tab: HERDR_WORKSPACE_ID and HERDR_TAB_ID are unset; run it from herdr"
+ws="$HERDR_WORKSPACE_ID"; my_tab="$HERDR_TAB_ID"
 
 # unique agent name
 live="$(herdr agent list | jq -r '.result.agents[].name // empty')"
@@ -70,10 +73,10 @@ for _ in $(seq 1 20); do
       -- --model "$model" --effort "$effort" --permission-mode auto 2>&1 >/dev/null)"; then
     started=1; break
   fi
-  grep -q agent_pane_busy <<<"$err" || { say "$err"; break; }
+  grep -q agent_pane_busy <<<"$err" || break
   sleep 1
 done
-[ "$started" -eq 1 ] || die "claude did not come up in $new_pane; the pane is left as is"
+[ "$started" -eq 1 ] || die "claude did not come up in $new_pane${err:+: $(tail -n 1 <<<"$err")}; the pane is left as is"
 
 herdr agent prompt "$label" "$message" >/dev/null
 status="idle"

@@ -11,15 +11,19 @@
 # Exit 1: `stop: <why>` on stderr and nothing changed; or the check found a
 # leak in the moved folder, which stays moved so it can be fixed before the
 # commit (the pre-commit hook blocks the commit until then).
+# Exit 64: a wrong command line, its usage on stderr.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: adopt.sh <name>'
 
-[ $# -eq 1 ] && [ -n "$1" ] || die "usage: adopt.sh <name>"
+[ $# -eq 1 ] && [ -n "$1" ] || die_usage "$usage"
 name="$1"
-[[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "not a skill name: $name"
+[[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die_usage "$usage" "not a skill name: $name"
 home="${SKILLS_HOME:-$HOME/.agents/skills}"
-repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo="$(git -C "$here/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
 
 [ ! -L "$home/$name" ] || die "$home/$name is already a link"
 [ -d "$home/$name" ] || die "no skill named $name in $home"

@@ -43,6 +43,7 @@
 # Exit 0: one line,
 # `MAIN=<dir> WORKTREE=<dir> BRANCH=<b> DEFAULT=<b> STATE=<created|reused> FROM=<what>`.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
+# Exit 64: a wrong command line, its usage on stderr.
 #
 #   checkout.sh main <owner/repo>
 #
@@ -78,6 +79,12 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/gh.sh"
+tmps=(); trap 'rm -f ${tmps[@]+"${tmps[@]}"}' EXIT
+
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
 common_dir() {
   local d
@@ -149,7 +156,8 @@ find_main() {
         main="$cand"; main_from="map"
       else
         printf 'map entry for %s is stale (%s), dropping it\n' "$slug" "$cand" >&2
-        tmp="$(mktemp)"; awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
+        tmp="$(mktemp "$(dirname "$map")/.$(basename "$map").XXXXXX")"; tmps+=("$tmp")
+        awk -F'\t' -v s="$slug" '$1!=s' "$map" >"$tmp"; mv "$tmp" "$map"
       fi
     fi
   fi
@@ -180,7 +188,7 @@ find_main() {
 # default branch; when gh fails, origin/HEAD's, with no fetch. When both fail,
 # the stop line and exit <code>, 1 when not given.
 default_branch() {
-  default="$(gh repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)" || default=""
+  if gh_out repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name; then default="$out"; else default=""; fi
   if [ -z "$default" ]; then
     default="$(git -C "$2" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)" || default=""
     default="${default#origin/}"
@@ -193,26 +201,26 @@ default_branch() {
 # The forms that take no branch.
 case "${1:-}" in
   slug)
-    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh slug <dir>"
+    [ $# -eq 2 ] && [ -n "$2" ] || die_usage "usage: checkout.sh slug <dir>"
     s="$(origin_slug "$2")"
     [ -n "$s" ] || die "$2 has no GitHub remote"
     printf '%s\n' "$s"; exit 0 ;;
   worktrees)
-    [ $# -eq 2 ] && [ -n "$2" ] || die "usage: checkout.sh worktrees <dir>"
+    [ $# -eq 2 ] && [ -n "$2" ] || die_usage "usage: checkout.sh worktrees <dir>"
     worktrees "$2"; exit 0 ;;
   holder)
-    [ $# -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] || die "usage: checkout.sh holder <dir> <branch>"
+    [ $# -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] || die_usage "usage: checkout.sh holder <dir> <branch>"
     listed="$(worktrees "$2")" || exit 1
     while read -r b _ _ w; do
       if [ "$b" = "BRANCH=$3" ]; then printf '%s\n' "${w#WORKTREE=}"; break; fi
     done <<<"$listed"
     exit 0 ;;
   main)
-    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh main <owner/repo>"
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh main <owner/repo>"
     find_main "$2"
     printf 'FROM=%s MAIN=%s\n' "$main_from" "$main"; exit 0 ;;
   default)
-    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die "usage: checkout.sh default <owner/repo>"
+    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh default <owner/repo>"
     find_main "$2"
     default_branch "$2" "$main" 2
     printf '%s\n' "$default"; exit 0 ;;
@@ -222,13 +230,13 @@ usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
 slug=""; branch=""; base=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base) [ -n "${2:-}" ] || die "$usage"; base="$2"; shift 2 ;;
-    -*) die "unknown flag $1" ;;
-    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die "unexpected argument: $1"; fi; shift ;;
+    --base) [ -n "${2:-}" ] || die_usage "$usage" "--base needs a ref"; base="$2"; shift 2 ;;
+    -*) die_usage "$usage" "unknown flag $1" ;;
+    *) if [ -z "$slug" ]; then slug="$1"; elif [ -z "$branch" ]; then branch="$1"; else die_usage "$usage" "unexpected argument: $1"; fi; shift ;;
   esac
 done
-[ -n "$slug" ] && [ -n "$branch" ] || die "$usage"
-[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die "$usage"
+[ -n "$slug" ] && [ -n "$branch" ] || die_usage "$usage"
+[[ "$slug" =~ ^[^/]+/[^/]+$ ]] || die_usage "$usage" "not owner/repo: $slug"
 
 find_main "$slug"
 
@@ -287,10 +295,11 @@ copy_included() {
     # -e is false for a dangling link; that link is the worktree's own, so keep it.
     [ ! -e "$wt/$f" ] && [ ! -L "$wt/$f" ] || continue
     # Written under a temp name and moved, so a cut-off copy never looks whole.
-    if mkdir -p "$(dirname "$wt/$f")" && cp -p "$main/$f" "$wt/$f.tmp.$$" 2>/dev/null && mv "$wt/$f.tmp.$$" "$wt/$f"; then
+    if mkdir -p "$(dirname "$wt/$f")" && t="$(mktemp "$(dirname "$wt/$f")/.$(basename "$f").XXXXXX")" && tmps+=("$t") \
+       && cp -p "$main/$f" "$t" 2>/dev/null && mv "$t" "$wt/$f"; then
       copied+=("$f")
     else
-      rm -f "$wt/$f.tmp.$$"; failed+=("$f")
+      failed+=("$f")
     fi
   done < <(git -C "$main" ls-files -z -o -i --exclude-from="$list")
   # A pattern may match nothing on purpose; only a plain path is named.

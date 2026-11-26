@@ -17,7 +17,7 @@ The folder holds `plan-<slug>.md`, `plan-<slug>.html`, and `/ship`'s `prompt-<sl
 python3 ../skills/plan-up/scripts/build_page.py "$DIR/plan-<slug>.md"
 ```
 
-It writes `plan-<slug>.html` and prints `page: <path>`. Problem lines name the block, or the `.md` line, to fix; fix it and run the builder again. Never write `DATA` or edit the `.html`: the builder makes it.
+It writes `plan-<slug>.html` and prints `page: <path>`. Problem lines on stderr name the block, or the `.md` line, to fix; fix it and run the builder again. Never write `DATA` or edit the `.html`: the builder makes it.
 
 Refs the page shows, and the user names in chat: `M1` map part 1, `P1` proved 1, `S2` slice 2, `S2.T1` its first test, `W1` walk 1, `V1` video 1, `D3` decided 3, `O1` out of scope 1, `#4` Proof row 4. An edit request names one of these; change the `.md` line, rebuild.
 

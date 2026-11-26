@@ -22,7 +22,7 @@ t_coa_find_in_window() {
   run python3 "$A" find --root /p/app --since "$(date +%F)"
   # Then
   eq exit 0 "$code"
-  eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
+  eq row "codex c1 fix the export" "$(printf '%s' "$out" | jq -r '[.[] | "\(.harness) \(.id) \(.title)"] | join(" ")')"
 }
 
 t_coa_find_archived() {
@@ -34,7 +34,7 @@ t_coa_find_archived() {
   run python3 "$A" find --root /p/app
   # Then
   eq exit 0 "$code"
-  eq row "codex c1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
+  eq row "codex c1 fix the export" "$(printf '%s' "$out" | jq -r '[.[] | "\(.harness) \(.id) \(.title)"] | join(" ")')"
 }
 
 t_coa_unreadable_keeps_filters() {
@@ -48,7 +48,7 @@ t_coa_unreadable_keeps_filters() {
   # When
   code=0; PATH="$T/nozstd" python3 "$A" find --root /p/app --id z2 >"$T/out" 2>"$T/err" || code=$?; out="$(cat "$T/out")"
   # Then
-  eq unreadable "rollout-2026-10-01T10-00-00-z2.jsonl.zst: needs Python 3.14+ or zstd, project unknown" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(os.path.basename(r["path"]) + ": " + r["unreadable"] for r in json.load(sys.stdin)))')"
+  eq unreadable "rollout-2026-10-01T10-00-00-z2.jsonl.zst: needs Python 3.14+ or zstd, project unknown" "$(printf '%s' "$out" | jq -r '[.[] | "\(.path | split("/") | last): \(.unreadable)"] | join(" ")')"
 }
 
 t_coa_rows_carry_query_fields() {
@@ -57,7 +57,7 @@ t_coa_rows_carry_query_fields() {
   # When
   run python3 "$A" find --root /p/app --query export
   # Then
-  eq row "c1 True True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"] > 0, r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
+  eq row "c1 true true 1 fix the export 0m ago number" "$(printf '%s' "$out" | jq -r '.[0] | "\(.id) \(.score > 0) \(.current) \(.prompts) \(.first_prompt) \(.age) \(.active | type)"')"
 }
 
 t_coa_extract_summary() {

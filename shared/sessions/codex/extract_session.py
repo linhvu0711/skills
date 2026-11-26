@@ -338,16 +338,12 @@ def main():
 
     matches = locate(args.session_id)
     if not matches:
-        print(f"No Codex rollout found for id '{args.session_id}' under {' or '.join(str(f) for f in rollout_io.data_folders())}", file=sys.stderr)
-        print("Tip: pass the full UUID, or a unique prefix. Recent sessions:", file=sys.stderr)
-        print("  ls -t ~/.codex/sessions/*/*/*/rollout-*.jsonl | head", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"stop: no Codex rollout found for id '{args.session_id}' under {' or '.join(str(f) for f in rollout_io.data_folders())}: pass the full UUID or a unique prefix; list recent ones with ls -t ~/.codex/sessions/*/*/*/rollout-*.jsonl | head")
     path = printer.only_match(matches, args.session_id)
     try:
         rows = load(path)
     except rollout_io.NoZstd as e:
-        print(f"stop: {path} {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"stop: {path} {e}")
 
     chat = read(rows)
 

@@ -4,8 +4,8 @@
     build_report.py <rows .json>
 
 Writes the page next to the rows file, prints `page: <html path>`, and
-exits 0. Prints each problem and exits 1 without changing the old page
-when the rows file is bad.
+exits 0. Prints each problem on stderr and exits 1 without changing the old
+page when the rows file is bad.
 """
 import argparse
 import json
@@ -170,8 +170,7 @@ def main():
         report = json.load(f)
     found = list(problems(report))
     if found:
-        print("\n".join(found))
-        sys.exit(1)
+        sys.exit("\n".join(found))
     with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "report.html"), encoding="utf-8") as f:
         shell = f.read()
     output = os.path.splitext(path)[0] + ".html"

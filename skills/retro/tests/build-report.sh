@@ -167,7 +167,8 @@ t_rb_refuses_unknown_item() {
   rb_build "$T/cards.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'card "Name the base in the plan": item "S9" is not in items' "$out"
+  eq stdout "" "$out"
+  eq stderr 'card "Name the base in the plan": item "S9" is not in items' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 
@@ -178,7 +179,8 @@ t_rb_refuses_quote_off_card() {
   rb_build "$T/cards.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'card "Name the base in the plan": quote item "PR #40" is not one of the card'"'"'s items' "$out"
+  eq stdout "" "$out"
+  eq stderr 'card "Name the base in the plan": quote item "PR #40" is not one of the card'"'"'s items' "$err"
 }
 
 t_rb_refuses_badge() {
@@ -188,7 +190,8 @@ t_rb_refuses_badge() {
   rb_build "$T/cards.json"
   # Then
   eq exit 1 "$code"
-  eq stdout 'card "Name the base in the plan": badge "Great" is not Strong, Worth exploring, Speculative, One-time, or Tip' "$out"
+  eq stdout "" "$out"
+  eq stderr 'card "Name the base in the plan": badge "Great" is not Strong, Worth exploring, Speculative, One-time, or Tip' "$err"
   eq page "" "$(ls "$T" | grep '\.html' || true)"
 }
 

@@ -304,12 +304,13 @@ if ! t3_on "$id"; then
   devin_warn "Devin is off in T3"
 else
   devin="on"
-  for m in $(printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk 'NF { print $2 }' | sort -u); do
+  while IFS= read -r m; do
     if ! command -v devin >/dev/null 2>&1; then
       reply="devin not installed"; ok=1
     else
       ok=0
-      reply="$(cd "$root" && perl -e 'alarm 60; exec @ARGV' devin --model "$m" --print "Reply with exactly the word: ok" 2>&1)" || ok=1
+      # The loop's lines are on stdin, so devin gets none.
+      reply="$(cd "$root" && perl -e 'alarm 60; exec @ARGV' devin --model "$m" --print "Reply with exactly the word: ok" 2>&1 </dev/null)" || ok=1
     fi
     if [ "$ok" -eq 0 ]; then
       devin="$devin · $m answers"
@@ -317,7 +318,7 @@ else
       devin="$devin · $m refused"
       devin_warn "$m refused ($(printf '%s\n' "$reply" | head -n 1))" "$m"
     fi
-  done
+  done < <(printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk 'NF { print $2 }' | sort -u)
 fi
 
 printf '%s\n' "${report[@]}"

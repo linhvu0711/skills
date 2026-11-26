@@ -15,7 +15,7 @@ row_with() {
 }
 
 # The line mac.sh prints when it cannot destroy mac-1.
-not_given_back="mac.sh: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force"
+not_given_back="stop: could not destroy mac-1 (Failed: timeout). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force"
 
 wid=0f0e0d0c-0b0a-4908-8706-050403020100
 
@@ -35,6 +35,15 @@ t_mac_rent_starts_worker() {
   lacks "nsc commands" '> ~/.cursor/agent-cli-state' "$(cat "$FAKE_NSC/calls")"
 }
 
+t_mac_rent_no_gh_token() {
+  fake_nsc
+  printf 'not logged in\n' > "$FAKE_GH/auth-token.fail"
+  mac rent ho-1 https://github.com/o/r main -- printf 'bc-1\tu\n'
+  eq exit 1 "$code"
+  eq "stderr last line" "stop: gh is not signed in (not logged in): run gh auth login" "$(tail -1 <<<"$err")"
+  [ ! -f "$FAKE_NSC/calls" ] || { echo "nsc ran" >&2; exit 1; }
+}
+
 t_mac_renew_keeps_worker_id() {
   fake_nsc
   echo "$wid" > "$FAKE_NSC/3.out"
@@ -49,7 +58,7 @@ t_mac_rent_no_worker_id() {
   fake_nsc
   mac rent ho-1 https://github.com/o/r main -- true
   eq exit 1 "$code"
-  eq stderr "mac.sh: the worker on mac-1 has no ID in agent-cli-state.json" "$err"
+  eq stderr "stop: the worker on mac-1 has no ID in agent-cli-state.json" "$err"
   has "destroyed" "destroy mac-1 --force" "$(cat "$FAKE_NSC/calls")"
 }
 
@@ -58,15 +67,15 @@ t_mac_rent_worker_fails() {
   echo 1 > "$FAKE_NSC/3.exit"
   mac rent ho-1 https://github.com/o/r main -- true
   eq exit 1 "$code"
-  eq stderr "mac.sh: the worker did not start on mac-1" "$err"
+  eq stderr "stop: the worker did not start on mac-1" "$err"
   has "destroyed" "destroy mac-1 --force" "$(cat "$FAKE_NSC/calls")"
 }
 
 t_mac_rent_bad_worker() {
   fake_nsc
   mac rent 'ho 1;x' https://github.com/o/r main -- true
-  eq exit 1 "$code"
-  eq stderr "mac.sh: worker name: letters, digits, and - only" "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: worker name: letters, digits, and - only"$'\n'"usage: mac.sh rent <worker> <repo-url> <base> -- <command>" "$err"
   [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
@@ -91,7 +100,7 @@ t_mac_return_destroy_fails() {
   # Then
   eq exit 1 "$code"
   eq stdout "" "$out"
-  eq stderr "mac.sh: could not destroy mac-1 (Failed: not signed in). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force" "$err"
+  eq stderr "stop: could not destroy mac-1 (Failed: not signed in). It still runs and costs money until you destroy it by hand: nsc destroy mac-1 --force" "$err"
 }
 
 t_mac_return_gone() {
@@ -121,7 +130,7 @@ t_mac_rent_destroy_fails() {
   # Then
   eq exit 1 "$code"
   eq stderr "$not_given_back
-mac.sh: the worker did not start on mac-1" "$err"
+stop: the worker did not start on mac-1" "$err"
 }
 
 t_mac_rent() {
@@ -141,10 +150,10 @@ t_mac_rent_create_fails() {
   fake_nsc
   echo "$wid" > "$FAKE_NSC/3.out"
   # When
-  mac rent ho-1 https://github.com/o/r main -- sh -c 'echo "cursor.sh: HTTP 500 on POST /agents" >&2; exit 1'
+  mac rent ho-1 https://github.com/o/r main -- sh -c 'echo "stop: HTTP 500 on POST /agents" >&2; exit 1'
   # Then
   eq exit 1 "$code"
-  eq stderr "cursor.sh: HTTP 500 on POST /agents" "$err"
+  eq stderr "stop: HTTP 500 on POST /agents" "$err"
   eq "last nsc call" "destroy mac-1 --force" "$(tail -1 "$FAKE_NSC/calls")"
   [ ! -s "$T/home/.config/dispatch/cursor-macs.tsv" ] || eq "mac rows" "" "$(cat "$T/home/.config/dispatch/cursor-macs.tsv")"
 }
@@ -156,11 +165,11 @@ t_mac_rent_names_kept_mac() {
   echo 1 > "$FAKE_NSC/5.exit"
   printf 'Failed: timeout\n' > "$FAKE_NSC/5.out"
   # When
-  mac rent ho-1 https://github.com/o/r main -- sh -c 'echo "cursor.sh: HTTP 500 on POST /agents" >&2; exit 1'
+  mac rent ho-1 https://github.com/o/r main -- sh -c 'echo "stop: HTTP 500 on POST /agents" >&2; exit 1'
   # Then
   eq exit 1 "$code"
   has stderr "$not_given_back" "$err"
-  eq "last line" "mac.sh: no agent started, so no row names mac-1" "$(printf '%s\n' "$err" | tail -1)"
+  eq "last line" "stop: no agent started, so no row names mac-1" "$(printf '%s\n' "$err" | tail -1)"
 }
 
 t_mac_rent_grok_key() {
@@ -170,7 +179,7 @@ t_mac_rent_grok_key() {
   run env HOME="$T/home" CURSOR_API_KEY=grok_k bash "$here/../scripts/mac.sh" rent ho-1 https://github.com/o/r main -- true
   # Then
   eq exit 1 "$code"
-  eq stderr "mac.sh: a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY" "$err"
+  eq stderr "stop: a Mac worker refuses grok_ keys: put a personal crsr_ key in CURSOR_API_KEY" "$err"
   [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
 }
 
@@ -218,7 +227,7 @@ t_mac_renew_send_fails() {
   echo "$wid" > "$FAKE_NSC/3.out"
   row_with -
   # When
-  mac renew bc-1 -- sh -c 'echo "cursor.sh: HTTP 409 on POST /agents/bc-1/runs: agent_busy" >&2; exit 1'
+  mac renew bc-1 -- sh -c 'echo "stop: HTTP 409 on POST /agents/bc-1/runs: agent_busy" >&2; exit 1'
   # Then
   eq exit 1 "$code"
   eq "last nsc call" "destroy mac-1 --force" "$(tail -1 "$FAKE_NSC/calls")"
@@ -233,7 +242,7 @@ t_mac_renew_send_fails_mac_kept() {
   printf 'Failed: timeout\n' > "$FAKE_NSC/5.out"
   row_with -
   # When
-  mac renew bc-1 -- sh -c 'echo "cursor.sh: HTTP 409 on POST /agents/bc-1/runs: agent_busy" >&2; exit 1'
+  mac renew bc-1 -- sh -c 'echo "stop: HTTP 409 on POST /agents/bc-1/runs: agent_busy" >&2; exit 1'
   # Then
   eq exit 1 "$code"
   has stderr "$not_given_back" "$err"
@@ -252,7 +261,7 @@ t_mac_renew_old_mac_kept() {
   # Then
   eq exit 1 "$code"
   eq stderr "$not_given_back
-mac.sh: no note sent: mac-1 was not given back" "$err"
+stop: no note sent: mac-1 was not given back" "$err"
   [ ! -e "$T/sent" ] || eq "sent note" "not sent" sent
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
@@ -293,12 +302,12 @@ t_mac_return_check_fails() {
   fake_nsc
   row_with mac-1
   # When
-  mac return bc-1 -- sh -c 'echo "cursor.sh: HTTP 502 on GET /agents/bc-1/runs/run-2" >&2; exit 2'
+  mac return bc-1 -- sh -c 'echo "stop: HTTP 502 on GET /agents/bc-1/runs/run-2" >&2; exit 2'
   # Then
   eq exit 1 "$code"
   eq stdout "" "$out"
-  eq stderr "cursor.sh: HTTP 502 on GET /agents/bc-1/runs/run-2
-mac.sh: could not check the run of bc-1, so mac-1 is kept" "$err"
+  eq stderr "stop: HTTP 502 on GET /agents/bc-1/runs/run-2
+stop: could not check the run of bc-1, so mac-1 is kept" "$err"
   [ ! -f "$FAKE_NSC/calls" ] || eq "nsc calls" "" "$(cat "$FAKE_NSC/calls")"
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
@@ -353,6 +362,7 @@ cases=(
   "mac rent gives the Mac back when the worker has no ID|t_mac_rent_no_worker_id"
   "mac rent gives the Mac back when the worker does not start|t_mac_rent_worker_fails"
   "mac rent refuses a worker name the shell would split|t_mac_rent_bad_worker"
+  "mac rent stops when gh has no token|t_mac_rent_no_gh_token"
   "mac return deletes the keys and destroys the Mac|t_mac_return_deletes_keys"
   "mac return fails and names the Mac when nsc destroy fails|t_mac_return_destroy_fails"
   "mac return counts a Mac that no longer exists as given back|t_mac_return_gone"

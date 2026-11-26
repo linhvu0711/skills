@@ -155,7 +155,8 @@ bad_chat() {
   chat_plan "$T/plan-acme-shop-chat-orders-csv.md" "$1"
   build "$T/plan-acme-shop-chat-orders-csv.md"
   eq exit 1 "$code"
-  eq stdout "$2" "$out"
+  eq stdout "" "$out"
+  eq stderr "$2" "$err"
   [ ! -e "$T/plan-acme-shop-chat-orders-csv.html" ] || eq page "not written" written
 }
 
@@ -172,8 +173,8 @@ bad_ticket() {
   sed "$1" "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
-  eq stdout "$2" "$out"
-  eq stderr "" "$err"
+  eq stdout "" "$out"
+  eq stderr "$2" "$err"
   [ ! -e "$T/plan-acme-shop-42.html" ] || eq page "not written" written
   [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
@@ -201,8 +202,8 @@ bad_perf() {
   sed "$1" "$here/build-page/perf.md" > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
-  eq stdout "$2" "$out"
-  eq stderr "" "$err"
+  eq stdout "" "$out"
+  eq stderr "$2" "$err"
   [ ! -e "$T/plan-acme-shop-42.html" ] || eq page "not written" written
   [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
@@ -220,7 +221,7 @@ t_build_run_perf_no_block() {
 }
 
 t_build_no_review() {
-  bad_ticket '/^## Review$/d' 'not a plan-up .md: plan-acme-shop-42.md'
+  bad_ticket '/^## Review$/d' 'stop: not a plan-up .md: plan-acme-shop-42.md'
 }
 
 t_build_no_schema() {
@@ -337,7 +338,8 @@ t_build_run_one_review() {
   sed '/^## Layer /,$ { /^## Review$/,/^## Summary$/ { /^## Summary$/!d; }; }' "$here/build-page/run-one.md" > "$T/plan-acme-shop-75-run.md"
   build "$T/plan-acme-shop-75-run.md"
   eq exit 1 "$code"
-  eq stdout 'review: the .md has 1 `## Review` block(s), a run of 1 layer needs 2' "$out"
+  eq stdout "" "$out"
+  eq stderr 'review: the .md has 1 `## Review` block(s), a run of 1 layer needs 2' "$err"
   [ ! -e "$T/plan-acme-shop-75-run.html" ] || eq page "not written" written
 }
 
@@ -346,7 +348,8 @@ t_build_stack_count() {
   sed '/^| 2 | #73 /d' "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
   build "$T/plan-acme-shop-71-run.md"
   eq exit 1 "$code"
-  eq stdout 'stack: 1 rows, 2 `## Layer` headings' "$out"
+  eq stdout "" "$out"
+  eq stderr 'stack: 1 rows, 2 `## Layer` headings' "$err"
   [ ! -e "$T/plan-acme-shop-71-run.html" ] || eq page "not written" written
 }
 
@@ -359,7 +362,8 @@ t_build_preserves_old() {
   sed '/^  Schema:/d' "$here/build-page/ticket.md" > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
-  eq stdout 'review: `Blast radius` has no `Schema` line' "$out"
+  eq stdout "" "$out"
+  eq stderr 'review: `Blast radius` has no `Schema` line' "$err"
   cmp -s "$T/old.html" "$T/plan-acme-shop-42.html" || eq page unchanged changed
   [ ! -e "$T/plan-acme-shop-42.html.tmp" ] || eq "temp page" gone "still there"
 }
@@ -517,8 +521,8 @@ bad_run() {
   sed "$1" "$here/build-page/run.md" > "$T/plan-acme-shop-71-run.md"
   build "$T/plan-acme-shop-71-run.md"
   eq exit 1 "$code"
-  eq stdout "$2" "$out"
-  eq stderr "" "$err"
+  eq stdout "" "$out"
+  eq stderr "$2" "$err"
   [ ! -e "$T/plan-acme-shop-71-run.html" ] || eq page "not written" written
   [ ! -e "$T/plan-acme-shop-71-run.html.tmp" ] || eq "temp page" gone "still there"
 }
@@ -747,9 +751,10 @@ t_build_delete_slice_number() {
     > "$T/plan-acme-shop-42.md"
   build "$T/plan-acme-shop-42.md"
   eq exit 1 "$code"
-  eq stdout 'slices: layer 1 delete slice is headed `Slice 2`; it is `Slice 1`
+  eq stdout "" "$out"
+  eq stderr 'slices: layer 1 delete slice is headed `Slice 2`; it is `Slice 1`
 file changes: layer 1 `src/orders/export.ts` names S1; layer 1 has no slice 1
-file changes: layer 1 `src/orders/export.test.ts` names S1; layer 1 has no slice 1' "$out"
+file changes: layer 1 `src/orders/export.test.ts` names S1; layer 1 has no slice 1' "$err"
 }
 
 t_build_late_delete_slice() {

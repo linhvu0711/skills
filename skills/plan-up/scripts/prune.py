@@ -14,13 +14,18 @@ never deleted. Each plan is read through plan_reader.py.
 """
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import re
-import subprocess
 import time
 
 import plan_reader
+
+# gh.py sits in the shared core, off sys.path, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
+GH = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GH)
 
 DAYS_30 = 30 * 24 * 60 * 60
 
@@ -29,10 +34,9 @@ def closed_issues(repo, cache):
     """The repo's closed issue numbers, or None when gh cannot list them."""
     if repo not in cache:
         try:
-            done = subprocess.run(["gh", "issue", "list", "-R", repo, "--state", "closed", "-L", "100000",
-                                   "--json", "number"], capture_output=True, text=True)
-            cache[repo] = {i["number"] for i in json.loads(done.stdout)} if done.returncode == 0 else None
-        except (OSError, ValueError, TypeError, KeyError):
+            cache[repo] = {i["number"] for i in json.loads(GH.run("issue", "list", "-R", repo, "--state", "closed",
+                                                                  "-L", "100000", "--json", "number"))}
+        except (GH.GhError, ValueError, TypeError, KeyError):
             cache[repo] = None
     return cache[repo]
 

@@ -29,17 +29,21 @@
 # the target by number, or by URL when gh in the checkout sees another repo.
 # Under --command ready-pr, args is the one open PR that closes the issue,
 # and it stays a URL when that PR is in another repo.
-# Exit 1: a stop that is this target's: a bad flag, no open ticket, no open
-# PR, no checkout. Exit 2: gh could not read GitHub. Either way the reason is
-# the last line on stderr, and nothing launched, so the caller's launch starts
-# only after every check here passed.
+# Exit 1: a stop that is this target's: no open ticket, no open PR, no
+# checkout. Exit 2: gh could not read GitHub. Exit 64: a wrong command line,
+# such as a bad flag, with the usage after the reason. Each time the reason is
+# the last `stop:` line on stderr, and nothing launched, so the caller's
+# launch starts only after every check here passed.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
+. "$here/../gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage="usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 gh_die() { printf 'stop: %s\n' "$*" >&2; exit 2; }
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
@@ -48,30 +52,30 @@ label=""; args=(); sizes=()
 set_model=""; set_effort=""; set_command=""; mode=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --label) label="$2"; shift 2 ;;
-    --model) [ -n "${2:-}" ] || die "--model needs a name"; set_model="$2"; shift 2 ;;
+    --label) [ -n "${2:-}" ] || die_usage "$usage" "--label needs a name"; label="$2"; shift 2 ;;
+    --model) [ -n "${2:-}" ] || die_usage "$usage" "--model needs a name"; set_model="$2"; shift 2 ;;
     --effort)
-      one_of "$effort_list" "${2:-}" || die "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
+      one_of "$effort_list" "${2:-}" || die_usage "$usage" "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
       set_effort="$2"; shift 2 ;;
     --command)
-      case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
+      case "${2:-}" in ship|triage|grill|ready-pr|complete-task) ;; *) die_usage "$usage" "--command must be ship, triage, grill, ready-pr, or complete-task, got: ${2:-nothing}" ;; esac
       set_command="$2"; shift 2 ;;
     --mode)
-      one_of "$ship_mode_list" "${2:-}" || die "--mode must be $(spelled "$ship_mode_list"), got: ${2:-nothing}"
+      one_of "$ship_mode_list" "${2:-}" || die_usage "$usage" "--mode must be $(spelled "$ship_mode_list"), got: ${2:-nothing}"
       mode="$2"; shift 2 ;;
     --size)
-      [[ "$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')" =~ ^[0-9]+=($size_list)$ ]] || die "--size takes <n>=$size_list, got: ${2:-nothing}"
+      [[ "$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')" =~ ^[0-9]+=($size_list)$ ]] || die_usage "$usage" "--size takes <n>=$size_list, got: ${2:-nothing}"
       sizes+=("$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"); shift 2 ;;
-    -*) die "unexpected argument: $1" ;;
+    -*) die_usage "$usage" "unexpected argument: $1" ;;
     *) args+=("$1"); shift ;;
   esac
 done
-[ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die "--mode goes only with --command ship"
-[ "${#args[@]}" -ge 1 ] || die "usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+[ -z "$mode" ] || [ -z "$set_command" ] || [ "$set_command" = ship ] || die_usage "$usage" "--mode goes only with --command ship"
+[ "${#args[@]}" -ge 1 ] || die_usage "$usage"
 
 issue_url="${args[0]}"
 [[ "$issue_url" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]] \
-  || die "first argument must be a GitHub issue URL, got: $issue_url"
+  || die_usage "$usage" "first argument must be a GitHub issue URL, got: $issue_url"
 owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"; number="${BASH_REMATCH[3]}"
 slug="$owner/$repo"
 
@@ -82,21 +86,22 @@ while [ $i -lt "${#args[@]}" ]; do
   if [ "$a" = "on" ]; then
     pr_url="${args[$((i+1))]:-}"
     [[ "$pr_url" =~ ^https://github\.com/$owner/$repo/pull/([0-9]+)/?$ ]] \
-      || die "'on' needs a PR URL in $slug, got: ${pr_url:-nothing}"
+      || die_usage "$usage" "'on' needs a PR URL in $slug, got: ${pr_url:-nothing}"
     pr_number="${BASH_REMATCH[1]}"
     i=$((i+2))
   elif [[ "$a" =~ ^#?([0-9]+)$ ]]; then
     tickets+=("${BASH_REMATCH[1]}"); i=$((i+1))
   else
-    die "unexpected argument: $a"
+    die_usage "$usage" "unexpected argument: $a"
   fi
 done
-[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die "on takes one issue"
+[ -z "$pr_url" ] || [ "${#tickets[@]}" -eq 0 ] || die_usage "$usage" "on takes one issue"
 prep_args="${args[*]}"
 
 # ---------- issue ----------
-issue_json="$(gh issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state)" \
-  || gh_die "gh could not read $issue_url"
+gh_out issue view "$number" --repo "$slug" --json number,title,labels,subIssues,state \
+  || gh_die "gh could not read $issue_url: $err"
+issue_json="$out"
 title="$(jq -r .title <<<"$issue_json")"
 sub_count="$(jq '.subIssues.nodes | length' <<<"$issue_json")"
 
@@ -156,7 +161,7 @@ fi
 counted=0
 for n in ${list[@]+"${list[@]}"}; do
   if [ "$n" = "$number" ]; then json="$issue_json"
-  else json="$(gh issue view "$n" --repo "$slug" --json number,labels)" || gh_die "gh could not read #$n in $slug"; fi
+  else gh_out issue view "$n" --repo "$slug" --json number,labels || gh_die "gh could not read #$n in $slug: $err"; json="$out"; fi
   if jq -e '[.labels[].name | ascii_downcase] | index("manual")' <<<"$json" >/dev/null; then
     [ "$set_command" = complete-task ] || continue
   elif [ "$set_command" = complete-task ]; then
@@ -200,9 +205,10 @@ if [ -n "$mode" ]; then command_from=set; fi
 if [ "$command" = ready-pr ]; then
   # shellcheck disable=SC2016 # the $ names are GraphQL variables
   q='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}}}}'
-  prs="$(gh api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
-    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url')" \
-    || gh_die "gh could not read the PRs of #$number"
+  gh_out api graphql -f query="$q" -F o="$owner" -F r="$repo" -F n="$number" \
+    -q '.data.repository.issue.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN") | .url' \
+    || gh_die "gh could not read the PRs of #$number: $err"
+  prs="$out"
   pr_count="$(grep -c . <<<"$prs" || true)"
   [ "$pr_count" -gt 0 ] || die "#$number has no open PR"
   [ "$pr_count" -eq 1 ] || die "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')"
@@ -211,7 +217,8 @@ fi
 
 # ---------- base ----------
 if [ -n "$pr_url" ]; then
-  base="$(gh pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName)" || gh_die "gh could not read $pr_url"
+  gh_out pr view "$pr_number" --repo "$slug" --json headRefName -q .headRefName || gh_die "gh could not read $pr_url: $err"
+  base="$out"
 else
   base="$(bash "$here/../checkout.sh" default "$slug")" || exit
 fi
@@ -224,7 +231,7 @@ path="${found#* MAIN=}"
 # The thread runs in that checkout, and /ship reads a number as an issue
 # of the repo gh sees there. A fork clone can make gh see its upstream, so
 # the URLs stay unless gh there names this repo.
-here_repo="$(cd "$path" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
+here_repo="$(cd "$path" && gh_out repo view --json nameWithOwner -q .nameWithOwner && printf '%s' "$out")" || here_repo=""
 if [ "$(lower "$here_repo")" = "$(lower "$slug")" ]; then
   if [ "$command" = ready-pr ]; then
     # A PR in another repo keeps its URL: a bare number would name a PR here.

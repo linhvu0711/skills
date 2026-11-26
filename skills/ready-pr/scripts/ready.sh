@@ -56,8 +56,12 @@
 # is tried again every --poll-sec until the limit, then BLOCKED with
 # `gh failed: <line>; still failing when the watch's <n> s limit passed`; an
 # `HTTP 401` is BLOCKED at once, since a login does not come back by waiting.
-# A bad flag or argument is `stop: …` on stderr, exit 64. Never merges.
+# A bad flag or argument is `stop: …` when there is a why, then the usage, on
+# stderr, exit 64. Never merges.
 set -euo pipefail
+
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]'
 
 repo=""; num=""; me=""; watch_sha=""; settle=60; timeout=1680; poll=60
 while [ $# -gt 0 ]; do
@@ -67,16 +71,16 @@ while [ $# -gt 0 ]; do
     --timeout-sec) timeout="${2:-}"; shift 2 ;;
     --settle-sec) settle="${2:-}"; shift 2 ;;
     --poll-sec) poll="${2:-}"; shift 2 ;;
-    -*) printf 'stop: unknown flag %s\n' "$1" >&2; exit 64 ;;
-    *) if [ -z "$repo" ]; then repo="$1"; elif [ -z "$num" ]; then num="$1"; else printf 'stop: unexpected argument %s\n' "$1" >&2; exit 64; fi; shift ;;
+    -*) die_usage "$usage" "unknown flag $1" ;;
+    *) if [ -z "$repo" ]; then repo="$1"; elif [ -z "$num" ]; then num="$1"; else die_usage "$usage" "unexpected argument $1"; fi; shift ;;
   esac
 done
-[ -n "$repo" ] && [ -n "$num" ] || { echo 'usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]' >&2; exit 64; }
+[ -n "$repo" ] && [ -n "$num" ] || die_usage "$usage"
 # The watch does bash arithmetic on these, which takes whole numbers only and
 # reads a leading 0 as octal, so each is checked here and read in base 10.
 for flag in settle timeout poll; do
   value="${!flag}"
-  [[ "$value" =~ ^[0-9]+$ ]] || { printf 'stop: --%s-sec takes whole seconds: %s\n' "$flag" "$value" >&2; exit 64; }
+  [[ "$value" =~ ^[0-9]+$ ]] || die_usage "$usage" "--$flag-sec takes whole seconds: $value"
   printf -v "$flag" '%d' "$((10#$value))"
 done
 

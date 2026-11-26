@@ -28,21 +28,25 @@
 # the first event, for a caller that only sees the process end; --follow
 # keeps going past the end, for a session that gets a follow-up. At --max
 # seconds it prints `still running <link>`. A failed poll is tried again; after
-# three in a row it prints `poll failed <link> :: <the adapter's error>` and
-# exits 1. Each line a working poll writes on stderr is printed too, stamped.
+# three in a row it prints `stop: poll failed <link> :: <the adapter's error>` on
+# stderr and exits 1. Each line a working poll writes on stderr is printed too, stamped.
 # When a run ends, watch runs the adapter's release, on each poll until it
 # works, and prints its stderr lines stamped, such as a Mac it could not give
 # back; status never does. The interval is the
 # adapter's `interval`. start on an issue that only another executor has prints
 # "#<n> already has a <executor> session" on stderr and starts anyway.
+# A wrong command line: `stop: <why>` when there is one, then this header on
+# stderr, exit 64. An adapter's exit code passes through.
 set -euo pipefail
 
-here="$(cd "$(dirname "$0")" && pwd -P)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
 DEFAULT_EXECUTOR=devin
 
-die() { echo "handoff.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # executor NAME -> NAME, or dies naming the executors the adapter files give,
 # the default first
@@ -60,7 +64,7 @@ executor() {
     2) list="${names[0]} or ${names[1]}" ;;
     *) list=$(printf '%s, ' "${names[@]:0:${#names[@]}-1}"); list="${list}or ${names[${#names[@]}-1]}" ;;
   esac
-  die "executor must be $list"
+  die_usage "$(usage_text)" "executor must be $list"
 }
 
 # newest ISSUE [EXECUTOR] -> the ledger's newest row for that issue, of that executor when given
@@ -86,7 +90,7 @@ cmd_start() {
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
   [[ -z "$title" ]] && title=$(head -c 100 "$file" | head -1)
   local line id link
-  line=$(adapter "$e" start "$file" --title "$title" ${rest[@]+"${rest[@]}"}) || exit 1
+  line=$(adapter "$e" start "$file" --title "$title" ${rest[@]+"${rest[@]}"}) || exit
   IFS=$'\t' read -r id link <<<"$line"
   if [[ -n "$issue" && -z "$(newest "$issue" "$e")" ]]; then
     local other; other=$(newest "$issue" | cut -f2)
@@ -100,9 +104,9 @@ cmd_start() {
 cmd_status() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
-  [[ -n "$id" ]] || die "session id required"
+  [[ -n "$id" ]] || die_usage "$(usage_text)" "session id required"
   local line st key prs link msg
-  line=$(adapter "$e" poll "$id" "$@") || exit 1
+  line=$(adapter "$e" poll "$id" "$@") || exit
   IFS=$'\t' read -r st key prs link msg <<<"$line"
   echo "state: $st"
   echo "pr: $prs"
@@ -113,7 +117,7 @@ cmd_status() {
 cmd_say() {
   local e; e=$(executor "${1:-}")
   local id="${2:-}" file="${3:-}"
-  [[ -n "$id" ]] || die "session id required"
+  [[ -n "$id" ]] || die_usage "$(usage_text)" "session id required"
   [[ -s "$file" ]] || die "note file missing or empty: $file"
   adapter "$e" say "$id" "$file"
 }
@@ -126,7 +130,7 @@ cmd_facts() {
 cmd_watch() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
-  [[ -n "$id" ]] || die "session id required"
+  [[ -n "$id" ]] || die_usage "$(usage_text)" "session id required"
   local interval="" max=0 once=0 follow=0 opts=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -138,7 +142,7 @@ cmd_watch() {
     esac
   done
   [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed=""
+  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed="" why
   errf=$(mktemp); relf=$(mktemp); trap "rm -f '$errf' '$relf'" EXIT
   start=$(date +%s)
   while :; do
@@ -147,8 +151,10 @@ cmd_watch() {
       # session, or an outage the caller has to see.
       fails=$((fails + 1))
       if (( fails >= 3 )); then
-        echo "[$(date +%H:%M)] poll failed $last_link :: $(tail -1 "$errf")"
-        exit 1
+        # A wrong command line prints its usage after the stop: line.
+        why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
+        [[ -n "$why" ]] || why="$(tail -1 "$errf")"
+        die "poll failed $last_link :: $why"
       fi
     else
       fails=0
@@ -208,7 +214,7 @@ cmd_watch() {
 # release SESSION: the executor is the one of the session's newest ledger row
 cmd_release() {
   local s="${1:-}" row e id
-  [[ -n "$s" ]] || die "session id required"
+  [[ -n "$s" ]] || die_usage "$(usage_text)" "session id required"
   [[ -f "$LEDGER" ]] && row=$(awk -F'\t' -v s="$s" '$3 == s || $4 == s' "$LEDGER" | tail -1)
   [[ -n "${row:-}" ]] || die "no session $s in the ledger"
   IFS=$'\t' read -r _ e id _ <<<"$row"
@@ -217,7 +223,7 @@ cmd_release() {
 
 cmd_route() {
   local issue="${1:-}" e="" row
-  [[ -n "$issue" ]] || die "issue URL required"
+  [[ -n "$issue" ]] || die_usage "$(usage_text)" "issue URL required"
   [[ -n "${2:-}" ]] && e=$(executor "$2")
   row=$(newest "$issue" "$e")
   if [[ -n "$row" ]]; then
@@ -235,5 +241,5 @@ case "${1:-}" in
   watch) shift; cmd_watch "$@" ;;
   facts) shift; cmd_facts "$@" ;;
   release) shift; cmd_release "$@" ;;
-  *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
+  *) die_usage "$(usage_text)" ;;
 esac

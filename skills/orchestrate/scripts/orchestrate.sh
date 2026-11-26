@@ -54,18 +54,22 @@
 # resume; one line of text per repo for sync and per epic for close-epics;
 # nothing for started and change.
 # Exit 1: something stopped us; the reason is the last line on stderr.
+# Exit 64: a wrong command line, `stop: <why>` when there is one, then the
+# usage, on stderr.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
 . "$core/kickoff/labels.sh"
+. "$core/gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|close-epics|watch <owner/repo> ..."
-[ $# -ge 2 ] || die "$usage"
+[ $# -ge 2 ] || die_usage "$usage"
 cmd="$1"; slug="$2"; shift 2
-[[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die "the repo must be owner/repo, got: $slug"
+[[ "$slug" =~ ^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$ ]] || die_usage "$usage" "the repo must be owner/repo, got: $slug"
 owner="${BASH_REMATCH[1]}"; repo="${BASH_REMATCH[2]}"
 home="${ORCHESTRATE_HOME:-$HOME/.agents/orchestrate}"
 runs="$home/$owner-$repo"
@@ -121,7 +125,7 @@ to_ref() {
     m="$(run_repo_named name "${BASH_REMATCH[1]}")"
     [ -n "$m" ] || die "no single repo named ${BASH_REMATCH[1]} in this run; say owner/${BASH_REMATCH[1]}#${BASH_REMATCH[2]}"
     printf '%s#%s' "$m" "${BASH_REMATCH[2]}"
-  else die "not an issue: $1; say #n, repo#n, or owner/repo#n"; fi
+  else die_usage "$usage" "not an issue: $1; say #n, repo#n, or owner/repo#n"; fi
 }
 
 # run_repo_named full|name <word>: the one repo among the run repo and the
@@ -176,7 +180,7 @@ lock_claims() { take_lock "$home/.claims.lock" "another run's check is busy: it 
 put() {
   local file="$1" tmp
   shift
-  tmp="$(mktemp "$(dirname "$file")/.$(basename "$file").XXXXXX")"
+  tmp="$(mktemp "$(dirname "$file")/.$(basename "$file").XXXXXX")"; tmps+=("$tmp")
   "$@" > "$tmp"
   mv "$tmp" "$file"
 }
@@ -201,32 +205,31 @@ fields='number title state createdAt labels(first:50){nodes{name}} subIssues(fir
 
 # read_issues <ref>...: one GraphQL call per repo, the run repo first,
 # printed as one object keyed by ref. The run repo's call failing fails it,
-# with gh's stderr in errf. Another repo's call failing gives each of its refs
-# {error: <gh's last stderr line>}, so the rest of the run goes on.
+# with gh's last error line in errf. Another repo's call failing gives each
+# of its refs {error: <that line>}, so the rest of the run goes on.
 read_issues() {
   local all="{}" rr q r n out err
-  # shellcheck disable=SC2046 # one word per repo
-  for rr in $(printf '%s\n' "$@" | sed 's/#.*//' | awk -v h="$slug" '!s[$0]++ { if ($0 == h) print; else o = o $0 "\n" } END { printf "%s", o }'); do
+  while IFS= read -r rr; do
     q=""
     for r in "$@"; do [ "${r%#*}" = "$rr" ] || continue; n="${r##*#}"; q="$q i$n: issue(number: $n) { ...F }"; done
     # shellcheck disable=SC2016 # the $ names are GraphQL variables
-    if out="$(gh api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
-        -F o="${rr%/*}" -F r="${rr#*/}" 2>"$errf")"; then
+    if gh_out api graphql -f query='query($o: String!, $r: String!) { repository(owner: $o, name: $r) {'"$q"' } } fragment F on Issue { '"$fields"' }' \
+        -F o="${rr%/*}" -F r="${rr#*/}"; then
       all="$(jq -c --arg rr "$rr" --argjson all "$all" --args '.data.repository as $d
         | $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: $d["i" + split("#")[1]]}] | from_entries)' "$@" <<<"$out")"
     elif [ "$rr" = "$slug" ]; then
+      printf '%s\n' "$err" >"$errf"
       return 1
     else
-      err="$(tail -1 "$errf")"
       all="$(jq -c --arg rr "$rr" --arg e "$err" --argjson all "$all" --args '
         $all + ([$ARGS.positional[] | select(startswith($rr + "#")) | {key: ., value: {error: $e}}] | from_entries)' "$@" <<<"null")"
     fi
-  done
+  done < <(printf '%s\n' "$@" | sed 's/#.*//' | awk -v h="$slug" '!s[$0]++ { if ($0 == h) print; else o = o $0 "\n" } END { printf "%s", o }')
   printf '%s\n' "$all"
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
 # decide_for write gh's stderr to errf.
-errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); trap 'rm -f "$errf" "$obsf"; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
+errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); tmps=(); trap 'rm -f "$errf" "$obsf" ${tmps[@]+"${tmps[@]}"}; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
 
 # size_label <issue json>: the issue's size, from its first size label.
 size_label() {
@@ -521,12 +524,12 @@ cmd_start() {
       --name) name="${2:-}"; shift 2 ;;
       --thread) thread="${2:-}"; shift 2 ;;
       --env) env="${2:-}"; shift 2 ;;
-      -*) die "unexpected argument: $1" ;;
-      *) a="$(to_ref "$1")" || exit 1; refs+=("$a"); shift ;;
+      -*) die_usage "usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..." "unexpected argument: $1" ;;
+      *) a="$(to_ref "$1")" || exit; refs+=("$a"); shift ;;
     esac
   done
   [ -n "$name" ] && [ -n "$thread" ] && [ -n "$env" ] && [ "${#refs[@]}" -gt 0 ] \
-    || die "usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..."
+    || die_usage "usage: orchestrate.sh start <owner/repo> --name <words> --thread <thread-id> --env <environment-id> <n>..."
   in_t3
   local d st found path got
   for d in "$runs"/*/; do
@@ -593,12 +596,12 @@ observe() {
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
   stages="{}"
-  for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
+  while IFS= read -r r; do
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$j" != null ] || continue
     if jq -e .error <<<"$j" >/dev/null; then st=unread; else st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; fi
     stages="$(jq -c --arg r "$r" --arg s "$st" '.[$r] = $s' <<<"$stages")"
-  done
+  done < <(jq -r '.set[], .removed[]' <<<"$S")
   holders="$(turn_holders "$stages")"
   turn="$(jq -r 'if . == [] then empty else .[0] end' <<<"$holders")"
   others="$(other_runs)"
@@ -611,7 +614,7 @@ observe() {
   owners="$(jq -c --argjson set "$(jq -c .set <<<"$S")" \
     '. as $is | [$set[] | . as $i | $is[$i] // empty | select(.error == null)
       | .closedByPullRequestsReferences.nodes[] | {key: .url, value: $i}] | reverse | from_entries' <<<"$issues")"
-  for r in $(jq -r '.set[], .removed[]' <<<"$S"); do
+  while IFS= read -r r; do
     gone="$(jq --arg r "$r" '.removed | index([$r]) != null' <<<"$S")"
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$gone" = false ] || [ "$j" != null ] || continue
@@ -652,7 +655,7 @@ observe() {
         # other stop is this issue's alone, and it waits.
         rc=0; line="$(decide_for "$r" "$sk")" || rc=$?
         if [ "$rc" -ne 0 ]; then
-          wait="$(tail -1 "$errf" | sed 's/^stop: //')"; line=""
+          wait="$(sed -n 's/^stop: //p' "$errf" | tail -1)"; line=""
           [ "$rc" -ne 2 ] || die "$wait"
           # The repo is not on this Mac: only the user can clone it.
           case "$wait" in "no checkout of "*) ask="$wait"; wait="" ;; esac
@@ -700,7 +703,7 @@ observe() {
            + (if $wait == "" then {} else {wait: $wait} end) + (if $ask == "" then {} else {ask: $ask} end)')"
     if [ "$gone" = true ]; then gone_rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$gone_rows")"
     else rows="$(jq -c --argjson r "$row" '. + [$r]' <<<"$rows")"; fi
-  done
+  done < <(jq -r '.set[], .removed[]' <<<"$S")
 
   # Done: every issue closed, an epic once its sub-issues are, and no PR
   # that closes one still open. An open sub-issue that is an epic of the run
@@ -822,10 +825,10 @@ cmd_check() {
 # launch. A failed one is never started again; `restart` clears it. A failed
 # task launch frees the task turn now, so other runs need not wait a check.
 cmd_started() {
-  [ $# -eq 4 ] || die "usage: orchestrate.sh started <owner/repo> <issue> <stage> <thread-id> <link> | --failed <why>"
+  [ $# -eq 4 ] || die_usage "usage: orchestrate.sh started <owner/repo> <issue> <stage> <thread-id> <link> | --failed <why>"
   newest_run
   local r st="$2" upd
-  r="$(to_ref "$1")" || exit 1
+  r="$(to_ref "$1")" || exit
   [ "$(jq --arg r "$r" --arg s "$st" '[.threads[] | select(.ref == $r and .stage == $s and .status == "pending")] | length' <<<"$S")" -gt 0 ] \
     || die "$(label_of "$r") has no pending thread at stage $st"
   if [ "$3" = --failed ]; then
@@ -846,7 +849,7 @@ cmd_started() {
 # turn, or kept it open for the user, with why.
 cmd_settled() {
   local susage="usage: orchestrate.sh settled <owner/repo> <thread-id> <run-id> [--kept <why>]"
-  [ $# -eq 2 ] || { [ $# -eq 4 ] && [ "$3" = --kept ] && [ -n "$4" ]; } || die "$susage"
+  [ $# -eq 2 ] || { [ $# -eq 4 ] && [ "$3" = --kept ] && [ -n "$4" ]; } || die_usage "$susage"
   newest_run
   local id="$1" upd
   [ "$(jq --arg t "$id" '[.threads[] | select(.thread == $t and .status == "started" and (.command == "grill" or .command == "triage"))] | length' <<<"$S")" -gt 0 ] \
@@ -868,20 +871,20 @@ cmd_settled() {
 # prints its reason as `why`.
 cmd_proposed() {
   local pusage="usage: orchestrate.sh proposed <owner/repo> <issue> $routes|unsure [--size $size_list]"
-  [ $# -ge 2 ] && [[ "$2" =~ ^($routes|unsure)$ ]] || die "$pusage"
+  [ $# -ge 2 ] && [[ "$2" =~ ^($routes|unsure)$ ]] || die_usage "$pusage"
   local word="$1" r route="$2" size="" sk line why=""
   shift 2
   if [ $# -gt 0 ]; then
-    [ $# -eq 2 ] && [ "$1" = --size ] || die "$pusage"
+    [ $# -eq 2 ] && [ "$1" = --size ] || die_usage "$pusage"
     size="$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"
-    one_of "$size_list" "$size" || die "$pusage"
+    one_of "$size_list" "$size" || die_usage "$pusage"
   fi
   case "$route" in
     ship) [ -n "$size" ] || die "a ship proposal needs --size $size_list" ;;
     task|close) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
   esac
   newest_run
-  r="$(to_ref "$word")" || exit 1
+  r="$(to_ref "$word")" || exit
   [ "$(jq --arg r "$r" '.set | index([$r]) != null' <<<"$S")" = true ] || die "$(label_of "$r") is not in the set"
   S="$(jq -c --arg i "$r" --arg r "$route" --arg z "$size" \
     '.proposals[$i] = {route: $r, answer: ((.proposals // {})[$i].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
@@ -889,7 +892,7 @@ cmd_proposed() {
   sk="$(answer_skill "$route")"
   line="null"
   if [ -n "$sk" ] && ! line="$(decide_for "$r" "$sk")"; then
-    line="null"; why="$(tail -1 "$errf" | sed 's/^stop: //')"
+    line="null"; why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
   fi
   jq -cn --arg i "$r" --arg label "$(label_of "$r")" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \
     '{ref: $i, label: $label, route: $r, size: (if $z == "" then null else $z end), model: $l.model, effort: $l.effort}
@@ -916,9 +919,9 @@ cmd_change() {
   local what="${1:-}" refs a r
   case "$what" in
     add|remove)
-      shift; [ $# -gt 0 ] || die "usage: orchestrate.sh change <owner/repo> $what <issue>..."
+      shift; [ $# -gt 0 ] || die_usage "usage: orchestrate.sh change <owner/repo> $what <issue>..."
       refs=""
-      for a in "$@"; do r="$(to_ref "$a")" || exit 1; refs="$refs$r"$'\n'; done
+      for a in "$@"; do r="$(to_ref "$a")" || exit; refs="$refs$r"$'\n'; done
       refs="$(printf '%s' "$refs" | jq -Rcs 'split("\n") | map(select(. != ""))')"
       if [ "$what" = add ]; then
         S="$(jq -c --argjson a "$refs" '.set += [$a[] as $x | select(.set | index([$x]) | not) | $x] | .removed -= $a' <<<"$S")"
@@ -927,15 +930,15 @@ cmd_change() {
       fi
       ;;
     restart)
-      [ -n "${2:-}" ] || die "usage: orchestrate.sh change <owner/repo> restart <issue>"
-      r="$(to_ref "$2")" || exit 1
+      [ -n "${2:-}" ] || die_usage "usage: orchestrate.sh change <owner/repo> restart <issue>"
+      r="$(to_ref "$2")" || exit
       [ "$(jq --arg r "$r" '[.threads[] | select(.ref == $r)] | length' <<<"$S")" -gt 0 ] \
         || die "$(label_of "$r") has no thread to restart"
       S="$(jq -c --arg r "$r" '(.threads | map(.ref == $r) | rindex(true)) as $i | .threads |= del(.[$i])' <<<"$S")"
       ;;
     ship)
       one_of "$ship_mode_list" "${2:-}" && [ -n "${3:-}" ] \
-        || die "usage: orchestrate.sh change <owner/repo> ship $ship_mode_list <issue>|all"
+        || die_usage "usage: orchestrate.sh change <owner/repo> ship $ship_mode_list <issue>|all"
       local mode="$2"
       # shellcheck disable=SC2016 # the $ names are jq variables
       local shipped='(.stage == "ticket" or (.stage == "unlabeled" and ($S.proposals // {})[.ref].answer == "ship"))'
@@ -945,41 +948,42 @@ cmd_change() {
           | reduce (.threads[] | select('"$shipped"') | .ref) as $r (.; .ship[$r] //= $d)
           | .ship.default = $m' <<<"$S")"
       else
-        r="$(to_ref "$3")" || exit 1
+        r="$(to_ref "$3")" || exit
         [ "$(jq --arg r "$r" '. as $S | [.threads[] | select(.ref == $r and '"$shipped"')] | length' <<<"$S")" -eq 0 ] \
           || die "$(label_of "$r") has started; it ships with /ship$(m="$(ship_mode "$r")"; [ -z "$m" ] || printf ' --%s' "$m")"
         S="$(jq -c --arg r "$r" --arg m "$mode" '.ship[$r] = $m' <<<"$S")"
       fi
       ;;
     use)
-      [ -n "${2:-}" ] || die "usage: orchestrate.sh change <owner/repo> use <issue>|all [--model M] [--effort E]"
+      local uusage="usage: orchestrate.sh change <owner/repo> use <issue>|all [--model M] [--effort E]"
+      [ -n "${2:-}" ] || die_usage "$uusage"
       local key="all" pick="{}"
-      [ "$2" = all ] || { key="$(to_ref "$2")" || exit 1; }
+      [ "$2" = all ] || { key="$(to_ref "$2")" || exit; }
       shift 2
       while [ $# -gt 0 ]; do
         case "$1" in
-          --model) [ -n "${2:-}" ] || die "--model needs a name"; pick="$(jq -c --arg v "$2" '.model = $v' <<<"$pick")"; shift 2 ;;
+          --model) [ -n "${2:-}" ] || die_usage "$uusage" "--model needs a name"; pick="$(jq -c --arg v "$2" '.model = $v' <<<"$pick")"; shift 2 ;;
           --effort)
-            one_of "$effort_list" "${2:-}" || die "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
+            one_of "$effort_list" "${2:-}" || die_usage "$uusage" "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
             pick="$(jq -c --arg v "$2" '.effort = $v' <<<"$pick")"; shift 2 ;;
-          *) die "unexpected argument: $1" ;;
+          *) die_usage "$uusage" "unexpected argument: $1" ;;
         esac
       done
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
     answer)
       local ausage="usage: orchestrate.sh change <owner/repo> answer <issue>|all yes|skip|$routes"
-      [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$routes)$ ]] || die "$ausage"
+      [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$routes)$ ]] || die_usage "$ausage"
       local word="$3"
       if [ "$2" = all ]; then
-        case "$word" in yes|skip) ;; *) die "$ausage" ;; esac
+        case "$word" in yes|skip) ;; *) die_usage "$ausage" ;; esac
         S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
           if .answer != null then .
           elif $w == "skip" then .answer = "skip"
           elif .route != null and .route != "unsure" then .answer = .route
           else . end))' <<<"$S")"
       else
-        r="$(to_ref "$2")" || exit 1
+        r="$(to_ref "$2")" || exit
         [ "$(jq --arg r "$r" '.set | index([$r]) != null' <<<"$S")" = true ] || die "$(label_of "$r") is not in the set"
         if [ "$word" = yes ]; then
           word="$(jq -r --arg r "$r" '(.proposals // {})[$r].route // "unsure"' <<<"$S")"
@@ -988,7 +992,7 @@ cmd_change() {
         S="$(jq -c --arg r "$r" --arg w "$word" '.proposals[$r] = ((.proposals // {})[$r] // {}) + {route: ((.proposals // {})[$r].route), answer: $w}' <<<"$S")"
       fi
       ;;
-    *) die "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
+    *) die_usage "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac
   save
 }
@@ -1001,13 +1005,13 @@ cmd_timer() {
   newest_run
   case "${1:-}" in
     --every)
-      [[ "${2:-}" =~ ^[0-9]+$ ]] && [ "$2" -ge 1 ] || die "check every takes 1 minute or more"
+      [[ "${2:-}" =~ ^[0-9]+$ ]] && [ "$2" -ge 1 ] || die_usage "usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" "check every takes 1 minute or more"
       S="$(jq -c --argjson e "$2" '.timer.every = $e' <<<"$S")" ;;
     pause|resume|stop)
       case "$(jq -r .status <<<"$S")" in done) die "the run in $slug is done" ;; esac
       case "$1" in pause) st=paused; stop_watcher ;; resume) st=running ;; stop) st=stopped; stop_watcher ;; esac
       S="$(jq -c --arg s "$st" '.status = $s' <<<"$S")" ;;
-    *) die "usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" ;;
+    *) die_usage "usage: orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop" ;;
   esac
   save
   jq -c '{status, every: .timer.every}' <<<"$S"
@@ -1019,7 +1023,7 @@ cmd_timer() {
 # title, and the check interval.
 cmd_resume() {
   [ "${1:-}" = --thread ] && [ -n "${2:-}" ] && [ "${3:-}" = --env ] && [ -n "${4:-}" ] \
-    || die "usage: orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
+    || die_usage "usage: orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>"
   in_t3
   local d
   run=""
@@ -1043,7 +1047,7 @@ cmd_resume() {
 # commits, and edits stay. A branch that cannot move exits 0 with a
 # `not updated` line, since the done run goes on to prune and retro anyway.
 cmd_sync() {
-  [ $# -eq 0 ] || die "usage: orchestrate.sh sync <owner/repo>"
+  [ $# -eq 0 ] || die_usage "usage: orchestrate.sh sync <owner/repo>"
   newest_run
   local rr p
   while IFS=$'\t' read -r rr p; do
@@ -1053,9 +1057,10 @@ cmd_sync() {
 
 # sync_one <owner/repo> <path>: sync's line for one repo.
 sync_one() {
-  local repo="$1" path="$2" def new old where
-  def="$(gh repo view "$repo" --json defaultBranchRef -q .defaultBranchRef.name 2>"$errf")" \
-    || { printf '%s not updated: gh could not name the default branch: %s\n' "$repo" "$(tail -1 "$errf")"; return 0; }
+  local repo="$1" path="$2" def new old where out err
+  gh_out repo view "$repo" --json defaultBranchRef -q .defaultBranchRef.name \
+    || { printf '%s not updated: gh could not name the default branch: %s\n' "$repo" "$err"; return 0; }
+  def="$out"
   # The refspec is named, since the clone's own fetch refspec may leave the default branch out.
   git -C "$path" fetch --quiet origin "+refs/heads/$def:refs/remotes/origin/$def" 2>"$errf" \
     || { printf '%s not updated: fetch failed: %s\n' "$def" "$(tail -1 "$errf")"; return 0; }
@@ -1083,11 +1088,11 @@ sync_one() {
 # ---------- close-epics ----------
 # The last check's rows hold each open epic at stage epic; a closed one is at done.
 cmd_close_epics() {
-  [ $# -eq 0 ] || die "usage: orchestrate.sh close-epics <owner/repo>"
+  [ $# -eq 0 ] || die_usage "usage: orchestrate.sh close-epics <owner/repo>"
   newest_run
   # An epic stays at stage epic all run long, with open sub-issues; only a done run makes the close safe.
   [ "$(jq -r .status <<<"$S")" = done ] || die "the run in $slug is not done; close-epics runs only at its end"
-  local pending left got r kind val closed
+  local pending left got r kind val closed out err
   pending="$(jq -r '.seen.issues // {} | .[] | select(.stage == "epic") | .ref' <<<"$S")"
   # Each pass reads the epics again just before the close, since a sub-issue
   # can open again after the last check. An inner epic closes a pass before
@@ -1095,11 +1100,11 @@ cmd_close_epics() {
   while [ -n "$pending" ]; do
     # shellcheck disable=SC2086 # one word per ref
     if ! got="$(read_issues $pending)"; then
-      for r in $pending; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done
+      while IFS= read -r r; do printf '%s not closed: could not read it: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"; done <<<"$pending"
       return 0
     fi
     closed=0; left=""
-    for r in $pending; do
+    while IFS= read -r r; do
       IFS=$'\t' read -r kind val < <(jq -r --arg r "$r" '.[$r] as $i
         | if $i == null then ["error", "not found"]
           elif $i.error then ["error", $i.error]
@@ -1115,13 +1120,13 @@ cmd_close_epics() {
         pr) printf '%s not closed: %s is open\n' "$(label_of "$r")" "$val" ;;
         sub) left="$left $r=$val" ;;
         ready)
-          if gh issue close "${r##*#}" --repo "${r%#*}" --reason completed >/dev/null 2>"$errf"; then
+          if gh_out issue close "${r##*#}" --repo "${r%#*}" --reason completed; then
             printf '%s closed\n' "$(label_of "$r")"; closed=$((closed + 1))
           else
-            printf '%s not closed: %s\n' "$(label_of "$r")" "$(tail -1 "$errf")"
+            printf '%s not closed: %s\n' "$(label_of "$r")" "$err"
           fi ;;
       esac
-    done
+    done <<<"$pending"
     if [ "$closed" -eq 0 ]; then
       for r in $left; do printf '%s not closed: %s is still open\n' "$(label_of "${r%%=*}")" "$(label_of "${r#*=}")"; done
       return 0
@@ -1213,9 +1218,9 @@ cmd_watch() {
   local wusage="usage: orchestrate.sh watch <owner/repo> [--once [--token <t>] | --loop <run-dir> <token>]"
   case "${1:-}" in
     "") watch_start; return ;;
-    --loop) [ $# -eq 3 ] || die "$wusage"; watch_loop "$2" "$3" ;;
-    --once) [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --token ]; } || die "$wusage" ;;
-    *) die "$wusage" ;;
+    --loop) [ $# -eq 3 ] || die_usage "$wusage"; watch_loop "$2" "$3" ;;
+    --once) [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --token ]; } || die_usage "$wusage" ;;
+    *) die_usage "$wusage" ;;
   esac
   in_t3
   newest_run
@@ -1255,5 +1260,5 @@ case "$cmd" in
   sync) cmd_sync "$@" ;;
   close-epics) cmd_close_epics "$@" ;;
   watch) cmd_watch "$@" ;;
-  *) die "$usage" ;;
+  *) die_usage "$usage" ;;
 esac

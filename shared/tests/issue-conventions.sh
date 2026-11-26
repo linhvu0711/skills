@@ -167,7 +167,19 @@ t_ic_seed_forget() {
   eq "priority-get stdout" MISS "$out"
 }
 
+t_ic_save_keeps_other_temp() {
+  # Given: another save's temp file beside the store, under the old fixed name
+  ic_setup; mkdir -p "$(dirname "$ISS")"; printf 'other\n' > "$ISS.tmp"
+  # When
+  set_types
+  # Then
+  eq exit 0 "$code"
+  eq "other temp" "other" "$(cat "$ISS.tmp")"
+  eq files "issue-conventions.json issue-conventions.json.tmp" "$(cd "$(dirname "$ISS")" && ls -A | tr '\n' ' ' | sed 's/ $//')"
+}
+
 cases=(
+  "conventions: a save keeps another save's temp file and leaves none of its own|t_ic_save_keeps_other_temp"
   "conventions: get on a repo never learned prints MISS|t_ic_get_miss"
   "conventions: set saves style, words, and sizes, and get reads them back|t_ic_set_get"
   "conventions: a second set replaces the first|t_ic_set_twice"

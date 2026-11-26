@@ -14,15 +14,17 @@
 # Prints one line per bot seen, its tool name, in reviewers.tsv order, and
 # nothing when none is seen. Exit 0.
 # A gh call that fails is `stop: gh failed: <its last line>` on stderr,
-# exit 1. A bad argument is `stop: …` on stderr, exit 64.
+# exit 1. A bad argument is `stop: …` then the usage on stderr, exit 64.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/../gh.sh"
-[ $# -eq 2 ] || { echo 'usage: reviewers.sh <owner/repo> <number>' >&2; exit 64; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: reviewers.sh <owner/repo> <number>'
+[ $# -eq 2 ] || die_usage "$usage"
 repo="$1"; num="$2"
-case "$repo" in */*) ;; *) printf 'stop: %s is not owner/repo\n' "$repo" >&2; exit 64 ;; esac
-case "$num" in ''|*[!0-9]*) printf 'stop: %s is not a PR number\n' "$num" >&2; exit 64 ;; esac
+case "$repo" in */*) ;; *) die_usage "$usage" "$repo is not owner/repo" ;; esac
+case "$num" in ''|*[!0-9]*) die_usage "$usage" "$num is not a PR number" ;; esac
 
 known="$(grep -v '^#' "$here/reviewers.tsv" | jq -R -s -c '
   [split("\n")[] | select(length > 0) | split("\t") | {tool: .[0], login: .[1]}]')"

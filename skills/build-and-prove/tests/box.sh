@@ -200,6 +200,18 @@ t_box_no_proofbox() {
   has stderr "stop: proofbox is not installed" "$err"
 }
 
+t_box_unknown_verb_without_proofbox() {
+  # Given: no proofbox on PATH
+  repo
+  export PATH="/usr/bin:/bin"
+  # When
+  box nope
+  # Then
+  eq exit 64 "$code"
+  has stderr "usage: box.sh auth <linux|macos>" "$err"
+  lacks stderr "proofbox is not installed" "$err"
+}
+
 t_box_create_fails() {
   fake_proofbox
   echo "Namespace refused the Sandbox: 4 of 4 in use; nothing was created. Delete a Sandbox or use a smaller --size" > "$FAKE_PB/create.fail"
@@ -470,7 +482,7 @@ t_box_gates_usage() {
   # When
   box gates "$P" --
   # Then
-  eq exit 1 "$code"
+  eq exit 64 "$code"
   has stderr "gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
   eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
   [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
@@ -684,6 +696,24 @@ ci_only_fixture() {
   mkdir -p "$R/.github/workflows"
   printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pwd' > "$R/.github/workflows/ci.yml"
   sha="$(git -C "$R" rev-parse --short HEAD)"
+}
+
+t_box_gates_cover_fails_no_temp() {
+  # Given: ci-covers stops, since the tail that reads a workflow's run lines
+  # fails, and a mktemp that logs each path it makes
+  ci_only_fixture
+  mkdir -p "$T/failbin"
+  printf '%s\n' '#!/usr/bin/env bash' 'case "$*" in "-n +2 "*) exit 1 ;; esac' 'exec /usr/bin/tail "$@"' > "$T/failbin/tail"
+  printf '%s\n' '#!/usr/bin/env bash' 'p="$(/usr/bin/mktemp "$@")" || exit' "printf '%s\\n' \"\$p\" >> '$T/made'" "printf '%s\\n' \"\$p\"" > "$T/failbin/mktemp"
+  chmod +x "$T/failbin/tail" "$T/failbin/mktemp"
+  export PATH="$T/failbin:$PATH"
+  # When
+  box gates "$P" --ci "$R" -- 'pnpm test'
+  # Then
+  eq exit 1 "$code"
+  local left="" f
+  while IFS= read -r f; do [ ! -e "$f" ] || left="$left $f"; done < "$T/made"
+  eq "temp files left" "" "$left"
 }
 
 t_box_gates_ci_no_sandbox() {
@@ -1160,6 +1190,7 @@ cases=(
   "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --ci leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_ci"
+  "gates leaves no temp file when ci-covers stops|t_box_gates_cover_fails_no_temp"
   "gates --ci needs no Sandbox when CI runs every Gate|t_box_gates_ci_no_sandbox"
   "gates --ci needs no proofbox when CI runs every Gate|t_box_gates_ci_no_proofbox"
   "gates --ci runs an --on-local Gate on the local machine though CI names it|t_box_gates_ci_on_local"
@@ -1191,6 +1222,7 @@ cases=(
   "box.env is read as text, never run|t_box_state_not_run"
   "down deletes the Sandbox and clears the state|t_box_down"
   "up stops when proofbox is missing|t_box_no_proofbox"
+  "an unknown verb gets the usage, proofbox or not|t_box_unknown_verb_without_proofbox"
   "up stops with proofbox's line when create fails|t_box_create_fails"
   "up names the login command when the login is missing|t_box_login"
   "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"

@@ -39,7 +39,8 @@ t_cd_unknown_edge_end() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'edges[1]: to "cache" is not a node' "$out"
+  eq stdout "" "$out"
+  eq stderr 'edges[1]: to "cache" is not a node' "$err"
 }
 
 t_cd_unknown_group_member() {
@@ -49,7 +50,8 @@ t_cd_unknown_group_member() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'group "svc": member "queue" is not a node or group' "$out"
+  eq stdout "" "$out"
+  eq stderr 'group "svc": member "queue" is not a node or group' "$err"
 }
 
 t_cd_unknown_step_participant() {
@@ -59,7 +61,8 @@ t_cd_unknown_step_participant() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'steps[1]: to "queue" is not a participant' "$out"
+  eq stdout "" "$out"
+  eq stderr 'steps[1]: to "queue" is not a participant' "$err"
 }
 
 t_cd_unknown_frame_participant() {
@@ -69,7 +72,8 @@ t_cd_unknown_frame_participant() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'frames[0]: participant "queue" is not a participant' "$out"
+  eq stdout "" "$out"
+  eq stderr 'frames[0]: participant "queue" is not a participant' "$err"
 }
 
 t_cd_unknown_note_participant() {
@@ -79,7 +83,8 @@ t_cd_unknown_note_participant() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'notes[0]: at "queue" is not a participant' "$out"
+  eq stdout "" "$out"
+  eq stderr 'notes[0]: at "queue" is not a participant' "$err"
 }
 
 t_cd_duplicate_participant() {
@@ -89,7 +94,8 @@ t_cd_duplicate_participant() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'participants[3]: id "api" is used twice' "$out"
+  eq stdout "" "$out"
+  eq stderr 'participants[3]: id "api" is used twice' "$err"
 }
 
 t_cd_duplicate_node() {
@@ -99,7 +105,8 @@ t_cd_duplicate_node() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'nodes[3]: id "web" is used twice' "$out"
+  eq stdout "" "$out"
+  eq stderr 'nodes[3]: id "web" is used twice' "$err"
 }
 
 t_cd_duplicate_node_and_group() {
@@ -109,7 +116,8 @@ t_cd_duplicate_node_and_group() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'groups[0]: id "svc" is used twice' "$out"
+  eq stdout "" "$out"
+  eq stderr 'groups[0]: id "svc" is used twice' "$err"
 }
 
 t_cd_node_without_id() {
@@ -119,7 +127,8 @@ t_cd_node_without_id() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'nodes[3]: no id' "$out"
+  eq stdout "" "$out"
+  eq stderr 'nodes[3]: no id' "$err"
 }
 
 t_cd_node_without_id_and_edge_without_from() {
@@ -129,7 +138,8 @@ t_cd_node_without_id_and_edge_without_from() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout "$(printf 'nodes[3]: no id\nedges[2]: from "None" is not a node')" "$out"
+  eq stdout "" "$out"
+  eq stderr "$(printf 'nodes[3]: no id\nedges[2]: from "None" is not a node')" "$err"
 }
 
 t_cd_frame_and_note_past_last_step() {
@@ -139,7 +149,8 @@ t_cd_frame_and_note_past_last_step() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout "$(printf 'frames[0]: to 40 is not a step\nnotes[0]: after 40 is not a step')" "$out"
+  eq stdout "" "$out"
+  eq stderr "$(printf 'frames[0]: to 40 is not a step\nnotes[0]: after 40 is not a step')" "$err"
 }
 
 t_cd_frame_past_last_step() {
@@ -149,7 +160,8 @@ t_cd_frame_past_last_step() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'frames[0]: to 3 is not a step' "$out"
+  eq stdout "" "$out"
+  eq stderr 'frames[0]: to 3 is not a step' "$err"
 }
 
 t_cd_frame_step_below_zero_or_text() {
@@ -159,7 +171,8 @@ t_cd_frame_step_below_zero_or_text() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout "$(printf 'frames[0]: from -1 is not a step\nframes[0]: to "a" is not a step')" "$out"
+  eq stdout "" "$out"
+  eq stderr "$(printf 'frames[0]: from -1 is not a step\nframes[0]: to "a" is not a step')" "$err"
 }
 
 t_cd_frame_step_true_or_float() {
@@ -170,7 +183,8 @@ t_cd_frame_step_true_or_float() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout "$(printf 'frames[0]: from true is not a step\nframes[0]: to 1.0 is not a step')" "$out"
+  eq stdout "" "$out"
+  eq stderr "$(printf 'frames[0]: from true is not a step\nframes[0]: to 1.0 is not a step')" "$err"
 }
 
 t_cd_frame_without_to() {
@@ -180,7 +194,8 @@ t_cd_frame_without_to() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'frames[0]: to null is not a step' "$out"
+  eq stdout "" "$out"
+  eq stderr 'frames[0]: to null is not a step' "$err"
 }
 
 t_cd_note_past_last_step() {
@@ -190,7 +205,8 @@ t_cd_note_past_last_step() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'notes[0]: after 3 is not a step' "$out"
+  eq stdout "" "$out"
+  eq stderr 'notes[0]: after 3 is not a step' "$err"
 }
 
 t_cd_note_step_not_whole() {
@@ -200,7 +216,8 @@ t_cd_note_step_not_whole() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'notes[0]: after 1.5 is not a step' "$out"
+  eq stdout "" "$out"
+  eq stderr 'notes[0]: after 1.5 is not a step' "$err"
 }
 
 t_cd_note_without_after() {
@@ -231,7 +248,8 @@ t_cd_not_json() {
   cd_check
   # Then
   eq exit 1 "$code"
-  has stdout "DATA is not JSON: Expecting property name enclosed in double quotes" "$out"
+  eq stdout "" "$out"
+  has stderr "stop: DATA is not JSON: Expecting property name enclosed in double quotes" "$err"
 }
 
 t_cd_data_on_next_line() {
@@ -252,7 +270,8 @@ t_cd_missing_node_label() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'node "db": no label' "$out"
+  eq stdout "" "$out"
+  eq stderr 'node "db": no label' "$err"
 }
 
 t_cd_missing_step_label() {
@@ -262,7 +281,8 @@ t_cd_missing_step_label() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'steps[0]: no label' "$out"
+  eq stdout "" "$out"
+  eq stderr 'steps[0]: no label' "$err"
 }
 
 t_cd_over_budget() {
@@ -272,7 +292,8 @@ t_cd_over_budget() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'flowchart: 15 nodes, budget 14' "$out"
+  eq stdout "" "$out"
+  eq stderr 'flowchart: 15 nodes, budget 14' "$err"
 }
 
 t_cd_unknown_type() {
@@ -282,7 +303,8 @@ t_cd_unknown_type() {
   cd_check
   # Then
   eq exit 1 "$code"
-  eq stdout 'type "flow" is not a catalog type' "$out"
+  eq stdout "" "$out"
+  eq stderr 'stop: type "flow" is not a catalog type' "$err"
 }
 
 cases=(

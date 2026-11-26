@@ -51,12 +51,18 @@
 # names a new Mac only after the send works, and return reads the row before
 # it checks the run: so a return that sees an ended run never gives back a Mac
 # that a renew rented for the next run.
+# A wrong command line: `stop: <why>` when there is one, then the usage on
+# stderr, exit 64. The command's own exit code passes through.
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
-die() { echo "mac.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../shared/gh.sh"
+scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
+usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # need_tools -> dies when a tool a Mac step needs is missing. Only a step that
 # touches a Mac runs it, so an agent with no Mac needs no nsc.
@@ -83,7 +89,7 @@ row_get() {
 row_set() {
   local tmp
   mkdir -p "$(dirname "$MACS")"; touch "$MACS"
-  tmp=$(mktemp "$MACS.XXXXXX")
+  tmp=$(mktemp "$(dirname "$MACS")/.$(basename "$MACS").XXXXXX"); tmps+=("$tmp")
   awk -F'\t' -v a="$1" '$1 != a' "$MACS" >"$tmp"
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >>"$tmp"
   mv "$tmp" "$MACS"
@@ -102,7 +108,7 @@ row_clear() {
 
 # after_dashes ARGS -> dies unless ARGS holds "--" with a command after it
 after_dashes() {
-  [[ "${1:-}" == "--" && $# -gt 1 ]] || die "usage: mac.sh $verb ... -- <command>"
+  [[ "${1:-}" == "--" && $# -gt 1 ]] || die_usage "usage: mac.sh $verb ... -- <command>"
 }
 
 # remote INSTANCE SCRIPT -> runs SCRIPT on the Mac, with no stdin
@@ -113,21 +119,22 @@ remote_in() { nsc ssh "$1" -T -- "$2"; }
 
 cmd_up() {
   local worker="${1:-}" repo="${2:-}" base="${3:-}" wid="${4:-}"
-  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die "usage: mac.sh rent <worker> <repo-url> <base> -- <command>"
-  [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die "worker name: letters, digits, and - only"
-  [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die "worker id: a UUID"
+  local usage='usage: mac.sh rent <worker> <repo-url> <base> -- <command>'
+  [[ -n "$worker" && -n "$repo" && -n "$base" ]] || die_usage "$usage"
+  [[ "$worker" =~ ^[A-Za-z0-9-]+$ ]] || die_usage "$usage" "worker name: letters, digits, and - only"
+  [[ -z "$wid" || "$wid" =~ ^[0-9a-f-]{36}$ ]] || die_usage "$usage" "worker id: a UUID"
   need_tools
-  local dir cid id key token name state=""
+  local dir cid id key token name state="" out err
   key="${CURSOR_API_KEY:-}"
   [[ -n "$key" ]] || die "CURSOR_API_KEY is not set"
-  token=$(gh auth token 2>/dev/null) || die "gh is not signed in: run gh auth login"
-  dir=$(mktemp -d); cid="$dir/cid"
+  gh_out auth token || die "gh is not signed in ($err): run gh auth login"; token="$out"
+  dir=$(mktemp -d "$scratch/create.XXXXXX"); cid="$dir/cid"
   nsc create </dev/null --machine_type mac/silicon:6x14 \
     --selectors macos.version=26.x,image.with=xcode-26 \
     --duration "${HOURS}h" --purpose "handoff $worker" \
     --cidfile "$cid" --wait_timeout 5m >"$dir/create.log" 2>&1 \
-    || { tail -3 "$dir/create.log" >&2; rm -rf "$dir"; die "nsc create failed"; }
-  id=$(cat "$cid"); rm -rf "$dir"
+    || { tail -3 "$dir/create.log" >&2; die "nsc create failed"; }
+  id=$(cat "$cid")
   [[ -n "$id" ]] || die "nsc create printed no instance id"
   # From here on, a failure must not leave a rented Mac behind.
   name="${repo##*/}"
@@ -175,18 +182,17 @@ cmd_down() {
   need_tools
   # A Mac whose worker hangs must still be destroyed, so this step may fail.
   remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
-  log=$(mktemp)
+  log=$(mktemp "$scratch/destroy.XXXXXX")
   if nsc destroy "$id" --force </dev/null >"$log" 2>&1; then
-    rm -f "$log"; echo "destroyed $id"; return 0
+    echo "destroyed $id"; return 0
   fi
   # Proven 2026-11-12: nsc destroy of an ID Namespace does not hold exits 1
   # with "Failed: <id>: does not exist.", so that Mac costs nothing.
   if grep -q 'does not exist\.' "$log"; then
-    rm -f "$log"; echo "already gone $id"; return 0
+    echo "already gone $id"; return 0
   fi
   why=$(grep -v -e '^info:' -e '^[[:space:]]*$' "$log" | head -1 || true)
-  rm -f "$log"
-  echo "mac.sh: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
+  echo "stop: could not destroy $id${why:+ ($why)}. It still runs and costs money until you destroy it by hand: nsc destroy $id --force" >&2
   return 1
 }
 
@@ -194,10 +200,10 @@ cmd_rent() {
   local worker="${1:-}" repo="${2:-}" base="${3:-}" up mac wid res agent
   verb=rent; shift 3 || true; after_dashes "$@"; shift
   key_check
-  up=$(cmd_up "$worker" "$repo" "$base") || exit 1
+  up=$(cmd_up "$worker" "$repo" "$base") || exit
   IFS=$'\t' read -r mac wid <<<"$up"
   if ! res=$("$@" </dev/null); then
-    cmd_down "$mac" >/dev/null || echo "mac.sh: no agent started, so no row names $mac" >&2
+    cmd_down "$mac" >/dev/null || die "no agent started, so no row names $mac"
     exit 1
   fi
   IFS=$'\t' read -r agent _ <<<"$res"
@@ -217,7 +223,7 @@ cmd_renew() {
   if [[ "$mac" != "-" ]] && ! cmd_down "$mac" >/dev/null; then
     die "no note sent: $mac was not given back"
   fi
-  up=$(cmd_up "$w" "$r" "$b" "$wid") || exit 1
+  up=$(cmd_up "$w" "$r" "$b" "$wid") || exit
   IFS=$'\t' read -r new _ <<<"$up"
   if ! MAC_NEW_BASE="$b" "$@"; then
     # A new Mac not given back takes the row, so a return finds it.
@@ -245,5 +251,5 @@ case "${1:-}" in
   rent)   shift; cmd_rent "$@" ;;
   renew)  shift; cmd_renew "$@" ;;
   return) shift; cmd_return "$@" ;;
-  *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
+  *) die_usage "$(usage_text)" ;;
 esac

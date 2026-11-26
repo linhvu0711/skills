@@ -30,20 +30,25 @@
 # --own: the numbers of the PRs the caller owns. Each other PR, and each PR
 # stacked on a left one, prints `LEFT <url>` and is not pushed; the move goes
 # on with the next PR, and this is no stop. Without it, every PR is owned.
+# A wrong command line prints the usage on stderr, exit 64.
 set -euo pipefail
+
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
+. "$here/../../../shared/gh.sh"
 
 # children <branch>: the open PRs on <branch>, one line each, by number.
 children() {
   local json
-  json="$(gh pr list --repo "$repo" --base "$1" --state open --limit 101 \
-    --json number,baseRefName,headRefName,url,isCrossRepository 2>&1)" \
-    || { printf 'stop: %s\n' "$json" >&2; exit 1; }
+  gh_or_stop pr list --repo "$repo" --base "$1" --state open --limit 101 \
+    --json number,baseRefName,headRefName,url,isCrossRepository
+  json="$out"
   [ "$(jq length <<<"$json")" -le 100 ] \
-    || { printf 'stop: more than 100 open PRs on %s; restack lists at most 100\n' "$1" >&2; exit 1; }
+    || die "more than 100 open PRs on $1; restack lists at most 100"
   jq -r 'sort_by(.number)[] | "\(.number) \(.baseRefName) \(.headRefName) \(.url) fork=\(.isCrossRepository)"' <<<"$json"
 }
 
@@ -116,7 +121,7 @@ move_one() {
 cmd="${1:-}"; [ $# -gt 0 ] && shift
 case "$cmd" in
   list)
-    [ $# -eq 2 ] || { echo "$usage" >&2; exit 64; }
+    [ $# -eq 2 ] || die_usage "$usage"
     repo="$1"; seen=" $2 "; stack=()
     walk "$2"
     printf 'STACK=%s\n' "${#stack[@]}"
@@ -125,10 +130,10 @@ case "$cmd" in
   move)
     own=""
     if [ $# -eq 6 ] && [ "$5" = --own ]; then own=",$6,"
-    elif [ $# -ne 4 ]; then echo "$usage" >&2; exit 64
+    elif [ $# -ne 4 ]; then die_usage "$usage"
     fi
     wt="$1"; olds_b=("$2"); olds_s=("$3"); left=" "
-    [ -f "$4" ] || { printf 'stop: no stack file %s\n' "$4" >&2; exit 1; }
+    [ -f "$4" ] || die "no stack file $4"
     lines=(); while IFS= read -r l; do lines+=("$l"); done < "$4"
     tmp="$(mktemp -d)"; trap 'drop_tmp; rm -rf "$tmp"' EXIT
     moved=0; stopped=0
@@ -150,5 +155,5 @@ case "$cmd" in
     [ "$stopped" -eq 0 ] || { echo 'RESTACK=stopped'; exit 1; }
     printf 'RESTACK=moved %s\n' "$moved"
     ;;
-  *) echo "$usage" >&2; exit 64 ;;
+  *) die_usage "$usage" ;;
 esac

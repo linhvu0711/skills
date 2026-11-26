@@ -70,7 +70,7 @@ QUERY = """query($owner: String!, $name: String!, $oid: GitObjectID!) {
 def git(*args):
     r = subprocess.run(["git", *args], capture_output=True, text=True)
     if r.returncode != 0:
-        sys.exit(r.stderr.strip() or f"git exited {r.returncode}")
+        sys.exit(f"stop: git failed: {r.stderr.strip() or f'git exited {r.returncode}'}")
     return r.stdout
 
 

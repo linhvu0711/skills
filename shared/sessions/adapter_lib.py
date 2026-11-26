@@ -261,6 +261,6 @@ def main(h: Harness) -> int:
     try:
         rows = find(h, args) if installed(h) else []
     except Failed as e:
-        raise SystemExit(f"stop: {e}")
+        sys.exit(f"stop: {e}")
     print_json(rows)
     return 0

@@ -39,16 +39,22 @@
 # needs a personal crsr_ key. --platform windows stops: Devin has one.
 # Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
 # leaves a stale value in a running shell). Never printed.
+# A wrong command line: `stop: <why>` when there is one, then the usage lines
+# on stderr, exit 64.
 set -euo pipefail
 
 API="${CURSOR_API_URL:-https://api.cursor.com}/v1"
 MSG_CHARS=600
-MAC="${HANDOFF_MAC:-$(cd "$(dirname "$0")/.." && pwd -P)/mac.sh}"
-SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+MAC="${HANDOFF_MAC:-$here/../mac.sh}"
+SELF="$here/$(basename "${BASH_SOURCE[0]}")"
 
-die() { echo "cursor.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../../../../shared/gh.sh"
+scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
 
-usage() {
+usage_text() {
   cat <<'EOF'
 cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID] [--platform linux|macos]
 cursor.sh poll <agent> [--repo owner/name --issue N]
@@ -60,7 +66,6 @@ cursor.sh ended <agent>    (mac.sh runs these three)
 cursor.sh create <body-file> <worker>
 cursor.sh send <agent> <note-file>
 EOF
-  exit 1
 }
 
 key() {
@@ -76,7 +81,7 @@ key() {
 
 aid() {
   local s="${1:-}"
-  [[ -z "$s" ]] && die "agent id required"
+  [[ -n "$s" ]] || die_usage "$(usage_text)" "agent id required"
   s="${s%%\?*}"                      # drop a query string
   s="${s##*/}"                       # app URL -> id
   [[ "$s" == bc-* ]] || s="bc-$s"
@@ -86,7 +91,7 @@ aid() {
 # api METHOD PATH [JSON]  -> body on stdout, dies on non-2xx
 api() {
   local method="$1" path="$2" data="${3:-}" out code
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   if [[ -n "$data" ]]; then
     code=$(curl -sS -o "$out" -w '%{http_code}' -X "$method" \
       -H "Authorization: Bearer $(key)" -H 'Content-Type: application/json' \
@@ -98,9 +103,9 @@ api() {
   if [[ "$code" != 2* ]]; then
     local why; why=$(jq -r '.error.code // empty' "$out" 2>/dev/null || true)
     local msg; msg=$(jq -r '.error.message // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on $method $path${why:+: $why}${msg:+ ($msg)}"
+    die "HTTP $code on $method $path${why:+: $why}${msg:+ ($msg)}"
   fi
-  cat "$out"; rm -f "$out"
+  cat "$out"
 }
 
 # summary AGENT_JSON RUN_JSON -> "agent<TAB>run<TAB>run_id<TAB>prs<TAB>url<TAB>last message (one line, cut)"
@@ -130,16 +135,15 @@ fetch() {
 # name, which no other agent has.
 create_on_mac() {
   local body="$1" worker="$2" out code rc=0 i found
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   code=$(curl -sS --max-time 20 -o "$out" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer $(key)" -H 'Content-Type: application/json' \
     -d "$body" "$API/agents" 2>/dev/null) || rc=$?
-  if [[ $rc -eq 0 && "$code" == 2* ]]; then cat "$out"; rm -f "$out"; return 0; fi
+  if [[ $rc -eq 0 && "$code" == 2* ]]; then cat "$out"; return 0; fi
   if [[ $rc -eq 0 ]]; then
     local why; why=$(jq -r '.error.code // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on POST /agents${why:+: $why}"
+    die "HTTP $code on POST /agents${why:+: $why}"
   fi
-  rm -f "$out"
   [[ $rc -eq 28 ]] || die "POST /agents failed (curl exit $rc)"
   for i in 1 2 3; do
     found=$(api GET "/agents?limit=20" | jq -c --arg w "$worker" \
@@ -168,7 +172,8 @@ agent_line() {
 # create BODY_FILE WORKER -> starts the agent on the Mac's worker; mac.sh rent runs it
 cmd_create() {
   local res
-  res=$(create_on_mac "$(cat "${1:?body file required}")" "${2:?worker required}")
+  [[ -n "${1:-}" && -n "${2:-}" ]] || die_usage "$(usage_text)" "create needs a body file and a worker"
+  res=$(create_on_mac "$(cat "$1")" "$2")
   agent_line "$res"
 }
 
@@ -182,16 +187,16 @@ cmd_start() {
       --base)  base="$2"; shift 2 ;;
       --model) model="$2"; shift 2 ;;
       --platform) platform="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
   case "$platform" in
     linux|macos) ;;
     windows) die "Cursor has no Windows machine: hand this one to devin" ;;
-    *) die "--platform must be linux or macos" ;;
+    *) die_usage "$(usage_text)" "--platform must be linux or macos" ;;
   esac
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
-  [[ -n "$repo" ]] || die "--repo owner/name is required"
+  [[ -n "$repo" ]] || die_usage "$(usage_text)" "--repo owner/name is required"
   repo=$(repo_url "$repo")
   local connected
   connected=$(api GET /repositories | jq -r '.items[].url | sub("\\.git$"; "")')
@@ -207,10 +212,9 @@ cmd_start() {
     + (if $model != "" then { model: { id: $model } } else {} end)
     + (if $w != "" then { env: { type: "machine", name: $w } } else {} end)' "$file")
   if [[ -n "$worker" ]]; then
-    bf=$(mktemp); printf '%s' "$body" >"$bf"
+    bf=$(mktemp "$scratch/body.XXXXXX"); printf '%s' "$body" >"$bf"
     res=$(CURSOR_API_KEY="$(key)" bash "$MAC" rent "$worker" "$repo" "$base" -- bash "$SELF" create "$bf" "$worker") \
-      || { rm -f "$bf"; exit 1; }
-    rm -f "$bf"
+      || exit 1
     printf '%s\n' "$res"
     return 0
   fi
@@ -225,11 +229,11 @@ cmd_poll() {
     case "$1" in
       --repo) repo="$2"; shift 2 ;;
       --issue) issue="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
-  [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die "--repo and --issue go together"
-  local line ast rst rid prs url msg st ghprs all=" " p arr=()
+  [[ -n "$repo" && -z "$issue" || -z "$repo" && -n "$issue" ]] && die_usage "$(usage_text)" "--repo and --issue go together"
+  local line ast rst rid prs url msg st ghprs all=" " p arr=() out err
   line=$(fetch "$id")
   IFS=$'\t' read -r ast rst rid prs url msg <<<"$line"
   case "$rst" in
@@ -238,9 +242,9 @@ cmd_poll() {
   esac
   [[ "$prs" != "-" ]] && IFS=',' read -ra arr <<<"$prs"
   if [[ -n "$repo" ]]; then
-    ghprs=$(gh pr list -R "$repo" --state all --limit 50 --json url,headRefName \
-      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url" 2>/dev/null || true)
-    for p in $ghprs; do arr+=("$p"); done
+    if gh_out pr list -R "$repo" --state all --limit 50 --json url,headRefName \
+      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"; then ghprs="$out"; else ghprs=""; fi
+    while IFS= read -r p; do [[ -z "$p" ]] || arr+=("$p"); done <<<"$ghprs"
   fi
   for p in ${arr[@]+"${arr[@]}"}; do
     case "$all" in *" $p "*) ;; *) all="$all$p " ;; esac
@@ -303,5 +307,5 @@ case "${1:-}" in
   create) shift; cmd_create "$@" ;;
   send)   shift; cmd_send "$@" ;;
   interval) echo 60 ;;
-  *) usage ;;
+  *) die_usage "$(usage_text)" ;;
 esac

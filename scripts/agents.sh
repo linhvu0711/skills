@@ -53,6 +53,7 @@
 # `name` when its first home is <harness> on the backup's model and effort,
 # else `t3 <place> <model> <effort>`, its first home. The subagent gate reads
 # it.
+# Any other command line: its usage on stderr, exit 64.
 # The Antigravity form maps the Claude Code tools to
 # Antigravity's, as agy's own migration skill does: Read, Grep, Glob to
 # read_file; Bash to run_command and manage_task; Edit to edit_file; Write
@@ -63,17 +64,20 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 mode="${1:-}"
 case "$mode" in
   check|tools|models) harness=""; marker="" ;;
-  render) [ $# -eq 3 ] || { echo "usage: agents.sh render <harness> <marker>" >&2; exit 2; }
+  render) u='usage: agents.sh render <harness> <marker>'
+          [ $# -eq 3 ] || die_usage "$u"
           harness="$2"; marker="$3"
-          case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
-  start) [ $# -eq 2 ] || { echo "usage: agents.sh start <harness>" >&2; exit 2; }
+          case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
+  start) u='usage: agents.sh start <harness>'
+         [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
-         case "$harness" in claude|codex|antigravity) ;; *) echo "unknown harness: $harness" >&2; exit 2 ;; esac ;;
-  *) echo "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness>" >&2; exit 2 ;;
+         case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
+  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness>" ;;
 esac
 
 LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here/frontmatter.awk" -f <(cat <<'AWK'

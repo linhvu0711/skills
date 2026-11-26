@@ -28,7 +28,7 @@ The sync script defines the manifest columns and the `.embed-source-ref` marker.
 
 ## Needs
 
-- `git`, `bash`, and `node`.
+- `git`, `bash`, and `jq`.
 - A JavaScript package manager: pnpm, npm, or yarn. The skill reads versions from `node_modules`.
 - The `semble` CLI, to index the new source for search.
 

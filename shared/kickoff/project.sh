@@ -5,13 +5,16 @@
 #   project.sh <path>
 #
 # Exit 0: `found` or `added`, one line. Exit 1: something stopped us; the
-# reason is the last line on stderr. A project it added stays added.
+# reason is the last line on stderr. A project it added stays added. Exit 64:
+# a wrong command line, its usage on stderr.
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-path="$1"
-
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+
+[ $# -eq 1 ] && [ -n "$1" ] || die_usage 'usage: project.sh <path>'
+path="$1"
 
 t3="$(bash "$here/../t3-cli.sh")" || exit 1
 

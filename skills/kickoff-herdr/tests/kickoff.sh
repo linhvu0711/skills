@@ -234,16 +234,16 @@ t_ko_mode_merge() {
 t_ko_bad_command() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --command deploy https://github.com/acme/app/issues/42
-  eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
   [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
 }
 
 t_ko_bad_effort() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --effort huge https://github.com/acme/app/issues/42
-  eq exit 1 "$code"
-  eq stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --effort must be low, medium, high, xhigh, or max, got: huge" "$err"
 }
 
 t_ko_on_name() {
@@ -257,8 +257,8 @@ t_ko_on_name() {
 t_ko_no_dry_run() {
   ko_herdr; ko_issue '[{"name":"size/S"}]'
   ko_go --dry-run https://github.com/acme/app/issues/42
-  eq exit 1 "$code"
-  eq stderr "stop: unexpected argument: --dry-run" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: unexpected argument: --dry-run" "$err"
 }
 
 t_ko_runs_by_path() {

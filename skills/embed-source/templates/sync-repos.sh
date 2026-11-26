@@ -26,7 +26,8 @@ embed_rows() {
 
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+tmps=(); trap 'rm -rf ${tmps[@]+"${tmps[@]}"}' EXIT
 
 if [[ "${EMBED_SOURCE_SKIP:-}" == "1" ]]; then
   echo "sync-repos: skipped (EMBED_SOURCE_SKIP=1)"
@@ -34,7 +35,7 @@ if [[ "${EMBED_SOURCE_SKIP:-}" == "1" ]]; then
 fi
 [[ -f "$EMBED_MANIFEST" ]] || { echo "sync-repos: no $EMBED_MANIFEST, nothing to fetch"; exit 0; }
 
-embed_rows | while IFS='|' read -r lib _package repo ref _vfile; do
+while IFS='|' read -r lib _package repo ref _vfile; do
     dir="repos/$lib"
     marker="$dir/$EMBED_MARKER"
 
@@ -51,8 +52,8 @@ embed_rows | while IFS='|' read -r lib _package repo ref _vfile; do
       continue
     fi
 
-    tmp="$dir.tmp.$$"
-    rm -rf "$tmp"
+    mkdir -p "$(dirname "$dir")"
+    tmp="$(mktemp -d "$dir.XXXXXX")"; tmps+=("$tmp")
     echo "sync-repos: fetching $lib at $ref"
     if git clone --quiet --depth 1 --single-branch --branch "$ref" "$repo" "$tmp" 2>/dev/null; then
       rm -rf "$tmp/.git" "$dir"
@@ -60,12 +61,11 @@ embed_rows | while IFS='|' read -r lib _package repo ref _vfile; do
       printf '%s\n' "$ref" > "$marker"
       echo "sync-repos: $lib ready ($(du -sh "$dir" | cut -f1))"
     else
-      rm -rf "$tmp"
       if [[ -d "$dir" ]]; then
         echo "sync-repos: could not fetch $lib at $ref (offline?), keeping the current copy"
       else
         echo "sync-repos: could not fetch $lib at $ref (offline?), run scripts/sync-repos.sh later"
       fi
     fi
-  done
+  done < <(embed_rows)
 exit 0

@@ -52,9 +52,11 @@
 # one decimal, as in `412M` or `1.2G`; `size ?` when du fails.
 # A path under $HOME is printed with ~.
 # Exit 1: `stop: <why>` on stderr, and nothing was removed.
+# Exit 64: a wrong command line, its usage on stderr, and nothing was removed.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
 . "$here/../../../shared/gh.sh"
@@ -242,10 +244,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     all) all=1; shift ;;
     --remove)
-      [ -n "${2:-}" ] || die "$usage"
+      [ -n "${2:-}" ] || die_usage "$usage" "--remove needs a path"
       [ -d "$2" ] || die "no folder at $2"
       names+=("$(cd "$2" && pwd -P)"); shift 2 ;;
-    *) die "$usage" ;;
+    *) die_usage "$usage" "unexpected argument: $1" ;;
   esac
 done
 

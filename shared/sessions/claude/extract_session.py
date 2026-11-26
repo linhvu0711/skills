@@ -241,10 +241,7 @@ def main():
 
     matches = locate(args.session_id)
     if not matches:
-        print(f"No session file found for id '{args.session_id}' under {PROJECTS_DIR}", file=sys.stderr)
-        print("Tip: pass the full UUID, or a unique prefix. List sessions with:", file=sys.stderr)
-        print("  ls ~/.claude/projects/*/*.jsonl", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"stop: no session file found for id '{args.session_id}' under {PROJECTS_DIR}: pass the full UUID or a unique prefix; list them with ls ~/.claude/projects/*/*.jsonl")
     path = printer.only_match(matches, args.session_id)
     rows = load(path)
     chat = read(rows)

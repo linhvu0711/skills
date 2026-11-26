@@ -11,6 +11,7 @@
 # Run it inside a checkout of the repo: any branch, any state.
 # Exit 0: `BASE_WT=<dir> BASE_SHA=<sha>` on add, `removed <dir>` on remove.
 # Exit 1: `stop: <why>` on stderr. Nothing is half done.
+# Exit 64: a wrong command line, its usage on stderr.
 # A failed install, or no package tool, is no stop: one
 # `warn: could not install the packages of <base>: <why>` line on stderr, and
 # the copy is kept with no packages. The install's output is in
@@ -18,17 +19,19 @@
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+usage='usage: base-copy.sh <base> | --remove <dir>'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 tree="$here/../../../shared/base-tree.sh"
 
 case "${1:-}" in
   --remove)
     dir="${2:-}"
-    [ -n "$dir" ] || die "usage: base-copy.sh --remove <dir>"
+    [ -n "$dir" ] || die_usage "$usage"
     "$BASH" "$tree" --remove "$dir"
     ;;
   "" | -*)
-    die "usage: base-copy.sh <base> | --remove <dir>"
+    die_usage "$usage"
     ;;
   *)
     base="$1"

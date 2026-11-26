@@ -13,7 +13,7 @@ such as `A new release of gh is available`.
 
 run(*args, cwd=None): gh's stdout. A failure raises GhError, whose text is
 the last non-empty line of gh's stderr, `gh exited <n>` when it printed none,
-or `gh: command not found`.
+`gh: command not found`, or `gh: could not start: <why>`.
 
 stop(what, *args, cwd=None): run's stdout, or `stop: gh could not <what>:
 <line>` on stderr and exit 1.
@@ -32,6 +32,8 @@ def run(*args, cwd=None):
         done = subprocess.run(["gh", *args], cwd=cwd, capture_output=True, text=True)
     except FileNotFoundError:
         raise GhError("gh: command not found")
+    except OSError as e:
+        raise GhError(f"gh: could not start: {e.strerror}")
     if done.returncode != 0:
         lines = [l for l in done.stderr.splitlines() if l.strip()]
         raise GhError(lines[-1] if lines else f"gh exited {done.returncode}")
@@ -42,5 +44,4 @@ def stop(what, *args, cwd=None):
     try:
         return run(*args, cwd=cwd)
     except GhError as e:
-        print(f"stop: gh could not {what}: {e}", file=sys.stderr)
-        raise SystemExit(1)
+        sys.exit(f"stop: gh could not {what}: {e}")

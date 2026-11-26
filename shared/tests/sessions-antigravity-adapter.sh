@@ -14,7 +14,7 @@ ag_home() {
 
 # rows <fields>: each row of the find output, the named fields joined by spaces.
 rows() {
-  printf '%s' "$out" | python3 -c 'import json,sys; print("\n".join(" ".join(str(r.get(k)) for k in sys.argv[1:]) for r in json.load(sys.stdin)))' "$@"
+  printf '%s' "$out" | jq -r '.[] as $r | [$ARGS.positional[] | $r[.] | tostring] | join(" ")' --args "$@"
 }
 
 # days_ago <n>: the local date n days back, YYYY-MM-DD.
@@ -36,7 +36,7 @@ t_aga_rows_carry_query_fields() {
   # When
   run python3 "$A" find --root /p/app --query export
   # Then
-  eq row "a1 True False 1 fix the export 0m ago" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"] > 0, r["current"], r["prompts"], r["first_prompt"], r["age"])')"
+  eq row "a1 true false 1 fix the export 0m ago" "$(printf '%s' "$out" | jq -r '.[0] | "\(.id) \(.score > 0) \(.current) \(.prompts) \(.first_prompt) \(.age)"')"
 }
 
 t_aga_skips_empty_chat() {
@@ -68,7 +68,7 @@ t_aga_reads_t3_chat() {
   # When
   run python3 "$A" find --root /p/app
   # Then
-  eq row "t1 /p/app Fix the export | fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["cwd"], r["title"], "|", r["first_prompt"])')"
+  eq row "t1 /p/app Fix the export | fix the export" "$(printf '%s' "$out" | jq -r '.[0] | "\(.id) \(.cwd) \(.title) | \(.first_prompt)"')"
 }
 
 t_aga_extract() {

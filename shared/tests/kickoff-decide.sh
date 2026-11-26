@@ -115,8 +115,9 @@ t_kd_bad_size() {
   # When
   kd_run --size 42=huge https://github.com/acme/app/issues/42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
+  has stderr "usage: decide.sh [--label L]" "$err"
   eq stdout "" "$out"
 }
 
@@ -135,7 +136,7 @@ t_kd_gh_fails_exit_2() {
     got="$got$code|$(tail -1 <<<"$err");"
   done
   # Then
-  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42;2|stop: gh could not read #43 in acme/app;2|stop: gh could not read the PRs of #42;2|stop: gh could not read https://github.com/acme/app/pull/80;" "$got"
+  eq stops "2|stop: gh could not read https://github.com/acme/app/issues/42: HTTP 502;2|stop: gh could not read #43 in acme/app: HTTP 502;2|stop: gh could not read the PRs of #42: HTTP 502;2|stop: gh could not read https://github.com/acme/app/pull/80: HTTP 502;" "$got"
 }
 
 t_kd_base_from_origin_head() {
@@ -249,8 +250,8 @@ t_kd_bad_command() {
   # When
   kd_run --command deploy https://github.com/acme/app/issues/42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: deploy" "$err"
   eq stdout "" "$out"
 }
 
@@ -260,8 +261,8 @@ t_kd_plan_up_stops() {
   # When
   kd_run --command plan-up https://github.com/acme/app/issues/42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: plan-up" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --command must be ship, triage, grill, ready-pr, or complete-task, got: plan-up" "$err"
   eq stdout "" "$out"
 }
 
@@ -364,8 +365,8 @@ t_kd_mode_needs_ship() {
   # When
   kd_run --command grill --mode merge https://github.com/acme/app/issues/42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --mode goes only with --command ship" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --mode goes only with --command ship" "$err"
   eq stdout "" "$out"
 }
 
@@ -375,8 +376,8 @@ t_kd_bad_mode() {
   # When
   kd_run --mode full https://github.com/acme/app/issues/42
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: --mode must be review, ready, or merge, got: full" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: --mode must be review, ready, or merge, got: full" "$err"
 }
 
 t_kd_heading_forms() {
@@ -416,8 +417,8 @@ t_kd_on_one_issue() {
   # When
   kd_run https://github.com/acme/app/issues/42 '#13' on https://github.com/acme/app/pull/80
   # Then
-  eq exit 1 "$code"
-  eq stderr "stop: on takes one issue" "$err"
+  eq exit 64 "$code"
+  has stderr "stop: on takes one issue" "$err"
   eq stdout "" "$out"
 }
 

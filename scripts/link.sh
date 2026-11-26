@@ -50,16 +50,19 @@
 # hook file's folder, or a T3 Antigravity folder. A target something else
 # holds, and each file of an agent that agents.sh cannot render, adds, as a
 # seventh field, the words its `skip:` line gives. Any other argument: the
-# usage line on stderr, exit 2.
+# usage line on stderr, exit 64.
 set -euo pipefail
+
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 case "$#:${1:-}" in
   0:) visit=fix ;;
   1:--status) visit=record ;;
-  *) echo "usage: link.sh [--status]" >&2; exit 2 ;;
+  *) die_usage 'usage: link.sh [--status]' ;;
 esac
 
-repo="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo="$(git -C "$here/.." rev-parse --show-toplevel)"
 git_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-dir)" && pwd -P)"
 common_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)" && pwd -P)"
 [ "$git_dir" = "$common_dir" ] || exit 0
@@ -74,7 +77,7 @@ t3="${T3_ANTIGRAVITY_HOME:-$HOME/.t3/userdata/providers/antigravity}"
 claude_settings="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 codex_hooks="${CODEX_HOOKS_FILE:-$HOME/.codex/hooks.json}"
 gate="$repo/shared/gate/subagent-gate.sh"
-scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
+scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 
 # unlink_dead <folder> <target-prefix>...: remove each link in the folder that
 # points to no file and whose target is one of the prefixes plus its name. A
@@ -313,7 +316,7 @@ fix() {
       to="$path"
       if [ -L "$to" ] && t="$(realpath "$to" 2>/dev/null)"; then to="$t"; fi
       mkdir -p "$(dirname "$to")"
-      t="$(mktemp "$(dirname "$to")/.link.XXXXXX")"; cat "$want" > "$t"
+      t="$(mktemp "$(dirname "$to")/.$(basename "$to").XXXXXX")"; tmps+=("$t"); cat "$want" > "$t"
       mv "$t" "$to"; printf 'wrote %s\n' "$to" ;;
   esac
 }

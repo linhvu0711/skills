@@ -46,10 +46,10 @@ old() { python3 -c 'import os,sys,time; t=time.time()-30*86400; os.utime(sys.arg
 helper() { printf '{"subagent":{"thread_spawn":{"parent_thread_id":"%s","depth":1}}}' "$1"; }
 
 # helpers: the file names in the first session's subagents, sorted.
-helpers() { printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(sorted(os.path.basename(p) for p in json.load(sys.stdin)["sessions"][0]["subagents"])))'; }
+helpers() { printf '%s' "$out" | jq -r '[.sessions[0].subagents[] | split("/") | last] | sort | join(" ")'; }
 
 # ids: the session ids in the finder's JSON on stdout, sorted, space-joined.
-ids() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["id"] for s in json.load(sys.stdin)["sessions"])))'; }
+ids() { printf '%s' "$out" | jq -r '[.sessions[].id] | sort | join(" ")'; }
 
 t_cof_lists_project_session() {
   cof_home; co_rollout c1 /p/app "fix the export"
@@ -113,7 +113,7 @@ t_cof_helper_threads() {
   run python3 "$F" --cwd /p/app --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
-  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; print(" ".join(os.path.basename(p) for p in json.load(sys.stdin)["sessions"][0]["subagents"]))')"
+  eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(printf '%s' "$out" | jq -r '[.sessions[0].subagents[] | split("/") | last] | join(" ")')"
 }
 
 t_cof_active_days() {
@@ -158,7 +158,7 @@ t_cof_resumed_keeps_old_helpers() {
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
   eq helpers "rollout-2026-10-01T10-00-00-h1.jsonl" "$(helpers)"
-  eq "modified is today" "$(date +%F)" "$(printf '%s' "$out" | python3 -c 'import json,sys,datetime as d; print(d.date.fromtimestamp(json.load(sys.stdin)["sessions"][0]["modified"]))')"
+  eq "modified is today" "$(date +%F)" "$(printf '%s' "$out" | jq -r '.sessions[0].modified | localtime | strftime("%Y-%m-%d")')"
 }
 
 t_cof_window_skips_older_days() {
@@ -169,6 +169,18 @@ t_cof_window_skips_older_days() {
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
   eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"
+}
+
+t_cof_index_keeps_other_temp() {
+  # Given: another search's temp file beside the index, under the old fixed name
+  cof_home; co_rollout c1 /p/app "fix the export"
+  local d="$HOME/.cache/find-co-session"; mkdir -p "$d"; printf 'other\n' > "$d/codex-index.tmp"
+  # When
+  run python3 "$F" --cwd /p/app --all --json
+  # Then
+  eq exit 0 "$code"
+  eq "other temp" "other" "$(cat "$d/codex-index.tmp")"
+  eq files "codex-index.json codex-index.tmp" "$(cd "$d" && ls -A | tr '\n' ' ' | sed 's/ $//')"
 }
 
 # has_zstd: true when this machine can write and read a .jsonl.zst rollout.
@@ -242,6 +254,7 @@ t_cof_skips_bare_agents_item() {
 }
 
 cases=(
+  "codex find: an index save keeps another search's temp file and leaves none of its own|t_cof_index_keeps_other_temp"
   "finder skips a user item the harness injected|t_cof_skips_injected_item"
   "finder rebuilds an index of an older version|t_cof_rebuilds_older_index"
   "finder skips AGENTS.md instructions with no heading mark|t_cof_skips_bare_agents_item"

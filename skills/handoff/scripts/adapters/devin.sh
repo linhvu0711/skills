@@ -25,9 +25,14 @@
 # PAT) and `export DEVIN_ORG_ID=` win over the env (a rotated key leaves
 # a stale value in a running shell). Optional `export DEVIN_USER_ID=`
 # makes a service-user key create sessions as that user. Never printed.
+# A wrong command line: `stop: <why>` when there is one, then this header on
+# stderr, exit 64.
 set -euo pipefail
 
-die() { echo "devin.sh: $*" >&2; exit 1; }
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
+usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # zvar NAME -> value from ~/.zshrc, else env, else empty
 zvar() {
@@ -56,7 +61,7 @@ api_base() { printf '%s/v3/organizations/%s' "${DEVIN_API_URL:-https://api.devin
 
 sid() {
   local s="${1:-}"
-  [[ -z "$s" ]] && die "session id required"
+  [[ -n "$s" ]] || die_usage "$(usage_text)" "session id required"
   s="${s##*/}"                       # app URL -> id
   [[ "$s" == devin-* ]] || s="devin-$s"
   printf %s "$s"
@@ -65,7 +70,7 @@ sid() {
 # api METHOD PATH [JSON]  -> body on stdout, dies on non-2xx
 api() {
   local method="$1" path="$2" data="${3:-}" out code
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   if [[ -n "$data" ]]; then
     code=$(curl -sS -o "$out" -w '%{http_code}' -X "$method" \
       -H "Authorization: Bearer $(key)" -H 'Content-Type: application/json' \
@@ -76,9 +81,9 @@ api() {
   fi
   if [[ "$code" != 2* ]]; then
     local why; why=$(jq -r '.detail // .message // .error // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on $method $path${why:+: $why}"
+    die "HTTP $code on $method $path${why:+: $why}"
   fi
-  cat "$out"; rm -f "$out"
+  cat "$out"
 }
 
 # state SESSION-JSON -> one word, the state poll prints:
@@ -125,16 +130,15 @@ summary() {
 upload() {
   local file="$1" out code url
   [[ -s "$file" ]] || die "file missing or empty: $file"
-  out=$(mktemp)
+  out=$(mktemp "$scratch/out.XXXXXX")
   code=$(curl -sS -o "$out" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer $(key)" -F "file=@$file" "$(api_base)/attachments")
   if [[ "$code" != 2* ]]; then
     local why; why=$(jq -r '.detail // .message // .error // empty' "$out" 2>/dev/null || true)
-    rm -f "$out"; die "HTTP $code on POST /attachments${why:+: $why}"
+    die "HTTP $code on POST /attachments${why:+: $why}"
   fi
   url=$(jq -r 'if type == "string" then . else (.url // empty) end' "$out" 2>/dev/null || true)
   [[ -z "$url" ]] && url=$(tr -d '"[:space:]' <"$out")
-  rm -f "$out"
   [[ "$url" == http* ]] || die "no attachment URL in response"
   printf %s "$url"
 }
@@ -164,7 +168,7 @@ cmd_start() {
       --title)    title="$2"; shift 2 ;;
       --platform) platform="$2"; shift 2 ;;
       --mode)     mode="$2"; shift 2 ;;
-      *) die "unknown option $1" ;;
+      *) die_usage "$(usage_text)" "unknown option $1" ;;
     esac
   done
   [[ -s "$file" ]] || die "prompt file missing or empty: $file"
@@ -229,5 +233,5 @@ case "${1:-}" in
   facts)   shift; cmd_facts "$@" ;;
   release) shift; sid "${1:-}" >/dev/null ;;
   interval) echo 120 ;;
-  *) awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; exit 1 ;;
+  *) die_usage "$(usage_text)" ;;
 esac

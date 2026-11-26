@@ -17,7 +17,7 @@
 # `<p> passed, <f> failed`. Exit 1 when any case failed.
 set -euo pipefail
 
-here="$(cd "$(dirname "$0")" && pwd -P)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/test-lib.sh"
 mac_home="/Us""ers/alice"
 linux_home="/ho""me/bob"
@@ -169,11 +169,23 @@ t_stops_on_missing_path() {
   eq stderr "stop: no such path: nope" "$err"
 }
 
+t_check_refuses_unknown_flag() {
+  # Given: a repo
+  repo
+  # When
+  run bash scripts/check.sh --bogus
+  # Then
+  eq exit 64 "$code"
+  eq stderr "stop: unknown flag --bogus
+usage: check.sh [<path>... | --staged | --commit-msg <file>]" "$err"
+}
+
 t_adopt_stops_on_bad_name() {
   skills_home "# demo"
   run env SKILLS_HOME="$T/home" bash scripts/adopt.sh ..
-  eq exit 1 "$code"
-  eq stderr "stop: not a skill name: .." "$err"
+  eq exit 64 "$code"
+  eq stderr "stop: not a skill name: ..
+usage: adopt.sh <name>" "$err"
   eq "ls home" demo "$(ls "$T/home")"
   eq "ls skills" "" "$(ls skills)"
 }
@@ -750,7 +762,7 @@ t_link_refuses_unknown_argument() {
   # When
   link_sh scripts/link.sh --nope
   # Then
-  eq exit 2 "$code"
+  eq exit 64 "$code"
   eq stderr "usage: link.sh [--status]" "$err"
 }
 
@@ -1612,6 +1624,7 @@ cases=(
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
   "stops on a missing path|t_stops_on_missing_path"
   "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
+  "check.sh refuses an unknown flag with its usage|t_check_refuses_unknown_flag"
   "link links a new skill into every folder|t_link_links_new_skill"
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"

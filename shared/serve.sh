@@ -3,12 +3,19 @@
 #
 #   serve.sh <dir> <file.html>
 #
+# Exit 64: a wrong command line, its usage on stderr.
+#
 # A port counts only when it serves this exact file from <dir>. A server
 # on 8765 that holds some other folder (an old page folder, a diagram, an
 # other session) is left alone, and the next free port gets a new server.
 set -eu
+
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+# sh has no local, so u is a plain variable.
+die_usage() { u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+[ $# -eq 2 ] || die_usage 'usage: serve.sh <dir> <file.html>'
 dir=$1 file=$2
-[ -f "$dir/$file" ] || { echo "$dir/$file: not found" >&2; exit 1; }
+[ -f "$dir/$file" ] || die "$dir/$file: not found"
 
 serves() { curl -sf --max-time 2 "http://127.0.0.1:$1/$file" 2>/dev/null | cmp -s - "$dir/$file"; }
 
@@ -22,6 +29,6 @@ for port in $(seq 8765 8784); do
     serves "$port" && { echo "http://127.0.0.1:$port/$file"; exit 0; }
     sleep 0.2
   done
-  echo "started a server on $port, but it does not serve $file" >&2; exit 1
+  die "started a server on $port, but it does not serve $file"
 done
-echo "no free port in 8765-8784" >&2; exit 1
+die "no free port in 8765-8784"

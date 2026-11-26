@@ -28,7 +28,7 @@ cc_session() {
 age() { python3 -c 'import os,sys,time; t=time.time()-int(sys.argv[2])*86400; os.utime(sys.argv[1],(t,t))' "$1" "$2"; }
 
 # ids: the session ids in the finder's JSON on stdout, sorted, space-joined.
-ids() { printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["id"] for s in json.load(sys.stdin)["sessions"])))'; }
+ids() { printf '%s' "$out" | jq -r '[.sessions[].id] | sort | join(" ")'; }
 
 t_ccf_lists_project_session() {
   ccf_home; cc_session -p-app s1 /p/app "fix the export"
@@ -49,7 +49,7 @@ t_ccf_worktrees_in_window() {
   run python3 "$F" --project-dir /p/app --include-subdirs --days 3 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "s1 w1" "$(ids)"
-  eq subagents "agent-a1.jsonl" "$(printf '%s' "$out" | python3 -c 'import json,os,sys; s=[x for x in json.load(sys.stdin)["sessions"] if x["id"]=="w1"][0]; print(" ".join(os.path.basename(p) for p in s["subagents"]))')"
+  eq subagents "agent-a1.jsonl" "$(printf '%s' "$out" | jq -r '[.sessions[] | select(.id == "w1")][0] | [.subagents[] | split("/") | last] | join(" ")')"
 }
 
 t_ccf_topic_in_window() {
@@ -69,7 +69,7 @@ t_ccf_every_project() {
   run python3 "$F" --all-projects --days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "s1 t1" "$(ids)"
-  eq cwds "/p/app /p/tool" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(sorted(s["cwd"] for s in json.load(sys.stdin)["sessions"])))')"
+  eq cwds "/p/app /p/tool" "$(printf '%s' "$out" | jq -r '[.sessions[].cwd] | sort | join(" ")')"
 }
 
 t_ccf_name_clash() {
@@ -95,8 +95,8 @@ t_ccf_finds_skill_started_chat() {
   run python3 "$F" "box gates" --project-dir /p/app --json
   # Then: the /ship chat first, its prompt shown with its arguments
   eq exit 0 "$code"
-  eq order "s1 s2" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(s["id"] for s in json.load(sys.stdin)["sessions"]))')"
-  eq prompt "/ship 237" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessions"][0]["first_prompt"])')"
+  eq order "s1 s2" "$(printf '%s' "$out" | jq -r '[.sessions[].id] | join(" ")')"
+  eq prompt "/ship 237" "$(printf '%s' "$out" | jq -r '.sessions[0].first_prompt')"
 }
 
 

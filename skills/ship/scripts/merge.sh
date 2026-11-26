@@ -17,13 +17,15 @@
 #   stop: head moved to <sha7>; ready it again
 #   stop: merge refused: <gh's last line>
 #   stop: #<n> is still open after the merge; a merge queue or a rule holds it
+# A wrong command line prints the usage on stderr, exit 64.
 set -euo pipefail
 
+die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 usage='usage: merge.sh <owner/repo> <number> --sha <sha>'
-[ $# -eq 4 ] && [ "$3" = --sha ] || { echo "$usage" >&2; exit 64; }
+[ $# -eq 4 ] && [ "$3" = --sha ] || die_usage "$usage"
 repo="$1"; number="$2"; sha="$4"
 
-die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
 # A short SHA never equals GitHub's headRefOid, so it would read as a moved head.
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "--sha needs the full 40-character head SHA, got: $sha"
 

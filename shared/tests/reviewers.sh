@@ -74,10 +74,10 @@ t_rv_bad_args() {
   fake_gh
   reviewers app 7
   eq exit 64 "$code"
-  eq stderr "stop: app is not owner/repo" "$err"
+  eq stderr "stop: app is not owner/repo"$'\n'"usage: reviewers.sh <owner/repo> <number>" "$err"
   reviewers acme/app x
   eq exit 64 "$code"
-  eq stderr "stop: x is not a PR number" "$err"
+  eq stderr "stop: x is not a PR number"$'\n'"usage: reviewers.sh <owner/repo> <number>" "$err"
 }
 
 cases=(

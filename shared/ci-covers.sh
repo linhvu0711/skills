@@ -30,13 +30,15 @@
 #   ci <workflow file> · <command>     the first such workflow, by file name
 #   here · <command>
 #
-# Exit 0 with those lines. Exit 1: `stop: <why>` on stderr.
+# Exit 0 with those lines. Exit 1: `stop: <why>` on stderr. Exit 64: a
+# wrong command line, its usage on stderr.
 set -euo pipefail
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 
 usage='usage: ci-covers.sh <worktree> -- <command>...'
-[ $# -ge 3 ] && [ -d "$1" ] && [ "$2" = -- ] || die "$usage"
+[ $# -ge 3 ] && [ -d "$1" ] && [ "$2" = -- ] || die_usage "$usage"
 wt="$1"; shift 2
 
 # The awk program prints PR or NOPR first, then each run command, one a line.

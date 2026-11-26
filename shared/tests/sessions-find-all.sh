@@ -36,12 +36,8 @@ days_ago() { python3 -c 'import datetime as d,sys; print(d.date.today()-d.timede
 
 # harnesses: each harness as `<harness> <installed> <ids of its rows>`, one per line.
 harnesses() {
-  printf '%s' "$out" | python3 -c '
-import json, sys
-d = json.load(sys.stdin)
-for h in d["harnesses"]:
-    ids = [r["id"] for r in d["sessions"] if r["harness"] == h["harness"]]
-    print(" ".join([h["harness"], str(h["installed"])] + ids))'
+  printf '%s' "$out" | jq -r '.sessions as $s | .harnesses[] | .harness as $h
+    | [$h, (.installed | tostring)] + [$s[] | select(.harness == $h) | .id] | join(" ")'
 }
 
 t_fa_lists_harnesses() {
@@ -50,9 +46,9 @@ t_fa_lists_harnesses() {
   # When
   run python3 "$S" --root /p/app
   # Then
-  eq harnesses "antigravity False
-claude True s1
-codex True c1" "$(harnesses)"
+  eq harnesses "antigravity false
+claude true s1
+codex true c1" "$(harnesses)"
 }
 
 t_fa_window() {
@@ -64,7 +60,7 @@ t_fa_window() {
   # When
   run python3 "$S" --root /p/app --since "$(days_ago 7)"
   # Then
-  eq claude "claude True s1" "$(harnesses | grep '^claude ')"
+  eq claude "claude true s1" "$(harnesses | grep '^claude ')"
 }
 
 t_fa_names_no_adapter_harness() {
@@ -86,7 +82,7 @@ print(json.dumps({"sessions": [{"id": "f1", "modified": time.time(), "cwd": "/p/
   # When
   run python3 "$T/sessions/find_all.py" --root /p/app
   # Then
-  eq runs "1 fake True f1" "$(wc -l < "$T/sessions/fake/runs" | tr -d ' ') $(harnesses | grep '^fake ')"
+  eq runs "1 fake true f1" "$(wc -l < "$T/sessions/fake/runs" | tr -d ' ') $(harnesses | grep '^fake ')"
 }
 
 t_fa_failed_harness() {
@@ -98,7 +94,7 @@ sys.exit(1)'
   # When
   run python3 "$T/sessions/find_all.py" --root /p/app
   # Then
-  eq result '0 {"harness": "fake", "label": "Fake", "installed": true, "error": "fake finder failed: boom"} claude True s1' "$code $(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps([h for h in json.load(sys.stdin)["harnesses"] if h["harness"] == "fake"][0]))') $(harnesses | grep '^claude ')"
+  eq result '0 {"harness":"fake","label":"Fake","installed":true,"error":"fake finder failed: boom"} claude true s1' "$code $(printf '%s' "$out" | jq -c '.harnesses[] | select(.harness == "fake")') $(harnesses | grep '^claude ')"
 }
 
 t_fa_not_utf8() {
@@ -109,7 +105,7 @@ sys.stdout.buffer.write(b"caf\xe9\n")'
   # When
   run python3 "$T/sessions/find_all.py" --root /p/app
   # Then
-  eq result '0 {"harness": "fake", "label": "Fake", "installed": true, "error": "fake finder failed: output is not UTF-8"} claude True s1' "$code $(printf '%s' "$out" | python3 -c 'import json,sys; print(json.dumps([h for h in json.load(sys.stdin)["harnesses"] if h["harness"] == "fake"][0]))') $(harnesses | grep '^claude ')"
+  eq result '0 {"harness":"fake","label":"Fake","installed":true,"error":"fake finder failed: output is not UTF-8"} claude true s1' "$code $(printf '%s' "$out" | jq -c '.harnesses[] | select(.harness == "fake")') $(harnesses | grep '^claude ')"
 }
 
 t_fa_other_io_encoding() {
@@ -119,7 +115,8 @@ t_fa_other_io_encoding() {
   # When
   PYTHONIOENCODING=latin-1 run python3 "$S" --root /p/app
   # Then
-  eq rows "export café 🚀 codex" "$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1], encoding="latin-1"))["sessions"]; print(s[0]["first_prompt"], s[1]["harness"])' "$T/out")"
+  eq "non-ASCII bytes" "" "$(LC_ALL=C tr -d '\000-\177' < "$T/out")"
+  eq rows "export café 🚀 codex" "$(jq -r '.sessions | "\(.[0].first_prompt) \(.[1].harness)"' "$T/out")"
 }
 
 cases=(

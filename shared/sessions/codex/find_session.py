@@ -46,6 +46,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 here = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
@@ -170,10 +171,15 @@ def save_index(idx: dict) -> None:
     for path in INDEX_PATHS:
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            tmp = os.path.splitext(path)[0] + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as h:
-                json.dump(idx, h, ensure_ascii=False)
-            os.replace(tmp, path)
+            # A name of its own, so a search that runs at the same time keeps its file.
+            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=os.path.basename(path) + ".")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as h:
+                    json.dump(idx, h, ensure_ascii=False)
+                os.replace(tmp, path)
+            finally:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
             return
         except OSError as e:
             last = e

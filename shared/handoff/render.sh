@@ -18,11 +18,12 @@
 set -euo pipefail
 
 ex=${1:-}; f=${2:-}
-dir=$(cd "$(dirname "$0")" && pwd)
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 skills=$(cd "$dir/../../skills" && pwd -P)
+die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 usage="usage: render.sh <devin|cursor|local> <rules|prompt>"
-case "$ex" in devin|cursor|local) ;; *) echo "$usage" >&2; exit 64 ;; esac
-case "$f" in rules|prompt) ;; *) echo "$usage" >&2; exit 64 ;; esac
+case "$ex" in devin|cursor|local) ;; *) die_usage "$usage" ;; esac
+case "$f" in rules|prompt) ;; *) die_usage "$usage" ;; esac
 
 case "$ex" in
   devin)  app=Devin;       session=session; here="in the session";      caller=/handoff ;;

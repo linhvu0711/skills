@@ -25,7 +25,7 @@ t_cca_find_in_window() {
   run python3 "$A" find --root /p/app --since "$(days_ago 0)"
   # Then
   eq exit 0 "$code"
-  eq row "claude s1 fix the export" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["harness"] + " " + r["id"] + " " + r["title"] for r in json.load(sys.stdin)))')"
+  eq row "claude s1 fix the export" "$(printf '%s' "$out" | jq -r '[.[] | "\(.harness) \(.id) \(.title)"] | join(" ")')"
 }
 
 
@@ -35,7 +35,7 @@ t_cca_until_drops_newer() {
   # When
   run python3 "$A" find --root /p/app --until "$(days_ago 5)"
   # Then
-  eq ids "s2" "$(printf '%s' "$out" | python3 -c 'import json,sys; print(" ".join(r["id"] for r in json.load(sys.stdin)))')"
+  eq ids "s2" "$(printf '%s' "$out" | jq -r '[.[].id] | join(" ")')"
 }
 
 t_cca_rows_carry_query_fields() {
@@ -44,7 +44,7 @@ t_cca_rows_carry_query_fields() {
   # When
   run python3 "$A" find --root /p/app --query export
   # Then
-  eq row "s1 True True 1 fix the export 0m ago float" "$(printf '%s' "$out" | python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["id"], r["score"] > 0, r["current"], r["prompts"], r["first_prompt"], r["age"], type(r["active"]).__name__)')"
+  eq row "s1 true true 1 fix the export 0m ago number" "$(printf '%s' "$out" | jq -r '.[0] | "\(.id) \(.score > 0) \(.current) \(.prompts) \(.first_prompt) \(.age) \(.active | type)"')"
 }
 
 t_cca_extract_summary() {
