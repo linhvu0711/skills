@@ -1,4 +1,4 @@
-# handoff
+# dispatch
 
 Turns the plan that `/plan-up` wrote in this chat into a prompt, starts a Devin cloud session or a Cursor cloud agent with it, and watches it until the PR is ready.
 
@@ -6,9 +6,9 @@ Turns the plan that `/plan-up` wrote in this chat into a prompt, starts a Devin 
 
 You have a plan you said `go` to and want a cloud agent to build it, with its own machine, browser, and screen recorder.
 
-- `/handoff [devin|cursor] <issue-url>`: the first prompt for one ticket. No URL: the plan this chat holds. A plan with no issue (plan-up's chat plan) stops here: a cloud session needs an issue, so make one with [file-issue](../file-issue/) first.
-- `/handoff [devin|cursor] <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
-- `/handoff [devin|cursor] <note>`: a follow-up or an answer for the session on this chat's issue. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
+- `/dispatch [devin|cursor] <issue-url>`: the first prompt for one ticket. No URL: the plan this chat holds. A plan with no issue (plan-up's chat plan) stops here: a cloud session needs an issue, so make one with [file-issue](../file-issue/) first.
+- `/dispatch [devin|cursor] <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
+- `/dispatch [devin|cursor] <note>`: a follow-up or an answer for the session on this chat's issue. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
 - `--model <id>` picks the Cursor model. Without it Cursor's default runs, `Auto`.
 
 With no executor named, a follow-up goes to the executor that started the issue, and a new issue goes to Devin. An issue that already has a session asks you first: send the plan to that session, or start a new one. It only runs when you call it.
@@ -50,7 +50,7 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 - Sorts review questions the way [validate-pr-reviews](../validate-pr-reviews/) does, and files `fix later` findings with [capture](../capture/).
 - Called by [ship](../ship/) when the command names `devin` or `cursor`, or a Windows plan goes to Devin.
 - Shares its prompt and rules templates with [build-and-prove](../build-and-prove/), which renders them for the local builder.
-- Its module, `scripts/handoff.sh`, keeps one ledger of sessions for both executors, finds each executor by its adapter file in `scripts/adapters/`, so a new adapter file, which also gives its own watch interval, is all `handoff.sh` needs for a new executor (the `/handoff` flow itself still offers only Devin and Cursor), and does not read the ledgers from before it, `sessions.tsv` and `cursor-sessions.tsv`; a repo that requires verified commit signatures goes to Devin. The Devin adapter starts, polls, and messages a session, and lists the repos Devin can reach and its modes; it has no archive or upload command.
+- Its module, `scripts/handoff.sh`, keeps one ledger of sessions for both executors, finds each executor by its adapter file in `scripts/adapters/`, so a new adapter file, which also gives its own watch interval, is all `handoff.sh` needs for a new executor (the `/dispatch` flow itself still offers only Devin and Cursor), and does not read the ledgers from before it, `sessions.tsv` and `cursor-sessions.tsv`; a repo that requires verified commit signatures goes to Devin. The Devin adapter starts, polls, and messages a session, and lists the repos Devin can reach and its modes; it has no archive or upload command.
 
 ## Credits
 

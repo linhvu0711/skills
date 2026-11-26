@@ -1,5 +1,5 @@
 ---
-name: handoff
+name: dispatch
 description: "Build the prompt from the plan file /plan-up wrote in this chat (one ticket, or a run stacked as PRs), start a Devin session or a Cursor cloud agent by API, and watch it. Devin unless named, or the executor that started the issue. Also sends a follow-up note to the running session, including a new layer on its stack. Use when a /plan-up plan from this chat should be built in the cloud, or a running cloud session needs a follow-up."
 disable-model-invocation: true
 ---
@@ -12,10 +12,10 @@ The prompt skeleton and the rules block live in `../../shared/handoff/` as templ
 
 ## Arguments
 
-- `/handoff [devin|cursor] [<issue-url> | <epic-url>] [--model <id>]`: the first prompt for an issue, or for a run (the plan with a Stack block that `/plan-up` wrote in this chat). No URL: the plan this chat holds.
-- `/handoff [devin|cursor] <note>`: a follow-up for the session already running on this chat's issue or run. A plan prepped `on` the open stack is a follow-up too: a new layer.
+- `/dispatch [devin|cursor] [<issue-url> | <epic-url>] [--model <id>]`: the first prompt for an issue, or for a run (the plan with a Stack block that `/plan-up` wrote in this chat). No URL: the plan this chat holds.
+- `/dispatch [devin|cursor] <note>`: a follow-up for the session already running on this chat's issue or run. A plan prepped `on` the open stack is a follow-up too: a new layer.
 
-The first word is the executor when it is `devin` or `cursor`, when it is the only word, or when a URL follows it. Any other word there: say `executor must be devin or cursor` and stop; `handoff.sh` stops with the same words. Anything else is a note; a one-word note names its executor first, as `/handoff devin yes`.
+The first word is the executor when it is `devin` or `cursor`, when it is the only word, or when a URL follows it. Any other word there: say `executor must be devin or cursor` and stop; `handoff.sh` stops with the same words. Anything else is a note; a one-word note names its executor first, as `/dispatch devin yes`.
 
 No executor named: `bash scripts/handoff.sh route <issue-url>` picks it: `follow <executor> <session> <link>` names the executor that started the issue, and `start devin` a new issue. A named executor: `route <issue-url> <executor>`. A run's issue URL is the epic URL; a set's, the first ticket URL. Say the pick in one line, as `Executor: cursor (started #42)`. `--model` names a Cursor model (§ Cursor); with Devin, say `--model is for cursor` and stop.
 
@@ -43,7 +43,7 @@ No executor named: `bash scripts/handoff.sh route <issue-url>` picks it: `follow
 
 8. **Answer.** The executor asked something, or asked what to do next; its section says which events mean that. You are the brain that wrote the plan; you answer, not the user. First get the whole question: the watch line cuts it, so run `bash scripts/handoff.sh status <executor> <session>` and read the message whole. Then sort it as `../plan-up/SKILL.md` step 5 sorts a fork, the same sort § Follow-up step 1 uses:
    - **Small fork**: the plan, the issue, or the repo holds the answer, a hard-to-undo pick with a clear winner included, a new dependency never. Fetch the code with an explorer when you need a `file:line`. Decide, shape the answer per `prompt.md` § Answer, `say` it. Under 20 lines: print it in one fenced block; longer: its file path and one line of summary. Then one line: `Answered <link>`. Tell the user in one line what the executor asked and what you answered, and say `(hard to undo)` when it was. The watch goes on as the executor's section says. Stop.
-   - **Big fork**: step 5 says ask, as for every new dependency; or the answer is a force push, a delete, or anything that touches other branches or PRs than the plan names, which is asked every time. Quote the executor's question as it is, in a fenced block, then the session link, then one question to the user, two options at most, with the option you would pick first and the `file:line` behind each on the question's `Seen:` line, per `../../shared/grilling.md`. The user answers with `/handoff <note>`. Stop.
+   - **Big fork**: step 5 says ask, as for every new dependency; or the answer is a force push, a delete, or anything that touches other branches or PRs than the plan names, which is asked every time. Quote the executor's question as it is, in a fenced block, then the session link, then one question to the user, two options at most, with the option you would pick first and the `file:line` behind each on the question's `Seen:` line, per `../../shared/grilling.md`. The user answers with `/dispatch <note>`. Stop.
 
    Not sure which: big.
 
@@ -57,7 +57,7 @@ No executor named: `bash scripts/handoff.sh route <issue-url>` picks it: `follow
 
 2. **Shape** per `prompt.md` § Follow-up: what changed, what to do with `file:line`, which Proof rows it touches, which video a changed walk sits in, how to check. A new layer: `prompt.md` § New layer, the layer's plan whole under `# Stack`, its Stack row with the size letter, and its `Proved` block, if any. The rules block stays out; the session already has it, and the size labels with it.
 
-3. **Send.** The session is the one this chat started. A chat without one runs `bash scripts/handoff.sh route <issue-url> [<executor>]`, the issue from this chat's plan; a chat with no plan either asks for the issue URL in one line and waits. A new layer routes by the stack's URL, not its own issue's: the epic URL, or a set's first ticket URL, the one the stack was handed off with; not known here, ask for it in one line and wait. `follow <executor> <session> <link>` is the session, so a note with no executor named goes to the executor that started the issue. `start …` means the issue has no session: say `#<n> has no handoff session. Start one with /handoff
+3. **Send.** The session is the one this chat started. A chat without one runs `bash scripts/handoff.sh route <issue-url> [<executor>]`, the issue from this chat's plan; a chat with no plan either asks for the issue URL in one line and waits. A new layer routes by the stack's URL, not its own issue's: the epic URL, or a set's first ticket URL, the one the stack was handed off with; not known here, ask for it in one line and wait. `follow <executor> <session> <link>` is the session, so a note with no executor named goes to the executor that started the issue. `start …` means the issue has no session: say `#<n> has no handoff session. Start one with /dispatch
    <issue-url>.` and stop. Write the note to a file,
    `bash scripts/handoff.sh say <executor> <session> <file>`. Under 20 lines: print the note in one fenced block; longer: its file path and one line of summary. Then one line: `Sent to <link>`. The watch goes on as the executor's section says; a chat without one starts it as in First prompt step 7. Stop.
 
@@ -101,27 +101,27 @@ No executor named: `bash scripts/handoff.sh route <issue-url>` picks it: `follow
 
 ## Examples
 
-**User:** `/handoff https://github.com/acme/shop/issues/42` after a `/plan-up` ended with `Ready for /handoff.`
+**User:** `/dispatch https://github.com/acme/shop/issues/42` after a `/plan-up` ended with `Ready for /dispatch.`
 
 Plan read from `$HOME/.agents/artifacts/plan/plan-acme-shop-42.md`. `route` prints `start devin`: `Executor: devin (new issue)`. Prompt assembled and checked. A web app, so Linux. `start devin` with `--issue`, `Session started: <link> · devin · linux`, a watch on `watch`. Stop. Later the watch prints `pr <url>`, then `finished … :: <finish message>`; each becomes two lines to the user.
 
-**User:** `/handoff cursor https://github.com/acme/shop/issues/42 --model claude-opus-5` after the same `/plan-up`
+**User:** `/dispatch cursor https://github.com/acme/shop/issues/42 --model claude-opus-5` after the same `/plan-up`
 
 `Executor: cursor (named)`. `handoff.sh facts cursor` lists `acme/shop` and `claude-opus-5`, the `Author` line comes from `git config`. A web app, so no `--platform`. `start cursor` with `--repo acme/shop --base main --model claude-opus-5`, a watch on `watch cursor <agent> --repo acme/shop --issue 42`. Stop.
 
-**User:** `/handoff cursor https://github.com/acme/clock/issues/9`; the repo's `packages/helper/Package.swift` has a macOS target
+**User:** `/dispatch cursor https://github.com/acme/clock/issues/9`; the repo's `packages/helper/Package.swift` has a macOS target
 
 `Platform: macos (Package.swift with a macOS target)`. `start cursor` with `--repo acme/clock --base main --platform macos`; about 3 minutes later it prints the agent. Watch as above. On `finished` the watch gives the Mac back; the next `say` rents a new one.
 
-**User:** `/handoff` after a short-path `/plan-up` of #57 ended with `Ready for /handoff.`
+**User:** `/dispatch` after a short-path `/plan-up` of #57 ended with `Ready for /dispatch.`
 
 No URL: the issue is the plan's, #57. No walks, no videos: the prompt drops those blocks. With no plan in this chat: `Run /plan-up first.`
 
-**User:** `/handoff foo`
+**User:** `/dispatch foo`
 
 `foo` is the only word, so it is the executor slot: `executor must be devin or cursor`. Stop.
 
-**User:** `/handoff the export button should be disabled while the file builds`; a Cursor agent started #42, the issue of this chat's plan
+**User:** `/dispatch the export button should be disabled while the file builds`; a Cursor agent started #42, the issue of this chat's plan
 
 No executor named. `route https://github.com/acme/shop/issues/42` prints `follow cursor bc-1 https://cursor.com/agents/bc-1`. An explorer fetches the button at `ExportButton.tsx:18` and the loading pattern at `SaveButton.tsx:22`; the repo shows the answer, so no question. Note shaped per § Follow-up, `say cursor bc-1`, `Sent to <link>`, watch again. Stop.
 
@@ -131,8 +131,8 @@ No executor named. `route https://github.com/acme/shop/issues/42` prints `follow
 
 **Watch prints** `finished <link> :: The users table has no team_id column. Should I add a migration or …` from Cursor, no `pr` line
 
-A question whose answer sets the scope, a migration in this PR or its own ticket: big fork. Quoted, the link, then one question: `A` add the migration in this PR (would pick, `migrations/0042.sql` shows the shape), `B` file it as its own ticket. Stop. The user's `/handoff A, add the migration` goes as § Answer.
+A question whose answer sets the scope, a migration in this PR or its own ticket: big fork. Quoted, the link, then one question: `A` add the migration in this PR (would pick, `migrations/0042.sql` shows the shape), `B` file it as its own ticket. Stop. The user's `/dispatch A, add the migration` goes as § Answer.
 
-**User:** `/handoff https://github.com/acme/shop/issues/75` after a `/plan-up … on pull/80`, a session running on the stack
+**User:** `/dispatch https://github.com/acme/shop/issues/75` after a `/plan-up … on pull/80`, a session running on the stack
 
 A one-layer plan on `PR #80`: § New layer, `say` to the stack's session.

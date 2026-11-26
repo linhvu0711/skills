@@ -25,7 +25,7 @@ A script decides what to start; you start it with T3's tools. Read `../../shared
    #<number> <title> → <link> · <slash_command> (<command_from>) · model <model id> (<model_from>) · effort <effort> (<effort_from>) · <reason> · base <base> · project <project>
    ```
 
-   `<link>` is the thread's `link` from step 3, as it is. The command now talks to the user in the new thread. Do not watch it, read its plan, or run `/handoff` from here.
+   `<link>` is the thread's `link` from step 3, as it is. The command now talks to the user in the new thread. Do not watch it, read its plan, or run `/dispatch` from here.
 
 One thread for all the issues, unless the user asks for one each. One each: steps 2 to 4 once per issue, one after the other.
 

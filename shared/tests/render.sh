@@ -319,7 +319,7 @@ t_render_names_handoff() {
     render "$ex" prompt
     # Then
     eq "$ex exit" 0 "$code"
-    eq "$ex lines naming /handoff as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/handoff` resolved and created them' || true)"
+    eq "$ex lines naming /dispatch as caller" 1 "$(printf '%s\n' "$out" | grep -cF 'as `/dispatch` resolved and created them' || true)"
     eq "$ex lines naming an old skill" 0 "$(printf '%s\n' "$out" | grep -cE 'handoff-(devin|cursor)' || true)"
   done
 }
@@ -364,5 +364,5 @@ cases=(
   "local rules run a slice's e2e specs in the Sandbox|t_render_local_e2e"
   "cloud rules leave the per-slice e2e rule out|t_render_cloud_no_e2e"
   "render puts the box.sh path in local rules|t_render_names_box"
-  "render names /handoff as the caller for devin and cursor|t_render_names_handoff"
+  "render names /dispatch as the caller for devin and cursor|t_render_names_handoff"
 )

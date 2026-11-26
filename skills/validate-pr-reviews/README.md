@@ -32,7 +32,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - Calls [commit](../commit/) and [capture](../capture/) after go.
 - Called by [ready-pr](../ready-pr/), which runs it on every review round.
 - Reads the Standard that [audit-coding-standards](../audit-coding-standards/) writes, from the base branch.
-- [handoff](../handoff/) sorts a cloud agent's review questions with the same verdict table.
+- [dispatch](../dispatch/) sorts a cloud agent's review questions with the same verdict table.
 
 ## Credits
 

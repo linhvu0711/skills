@@ -28,7 +28,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Fits with
 
 - A seed grows up through [grill](../grill/) (`/grill #88`) or [discover-path](../discover-path/). A bug becomes a `fix` ticket through [triage](../triage/) or [file-issue](../file-issue/), which rewrite the `[bug]` into the ticket in place.
-- Called by [file-issue](../file-issue/) when the chat holds only a loose idea or a bug with no agreed fix, by [ready-pr](../ready-pr/) and [validate-pr-reviews](../validate-pr-reviews/) for each `fix later` finding, and by [handoff](../handoff/) to file a bug.
+- Called by [file-issue](../file-issue/) when the chat holds only a loose idea or a bug with no agreed fix, by [ready-pr](../ready-pr/) and [validate-pr-reviews](../validate-pr-reviews/) for each `fix later` finding, and by [dispatch](../dispatch/) to file a bug.
 - Named by [audit-coding-standards](../audit-coding-standards/). The shared core's issue rules read the same priority labels through that script.
 
 ## Credits

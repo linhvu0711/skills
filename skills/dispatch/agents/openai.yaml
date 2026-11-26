@@ -1,6 +1,6 @@
 interface:
-  display_name: "Handoff"
+  display_name: "Dispatch"
   short_description: "Build the prompt from the plan and start a Devin or Cursor session"
-  default_prompt: "$handoff"
+  default_prompt: "$dispatch"
 policy:
   allow_implicit_invocation: false

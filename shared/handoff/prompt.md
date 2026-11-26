@@ -1,4 +1,4 @@
-<!-- template: shared by /handoff and /build-and-prove. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /dispatch and /build-and-prove. Render with `render.sh <devin|cursor|local> prompt`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 # Prompt rules
 
 The prompt file is the only thing the executor gets. It reads no file of ours beyond it. So it carries the issue, the plan, and the rules in

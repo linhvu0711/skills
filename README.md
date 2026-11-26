@@ -46,7 +46,7 @@ flowchart LR
     sp[plan-up] --> sm2{ship mode} --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
   end
   planup --> bp[build-and-prove] --> makepr[make-pr] --> readypr[ready-pr]
-  planup --> ho[handoff]
+  planup --> ho[dispatch]
   ship -->|ship mode ready| done([PR ready: you merge])
   ship -->|ship mode merge| merged([PR merged])
   ho --> done
@@ -59,7 +59,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, ready it, and merge it when that is the right call. After the plan, it picks a ship mode: `review` opens the plan as a page and builds only after you say `go`, `ready` stops at a PR that is ready to merge, and `merge` merges it. Type `--review`, `--ready`, or `--merge` to pick the mode yourself. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship, ready-pr, or complete-task) until all are closed.
-- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
+- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [dispatch](skills/dispatch/), which sends it to Devin or Cursor.
 - After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-reviews](skills/validate-pr-reviews/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR.
@@ -89,7 +89,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
 | [plan-up](skills/plan-up/) | Turns a ready issue, or a run of tickets, into a plan a coding agent can follow cold: seams, tests, slices, doc updates, UI walks. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine. For a plan with UI walks, it runs the app and the Gates CI does not run in one proofbox Sandbox and has a walker film the walks as proof; a plan with no UI runs its Gates on your machine and in CI. |
-| [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
+| [dispatch](skills/dispatch/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [complete-task](skills/complete-task/) | Does a task issue's steps in your browser, and stops only for the steps that are yours. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |
@@ -140,15 +140,15 @@ Each helper a skill starts, a skill agent or the explorer or the runner, names a
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [run-in-t3](skills/run-in-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [run-in-t3](skills/run-in-t3/), [orchestrate](skills/orchestrate/), [dispatch](skills/dispatch/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
 - T3 Code and its `t3` command: [run-in-t3](skills/run-in-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
-- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2.1 answer.
-- Cursor: [handoff](skills/handoff/).
+- Devin: [dispatch](skills/dispatch/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2.1 answer.
+- Cursor: [dispatch](skills/dispatch/).
 - macOS and `agent-desktop`: [use-mac](skills/use-mac/) and [complete-task](skills/complete-task/).
 - Xcode's iOS simulator and AXe: [use-mac](skills/use-mac/), to check a web page on an iPhone.
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.

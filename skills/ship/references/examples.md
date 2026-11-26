@@ -40,7 +40,7 @@ No merge: a person's approval is the user's. The report ends `NOT MERGED https:/
 
 **User:** `/ship https://github.com/acme/shop/issues/42 devin`.
 
-`Route: cloud (devin, named)`. Handoff § First prompt whole with Devin, a line-by-line watch on it. Later `finished` with PR 44; finish check passes; Ready step says `READY`. Report with `session: <url>`.
+`Route: cloud (devin, named)`. Dispatch § First prompt whole with Devin, a line-by-line watch on it. Later `finished` with PR 44; finish check passes; Ready step says `READY`. Report with `session: <url>`.
 
 **User:** `/ship https://github.com/acme/shop/issues/88`; the plan says `Platform: windows`.
 

@@ -7,7 +7,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 - Stop a script with an error: `die()` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python.
 - Call GitHub: `shared/gh.sh` in shell, `shared/gh.py` in Python.
 - Find a script's own folder: `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`.
-- Read JSON in shell: `jq`. Old way: `grep -o`, kept only in the text `skills/handoff/scripts/mac.sh` runs on a Mac, where `jq` may be missing.
+- Read JSON in shell: `jq`. Old way: `grep -o`, kept only in the text `skills/dispatch/scripts/mac.sh` runs on a Mac, where `jq` may be missing.
 - Write JSON in shell: literal text for a fixed fixture, `jq -n --arg` when a value comes from a variable. Old way: a hand-written string with a variable in it (#409).
 - Clean up temp files: a `trap … EXIT` in shell, `try`/`finally` in Python (bash-manual). Old way: `rm` after use, kept only in `gh_out` of `shared/gh.sh`, where a trap would replace its caller's.
 - Replace a file: write a temp file in the same folder, then `mv`; Python: `os.replace`.

@@ -119,11 +119,11 @@ _Avoid_: playbook, mode
 ## Handoff
 
 **Executor**:
-The agent that does the work of a plan: Devin or Cursor in the cloud, through `/handoff`, or local, through `/build-and-prove`.
+The agent that does the work of a plan: Devin or Cursor in the cloud, through `/dispatch`, or local, through `/build-and-prove`.
 _Avoid_: vendor, provider, backend
 
 **Handoff ledger**:
-The one list of handoff sessions, a row per session with its executor and issue. `/handoff` reads it to send a follow-up to the executor that started the issue.
+The one list of handoff sessions, a row per session with its executor and issue. `/dispatch` reads it to send a follow-up to the executor that started the issue.
 _Avoid_: session list, sessions file
 
 ## Local build
@@ -161,7 +161,7 @@ What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, `dem
 _Avoid_: artifacts dir, media folder
 
 **Follow-up**:
-More work on a ticket after its first build: a change the user asks for, or a review fix after the PR is open. It redoes only what the change touches. `/build-and-prove` runs a local one; a rerun after a stop is a follow-up with no change. `/handoff` sends a cloud one to the executor that started the issue.
+More work on a ticket after its first build: a change the user asks for, or a review fix after the PR is open. It redoes only what the change touches. `/build-and-prove` runs a local one; a rerun after a stop is a follow-up with no change. `/dispatch` sends a cloud one to the executor that started the issue.
 _Avoid_: rework, second pass, iteration
 
 ## PRs
