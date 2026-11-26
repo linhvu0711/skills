@@ -157,7 +157,7 @@ A failed walk whose screen shows the Sandbox, not the app, is wrong: a missing t
 _Avoid_: flaky walk, env failure
 
 **Proof folder**:
-What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, and the filled Proof table. `/make-pr` builds the PR's Proof part from it.
+What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, `demo.md`, and `proof.md`. `/make-pr` makes the PR's Demo part from `demo.md` and its Proof part from `proof.md`.
 _Avoid_: artifacts dir, media folder
 
 **Follow-up**:
