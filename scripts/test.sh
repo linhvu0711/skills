@@ -405,23 +405,22 @@ t_agents_tries_follow_tier_cell() {
   eq "helper2 stdout" "$want" "$out"
 }
 
-t_agents_start_names_first_home() {
-  # Given: an agent whose Claude home is devin swe-2-high high and whose
-  # Claude backup is claude-haiku-5-5 high
+t_agents_start_names_first_try() {
+  # Given: a tier-2 agent, whose first try under Claude is Devin
   repo; agent demo helper
+  sed -i.bak 's/^tier: 1$/tier: 2/' skills/demo/agents/helper.md
   # When
   run bash scripts/agents.sh start claude < skills/demo/agents/helper.md
   # Then
   eq exit 0 "$code"
-  eq stdout "t3 devin swe-2-high high" "$out"
+  eq stdout "t3 devin swe-2-1-medium high" "$out"
 }
 
-t_agents_start_by_name_when_home_is_backup() {
-  # Given: the same agent with its Claude home on the backup's model and effort
+t_agents_start_by_name_when_first_try_is_harness() {
+  # Given: a tier-1 agent, whose only try under Codex is Codex
   repo; agent demo helper
-  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: claude claude-haiku-5-5 high/' skills/demo/agents/helper.md
   # When
-  run bash scripts/agents.sh start claude < skills/demo/agents/helper.md
+  run bash scripts/agents.sh start codex < skills/demo/agents/helper.md
   # Then
   eq exit 0 "$code"
   eq stdout "name" "$out"
@@ -1780,8 +1779,8 @@ cases=(
   "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
   "agents.sh lists a tier-3 checker's try list|t_agents_tries_lists_checker"
   "agents.sh moves every agent of a tier when one cell changes|t_agents_tries_follow_tier_cell"
-  "agents.sh start names the first home off the backup|t_agents_start_names_first_home"
-  "agents.sh start says name when the home is the backup|t_agents_start_by_name_when_home_is_backup"
+  "agents.sh start names a tier-2 agent's first try|t_agents_start_names_first_try"
+  "agents.sh start says name when the first try is the harness|t_agents_start_by_name_when_first_try_is_harness"
   "link writes no Antigravity plugin|t_link_writes_no_antigravity_plugin"
   "link removes the Antigravity plugin an earlier run wrote|t_link_removes_old_antigravity_plugin"
   "link removes the old Antigravity plugin once|t_link_old_plugin_cleanup_runs_once"

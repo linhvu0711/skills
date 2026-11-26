@@ -63,9 +63,8 @@
 # order, exit 0.
 # start: how the main agent of <harness>, claude or codex, starts the agent
 # in T3, exit 0:
-# `name` when its first home is <harness> on the backup's model and effort,
-# else `t3 <place> <model> <effort>`, its first home. The subagent gate reads
-# it.
+# `name` when its first try is <harness> itself, else
+# `t3 <company> <model> <effort>`, its first try. The subagent gate reads it.
 # Any other command line: its usage on stderr, exit 64.
 # The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
 # the description becomes `\"`, and a `"""` in the body becomes `""\"`.
@@ -190,9 +189,8 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
         else { split(entry[k[1], k[2]], w, " "); print k[1], k[2], k[2], w[1] } }
       exit 0 }
     if (mode == "start") {
-      split(entry["home", harness], items, ","); split(items[1], w, " ")
-      split(entry["backup", harness], b, " ")
-      if (w[1] == harness && w[2] == b[1] && w[3] == b[2]) print "name"
+      tries(harness, fm["tier"], fm["checker"]); split(tries_out[1], w, " ")
+      if (w[1] == harness) print "name"
       else print "t3", w[1], w[2], w[3]
       exit 0 }
     if (fm_block["name"]) problem("name on more than one line")

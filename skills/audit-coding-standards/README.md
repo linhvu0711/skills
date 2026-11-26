@@ -37,7 +37,7 @@ When it finds nothing, the page says so and nothing is written. When it found no
 - `git`, for the author count and the age of the rules.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - Web search or the context7 MCP server, for the research.
-- An agent that can start subagents, for the research and for the `rule-judge` and `way-judge` helpers in `agents/`, which each read about ten files at a time. They start per `../../shared/facts.md` § Skill agents, on the home models each file names for your harness, or on its backup. [link.sh](../../scripts/link.sh) installs both.
+- An agent that can start subagents, for the research and for the `rule-judge` and `way-judge` helpers in `agents/`, which each read about ten files at a time. They start per `../../shared/facts.md` § Skill agents, on the try list its tier gives for your harness. [link.sh](../../scripts/link.sh) installs both.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - Its own [checks.md](references/checks.md) and [research.md](references/research.md): where rules live, the four checks, the size of the repo, and how sources are read.
 - [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets.
