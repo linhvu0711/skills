@@ -123,4 +123,4 @@ One size label: size the PR's own diff against its base with the size table, and
 
 ### A repo's own PR template
 
-A repo with a PR template (`.github/pull_request_template.md`, or a file under `.github/PULL_REQUEST_TEMPLATE/`) keeps its structure. Each part above goes under the template heading that matches it best; a part with no match goes at the end under its own heading. A template heading with nothing to say is left out. A checkbox stays, ticked only when it is true. The branch, the title, and the label follow this shape as written.
+A repo with a PR template (`.github/pull_request_template.md`, or a file under `.github/PULL_REQUEST_TEMPLATE/`) keeps its structure. Each part above goes under the template heading that matches it best; a part with no match goes at the end under its own heading, except `## Demo`, which goes right after the heading that holds the Summary, or first when none does. A template heading with nothing to say is left out. A checkbox stays, ticked only when it is true. The branch, the title, and the label follow this shape as written.
