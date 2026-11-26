@@ -1,5 +1,5 @@
 ---
-name: retro
+name: retrospect
 description: "Look back over coding sessions from every harness, and PRs no session touched, find where the agent struggled and what worked, and turn the patterns into shared fixes to the repo's agent setup. One session by default; a time range, session IDs, a topic, or an orchestrate run reads many. Use when the user asks for a retro, or where agents struggled in past sessions."
 disable-model-invocation: true
 ---
@@ -30,7 +30,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
    It prints `harnesses`, `sessions`, and `unread`. Keep the `sessions` rows whose `harness` the sources keep.
 
-   A topic score counts words, not meaning, so read each row's title and first prompt, and drop a row that shares only passing words with the topic, as a row titled "fix the login page" for the topic "login rate limit". Leave out the session running this retro when its first prompt is the `/retro` call. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry the sources keep that has an `error` is a harness not read: its error goes to the report.
+   A topic score counts words, not meaning, so read each row's title and first prompt, and drop a row that shares only passing words with the topic, as a row titled "fix the login page" for the topic "login rate limit". Leave out the session running this retro when its first prompt starts with `/retrospect` or `$retrospect`. A row with `unreadable` is listed as not read, with its reason. Each `unread` line goes to the report as it is. A `harnesses` entry the sources keep that has an `error` is a harness not read: its error goes to the report.
 
    Done when every row is kept or dropped with a reason, and every `unread` line and every `error` of a harness the sources keep is held for the report.
 
@@ -103,7 +103,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
 ## Run scope
 
-`/retro run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread` and `threads[].path`. `set` and `removed` hold refs, `owner/repo#n`; an old run's bare number is an issue in the run's `repo`.
+`/retrospect run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread` and `threads[].path`. `set` and `removed` hold refs, `owner/repo#n`; an old run's bare number is an issue in the run's `repo`.
 
 - **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <folder> --since <started_at day> --id <session>`, with one `--root` for each distinct folder: the run's `path` and each `threads[].path`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip `find_all.py`, and keep its `unread` lines out.
 - **GitHub.** `scripts/github.py list <repo> --transcripts <scratch> --issues <numbers>`, once per repo in the set minus removed, with that repo's numbers; the lists join.

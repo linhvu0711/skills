@@ -337,15 +337,15 @@ For one repo, the file that does each job for its agents (steering, coding stand
 _Avoid_: config list
 
 **Home repo**:
-The repo that holds the file a retro card's fix changes. Retro finds it from that file's real place on disk and files the card there. An issue filed in any repo but the project's own leaves out the project's name.
+The repo that holds the file a retro card's fix changes. Retrospect finds it from that file's real place on disk and files the card there. An issue filed in any repo but the project's own leaves out the project's name.
 _Avoid_: target repo, destination
 
 **Open question**:
-A problem retro's readers saw but no session found the cause of, so retro can name no fix. The report lists it in one line, not as a card.
+A problem retro's readers saw but no session found the cause of, so retrospect can name no fix. The report lists it in one line, not as a card.
 _Avoid_: unknown card
 
 **Touched PR**:
-A PR that a session in scope names by number or URL. Retro does not read it.
+A PR that a session in scope names by number or URL. Retrospect does not read it.
 _Avoid_: covered PR
 
 **Session adapter**:

@@ -107,7 +107,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [improve-ci](skills/improve-ci/) | Times a repo's GitHub Actions runs, finds what makes CI slow, dishonest, or unsafe, shows a report, then grills you and files the fixes. |
 | [audit-coding-standards](skills/audit-coding-standards/) | Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it has one: researches your stack, reads your code, shows a report page, asks only your choices, then files tickets and writes the rules. |
 | [prune-codebase](skills/prune-codebase/) | Finds what teaches agents bad habits: bad comments, unused code, copies, and hacks. Shows them on a report page, and after your go edits comments, files tickets, and adds rules, with no code changed and nothing committed. |
-| [retro](skills/retro/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, standards, skills. |
+| [retrospect](skills/retrospect/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, standards, skills. |
 
 ### Any time
 

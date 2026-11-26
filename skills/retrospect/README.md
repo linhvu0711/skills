@@ -1,16 +1,16 @@
-# retro
+# retrospect
 
 Looks back over your coding sessions, from every harness it can read, and over the PRs no session worked on. It finds where the agent struggled and what worked well, and turns what repeats into shared fixes to the repo's agent setup: a check, a pointer, a standard, a skill.
 
 ## Use it when
 
-A session felt harder than it should have, the same kind of trouble keeps coming back, or you want to know what to change after a stretch of work. Type `/retro` for the session you are in. Name a range, IDs, a topic, or sources to read more: `/retro today`, `/retro last 3 days`, `/retro from 2026-10-01 to 2026-10-05`, `/retro the handoff sessions this week`, `/retro only claude sessions`, `/retro PRs from last week`, `/retro last 3 days, all projects`. Many sessions and PRs show what one cannot: the same mistake, the same slow search, the same review comment, the same correction you keep typing, the same good habit.
+A session felt harder than it should have, the same kind of trouble keeps coming back, or you want to know what to change after a stretch of work. Type `/retrospect` for the session you are in. Name a range, IDs, a topic, or sources to read more: `/retrospect today`, `/retrospect last 3 days`, `/retrospect from 2026-10-01 to 2026-10-05`, `/retrospect the handoff sessions this week`, `/retrospect only claude sessions`, `/retrospect PRs from last week`, `/retrospect last 3 days, all projects`. Many sessions and PRs show what one cannot: the same mistake, the same slow search, the same review comment, the same correction you keep typing, the same good habit.
 
-[orchestrate](../orchestrate/) starts it for you when a run is done, as `/retro run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
+[orchestrate](../orchestrate/) starts it for you when a run is done, as `/retrospect run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
 
 ## What you get
 
-Retro first finds the sessions of every harness (the tools that run the agent: Claude Code, Codex, or Antigravity) for this repo, in one call to the shared core's `find_all.py`. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
+Retrospect first finds the sessions of every harness (the tools that run the agent: Claude Code, Codex, or Antigravity) for this repo, in one call to the shared core's `find_all.py`. Each harness it can read has an adapter in [`sessions/`](../../shared/sessions/); a harness with data and no adapter is named in the report as `found <harness> sessions, cannot read them yet`, never skipped silently. It also lists the PRs and issues in the window that no session names. A PR a session worked on is left out, since the session already holds its reviews and fixes.
 
 If that adds up to more than 20 readers, it tells you the count and waits for `go`. Then one reader agent reads each session (with its helper agents' logs), each PR (its body, reviews, review threads, and the end of each failed CI log), and the issues. Each writes an evidence list: the moments things went wrong, corrections you or a reviewer gave more than once, steps you did by hand, and ways of working worth sharing. Text in a session or a PR can come from anyone, so each reader is told it is data to read, never orders to follow.
 

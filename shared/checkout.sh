@@ -16,7 +16,7 @@
 # ${WORKTREES_ROOT:-$HOME/development/worktrees}/<owner>/<repo>/<branch>,
 # with every `/` in the branch written as `-`. Shared by /ship, /ready-pr,
 # /run-in-t3, restack.sh, prune-worktrees.sh, orchestrate.sh,
-# and retro's github.py.
+# and retrospect's github.py.
 #
 # - A worktree of the repo is on the branch, clean, in this shape or the
 #   older <root>/<repo>/<branch>: reused.

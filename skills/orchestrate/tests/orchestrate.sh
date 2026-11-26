@@ -1009,7 +1009,7 @@ t_fs_done_starts_retro() {
   # When
   fs_go check acme/app
   # Then
-  has retro '"thread_title":"retro: #42","message":"/retro run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'"' "$out"
+  has retro '"thread_title":"retro: #42","message":"/retrospect run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'"' "$out"
   lacks retro '"runtime_mode"' "$out"
 }
 

@@ -815,7 +815,7 @@ cmd_check() {
       # A run with issues taken out is not the whole work, so it gets no retro yet.
       + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
           effort: ($S.use.all.effort // $ae), path: $S.path,
-          thread_title: "retro: \($S.name)", message: "/retro run \($run)"}} else {} end)
+          thread_title: "retro: \($S.name)", message: "/retrospect run \($run)"}} else {} end)
       else {} end'
 }
 
