@@ -262,13 +262,14 @@ done
 
 # The agents whose first home starts them in Devin, one `<agent> <model> <then>`
 # line each, <then> being where a Devin failure sends it: next when the entry
-# lists another home whose place is on in T3, else backup. A later home on Devin is only a fallback,
-# so its loss sends no one on.
+# lists another home whose place is on in T3, else backup, or fail for an
+# Antigravity main agent, which has no backup. A later home on Devin is only a
+# fallback, so its loss sends no one on.
 devin_homes=()
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
   if [ "$map" = home ] && [ "$place" = devin ]; then
-    then=backup
+    if [ "$h" = antigravity ]; then then=fail; else then=backup; fi
     for r in ${rows[@]+"${rows[@]}"}; do
       read -r ra rmap rh next _ <<< "$r"
       case "$rmap" in home[0-9]*) ;; *) continue ;; esac
@@ -289,10 +290,11 @@ on_devin() {
 
 # devin_warn <cause> [model]: a warning per place a Devin failure sends agents.
 devin_warn() {
-  local b n
-  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"
+  local b n f
+  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"; f="$(on_devin fail "${2:-}")"
   [ -z "$b" ] || warns+=("warn: $1, so these run on their backup: $b")
   [ -z "$n" ] || warns+=("warn: $1, so these move to their next home: $n")
+  [ -z "$f" ] || warns+=("warn: $1, so these fail in Antigravity, which has no backup: $f")
 }
 
 # Devin: one live call per model a first home starts on in Devin. A helper

@@ -385,6 +385,20 @@ t_sync_warns_third_home_when_second_off() {
   eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
+t_sync_warns_antigravity_helper_fails_when_devin_off() {
+  # Given: Devin off in T3, and the helper's Antigravity home on Devin
+  mac
+  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
+  sed -i.bak 's/^  antigravity: antigravity gemini-4-neon high$/  antigravity: devin swe-2-high high/' \
+    "$T/mac/repo/skills/demo/agents/helper.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  eq warns 'warn: Devin is off in T3, so these run on their backup: helper
+warn: Devin is off in T3, so these fail in Antigravity, which has no backup: helper' "$(grep '^warn:' <<<"$out")"
+}
+
 t_sync_follows_link_env() {
   # Given: Claude Code's skills folder moved, and link.sh's env setting naming
   # the new folder
@@ -458,6 +472,7 @@ cases=(
   "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
   "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
+  "sync warns that an Antigravity helper on Devin fails when Devin is off|t_sync_warns_antigravity_helper_fails_when_devin_off"
   "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
   "sync names an agent link.sh cannot render once|t_sync_names_agent_link_cannot_render"
   "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"

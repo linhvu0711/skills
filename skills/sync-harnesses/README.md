@@ -39,10 +39,11 @@ The check never makes T3's `GEMINI.md` link. T3 makes that link itself each time
 
 It also checks each model a helper's file names. A home model must be in T3's list for its place, `~/.t3/caches/<provider>.json`. A helper that lists more than one home gets each one checked, and a problem names the second as `home 2`. A Claude Code backup must be in T3's Claude list, and a Codex backup in Codex's own list, `~/.codex/models_cache.json`. A model not in its list gets a line such as `problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna`. The check changes no agent file: you pick the new model. A place that is off in T3 gets `skip: Antigravity is off in T3, so its home models are not checked`, and a skip line does not fail the run.
 
-The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's first home names in Devin. A later home on Devin is only a fallback, so the live call skips it. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose first home is Devin run on their backup, or on their next home when they list one that is on in T3, and a `warn:` line names them:
+The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's first home names in Devin. A later home on Devin is only a fallback, so the live call skips it. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose first home is Devin run on their backup, or on their next home when they list one that is on in T3, and a `warn:` line names them. An Antigravity main agent has no backup, so there a helper with no next home fails, and a line of its own names it:
 
 ```
 warn: Devin is off in T3, so these run on their backup: scope-reviewer, standards-reviewer, walker
+warn: Devin is off in T3, so these fail in Antigravity, which has no backup: scope-reviewer, standards-reviewer, walker
 warn: swe-2-high refused (Error: Unknown model: 'swe-2-high'), so these run on their backup: scope-reviewer, standards-reviewer, walker
 ```
 
