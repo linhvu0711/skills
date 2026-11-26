@@ -11,7 +11,7 @@ Turn the work in this checkout into one pull request. Read `../../shared/pr-shap
 
 A caller can set five things: the branch name, the files that go in, the issue line, what goes under `Summary` and `Follow-ups`, and a proof folder. The rest is this skill's.
 
-A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the finished `## Proof` part, with the screenshots and videos it names as `./<file>` beside it, and `checks.txt`, the repo's checks it did on HEAD, each line ending with where it ran. With one set, `gh` must be 2.99 or newer (`gh --version`), so that `gh pr edit --attach` exists; older: say so and stop before step 7.
+A **proof folder** is what `/build-and-prove` leaves: `demo.md`, the finished `## Demo` part, when the build had walks, with the screenshots and videos it names as `./<file>` beside it; `proof.md`, the finished `## Proof` part; and `checks.txt`, the repo's checks it did on HEAD, each line ending with where it ran. With one set, `gh` must be 2.99 or newer (`gh --version`), so that `gh pr edit --attach` exists; older: say so and stop before step 7.
 
 ## Steps
 
@@ -43,7 +43,7 @@ A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the finished `
 
 7. **Push.** `git push -u origin HEAD`. Rejected: show the message and stop. A force push is the user's call. Done when `origin/<branch>` is at HEAD.
 
-8. **Body.** Read the repo's PR template when it has one (`.github/pull_request_template.md`, or `.github/PULL_REQUEST_TEMPLATE/`). Write the title and the body by the PR shape, for the whole branch against the base (`git diff origin/<base>...HEAD`), to a file outside the tree: `f=$(mktemp)`. An open PR: read its body first, `gh pr view <n> --json body -q .body`, and carry every line under `Follow-ups` into the new body; those issues are not in the diff. A proof folder: `## Proof` is its `proof.md`, pasted whole, with each test case linked at the head commit it just pushed, as the shape says, so each run links at the new head; and the body file is `pr-body.md` inside the proof folder, next to the media, not a temp file. Then run `../unslop/SKILL.md` on the prose: the title, and the text of `Summary`, `Where to look`, and `Breaking changes`. Leave as they are: the `Risk` line's form, code, commands, paths, links, the `Closes` line, the `Follow-ups` lines, and `## Proof`.
+8. **Body.** Read the repo's PR template when it has one (`.github/pull_request_template.md`, or `.github/PULL_REQUEST_TEMPLATE/`). Write the title and the body by the PR shape, for the whole branch against the base (`git diff origin/<base>...HEAD`), to a file outside the tree: `f=$(mktemp)`. An open PR: read its body first, `gh pr view <n> --json body -q .body`, and carry every line under `Follow-ups` into the new body; those issues are not in the diff. A proof folder: `## Demo` is its `demo.md`, pasted whole where the PR shape puts it, when it has one; `## Proof` is its `proof.md`, pasted whole, with each test case linked at the head commit it just pushed, as the shape says, so each run links at the new head; and the body file is `pr-body.md` inside the proof folder, next to the media, not a temp file. Then run `../unslop/SKILL.md` on the prose: the title, and the text of `Summary`, `Where to look`, and `Breaking changes`. Leave as they are: the `Risk` line's form, code, commands, paths, links, the `Closes` line, the `Follow-ups` lines, `## Demo`, and `## Proof`.
 
    Then read what the PR will show for a leak: the title, the body, and each file the body attaches. A leak is a token, a key, a password, a `.env` value, or a private detail: a home path, an email address, a private host or URL, or a person's data the repo does not already show. Look at each screenshot. For a video, write one frame each 5 seconds to a folder you keep, look at every frame in it, then remove the folder:
 
@@ -60,7 +60,7 @@ A **proof folder** is what `/build-and-prove` leaves: `proof.md`, the finished `
    - No PR: `gh pr create -R <repo> --base <base> --head <branch> --title "<title>" --body-file "$f"`, ready for review.
    - An open PR: `gh pr edit -R <repo> <n> --title "<title>" --body-file "$f"`. The new body covers the whole branch and replaces the old one, its `Follow-ups` kept; GitHub keeps the old body in the edit history.
 
-   A proof folder: then, from inside it, attach every file the body names, `gh pr edit -R <repo> <n> --body-file pr-body.md --attach <file> …`, and unwrap the video lines, both per `../../shared/pr-shape.md` § Proof. Open the PR and check that each image shows and each video plays.
+   A proof folder: then, from inside it, attach every file the body names, `gh pr edit -R <repo> <n> --body-file pr-body.md --attach <file> …`, and unwrap the video lines, both per `../../shared/pr-shape.md` § Demo. Open the PR and check that each image shows and each video plays.
 
    Done when `gh pr view -R <repo> <n> --json title,body` shows what you wrote.
 

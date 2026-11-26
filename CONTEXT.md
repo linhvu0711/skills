@@ -46,6 +46,10 @@ _Avoid_: per-harness branch
 The title and body that every pull request opened by these skills follows. It is kept once, in `shared/pr-shape.md`.
 _Avoid_: PR template (that is a repo's own `.github/pull_request_template.md`)
 
+**Demo**:
+The PR part right after Summary that shows the change: before and after screenshots, then videos. Only a PR with screenshots or videos has one.
+_Avoid_: media section
+
 **Close-out**:
 The grill's last step after `Grill done.`. It places the doc text the grill kept. When code follows, it files the issue or epic with the text under Docs to write; when that code changes a screen, it first suggests a prototype and waits for go. When no code follows, the docs are true now: it writes them and opens one docs PR. A caller can take the text back instead.
 _Avoid_: wrap-up, finish
@@ -153,7 +157,7 @@ A failed walk whose screen shows the Sandbox, not the app, is wrong: a missing t
 _Avoid_: flaky walk, env failure
 
 **Proof folder**:
-What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, and the filled Proof table. `/make-pr` builds the PR's Proof part from it.
+What `/build-and-prove` leaves for `/make-pr`: the videos, the screenshots, `demo.md`, and `proof.md`. `/make-pr` makes the PR's Demo part from `demo.md` and its Proof part from `proof.md`.
 _Avoid_: artifacts dir, media folder
 
 **Follow-up**:

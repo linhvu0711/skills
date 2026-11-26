@@ -199,7 +199,7 @@ A prompt with a `# Perf` block, or a layer with a `## Perf` block, measures afte
   ```
 
   Two PRs open makes the stack; each later call adds the new PR. Then start the next layer. The PR body covers that layer's Done-when lines only.
-- The media rules are under § Proof above: the Screenshot and Video columns, the Screenshots and Videos parts, and `gh pr edit --attach`.
+- The media rules are under § Demo and § Proof above: the Demo part, the Proof table's media column, and `gh pr edit --attach`.
 <!-- devin -->
   Only when `--attach` fails: paste the files into the PR editor on github.com with your browser; the links come out the same. Links into the Devin app do not count as proof.
 <!-- /devin -->
