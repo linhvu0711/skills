@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clarify"
+  short_description: "Explain what the agent said, from the session first"
+  default_prompt: "$clarify"
