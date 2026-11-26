@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # t3-cli.sh: name the t3 command of the T3 Code chat this runs in. T3 Code
 # sets T3CODE_CLI_PATH to its own t3 in every chat, so that is the t3 to run,
-# whether or not one is on PATH. Shared by orchestrate.sh and kickoff-t3's
+# whether or not one is on PATH. Shared by orchestrate.sh and run-in-t3's
 # kickoff.sh.
 #
 #   t3-cli.sh

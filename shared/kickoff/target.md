@@ -1,6 +1,6 @@
 # Kickoff target
 
-Used by kickoff-t3. It turns what the user said into the arguments of its `scripts/kickoff.sh`, which runs `decide.sh`, the script next to this file. This file holds the target forms, the flags, the table the script picks from, and how to turn the user's words into a target.
+Used by run-in-t3. It turns what the user said into the arguments of its `scripts/kickoff.sh`, which runs `decide.sh`, the script next to this file. This file holds the target forms, the flags, the table the script picks from, and how to turn the user's words into a target.
 
 ## Target forms
 

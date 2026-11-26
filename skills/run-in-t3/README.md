@@ -1,4 +1,4 @@
-# kickoff-t3
+# run-in-t3
 
 Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or a whole epic.
 
@@ -6,12 +6,12 @@ Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or a whole
 
 You work in T3 Code and want planning or a whole `/ship` run to start in its own thread while you keep going in this one. Name the issues the way you would to a person:
 
-- `/kickoff-t3 42`: one ticket.
-- `/kickoff-t3 12 and 14`: two tickets in one thread, as a stack.
-- `/kickoff-t3 all of P1 in this epic`: the open tickets of that phase.
-- `/kickoff-t3 the whole epic`: every open ticket in it.
-- `/kickoff-t3 42 on PR 80`: one ticket as a new layer on an open stack.
-- `/kickoff-t3 on this`, right after making an issue: it finds the issue in the chat.
+- `/run-in-t3 42`: one ticket.
+- `/run-in-t3 12 and 14`: two tickets in one thread, as a stack.
+- `/run-in-t3 all of P1 in this epic`: the open tickets of that phase.
+- `/run-in-t3 the whole epic`: every open ticket in it.
+- `/run-in-t3 42 on PR 80`: one ticket as a new layer on an open stack.
+- `/run-in-t3 on this`, right after making an issue: it finds the issue in the chat.
 
 More than one issue goes in one thread, unless you say "one thread each". Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship it" to stop at a ready PR, or "ship and merge") in your words to change the defaults below. Name none of these, and the `/ship` run picks its own ship mode from its plan. You can also name triage, grill, or ready-pr ("triage it", "grill it", "ready the PR"): triage and grill run on opus at high effort, ready-pr on opus at medium. For a task issue, one with the `manual` label, name complete-task ("do the task"): it runs on opus at medium, and the agent says it is ready and waits for your `go`. It only runs when you call it.
 

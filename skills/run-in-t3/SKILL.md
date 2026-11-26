@@ -1,5 +1,5 @@
 ---
-name: kickoff-t3
+name: run-in-t3
 description: "Start /ship in a new T3 Code thread on issues named by number, URL, or words: one ticket, a run of epic tickets, a set, or a whole epic. A script picks the model and effort from the labels and starts /ship with no ship mode unless the user names them, and makes the repo a T3 project; the agent starts the thread. Stops once the thread runs. Use when the user asks to ship issues in a new T3 Code thread."
 disable-model-invocation: true
 ---
@@ -31,22 +31,22 @@ One thread for all the issues, unless the user asks for one each. One each: step
 
 ## Examples
 
-**User:** `/kickoff-t3 https://github.com/acme/shop/issues/42`, in a T3 chat; #42 is `size/M`, and the checkout is a T3 project.
+**User:** `/run-in-t3 https://github.com/acme/shop/issues/42`, in a T3 chat; #42 is `size/M`, and the checkout is a T3 project.
 
 The script prints the line with `command` `ship`, `mode` empty, `slash_command` `/ship`, `model` `opus`, `effort` `medium`, `project` `found`. `opus` maps to `claude-opus-5-5`. The project with that `workspaceRoot` is found. One `t3_thread_launch`. Say `#42 Export orders as CSV → [#42 Export orders as CSV](t3-thread://v1/…) · /ship (default) · model claude-opus-5-5 (default) · effort medium (default) · size M · base main · project found`. Stop.
 
-**User:** `/kickoff-t3 42 with sonnet xhigh`, in a session about acme/shop.
+**User:** `/run-in-t3 42 with sonnet xhigh`, in a session about acme/shop.
 
 Run `kickoff.sh --model sonnet --effort xhigh https://github.com/acme/shop/issues/42`. The command still comes from the table. `sonnet` maps to the first `claude-sonnet-` id.
 
-**User:** `/kickoff-t3 42`, in a terminal outside T3 Code.
+**User:** `/run-in-t3 42`, in a terminal outside T3 Code.
 
 The script says `stop: not inside T3 Code`. Show it. Stop. Nothing started.
 
-**User:** `/kickoff-t3 42` for a repo whose checkout is not a T3 project yet.
+**User:** `/run-in-t3 42` for a repo whose checkout is not a T3 project yet.
 
 The script adds it and says `project` `added`. Step 4 finds the new project. The report ends `· project added`.
 
-**User:** `what would /kickoff-t3 do for issue 70?`
+**User:** `what would /run-in-t3 do for issue 70?`
 
 Do not run the script. Read #70's labels and answer from the table in `target.md`: the model, effort, and command it would pick, and why.

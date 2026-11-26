@@ -1,6 +1,6 @@
 interface:
-  display_name: "Kickoff T3"
+  display_name: "Run in T3"
   short_description: "Start /ship in a new T3 Code thread"
-  default_prompt: "$kickoff-t3"
+  default_prompt: "$run-in-t3"
 policy:
   allow_implicit_invocation: false

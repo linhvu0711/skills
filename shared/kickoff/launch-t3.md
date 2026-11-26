@@ -1,6 +1,6 @@
 # Launch a T3 thread
 
-Shared by every skill that starts a command in a new T3 Code thread. The caller holds a JSON line with `model`, `effort`, `path`, `thread_title`, and `message`, as kickoff-t3's kickoff script prints it. This file starts the thread from that line with T3's tools. A `stop:` line below ends the caller's run: nothing started.
+Shared by every skill that starts a command in a new T3 Code thread. The caller holds a JSON line with `model`, `effort`, `path`, `thread_title`, and `message`, as run-in-t3's kickoff script prints it. This file starts the thread from that line with T3's tools. A `stop:` line below ends the caller's run: nothing started.
 
 ## Steps
 

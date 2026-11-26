@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# decide.sh: work out what kickoff starts, for kickoff-t3 and the orchestrator's check.
+# decide.sh: work out what kickoff starts, for run-in-t3 and the orchestrator's check.
 #
 # Usage: decide.sh [--heading H] [--model M] [--effort E]
 #                  [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge]
