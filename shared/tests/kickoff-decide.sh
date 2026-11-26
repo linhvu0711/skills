@@ -1,5 +1,5 @@
 # kickoff-decide.sh: the cases for the shared core's kickoff/decide.sh, the
-# half of kickoff that both kickoff-herdr and kickoff-t3 run. The repo's
+# half of kickoff that kickoff-t3 and the orchestrator run. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -39,7 +39,7 @@ t_kd_json_line() {
   kd_run https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"#42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"label\":\"i42\",\"heading\":\"#42\",\"slash_command\":\"/ship\",\"message\":\"/ship #42\"}" "$out"
+  eq stdout "{\"number\":42,\"title\":\"Export orders\",\"form\":\"issue\",\"args\":\"#42\",\"command\":\"ship\",\"command_from\":\"default\",\"mode\":\"\",\"model\":\"opus\",\"model_from\":\"default\",\"effort\":\"high\",\"effort_from\":\"default\",\"reason\":\"size L\",\"base\":\"main\",\"path\":\"$T/dev/app\",\"heading\":\"#42\",\"slash_command\":\"/ship\",\"message\":\"/ship #42\"}" "$out"
 }
 
 t_kd_size_rows() {
@@ -117,7 +117,7 @@ t_kd_bad_size() {
   # Then
   eq exit 64 "$code"
   has stderr "stop: --size takes <n>=XS|S|M|L|XL, got: 42=huge" "$err"
-  has stderr "usage: decide.sh [--label L]" "$err"
+  has stderr "usage: decide.sh [--heading H]" "$err"
   eq stdout "" "$out"
 }
 
@@ -176,7 +176,7 @@ t_kd_stops_no_checkout() {
 # kd_line <command> <effort> <reason> [<args>]: the JSON line decide prints
 # for #42 under --command <command>, on model opus.
 kd_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","label":"i42","heading":"#42","slash_command":"/%s","message":"/%s %s"}' \
+  printf '{"number":42,"title":"Export orders","form":"issue","args":"%s","command":"%s","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"%s","effort_from":"default","reason":"%s","base":"main","path":"%s","heading":"#42","slash_command":"/%s","message":"/%s %s"}' \
     "${4:-#42}" "$1" "$2" "$3" "$T/dev/app" "$1" "$1" "${4:-#42}"
 }
 
@@ -207,7 +207,7 @@ t_kd_complete_task_row() {
   kd_run --command complete-task https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq stdout "$(printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"complete-task","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"command complete-task","base":"main","path":"%s","label":"i42","heading":"#42","slash_command":"/complete-task --ready","message":"/complete-task --ready #42"}' "$T/dev/app")" "$out"
+  eq stdout "$(printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"complete-task","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"command complete-task","base":"main","path":"%s","heading":"#42","slash_command":"/complete-task --ready","message":"/complete-task --ready #42"}' "$T/dev/app")" "$out"
 }
 
 t_kd_complete_task_not_task() {
@@ -385,29 +385,87 @@ t_kd_heading_forms() {
   # checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
   printf '{"headRefName":"feat/79-teams"}\n' > "$FAKE_GH/pr-view.json"
-  # When: a set of two, a set too long for one heading, on a PR, a named label
+  # When: a set of two, a set too long for one heading, on a PR, a named heading
   kd_run https://github.com/acme/app/issues/42 '#43'
   eq "set exit" 0 "$code"
-  eq "set" '#42 #43 i42-43' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
+  eq "set" '#42 #43' "$(jq -r .heading <<<"$out")"
   kd_run https://github.com/acme/app/issues/42 '#1001' '#1002' '#1003' '#1004' '#1005' '#1006'
   eq "long exit" 0 "$code"
   eq "long" '#42 #1001 #1002 #1003 #1004 +2' "$(jq -r .heading <<<"$out")"
   kd_run https://github.com/acme/app/issues/42 on https://github.com/acme/app/pull/80
   eq "on exit" 0 "$code"
-  eq "on" '#42 on #80 i42-on-80' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
-  kd_run --label exports https://github.com/acme/app/issues/42
+  eq "on" '#42 on #80' "$(jq -r .heading <<<"$out")"
+  kd_run --heading exports https://github.com/acme/app/issues/42
   eq "named exit" 0 "$code"
-  eq "named" 'exports exports' "$(jq -r '"\(.heading) \(.label)"' <<<"$out")"
+  eq "named" 'exports' "$(jq -r .heading <<<"$out")"
 }
 
-t_kd_label_lower_case() {
+t_kd_heading_as_given() {
   # Given: #42 size/S, one checkout of acme/app
   kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
   # When
-  kd_run --label Auth https://github.com/acme/app/issues/42
+  kd_run --heading Login-Fix https://github.com/acme/app/issues/42
   # Then
   eq exit 0 "$code"
-  eq "label heading" "auth Auth" "$(jq -r '"\(.label) \(.heading)"' <<<"$out")"
+  eq heading "Login-Fix" "$(jq -r .heading <<<"$out")"
+}
+
+t_kd_label_refused() {
+  # Given: #42 size/S, one checkout of acme/app
+  kd_setup '[{"name":"size/S"}]'; kd_clone "$T/dev/app"
+  # When
+  kd_run --label Login-Fix https://github.com/acme/app/issues/42
+  # Then
+  eq exit 64 "$code"
+  has stderr "stop: unexpected argument: --label" "$err"
+  has stderr "usage: decide.sh [--heading H]" "$err"
+  eq stdout "" "$out"
+}
+
+# kd_epic <call> <subIssues-json>: the fake gh's answer to its <call>th
+# `issue view`, the epic #70 "Order export" with these sub-issues.
+kd_epic() {
+  printf '{"number":70,"title":"Order export","labels":[],"subIssues":{"nodes":%s},"state":"OPEN"}\n' "$2" > "$FAKE_GH/issue-view.$1.json"
+}
+
+t_kd_run_all_ready() {
+  # Given: epic #70 with open #71 ready-to-build size/XS and #73 ready-to-build size/S
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"OPEN"},{"number":73,"state":"OPEN"}]'
+  kd_view 2 71 '[{"name":"ready-to-build"},{"name":"size/XS"}]'
+  kd_view 3 73 '[{"name":"ready-to-build"},{"name":"size/S"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70 '#71' '#73'
+  # Then
+  eq exit 0 "$code"
+  eq "row message heading" "opus medium ready-to-build of 2 tickets|/ship #70 #71 #73|#71 #73" "$(jq -r '"\(.model) \(.effort) \(.reason)|\(.message)|\(.heading)"' <<<"$out")"
+}
+
+t_kd_epic_open_not_manual() {
+  # Given: epic #70 with #71 open size/S, #72 closed, #74 open manual
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"OPEN"},{"number":72,"state":"CLOSED"},{"number":74,"state":"OPEN"}]'
+  kd_view 2 71 '[{"name":"size/S"}]'
+  kd_view 3 74 '[{"name":"manual"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70
+  # Then
+  eq exit 0 "$code"
+  eq "row message" "opus medium size S|/ship #70" "$(jq -r '"\(.model) \(.effort) \(.reason)|\(.message)"' <<<"$out")"
+  local looked="" n
+  while IFS=' ' read -r _ _ n _; do looked="${looked:+$looked }$n"; done < "$FAKE_GH/issue-view.args"
+  eq "issues looked up" "70 71 74" "$looked"
+}
+
+t_kd_epic_none_open() {
+  # Given: epic #70 whose only sub-issue #71 is closed
+  kd_setup '[]'; kd_clone "$T/dev/app"
+  kd_epic 1 '[{"number":71,"state":"CLOSED"}]'
+  # When
+  kd_run https://github.com/acme/app/issues/70
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #70 has no open ticket for an agent" "$err"
 }
 
 t_kd_on_one_issue() {
@@ -457,9 +515,13 @@ cases=(
   "--mode merge puts the ship mode in the slash command|t_kd_slash_command"
   "the message names the target by number|t_kd_message_numbers"
   "the message keeps URLs when gh in the checkout names another repo|t_kd_message_keeps_urls"
-  "the heading is # and the numbers, the label i and the numbers|t_kd_heading_forms"
+  "the heading is # and the numbers|t_kd_heading_forms"
+  "a run of all ready-to-build tickets takes the ready-to-build row|t_kd_run_all_ready"
+  "an epic counts its open tickets that are not manual|t_kd_epic_open_not_manual"
+  "an epic with no open ticket stops|t_kd_epic_none_open"
   "on takes one issue|t_kd_on_one_issue"
-  "a named label is made lower case|t_kd_label_lower_case"
+  "a named heading is kept as typed|t_kd_heading_as_given"
+  "--label is refused|t_kd_label_refused"
   "each size takes its row|t_kd_size_rows"
   "a size label wins over a guess|t_kd_label_beats_guess"
   "a guessed size counts|t_kd_guessed_size"

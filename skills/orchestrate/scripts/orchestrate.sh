@@ -666,7 +666,7 @@ observe() {
     fi
     if [ -n "$line" ]; then
       starts="$(jq -c --argjson l "$line" --arg st "$st" --arg r "$r" --arg label "$(label_of "$r")" \
-        '. + [$l + {ref: $r, label: $label, stage: $st, thread_title: "\($l.heading) \($l.title)"}]' <<<"$starts")"
+        '. + [$l + {ref: $r, stage: $st, label: $label, thread_title: "\($l.heading) \($l.title)"}]' <<<"$starts")"
       claims="$(jq -c --arg r "$r" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [{ref: $r, repo: ($r | split("#")[0]), path: $l.path, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"

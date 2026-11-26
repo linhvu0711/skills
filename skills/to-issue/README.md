@@ -40,7 +40,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - Puts doc text that a [grill](../grill/) agreed on (a glossary entry, an ADR) under `## Docs to write`, so it lands in the PR that ships the code.
 - Sends XL work to [to-epic](../to-epic/).
 - Sends a loose idea, or a bug with no agreed fix, to [capture](../capture/).
-- Its tickets go to [plan-up](../plan-up/), [ship](../ship/), and [kickoff-herdr](../kickoff-herdr/). [handoff](../handoff/) reads the size labels through the same script.
+- Its tickets go to [plan-up](../plan-up/) and [ship](../ship/). [handoff](../handoff/) reads the size labels through the same script.
 
 ## Credits
 
