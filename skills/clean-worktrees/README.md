@@ -1,10 +1,10 @@
-# prune-worktrees
+# clean-worktrees
 
 Removes the git worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays.
 
 ## Use it when
 
-A PR merged and its worktree is still on disk. Type `/prune-worktrees` in the repo (`$prune-worktrees` in Codex). `/prune-worktrees all` also goes through every repo with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`, in `<owner>/<repo>/<branch>` folders or the older `<repo>/<branch>`. [ship](../ship/) names it in its last line, `After merge: /prune-worktrees`. It only runs when you call it.
+A PR merged and its worktree is still on disk. Type `/clean-worktrees` in the repo (`$clean-worktrees` in Codex). `/clean-worktrees all` also goes through every repo with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`, in `<owner>/<repo>/<branch>` folders or the older `<repo>/<branch>`. [ship](../ship/) names it in its last line, `After merge: /clean-worktrees`. It only runs when you call it.
 
 ## What you get
 
@@ -27,7 +27,7 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 
 ## Fits with
 
-- [ship](../ship/) ends with `After merge: /prune-worktrees` for the worktree it built in, and runs it after its merges in ship mode `merge`.
+- [ship](../ship/) ends with `After merge: /clean-worktrees` for the worktree it built in, and runs it after its merges in ship mode `merge`.
 - It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list and GitHub repo through it, so an origin set through a git `insteadOf` alias, such as `gh:acme/app`, counts as GitHub.
 - Nothing calls this skill; you run it.
 

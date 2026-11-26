@@ -1,10 +1,10 @@
 ---
-name: prune-worktrees
-description: "Remove the git worktrees that are safe to prune (clean, PR merged at its last commit) with their branches, and list every other worktree with the reason it stays. Use when the user types /prune-worktrees in Claude Code or $prune-worktrees in Codex, or says 'prune worktrees', 'clean up worktrees', 'remove merged worktrees'. /ship's last line names it after a merge, and /ship in ship mode merge runs it after its own."
+name: clean-worktrees
+description: "Remove the git worktrees that are safe to prune (clean, PR merged at its last commit) with their branches, and list every other worktree with the reason it stays. Use when the user types /clean-worktrees in Claude Code or $clean-worktrees in Codex, or says 'prune worktrees', 'clean up worktrees', 'remove merged worktrees'. /ship's last line names it after a merge, and /ship in ship mode merge runs it after its own."
 disable-model-invocation: true
 ---
 
-# prune-worktrees
+# clean-worktrees
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
@@ -24,7 +24,7 @@ A worktree is **safe to prune** when it is clean, its PR is merged on GitHub, it
    bash scripts/prune-worktrees.sh
    ```
 
-   `/prune-worktrees all`: add `all`. It also goes through every repo with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`, in `<owner>/<repo>/<branch>` folders or the older `<repo>/<branch>`.
+   `/clean-worktrees all`: add `all`. It also goes through every repo with a worktree under `${WORKTREES_ROOT:-~/development/worktrees}`, in `<owner>/<repo>/<branch>` folders or the older `<repo>/<branch>`.
 
 2. Exit 0: reply with its stdout, verbatim, and nothing more.
 
@@ -34,7 +34,7 @@ A worktree is **safe to prune** when it is clean, its PR is merged on GitHub, it
 
 ## Examples
 
-**User:** `/prune-worktrees` after two PRs merged; a third PR is open.
+**User:** `/clean-worktrees` after two PRs merged; a third PR is open.
 
 ```
 kept ~/development/worktrees/acme/app/feat-7-search (412M): PR #159 open

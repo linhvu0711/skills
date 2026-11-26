@@ -1,6 +1,6 @@
 interface:
-  display_name: "Prune Worktrees"
+  display_name: "Clean Worktrees"
   short_description: "Remove worktrees that are safe to prune, list the rest with a reason"
-  default_prompt: "$prune-worktrees"
+  default_prompt: "$clean-worktrees"
 policy:
   allow_implicit_invocation: false

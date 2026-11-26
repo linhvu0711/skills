@@ -1042,7 +1042,7 @@ cmd_resume() {
 
 # ---------- sync ----------
 # sync: the default branch of each main checkout the newest run worked in,
-# fast-forwarded to origin's, one line per repo, led by the repo's name, so prune-worktrees judges, and the retro reads, the merged
+# fast-forwarded to origin's, one line per repo, led by the repo's name, so clean-worktrees judges, and the retro reads, the merged
 # work. It only fast-forwards: the checkout is the user's, so their branch,
 # commits, and edits stay. A branch that cannot move exits 0 with a
 # `not updated` line, since the done run goes on to prune and retro anyway.

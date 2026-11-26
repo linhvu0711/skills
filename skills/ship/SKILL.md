@@ -52,7 +52,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
 1. **Plan.** A plan this chat made (§ No issue): skip this step. Else read `../plan-up/SKILL.md` and follow its steps 1 to 9 whole: base copy, issue, gate, facts, forks, plan, done rule, check, page. Its stop points are yours: a base that cannot be fetched, a gate that fails, a `manual` ticket, a claimed ticket you do not build anyway, a stale step, and every big fork (one question per message, wait), the plan check's questions included. Step 9 changes: run `build_page.py` on the `.md` and fix its problem lines on stderr, as plan-up says, but serve, open, publish, print, and wait for nothing yet; step 2 does that.
 
-   A worktree or branch an earlier ticket left goes only through `bash ../prune-worktrees/scripts/prune-worktrees.sh`, run from the session's folder. It removes a clean worktree whose PR merged at its last commit, and also one with no PR whose tip is in the default branch, as a worktree another ticket just made is. So run it only when no other ticket is building in this repo; when you cannot tell, leave the old worktree for step 8 or the end of the run. One it keeps stays, with its reason in the report. Never remove one by hand, with `git worktree remove` or `git branch -D`.
+   A worktree or branch an earlier ticket left goes only through `bash ../clean-worktrees/scripts/prune-worktrees.sh`, run from the session's folder. It removes a clean worktree whose PR merged at its last commit, and also one with no PR whose tip is in the default branch, as a worktree another ticket just made is. So run it only when no other ticket is building in this repo; when you cannot tell, leave the old worktree for step 8 or the end of the run. One it keeps stays, with its reason in the report. Never remove one by hand, with `git worktree remove` or `git branch -D`.
 
    Done when the plan `.md` exists, `build_page.py` printed no problem line, and you hold its path.
 
@@ -113,7 +113,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
    After the last merge, from the session's folder:
 
    ```bash
-   bash ../prune-worktrees/scripts/prune-worktrees.sh
+   bash ../clean-worktrees/scripts/prune-worktrees.sh
    ```
 
    It removes each worktree whose PR merged at its last commit, with its branch, and keeps the rest with the reason. `stop:` on stderr: show it; nothing was removed, and the merges stand. Hold its lines.
@@ -124,7 +124,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
    Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
    Worktree: ~/development/worktrees/acme/app/feat-42-login
-   After merge: /prune-worktrees
+   After merge: /clean-worktrees
    Ship mode: ready · small fix, no schema or API, no risk in the plan
    READY https://github.com/acme/app/pull/43
    ```
@@ -139,7 +139,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
    Ship mode `merge`, three changes:
    - the last line is the `MERGED` line `merge.sh` printed, as in `MERGED https://github.com/acme/app/pull/43 merge 4f2a1b0`;
-   - the `After merge: /prune-worktrees` line is the lines `prune-worktrees.sh` printed;
+   - the `After merge: /clean-worktrees` line is the lines `prune-worktrees.sh` printed;
    - a PR that was not merged ends `NOT MERGED <url>: <why>`, or keeps its `READY` line when the re-check held it back. Nothing was merged: no prune lines.
 
    Ship mode `review` or `ready`: the merge is the user's.
