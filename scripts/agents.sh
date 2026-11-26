@@ -175,6 +175,15 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
     if (!("checker" in fm_nr)) problem(fm_end, "no checker line")
     else if (fm["checker"] != "yes" && fm["checker"] != "no") problem(fm_nr["checker"], "checker is yes or no, not " fm["checker"])
   }
+  # try_problems(h): the problems of the agent's try list under main harness
+  # h, at its tier line: no try, or a try with no model its company takes.
+  # check.sh checks the whole tier file; this keeps render, tries, and start
+  # from passing on a file it has not checked yet.
+  function try_problems(h,  n, i, w) {
+    n = tries(h, fm["tier"], fm["checker"])
+    if (n == 0) problem(fm_nr["tier"], "no try for " h " at " fm["tier"] " " fm["checker"])
+    for (i = 1; i <= n; i++) { split(tries_out[i], w, " ")
+      if (!model_ok(w[1], w[2]) || !effort_ok(w[1], w[3])) problem(fm_nr["tier"], "tier " fm["tier"] " for " w[1] ": " (w[2] == "" ? "no model" : tier_model[fm["tier"], w[1]]) " is no model it can run") } }
   # toml(s, body): s as the inside of a TOML basic string, or of a multi-line
   # one when body is set.
   function toml(s, body,  i, c, o) {
@@ -211,6 +220,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
     if (mode == "tools") { print claude_tools(tools); exit 0 }
     read_tiers(); agent_problems()
     if (mode == "check") { for (i = 1; i <= np; i++) print probs[i]; exit 0 }
+    if (!np) try_problems(harness)
     if (np) { print probs[1] > "/dev/stderr"; exit 1 }
     n = tries(harness, fm["tier"], fm["checker"])
     if (mode == "tries") { for (i = 1; i <= n; i++) print tries_out[i]; exit 0 }

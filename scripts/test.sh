@@ -337,6 +337,18 @@ t_link_leaves_other_codex_agent() {
   eq "own file" 'name = "mine"' "$(cat "$T/codex/helper.toml")"
 }
 
+t_link_keeps_agent_on_tier_model_none() {
+  # Given: an agent linked, then its tier-1 Claude model set to none
+  linked demo; agent demo helper; link_sh
+  awk -F '\t' -v OFS='\t' 'NR == 41 { $2 = "none" } { print }' shared/model-tiers.md > "$T/tiers"; mv "$T/tiers" shared/model-tiers.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has stderr "skip: skills/demo/agents/helper.md:5: tier 1 for claude: none is no model it can run" "$err"
+  has "cagents/helper.md" "model: claude-haiku-5-5" "$(cat "$T/cagents/helper.md")"
+}
+
 t_link_skips_agent_without_tier() {
   # Given: an agent file with no tier line
   linked demo; agent demo helper
@@ -1738,6 +1750,7 @@ cases=(
   "link.sh runs from outside the repo|t_link_runs_from_outside_repo"
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
   "link skips an agent file with no tier line|t_link_skips_agent_without_tier"
+  "link keeps an agent whose tier model is none|t_link_keeps_agent_on_tier_model_none"
   "link removes the forms of a renamed skill agent|t_link_removes_renamed_agent_forms"
   "link leaves an agent file it did not make|t_link_leaves_other_agent"
   "link adds the gate to claude settings and keeps the rest|t_link_adds_gate_to_claude_settings"
