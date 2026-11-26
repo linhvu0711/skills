@@ -57,7 +57,7 @@ embed_rows | while IFS='|' read -r lib package _repo ref vfile; do
 
     readme="none"
     if [[ -f README.md ]]; then
-      readme="$(sed -n '/embed-source:start/,/embed-source:end/p' README.md | grep -oE "^\| *$lib *\| *[0-9][^ |]*" | sed -E 's/.*\| *//' | head -1)"
+      readme="$(sed -n '/embed-source:start/,/embed-source:end/p' README.md | grep -oE "^\| *$lib *\| *[0-9][^ |]*" | sed -E 's/.*\| *//' | head -1 || true)"
       readme="${readme:-missing}"
     fi
 
