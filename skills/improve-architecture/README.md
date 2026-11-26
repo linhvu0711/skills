@@ -45,5 +45,3 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 ## Credits
 
 Adapted from the `improve-codebase-architecture` and `codebase-design` skills in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. `codebase-design.md` and `references/deepening.md` are copied as they are, with only their links to each other changed; `codebase-design.md` lives in the shared core, so plan-up reads it too.
-
-The caller-first brief, the scoring points named before the designs come back, and the rule to reframe a wild split instead of averaging it take ideas from the `architect` and `arena` skills in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
