@@ -1241,6 +1241,27 @@ t_flags_claude_try_list_ending_elsewhere() {
   has stderr "shared/model-tiers.md:55: 2 no for claude: the last try is devin, not claude" "$err"
 }
 
+t_flags_try_order_row_odd_key() {
+  # Given: a good agent, and a try-order key with two spaces
+  agent_md "$full_agent"
+  # When
+  tier_line 55 '2  no\tdevin, claude\tdevin, codex\tdevin, antigravity'
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/model-tiers.md:55: row 2  no is not <tier> <yes|no>" "$err"
+}
+
+t_flags_missing_try_order_row() {
+  # Given: a good agent, and the try-order row 2 no taken out
+  agent_md "$full_agent"
+  sed 55d shared/model-tiers.md > "$T/tiers"; mv "$T/tiers" shared/model-tiers.md; git add -A; git commit -qm tiers
+  # When
+  run bash scripts/check.sh
+  # Then
+  eq exit 1 "$code"
+  has stderr "shared/model-tiers.md:52: no try order row 2 no" "$err"
+}
+
 t_passes_agent_with_all_fields() {
   # Given: a full agent file and a Codex openai.yaml beside it
   agent_md "$full_agent"
@@ -1834,6 +1855,8 @@ cases=(
   "flags a tier row in a bad format|t_flags_tier_row_bad_format"
   "flags a try cell with no model at its tier|t_flags_try_cell_no_model_at_tier"
   "flags a Claude try list that ends on another company|t_flags_claude_try_list_ending_elsewhere"
+  "flags a try-order row whose key has two spaces|t_flags_try_order_row_odd_key"
+  "flags a missing try-order row|t_flags_missing_try_order_row"
   "passes an agent file with every field|t_passes_agent_with_all_fields"
   "flags a shared agent with no tier line|t_flags_shared_agent_no_tier"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"

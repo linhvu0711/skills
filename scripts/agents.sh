@@ -95,15 +95,15 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
   function problem(n, s) { probs[++np] = n ": " s }
   # read_tiers: the three tables of the tier file. getline keeps stdin for
   # frontmatter.awk. tt_rows[t] counts the rows of table t, whose header is
-  # tt_head[t, i] and whose row r is tt_cell[t, r, i], of tt_n[t, r] cells at
-  # line tt_nr[t, r].
+  # tt_head[t, i], at line tt_hnr[t], and whose row r is tt_cell[t, r, i], of
+  # tt_n[t, r] cells at line tt_nr[t, r].
   function read_tiers(  line, ln, n, c, k, t, in_t, r) {
     while ((getline line < tiers) > 0) { ln++
       if (line ~ /^```tsv[ \t]*$/) { in_t = 1; t = ""; continue }
       if (in_t && line ~ /^```[ \t]*$/) { in_t = 0; continue }
       if (!in_t) continue
       k = split(line, c, "\t")
-      if (t == "") { t = c[1]; tt_cols[t] = k; for (n = 1; n <= k; n++) tt_head[t, n] = c[n]; continue }
+      if (t == "") { t = c[1]; tt_cols[t] = k; tt_hnr[t] = ln; for (n = 1; n <= k; n++) tt_head[t, n] = c[n]; continue }
       r = ++tt_rows[t]; tt_n[t, r] = k; tt_nr[t, r] = ln
       for (n = 1; n <= k; n++) tt_cell[t, r, n] = c[n]
     }
@@ -143,16 +143,25 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
         else if (n < 2) problem(tt_nr["tier", r], at "no effort")
         else if (!effort_ok(k, w[2])) problem(tt_nr["tier", r], at w[2] " is not an effort " k " takes")
         else if (n > 2) problem(tt_nr["tier", r], at "one effort, then nothing") } }
+    # tries looks a row up by its exact key, so a key in another form, or a
+    # row twice or not at all, would give an agent no try.
     for (r = 1; r <= tt_rows["row"]; r++) { if (bad["row", r]) continue
       row = tt_cell["row", r, 1]; split(row, rw, " ")
+      if (row !~ /^[^ ]+ (yes|no)$/ || !(rw[1] in known_tier)) { problem(tt_nr["row", r], "row " row " is not <tier> <yes|no>"); continue }
+      if (row in row_seen) { problem(tt_nr["row", r], "row " row " twice"); continue }
+      row_seen[row] = 1
       for (i = 2; i <= tt_cols["row"]; i++) {
         h = tt_head["row", i]; at = row " for " h ": "
         n = split(tt_cell["row", r, i], cs, /, */)
+        if (n == 0) { problem(tt_nr["row", r], at "no try"); continue }
         for (k = 1; k <= n; k++)
           if (!(cs[k] in company)) problem(tt_nr["row", r], at "unknown company: " cs[k])
           else if (tier_model[rw[1], cs[k]] == "none" || tier_model[rw[1], cs[k]] == "") problem(tt_nr["row", r], at cs[k] " has no model at tier " rw[1])
         last = cs[n]
         if ((h == "claude" || h == "codex") && last != h) problem(tt_nr["row", r], at "the last try is " last ", not " h) } }
+    if ("row" in tt_cols) for (t in known_tier) for (i = 1; i <= 2; i++) {
+      row = t " " (i == 1 ? "no" : "yes")
+      if (!(row in row_seen)) problem(tt_hnr["row"], "no try order row " row) }
     for (r = 1; r <= tt_rows["company"]; r++) { if (bad["company", r]) continue
       v = tt_cell["company", r, 2]
       if (v != "yes" && v != "no") problem(tt_nr["company", r], "in use for " tt_cell["company", r, 1] " is yes or no, not " v) }
