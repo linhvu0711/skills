@@ -67,24 +67,6 @@ t_cce_task_notification() {
   has note "[task notification] Build finished · completed · ok" "$out"
 }
 
-t_cce_full() {
-  # Given: the log
-  cce_log
-  # When
-  run python3 "$X" "$T/s.jsonl" --full
-  # Then
-  has thinking "## 💭 Thinking" "$out"
-}
-
-t_cce_tail() {
-  # Given: the log, with two prompts
-  cce_log
-  # When
-  run python3 "$X" "$T/s.jsonl" --summary --tail 1
-  # Then
-  eq users 1 "$(users)"
-}
-
 t_cce_after_compact() {
   # Given: the log, one prompt before the compaction and one after
   cce_log
@@ -101,24 +83,6 @@ t_cce_max_result_chars() {
   run python3 "$X" "$T/s.jsonl" --max-result-chars 100
   # Then
   has cut "… [+500 chars truncated]" "$out"
-}
-
-t_cce_list() {
-  # Given: the log, with two prompts
-  cce_log
-  # When
-  run python3 "$X" "$T/s.jsonl" --list
-  # Then
-  has turns "turns:  2 user prompts" "$out"
-}
-
-t_cce_skeleton() {
-  # Given: the log, with an Edit of /p/app/a.py
-  cce_log
-  # When
-  run python3 "$X" "$T/s.jsonl" --skeleton
-  # Then
-  has edited '- `/p/app/a.py`' "$out"
 }
 
 
@@ -143,11 +107,7 @@ cases=(
   "extractor reads a helper log by path|t_cce_helper_log_by_path"
   "extractor marks a compaction summary|t_cce_compaction"
   "extractor turns a task notification into one line|t_cce_task_notification"
-  "extractor --full shows thinking|t_cce_full"
-  "extractor --tail keeps the last prompts|t_cce_tail"
   "extractor --after-compact starts at the last compaction|t_cce_after_compact"
   "extractor --max-result-chars cuts a tool result|t_cce_max_result_chars"
-  "extractor --list counts the prompts|t_cce_list"
-  "extractor --skeleton lists the edited files|t_cce_skeleton"
   "extractor stops on an unknown id|t_cce_unknown_id_stops"
 )

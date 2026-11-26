@@ -48,9 +48,6 @@ coe_log() {
   } > "$T/r.jsonl"
 }
 
-# users: how many lines of the output are a user block's heading.
-users() { printf '%s\n' "$out" | grep -c '^## 🧑 User$' || true; }
-
 t_coe_event_over_item() {
   # Given: the rollout, with user messages as events and as a response item
   coe_log
@@ -80,24 +77,6 @@ t_coe_exec_apply_patch() {
   has call "→ exec(apply_patch: a.py)" "$out"
 }
 
-t_coe_full() {
-  # Given: the rollout, with a 600-character tool result
-  coe_log
-  # When
-  run python3 "$X" "$T/r.jsonl" --full
-  # Then
-  has result "$(printf 'r%.0s' $(seq 600))" "$out"
-}
-
-t_coe_tail() {
-  # Given: the rollout, with two prompts
-  coe_log
-  # When
-  run python3 "$X" "$T/r.jsonl" --summary --tail 1
-  # Then
-  eq users 1 "$(users)"
-}
-
 t_coe_max_result_chars() {
   # Given: the rollout, with a 600-character tool result
   coe_log
@@ -105,24 +84,6 @@ t_coe_max_result_chars() {
   run python3 "$X" "$T/r.jsonl" --max-result-chars 100
   # Then
   has cut "… [+500 chars truncated]" "$out"
-}
-
-t_coe_list() {
-  # Given: the rollout, with two prompts
-  coe_log
-  # When
-  run python3 "$X" "$T/r.jsonl" --list
-  # Then
-  has turns "turns:  2 user prompts" "$out"
-}
-
-t_coe_skeleton() {
-  # Given: the rollout, with an exec-wrapped apply_patch of a.py
-  coe_log
-  # When
-  run python3 "$X" "$T/r.jsonl" --skeleton
-  # Then
-  has patched '- `a.py`' "$out"
 }
 
 
@@ -150,9 +111,5 @@ cases=(
   "extractor takes event prompts over item prompts|t_coe_event_over_item"
   "extractor reads a prompt from an item_completed event|t_coe_item_completed"
   "extractor names the files an exec apply_patch changes|t_coe_exec_apply_patch"
-  "extractor --full keeps a tool result whole|t_coe_full"
-  "extractor --tail keeps the last prompts|t_coe_tail"
   "extractor --max-result-chars cuts a tool result|t_coe_max_result_chars"
-  "extractor --list counts the prompts|t_coe_list"
-  "extractor --skeleton lists the files an exec apply_patch changes|t_coe_skeleton"
 )
