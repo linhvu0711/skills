@@ -112,6 +112,76 @@ t_es_status_no_jq() {
   eq stderr "stop: jq is not installed: status.sh reads package.json versions with it" "$err"
 }
 
+t_es_status_idiom_no_header() {
+  # Given: zod up to date, and an idiom file with no version header
+  es_project
+  mkdir -p "$P/docs/idioms"
+  printf '# no header\n' > "$P/docs/idioms/zod-a.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=3.1.0 drift=yes
+  patterns: docs/idioms/zod-a.md:none " "$out"
+}
+
+t_es_status_stale_idiom() {
+  # Given: zod up to date, one idiom file at 3.1.0 and one still at 3.0.0
+  es_project
+  mkdir -p "$P/docs/idioms"
+  printf '<!-- embed-source: zod@3.1.0 -->\n' > "$P/docs/idioms/zod-a.md"
+  printf '<!-- embed-source: zod@3.0.0 -->\n' > "$P/docs/idioms/zod-b.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=3.1.0 drift=yes
+  patterns: docs/idioms/zod-a.md:3.1.0 docs/idioms/zod-b.md:3.0.0 " "$out"
+}
+
+t_es_status_current_idiom() {
+  # Given: zod up to date, and one idiom file at 3.1.0
+  es_project
+  mkdir -p "$P/docs/idioms"
+  printf '<!-- embed-source: zod@3.1.0 -->\n' > "$P/docs/idioms/zod-a.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=3.1.0 drift=no
+  patterns: docs/idioms/zod-a.md:3.1.0 " "$out"
+}
+
+t_es_status_readme_missing_row() {
+  # Given: zod up to date, and a README with no embed-source section
+  es_project
+  printf '# x\n' > "$P/README.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=missing drift=yes" "$out"
+}
+
+t_es_status_two_libs() {
+  # Given: a second manifest row for effect, and a README with no
+  # embed-source section, so zod, the first row, has no README row
+  es_project
+  printf '| effect | effect | https://github.com/Effect-TS/effect.git | v1.0.0 | package.json |\n' >> "$P/repos/README.md"
+  printf '# x\n' > "$P/README.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=missing drift=yes
+lib=effect prefix=repos/effect synced=no embedded=missing installed=absent ref=v1.0.0 readme=missing drift=yes" "$out"
+}
+
+t_es_status_stale_readme() {
+  # Given: zod up to date, but the README section still names 3.0.0
+  es_project
+  printf '<!-- embed-source:start -->\n| zod | 3.0.0 | x |\n<!-- embed-source:end -->\n' > "$P/README.md"
+  # When
+  run bash "$ES_STATUS" "$P"
+  # Then
+  eq stdout "lib=zod prefix=repos/zod synced=yes embedded=3.1.0 installed=3.1.0 ref=v3.1.0 readme=3.0.0 drift=yes" "$out"
+}
+
 cases=(
   "embed-source status: stops when jq is missing|t_es_status_no_jq"
   "embed-source status: reads a dependency's version from package.json|t_es_status_package_json"
@@ -121,4 +191,10 @@ cases=(
   "embed-source status: a missing marker says synced=no|t_es_status_missing_marker"
   "embed-source status: a missing checkout says embedded=missing|t_es_status_missing_checkout"
   "embed-source status: reads the marker name the sync script defines|t_es_status_reads_defined_marker"
+  "embed-source status: an idiom file with no header says none and drift=yes|t_es_status_idiom_no_header"
+  "embed-source status: a stale idiom file says drift=yes|t_es_status_stale_idiom"
+  "embed-source status: a current idiom file says drift=no|t_es_status_current_idiom"
+  "embed-source status: a README with no row says readme=missing|t_es_status_readme_missing_row"
+  "embed-source status: a missing README row skips no later library|t_es_status_two_libs"
+  "embed-source status: a stale README version says drift=yes|t_es_status_stale_readme"
 )

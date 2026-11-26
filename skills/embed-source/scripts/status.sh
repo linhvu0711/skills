@@ -51,13 +51,13 @@ embed_rows | while IFS='|' read -r lib package _repo ref vfile; do
     patterns=""
     for f in docs/idioms/"$lib"-*.md; do
       [[ -f "$f" ]] || continue
-      v="$(grep -oE 'embed-source: *[^ ]+@[0-9][^ >]*' "$f" | head -1 | sed -E 's/.*@//')"
+      v="$(grep -oE 'embed-source: *[^ ]+@[0-9][^ >]*' "$f" | head -1 | sed -E 's/.*@//' || true)"
       patterns+="${f}:${v:-none} "
     done
 
     readme="none"
     if [[ -f README.md ]]; then
-      readme="$(sed -n '/embed-source:start/,/embed-source:end/p' README.md | grep -oE "^\| *$lib *\| *[0-9][^ |]*" | sed -E 's/.*\| *//' | head -1)"
+      readme="$(sed -n '/embed-source:start/,/embed-source:end/p' README.md | grep -oE "^\| *$lib *\| *[0-9][^ |]*" | sed -E 's/.*\| *//' | head -1 || true)"
       readme="${readme:-missing}"
     fi
 
