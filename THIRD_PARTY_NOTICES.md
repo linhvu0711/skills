@@ -137,7 +137,7 @@ SOFTWARE.
 | `shared/codebase-design.md` | `skills/engineering/codebase-design` | copy (its link points at improve-architecture's `references/deepening.md`) |
 | `skills/triage` | `skills/engineering/diagnosing-bugs` | heavy adaptation |
 | `skills/discover-path` | `skills/engineering/wayfinder` | heavy adaptation |
-| `skills/to-epic` | `skills/engineering/to-tickets` | heavy adaptation |
+| `skills/file-epic` | `skills/engineering/to-tickets` | heavy adaptation |
 | `shared/review/general-rules.md` | `skills/engineering/code-review` | heavy adaptation |
 | `skills/retro` | `skills/engineering/retro` | heavy adaptation |
 

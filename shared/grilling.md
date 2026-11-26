@@ -58,14 +58,14 @@ Most of the tree comes from the work. A few branches are missed by reflex, and a
 | The done list: one observable outcome per line | `file-issue` Done when |
 | The five unhappy states for each user action, per `issue-rules.md` § Unhappy paths. Each one settled, or named as out | `file-issue` Done when and Scope Out |
 | What is near but out | `file-issue` Scope Out |
-| Files, seams, schema or API change, migrations, packages touched | `file-issue` size; `to-epic` cutting |
-| For work over one ticket: what gates what | `to-epic` phases and edges |
+| Files, seams, schema or API change, migrations, packages touched | `file-issue` size; `file-epic` cutting |
+| For work over one ticket: what gates what | `file-epic` phases and edges |
 | Terms | `CONTEXT.md`, per `domain-modeling.md` |
 
 Bugs and slow things are not grilled from scratch. `/triage` finds the cause first and says whether a grill is needed. When it is, the tree starts from the open decision it named.
 
 ## Done
 
-The session is done when the frontier is empty, every branch of the design tree visited, nothing left silently assumed, and every row above holds for each ticket-sized piece of the work. That last test is the `file-issue` readiness gate and the `to-epic` facts step; when it holds, those skills do not fail. Ask the user to confirm you have reached a shared understanding, then stop. Act on the plan only after that confirmation.
+The session is done when the frontier is empty, every branch of the design tree visited, nothing left silently assumed, and every row above holds for each ticket-sized piece of the work. That last test is the `file-issue` readiness gate and the `file-epic` facts step; when it holds, those skills do not fail. Ask the user to confirm you have reached a shared understanding, then stop. Act on the plan only after that confirmation.
 
 When the frontier keeps growing and the work will not settle in this session, say `This needs a map. Run /discover-path.` and stop. The user decides; grill only points.

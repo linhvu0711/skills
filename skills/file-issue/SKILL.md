@@ -15,7 +15,7 @@ Read `../../shared/issue-rules.md` first. It holds the gate, types, sizes, label
 
 2. **Repo convention.** Load it, or learn it once. Done when `style`, `size` labels, and (only if the user named a priority) the priority label are known.
 
-3. **Type and size.** Pick the type from the table. Size from the facts table. When a size fact is unknown, run the one lookup round, then decide. When the ticket looks XS or S, the same round also fetches the lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so Steps can be written. XL: say which facts push it over the ceiling and that `to-epic` is the tool for it, and stop. Nothing is created. `task`: no size, no XL check. The lookup round goes to the platform's docs instead, per the rules file § Lookup, so Steps can be written.
+3. **Type and size.** Pick the type from the table. Size from the facts table. When a size fact is unknown, run the one lookup round, then decide. When the ticket looks XS or S, the same round also fetches the lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so Steps can be written. XL: say which facts push it over the ceiling and that `file-epic` is the tool for it, and stop. Nothing is created. `task`: no size, no XL check. The lookup round goes to the platform's docs instead, per the rules file § Lookup, so Steps can be written.
 
 4. **Duplicate check.** Two searches, open then closed, in the issue's repo, per the rules file § Duplicates and seeds. Same open work, not a seed: show it, stop. Origin found: remember its number, and whether it is a bug, a seed, or a map. A closed match goes on the Related line.
 
@@ -63,4 +63,4 @@ Type `task`. Title `task: create the X developer app for sign-in`. Label `manual
 
 **User:** `/file-issue` for "move all services to the new config loader".
 
-Lookup counts 41 files across 6 packages. Size is XL. Reply names the count and the packages, and says the work needs `to-epic`.
+Lookup counts 41 files across 6 packages. Size is XL. Reply names the count and the packages, and says the work needs `file-epic`.

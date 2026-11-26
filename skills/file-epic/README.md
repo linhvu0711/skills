@@ -1,10 +1,10 @@
-# to-epic
+# file-epic
 
 Cuts a large piece of work into a phased GitHub epic: one parent issue, native sub-issues, and native blocked-by edges. You approve the breakdown in chat before anything is created.
 
 ## Use it when
 
-The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/to-epic` in the same chat (`$to-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
+The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/file-epic` in the same chat (`$file-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
 
 ## What you get
 

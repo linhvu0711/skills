@@ -77,7 +77,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 - Starts each thread the way [kickoff-t3](../kickoff-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/kickoff/launch-t3.md`, start the thread in the permission mode of this chat. Run it from a chat in full access, so the threads' helpers in Antigravity run without asking you at each command.
 - Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
-- [capture](../capture/) makes the seeds and bugs it starts from; [to-epic](../to-epic/) makes the epics.
+- [capture](../capture/) makes the seeds and bugs it starts from; [file-epic](../file-epic/) makes the epics.
 - When a run is done, unless you took issues out of it, it starts [retro](../retro/) on the run, which suggests changes to the repo's agent setup from what the run's sessions and PRs show.
 
 ## Tests

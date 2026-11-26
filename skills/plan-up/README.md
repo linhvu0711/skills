@@ -84,7 +84,7 @@ Each step now reads only the section of the plan guide it needs, named by its he
 
 ## Fits with
 
-- Takes tickets from [file-issue](../file-issue/) and runs from [to-epic](../to-epic/).
+- Takes tickets from [file-issue](../file-issue/) and runs from [file-epic](../file-epic/).
 - Sends a failed gate to [grill](../grill/) or [triage](../triage/).
 - Its plan goes to [build-and-prove](../build-and-prove/), which builds it on your machine with proofbox, or to [handoff](../handoff/), which sends it to Devin or Cursor. [ship](../ship/) picks one.
 - [ship](../ship/) runs it as its first step: with its page and a wait in ship mode `review`, with no wait in `ready` or `merge`.

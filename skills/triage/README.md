@@ -42,7 +42,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 - Calls [grill](../grill/) when the fix needs a decision.
 - Calls [file-issue](../file-issue/) to file the ticket, and to rewrite the bug issue into it.
-- Suggested by [grill](../grill/) for bugs and slow things, and by [file-issue](../file-issue/), [to-epic](../to-epic/), and [plan-up](../plan-up/) when a `fix` ticket has no known cause.
+- Suggested by [grill](../grill/) for bugs and slow things, and by [file-issue](../file-issue/), [file-epic](../file-epic/), and [plan-up](../plan-up/) when a `fix` ticket has no known cause.
 
 ## Credits
 

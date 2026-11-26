@@ -1,5 +1,5 @@
 ---
-name: to-epic
+name: file-epic
 description: "Cut a large piece of work into a phased GitHub epic: one parent, native sub-issues, native blocked-by edges. Breakdown is approved in chat before anything is created. Use when the work is too big for one issue and its pieces are known."
 ---
 
@@ -137,6 +137,6 @@ Each phase is a checkbox list, one ticket per line. GitHub renders the title and
 
 ## Example
 
-**User:** `/to-epic` after a chat that designed "teams": a Team entity, members with roles, an invite flow, and team-scoped billing. Lookup finds an existing `Org` seam and one billing hook.
+**User:** `/file-epic` after a chat that designed "teams": a Team entity, members with roles, an invite flow, and team-scoped billing. Lookup finds an existing `Org` seam and one billing hook.
 
 Breakdown: 4 phases, 9 tickets. Phase 1: `feat` Team entity with create and list through API and UI (M), and `task` create the Stripe Connect account (lead time about 2 days, Stripe review). Phase 2, all free once the Team ticket closes: add a member with a role (M), invite by email (M), team switcher in the header (S). Phase 3: team-scoped invoices (L), blocked by the member ticket and the Stripe task. Phase 4: `task` set the Stripe keys on the host and send one live invoice, blocked by the invoices ticket. Three questions asked. User says "split the invite one". Invite becomes send (S) and accept (S), accept blocked by send. User says "go". Parent plus 10 sub-issues created, the two Stripe tasks with `manual` and no size, parent table rewritten with numbers, URL on the clipboard, and the lines "Free to start now: #41" and "Yours: #42 Stripe Connect account, #50 live invoice".

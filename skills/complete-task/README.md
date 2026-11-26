@@ -26,7 +26,7 @@ When a step fails, it tries once more if that is safe, then gives you numbered s
 
 ## Fits with
 
-- [file-issue](../file-issue/) and [to-epic](../to-epic/) write task issues with the steps this skill follows.
+- [file-issue](../file-issue/) and [file-epic](../file-epic/) write task issues with the steps this skill follows.
 - [orchestrate](../orchestrate/) starts it, one task at a time.
 - [use-mac](../use-mac/) drives the browser and the apps.
 - [capture](../capture/) logs a code bug seen on the way.

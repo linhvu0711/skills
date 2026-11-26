@@ -79,7 +79,7 @@ The full text the grill agreed on, word for word, per `issue-rules.md`
 ~~~
 ```
 
-Decisions so far is an index. A decision lives on its ticket; the map gists it and links. A patch of fog that becomes a ticket leaves Not yet specified the same moment. Out of scope never graduates. Docs to write holds every glossary entry and ADR the grills agreed on, in full, until `to-epic` hands each to a sub-issue; drop the heading while it is empty.
+Decisions so far is an index. A decision lives on its ticket; the map gists it and links. A patch of fog that becomes a ticket leaves Not yet specified the same moment. Out of scope never graduates. Docs to write holds every glossary entry and ADR the grills agreed on, in full, until `file-epic` hands each to a sub-issue; drop the heading while it is empty.
 
 ## Ticket body
 

@@ -1,6 +1,6 @@
 # Issue rules
 
-Shared by `file-issue` and `to-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
+Shared by `file-issue` and `file-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
 
 ## Vocabulary
 
@@ -70,7 +70,7 @@ Priority and size never appear in the title. They are labels.
 
 The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
 
-XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut it further.
+XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `file-epic`. XL in `file-epic`: cut it further.
 
 A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
 
@@ -215,7 +215,7 @@ Every credential in Hand back carries the warning on its line. The value of one 
 
 Steps are always written. They come from the platform's docs, fetched in the one lookup round, whose brief asks for the web (see Lookup). Each step names the page, the button or field, and the value to enter. A step with no doc source goes under Open as the question it leaves, never into Steps. The last step is the proof: the check that shows the code ticket can use the result.
 
-`Lead time:` is what `to-epic` reads to place the task: a wait of days puts the task in the first phase, whatever phase needs it.
+`Lead time:` is what `file-epic` reads to place the task: a wait of days puts the task in the first phase, whatever phase needs it.
 
 ### Unhappy paths (feat and fix)
 
