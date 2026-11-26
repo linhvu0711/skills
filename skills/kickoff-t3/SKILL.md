@@ -39,7 +39,7 @@ The script prints the line with `command` `ship`, `mode` empty, `slash_command` 
 
 Run `kickoff.sh --model sonnet --effort xhigh https://github.com/acme/shop/issues/42`. The command still comes from the table. `sonnet` maps to the first `claude-sonnet-` id.
 
-**User:** `/kickoff-t3 42`, in a herdr pane, not in T3 Code.
+**User:** `/kickoff-t3 42`, in a terminal outside T3 Code.
 
 The script says `stop: not inside T3 Code`. Show it. Stop. Nothing started.
 

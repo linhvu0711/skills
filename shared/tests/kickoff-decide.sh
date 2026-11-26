@@ -1,5 +1,5 @@
 # kickoff-decide.sh: the cases for the shared core's kickoff/decide.sh, the
-# half of kickoff that both kickoff-herdr and kickoff-t3 run. The repo's
+# half of kickoff that kickoff-t3 and the orchestrator run. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

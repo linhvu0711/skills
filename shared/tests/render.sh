@@ -249,7 +249,7 @@ t_render_local_no_pane() {
   # Then
   eq "rules exit" 0 "$rules_code"
   eq "prompt exit" 0 "$code"
-  for needle in pane QUESTION herdr-send; do
+  for needle in pane QUESTION; do
     lacks "rules" "$needle" "$rules"
     lacks "prompt" "$needle" "$out"
   done

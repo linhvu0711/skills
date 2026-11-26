@@ -83,7 +83,7 @@ Each fact it states carries an evidence label (Seen, Inferred, Guess, or Unknown
 - Calls [plan-up](../plan-up/), then [build-and-prove](../build-and-prove/) and [make-pr](../make-pr/), or [handoff](../handoff/) when you name the cloud, then [review-pr](../review-pr/) when the repo has no review tool, then [ready-pr](../ready-pr/).
 - A failed readiness gate sends you to [grill](../grill/) first.
 - In a stack, runs [ready-pr](../ready-pr/) again on each PR after the one below it merges, and [prune-worktrees](../prune-worktrees/) at the end.
-- [kickoff-t3](../kickoff-t3/) and [kickoff-herdr](../kickoff-herdr/) start it in a new thread or pane, and [orchestrate](../orchestrate/) starts it for each ticket it runs; else you run it.
+- [kickoff-t3](../kickoff-t3/) starts it in a new thread, and [orchestrate](../orchestrate/) starts it for each ticket it runs; else you run it.
 
 ## Credits
 

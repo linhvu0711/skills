@@ -36,11 +36,9 @@ flowchart LR
 ```mermaid
 flowchart LR
   ticket([issue or epic]) --> ship
-  ticket --> kickoffherdr[kickoff-herdr]
   ticket --> kickofft3[kickoff-t3]
   ticket --> orchestrate[orchestrate]
   ticket --> planup[plan-up]
-  kickoffherdr -->|new pane| ship
   kickofft3 -->|new thread| ship
   orchestrate -->|thread per stage| ship
   subgraph ship [ship: one run]
@@ -89,7 +87,6 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 | Skill | What it does |
 |---|---|
-| [kickoff-herdr](skills/kickoff-herdr/) | Opens a new herdr pane and starts `/ship` there on an issue, a run of tickets, or an epic. |
 | [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [complete-task](skills/complete-task/) | Does a task issue's steps in your browser, and stops only for the steps that are yours. |
@@ -157,12 +154,11 @@ Each helper a skill starts, a skill agent or the explorer or the runner, has one
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-herdr](skills/kickoff-herdr/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
-- `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/).
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
 - Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2 answer.
