@@ -12,7 +12,9 @@
 # still missing or a model no list offers, and one `skip:` line per check it
 # could not run. Exit 1 when a problem line printed, else 0. Every install
 # path comes from link.sh's status lines, so its env settings hold; the
-# rules files and the model lists come from HOME.
+# rules files and the model lists come from HOME. The Antigravity gates are
+# read from the plugins folder link.sh links into each T3 folder, through
+# the same setting link.sh reads, since no status line names that folder.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -22,10 +24,11 @@ shared_rules="$HOME/.agents/rules/shared.md"
 claude_md="$HOME/.claude/CLAUDE.md"
 codex_md="$HOME/.codex/AGENTS.md"
 gemini_md="$HOME/.gemini/GEMINI.md"
+plugins="${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}"
 
-# The owner's personal gates, wired in every harness, and the repo's
-# subagent gate. Antigravity also runs session-rules, since T3 starts its
-# chats without the rules file.
+# The owner's personal gates, wired in every harness. Claude Code and Codex
+# also run the repo's subagent gate, and Antigravity runs session-rules in
+# its place, since T3 starts its chats without the rules file.
 personal_gates="write-for-agents-gate unslop-gate unslop-commit-gate question-gate plain-style"
 
 problems=(); fixed=(); link_problems=()
@@ -147,15 +150,14 @@ check_codex() {
 
 # Antigravity, and each private folder T3 runs it from. Antigravity reads the
 # hooks.json of every plugin in its plugins folder, and link.sh's status
-# line names that folder and each T3 folder.
+# lines name each T3 folder. It has no subagents: it runs only in T3, which
+# starts each helper on its home model.
 check_antigravity() {
   local t st kind h name
   count_targets antigravity skill skill; s="$got"
-  count_targets antigravity agent subagent; a="$got"
-  target gate antigravity; plugins="$folder"
-  # The gates sit in many plugins' hooks.json, so one file link.sh could not
-  # read hides no gate's line.
-  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates subagent-gate session-rules; g="$got"
+  # The gates sit in many plugins' hooks.json, so one file that is not JSON
+  # hides no gate's line.
+  count_gates antigravity "$plugins" "$(commands "$plugins"/*/hooks.json)" "" $personal_gates session-rules; g="$got"
   r=0; rt=1
   if imports_rules "$gemini_md"; then r=1; else problem "antigravity rules: $gemini_md does not include $shared_rules"; fi
   for t in ${targets[@]+"${targets[@]}"}; do
@@ -167,7 +169,7 @@ check_antigravity() {
       if imports_rules "$gemini_md"; then r=$((r + 1)); fi
     else problem "antigravity rules: $d has no GEMINI.md link: T3 makes it at the next Antigravity chat"; fi
   done
-  got="skills $s · subagents $a · gates $g · rules $r/$rt"
+  got="skills $s · gates $g · rules $r/$rt"
 }
 
 # harness <name> <cli>: the harness's report line, or skipped when its CLI is
@@ -237,12 +239,10 @@ t3_on() {
 offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&1; }
 
 # Models: a home against the T3 list of its place, a Claude Code backup
-# against T3's Claude list, a Codex backup against Codex's own list. An
-# Antigravity backup names no exact model, so it has no list. A backup of a
-# harness the Mac lacks never runs, so it is not checked.
+# against T3's Claude list, a Codex backup against Codex's own list. A
+# backup of a harness the Mac lacks never runs, so it is not checked.
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
-  [ "$model" = inherit ] && continue
   label="$map"; case "$map" in home?*) label="home ${map#home}" ;; esac
   if [ "${map#home}" != "$map" ]; then
     t3_id "$place"; [ -n "$id" ] || continue
@@ -262,13 +262,14 @@ done
 
 # The agents whose first home starts them in Devin, one `<agent> <model> <then>`
 # line each, <then> being where a Devin failure sends it: next when the entry
-# lists another home whose place is on in T3, else backup. A later home on Devin is only a fallback,
-# so its loss sends no one on.
+# lists another home whose place is on in T3, else backup, or fail for an
+# Antigravity main agent, which has no backup. A later home on Devin is only a
+# fallback, so its loss sends no one on.
 devin_homes=()
 for row in ${rows[@]+"${rows[@]}"}; do
   read -r a map h place model <<< "$row"
   if [ "$map" = home ] && [ "$place" = devin ]; then
-    then=backup
+    if [ "$h" = antigravity ]; then then=fail; else then=backup; fi
     for r in ${rows[@]+"${rows[@]}"}; do
       read -r ra rmap rh next _ <<< "$r"
       case "$rmap" in home[0-9]*) ;; *) continue ;; esac
@@ -289,10 +290,11 @@ on_devin() {
 
 # devin_warn <cause> [model]: a warning per place a Devin failure sends agents.
 devin_warn() {
-  local b n
-  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"
+  local b n f
+  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"; f="$(on_devin fail "${2:-}")"
   [ -z "$b" ] || warns+=("warn: $1, so these run on their backup: $b")
   [ -z "$n" ] || warns+=("warn: $1, so these move to their next home: $n")
+  [ -z "$f" ] || warns+=("warn: $1, so these fail in Antigravity, which has no backup: $f")
 }
 
 # Devin: one live call per model a first home starts on in Devin. A helper

@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-opus-5-5 xhigh
   codex: gpt-6.2-sol xhigh
-  antigravity: inherit
 ---
 
 You review one axis of one pull request: Logic.

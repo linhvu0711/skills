@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You find unused code in a few files, so a skill can show the user what an agent might copy or call by mistake.

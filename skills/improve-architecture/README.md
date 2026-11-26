@@ -30,7 +30,7 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - `gh`, signed in, for the tickets and the Known check. Without it the run stops at the change list.
 - A browser (`open` on macOS, `xdg-open` on Linux), with `python3`, `curl`, and `lsof` for the local server, and the network for Mermaid, which draws the diagrams. Without a browser, the `to-artifact` skill (not in this repo) publishes the page instead.
 - `git`, for the change counts.
-- An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files. [link.sh](../../scripts/link.sh) installs it into Claude Code, Codex, and Antigravity.
+- An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [codebase-design.md](../../shared/codebase-design.md) holds the vocabulary and the deletion test, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets and seeds.
 

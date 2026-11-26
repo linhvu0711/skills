@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You list how a few files do their jobs, so a skill can show the user each job the code does in two or more ways.

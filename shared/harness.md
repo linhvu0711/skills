@@ -4,7 +4,7 @@ How each harness does a step a skill names. The rule for when to take a step is 
 
 | Step | Claude Code | Codex | Antigravity |
 |---|---|---|---|
-| Start a subagent by name | The Agent tool with `subagent_type: <name>`. | `spawn_agent` with `agent_type: <name>` and the brief as `message`, then `wait_agent` for its answer. | `invoke_subagent` with `TypeName: <name>`, a `Role` of two to five words, and the brief as `Prompt`. It runs in the background and its answer comes as a message, so end the turn with no tool call. |
+| Start a subagent by name | The Agent tool with `subagent_type: <name>`. | `spawn_agent` with `agent_type: <name>` and the brief as `message`, then `wait_agent` for its answer. | None: link.sh installs no agent here, so a helper starts only through T3 (`facts.md` § Skill agents). |
 | Start the plain subagent | `general-purpose`. | `default`. | `self`. agy's own prompt says it may hang, so start it only when no named agent fits. |
 | Start a skill | The `Skill` tool with `skill: <name>`. It refuses a skill marked `disable-model-invocation: true`: read that skill's `SKILL.md` whole and follow it. | No tool: open the skill's `SKILL.md`, read it whole before acting, and follow it; never hand that read to a subagent. | No tool: read the skill's `SKILL.md` whole and follow it. |
 | Model and effort on the start call | `model` takes only `haiku`, `sonnet`, `opus`, or `fable`, and no effort. A named agent runs on its file's model and effort. | None by default: `spawn_agent` shows `model` and `reasoning_effort` only when `expose_spawn_agent_model_overrides` is on. A named agent runs on its file's model and effort. | `Model` takes only `inherit`, `flash_lite`, `flash`, or `pro`, and no effort. |

@@ -99,8 +99,6 @@ This file is the Standard: the rules for how code is written in this repo. Read 
   Why: `docs/adr/0017-skills-ask-for-helper-jobs-in-plain-words.md` and `docs/adr/0027-the-explorer-and-the-runner-ship-in-the-repo.md`.
 - A skill starts a subagent per `shared/facts.md` § Skill agents: in T3 on its home models, tried from left to right, and outside T3, or when no home can run, on its backup. When it does not run on its first home, the skill's report says so in one line.
   Why: `docs/adr/0028-a-subagents-model-depends-on-the-main-agent.md` and `docs/adr/0030-a-subagent-tries-its-home-models-in-order.md`.
-- An Antigravity agent's backup is `inherit`.
-  Why: `docs/adr/0026-an-antigravity-helper-takes-the-main-agents-model.md`.
 - A skill description starts with a command verb, as "Find a past session…", and ends with a "Use when …" sentence (agentskills-descriptions).
 - `SKILL.md` says when to read each reference file, and a reference over 100 lines opens with a table of contents (anthropic-skill-best-practices).
 

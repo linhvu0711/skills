@@ -215,8 +215,7 @@ home:
   antigravity: claude claude-opus-5-5 xhigh
 backup:
   claude: claude-haiku-5-5 high
-  codex: gpt-6-luna xhigh
-  antigravity: inherit'
+  codex: gpt-6-luna xhigh'
 
 # agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
 # full_agent under that name, with a two-line body.
@@ -336,23 +335,6 @@ t_link_skips_agent_without_claude_backup() {
   [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
 }
 
-t_link_writes_antigravity_form() {
-  # Given: a skill with one agent file
-  linked demo; agent demo helper
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  has stdout "wrote $T/gplugins/skills/agents/helper.md" "$out"
-  eq "antigravity form" "$(printf '%s\n' '---' \
-    '# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.' \
-    'name: helper' 'description: Reviews one "demo" diff.' 'subagent: true' 'mainAgent: false' \
-    'model: inherit' 'tools: [read_file, run_command, manage_task]' '---' 'Review the diff.' \
-    'Match \d+ in "x".')" "$(cat "$T/gplugins/skills/agents/helper.md")"
-  link_sh
-  eq "second run" "" "$out$err"
-}
-
 t_agents_lists_tools() {
   # Given: an agent whose tools line names the Agent tool
   repo; agent demo helper
@@ -408,31 +390,7 @@ t_agents_lists_models_in_order() {
   run bash scripts/agents.sh models < skills/demo/agents/helper.md
   # Then
   eq stdout "$(printf '%s\n' 'home claude devin swe-2-high' 'home2 claude codex gpt-6-luna' 'home codex claude claude-opus-5-5' \
-    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna' \
-    'backup antigravity antigravity inherit')" "$out"
-}
-
-t_link_writes_antigravity_start_tool() {
-  # Given: a skill agent whose tools line names the Agent tool
-  linked demo; agent demo helper
-  sed -i.bak 's/^tools: Read, Grep, Glob, Bash$/tools: Read, Grep, Glob, Bash, Agent/' skills/demo/agents/helper.md
-  # When
-  link_sh
-  # Then
-  eq "tools line" "tools: [read_file, run_command, manage_task, invoke_subagent]" "$(sed -n 8p "$T/gplugins/skills/agents/helper.md")"
-}
-
-t_link_writes_plugin_manifest() {
-  # Given: a skill with one agent file
-  linked demo; agent demo helper
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  has stdout "wrote $T/gplugins/skills/plugin.json" "$out"
-  eq "manifest" "$(printf '%s\n' '{' '  "name": "skills",' \
-    '  "description": "The skill agents of the skills repo, written by its scripts/link.sh."' '}')" \
-    "$(cat "$T/gplugins/skills/plugin.json")"
+    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna')" "$out"
 }
 
 t_link_removes_renamed_agent_forms() {
@@ -445,10 +403,8 @@ t_link_removes_renamed_agent_forms() {
   eq exit 0 "$code"
   has stdout "removed $T/cagents/helper.md" "$out"
   has stdout "removed $T/codex/helper.toml" "$out"
-  has stdout "removed $T/gplugins/skills/agents/helper.md" "$out"
   eq "ls cagents" aide.md "$(ls "$T/cagents")"
   eq "ls codex" aide.toml "$(ls "$T/codex")"
-  eq "ls plugin agents" aide.md "$(ls "$T/gplugins/skills/agents")"
 }
 
 t_link_writes_shared_agent_forms() {
@@ -461,7 +417,6 @@ t_link_writes_shared_agent_forms() {
   eq exit 0 "$code"
   has stdout "wrote $T/cagents/explorer.md" "$out"
   has stdout "wrote $T/codex/explorer.toml" "$out"
-  has stdout "wrote $T/gplugins/skills/agents/explorer.md" "$out"
   eq "mark" "# Made by scripts/link.sh from shared/agents/explorer.md. Edit that file, not this one." \
     "$(sed -n 2p "$T/cagents/explorer.md")"
   link_sh
@@ -543,30 +498,97 @@ t_link_leaves_hook_file_not_json() {
   eq "own file" '{oops' "$(cat "$T/claude-settings.json")"
 }
 
-t_link_writes_gate_into_plugin() {
-  # Given: a skill with one agent file
+# old_plugin: the "skills" Antigravity plugin an earlier link.sh wrote, with
+# helper's agent file, the plugin.json, and the gate's hooks.json.
+old_plugin() {
+  mkdir -p "$T/gplugins/skills/agents"
+  printf -- '---\n# Made by scripts/link.sh from skills/demo/agents/helper.md. Edit that file, not this one.\nname: helper\n---\n' \
+    > "$T/gplugins/skills/agents/helper.md"
+  printf '%s\n' '{' '  "name": "skills",' \
+    '  "description": "The skill agents of the skills repo, written by its scripts/link.sh."' '}' > "$T/gplugins/skills/plugin.json"
+  printf '%s' '{"subagent-gate":{"PreToolUse":[]}}' > "$T/gplugins/skills/hooks.json"
+}
+
+t_link_writes_no_antigravity_plugin() {
+  # Given: a skill with one agent file, and the gate
   linked demo; agent demo helper; with_gate
   # When
   link_sh
   # Then
-  eq exit 0 "$code"
-  eq hooks '{"subagent-gate":{"PreToolUse":[{"matcher":"invoke_subagent|edit_file|write_file|write_to_file|replace_file_content|multi_replace_file_content","hooks":[{"type":"command","command":"bash '"'$R/shared/gate/subagent-gate.sh'"' antigravity","timeout":5}]}]}}' \
-    "$(jq -c . "$T/gplugins/skills/hooks.json")"
+  eq plugins "" "$(ls -A "$T/gplugins")"
+}
+
+t_link_removes_old_antigravity_plugin() {
+  # Given: the skills plugin an earlier run wrote
+  linked demo; agent demo helper; with_gate; old_plugin
+  # When
   link_sh
+  # Then
+  [ ! -e "$T/gplugins/skills" ] || eq "gplugins/skills" "gone" "$(find "$T/gplugins/skills" | tr '\n' ' ')"
+}
+
+t_link_old_plugin_cleanup_runs_once() {
+  # Given: the old skills plugin, removed by one run
+  linked demo; agent demo helper; with_gate; old_plugin; link_sh
+  # When
+  link_sh
+  # Then
   eq "second run" "" "$out$err"
 }
 
-t_link_updates_old_gate_in_plugin() {
-  # Given: a plugin hooks.json with a key of the user's own and an old gate entry
-  linked demo; agent demo helper; with_gate; mkdir -p "$T/gplugins/skills"
+t_link_keeps_user_key_in_old_plugin_hooks() {
+  # Given: the old skills plugin, its hooks.json with a key of the user's own
+  linked demo; agent demo helper; with_gate; old_plugin
   printf '%s' '{"mine":{},"subagent-gate":{"PreToolUse":[]}}' > "$T/gplugins/skills/hooks.json"
   # When
   link_sh
   # Then
-  eq exit 0 "$code"
-  eq keys '["mine","subagent-gate"]' "$(jq -c keys "$T/gplugins/skills/hooks.json")"
-  eq command "bash '$R/shared/gate/subagent-gate.sh' antigravity" \
-    "$(jq -r '."subagent-gate".PreToolUse[0].hooks[0].command' "$T/gplugins/skills/hooks.json")"
+  eq hooks '{"mine":{}}' "$(jq -c . "$T/gplugins/skills/hooks.json")"
+}
+
+t_link_keeps_user_manifest_in_old_plugin() {
+  # Given: the old skills plugin, with a plugin.json of the user's own
+  linked demo; agent demo helper; with_gate; old_plugin
+  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
+  # When
+  link_sh
+  # Then
+  eq files "$T/gplugins/skills/plugin.json" "$(find "$T/gplugins/skills" -type f)"
+}
+
+t_link_keeps_user_agent_in_old_plugin() {
+  # Given: the old skills plugin, with an agent file of the user's own
+  linked demo; agent demo helper; with_gate; old_plugin
+  printf 'mine\n' > "$T/gplugins/skills/agents/mine.md"
+  # When
+  link_sh
+  # Then
+  eq files "$T/gplugins/skills/agents/mine.md" "$(find "$T/gplugins/skills" -type f)"
+}
+
+# no_jq: $T/nojq, a bin folder with every command on PATH but jq.
+no_jq() {
+  local d f n dirs; mkdir -p "$T/nojq"; IFS=: read -ra dirs <<<"$PATH"
+  for d in "${dirs[@]}"; do
+    for f in "$d"/*; do
+      n="$(basename "$f")"
+      [ -x "$f" ] && [ "$n" != jq ] && [ ! -e "$T/nojq/$n" ] || continue
+      ln -s "$f" "$T/nojq/$n"
+    done
+  done
+}
+
+t_link_stops_without_jq() {
+  # Given: the old skills plugin, and no jq on PATH
+  linked demo; agent demo helper; with_gate; old_plugin; no_jq
+  # When
+  PATH="$T/nojq" link_sh
+  # Then
+  eq exit 1 "$code"
+  has stderr 'stop: link.sh needs jq to read and write hook files; install it, as with brew install jq' "$err"
+  eq files "$T/gplugins/skills/agents/helper.md
+$T/gplugins/skills/hooks.json
+$T/gplugins/skills/plugin.json" "$(find "$T/gplugins/skills" -type f | sort)"
 }
 
 t_link_links_plugins_into_each_t3() {
@@ -607,10 +629,8 @@ t_link_status_names_every_target_ok() {
   eq stderr "" "$err"
   eq stdout "$(status_lines "ok skill shared demo $T/agents/demo $T/agents" "ok skill claude demo $T/claude/demo $T/claude" \
     "ok skill antigravity demo $T/gskills/demo $T/gskills" "ok agent claude helper $T/cagents/helper.md $T/cagents" \
-    "ok agent codex helper $T/codex/helper.toml $T/codex" "ok agent antigravity helper $T/gplugins/skills/agents/helper.md $T/gplugins" \
-    "ok manifest antigravity plugin.json $T/gplugins/skills/plugin.json $T/gplugins" "ok gate claude subagent-gate $T/claude-settings.json $T" \
-    "ok gate codex subagent-gate $T/codex-hooks.json $T" "ok gate antigravity subagent-gate $T/gplugins/skills/hooks.json $T/gplugins" \
-    "ok plugins antigravity plugins $T/t3/p1/config/plugins $T/t3/p1")" "$out"
+    "ok agent codex helper $T/codex/helper.toml $T/codex" "ok gate claude subagent-gate $T/claude-settings.json $T" \
+    "ok gate codex subagent-gate $T/codex-hooks.json $T" "ok plugins antigravity plugins $T/t3/p1/config/plugins $T/t3/p1")" "$out"
 }
 
 t_link_status_names_missing_and_held() {
@@ -621,10 +641,10 @@ t_link_status_names_missing_and_held() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "lines 2, 5, 8" "$(printf 'missing\tskill\tclaude\tdemo\t%s\t%s\n' "$T/claude/demo" "$T/claude"
+  eq "lines 2, 5, 6" "$(printf 'missing\tskill\tclaude\tdemo\t%s\t%s\n' "$T/claude/demo" "$T/claude"
     printf 'stale\tagent\tcodex\thelper\t%s\t%s\t%s\n' "$T/codex/helper.toml" "$T/codex" "$T/codex/helper.toml is not this repo's helper.toml"
     printf 'stale\tgate\tclaude\tsubagent-gate\t%s\t%s\t%s\n' "$T/claude-settings.json" "$T" "$T/claude-settings.json is not JSON")" \
-    "$(sed -n '2p;5p;8p' <<<"$out")"
+    "$(sed -n '2p;5p;6p' <<<"$out")"
 }
 
 t_link_status_names_agent_it_cannot_render() {
@@ -634,7 +654,7 @@ t_link_status_names_agent_it_cannot_render() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "helper2 lines" "$(for l in "claude $T/cagents/helper2.md $T/cagents" "codex $T/codex/helper2.toml $T/codex" "antigravity $T/gplugins/skills/agents/helper2.md $T/gplugins"; do
+  eq "helper2 lines" "$(for l in "claude $T/cagents/helper2.md $T/cagents" "codex $T/codex/helper2.toml $T/codex"; do
       read -r h p f <<<"$l"; printf 'missing\tagent\t%s\thelper2\t%s\t%s\tskills/demo/agents/helper2.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
     "$(grep helper2 <<<"$out")"
 }
@@ -646,20 +666,9 @@ t_link_status_names_installed_agent_it_cannot_render() {
   # When
   link_sh scripts/link.sh --status
   # Then
-  eq "helper lines" "$(for l in "claude $T/cagents/helper.md $T/cagents" "codex $T/codex/helper.toml $T/codex" "antigravity $T/gplugins/skills/agents/helper.md $T/gplugins"; do
+  eq "helper lines" "$(for l in "claude $T/cagents/helper.md $T/cagents" "codex $T/codex/helper.toml $T/codex"; do
       read -r h p f <<<"$l"; printf 'stale\tagent\t%s\thelper\t%s\t%s\tskills/demo/agents/helper.md: missing backup for codex\n' "$h" "$p" "$f"; done)" \
     "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
-}
-
-t_link_status_names_foreign_manifest() {
-  # Given: everything linked, then a plugin.json of the user's own
-  linked demo; agent demo helper; with_gate; link_sh
-  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
-  # When
-  link_sh scripts/link.sh --status
-  # Then
-  eq manifest "$(printf 'stale\tmanifest\tantigravity\tplugin.json\t%s\t%s\t%s' "$T/gplugins/skills/plugin.json" "$T/gplugins" "$T/gplugins/skills/plugin.json is not this repo's plugin.json")" \
-    "$(grep manifest <<<"$out")"
 }
 
 t_link_status_matches_install_skips() {
@@ -668,7 +677,6 @@ t_link_status_matches_install_skips() {
   linked demo; agent demo helper; with_gate; link_sh
   rm "$T/claude/demo"; mkdir "$T/claude/demo"
   printf 'mine\n' > "$T/codex/helper.toml"
-  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
   printf 'not json\n' > "$T/claude-settings.json"
   rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
   agent demo helper2; grep -v '^  codex: gpt-6-luna xhigh$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
@@ -680,8 +688,8 @@ t_link_status_matches_install_skips() {
   whys="$(awk -F '\t' '$NF ~ / / { print $NF }' <<<"$out" | LC_ALL=C sort -u)"
   # Then
   want="$(printf '%s\n' "$T/claude-settings.json is not JSON" "$T/claude/demo is not this repo's demo" \
-    "$T/codex/helper.toml is not this repo's helper.toml" "$T/gplugins/skills/plugin.json is not this repo's plugin.json" \
-    "$T/t3/p1/config/plugins is not this repo's plugins" "skills/demo/agents/helper2.md: missing backup for codex")"
+    "$T/codex/helper.toml is not this repo's helper.toml" "$T/t3/p1/config/plugins is not this repo's plugins" \
+    "skills/demo/agents/helper2.md: missing backup for codex")"
   eq "install skips" "$want" "$skips"
   eq "status whys" "$want" "$whys"
 }
@@ -1164,13 +1172,13 @@ t_flags_backup_model_of_other_harness() {
   has stderr "skills/demo/agents/helper.md: backup for codex: claude-haiku-5-5 is not a model codex takes" "$err"
 }
 
-t_flags_exact_antigravity_backup() {
-  # Given: every field, with an exact model as the Antigravity backup
+t_flags_antigravity_backup() {
+  # Given: every field, and an Antigravity backup
   # When
-  agent_md "${full_agent/  antigravity: inherit/  antigravity: gemini-4-neon low}"
+  agent_md "$(printf '%s\n  antigravity: inherit' "$full_agent")"
   # Then
   eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md: backup for antigravity: gemini-4-neon is not a model antigravity takes" "$err"
+  has stderr "skills/demo/agents/helper.md: backup for antigravity: Antigravity takes no backup" "$err"
 }
 
 t_flags_effort_place_cannot_take() {
@@ -1715,26 +1723,27 @@ cases=(
   "link keeps a hook that shares the gate's group|t_link_keeps_hook_in_gate_group"
   "link writes through a linked hook file|t_link_writes_through_linked_hook_file"
   "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
-  "link writes the gate into the antigravity plugin|t_link_writes_gate_into_plugin"
-  "link updates an old gate entry in the antigravity plugin|t_link_updates_old_gate_in_plugin"
-  "link writes a shared agent's three forms|t_link_writes_shared_agent_forms"
+  "link writes a shared agent's two forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
-  "link writes a skill agent's Antigravity form|t_link_writes_antigravity_form"
   "agents.sh lists an agent's tools|t_agents_lists_tools"
   "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
   "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
   "agents.sh start names the first home off the backup|t_agents_start_names_first_home"
   "agents.sh start says name when the home is the backup|t_agents_start_by_name_when_home_is_backup"
-  "link writes the antigravity start tool|t_link_writes_antigravity_start_tool"
-  "link writes the skills plugin's manifest|t_link_writes_plugin_manifest"
+  "link writes no Antigravity plugin|t_link_writes_no_antigravity_plugin"
+  "link removes the Antigravity plugin an earlier run wrote|t_link_removes_old_antigravity_plugin"
+  "link removes the old Antigravity plugin once|t_link_old_plugin_cleanup_runs_once"
+  "link keeps a key of the user's own in the old plugin hooks|t_link_keeps_user_key_in_old_plugin_hooks"
+  "link keeps a plugin.json of the user's own|t_link_keeps_user_manifest_in_old_plugin"
+  "link keeps an agent file of the user's own in the old plugin|t_link_keeps_user_agent_in_old_plugin"
+  "link stops when jq is missing|t_link_stops_without_jq"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
   "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "link status names every target ok|t_link_status_names_every_target_ok"
   "link status names missing and held targets|t_link_status_names_missing_and_held"
   "link status writes nothing|t_link_status_writes_nothing"
   "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
-  "link status names a plugin.json of the user's own|t_link_status_names_foreign_manifest"
   "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
   "link status gives the skip words of the install|t_link_status_matches_install_skips"
   "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
@@ -1821,7 +1830,7 @@ cases=(
   "flags an agent file with a block name|t_flags_agent_block_name"
   "flags an agent file with an unknown harness|t_flags_agent_unknown_harness"
   "flags a backup model of another harness|t_flags_backup_model_of_other_harness"
-  "flags an exact model as an Antigravity backup|t_flags_exact_antigravity_backup"
+  "flags an Antigravity backup|t_flags_antigravity_backup"
   "flags an effort the place cannot take|t_flags_effort_place_cannot_take"
   "flags a home in an unknown place|t_flags_home_in_unknown_place"
   "passes an agent file with two homes|t_passes_agent_with_two_homes"

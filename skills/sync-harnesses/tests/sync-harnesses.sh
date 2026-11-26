@@ -19,7 +19,7 @@ json() { jq "$2" "$1" > "$1.new"; mv "$1.new" "$1"; }
 
 healthy='claude       skills 2/2 · subagents 1/1 · gates 6/6 · rules 1/1
 codex        skills 2/2 · subagents 1/1 · gates 6/6 · rules 1/1
-antigravity  skills 2/2 · subagents 1/1 · gates 7/7 · rules 2/2
+antigravity  skills 2/2 · gates 6/6 · rules 2/2
 devin in T3  on · swe-2-high answers'
 
 t_sync_healthy() {
@@ -52,7 +52,7 @@ t_sync_t3_rules_link_left_to_t3() {
   sync_mac
   # Then
   eq exit 1 "$code"
-  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 7/7 · rules 1/2' "$out"
+  has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 1/2' "$out"
   has problem 'problem: antigravity rules: ~/.t3/userdata/providers/antigravity/p1 has no GEMINI.md link: T3 makes it at the next Antigravity chat' "$out"
   [ ! -e "$H/.t3/userdata/providers/antigravity/p1/GEMINI.md" ] && [ ! -L "$H/.t3/userdata/providers/antigravity/p1/GEMINI.md" ] \
     || eq GEMINI.md absent there
@@ -104,7 +104,7 @@ t_sync_links_plugins_new_t3_folder() {
   # Then
   eq exit 0 "$code"
   has fixed 'fixed: linked ~/.t3/userdata/providers/antigravity/p2/config/plugins' "$out"
-  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 7/7 · rules 3/3' "$out"
+  has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 3/3' "$out"
 }
 
 t_sync_names_hand_made_subagent() {
@@ -300,7 +300,7 @@ t_sync_t3_rules_links_need_shared_file() {
   sync_mac
   # Then
   eq exit 1 "$code"
-  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 7/7 · rules 0/2' "$out"
+  has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 0/2' "$out"
 }
 
 t_sync_linked_settings_not_json_once() {
@@ -385,6 +385,20 @@ t_sync_warns_third_home_when_second_off() {
   eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
 }
 
+t_sync_warns_antigravity_helper_fails_when_devin_off() {
+  # Given: Devin off in T3, and the helper's Antigravity home on Devin
+  mac
+  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
+  sed -i.bak 's/^  antigravity: antigravity gemini-4-neon high$/  antigravity: devin swe-2-high high/' \
+    "$T/mac/repo/skills/demo/agents/helper.md"
+  # When
+  sync_mac
+  # Then
+  eq exit 0 "$code"
+  eq warns 'warn: Devin is off in T3, so these run on their backup: helper
+warn: Devin is off in T3, so these fail in Antigravity, which has no backup: helper' "$(grep '^warn:' <<<"$out")"
+}
+
 t_sync_follows_link_env() {
   # Given: Claude Code's skills folder moved, and link.sh's env setting naming
   # the new folder
@@ -409,34 +423,23 @@ t_sync_names_agent_link_cannot_render() {
   eq exit 1 "$code"
   has claude 'claude       skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
   has codex 'codex        skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
-  has antigravity 'antigravity  skills 2/2 · subagents 1/2 · gates 7/7 · rules 2/2' "$out"
+  has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 2/2' "$out"
   eq problems 'problem: skills/demo/agents/helper2.md: missing backup for codex' "$(grep '^problem:' <<<"$out")"
 }
 
-t_sync_names_foreign_plugin_manifest() {
-  # Given: the skills plugin's plugin.json that is not this repo's
-  mac
-  printf 'not json\n' > "$H/.gemini/config/plugins/skills/plugin.json"
-  # When
-  sync_mac
-  # Then
-  eq exit 1 "$code"
-  eq problems "problem: ~/.gemini/config/plugins/skills/plugin.json is not this repo's plugin.json" "$(grep '^problem:' <<<"$out")"
-}
-
 t_sync_names_gates_beside_unread_plugin_hooks() {
-  # Given: the skills plugin's hooks.json that is not JSON, and the personal
+  # Given: another plugin's hooks.json that is not JSON, and the personal
   # plugin with the question gate taken out
   mac
-  printf 'not json\n' > "$H/.gemini/config/plugins/skills/hooks.json"
+  mkdir -p "$H/.gemini/config/plugins/other"
+  printf 'not json\n' > "$H/.gemini/config/plugins/other/hooks.json"
   json "$H/.gemini/config/plugins/personal/hooks.json" '.personal.PreToolUse[0].hooks |= map(select(.command | contains("question-gate") | not))'
   # When
   sync_mac
   # Then
   eq exit 1 "$code"
-  has antigravity 'antigravity  skills 2/2 · subagents 1/1 · gates 5/7 · rules 2/2' "$out"
+  has antigravity 'antigravity  skills 2/2 · gates 5/6 · rules 2/2' "$out"
   has "question gate" 'problem: antigravity gate question-gate is not wired in ~/.gemini/config/plugins' "$out"
-  has "unread file" 'problem: ~/.gemini/config/plugins/skills/hooks.json is not JSON' "$out"
 }
 
 cases=(
@@ -469,8 +472,8 @@ cases=(
   "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
   "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
+  "sync warns that an Antigravity helper on Devin fails when Devin is off|t_sync_warns_antigravity_helper_fails_when_devin_off"
   "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
   "sync names an agent link.sh cannot render once|t_sync_names_agent_link_cannot_render"
-  "sync names a plugin.json that is not this repo's|t_sync_names_foreign_plugin_manifest"
   "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"
 )

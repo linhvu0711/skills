@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You judge groups of repeated code, so a skill can show the user which copies teach agents to paste one more.

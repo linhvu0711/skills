@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# subagent-gate.sh: the subagent gate. Each harness runs it before a tool
-# call, with the call's hook payload on stdin.
+# subagent-gate.sh: the subagent gate. Claude Code and Codex run it before a
+# tool call, with the call's hook payload on stdin.
 #
-#   subagent-gate.sh <claude|codex|antigravity>            < payload
-#   subagent-gate.sh <claude|codex|antigravity> matcher
+#   subagent-gate.sh <claude|codex>            < payload
+#   subagent-gate.sh <claude|codex> matcher
 #
 # The rules, read from the agent files through scripts/agents.sh tools, so
 # no second list of agent names exists here:
@@ -26,7 +26,7 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$here/../.."
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage='usage: subagent-gate.sh <claude|codex|antigravity> [matcher]'
+usage='usage: subagent-gate.sh <claude|codex> [matcher]'
 
 harness="${1:-}"
 case "$harness" in
@@ -34,8 +34,6 @@ case "$harness" in
     target_field=subagent_type; default_target=general-purpose ;;
   codex) start_tools="spawn_agent Agent"; edit_tools="apply_patch Edit Write"
     target_field=agent_type; default_target=default ;;
-  antigravity) start_tools="invoke_subagent"
-    edit_tools="edit_file write_file write_to_file replace_file_content multi_replace_file_content" ;;
   *) die_usage "$usage" ;;
 esac
 case "${2-}" in
@@ -47,34 +45,14 @@ esac
 payload="$(cat)"
 us=$'\x1f'
 
-# read_hook, for Claude Code and Codex, and read_antigravity: caller, tool
-# name, target, chat id, and chat log path, one unit separator apart. The
-# caller is empty for the main agent.
+# read_hook: caller, tool name, target, chat id, and chat log path, one unit
+# separator apart. The caller is empty for the main agent.
 read_hook() {
   jq -r --arg f "$target_field" --arg d "$default_target" \
     '[(if (.agent_id // "") != "" then .agent_type // "" else "" end),
       .tool_name // "", .tool_input[$f] // $d, .session_id // "", .transcript_path // ""] | join("\u001f")' <<<"$payload"
 }
-# Antigravity puts no agent name in the payload. A helper chat's own folder
-# keeps the message that started it, and that message names the agent; a chat
-# with no such message is the main agent.
-read_antigravity() {
-  local conv path chat m caller=''
-  IFS="$us" read -r conv path < <(jq -r '[.conversationId // "", .transcriptPath // ""] | join("\u001f")' <<<"$payload") || return 1
-  chat="${path%%/.system_generated/*}"
-  if [ -n "$conv" ] && [ "$chat" != "$path" ]; then
-    for m in "$chat"/.system_generated/messages/*.json; do
-      [ -f "$m" ] || continue
-      caller="$(jq -r --arg c "$conv" 'select(.recipient == $c and .sourceMetadata.tool.toolCall.name == "invoke_subagent")
-        | .sourceMetadata.tool.toolCall.argumentsJson | fromjson | .TypeName // ""' "$m" 2>/dev/null)"
-      [ -z "$caller" ] || break
-    done
-  fi
-  jq -r --arg c "$caller" '[$c, .toolCall.name // "", .toolCall.args.TypeName // "self", .conversationId // "", ""] | join("\u001f")' <<<"$payload"
-}
-
-reader=read_hook; [ "$harness" != antigravity ] || reader=read_antigravity
-fields="$("$reader" 2>/dev/null)" || exit 0
+fields="$(read_hook 2>/dev/null)" || exit 0
 IFS="$us" read -r caller tool target session log <<<"$fields"
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
@@ -93,15 +71,11 @@ agent_file() {
 tools_of() { bash "$repo/scripts/agents.sh" tools < "$1" 2>/dev/null; }
 
 deny() {
-  case "$harness" in
-    claude|codex) jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}' ;;
-    antigravity) jq -cn --arg r "$1" '{decision: "deny", reason: $r}' ;;
-  esac
+  jq -cn --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
   exit 0
 }
 
-# in_t3: whether this chat runs in T3. T3 gives Claude Code and Antigravity
-# its thread id, but starts Codex through one shared app server without it,
+# in_t3: whether this chat runs in T3. T3 gives Claude Code its thread id, but starts Codex through one shared app server without it,
 # so a Codex chat is read from its log, whose first line names the app that
 # opened it.
 in_t3() {

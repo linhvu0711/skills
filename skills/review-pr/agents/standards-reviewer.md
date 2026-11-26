@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You review one axis of one pull request: Standards.

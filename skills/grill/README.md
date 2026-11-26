@@ -33,7 +33,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - `git`.
 - Readers for the code and for research, per the reader job in `../../shared/facts.md`. Codex has none, so there it reads the files itself.
 - [to-issue](../to-issue/) and [to-epic](../to-epic/), to file the work with its doc text.
-- The `gap-checker` subagent, in `agents/`, for work filed as an epic. It starts per `../../shared/facts.md` § Skill agents, on the home models its file names for your harness, tried in order, or on its backup. [link.sh](../../scripts/link.sh) installs it into Claude Code, Codex, and Antigravity.
+- The `gap-checker` subagent, in `agents/`, for work filed as an epic. It starts per `../../shared/facts.md` § Skill agents, on the home models its file names for your harness, tried in order, or on its backup. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - [make-pr](../make-pr/), for the docs PR when no work follows.
 - [unslop](../unslop/), run on the prose before the commit.
 - From the shared core: [grilling.md](../../shared/grilling.md) and [facts.md](../../shared/facts.md).

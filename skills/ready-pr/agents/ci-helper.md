@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-haiku-5-5 high
   codex: gpt-6-luna high
-  antigravity: inherit
 ---
 
 You find why one group of CI checks failed.

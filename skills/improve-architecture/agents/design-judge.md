@@ -9,7 +9,6 @@ home:
 backup:
   claude: claude-sonnet-5-5 high
   codex: gpt-6.2-sol medium
-  antigravity: inherit
 ---
 
 You judge the design of a few files, so a skill can show the user which shapes teach agents to add one more layer, reach into another part, or build more than the job needs.
