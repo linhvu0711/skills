@@ -165,7 +165,7 @@ Optional, only for the skills that name them:
 - `herdr`, a terminal pane manager: [kickoff-herdr](skills/kickoff-herdr/).
 - T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
-- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2 answer.
+- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2.1 answer.
 - Cursor: [handoff](skills/handoff/).
 - macOS and `agent-desktop`: [use-mac](skills/use-mac/) and [complete-task](skills/complete-task/).
 - Xcode's iOS simulator and AXe: [use-mac](skills/use-mac/), to check a web page on an iPhone.

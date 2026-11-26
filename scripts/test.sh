@@ -426,19 +426,6 @@ t_agents_start_by_name_when_first_try_is_harness() {
   eq stdout "name" "$out"
 }
 
-t_agents_lists_models_in_order() {
-  # Given: an agent with two Claude homes, and a comment and a blank line in
-  # its home map
-  repo; agent demo helper
-  sed -i.bak -e 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, codex gpt-6-luna high\
-  # a note\
-/' skills/demo/agents/helper.md
-  # When
-  run bash scripts/agents.sh models < skills/demo/agents/helper.md
-  # Then
-  eq stdout "$(printf '%s\n' 'home claude devin swe-2-high' 'home2 claude codex gpt-6-luna' 'home codex claude claude-opus-5-5' \
-    'home antigravity claude claude-opus-5-5' 'backup claude claude claude-haiku-5-5' 'backup codex codex gpt-6-luna')" "$out"
-}
 
 t_link_removes_renamed_agent_forms() {
   # Given: an agent written once into every harness
@@ -1776,7 +1763,6 @@ cases=(
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "agents.sh lists an agent's tools|t_agents_lists_tools"
   "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
-  "agents.sh lists each home and backup in file order|t_agents_lists_models_in_order"
   "agents.sh lists a tier-3 checker's try list|t_agents_tries_lists_checker"
   "agents.sh moves every agent of a tier when one cell changes|t_agents_tries_follow_tier_cell"
   "agents.sh start names a tier-2 agent's first try|t_agents_start_names_first_try"

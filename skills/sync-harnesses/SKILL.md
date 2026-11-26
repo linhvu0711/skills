@@ -1,6 +1,6 @@
 ---
 name: sync-harnesses
-description: "Check that Claude Code, Codex, and Antigravity on this Mac have the repo's skills, the owner's rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2; remake missing links with the repo's link.sh and report the rest. Use when the user types /sync-harnesses in Claude Code or $sync-harnesses in Codex, or says 'sync harnesses', 'check my harnesses'."
+description: "Check that Claude Code, Codex, and Antigravity on this Mac have the repo's skills, the owner's rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.1; remake missing links with the repo's link.sh and report the rest. Use when the user types /sync-harnesses in Claude Code or $sync-harnesses in Codex, or says 'sync harnesses', 'check my harnesses'."
 disable-model-invocation: true
 ---
 

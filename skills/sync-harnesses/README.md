@@ -1,6 +1,6 @@
 # sync-harnesses
 
-Checks that Claude Code, Codex, and Antigravity on your Mac have the repo's skills, your rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.
+Checks that Claude Code, Codex, and Antigravity on your Mac have the repo's skills, your rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.1.
 
 ## Use it when
 
@@ -16,17 +16,17 @@ Then one line per harness, then one line for Devin in T3. On a Mac where all is 
 claude       skills 41/41 · subagents 11/11 · gates 6/6 · rules 1/1
 codex        skills 41/41 · subagents 11/11 · gates 6/6 · rules 1/1
 antigravity  skills 41/41 · gates 6/6 · rules 2/2
-devin in T3  on · swe-2-high answers
+devin in T3  on · swe-2-1-medium answers
 ```
 
 Each count is what the harness has out of what it should have:
 
 - `skills` counts the repo's skills linked into the harness's skills folder: `~/.claude/skills`, `~/.agents/skills` for Codex, and `~/.gemini/config/skills` for Antigravity.
-- `subagents` counts the repo's skill agents, and the explorer and the runner, that have their file in the harness's agents folder. Antigravity has no `subagents` count: it runs only inside T3, which starts each helper on its home model, so link.sh installs no agent there.
+- `subagents` counts the repo's skill agents, and the explorer and the runner, that have their file in the harness's agents folder. Antigravity has no `subagents` count: it runs only inside T3, which starts each helper on its try list, so link.sh installs no agent there.
 - `gates` counts the gates a hook command runs: your five personal gates (write-for-agents, the two unslop gates, the question gate, and the plain-style reminder), plus the repo's subagent gate in Claude Code and Codex. Antigravity has the start-of-chat gate that loads your rules in its place, since T3 starts its chats without them.
 - `rules` counts the files that load `~/.agents/rules/shared.md`, and is 0 while that file is missing or empty. Claude Code's `CLAUDE.md` imports it. Codex's `AGENTS.md` holds a copy of it. Antigravity's `GEMINI.md` includes it, and each private Antigravity folder T3 keeps adds one more: its `GEMINI.md` link.
 
-A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, with its backup models and the links under its own folders, and the run does not fail for it.
+A harness whose command (`claude`, `codex`, or `agy`) is not on your `PATH` shows `antigravity  skipped: not installed` in place of its counts. The check skips it, with the links under its own folders, and the run does not fail for it.
 
 Anything missing gets its own `problem:` line, and the run exits 1:
 
@@ -37,14 +37,13 @@ problem: antigravity rules: ~/.t3/userdata/providers/antigravity/ac0a… has no 
 
 The check never makes T3's `GEMINI.md` link. T3 makes that link itself each time it starts an Antigravity chat, so one owner keeps it.
 
-It also checks each model a helper's file names. A home model must be in T3's list for its place, `~/.t3/caches/<provider>.json`. A helper that lists more than one home gets each one checked, and a problem names the second as `home 2`. A Claude Code backup must be in T3's Claude list, and a Codex backup in Codex's own list, `~/.codex/models_cache.json`. A model not in its list gets a line such as `problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna`. The check changes no agent file: you pick the new model. A place that is off in T3 gets `skip: Antigravity is off in T3, so its home models are not checked`, and a skip line does not fail the run.
+It also checks each model a helper can try, from `shared/model-tiers.md`, for the companies its In use table marks `yes`. A Claude model must be in T3's Claude list, an Antigravity or Devin model in T3's list for that company, `~/.t3/caches/<provider>.json`, and a Codex model, once Codex is in use, in Codex's own list, `~/.codex/models_cache.json`. A model not in its list gets a line such as `problem: shared/model-tiers.md: T3 Devin does not offer swe-2-1-medium`, and a try order that reaches a company not in use gets `problem: shared/model-tiers.md: try order 2 no for claude reaches codex, which is not in use`. The check changes no file: you pick the new model. A company that is off in T3 gets `skip: Antigravity is off in T3, so its models are not checked`, and a skip line does not fail the run.
 
-The Devin line comes from one live call to SWE-2 through Devin's CLI, for each model a helper's first home names in Devin. A later home on Devin is only a fallback, so the live call skips it. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose first home is Devin run on their backup, or on their next home when they list one that is on in T3, and a `warn:` line names them. An Antigravity main agent has no backup, so there a helper with no next home fails, and a line of its own names it:
+The Devin line comes from one live call to SWE-2.1 through Devin's CLI, for each model a helper tries first in Devin. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose first try is Devin move to their next try, and a `warn:` line names them:
 
 ```
-warn: Devin is off in T3, so these run on their backup: scope-reviewer, standards-reviewer, walker
-warn: Devin is off in T3, so these fail in Antigravity, which has no backup: scope-reviewer, standards-reviewer, walker
-warn: swe-2-high refused (Error: Unknown model: 'swe-2-high'), so these run on their backup: scope-reviewer, standards-reviewer, walker
+warn: Devin is off in T3, so these move to their next try: gap-checker, hack-judge, logic-reviewer, plan-correctness-checker, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
+warn: swe-2-1-medium refused (Error: Unknown model: 'swe-2-1-medium'), so these move to their next try: gap-checker, hack-judge, logic-reviewer, plan-correctness-checker, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
 ```
 
 A warning does not fail the run.

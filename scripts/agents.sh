@@ -5,9 +5,10 @@
 #
 #   agents.sh check < skills/<name>/agents/<agent>.md
 #   agents.sh render <harness> <marker> < skills/<name>/agents/<agent>.md
-#   agents.sh models < skills/<name>/agents/<agent>.md
 #   agents.sh start <harness> < skills/<name>/agents/<agent>.md
 #   agents.sh tries <harness> < skills/<name>/agents/<agent>.md
+#   agents.sh orders <harness>
+#   agents.sh in-use
 #
 # A shared agent, shared/agents/<agent>.md, is read the same way.
 #
@@ -55,9 +56,10 @@
 # exit 0; or the first problem on stderr, exit 1. <harness> is claude or
 # codex: Antigravity gets no agent file. tools: the agent's Claude Code tools on one line, every one
 # of them for a file with no tools line, exit 0. The subagent gate reads it.
-# models: one line per home and backup, <map> <harness> <place> <model>, in
-# file order, exit 0. The map is home for the first home, home<n> for the
-# n-th, and backup, whose place is its harness. sync-harnesses reads it.
+# orders: every try of every try-order row for the main agent of <harness>,
+# in table order, one `<tier> <checker> <company> <model> <effort>` line
+# each, exit 0. in-use: each company in use, one per line, exit 0. Neither
+# reads an agent file. sync-harnesses reads both.
 # tries: the agent's try list for the main agent of <harness>, claude,
 # codex, or antigravity, one `<company> <model> <effort>` line per try, in
 # order, exit 0.
@@ -76,7 +78,11 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 
 mode="${1:-}"
 case "$mode" in
-  check|tools|models) harness=""; marker="" ;;
+  check|tools|in-use) harness=""; marker="" ;;
+  orders) u='usage: agents.sh orders <harness>'
+          [ $# -eq 2 ] || die_usage "$u"
+          harness="$2"; marker=""
+          case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
   render) u='usage: agents.sh render <harness> <marker>'
           [ $# -eq 3 ] || die_usage "$u"
           harness="$2"; marker="$3"
@@ -89,8 +95,10 @@ case "$mode" in
          [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
          case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
-  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness> | agents.sh tries <harness>" ;;
+  *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh start <harness> | agents.sh tries <harness> | agents.sh orders <harness> | agents.sh in-use" ;;
 esac
+# orders and in-use read no agent file, so a caller's stdin stays its own.
+case "$mode" in orders|in-use) exec </dev/null ;; esac
 
 LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers="$tiers" -f "$here/frontmatter.awk" -f <(cat <<'AWK'
   function problem(s) { probs[++np] = s }
@@ -167,6 +175,11 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
           efforts["antigravity"] = "low medium high xhigh"
           efforts["devin"] = "none low medium high xhigh max" }
   END {
+    if (mode == "orders" || mode == "in-use") { read_tiers()
+      if (mode == "in-use") { for (r = 1; r <= tt_rows["company"]; r++) if (tt_cell["company", r, 2] == "yes") print tt_cell["company", r, 1]; exit 0 }
+      for (r = 1; r <= tt_rows["row"]; r++) { row = tt_cell["row", r, 1]; split(row, rw, " ")
+        n = tries(harness, rw[1], rw[2]); for (i = 1; i <= n; i++) print row, tries_out[i] }
+      exit 0 }
     if (!fm_closed) {
       if (mode == "render" || mode == "tools") { print "missing frontmatter" > "/dev/stderr"; exit 1 }
       exit 0
@@ -182,12 +195,6 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
     split("claude codex antigravity", hs, " ")
     for (i = 1; i <= 3; i++) if (!seen["home", hs[i]]) problem("missing home for " hs[i])
     for (i = 1; i <= 2; i++) if (!seen["backup", hs[i]]) problem("missing backup for " hs[i])
-    if (mode == "models") {
-      for (i = 1; i <= ne; i++) { split(order[i], k, SUBSEP)
-        if (k[1] == "home") { nh = split(entry[k[1], k[2]], items, ",")
-          for (j = 1; j <= nh; j++) { split(items[j], w, " "); print (j == 1 ? "home" : "home" j), k[2], w[1], w[2] } }
-        else { split(entry[k[1], k[2]], w, " "); print k[1], k[2], k[2], w[1] } }
-      exit 0 }
     if (mode == "start") {
       tries(harness, fm["tier"], fm["checker"]); split(tries_out[1], w, " ")
       if (w[1] == harness) print "name"
