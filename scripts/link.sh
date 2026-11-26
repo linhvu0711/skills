@@ -13,15 +13,19 @@
 # folder. Each skill agent, skills/<name>/agents/<agent>.md, and each shared
 # agent, the explorer and the runner in shared/agents/<agent>.md, becomes a file per
 # harness, on that harness's backup model, written by scripts/agents.sh:
-# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code,
-# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex, and
-# ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}/skills/agents/<agent>.md
-# in the "skills" Antigravity plugin, beside the plugin.json it writes when the
-# repo has an agent, and the hooks.json that runs the subagent gate, whose
-# subagent-gate key it owns. Only `.md` files in agents/ count, so a Codex openai.yaml
+# ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code and
+# ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex. Antigravity
+# gets no agent file: it runs only inside T3, which starts each helper on its
+# home model. Only `.md` files in agents/ count, so a Codex openai.yaml
 # stays out. Each file it writes starts with a mark that names its source; a file it wrote whose source is gone, and
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.
+#
+# An earlier version wrote a "skills" Antigravity plugin in
+# ${ANTIGRAVITY_PLUGINS_HOME:-$HOME/.gemini/config/plugins}/skills/. Its agent
+# files with the mark, its plugin.json with the words it wrote, and the
+# subagent-gate key of its hooks.json are removed; a file or key of the
+# user's own there stays.
 #
 # It also wires the subagent gate, shared/gate/subagent-gate.sh: one
 # PreToolUse entry in ${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json} and
@@ -44,10 +48,10 @@
 #
 # --status writes nothing and prints one line per target, its fields joined
 # by a tab: `<state> <kind> <harness> <name> <path> <folder>`, the state `ok`,
-# `missing`, or `stale`, the kind `skill`, `agent`, `manifest`, `gate`, or
-# `plugins`, the harness `shared` for the first skills folder, and the folder
-# the setting names for it: a skills or agents folder, the plugins folder, a
-# hook file's folder, or a T3 Antigravity folder. A target something else
+# `missing`, or `stale`, the kind `skill`, `agent`, `gate`, or `plugins`, the
+# harness `shared` for the first skills folder, and the folder the setting
+# names for it: a skills or agents folder, a hook file's folder, or a T3
+# Antigravity folder. A target something else
 # holds, and each file of an agent that agents.sh cannot render, adds, as a
 # seventh field, the words its `skip:` line gives. Any other argument: the
 # usage line on stderr, exit 64.
@@ -130,17 +134,6 @@ put_state() {
   else st=stale; fi
 }
 
-# manifest_state <path> <want>: set st and why for the "skills" plugin's
-# plugin.json. It is strict JSON with no mark, since agy warns that `plugin
-# install` cannot read a comment, so this script owns it only when it holds
-# exactly the wanted words.
-manifest_state() {
-  why=""
-  if [ ! -e "$1" ] && [ ! -L "$1" ]; then st=missing
-  elif [ "$(cat "$1")" != "$(cat "$2")" ]; then st=stale; why="$1 is not this repo's plugin.json"
-  else st=ok; fi
-}
-
 # sweep <folder> <glob>: remove each file there that this script wrote from a
 # source the repo no longer has.
 sweep() {
@@ -152,12 +145,41 @@ sweep() {
   done
 }
 
+# drop_old_plugin: remove the "skills" Antigravity plugin an earlier version
+# wrote: each agent file with this script's mark, the plugin.json that holds
+# exactly the words it wrote, which has no mark since it is strict JSON, and
+# the subagent-gate key of its hooks.json, the file too when no other key is
+# left. A file or key of the user's own stays.
+drop_old_plugin() {
+  local d="$plugins/skills" f t
+  for f in "$d"/agents/*.md; do
+    [ -n "$(made_from "$f")" ] || continue
+    rm "$f"; printf 'removed %s\n' "$f"
+  done
+  f="$d/plugin.json"
+  if [ -f "$f" ] && [ ! -L "$f" ] && [ "$(cat "$f")" = '{
+  "name": "skills",
+  "description": "The skill agents of the skills repo, written by its scripts/link.sh."
+}' ]; then
+    rm "$f"; printf 'removed %s\n' "$f"
+  fi
+  f="$d/hooks.json"
+  if [ -f "$f" ] && [ ! -L "$f" ] && jq -e 'has("subagent-gate")' "$f" >/dev/null 2>&1; then
+    if jq -e 'keys == ["subagent-gate"]' "$f" >/dev/null; then
+      rm "$f"; printf 'removed %s\n' "$f"
+    else
+      t="$(mktemp "$d/.hooks.json.XXXXXX")"; tmps+=("$t")
+      jq 'del(.["subagent-gate"])' "$f" > "$t"; mv "$t" "$f"; printf 'wrote %s\n' "$f"
+    fi
+  fi
+  rmdir "$d/agents" "$d" 2>/dev/null || true
+}
+
 # agent_folder <harness>: the folder the harness's agent files sit in.
 agent_folder() {
   case "$1" in
     claude) printf '%s' "$claude_agents" ;;
     codex) printf '%s' "$codex_agents" ;;
-    antigravity) printf '%s' "$plugins" ;;
   esac
 }
 
@@ -166,7 +188,6 @@ agent_path() {
   case "$1" in
     claude) printf '%s/%s.md' "$claude_agents" "$2" ;;
     codex) printf '%s/%s.toml' "$codex_agents" "$2" ;;
-    antigravity) printf '%s/skills/agents/%s.md' "$plugins" "$2" ;;
   esac
 }
 
@@ -219,7 +240,7 @@ hook_state() {
 # holds what the target should hold. folder is the one the setting names for
 # the target, so a reader finds it without cutting the path.
 each_target() {
-  local f n src err shared d own any=""
+  local f n src err shared d own
   kind=skill
   for f in "$repo"/skills/*/SKILL.md; do
     [ -f "$f" ] || continue
@@ -242,41 +263,24 @@ each_target() {
     [ -f "$f" ] || continue
     src="${f#"$repo"/}"; name="$(basename "$f" .md)"
     if ! err="$(bash "$repo/scripts/agents.sh" render claude "" < "$f" 2>&1 >/dev/null)"; then
-      for h in claude codex antigravity; do
+      for h in claude codex; do
         path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want=""; why="$src: $err"
         if [ -e "$path" ] || [ -L "$path" ]; then st=stale; else st=missing; fi
         "$1"
       done
       continue
     fi
-    for h in claude codex antigravity; do
+    for h in claude codex; do
       path="$(agent_path "$h" "$name")"; folder="$(agent_folder "$h")"; want="$scratch/$h-$name"
       bash "$repo/scripts/agents.sh" render "$h" "$(mark "$src")" < "$f" > "$want" 2>/dev/null || continue
       put_state "$path" "$want"; "$1"
     done
-    any=1
   done
-
-  if [ -n "$any" ]; then
-    kind=manifest; h=antigravity; name=plugin.json; path="$plugins/skills/plugin.json"; folder="$plugins"
-    want="$scratch/plugin.json"
-    printf '%s\n' '{
-  "name": "skills",
-  "description": "The skill agents of the skills repo, written by its scripts/link.sh."
-}' > "$want"
-    manifest_state "$path" "$want"; "$1"
-  fi
 
   if [ -f "$gate" ]; then
     kind=gate; name=subagent-gate
     h=claude; path="$claude_settings"; folder="$(dirname "$path")"; want="$scratch/claude-hooks.json"; hook_state "$path" claude; "$1"
     h=codex; path="$codex_hooks"; folder="$(dirname "$path")"; want="$scratch/codex-hooks.json"; hook_state "$path" codex; "$1"
-    if [ -n "$any" ]; then
-      # The "skills" plugin's hooks.json holds the gate under its own key, so
-      # every other key stays.
-      h=antigravity; path="$plugins/skills/hooks.json"; folder="$plugins"; want="$scratch/antigravity-hooks.json"
-      json_state "$path" '.["subagent-gate"] = {PreToolUse: [$e]}' "$(gate_entry antigravity)"; "$1"
-    fi
   fi
 
   # T3 runs Antigravity with a private home, so its chats see no plugin until
@@ -328,7 +332,7 @@ if [ "$visit" = fix ]; then
   unlink_dead "$antigravity" "$agents"
   sweep "$claude_agents" '*.md'
   sweep "$codex_agents" '*.toml'
-  sweep "$plugins/skills/agents" '*.md'
+  drop_old_plugin
 fi
 each_target "$visit"
 if [ "$visit" = fix ]; then

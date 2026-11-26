@@ -71,7 +71,7 @@ The walker now does each step in one proofbox call that also sets the step's cap
 - `git`, and `gh` (signed in) for the issue.
 - `ffmpeg` on the local machine, to read frames from each video.
 - `node` on the local machine, for the browser starter's tests.
-- The walker's agent file, `agents/walker.md`, which [link.sh](../../scripts/link.sh) installs into Claude Code, Codex, and Antigravity.
+- The walker's agent file, `agents/walker.md`, which [link.sh](../../scripts/link.sh) installs into Claude Code and Codex.
 - The shared core files `../../shared/facts.md`, `../../shared/plan.md` for a chat plan's rules, `../../shared/checkout.sh`, `../../shared/base-tree.sh`, `../../shared/copy.sh`, `../../shared/pr-shape.md`, `../../shared/benchmark.md`, pasted into the cloud rules and read in its own perf step, and the templates in `../../shared/handoff/`.
 - The harness table, `../../shared/harness.md`, for the todo list and how your harness starts the walker and sends it back.
 - A clipboard tool, optional, for the login command, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.

@@ -43,8 +43,8 @@
 #
 # check: one problem per line on stdout, nothing for a good file. Exit 0.
 # render: the file of <harness> on stdout, <marker> in a comment at its top,
-# exit 0; or the first problem on stderr, exit 1. <harness> is claude, codex,
-# or antigravity. tools: the agent's Claude Code tools on one line, every one
+# exit 0; or the first problem on stderr, exit 1. <harness> is claude or
+# codex: Antigravity gets no agent file. tools: the agent's Claude Code tools on one line, every one
 # of them for a file with no tools line, exit 0. The subagent gate reads it.
 # models: one line per home and backup, <map> <harness> <place> <model>, in
 # file order, exit 0. The map is home for the first home, home<n> for the
@@ -54,12 +54,7 @@
 # else `t3 <place> <model> <effort>`, its first home. The subagent gate reads
 # it.
 # Any other command line: its usage on stderr, exit 64.
-# The Antigravity form maps the Claude Code tools to
-# Antigravity's, as agy's own migration skill does: Read, Grep, Glob to
-# read_file; Bash to run_command and manage_task; Edit to edit_file; Write
-# to write_file; WebSearch and WebFetch to search_web; Agent to
-# invoke_subagent. No tools line, which means every tool in Claude Code,
-# gives all seven. The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
+# The Codex form is TOML: in its strings a `\` becomes `\\`, a `"` in
 # the description becomes `\"`, and a `"""` in the body becomes `""\"`.
 set -euo pipefail
 
@@ -72,7 +67,7 @@ case "$mode" in
   render) u='usage: agents.sh render <harness> <marker>'
           [ $# -eq 3 ] || die_usage "$u"
           harness="$2"; marker="$3"
-          case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
+          case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
   start) u='usage: agents.sh start <harness>'
          [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
@@ -104,19 +99,6 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
     gsub(/,/, " ", t); gsub(/\[/, " ", t); gsub(/\]/, " ", t); n = split(t, w, " ")
     for (i = 1; i <= n; i++) out = out (out == "" ? "" : " ") w[i]
     return out }
-  # agy_tools(t): the Antigravity tool list for the Claude Code tools t.
-  function agy_tools(t,  n, w, i, has, all, out) {
-    n = split(claude_tools(t), w, " ")
-    for (i = 1; i <= n; i++) {
-      if (w[i] == "Read" || w[i] == "Grep" || w[i] == "Glob") has["read_file"] = 1
-      else if (w[i] == "Bash") { has["run_command"] = 1; has["manage_task"] = 1 }
-      else if (w[i] == "Edit") has["edit_file"] = 1
-      else if (w[i] == "Write") has["write_file"] = 1
-      else if (w[i] == "WebSearch" || w[i] == "WebFetch") has["search_web"] = 1
-      else if (w[i] == "Agent") has["invoke_subagent"] = 1 }
-    split("read_file run_command manage_task edit_file write_file search_web invoke_subagent", all, " ")
-    for (i = 1; i <= 7; i++) if (all[i] in has) out = out (out == "" ? "" : ", ") all[i]
-    return "[" out "]" }
   function effort_ok(place, e) { return index(" " efforts[place] " ", " " e " ") > 0 }
   # entry_problems(sec, h): the problems of the entry for harness h in map sec.
   # A home entry is a list joined by `,`; its n-th home, from the second, is
@@ -182,11 +164,6 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -f "$here
       print "---"; print "# " marker; print rawname; print rawdesc
       if (rawtools != "") print rawtools
       print "model: " b[1]; print "effort: " b[2]; print "---"
-    }
-    if (harness == "antigravity") {
-      print "---"; print "# " marker; print rawname; print rawdesc
-      print "subagent: true"; print "mainAgent: false"
-      print "model: " b[1]; print "tools: " agy_tools(tools); print "---"
     }
     if (harness == "codex") {
       print "# " marker

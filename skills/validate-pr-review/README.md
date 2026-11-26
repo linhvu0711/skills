@@ -23,7 +23,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in (it reads review comments with `gh api` and resolves threads with `gh api graphql`).
-- An agent that can start subagents: one `finding-judge` per group of files, in `agents/`, started per `../../shared/facts.md` § Skill agents on the model its file names for your harness. The harness table, `../../shared/harness.md`, says how your harness starts it. [link.sh](../../scripts/link.sh) installs it into Claude Code, Codex, and Antigravity.
+- An agent that can start subagents: one `finding-judge` per group of files, in `agents/`, started per `../../shared/facts.md` § Skill agents on the model its file names for your harness. The harness table, `../../shared/harness.md`, says how your harness starts it. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - The [commit](../commit/) skill for the fixes and the [capture](../capture/) skill for the `fix later` issues.
 - The shared core files `../../shared/facts.md` and `../../shared/coding-standards/standard.md`, which says which lines of the Standard are rules.
 

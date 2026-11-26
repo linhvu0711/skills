@@ -413,17 +413,6 @@ t_sync_names_agent_link_cannot_render() {
   eq problems 'problem: skills/demo/agents/helper2.md: missing backup for codex' "$(grep '^problem:' <<<"$out")"
 }
 
-t_sync_names_foreign_plugin_manifest() {
-  # Given: the skills plugin's plugin.json that is not this repo's
-  mac
-  printf 'not json\n' > "$H/.gemini/config/plugins/skills/plugin.json"
-  # When
-  sync_mac
-  # Then
-  eq exit 1 "$code"
-  eq problems "problem: ~/.gemini/config/plugins/skills/plugin.json is not this repo's plugin.json" "$(grep '^problem:' <<<"$out")"
-}
-
 t_sync_names_gates_beside_unread_plugin_hooks() {
   # Given: another plugin's hooks.json that is not JSON, and the personal
   # plugin with the question gate taken out
@@ -471,6 +460,5 @@ cases=(
   "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
   "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
   "sync names an agent link.sh cannot render once|t_sync_names_agent_link_cannot_render"
-  "sync names a plugin.json that is not this repo's|t_sync_names_foreign_plugin_manifest"
   "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"
 )

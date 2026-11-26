@@ -13,7 +13,7 @@ The `shared/` folder: files that two or more skills read.
 _Avoid_: common, utils, lib
 
 **Skill agent**:
-A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models and a backup model for each main harness. `link.sh` installs it into every harness. The explorer and the runner are not skill agents; the shared core owns them.
+A subagent that one skill owns. Its file is in `skills/<name>/agents/` and names one or more home models and a backup model for each main harness. `link.sh` installs it into Claude Code and Codex. The explorer and the runner are not skill agents; the shared core owns them.
 _Avoid_: subagent config, custom agent, agent file
 
 **Home model**:
