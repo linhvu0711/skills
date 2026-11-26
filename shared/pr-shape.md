@@ -77,7 +77,7 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
    The diff already lists the files; the bullets point. A PR whose diff is one place that the Summary already names keeps only the `Risk` line.
 5. **`## Breaking changes`**: what else must happen for the change to work. Who it breaks and what they do now; a migration to run; an env var or a config to set; the order to deploy in. Undo steps only when a revert of the PR does not undo it, as with a data migration. This part and the `!` in the title go together: one is there exactly when the other is.
 6. **`## Proof`**: the evidence that the change does what it says.
-   - The issue or the plan has Done-when lines: one table, one row per Done-when line, in order. A fix's first row is its Repro, as in the plan's Proof table. Columns: `#`, `Behavior`, `Test`. `Behavior` is the Done-when line verbatim. `Test` is the case name, linked to its lines at the head commit the body is written for; or the command and its output in a fenced block, run on the head commit; or the URL of the CI run on the head commit. The words `see the Actions run` with no URL are not proof. A test link is `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`: `<sha>` the full 40-character head SHA, `<a>` to `<b>` the test case's lines at that commit. A link at the branch breaks: a later commit or rebase moves the lines, and the link opens the wrong test. A body written again after a push links at the new head.
+   - The issue or the plan has Done-when lines: one table, one row per Done-when line, in order. A fix's first row is its Repro, as in the plan's Proof table. Columns: `#`, `Behavior`, `Test`. `Behavior` is the Done-when line verbatim. `Test` is the test file's name and the case name, as `` `todos.test.ts` "adds a todo" ``, with no folder, linked to its lines at the head commit the body is written for; or the command and its output in a fenced block, run on the head commit; or the URL of the CI run on the head commit. The words `see the Actions run` with no URL are not proof. A test link is `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`: `<sha>` the full 40-character head SHA, `<a>` to `<b>` the test case's lines at that commit. A link at the branch breaks: a later commit or rebase moves the lines, and the link opens the wrong test. A body written again after a push links at the new head.
    - No Done-when lines: a list of the checks that ran on the head commit. Each item is the command, the short SHA, and the result, or a test the PR added or changed, linked. The list holds only checks that ran.
    - A `perf` plan's Target line: its `Test` cell is one result, the metric and unit, `before → after`, the run count, and the command, run on the head commit. `before` is the base median and `after` the head median, measured in turns on one machine. A base median outside the spread of the issue's `Baseline:` ends the cell with that Baseline in brackets, as in `(issue Baseline: 1200 ms, spread 1150 to 1260 ms)`, so a reader sees the two numbers differ.
 
@@ -91,9 +91,9 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
 
      | # | Behavior | Test | Seen in |
      |---|---|---|---|
-     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case at the head commit) | Screenshot 1 · video 1 @ step 4 |
-     | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 · video 1 @ step 4 |
-     | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 · video 1 @ step 6 |
+     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`todos.test.ts` "adds a todo"](link to the test case at the head commit) | Screenshot 1 · video 1 @ step 4 |
+     | 2 | Rows are sorted by due date. | [`todos.test.ts` "sorts by due date"](link) | Screenshot 1 · video 1 @ step 4 |
+     | 3 | The `Due` field opens a date picker on today's month. | [`todos.test.ts` "opens the date picker"](link) | Screenshot 2 · video 1 @ step 6 |
      | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | |
      ```
 
@@ -102,7 +102,7 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
 
    | # | Behavior | Test |
    |---|---|---|
-   | 1 | `uninstall` removes the launch agent and says so. | [`apps/cli/src/uninstall.test.ts` "removes the launch agent"](link to the test case at the head commit) |
+   | 1 | `uninstall` removes the launch agent and says so. | [`uninstall.test.ts` "removes the launch agent"](link to the test case at the head commit) |
    | 2 | `bun test` passes. | `bun test` on `9e18c16`: `116 pass, 0 fail` |
    ```
 
@@ -111,7 +111,7 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
 
    - `scripts/check.sh` on `9e18c16`: `check: clean`
    - `bun test` on `9e18c16`: `116 pass, 0 fail`
-   - Added [`src/export.test.ts` "writes ISO dates"](link to the test case at the head commit)
+   - Added [`export.test.ts` "writes ISO dates"](link to the test case at the head commit)
    ```
 7. **`## Follow-ups`**: every issue filed during the work or the review, one line each, `#<n>: <what it is>`. Each line is an issue that exists. When an issue is filed after the PR opens, this part is updated then.
 
