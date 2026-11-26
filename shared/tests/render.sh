@@ -61,6 +61,15 @@ t_render_test_link_file_name() {
   eq "rule" 1 "$(printf '%s\n' "$item" | grep -c "\`Test\` is the test file's name and the case name")"
 }
 
+t_render_breaking_steps_only() {
+  # Given: the Breaking changes part of the PR shape
+  local item
+  # When
+  item="$(sed -n '/^5\. \*\*`## Breaking changes`\*\*/,/^6\. /p' "$here/../pr-shape.md")"
+  # Then
+  eq "steps only" 1 "$(printf '%s\n' "$item" | grep -c 'the steps alone, since the `Risk` line already says a revert cannot undo it')"
+}
+
 t_render_risk_line() {
   local item
   item="$(sed -n '/^4\. \*\*`## Where to look`\*\*/,/^5\. /p' "$here/../pr-shape.md")"
@@ -323,6 +332,7 @@ cases=(
   "pr-shape puts Demo right after Summary|t_render_demo_after_summary"
   "pr-shape Proof has one Seen in column|t_render_proof_seen_in"
   "pr-shape test links show the file name|t_render_test_link_file_name"
+  "pr-shape Breaking changes gives steps only|t_render_breaking_steps_only"
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
   "cloud rules carry the Risk line once|t_render_cloud_risk_once"
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"
