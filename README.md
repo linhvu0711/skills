@@ -16,8 +16,8 @@ flowchart LR
   grill -->|a bug| triage
   grill -->|too big| discover[discover-path]
   discover -->|each question| grill
-  grill --> toissue[to-issue]
-  grill --> toepic[to-epic]
+  grill --> toissue[file-issue]
+  grill --> toepic[file-epic]
   discover --> toissue
   discover --> toepic
   triage --> toissue
@@ -29,14 +29,14 @@ flowchart LR
 - [discover-path](skills/discover-path/) takes work too big for one grill and splits it into questions, each one settled by grill.
 - [improve-architecture](skills/improve-architecture/) finds code that needs a new design, then talks you through the choices.
 - [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/) help on the way, when the question is about a screen or about how the code is built.
-- The work ends as one ticket from [to-issue](skills/to-issue/), or as a phased epic from [to-epic](skills/to-epic/).
+- The work ends as one ticket from [file-issue](skills/file-issue/), or as a phased epic from [file-epic](skills/file-epic/).
 
 ### 2. Build and ship
 
 ```mermaid
 flowchart LR
   ticket([issue or epic]) --> ship
-  ticket --> kickofft3[kickoff-t3]
+  ticket --> kickofft3[run-in-t3]
   ticket --> orchestrate[orchestrate]
   ticket --> planup[plan-up]
   kickofft3 -->|new thread| ship
@@ -46,12 +46,12 @@ flowchart LR
     sp[plan-up] --> sm2{ship mode} --> sb[build-and-prove] --> sm[make-pr] --> sr[ready-pr]
   end
   planup --> bp[build-and-prove] --> makepr[make-pr] --> readypr[ready-pr]
-  planup --> ho[handoff]
+  planup --> ho[dispatch]
   ship -->|ship mode ready| done([PR ready: you merge])
   ship -->|ship mode merge| merged([PR merged])
   ho --> done
   readypr --> done
-  readypr -.->|judges each comment| vpr[validate-pr-review]
+  readypr -.->|judges each comment| vpr[validate-pr-reviews]
   readypr -.->|on a rebase conflict| fc[fix-conflicts]
 ```
 
@@ -59,8 +59,8 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, ready it, and merge it when that is the right call. After the plan, it picks a ship mode: `review` opens the plan as a page and builds only after you say `go`, `ready` stops at a PR that is ready to merge, and `merge` merges it. Type `--review`, `--ready`, or `--merge` to pick the mode yourself. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship, ready-pr, or complete-task) until all are closed.
-- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
-- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
+- To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [dispatch](skills/dispatch/), which sends it to Devin or Cursor.
+- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-reviews](skills/validate-pr-reviews/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR.
 
@@ -74,30 +74,30 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [grill](skills/grill/) | Interviews you on a plan or a design, one question at a time, and writes the glossary and ADRs as answers settle. |
 | [discover-path](skills/discover-path/) | Turns an idea too big for one grill into a map on GitHub: a parent issue whose child tickets are the questions to settle. |
 | [triage](skills/triage/) | Finds the root cause of a bug, or the hot spot behind something slow, then turns the bug into a fix ticket. |
-| [why](skills/why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
+| [explain-why](skills/explain-why/) | Answers why code is the way it is from git history, the PR and its reviews, the issue, the ADRs, and past sessions, each reason with an evidence label and its source. |
 | [create-prototype](skills/create-prototype/) | Builds a clickable HTML prototype of a UI change inside your app's real shell, before anyone writes the real code. |
 | [create-diagram](skills/create-diagram/) | Draws a diagram of your code as an interactive HTML page, built only from facts found in the code. |
-| [to-issue](skills/to-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
-| [to-epic](skills/to-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |
+| [file-issue](skills/file-issue/) | Turns what the chat settled into one typed, sized GitHub issue an agent can pick up cold. |
+| [file-epic](skills/file-epic/) | Cuts a large piece of work into a phased GitHub epic with native sub-issues and blocked-by edges. |
 
 ### Build and ship
 
 | Skill | What it does |
 |---|---|
-| [kickoff-t3](skills/kickoff-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
+| [run-in-t3](skills/run-in-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
 | [plan-up](skills/plan-up/) | Turns a ready issue, or a run of tickets, into a plan a coding agent can follow cold: seams, tests, slices, doc updates, UI walks. |
 | [build-and-prove](skills/build-and-prove/) | Builds a plan on your machine. For a plan with UI walks, it runs the app and the Gates CI does not run in one proofbox Sandbox and has a walker film the walks as proof; a plan with no UI runs its Gates on your machine and in CI. |
-| [handoff](skills/handoff/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
+| [dispatch](skills/dispatch/) | Sends the plan to a Devin session or a Cursor cloud agent and watches it until the PR is ready. |
 | [complete-task](skills/complete-task/) | Does a task issue's steps in your browser, and stops only for the steps that are yours. |
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |
 | [review-pr](skills/review-pr/) | Reviews a pull request on three separate checks (logic, scope, standards), with your repo's own rules folded in. |
-| [validate-pr-review](skills/validate-pr-review/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
+| [validate-pr-reviews](skills/validate-pr-reviews/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
 | [ready-pr](skills/ready-pr/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
-| [prune-worktrees](skills/prune-worktrees/) | Removes the worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays. |
+| [clean-worktrees](skills/clean-worktrees/) | Removes the worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays. |
 
 ### Keep the codebase healthy
 
@@ -107,7 +107,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [improve-ci](skills/improve-ci/) | Times a repo's GitHub Actions runs, finds what makes CI slow, dishonest, or unsafe, shows a report, then grills you and files the fixes. |
 | [audit-coding-standards](skills/audit-coding-standards/) | Makes your repo's `CODING_STANDARDS.md` when it has none, and checks it when it has one: researches your stack, reads your code, shows a report page, asks only your choices, then files tickets and writes the rules. |
 | [prune-codebase](skills/prune-codebase/) | Finds what teaches agents bad habits: bad comments, unused code, copies, and hacks. Shows them on a report page, and after your go edits comments, files tickets, and adds rules, with no code changed and nothing committed. |
-| [retro](skills/retro/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, standards, skills. |
+| [retrospect](skills/retrospect/) | Reads sessions from every harness it has an adapter for, and PRs no session touched; finds where the agent struggled and what worked, and turns what repeats into shared fixes: checks, pointers, standards, skills. |
 
 ### Any time
 
@@ -117,7 +117,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [clarify](skills/clarify/) | Explains what the agent said when you did not follow it, from the session first. |
 | [unslop](skills/unslop/) | Edits prose so it stops sounding like an AI wrote it. |
 | [write-for-agents](skills/write-for-agents/) | A reference for writing documents agents read: skills, `AGENTS.md`, `CLAUDE.md`. |
-| [semantic-code-search](skills/semantic-code-search/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
+| [search-by-meaning](skills/search-by-meaning/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
 | [embed-source](skills/embed-source/) | Puts a library's full source next to your repo, at the version you install, so agents read real code. |
 | [use-mac](skills/use-mac/) | Works in the desktop apps on your Mac in the background: opens, reads, clicks, and types across apps, and proves each step. |
 | [sync-harnesses](skills/sync-harnesses/) | Checks that every harness on your Mac has the skills, subagents, rules, and gates, remakes missing links, and reports the rest. |
@@ -140,20 +140,20 @@ Each helper a skill starts, a skill agent or the explorer or the runner, names a
 ## Needs
 
 - `gh`, signed in, for every skill that reads or writes GitHub issues and pull requests.
-- `jq`, for the skills that call an API: [ship](skills/ship/), [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/), [handoff](skills/handoff/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
+- `jq`, for the skills that call an API: [ship](skills/ship/), [run-in-t3](skills/run-in-t3/), [orchestrate](skills/orchestrate/), [dispatch](skills/dispatch/), [ready-pr](skills/ready-pr/), [sync-harnesses](skills/sync-harnesses/), and `scripts/link.sh` and the [subagent gate](shared/gate/).
 - `python3`, for the skills that ship a script or build an HTML page.
 
 Optional, only for the skills that name them:
 
-- T3 Code and its `t3` command: [kickoff-t3](skills/kickoff-t3/), [orchestrate](skills/orchestrate/).
+- T3 Code and its `t3` command: [run-in-t3](skills/run-in-t3/), [orchestrate](skills/orchestrate/).
 - proofbox: [build-and-prove](skills/build-and-prove/), and [ship](skills/ship/) on its local route, for a plan with UI walks.
-- Devin: [handoff](skills/handoff/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2.1 answer.
-- Cursor: [handoff](skills/handoff/).
+- Devin: [dispatch](skills/dispatch/), and [ship](skills/ship/) when you name it, and Devin Review, or another review tool, for [ready-pr](skills/ready-pr/), and [sync-harnesses](skills/sync-harnesses/), which asks Devin's CLI for one SWE-2.1 answer.
+- Cursor: [dispatch](skills/dispatch/).
 - macOS and `agent-desktop`: [use-mac](skills/use-mac/) and [complete-task](skills/complete-task/).
 - Xcode's iOS simulator and AXe: [use-mac](skills/use-mac/), to check a web page on an iPhone.
 - The `impeccable` skill: [create-prototype](skills/create-prototype/) and [create-diagram](skills/create-diagram/), to match your design system.
 - A tool with screens and flows from real apps, such as the Mobbin MCP: [create-prototype](skills/create-prototype/), for references.
-- `semble`: [semantic-code-search](skills/semantic-code-search/) and [embed-source](skills/embed-source/).
+- `semble`: [search-by-meaning](skills/search-by-meaning/) and [embed-source](skills/embed-source/).
 
 ## Credits
 

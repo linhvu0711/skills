@@ -32,11 +32,11 @@ When it finds nothing, the page says so, and the skill asks nothing and writes n
 - `git`, for the change counts.
 - An agent that can start subagents: the `design-judge` helper in `agents/`, one per batch of about ten files. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [codebase-design.md](../../shared/codebase-design.md) holds the vocabulary and the deletion test, and [facts.md](../../shared/facts.md) says how facts are fetched.
-- [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets and seeds.
+- [grill](../grill/) for the talk, and [file-issue](../file-issue/) and [capture](../capture/) for the tickets and seeds.
 
 ## Fits with
 
-- Calls [grill](../grill/), [to-issue](../to-issue/), and [capture](../capture/). A rule goes in through the Standard's shared step, as in [prune-codebase](../prune-codebase/).
+- Calls [grill](../grill/), [file-issue](../file-issue/), and [capture](../capture/). A rule goes in through the Standard's shared step, as in [prune-codebase](../prune-codebase/).
 - Hands off to [make-pr](../make-pr/) for the ADRs and rules it leaves uncommitted.
 - [plan-up](../plan-up/) and [ship](../ship/) build a ticket it filed: `/ship #42`.
 - Unused code, copies, hacks, and comments go to [prune-codebase](../prune-codebase/).

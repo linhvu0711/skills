@@ -40,7 +40,7 @@ No merge: a person's approval is the user's. The report ends `NOT MERGED https:/
 
 **User:** `/ship https://github.com/acme/shop/issues/42 devin`.
 
-`Route: cloud (devin, named)`. Handoff § First prompt whole with Devin, a line-by-line watch on it. Later `finished` with PR 44; finish check passes; Ready step says `READY`. Report with `session: <url>`.
+`Route: cloud (devin, named)`. Dispatch § First prompt whole with Devin, a line-by-line watch on it. Later `finished` with PR 44; finish check passes; Ready step says `READY`. Report with `session: <url>`.
 
 **User:** `/ship https://github.com/acme/shop/issues/88`; the plan says `Platform: windows`.
 
@@ -56,7 +56,7 @@ No build, no plan: § No issue case 3. Plan-up's chat form prints `Brief: [feat]
 
 **User:** `/ship devin` after the same chat.
 
-Case 3 again, then Route: `A chat plan has no issue, so it cannot build in the cloud. Run /to-issue first.` Stop.
+Case 3 again, then Route: `A chat plan has no issue, so it cannot build in the cloud. Run /file-issue first.` Stop.
 
 **User:** `/ship https://github.com/acme/shop/issues/61` where the issue has no Done-when list.
 
@@ -64,4 +64,4 @@ Plan-up's gate fails: the question that closes it, `/grill` named. Stop. Nothing
 
 **User:** `/ship --ready https://github.com/acme/shop/issues/90`; after the first wait on PR 91, `reviewers.sh` prints nothing.
 
-No review bot. Review-pr reviews PR 91 and finds one `🟠 should`; validate-pr-review on its report judges it `fix here`, the fix is committed and pushed, nothing is posted. Then ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's `Route:` line ends ` · review-pr: comment`.
+No review bot. Review-pr reviews PR 91 and finds one `🟠 should`; validate-pr-reviews on its report judges it `fix here`, the fix is committed and pushed, nothing is posted. Then ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's `Route:` line ends ` · review-pr: comment`.

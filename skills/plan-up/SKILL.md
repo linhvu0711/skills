@@ -1,6 +1,6 @@
 ---
 name: plan-up
-description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, a whole epic, stacked as PRs, or work this chat agreed on with no issue, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for go, then /handoff. Use when the user types /plan-up with an issue, tickets, an epic, or none for a chat plan."
+description: "Turn one ready GitHub issue, a run of epic tickets, a set of plain tickets, a whole epic, stacked as PRs, or work this chat agreed on with no issue, into a plan an executor can follow cold: seams, tests, slices, docs, UI walks, video scripts. Settles doubts by reading and by small probes, and leaves the repo as it was. Ends with the plan as a local HTML page open in the browser, a short summary in chat, and waits for go, then /dispatch. Use when the user types /plan-up with an issue, tickets, an epic, or none for a chat plan."
 disable-model-invocation: true
 ---
 
@@ -125,7 +125,7 @@ Name each issue or PR any way: a URL, `42`, `#42`, `issue 42`, `PR 80`, or words
    - **Record.** A `## Plan check` block, last in the `.md`, per `../../shared/plan.md` § Plan check. The line has one part per checker, correctness first, joined by `; `. Each part is `<n> found · <f> fixed · <a> asked you`, `none found`, `skipped · <why>`, or `failed · <why>`, as `Plan check: correctness 3 found · 2 fixed · 1 asked you; design skipped · no new or moved part`.
    - **One fails.** An error, a refusal, or a usage limit: the plan goes on without that checker, which gets no line in the block, and its part of the line is `failed · <why>`. The other checker's findings stand. No checker that ran is left: no block.
 
-9. **Present.** Per `../../shared/plan-page.md`: run `python3 scripts/build_page.py <plan .md>`, and on problem lines on stderr fix the `.md` and run it again. Never write `DATA`: the builder makes it. Serve with `../../shared/serve.sh`, open it in the browser, or publish it on a headless host. Chat gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An edit: change the `.md`, rebuild, bump `v`, show the summary again. `go`: remove the base copy (step 1), say `Ready for /handoff.` (a chat plan: `Ready for /ship.`, since the cloud needs an issue), and stop. Any other reply, a question too: answer it and wait again.
+9. **Present.** Per `../../shared/plan-page.md`: run `python3 scripts/build_page.py <plan .md>`, and on problem lines on stderr fix the `.md` and run it again. Never write `DATA`: the builder makes it. Serve with `../../shared/serve.sh`, open it in the browser, or publish it on a headless host. Chat gets the summary block from `plan-page.md` § Chat, nothing more. Wait. An edit: change the `.md`, rebuild, bump `v`, show the summary again. `go`: remove the base copy (step 1), say `Ready for /dispatch.` (a chat plan: `Ready for /ship.`, since the cloud needs an issue), and stop. Any other reply, a question too: answer it and wait again.
 
 ## Examples
 

@@ -10,7 +10,7 @@ You have a plan with decisions still open, and you want them found and settled b
 
 One question per message, each with its options and a recommended pick (the clean, long-term option, with any quick fix shown as a labelled fallback), until you agree the plan is understood. Each question explains the problem in plain words, with a small example when the idea is not obvious, and puts the code it rests on in a last `Seen:` line. Each question also comes with a picture that puts its options side by side, with one real example each. T3 Code shows it in the chat, and other hosts open it in your browser. After you answer, the next message starts with the next question and ends with a short `Got it:` line. New terms get a glossary entry, and a decision that is hard to reverse, surprising, and the result of a real trade-off gets an ADR. No doc file changes while you talk.
 
-At the end you get the settled list, and the docs go with the work. When there is code to build, it files one issue through [to-issue](../to-issue/), a few issues through to-issue when they do not depend on each other, or an epic through [to-epic](../to-epic/) when they do. With more than one ticket, it names the shape (`3 issues`, `an epic with 4 children`) when it asks you to confirm. For an epic, a second model reads the decisions you agreed on, once, before anything is filed. In T3 Code it comes from another company; elsewhere it runs on your own harness's model. It looks for missing pieces and for decisions whose reason states a fact the code contradicts. Each finding the chat has not answered comes back to you as a question, and you confirm again. The check never runs twice, and the settled list shows its result, as `Gap check: 4 found · 3 asked · 1 already settled`. When the work changes a screen, grill stops before it files anything and suggests `/create-prototype`, so you can click through the design first. Whatever you change there joins the settled list, and the issues are filed when you say `go`. The agreed text goes in the issue under `## Docs to write`. The PR that ships the code writes the docs, so no doc says what the code does not do yet. A seed issue you started from becomes that issue, same number; it is never closed:
+At the end you get the settled list, and the docs go with the work. When there is code to build, it files one issue through [file-issue](../file-issue/), a few issues through file-issue when they do not depend on each other, or an epic through [file-epic](../file-epic/) when they do. With more than one ticket, it names the shape (`3 issues`, `an epic with 4 children`) when it asks you to confirm. For an epic, a second model reads the decisions you agreed on, once, before anything is filed. In T3 Code it comes from another company; elsewhere it runs on your own harness's model. It looks for missing pieces and for decisions whose reason states a fact the code contradicts. Each finding the chat has not answered comes back to you as a question, and you confirm again. The check never runs twice, and the settled list shows its result, as `Gap check: 4 found · 3 asked · 1 already settled`. When the work changes a screen, grill stops before it files anything and suggests `/create-prototype`, so you can click through the design first. Whatever you change there joins the settled list, and the issues are filed when you say `go`. The agreed text goes in the issue under `## Docs to write`. The PR that ships the code writes the docs, so no doc says what the code does not do yet. A seed issue you started from becomes that issue, same number; it is never closed:
 
 ```
 Grill done.
@@ -32,7 +32,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - `gh`, signed in, for seed issues.
 - `git`.
 - Readers for the code and for research, per the reader job in `../../shared/facts.md`. Codex has none, so there it reads the files itself.
-- [to-issue](../to-issue/) and [to-epic](../to-epic/), to file the work with its doc text.
+- [file-issue](../file-issue/) and [file-epic](../file-epic/), to file the work with its doc text.
 - The `gap-checker` subagent, in `agents/`, for work filed as an epic. It starts per `../../shared/facts.md` § Skill agents, on the try list its tier gives for your harness. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - [make-pr](../make-pr/), for the docs PR when no work follows.
 - [unslop](../unslop/), run on the prose before the commit.
@@ -40,11 +40,11 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 ## Fits with
 
-- Calls [unslop](../unslop/), then [to-issue](../to-issue/) or [to-epic](../to-epic/), or [make-pr](../make-pr/) when no work follows.
+- Calls [unslop](../unslop/), then [file-issue](../file-issue/) or [file-epic](../file-epic/), or [make-pr](../make-pr/) when no work follows.
 - Suggests [create-prototype](../create-prototype/) before it files work that changes a screen.
 - Sends a bug to [triage](../triage/) first, and work too big for one session to [discover-path](../discover-path/).
 - Called with a seed by [discover-path](../discover-path/), [triage](../triage/), [improve-architecture](../improve-architecture/), and [audit-coding-standards](../audit-coding-standards/).
-- Named as the next step when a gate fails in [to-issue](../to-issue/), [to-epic](../to-epic/), [plan-up](../plan-up/), and [create-prototype](../create-prototype/).
+- Named as the next step when a gate fails in [file-issue](../file-issue/), [file-epic](../file-epic/), [plan-up](../plan-up/), and [create-prototype](../create-prototype/).
 
 ## Credits
 

@@ -78,7 +78,7 @@ The walker now does each step in one proofbox call that also sets the step's cap
 
 ## Fits with
 
-- Builds the plan [plan-up](../plan-up/) writes, with the rules [handoff](../handoff/) renders for a local builder.
+- Builds the plan [plan-up](../plan-up/) writes, with the rules [dispatch](../dispatch/) renders for a local builder.
 - Called by [ship](../ship/), which then runs [make-pr](../make-pr/) with the proof folder and [ready-pr](../ready-pr/).
 - Why Coding runs on the local machine and the Gates CI does not run in the Sandbox, and why the walker never reads code: ADRs 0011, 0038, and 0010 in this repo. Why a plan with no UI starts no Sandbox: ADR 0019.
 

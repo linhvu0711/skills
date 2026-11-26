@@ -15,7 +15,7 @@ You have a ready issue and want the whole path done without starting each step b
 - `/ship` with no issue named, and words after it or none. What the chat holds picks the start:
   - a build this chat started: the words are an answer or a follow-up for it. [build-and-prove](../build-and-prove/) builds the follow-up and does again only what it touches, then [make-pr](../make-pr/) opens or updates the PR;
   - a plan that `/plan-up` made in this chat: it skips the planning and starts at the build, and words with it are an edit to the plan;
-  - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [to-issue](../to-issue/) first.
+  - neither: it plans the work this chat agreed on, with no issue. It prints a short brief (title, size, Done-when lines) and goes on. If the chat left a gap, it stops and names [grill](../grill/). The PR has no `Closes #<n>` line. A plan with no issue builds only on your machine: the cloud needs an issue, so make one with [file-issue](../file-issue/) first.
 
 Put `--review`, `--ready`, or `--merge` first to set the ship mode, as in `/ship --merge <issue>`. It only runs when you call it.
 
@@ -33,10 +33,10 @@ Two guards stay in every mode. The plan's big forks still stop for you. A hard-t
 
 **The plan,** from [plan-up](../plan-up/), as a `.md` file, unless the chat already has one. Your checkout can be on any branch, with edits or not; plan-up reads a copy of the base branch and leaves your tree alone. Unless the ship mode is `review`, no page opens: the chat gets a short summary with the file's path, and the run goes on. When either of plan-up's plan checkers fails, the run takes `review` and waits for your `go`, since a check the plan was due did not run.
 
-**The run.** It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; with no todo tool in the host, it keeps the list in the chat. A step it skips stays in the list with the reason. It never merges outside its merge step, never force-pushes a branch it did not make (it hands ready-pr's restack the PRs it opened, and the restack leaves the rest), never closes a PR; the rules sit together at the top of the skill. A worktree left from an earlier ticket goes only through [prune-worktrees](../prune-worktrees/), which checks the merge first, and only when no other ticket is building in the repo, since a fresh worktree with no PR also counts as merged; never by hand. Then the route:
+**The run.** It keeps a todo list of its steps and of each skill it runs, so it keeps its place when the chat is compacted; with no todo tool in the host, it keeps the list in the chat. A step it skips stays in the list with the reason. It never merges outside its merge step, never force-pushes a branch it did not make (it hands ready-pr's restack the PRs it opened, and the restack leaves the rest), never closes a PR; the rules sit together at the top of the skill. A worktree left from an earlier ticket goes only through [clean-worktrees](../clean-worktrees/), which checks the merge first, and only when no other ticket is building in the repo, since a fresh worktree with no PR also counts as merged; never by hand. Then the route:
 
 - **Local**, the default, for every plan, with UI walks or without: [build-and-prove](../build-and-prove/) builds it in a git worktree under `~/development/worktrees`, writes and tests each slice on the local machine, and, for a plan with walks, runs the app and the Gates the PR's CI does not run in one proofbox Sandbox and has a walker film the walks. A plan with no UI starts no Sandbox: each Gate the PR's CI runs is left to CI, and your machine runs the rest. Then [make-pr](../make-pr/) opens the PR with the screenshots and videos, and [ready-pr](../ready-pr/) takes it through review. After the PR's first checks are done, it looks on that PR for a review bot from a short list in `../../shared/review/reviewers.tsv` (Devin Review, CodeRabbit, Cursor Bugbot, Greptile, Macroscope). With none there, [review-pr](../review-pr/) reviews the PR first, and its findings are judged and fixed like a bot's, with nothing posted. A bot not on the list gets a local review too: one review too many, never one too few. Each push of fixes gets a new review; after three rounds that push, one last review fixes nothing and stops the run if it still finds something. Review fixes run their tests on your machine. Before each push of fixes, build-and-prove's follow-up does again only what the fixes touch: the Gates the PR's CI does not run, the videos whose walks the fixes reach (a fix on a path no walk takes keeps its video), and the perf measure when the fixes touch the code the perf command runs. After the push, make-pr updates the PR from the proof folder. A stack goes layer by layer, bottom first.
-- **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [handoff](../handoff/). A Windows plan asks first, since proofbox has no Windows.
+- **Cloud**, only when the command names `devin` or `cursor`: that agent builds it through [dispatch](../dispatch/). A Windows plan asks first, since proofbox has no Windows.
 
 It stops only for a ticket someone else is already on, the plan's big decisions, the build's surprises, and a review finding it cannot settle alone, such as a risky one it would not fix.
 
@@ -47,7 +47,7 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 - The method is a merge commit when the repo allows it, else squash, else rebase. A merge commit keeps one commit per slice, and the next PR in a stack needs no rebase.
 - In a stack, after a PR merges, the next one points at the base branch, is rebased when the method was squash or rebase, and is made ready again before its merge.
 - It never uses `--admin`, auto-merge, or a merge queue, and never pushes to the base branch. The repo's branch rules stay in force.
-- After the last merge, [prune-worktrees](../prune-worktrees/) removes the worktrees whose PR merged, with their branches.
+- After the last merge, [clean-worktrees](../clean-worktrees/) removes the worktrees whose PR merged, with their branches.
 - A new layer on an open stack (`on <pr>`) is made ready but not merged, since the PR under it is not this run's.
 
 **The last message.** One `Ship mode:` line per PR, above its last line. The PR body has no ship mode:
@@ -56,13 +56,13 @@ It stops only for a ticket someone else is already on, the plan's big decisions,
 Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
 Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
 Worktree: ~/development/worktrees/acme/app/feat-42-login
-After merge: /prune-worktrees
+After merge: /clean-worktrees
 Ship mode: ready · small fix, no schema or API, no risk in the plan
 READY https://github.com/acme/app/pull/43
 ```
 
 - A PR that waits only for a person's approval ends with `READY <url> (waiting for approval)`.
-- Ship mode `merge` ends with the merge line, `MERGED https://github.com/acme/app/pull/43 merge 4f2a1b0`, and the lines `prune-worktrees` printed in place of the `After merge` line. A PR it did not merge ends `NOT MERGED <url>: <why>`.
+- Ship mode `merge` ends with the merge line, `MERGED https://github.com/acme/app/pull/43 merge 4f2a1b0`, and the lines `clean-worktrees` printed in place of the `After merge` line. A PR it did not merge ends `NOT MERGED <url>: <why>`.
 - A mode you typed reads `Ship mode: merge (set) · <worry or none>`.
 - A PR the re-check held back reads `Ship mode: ready (was merge) · <why>`, and ends with its `READY` line.
 
@@ -71,19 +71,19 @@ Each fact it states carries an evidence label (Seen, Inferred, Guess, or Unknown
 ## Needs
 
 - `gh` (signed in, and allowed to merge in the repo for ship mode `merge`), `git`, `jq`, and `python3`.
-- The skills it chains: [plan-up](../plan-up/), [build-and-prove](../build-and-prove/), [make-pr](../make-pr/), [review-pr](../review-pr/), [ready-pr](../ready-pr/), and [handoff](../handoff/) for the cloud, and what they need. build-and-prove needs proofbox.
-- [prune-worktrees](../prune-worktrees/) and [fix-conflicts](../fix-conflicts/) for ship mode `merge`.
+- The skills it chains: [plan-up](../plan-up/), [build-and-prove](../build-and-prove/), [make-pr](../make-pr/), [review-pr](../review-pr/), [ready-pr](../ready-pr/), and [dispatch](../dispatch/) for the cloud, and what they need. build-and-prove needs proofbox.
+- [clean-worktrees](../clean-worktrees/) and [fix-conflicts](../fix-conflicts/) for ship mode `merge`.
 - The shared core files `../../shared/facts.md`, `../../shared/plan-page.md`, `../../shared/gh.sh`, how `merge.sh` and `reviewers.sh` run `gh`, and `../../shared/review/reviewers.sh`, with its list `reviewers.tsv`.
 - The harness table, `../../shared/harness.md`, for the todo list and the watches it runs.
 - For `review`: a browser on this machine for the plan page. With none, plan-up publishes the page as an artifact.
-- For the cloud route: a Devin or Cursor account, as [handoff](../handoff/) describes.
+- For the cloud route: a Devin or Cursor account, as [dispatch](../dispatch/) describes.
 
 ## Fits with
 
-- Calls [plan-up](../plan-up/), then [build-and-prove](../build-and-prove/) and [make-pr](../make-pr/), or [handoff](../handoff/) when you name the cloud, then [review-pr](../review-pr/) when the repo has no review tool, then [ready-pr](../ready-pr/).
+- Calls [plan-up](../plan-up/), then [build-and-prove](../build-and-prove/) and [make-pr](../make-pr/), or [dispatch](../dispatch/) when you name the cloud, then [review-pr](../review-pr/) when the repo has no review tool, then [ready-pr](../ready-pr/).
 - A failed readiness gate sends you to [grill](../grill/) first.
-- In a stack, runs [ready-pr](../ready-pr/) again on each PR after the one below it merges, and [prune-worktrees](../prune-worktrees/) at the end.
-- [kickoff-t3](../kickoff-t3/) starts it in a new thread, and [orchestrate](../orchestrate/) starts it for each ticket it runs; else you run it.
+- In a stack, runs [ready-pr](../ready-pr/) again on each PR after the one below it merges, and [clean-worktrees](../clean-worktrees/) at the end.
+- [run-in-t3](../run-in-t3/) starts it in a new thread, and [orchestrate](../orchestrate/) starts it for each ticket it runs; else you run it.
 
 ## Credits
 

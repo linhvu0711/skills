@@ -40,11 +40,11 @@ When it finds nothing, the page says so and nothing is written. When it found no
 - An agent that can start subagents, for the research and for the `rule-judge` and `way-judge` helpers in `agents/`, which each read about ten files at a time. They start per `../../shared/facts.md` § Skill agents, on the try list its tier gives for your harness. [link.sh](../../scripts/link.sh) installs both.
 - The shared core: [clean-codebase](../../shared/clean-codebase/) runs the five steps and builds the page, [coding-standards](../../shared/coding-standards/) holds the Standard's shape, and [facts.md](../../shared/facts.md) says how facts are fetched.
 - Its own [checks.md](references/checks.md) and [research.md](references/research.md): where rules live, the four checks, the size of the repo, and how sources are read.
-- [grill](../grill/) for the talk, and [to-issue](../to-issue/) and [capture](../capture/) for the tickets.
+- [grill](../grill/) for the talk, and [file-issue](../file-issue/) and [capture](../capture/) for the tickets.
 
 ## Fits with
 
-- Calls [grill](../grill/), [to-issue](../to-issue/), and [capture](../capture/).
+- Calls [grill](../grill/), [file-issue](../file-issue/), and [capture](../capture/).
 - [prune-codebase](../prune-codebase/) runs the same five steps on bad comments.
 - Hands off to [make-pr](../make-pr/) for the files it leaves uncommitted.
 - [ship](../ship/) can fix a ticket it filed later: `/ship #42`.

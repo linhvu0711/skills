@@ -52,7 +52,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
 1. **Plan.** A plan this chat made (§ No issue): skip this step. Else read `../plan-up/SKILL.md` and follow its steps 1 to 9 whole: base copy, issue, gate, facts, forks, plan, done rule, check, page. Its stop points are yours: a base that cannot be fetched, a gate that fails, a `manual` ticket, a claimed ticket you do not build anyway, a stale step, and every big fork (one question per message, wait), the plan check's questions included. Step 9 changes: run `build_page.py` on the `.md` and fix its problem lines on stderr, as plan-up says, but serve, open, publish, print, and wait for nothing yet; step 2 does that.
 
-   A worktree or branch an earlier ticket left goes only through `bash ../prune-worktrees/scripts/prune-worktrees.sh`, run from the session's folder. It removes a clean worktree whose PR merged at its last commit, and also one with no PR whose tip is in the default branch, as a worktree another ticket just made is. So run it only when no other ticket is building in this repo; when you cannot tell, leave the old worktree for step 8 or the end of the run. One it keeps stays, with its reason in the report. Never remove one by hand, with `git worktree remove` or `git branch -D`.
+   A worktree or branch an earlier ticket left goes only through `bash ../clean-worktrees/scripts/prune-worktrees.sh`, run from the session's folder. It removes a clean worktree whose PR merged at its last commit, and also one with no PR whose tip is in the default branch, as a worktree another ticket just made is. So run it only when no other ticket is building in this repo; when you cannot tell, leave the old worktree for step 8 or the end of the run. One it keeps stays, with its reason in the report. Never remove one by hand, with `git worktree remove` or `git branch -D`.
 
    Done when the plan `.md` exists, `build_page.py` printed no problem line, and you hold its path.
 
@@ -64,20 +64,20 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
    - Hold `<why>`: one short phrase for the pick, as `small fix, no schema or API, no risk in the plan`.
 
    The plan, by mode:
-   - `ready` or `merge`: remove the base copy (plan-up step 1), leave out `Ready for /handoff.`, and print the summary of `../../shared/plan-page.md` § Chat with no URL line and no `Say go` line. Go on at once to step 3: nothing waits.
+   - `ready` or `merge`: remove the base copy (plan-up step 1), leave out `Ready for /dispatch.`, and print the summary of `../../shared/plan-page.md` § Chat with no URL line and no `Say go` line. Go on at once to step 3: nothing waits.
    - `review`: serve the page and open it, or publish it on a headless host, per `../../shared/plan-page.md`. Print its § Chat summary with its URL, with one more line above the `Say go` line, `Ship mode: review · <why>`, or `Ship mode: review (set)` when the option set it. Nothing is built while it waits. The answer picks the next move:
      - An edit, a ref and what to change: change the `.md`, rebuild, bump `v`, show the summary again, and wait again.
-     - `go`: remove the base copy, leave out `Ready for /handoff.`, and go on at once to step 3.
+     - `go`: remove the base copy, leave out `Ready for /dispatch.`, and go on at once to step 3.
      - `stop`: remove the base copy, say `Stopped: nothing built. Plan:
        <path>`, and end the run.
      - Any other reply, a question too: answer it and wait again.
 
    Done when the mode is set and held, and either the summary printed with no wait, or the user said `go`.
 
-3. **Route.** Cloud when the command named `devin` or `cursor`. Local otherwise, with walks or without, one ticket or a stack. One case asks: a plan with `Platform: windows` and no executor named, since proofbox has no Windows. Ask `proofbox has no Windows. Build it on Devin?`, A yes (pick), B stop; wait. A chat plan has no issue, and the cloud needs one (handoff § First prompt step 1): with `devin` or `cursor` named, or with `Platform: windows`, say `A chat plan has no issue, so it cannot build in the cloud. Run /to-issue first.` and stop. Say the route in one line: `Route: local (3 walks)`, `Route: local (stack of 3)`, `Route: local (no UI)`, or `Route: cloud (devin, named)`.
+3. **Route.** Cloud when the command named `devin` or `cursor`. Local otherwise, with walks or without, one ticket or a stack. One case asks: a plan with `Platform: windows` and no executor named, since proofbox has no Windows. Ask `proofbox has no Windows. Build it on Devin?`, A yes (pick), B stop; wait. A chat plan has no issue, and the cloud needs one (dispatch § First prompt step 1): with `devin` or `cursor` named, or with `Platform: windows`, say `A chat plan has no issue, so it cannot build in the cloud. Run /file-issue first.` and stop. Say the route in one line: `Route: local (3 walks)`, `Route: local (stack of 3)`, `Route: local (no UI)`, or `Route: cloud (devin, named)`.
 
-4. **Cloud.** Read `../handoff/SKILL.md` and follow § First prompt whole, steps 1 to 9, with the named executor: prompt, send, watch, answer its questions (small forks yourself, big forks to the user), finish check. The PRs stay the executor's. On `finished` with a PR, run the Ready step of `../ready-pr/SKILL.md` on each PR, bottom of the stack first: `READY` on every one, go to step
-   8. Anything open goes back to the session as a follow-up per handoff § Follow-up, naming the PR and what is open; watch again; at most three times, then step 8 with what is open.
+4. **Cloud.** Read `../dispatch/SKILL.md` and follow § First prompt whole, steps 1 to 9, with the named executor: prompt, send, watch, answer its questions (small forks yourself, big forks to the user), finish check. The PRs stay the executor's. On `finished` with a PR, run the Ready step of `../ready-pr/SKILL.md` on each PR, bottom of the stack first: `READY` on every one, go to step
+   8. Anything open goes back to the session as a follow-up per dispatch § Follow-up, naming the PR and what is open; watch again; at most three times, then step 8 with what is open.
 
 5. **Local: build.** Read `../build-and-prove/SKILL.md` and follow it whole on the plan: worktree, setup files, Sandbox, builder, walks, proof folder. Its stop points are yours. It ends with `BUILT
    <branch>`; hold `WT`, the branch, the proof folder `PROOF`, and the
@@ -87,7 +87,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
 6. **Local: PR.** Read `../make-pr/SKILL.md` and follow it in `$WT`, with its five caller settings: the branch `BUILT` named; the files are the branch's commits, nothing new; the issue line `Closes #<n>`, or none for a chat plan; under `Summary`, the plan's Review `Change` and `Approach` in plain words, plus each surprise that changed what the code does; and the proof folder `PROOF`. The base is the layer's base from step 5. Its checks are in `checks.txt`, run in the Sandbox, on the local machine, or left to CI, so it runs none here. The PR body holds no ship mode.
 
-7. **Make ready.** First the checks on each PR, bottom of the stack first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me> --watch <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's head and `me` is `gh api user -q .login`. Its `RED` and `THREAD` lines are not read here: ready-pr's own watch reads them. Then the review bots on that PR: `bash ../../shared/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr: show it, stop. No line means no review bot: read `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the stack first, in its worktree, and post nothing. Then ready-pr step 5 on its report file as a text review: validate-pr-review with the report path as the argument, `go` given, under ready-pr step 5's five rules; its fixes are committed and pushed. A push makes a new head that review-pr has not seen: review it again, and judge that report the same way, until a round pushes nothing. After three rounds that push, review-pr runs once more on the last head and nothing is fixed: a `fix here` it finds, say what keeps coming back and stop; none, go on. The cloud route skips this: its PRs are the executor's.
+7. **Make ready.** First the checks on each PR, bottom of the stack first: `bash ../ready-pr/scripts/ready.sh <REPO> <NUMBER> --me <me> --watch <SHA>`, as ready-pr step 3 runs it, where `SHA` is the PR's head and `me` is `gh api user -q .login`. Its `RED` and `THREAD` lines are not read here: ready-pr's own watch reads them. Then the review bots on that PR: `bash ../../shared/review/reviewers.sh <REPO> <NUMBER>`. `stop:` on stderr: show it, stop. No line means no review bot: read `../review-pr/SKILL.md` and follow it whole on each PR, bottom of the stack first, in its worktree, and post nothing. Then ready-pr step 5 on its report file as a text review: validate-pr-reviews with the report path as the argument, `go` given, under ready-pr step 5's five rules; its fixes are committed and pushed. A push makes a new head that review-pr has not seen: review it again, and judge that report the same way, until a round pushes nothing. After three rounds that push, review-pr runs once more on the last head and nothing is fixed: a `fix here` it finds, say what keeps coming back and stop; none, go on. The cloud route skips this: its PRs are the executor's.
 
    Then read `../ready-pr/SKILL.md` and follow it whole on each PR, bottom of the stack first, in its worktree. Its fixes run their tests on the local machine, `cd "$WT" && …`, as ready-pr says, and start no Sandbox. Before each push of ready-pr step 5, of fixes or of a rebase alone, and after its rebase when it rebased, follow `../build-and-prove/SKILL.md` § Follow-up in `$WT` with the change `review fixes are committed`, or `rebased on <BASE>` for a rebase alone, and the layer's `--layer` and `--base` from step 5 for a layer of a stack; its stop points are yours. After the push, follow `../make-pr/SKILL.md` in `$WT` with step 6's caller settings: it updates the PR from `PROOF`. make-pr comes after the push, since its own push stops on a rebased head.
 
@@ -113,7 +113,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
    After the last merge, from the session's folder:
 
    ```bash
-   bash ../prune-worktrees/scripts/prune-worktrees.sh
+   bash ../clean-worktrees/scripts/prune-worktrees.sh
    ```
 
    It removes each worktree whose PR merged at its last commit, with its branch, and keeps the rest with the reason. `stop:` on stderr: show it; nothing was removed, and the merges stand. Hold its lines.
@@ -124,7 +124,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
    Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
    Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
    Worktree: ~/development/worktrees/acme/app/feat-42-login
-   After merge: /prune-worktrees
+   After merge: /clean-worktrees
    Ship mode: ready · small fix, no schema or API, no risk in the plan
    READY https://github.com/acme/app/pull/43
    ```
@@ -139,7 +139,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
    Ship mode `merge`, three changes:
    - the last line is the `MERGED` line `merge.sh` printed, as in `MERGED https://github.com/acme/app/pull/43 merge 4f2a1b0`;
-   - the `After merge: /prune-worktrees` line is the lines `prune-worktrees.sh` printed;
+   - the `After merge: /clean-worktrees` line is the lines `prune-worktrees.sh` printed;
    - a PR that was not merged ends `NOT MERGED <url>: <why>`, or keeps its `READY` line when the re-check held it back. Nothing was merged: no prune lines.
 
    Ship mode `review` or `ready`: the merge is the user's.
@@ -148,7 +148,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 
 `/ship` with no issue named, words after it or none. You judge whether the words name an issue or point at work in this chat. The first case that holds picks the start; the option and `devin` or `cursor` are taken off first, as in § Forms.
 
-1. **A build this chat started.** The words are a follow-up. A local build: follow `../build-and-prove/SKILL.md` § Follow-up in its worktree with the words as the change, and `--layer` and `--base` for a layer of a stack; its stop points are yours. Then go on from step 6: make-pr opens the PR, or updates the open one from `PROOF`. A cloud session: handoff § Follow-up. No words: say `A build from this chat is open; say what to change.` and stop.
+1. **A build this chat started.** The words are a follow-up. A local build: follow `../build-and-prove/SKILL.md` § Follow-up in its worktree with the words as the change, and `--layer` and `--base` for a layer of a stack; its stop points are yours. Then go on from step 6: make-pr opens the PR, or updates the open one from `PROOF`. A cloud session: dispatch § Follow-up. No words: say `A build from this chat is open; say what to change.` and stop.
 2. **A plan this chat made**, by `/plan-up` or by this skill's step 1, with no build yet. Hold its `.md`, the path its summary names, and say `Plan: <path>`. Words with it are an edit to the plan: change the `.md` and run `build_page.py` on it, with no page and no wait. Then step 2 sets the ship mode and removes the base copy, per plan-up step 1, unless the mode is `review`. When it is `review`:
    - The plan got `go` already, as `/plan-up` alone ends, and no words came with it: nothing waits. Remove the base copy and go on to step 3.
    - The plan got `go` already and words came with it, so the edit changed it: show the summary with the page URL and wait for `go` again, as step 2 does.

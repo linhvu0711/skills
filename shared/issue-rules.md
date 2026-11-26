@@ -1,6 +1,6 @@
 # Issue rules
 
-Shared by `to-issue` and `to-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
+Shared by `file-issue` and `file-epic`; `capture` follows § Written for a stranger and the label names. One issue here is a **ticket**: a unit of work an agent can pick up cold, in a fresh context window, and ship as one PR. The one exception is a `task`: work a person does cold in a platform outside the repo, and reports back. Everything below serves those two readers.
 
 ## Vocabulary
 
@@ -11,7 +11,7 @@ Titles and bodies use the repo's own words. The glossary is `CONTEXT.md` (or the
 Every issue these skills write, a ticket, a `task`, or a raw seed or bug from `capture`, is read by someone with no access to the chat that wrote it or the machine it ran on, maybe months later: another person, or an agent in a fresh session. Write so that reader can act on the issue alone.
 
 - **Nothing local.** No path on the writer's machine (a temp, scratch, or home folder), and no name of a thing that dies with the session: a VM or sandbox ID, a PID, a temp branch, a local port. Say what the thing was instead: "a fresh macOS VM", not its ID.
-- **Nothing of the source repo.** An issue or comment filed in a repo other than the one the chat ran in names nothing of that repo: not its name, its `owner/name`, a path in it, or a path in one of its worktrees. In a quote, put what the thing is in its place, as "a web app's cart file". A caller that names the words to leave out, as retro does, has each one checked before the issue is made.
+- **Nothing of the source repo.** An issue or comment filed in a repo other than the one the chat ran in names nothing of that repo: not its name, its `owner/name`, a path in it, or a path in one of its worktrees. In a quote, put what the thing is in its place, as "a web app's cart file". A caller that names the words to leave out, as retrospect does, has each one checked before the issue is made.
 - **No session words.** "Run 3", "the agent", "my limit", "as we saw above" mean nothing to the reader. Name what happened. How it was found is one line at most: `Found while <doing what>, YYYY-MM-DD.`
 - **Code by permalink.** In Context, a file and line is `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<a>-L<b>`, where `<sha>` is the full commit the lines were seen at, read in the checkout where they were seen (`git -C <that checkout> rev-parse HEAD`), which is not always the current folder. It must be on GitHub in the issue's repo: `gh api repos/<owner>/<repo>/commits/<sha> --silent` succeeds. No such checkout, or GitHub does not have the commit: write the path with no line, because a bare line number drifts with the next change. Steps keep the short `path:line` form; the Files line in Context carries the permalinks for the same places.
 - **Evidence in the issue.** An error goes in a code block, verbatim. A log goes in as the lines that matter, ten at most. A screenshot or recording the chat already has is uploaded with `--attach` on `gh issue create` or `gh issue edit` and referenced as `![alt](./file.png)`, never as a local path.
@@ -30,7 +30,7 @@ A ticket can be written only when all three hold, from the conversation alone:
 
 For a `task`, "what" is the thing that must exist at the end, "done" is the code ticket being able to use it, and "where" is the platform and account on top of the repo. Unhappy paths do not apply.
 
-Any one missing: stop. List the gaps in one short block, each as the question whose answer would close it. Name `/grill` as the way to close many at once, or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet known. Write nothing on GitHub, except the `capture` issue that `to-issue` step 1 files for a raw thing.
+Any one missing: stop. List the gaps in one short block, each as the question whose answer would close it. Name `/grill` as the way to close many at once, or `/triage` when the ticket is a `fix` or `perf` and the cause is not yet known. Write nothing on GitHub, except the `capture` issue that `file-issue` step 1 files for a raw thing.
 
 ## Types
 
@@ -70,7 +70,7 @@ Priority and size never appear in the title. They are labels.
 
 The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
 
-XL in `to-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `to-epic`. XL in `to-epic`: cut it further.
+XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `file-epic`. XL in `file-epic`: cut it further.
 
 A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
 
@@ -215,7 +215,7 @@ Every credential in Hand back carries the warning on its line. The value of one 
 
 Steps are always written. They come from the platform's docs, fetched in the one lookup round, whose brief asks for the web (see Lookup). Each step names the page, the button or field, and the value to enter. A step with no doc source goes under Open as the question it leaves, never into Steps. The last step is the proof: the check that shows the code ticket can use the result.
 
-`Lead time:` is what `to-epic` reads to place the task: a wait of days puts the task in the first phase, whatever phase needs it.
+`Lead time:` is what `file-epic` reads to place the task: a wait of days puts the task in the first phase, whatever phase needs it.
 
 ### Unhappy paths (feat and fix)
 
@@ -361,7 +361,7 @@ gh issue list --repo owner/repo --state closed --search "<2 or 3 keywords>" --li
 
 ### Origin bug
 
-A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `to-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
+A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `file-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
 gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label bug] \

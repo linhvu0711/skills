@@ -41,7 +41,7 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 
 ## Fits with
 
-- [retro](../retro/) reads many sessions through the same adapters, to learn from how a build went.
+- [retrospect](../retrospect/) reads many sessions through the same adapters, to learn from how a build went.
 
 ## Tests
 

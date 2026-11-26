@@ -22,7 +22,7 @@ Also at: src/orders/invoice.ts:31, writes the raw createdAt too
 
 Once the cause is confirmed, it searches for the same mistake elsewhere: the `Also at:` line names each place, or says `none found` with the search it ran, and the ticket carries the same places as links to the lines, so they still point at the right code after later changes. For a slow thing the cause line is a hot spot with its share of the time, like `900 of 1200 ms`. The baseline passes the one-side checks of the shared [benchmark checklist](../../shared/benchmark.md): repeat runs with the median and spread, the limit named, the physical limit, and the share of the path. Old and new in turns, and both sides tuned, come in when it compares the number with the hot spot stubbed. The report then carries `Baseline:` and `Target:` lines. The fix takes the first rung of the fix order that reaches the target: don't do it, don't repeat it, do less, do it later, do it in parallel, do it cheaper. It does not stop at a place, like "somewhere in this process": the cause is the line where the mistake is made, and it proves it by turning the bug off and on again. A check that costs money or time, like a rented Sandbox, it runs after one line about the cost, with no question. When the fix is a real choice (two fixes with a different blast radius, or a trade-off like batch or cache), it runs a grill on that choice first, and the doc text the grill agrees on goes into the ticket, so the fix PR writes it. When the fix is clear, it skips the grill.
 
-Then it files the ticket itself, through [to-issue](../to-issue/). The ticket follows the bug's category: a `fix` for our code, a `perf` for a hot spot, a `chore` for a missing guard or a pinned dependency, a `docs` for a missing setup step, or nothing when no code work is left. It never files a `spike`: it keeps checking in the same session until it finds the cause. When it needs a thing only you have, like a log or the steps you took, it asks you for it and files nothing. If you started from an issue, it adds what it found to that issue as a comment. The part that is yours (an ops fix, a data fix, a local command) stays in the report. You do not run `/to-issue`. When you started from an issue, like `/triage #42`, that issue becomes the ticket: new title, new body, same number, and the old text kept under "Original report". Nothing new is opened and nothing is closed.
+Then it files the ticket itself, through [file-issue](../file-issue/). The ticket follows the bug's category: a `fix` for our code, a `perf` for a hot spot, a `chore` for a missing guard or a pinned dependency, a `docs` for a missing setup step, or nothing when no code work is left. It never files a `spike`: it keeps checking in the same session until it finds the cause. When it needs a thing only you have, like a log or the steps you took, it asks you for it and files nothing. If you started from an issue, it adds what it found to that issue as a comment. The part that is yours (an ops fix, a data fix, a local command) stays in the report. You do not run `/file-issue`. When you started from an issue, like `/triage #42`, that issue becomes the ticket: new title, new body, same number, and the old text kept under "Original report". Nothing new is opened and nothing is closed.
 
 The repo is left as it found it, and your machine is yours to change: a local fix comes back as a command on the clipboard.
 
@@ -36,13 +36,13 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 - A clipboard tool, optional, for the fix command on a local-env bug, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
 - [benchmark.md](../../shared/benchmark.md) from the shared core: the checks a speed number must pass.
 - [grill](../grill/), when a decision is open.
-- [to-issue](../to-issue/), to file the ticket.
+- [file-issue](../file-issue/), to file the ticket.
 
 ## Fits with
 
 - Calls [grill](../grill/) when the fix needs a decision.
-- Calls [to-issue](../to-issue/) to file the ticket, and to rewrite the bug issue into it.
-- Suggested by [grill](../grill/) for bugs and slow things, and by [to-issue](../to-issue/), [to-epic](../to-epic/), and [plan-up](../plan-up/) when a `fix` ticket has no known cause.
+- Calls [file-issue](../file-issue/) to file the ticket, and to rewrite the bug issue into it.
+- Suggested by [grill](../grill/) for bugs and slow things, and by [file-issue](../file-issue/), [file-epic](../file-epic/), and [plan-up](../plan-up/) when a `fix` ticket has no known cause.
 
 ## Credits
 

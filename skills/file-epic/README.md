@@ -1,0 +1,45 @@
+# file-epic
+
+Cuts a large piece of work into a phased GitHub epic: one parent issue, native sub-issues, and native blocked-by edges. You approve the breakdown in chat before anything is created.
+
+## Use it when
+
+The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/file-epic` in the same chat (`$file-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
+
+## What you get
+
+First, a breakdown in chat: phases, and per ticket a title, type, size, blocked-by list, and one line of what it delivers. Each ticket is a thin vertical slice that can be verified alone. A ticket that leaves a stand-in, like a fake or a hard-coded value, names the later ticket that removes it, and that ticket checks it is gone. A ticket's Steps copy the way the repo's Standard (`CODING_STANDARDS.md`) names for each job, and point at the nearest pattern in the code only when the Standard has no rule for it. Work outside the repo, like an account or a key, is its own `task` ticket, never a note, and [complete-task](../complete-task/) drives it. It ends with three questions about granularity, edges, and splits, and loops on your changes until you say `go`.
+
+Then the parent and every sub-issue are created in phase order, with the edges wired, each assigned to you unless you name someone else or say no assignee, and the parent body rewritten with real numbers. When the work started as a `seed`, or as the map that [discover-path](../discover-path/) cleared, that issue becomes the parent: same number, new body, nothing closed. Before it creates anything, it searches open and closed issues. A closed issue on the same work does not stop it: the parent links it on its Related line, so work that came back keeps its history. Doc text agreed in a [grill](../grill/) (a glossary entry, an ADR) goes on the first sub-issue whose code makes it true, so it lands in that PR:
+
+```
+https://github.com/acme/shop/issues/40
+#41 [feat] Team entity with create and list · M · phase 1
+#42 [task] Create the Stripe Connect account · task · phase 1
+...
+Free to start now: #41
+Yours: #42 Stripe Connect account, #50 live invoice
+```
+
+Every ticket is written for a stranger with neither the chat nor your machine: code in Context as permalinks, and no local paths or session words. Name another repo in the chat and it searches and files there. The tickets name nothing of the repo you ran it in.
+
+Over 12 tickets, it proposes splitting into several epics first.
+
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
+## Needs
+
+- `gh`, signed in, on a repo with sub-issues and issue dependencies.
+- `python3`, for the shared core's [issue_conventions.py](../../shared/issue_conventions.py), which remembers each repo's title style and size labels.
+- Readers for the lookup round, per the reader job in `../../shared/facts.md`, with the web for a task's platform docs (Codex reads the files itself).
+- A clipboard tool, optional, for the parent URL, through [copy.sh](../../shared/copy.sh): macOS, Linux, or Windows. With none, it says the copy was skipped.
+- From the shared core: [issue-rules.md](../../shared/issue-rules.md), which every sub-issue follows.
+
+## Fits with
+
+- Fed by [discover-path](../discover-path/) and [grill](../grill/). [file-issue](../file-issue/) sends XL work here, and this skill sends a one-ticket job back.
+- Its phases are run as a stack of PRs by [plan-up](../plan-up/) and [ship](../ship/), one ticket per layer.
+
+## Credits
+
+Adapted from the `to-tickets` skill in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). The structure and some sentences come from there, rewritten around this repo's skills. The closed-issue search before filing comes from the triage dedupe of `automations/benny` in pstack, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.

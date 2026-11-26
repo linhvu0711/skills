@@ -1,5 +1,5 @@
 # t3-cli.sh: the cases for the shared core's t3-cli.sh, the T3 lookup that
-# orchestrate.sh and kickoff-t3 both run. The repo's test.sh sources this file
+# orchestrate.sh and run-in-t3 both run. The repo's test.sh sources this file
 # after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

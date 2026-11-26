@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # project.sh: make a checkout a T3 project when it is not one yet. Shared by
-# kickoff-t3's kickoff.sh and orchestrate.sh.
+# run-in-t3's kickoff.sh and orchestrate.sh.
 #
 #   project.sh <path>
 #

@@ -1,6 +1,6 @@
 """The adapter contract every harness folder under sessions/ keeps.
 
-A harness folder with an ``adapter.py`` is one harness retro can read. Its
+A harness folder with an ``adapter.py`` is one harness retrospect can read. Its
 adapter calls this module's ``main`` with the harness's own finder and
 extractor, and gets the same two subcommands as every other adapter:
 

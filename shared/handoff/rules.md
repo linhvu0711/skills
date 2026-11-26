@@ -1,4 +1,4 @@
-<!-- template: shared by /handoff and /build-and-prove. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
+<!-- template: shared by /dispatch and /build-and-prove. Never paste raw. Render with `render.sh <devin|cursor|local> rules`. Blocks between `<!-- devin -->` / `<!-- cursor -->` / `<!-- local -->` markers are kept for that executor only; `<!-- cloud -->` keeps a block for devin and cursor and drops it for local. Blocks nest. {{app}}, {{me}}, {{session}}, {{here}}, {{caller}} are per-executor words. -->
 You are the executor. The plan above was written by someone who read the repo and made every decision that needs judgment. Follow it in order. Your job is clean code, green tests, and proof for every Done-when line.
 
 ## Before anything
@@ -262,7 +262,7 @@ EOF
 gh issue create --title "[bug] <short noun phrase, under 70 chars>" --body-file "$f" --assignee @me --label bug
 ```
 
-The label `bug` missing in the repo: create it once, `gh label create bug --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through to-issue."`, and retry. It is assigned to the user, `@me`, since your `gh` runs as the user. No priority label, no plan, no root cause, no approach in the body. One issue per finding; two findings with the same cause share one issue. Search `gh issue list --state open --search "<two words>"` first and reuse an open issue that is clearly the same thing. Each issue filed or reused gets its line under `## Follow-ups` in the PR body: write `pr-body.md` again and `gh pr edit <n> --body-file pr-body.md`.
+The label `bug` missing in the repo: create it once, `gh label create bug --color 8250DF --description "Seen broken. Not triaged. Becomes a fix ticket through file-issue."`, and retry. It is assigned to the user, `@me`, since your `gh` runs as the user. No priority label, no plan, no root cause, no approach in the body. One issue per finding; two findings with the same cause share one issue. Search `gh issue list --state open --search "<two words>"` first and reuse an open issue that is clearly the same thing. Each issue filed or reused gets its line under `## Follow-ups` in the PR body: write `pr-body.md` again and `gh pr edit <n> --body-file pr-body.md`.
 
 Every reply carries its proof: `fix here` the commit SHA, `fix later` the issue URL, `push back` the fact, `won't fix` the reason. Resolve a thread only after that reply is posted; a thread with no SHA and no issue URL stays open. A `fix here` whose change touches a seam, a Done-when line, a schema, an API, or a `Decided` line is a surprise: stop and ask before the fix, not after (see below).
 

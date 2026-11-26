@@ -1,6 +1,6 @@
 ---
 name: discover-path
-description: "Plan work too big for one /grill session as a map of open questions on GitHub: one parent issue, child decision tickets, resolved one per run until the way to the goal is clear, then handed to /to-epic. Use when the goal is clear but the way there needs more decisions than one /grill can settle."
+description: "Plan work too big for one /grill session as a map of open questions on GitHub: one parent issue, child decision tickets, resolved one per run until the way to the goal is clear, then handed to /file-epic. Use when the goal is clear but the way there needs more decisions than one /grill can settle."
 disable-model-invocation: true
 argument-hint: "<idea, seed url, or map url>"
 ---
@@ -9,7 +9,7 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 
 Read `references/map.md` first: bodies, labels, titles, and every `gh` command live there. This file is the flow.
 
-A loose idea has arrived, too big for one `/grill` session, and the way from here to the goal is in **fog**. This skill draws the **map**: one parent issue on the repo's GitHub, with child **tickets** that are questions to settle. Each run settles one ticket. When no ticket is left and the fog is gone, the map is clear and `/to-epic` takes over.
+A loose idea has arrived, too big for one `/grill` session, and the way from here to the goal is in **fog**. This skill draws the **map**: one parent issue on the repo's GitHub, with child **tickets** that are questions to settle. Each run settles one ticket. When no ticket is left and the fog is gone, the map is clear and `/file-epic` takes over.
 
 A map is the parent of questions not yet decided. An epic is the parent of work already decided. The map comes first.
 
@@ -47,7 +47,7 @@ A map is the parent of questions not yet decided. An epic is the parent of work 
 
 2. **Wide grill.** Invoke `grill` again, breadth-first: fan out across the whole space, one level deep on every thread. Open decisions: every question that must be settled before the work can be cut; which are sharp now and which are fog; which need an outside fact (research), a thing to react to (experiment), or manual work first (task); what gates what. Close out: text. Then continue at step 3. Its doc entries join step 1's; all of them wait for the map, so charting opens no docs PR. Done when grill has said `Grill done.` and every settled question carries a type.
 
-   No fog, and the whole thing fits one session: say `/grill settled it.`, then file the work as the grill's close-out does with no line (`../grill/SKILL.md` § Close out): to-issue or to-epic, the seed as the origin, the doc entries under `## Docs to write`. Stop.
+   No fog, and the whole thing fits one session: say `/grill settled it.`, then file the work as the grill's close-out does with no line (`../grill/SKILL.md` § Close out): file-issue or file-epic, the seed as the origin, the doc entries under `## Docs to write`. Stop.
 
 3. **Propose in chat.** The proposal format in `references/map.md`. End with the three questions and the go line, verbatim:
 
@@ -86,7 +86,7 @@ A map is the parent of questions not yet decided. An epic is the parent of work 
 
 7. **Clear check, or report.** Open tickets remain: say `Closed <name>. Next free: <names>. Run /discover-path <map-url> again.` and stop.
 
-   No open ticket and no fog: walk the readiness gate in `../../shared/issue-rules.md` § Readiness gate over the whole Decisions so far list, unhappy paths included. Each gap becomes one ticket, created now, then report as above. No gap: print `Map clear.`, the Decisions so far list in full, and `Run /to-epic <map-url> in this chat.`, or `Run /to-issue <map-url> in this chat.` when the work fits one ticket. Either rewrites the map in place, same number: to-epic into the epic parent, giving each doc entry to the sub-issue whose code makes it true; to-issue into the ticket, with every entry. A destination with no code to build (a decision to lock): the map's doc entries are true now, so write them and open one docs PR per `../grill/SKILL.md` § Close out, no work, with `Closes #<map>`.
+   No open ticket and no fog: walk the readiness gate in `../../shared/issue-rules.md` § Readiness gate over the whole Decisions so far list, unhappy paths included. Each gap becomes one ticket, created now, then report as above. No gap: print `Map clear.`, the Decisions so far list in full, and `Run /file-epic <map-url> in this chat.`, or `Run /file-issue <map-url> in this chat.` when the work fits one ticket. Either rewrites the map in place, same number: file-epic into the epic parent, giving each doc entry to the sub-issue whose code makes it true; file-issue into the ticket, with every entry. A destination with no code to build (a decision to lock): the map's doc entries are true now, so write them and open one docs PR per `../grill/SKILL.md` § Close out, no work, with `Closes #<map>`.
 
 ## Revisit
 

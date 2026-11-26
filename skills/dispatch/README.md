@@ -1,0 +1,63 @@
+# dispatch
+
+Turns the plan that `/plan-up` wrote in this chat into a prompt, starts a Devin cloud session or a Cursor cloud agent with it, and watches it until the PR is ready.
+
+## Use it when
+
+You have a plan you said `go` to and want a cloud agent to build it, with its own machine, browser, and screen recorder.
+
+- `/dispatch [devin|cursor] <issue-url>`: the first prompt for one ticket. No URL: the plan this chat holds. A plan with no issue (plan-up's chat plan) stops here: a cloud session needs an issue, so make one with [file-issue](../file-issue/) first.
+- `/dispatch [devin|cursor] <epic-url>`: the first prompt for a run, one PR per ticket, stacked.
+- `/dispatch [devin|cursor] <note>`: a follow-up or an answer for the session on this chat's issue. A plan for a new layer on the open stack goes this way too, with the facts its probes proved.
+- `--model <id>` picks the Cursor model. Without it Cursor's default runs, `Auto`.
+
+With no executor named, a follow-up goes to the executor that started the issue, and a new issue goes to Devin. An issue that already has a session asks you first: send the plan to that session, or start a new one. It only runs when you call it.
+
+## What you get
+
+A prompt file holding the issue, the plan, and the build rules. Devin gets it as an attachment, on a machine picked for the repo (Linux unless it needs macOS or Windows, whatever your local machine runs). Cursor gets it whole as the agent's prompt, and the agent commits as you and opens the PR on the branch the plan names. Cursor's own machines run Linux; a task that needs macOS, such as an Xcode build or the iOS Simulator, runs on a Mac rented from Namespace for one run at a time, with a Cursor worker on it. The Mac is destroyed when the run ends and rented again for the next note. The watch gives it back when the run ends; a status check never does, and `handoff.sh release` does it by hand. When Namespace refuses to destroy it, the watch says so, names the Mac and the command that destroys it by hand, and keeps its row. A watch with `--follow` tries again on its next poll; without it, `handoff.sh release` gives the Mac back later. It no longer reports a Mac destroyed while it still runs and costs money. A plan that needs Windows goes to Devin. Missing size labels are created; a size-label bot in the base branch's workflows, whatever branch your checkout is on, owns them instead. The prompt itself stays out of the chat:
+
+```
+Prompt: ~/.agents/artifacts/plan/prompt-acme-shop-42.md (412 lines)
+Session started: https://app.devin.ai/sessions/… · devin · linux
+```
+
+The build rules make the agent ask two things of each test before it commits: would it fail if the code returned the wrong value, and would it fail if every function the test imports returned `undefined`. The agent's PR links each test in `Proof` at the head commit, so a later push never moves the link. A test never checks which of the repo's own functions the code called, how often, or in what order, and the repo's own database runs for real on its test database, not as a mock. The rules show a good test next to two bad ones. A fix's first test must also fail before the change, on its assertion and for the bug's reason, not on a missing name. A test that is green before its change gets one break on purpose, the plan's `Mutate:` line, and must go red before the file is put back. A test that says no starts from a passing case with one input changed and checks the error text of its own check. When the same red stays after two fixes, the agent writes down the cause it believes and tests that belief before a third fix; a belief it cannot test comes to you as a question. Two surprises of the same kind make it stop and ask, since the plan's design may be wrong. A smaller surprise it settles the way the repo's Standard (`CODING_STANDARDS.md`) says. It copies the nearest pattern in the code only when the Standard has no rule for it. Its code comments say why, never what the line does, and it checks data at the edge where it comes in, not again inside the code. A delete slice, a plan's first, deletes code that no caller uses: its tests exist already and must pass before the delete and after it; with no test near that code, the search that found no caller must find nothing after the delete.
+
+The PR shows each screen the change touches, next to the old screen when the change alters one that exists already, plus a video of each walk, recorded at real speed and checked for length before it is attached.
+
+Then it watches. When the agent asks something, this chat answers from the plan and the repo, and only brings you the big decisions, in plain words, with the code each option rests on in a last `Seen:` line. Each question also comes with a picture of its options, which T3 Code shows in the chat and other hosts open in your browser. Cursor has no "waiting for you" state, so a run that ends with a question is treated as one. When the agent finishes, it checks every review thread, reply, and filed issue, sends back anything missing, and reports the PR URL, its size, and the issues filed, each assigned to you.
+
+A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
+
+A `perf` PR proves its speed line with one Proof row: the metric and unit, `before → after`, the run count, and the command, plus the issue's Baseline when the base median falls outside its spread.
+
+On a `perf` plan the cloud executor runs the plan's command in turns on the base and the head, by the benchmark checklist its rules carry, and writes `before → after` in the Proof; a review fix to the measured code measures again.
+
+## Needs
+
+- For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID`, in the environment or as `export` lines in `~/.zshrc`. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.
+- For Cursor: cloud agents and an API key in `CURSOR_API_KEY` (environment or `~/.zshrc`), the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
+- For Cursor on macOS: the Namespace CLI `nsc`, signed in, and a personal Cursor API key that starts with `crsr_`, since a Cursor worker refuses the `grok_` keys grok.com makes. The Mac gets your GitHub login from `gh` for the run, because Cursor's saved secrets do not reach your own machines.
+- `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
+- The harness table, `../../shared/harness.md`, for how your harness watches the session line by line.
+- A plan from [plan-up](../plan-up/), and the shared core's [issue_conventions.py](../../shared/issue_conventions.py) for the repo's size labels.
+- The shared core files in `../../shared/handoff/` (prompt and rules templates, `render.sh`), `../../shared/plan-page.md`, `../../shared/issue-rules.md`, and `../../shared/benchmark.md`, which the rules paste into a cloud prompt for a perf plan.
+
+## Fits with
+
+- Reads the plan from [plan-up](../plan-up/).
+- Sorts review questions the way [validate-pr-reviews](../validate-pr-reviews/) does, and files `fix later` findings with [capture](../capture/).
+- Called by [ship](../ship/) when the command names `devin` or `cursor`, or a Windows plan goes to Devin.
+- Shares its prompt and rules templates with [build-and-prove](../build-and-prove/), which renders them for the local builder.
+- Its module, `scripts/handoff.sh`, keeps one ledger of sessions for both executors, finds each executor by its adapter file in `scripts/adapters/`, so a new adapter file, which also gives its own watch interval, is all `handoff.sh` needs for a new executor (the `/dispatch` flow itself still offers only Devin and Cursor), and does not read the ledgers from before it, `sessions.tsv` and `cursor-sessions.tsv`; a repo that requires verified commit signatures goes to Devin. The Devin adapter starts, polls, and messages a session, and lists the repos Devin can reach and its modes; it has no archive or upload command.
+
+## Credits
+
+The rules on call checks, the test database, and the bad tests next to the good one take ideas from `tdd/tests.md` and `tdd/mocking.md` in [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). No text was copied.
+
+The `undefined` test question and the root-cause rules (a tested belief before a third fix, a stop on two surprises of one kind, data checked at its edge) take ideas from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
+
+The break that must turn a test red, and the rule that a test that says no fails at its own check, take ideas from the `test-audit` skill in [openclaw/openclaw](https://github.com/openclaw/openclaw) (MIT). No text was copied.
+
+The perf part takes an idea from the `benchmark-checklist` skill in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

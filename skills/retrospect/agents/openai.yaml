@@ -1,0 +1,6 @@
+interface:
+  display_name: "Retrospect"
+  short_description: "Read sessions from every harness and untouched PRs, and turn the patterns into shared fixes"
+  default_prompt: "$retrospect"
+policy:
+  allow_implicit_invocation: false

@@ -1,6 +1,0 @@
-interface:
-  display_name: "Retro"
-  short_description: "Read sessions from every harness and untouched PRs, and turn the patterns into shared fixes"
-  default_prompt: "$retro"
-policy:
-  allow_implicit_invocation: false

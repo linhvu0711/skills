@@ -1,6 +1,6 @@
 # The executor
 
-The plan is written for an executor: a coding agent that gets the plan as one prompt and builds from it alone. This file says what the plan may assume about it. Which agent it is, and the rules it runs under, belong to `/handoff` or `/build-and-prove`; the plan never names it.
+The plan is written for an executor: a coding agent that gets the plan as one prompt and builds from it alone. This file says what the plan may assume about it. Which agent it is, and the rules it runs under, belong to `/dispatch` or `/build-and-prove`; the plan never names it.
 
 ## What it has
 

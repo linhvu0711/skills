@@ -815,7 +815,7 @@ cmd_check() {
       # A run with issues taken out is not the whole work, so it gets no retro yet.
       + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
           effort: ($S.use.all.effort // $ae), path: $S.path,
-          thread_title: "retro: \($S.name)", message: "/retro run \($run)"}} else {} end)
+          thread_title: "retro: \($S.name)", message: "/retrospect run \($run)"}} else {} end)
       else {} end'
 }
 
@@ -1042,7 +1042,7 @@ cmd_resume() {
 
 # ---------- sync ----------
 # sync: the default branch of each main checkout the newest run worked in,
-# fast-forwarded to origin's, one line per repo, led by the repo's name, so prune-worktrees judges, and the retro reads, the merged
+# fast-forwarded to origin's, one line per repo, led by the repo's name, so clean-worktrees judges, and the retro reads, the merged
 # work. It only fast-forwards: the checkout is the user's, so their branch,
 # commits, and edits stay. A branch that cannot move exits 0 with a
 # `not updated` line, since the done run goes on to prune and retro anyway.

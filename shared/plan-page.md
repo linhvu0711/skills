@@ -1,6 +1,6 @@
 # The plan page
 
-The plan has two forms. The `.md` file, in the shape of `plan.md`, is the plan: `/handoff` reads it. The `.html` page is the same plan rendered for review in a browser. Chat carries neither, only the URL and a short summary.
+The plan has two forms. The `.md` file, in the shape of `plan.md`, is the plan: `/dispatch` reads it. The `.html` page is the same plan rendered for review in a browser. Chat carries neither, only the URL and a short summary.
 
 ## Files
 

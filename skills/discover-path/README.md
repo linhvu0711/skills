@@ -16,7 +16,7 @@ Each later run takes the next free ticket, settles it with you, posts the answer
 Closed [grill] Which plan model: per seat or per team?. Next free: [research] Does Stripe support per-seat proration?. Run /discover-path <map-url> again.
 ```
 
-When no ticket and no fog is left, it prints `Map clear.`, the full list of decisions, and hands over to [to-epic](../to-epic/), or to [to-issue](../to-issue/) when the work fits one ticket. The map becomes the epic or the ticket, same number, and each doc entry goes to the sub-issue whose code makes it true, so it lands in that PR. When the end is a decision with no code to build, the doc entries ship in one docs PR.
+When no ticket and no fog is left, it prints `Map clear.`, the full list of decisions, and hands over to [file-epic](../file-epic/), or to [file-issue](../file-issue/) when the work fits one ticket. The map becomes the epic or the ticket, same number, and each doc entry goes to the sub-issue whose code makes it true, so it lands in that PR. When the end is a decision with no code to build, the doc entries ship in one docs PR.
 
 A `perf` ticket's body now carries a `Baseline:` line (the number, its median, spread, run count, command, and machine) and a `Target:` line, so the number reaches the plan and the PR.
 
@@ -33,7 +33,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 ## Fits with
 
 - Calls [grill](../grill/), [commit](../commit/), [create-prototype](../create-prototype/), and [create-diagram](../create-diagram/).
-- Hands a clear map to [to-epic](../to-epic/), or to [to-issue](../to-issue/) when the work fits one ticket.
+- Hands a clear map to [file-epic](../file-epic/), or to [file-issue](../file-issue/) when the work fits one ticket.
 - Suggested by [grill](../grill/) when the work will not settle in one session.
 
 ## Credits

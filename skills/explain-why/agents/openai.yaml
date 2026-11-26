@@ -1,0 +1,6 @@
+interface:
+  display_name: "Explain Why"
+  short_description: "Answer why code is the way it is, from the record."
+  default_prompt: "$explain-why <code or question>"
+policy:
+  allow_implicit_invocation: false
