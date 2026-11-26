@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # decide.sh: work out what kickoff starts, for kickoff-t3 and the orchestrator's check.
 #
-# Usage: decide.sh [--label L] [--model M] [--effort E]
+# Usage: decide.sh [--heading H] [--model M] [--effort E]
 #                  [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge]
 #                  [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
@@ -21,7 +21,7 @@
 #
 # Exit 0: one JSON line on stdout with number, title, form, args, command,
 # command_from, mode, model, model_from, effort, effort_from, reason, base,
-# path, label, heading, slash_command, and message. slash_command is the
+# path, heading, slash_command, and message. slash_command is the
 # command as the thread runs it, with its ship mode or --ready, as
 # `/ship --merge`; message is slash_command, a space, and args: the
 # thread's first prompt, as `/ship --merge #42`, which every launcher sends
@@ -43,16 +43,16 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage="usage: decide.sh [--label L] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
+usage="usage: decide.sh [--heading H] [--model M] [--effort E] [--command ship|triage|grill|ready-pr|complete-task] [--mode $ship_mode_list] [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]  (#n after a plain issue = a set, no parent needed)"
 gh_die() { printf 'stop: %s\n' "$*" >&2; exit 2; }
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 # ---------- args ----------
-label=""; args=(); sizes=()
+heading=""; args=(); sizes=()
 set_model=""; set_effort=""; set_command=""; mode=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --label) [ -n "${2:-}" ] || die_usage "$usage" "--label needs a name"; label="$2"; shift 2 ;;
+    --heading) [ -n "${2:-}" ] || die_usage "$usage" "--heading needs text"; heading="$2"; shift 2 ;;
     --model) [ -n "${2:-}" ] || die_usage "$usage" "--model needs a name"; set_model="$2"; shift 2 ;;
     --effort)
       one_of "$effort_list" "${2:-}" || die_usage "$usage" "--effort must be $(spelled "$effort_list"), got: ${2:-nothing}"
@@ -243,15 +243,11 @@ if [ "$(lower "$here_repo")" = "$(lower "$slug")" ]; then
   fi
 fi
 
-# ---------- label and heading ----------
-# The label names a herdr pane and agent, and herdr takes only
-# [a-z][a-z0-9_-]{0,31} there: i42, i42-43, i42-on-80, and i70 for a whole
-# epic. Too long: the whole numbers that fit in 27 characters, then -more.
+# ---------- heading ----------
 # The heading starts a T3 thread title, which takes any text: #42, #42 #43,
-# #42 on #80, and #70. Too long: the numbers that fit in 27 characters, then
-# +<the rest>. A label the user named is the heading as given.
-heading="$label"
-if [ -z "$label" ]; then
+# #42 on #80, and #70 for a whole epic. Too long: the numbers that fit in 27
+# characters, then +<the rest>. A heading the user named is used as typed.
+if [ -z "$heading" ]; then
   case "$form" in
     run) nums=("${tickets[@]}") ;;
     set) nums=("$number" "${tickets[@]}") ;;
@@ -263,27 +259,15 @@ if [ -z "$label" ]; then
   done
   if [ "$k" -lt "${#nums[@]}" ]; then heading="$heading +$(( ${#nums[@]} - k ))"; fi
   if [ "$form" = on ]; then heading="$heading on #$pr_number"; fi
-  label="i$(IFS=-; printf '%s' "${nums[*]}")"
-  if [ "${#label}" -gt 32 ]; then
-    label="i${nums[0]}"
-    for n in "${nums[@]:1}"; do
-      [ $(( ${#label} + ${#n} + 1 )) -le 27 ] || break
-      label="${label}-$n"
-    done
-    label="${label}-more"
-  fi
-  if [ "$form" = on ]; then label="${label}-on-${pr_number}"; fi
 fi
-label="$(lower "$label" | sed -E 's/^[^a-z]+//; s/[^a-z0-9_-]//g' | cut -c1-32)"
-[ -n "$label" ] || label="prep-$number"
 
 jq -cn --argjson number "$number" --arg title "$title" --arg form "$form" --arg args "$prep_args" \
   --arg command "$command" --arg command_from "$command_from" --arg mode "$mode" \
   --arg model "$model" --arg model_from "$model_from" \
   --arg effort "$effort" --arg effort_from "$effort_from" \
-  --arg reason "$reason" --arg base "$base" --arg path "$path" --arg label "$label" --arg heading "$heading" \
+  --arg reason "$reason" --arg base "$base" --arg path "$path" --arg heading "$heading" \
   '("/\($command)" + (if $mode != "" then " --\($mode)" elif $command == "complete-task" then " --ready" else "" end)) as $slash
    | {number: $number, title: $title, form: $form, args: $args, command: $command, command_from: $command_from,
     mode: $mode, model: $model, model_from: $model_from, effort: $effort, effort_from: $effort_from,
-    reason: $reason, base: $base, path: $path, label: $label, heading: $heading,
+    reason: $reason, base: $base, path: $path, heading: $heading,
     slash_command: $slash, message: "\($slash) \($args)"}'

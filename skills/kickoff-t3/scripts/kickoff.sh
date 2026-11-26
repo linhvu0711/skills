@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # kickoff.sh: get /ship ready to start in a new T3 Code thread.
 #
-# Usage: kickoff.sh [--label L] [--model M] [--effort E]
+# Usage: kickoff.sh [--heading H] [--model M] [--effort E]
 #                   [--command ship|triage|grill|ready-pr|complete-task] [--mode review|ready|merge]
 #                   [--size n=SIZE ...] <issue-url> [#n ...] [on <pr-url>]
 #
