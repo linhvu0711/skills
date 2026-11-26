@@ -60,7 +60,7 @@ A **proof folder** is what `/build-and-prove` leaves: `demo.md`, the finished `#
    - No PR: `gh pr create -R <repo> --base <base> --head <branch> --title "<title>" --body-file "$f"`, ready for review.
    - An open PR: `gh pr edit -R <repo> <n> --title "<title>" --body-file "$f"`. The new body covers the whole branch and replaces the old one, its `Follow-ups` kept; GitHub keeps the old body in the edit history.
 
-   A proof folder: then, from inside it, attach every file the body names, `gh pr edit -R <repo> <n> --body-file pr-body.md --attach <file> …`, and unwrap the video lines, both per `../../shared/pr-shape.md` § Proof. Open the PR and check that each image shows and each video plays.
+   A proof folder: then, from inside it, attach every file the body names, `gh pr edit -R <repo> <n> --body-file pr-body.md --attach <file> …`, and unwrap the video lines, both per `../../shared/pr-shape.md` § Demo. Open the PR and check that each image shows and each video plays.
 
    Done when `gh pr view -R <repo> <n> --json title,body` shows what you wrote.
 
