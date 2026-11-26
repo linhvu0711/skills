@@ -42,7 +42,6 @@ It only reads: no change to the repo, no comment on GitHub.
 
 ## Fits with
 
-- [find-cc-session](../find-cc-session/) and [find-co-session](../find-co-session/) use the same session finders it runs.
 - [triage](../triage/) finds the root cause of a bug; `/why` gives the reason for code that works.
 - [grill](../grill/): a reason `/why` finds can settle a question in a grill.
 

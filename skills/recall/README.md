@@ -14,18 +14,18 @@ One brief over every session on the topic, newest first:
 # Recall: export feature
 Sessions: 2 (Claude Code 1, Codex 1, Antigravity 0)
 **Done:**
-- export endpoint and its tests (3f2a9c1e)
+- export endpoint and its tests
 **Decisions:**
-- keep JSON as the default format (019e631d)
+- keep JSON as the default format
 **Open:**
-- the button still has no loading state (3f2a9c1e)
+- the button still has no loading state
 **PRs and branches:**
-- [open PR #45] PR #45 · date fix (3f2a9c1e)
-- [merged #42] PR #42 · export endpoint (3f2a9c1e)
+- [open PR #45] PR #45 · date fix
+- [merged #42] PR #42 · export endpoint
 Next: /ready-pr #45
 ```
 
-Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, a branch that is gone, or `[state unknown]` when `gh` cannot answer. The last line is the one next step. Each line ends with the session it came from, so `/load-cc-session 3f2a9c1e` or `/load-co-session 019e631d` pulls that session in. Recall only reads: it writes nothing and starts no work.
+Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, a branch that is gone, or `[state unknown]` when `gh` cannot answer. The last line is the one next step. Recall only reads: it writes nothing and starts no work.
 
 - No session on the topic, or a topic of only common words such as `the`: `No sessions on <topic>.`, and it stops.
 - More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
@@ -41,10 +41,7 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 
 ## Fits with
 
-- [find-cc-session](../find-cc-session/) finds one Claude Code session from a rough description.
-- [find-co-session](../find-co-session/) does the same for Codex sessions.
-- [load-cc-session](../load-cc-session/) pulls one Claude Code session in, to continue its work.
-- [load-co-session](../load-co-session/) does the same for Codex sessions.
+- [retro](../retro/) reads many sessions through the same adapters, to learn from how a build went.
 
 ## Tests
 

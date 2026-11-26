@@ -46,7 +46,7 @@ The user comes back to a topic after some days. This skill finds the sessions of
    Next: <one step>
    ```
 
-   Each bullet keeps its brief's words and ends with ` (<id8>)`, the session it came from, so the user can load that session. The same fact in two briefs: keep the newer session's. A `Done` bullet that a newer brief lists as `Open`, or the other way round: keep the newer one. A section with nothing: `none`. Under `**PRs and branches:**`, one line per PR or branch, with the newest session's `<what it is>`.
+   Each bullet keeps its brief's words. The same fact in two briefs: keep the newer session's. A `Done` bullet that a newer brief lists as `Open`, or the other way round: keep the newer one. A section with nothing: `none`. Under `**PRs and branches:**`, one line per PR or branch, with the newest session's `<what it is>`.
 
 6. **Live tags.** Write the brief to `<scratch>/recall-brief.md` and tag it with `../../shared/sessions/live_tags.py` as `../../shared/session-brief.md` § Live tags says, with `--cwd` the project folder that step 2 ran in, never this skill's folder. The tagged brief is the one you show.
 

@@ -1,6 +1,6 @@
 # State brief
 
-Shared by `load-cc-session`, `load-co-session`, and `recall`. A research agent writes the brief; the main agent tags its PRs and branches with their live state, shows it, and waits.
+Used by `recall`. A research agent writes the brief; the main agent tags its PRs and branches with their live state, shows it, and waits.
 
 ## Dispatch
 
@@ -30,7 +30,7 @@ Rules: only facts from the transcript; if a section has nothing, write "none". Q
 
 The explorer's reply carries the brief. Take it from the `# State brief` heading to the `Read:` line. No reply, an error, a reply with no `# State brief` heading, or the agent saying it cannot read the transcript is a failure.
 
-On failure fall back to the skeleton; do not retry.
+On failure, do not retry; the caller's own step says what to do with that session.
 
 ## Live tags
 
@@ -51,7 +51,7 @@ python3 sessions/live_tags.py <file> --cwd <folder>
 | `[branch gone]` | a branch with no PR, not here, and GitHub says it does not exist |
 | `[state unknown]` | `gh` cannot find the PR or see the branch, cannot be reached, or is not logged in |
 
-The tags never stop the brief. A PR `gh` cannot find is `[state unknown]`, and the next lines are still asked. When `gh` itself fails, the script prints one `live tags: gh failed: <reason>` line on stderr, that line and every later one is `[state unknown]`, and the brief shows. The skeleton fallback is not tagged.
+The tags never stop the brief. A PR `gh` cannot find is `[state unknown]`, and the next lines are still asked. When `gh` itself fails, the script prints one `live tags: gh failed: <reason>` line on stderr, that line and every later one is `[state unknown]`, and the brief shows.
 
 ## Measured
 
