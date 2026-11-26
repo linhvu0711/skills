@@ -64,4 +64,4 @@ Plan-up's gate fails: the question that closes it, `/grill` named. Stop. Nothing
 
 **User:** `/ship --ready https://github.com/acme/shop/issues/90`; after the first wait on PR 91, `reviewers.sh` prints nothing.
 
-No review bot. Review-pr reviews PR 91 and finds one `🟠 should`; validate-pr-review on its report judges it `fix here`, the fix is committed and pushed, nothing is posted. Then ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's `Route:` line ends ` · review-pr: comment`.
+No review bot. Review-pr reviews PR 91 and finds one `🟠 should`; validate-pr-reviews on its report judges it `fix here`, the fix is committed and pushed, nothing is posted. Then ready-pr: `READY https://github.com/acme/shop/pull/91`. The report's `Route:` line ends ` · review-pr: comment`.

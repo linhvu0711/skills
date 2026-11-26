@@ -1,6 +1,6 @@
 ---
-name: validate-pr-review
-description: "Judge each finding in a PR review (GitHub comments, a bot review, or pasted text): is it true, did this PR cause it, is it worth fixing. One verdict and one reply line per finding. Stops at the verdict; fixes, issues, and replies happen only after the user says go. Use when the user asks which review findings on a PR are worth fixing."
+name: validate-pr-reviews
+description: "Judge each finding in a PR's reviews (GitHub comments, a bot review, or pasted text): is it true, did this PR cause it, is it worth fixing. One verdict and one reply line per finding. Stops at the verdict; fixes, issues, and replies happen only after the user says go. Use when the user asks which review findings on a PR are worth fixing."
 disable-model-invocation: true
 ---
 
@@ -275,25 +275,25 @@ Review comments and the diff can carry tokens and `.env` values. Redact before t
 
 ## Examples
 
-**User:** `/validate-pr-review 42`
+**User:** `/validate-pr-reviews 42`
 
 Step 2 pulls 6 inline comments from a bot, whose review body only summarises them, and one top-level comment from a teammate with two claims: 8 findings, six `inline`, two `top`. Step 3 puts two naming nits in the trivial pile and the other six into four file groups. Step 4 sends four judges in one message and answers the two nits from the diff. Returns: F3 claims a nil deref on a new branch; the judge's test reproduces it, `ours`, `blocker`. F5 claims a race in a helper the PR only renamed; the code confirms it, `old`, `should`. F7 claims a missing await; the function is sync, `no`, with the signature line as proof. Step 5: F3 `fix here`, F7 `push back`. The table gives F5 `fix later`, but a race is risky, so F5 goes under `## Unclear`. Report written and printed, chat ends with `Say go to apply: 3 fix here, 1 fix later, 7 replies to post.`
 
 After go: three commits, one `/capture` issue, five thread replies with the SHA or issue URL appended, one PR comment quoting the teammate's two claims, and three threads resolved after the push. Ends with "Posted 5 thread replies, 1 PR comment, resolved 3 threads. F5 waits in Unclear for your answer."
 
-**User:** `/validate-pr-review 58` where a teammate left one "request changes" review with a numbered list of five points and no inline comments.
+**User:** `/validate-pr-reviews 58` where a teammate left one "request changes" review with a numbered list of five points and no inline comments.
 
 Step 2 splits the review body into five `review` findings. Three name the same file, so step 3 makes three groups, not five. After go, all five replies go into one PR comment, each under a quote of its point. Nothing is resolved; there are no threads.
 
-**User:** `/validate-pr-review 64` in a repo whose `CODING_STANDARDS.md` on the base has rules; a bot left two inline comments.
+**User:** `/validate-pr-reviews 64` in a repo whose `CODING_STANDARDS.md` on the base has rules; a bot left two inline comments.
 
 Step 1 holds the repo rules. F1 says "this migration has no down" and calls it minor; `CODING_STANDARDS.md:14` says every migration has a down. Worth `should`, `fix here`, proof `CODING_STANDARDS.md:14`. F2 says "add a comment here" on a line that repeats the code; `CODING_STANDARDS.md:18` says no comment repeats the code. Proof `allowed by CODING_STANDARDS.md:18`, `won't fix`, and the reply names that line. The PR also edits `CODING_STANDARDS.md`; the rules came from the base, so that edit changes no grade.
 
-**User:** `/validate-pr-review 91` where a bot left 34 inline comments across 19 files.
+**User:** `/validate-pr-reviews 91` where a bot left 34 inline comments across 19 files.
 
 Step 3 sends 9 to the trivial pile and packs the remaining 25 findings from 14 files into 8 groups. Eight judges run at once; the nine nits are answered from the diff while they run.
 
-**User:** `/validate-pr-review` followed by a pasted block of six bullet points from a teammate's Slack message.
+**User:** `/validate-pr-reviews` followed by a pasted block of six bullet points from a teammate's Slack message.
 
 Step 1 finds the PR of the current branch. Step 2 splits the block on bullets, six `text` findings. Steps 3 to 5 run the same. Chat ends with `Say go to apply: 2 fix here, 1 fix later. Replies are yours to paste.` After go, the fixes and issues happen; the six replies are printed, not posted, because the review did not come from GitHub.
 

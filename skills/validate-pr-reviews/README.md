@@ -1,10 +1,10 @@
-# validate-pr-review
+# validate-pr-reviews
 
 Checks every finding in a pull request review before you act on it: is it true, did this PR cause it, and is it worth fixing.
 
 ## Use it when
 
-A review came in, from a person, a bot, or a pasted Slack message, and you want to know which comments to fix, which to file for later, and which to push back on. `/validate-pr-review 42`, `/validate-pr-review <pr-url>`, or `/validate-pr-review` followed by the pasted text. With no argument it takes the PR of the current branch. It only runs when you call it.
+A review came in, from a person, a bot, or a pasted Slack message, and you want to know which comments to fix, which to file for later, and which to push back on. `/validate-pr-reviews 42`, `/validate-pr-reviews <pr-url>`, or `/validate-pr-reviews` followed by the pasted text. With no argument it takes the PR of the current branch. It only runs when you call it.
 
 ## What you get
 

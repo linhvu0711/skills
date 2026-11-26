@@ -1,0 +1,5 @@
+interface:
+  display_name: "Validate PR Reviews"
+  short_description: "Judge each finding in a PR's reviews: true, this PR's, worth fixing"
+policy:
+  allow_implicit_invocation: false

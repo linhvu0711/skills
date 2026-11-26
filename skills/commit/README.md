@@ -23,7 +23,7 @@ Nothing but the agent. It reads the change you describe or the diff in front of 
 
 ## Fits with
 
-Called by [ready-pr](../ready-pr/) for its fix commits, [validate-pr-review](../validate-pr-review/) after you say go, [audit-coding-standards](../audit-coding-standards/) as its last step, and [discover-path](../discover-path/).
+Called by [ready-pr](../ready-pr/) for its fix commits, [validate-pr-reviews](../validate-pr-reviews/) after you say go, [audit-coding-standards](../audit-coding-standards/) as its last step, and [discover-path](../discover-path/).
 
 ## Credits
 

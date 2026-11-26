@@ -51,7 +51,7 @@ flowchart LR
   ship -->|ship mode merge| merged([PR merged])
   ho --> done
   readypr --> done
-  readypr -.->|judges each comment| vpr[validate-pr-review]
+  readypr -.->|judges each comment| vpr[validate-pr-reviews]
   readypr -.->|on a rebase conflict| fc[fix-conflicts]
 ```
 
@@ -60,7 +60,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 - [ship](skills/ship/) does the whole path in one run: plan, build and prove, open the PR, ready it, and merge it when that is the right call. After the plan, it picks a ship mode: `review` opens the plan as a page and builds only after you say `go`, `ready` stops at a PR that is ready to merge, and `merge` merges it. Type `--review`, `--ready`, or `--merge` to pick the mode yourself. It builds on your machine by default; add `devin` or `cursor` to build in the cloud.
 - [orchestrate](skills/orchestrate/) runs a whole set of issues from one pinned T3 Code thread. Every few minutes it starts a thread for each free issue at its next stage (grill, triage, ship, ready-pr, or complete-task) until all are closed.
 - To go step by step, run [plan-up](skills/plan-up/) yourself. Then give the plan to [build-and-prove](skills/build-and-prove/), which builds it on your machine, with one proofbox Sandbox that films the walks when the plan has any; or to [handoff](skills/handoff/), which sends it to Devin or Cursor.
-- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-review](skills/validate-pr-review/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
+- After build-and-prove, [make-pr](skills/make-pr/) opens the PR with its proof folder, and [ready-pr](skills/ready-pr/) takes it through review. ready-pr checks each review comment with [validate-pr-reviews](skills/validate-pr-reviews/) and fixes a stuck rebase with [fix-conflicts](skills/fix-conflicts/).
 - Built it yourself? Run [commit](skills/commit/), then [make-pr](skills/make-pr/) and [ready-pr](skills/ready-pr/).
 - [review-pr](skills/review-pr/) is a separate review you run by hand on any PR.
 
@@ -94,7 +94,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [commit](skills/commit/) | Writes a short Conventional Commits message for your staged change, focused on why. |
 | [make-pr](skills/make-pr/) | Opens a pull request in the same shape as every PR these skills make, with build-and-prove's screenshots and videos when given its proof folder. |
 | [review-pr](skills/review-pr/) | Reviews a pull request on three separate checks (logic, scope, standards), with your repo's own rules folded in. |
-| [validate-pr-review](skills/validate-pr-review/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
+| [validate-pr-reviews](skills/validate-pr-reviews/) | Checks every finding in a review before you act on it: is it true, did this PR cause it, is it worth fixing. |
 | [ready-pr](skills/ready-pr/) | Takes an open pull request to ready-to-merge: judges every review comment, fixes, replies, and repeats. |
 | [fix-conflicts](skills/fix-conflicts/) | Resolves a merge or rebase that stopped on conflicts, keeping what each side meant to do. |
 | [clean-worktrees](skills/clean-worktrees/) | Removes the worktrees whose PRs are merged, with their branches, and lists every other worktree with the reason it stays. |
