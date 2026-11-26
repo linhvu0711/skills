@@ -340,7 +340,7 @@ t_link_leaves_other_codex_agent() {
 t_link_keeps_agent_on_tier_model_none() {
   # Given: an agent linked, then its tier-1 Claude model set to none
   linked demo; agent demo helper; link_sh
-  awk -F '\t' -v OFS='\t' 'NR == 41 { $2 = "none" } { print }' shared/model-tiers.md > "$T/tiers"; mv "$T/tiers" shared/model-tiers.md
+  awk -F '\t' -v OFS='\t' 'NR == 41 { $2 = "none" } { print }' shared/model-tiers.md > shared/model-tiers.md.new; mv shared/model-tiers.md.new shared/model-tiers.md
   # When
   link_sh
   # Then
@@ -352,7 +352,7 @@ t_link_keeps_agent_on_tier_model_none() {
 t_link_skips_agent_without_tier() {
   # Given: an agent file with no tier line
   linked demo; agent demo helper
-  grep -v '^tier: 1$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  grep -v '^tier: 1$' skills/demo/agents/helper.md > skills/demo/agents/helper.md.new; mv skills/demo/agents/helper.md.new skills/demo/agents/helper.md
   # When
   link_sh
   # Then
@@ -689,7 +689,7 @@ t_link_status_names_missing_and_held() {
 t_link_status_names_agent_it_cannot_render() {
   # Given: everything linked, then a second agent with no tier line
   linked demo; agent demo helper; with_gate; link_sh
-  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > skills/demo/agents/helper2.md.new; mv skills/demo/agents/helper2.md.new skills/demo/agents/helper2.md
   # When
   link_sh scripts/link.sh --status
   # Then
@@ -701,7 +701,7 @@ t_link_status_names_agent_it_cannot_render() {
 t_link_status_names_installed_agent_it_cannot_render() {
   # Given: everything linked, then the agent's tier line taken out
   linked demo; agent demo helper; with_gate; link_sh
-  grep -v '^tier: 1$' skills/demo/agents/helper.md > "$T/a"; mv "$T/a" skills/demo/agents/helper.md
+  grep -v '^tier: 1$' skills/demo/agents/helper.md > skills/demo/agents/helper.md.new; mv skills/demo/agents/helper.md.new skills/demo/agents/helper.md
   # When
   link_sh scripts/link.sh --status
   # Then
@@ -718,7 +718,7 @@ t_link_status_matches_install_skips() {
   printf 'mine\n' > "$T/codex/helper.toml"
   printf 'not json\n' > "$T/claude-settings.json"
   rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
-  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > "$T/a"; mv "$T/a" skills/demo/agents/helper2.md
+  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > skills/demo/agents/helper2.md.new; mv skills/demo/agents/helper2.md.new skills/demo/agents/helper2.md
   # When: the install, then --status
   link_sh
   local skips whys want
@@ -1218,8 +1218,8 @@ t_flags_unknown_tier() {
 # tier_line <n> <line>: line <n> of shared/model-tiers.md replaced by <line>,
 # its `\t` read as tabs, and committed; then run check.sh.
 tier_line() {
-  awk -v n="$1" -v l="$(printf '%b' "$2")" 'NR == n { print l; next } { print }' shared/model-tiers.md > "$T/tiers"
-  mv "$T/tiers" shared/model-tiers.md; git add -A; git commit -qm tiers
+  awk -v n="$1" -v l="$(printf '%b' "$2")" 'NR == n { print l; next } { print }' shared/model-tiers.md > shared/model-tiers.md.new
+  mv shared/model-tiers.md.new shared/model-tiers.md; git add -A; git commit -qm tiers
   run bash scripts/check.sh
 }
 
@@ -1266,7 +1266,7 @@ t_flags_try_order_row_odd_key() {
 t_flags_missing_try_order_row() {
   # Given: a good agent, and the try-order row 2 no taken out
   agent_md "$full_agent"
-  sed 55d shared/model-tiers.md > "$T/tiers"; mv "$T/tiers" shared/model-tiers.md; git add -A; git commit -qm tiers
+  sed 55d shared/model-tiers.md > shared/model-tiers.md.new; mv shared/model-tiers.md.new shared/model-tiers.md; git add -A; git commit -qm tiers
   # When
   run bash scripts/check.sh
   # Then
