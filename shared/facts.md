@@ -47,7 +47,7 @@ A subagent's file names its tier, 1 to 4, and its checker line, yes or no. `mode
 
 **Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
 
-**Next try.** A try cannot run when T3 lists its company as off, lists no such model, or refuses the start, or when its company is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then take the next try. From Claude Code or Codex, the last try is your own harness's model, so it fails only when you fail. From Antigravity, a helper with no try left failed: follow the skill's own rule for a failed helper.
+**Next try.** A try cannot run when T3 lists its company as off, lists no such model, or refuses the start, or when its company is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then take the next try. From Claude Code or Codex, the last try is your own harness's model, so it fails only when you fail. From Antigravity, a helper with no try left stops the skill, so no step runs without it. Say `<agent> cannot start: <try>, <why>; <try>, <why>.`, with each try in order as in **Report line**, as in `design-judge cannot start: antigravity gemini-4-neon medium, Antigravity needs full-access.`, and stop.
 
 **Report line.** A helper that did not run on its first try puts one line in the skill's report, just above its last line:
 
