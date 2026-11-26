@@ -41,6 +41,16 @@ t_render_demo_after_summary() {
   eq "devin rules" 1 "$(printf '%s\n' "$out" | grep -c '^3\. \*\*`## Demo`\*\*')"
 }
 
+t_render_proof_seen_in() {
+  # Given: the Proof part of the PR shape
+  local item
+  # When
+  item="$(sed -n '/^6\. \*\*`## Proof`\*\*/,/^7\. /p' "$here/../pr-shape.md")"
+  # Then
+  eq "Seen in header" 1 "$(printf '%s\n' "$item" | grep -c '^ *| # | Behavior | Test | Seen in |$')"
+  eq "old media columns" 0 "$(printf '%s\n' "$item" | grep -c '| Screenshot | Video |' || true)"
+}
+
 t_render_risk_line() {
   local item
   item="$(sed -n '/^4\. \*\*`## Where to look`\*\*/,/^5\. /p' "$here/../pr-shape.md")"
@@ -301,6 +311,7 @@ cases=(
   "devin rules still open the PR|t_render_devin_pr"
   "pr-shape holds the media rules and devin rules carry them once|t_render_media_once"
   "pr-shape puts Demo right after Summary|t_render_demo_after_summary"
+  "pr-shape Proof has one Seen in column|t_render_proof_seen_in"
   "pr-shape opens Where to look with the Risk line|t_render_risk_line"
   "cloud rules carry the Risk line once|t_render_cloud_risk_once"
   "pr-shape titles name the result, and cloud rules carry it|t_render_title_result"

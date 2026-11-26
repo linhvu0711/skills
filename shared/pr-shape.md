@@ -38,7 +38,7 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
      ![](./after-2.png)
      ```
 
-     A `Screenshot` cell that names no block, or a walk whose `Before` line names steps and whose block has no before image, is a gap.
+     A `Seen in` cell that names a screenshot with no block, or a walk whose `Before` line names steps and whose block has no before image, is a gap.
 
    - Videos, under `### Videos`, after the screenshots, in plan order, one block each: one line in plain words, `Video n:` then what it shows, ending ` (filmed on <short SHA>)` when the video's line in the proof folder's `videos.txt` names a commit other than the head the body is written for, then an empty line, then `![video-n](./video-n.mp4)` alone on its own line with an empty line after it. That image form is what `--attach` rewrites to the upload URL; it is not what GitHub plays. GitHub shows a player only when the bare `https://github.com/user-attachments/…` URL is the whole paragraph: no `![…](…)` around it, no caption on the same line. So after the attach step below, read the body back and unwrap every video line, then write the body once more:
 
@@ -49,7 +49,7 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
      gh pr edit -R <owner>/<repo> <n> --body-file pr-body.md
      ```
 
-     Then open the PR and check that each video shows a player, not a broken image. Every video of the plan has a block; a `Video` cell that names a video with no block is a gap.
+     Then open the PR and check that each video shows a player, not a broken image. Every video of the plan has a block; a `Seen in` cell that names a video with no block is a gap.
    - How the media gets in. `gh` uploads it: every `--attach <file>` on `gh pr edit` (or `gh pr create`, `gh pr comment`) uploads that file to GitHub and rewrites the `./<file>` reference in the body to the uploaded asset's URL, a `github.com/user-attachments` link that never expires. An image then shows inline and a video plays in a player, and only people with access to the repo can see them. Keep `pr-body.md` next to the media files. Then, from that directory:
 
      ```bash
@@ -84,17 +84,17 @@ The parts, in this order. `Summary`, `Where to look`, and `Proof` are always the
      ```markdown
      | 1 | p95 of `GET /orders` is under 300 ms. | p95 of `GET /orders`, ms: 1200 → 280, median of 5 in turns, `pnpm bench orders` on `9e18c16` |
      ```
-   - The plan has UI walks: the Proof table has two more columns after `Test`: `Screenshot` and `Video`. `Screenshot` holds no image: it names the screenshot in Demo that shows the line holding, as `Screenshot n`. Two lines one screenshot shows both name it. A line with no screen leaves the cell empty. `Video` is the plan's `video n @ step m` for the line, copied from the Proof table; a line with no screen leaves it empty.
+   - The plan has UI walks: the Proof table has one more column after `Test`: `Seen in`. It holds no image: it names where the Demo shows the line holding, the screenshot as `Screenshot n` and the plan's `video n @ step m` for the line, copied from the Proof table, joined by ` · `. Two lines one screenshot shows both name it. A line with no screen leaves the cell empty.
 
      ```markdown
      ## Proof
 
-     | # | Behavior | Test | Screenshot | Video |
-     |---|---|---|---|---|
-     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case at the head commit) | Screenshot 1 | video 1 @ step 4 |
-     | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 | video 1 @ step 4 |
-     | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 | video 1 @ step 6 |
-     | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | | |
+     | # | Behavior | Test | Seen in |
+     |---|---|---|---|
+     | 1 | Clicking `Add` puts a row in the list with the title and the due date. | [`src/todos.test.ts` "adds a todo"](link to the test case at the head commit) | Screenshot 1 · video 1 @ step 4 |
+     | 2 | Rows are sorted by due date. | [`src/todos.test.ts` "sorts by due date"](link) | Screenshot 1 · video 1 @ step 4 |
+     | 3 | The `Due` field opens a date picker on today's month. | [`src/todos.test.ts` "opens the date picker"](link) | Screenshot 2 · video 1 @ step 6 |
+     | 4 | `npm test` passes in CI. | [Actions run](URL of the run on the head commit) | |
      ```
 
    ```markdown
