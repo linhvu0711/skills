@@ -168,13 +168,13 @@ t_cof_window_skips_older_days() {
   run python3 "$F" --cwd /p/app --active-days 1 --all --json --limit 0
   eq exit 0 "$code"
   eq ids "c1" "$(ids)"
-  eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/find-co-session/codex-index.json" || true)"
+  eq "indexed z1" "0" "$(grep -c 'z1.jsonl' "$HOME/.cache/skills-sessions/codex-index.json" || true)"
 }
 
 t_cof_index_keeps_other_temp() {
   # Given: another search's temp file beside the index, under the old fixed name
   cof_home; co_rollout c1 /p/app "fix the export"
-  local d="$HOME/.cache/find-co-session"; mkdir -p "$d"; printf 'other\n' > "$d/codex-index.tmp"
+  local d="$HOME/.cache/skills-sessions"; mkdir -p "$d"; printf 'other\n' > "$d/codex-index.tmp"
   # When
   run python3 "$F" --cwd /p/app --all --json
   # Then
@@ -234,7 +234,7 @@ t_cof_rebuilds_older_index() {
   # Given: c1 indexed, then its index rewritten as version 6 with a stale prompt
   cof_home; co_rollout c1 /p/app "fix the export"
   run python3 "$F" --cwd /p/app --all --json
-  local idx="$HOME/.cache/find-co-session/codex-index.json"
+  local idx="$HOME/.cache/skills-sessions/codex-index.json"
   jq '.version = 6 | .files |= map_values(.prompts = ["stale prompt"] | .first_prompt = "stale prompt")' "$idx" > "$idx.new" && mv "$idx.new" "$idx"
   # When
   run python3 "$F" --cwd /p/app --all --json

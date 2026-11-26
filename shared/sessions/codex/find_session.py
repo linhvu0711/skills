@@ -16,8 +16,8 @@ final call (which candidate the user meant) to the caller, and never touches
 the clipboard.
 
 Speed: a rollout never changes once its day is over, so parsed content is kept
-in an index (``~/.cache/find-co-session/codex-index.json``, or
-``/tmp/find-co-session/`` when the home cache is read-only) keyed by path, size,
+in an index (``~/.cache/skills-sessions/codex-index.json``, or
+``/tmp/skills-sessions/`` when the home cache is read-only) keyed by path, size,
 and mtime. The first run over a new project parses that project's rollouts
 once; later runs only parse files that are new or still growing. The cwd of
 every rollout is read from line 1, so rollouts of other projects cost one
@@ -56,8 +56,8 @@ rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
 chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
 
 INDEX_PATHS = (
-    os.path.join(os.path.expanduser("~"), ".cache", "find-co-session", "codex-index.json"),
-    os.path.join("/tmp", "find-co-session", "codex-index.json"),  # Codex sandbox fallback
+    os.path.join(os.path.expanduser("~"), ".cache", "skills-sessions", "codex-index.json"),
+    os.path.join("/tmp", "skills-sessions", "codex-index.json"),  # Codex sandbox fallback
 )
 INDEX_VERSION = 7  # 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
