@@ -49,7 +49,8 @@
 # models: one line per home and backup, <map> <harness> <place> <model>, in
 # file order, exit 0. The map is home for the first home, home<n> for the
 # n-th, and backup, whose place is its harness. sync-harnesses reads it.
-# start: how the main agent of <harness> starts the agent in T3, exit 0:
+# start: how the main agent of <harness>, claude or codex, starts the agent
+# in T3, exit 0:
 # `name` when its first home is <harness> on the backup's model and effort,
 # else `t3 <place> <model> <effort>`, its first home. The subagent gate reads
 # it.
@@ -71,7 +72,7 @@ case "$mode" in
   start) u='usage: agents.sh start <harness>'
          [ $# -eq 2 ] || die_usage "$u"
          harness="$2"; marker=""
-         case "$harness" in claude|codex|antigravity) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
+         case "$harness" in claude|codex) ;; *) die_usage "$u" "unknown harness: $harness" ;; esac ;;
   *) die_usage "usage: agents.sh check | agents.sh render <harness> <marker> | agents.sh tools | agents.sh models | agents.sh start <harness>" ;;
 esac
 
