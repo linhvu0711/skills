@@ -81,8 +81,6 @@ What a decision asks, by kind:
 - **Too thin**: the constraints on the deepened module; which dependencies sit behind the seam and how each is tested, per its category; the shape of the deepened module; which tests survive and which are replaced.
 - **Leaks its inside**, **Hard to test**, **Heavier than its job**: whether to redesign, and how.
 
-When the user asks to see other interfaces for a Too thin candidate, run `references/design-it-twice.md` before that decision closes.
-
 A candidate the user turns down for a reason that stays true is answered `keep-and-mark`: the grill hands back its ADR, so the next run leaves the candidate out.
 
 ## Apply
@@ -96,7 +94,7 @@ A candidate the user turns down for a reason that stays true is answered `keep-a
 
 **User:** `/improve-architecture`
 
-The scan holds 420 files: 42 design-judge helpers, hottest folders first. `src/orders/` comes back with five modules that each pass the order on to `OrderRepo`; the deletion test concentrates. `src/checkout/total.ts` reads the Pricing cache. The page: `I found 2 things. I would fix 1. 1 needs your choice.` The Order intake card is Still spreading, badge `Strong`, tag `local-substitutable`, with a before diagram of five boxes and an after diagram of one. The talk asks the seam question for Order intake, and the user asks for three designs, so design-it-twice runs. The change list holds 2 tickets. The user says go: `R1 → #140 (ticket)`, `R2 → #141 (ticket)`, a line in the Run table, then `Ready for a pull request`.
+The scan holds 420 files: 42 design-judge helpers, hottest folders first. `src/orders/` comes back with five modules that each pass the order on to `OrderRepo`; the deletion test concentrates. `src/checkout/total.ts` reads the Pricing cache. The page: `I found 2 things. I would fix 1. 1 needs your choice.` The Order intake card is Still spreading, badge `Strong`, tag `local-substitutable`, with a before diagram of five boxes and an after diagram of one. The talk asks the seam question for Order intake. The change list holds 2 tickets. The user says go: `R1 → #140 (ticket)`, `R2 → #141 (ticket)`, a line in the Run table, then `Ready for a pull request`.
 
 **User:** `/improve-architecture src/notify`
 
