@@ -1632,11 +1632,12 @@ t_readme_hook_asks_core_named_bare_deleted() {
 }
 
 t_readme_hook_asks_core_named_bare_staged_only() {
-  # Given: as above
-  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
+  # Given: skill demo reads shared/y.md, which names new.md bare; HEAD has
+  # no shared/new.md
+  hooked; core; printf 'see new.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
   git add -A; git commit -qm skill
-  # When: an edit to x.md is staged, then its working copy is removed
-  printf 'more\n' >> shared/x.md; git add -A; rm shared/x.md
+  # When: the commit adds new.md, and its working copy is removed
+  printf 'hi\n' > shared/new.md; git add -A; rm shared/new.md
   run git commit -m test
   # Then
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
