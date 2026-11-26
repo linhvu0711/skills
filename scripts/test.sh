@@ -283,6 +283,20 @@ t_link_runs_from_outside_repo() {
   eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
 }
 
+t_link_writes_last_try() {
+  # Given: a tier-3 checker
+  linked demo; agent demo helper
+  sed -i.bak -e 's/^tier: 1$/tier: 3/' -e 's/^checker: no$/checker: yes/' skills/demo/agents/helper.md
+  # When
+  link_sh
+  # Then
+  eq exit 0 "$code"
+  has "claude model" "model: claude-opus-5-5
+effort: high" "$(cat "$T/cagents/helper.md")"
+  has "codex model" 'model = "gpt-6.2-sol"
+model_reasoning_effort = "high"' "$(cat "$T/codex/helper.toml")"
+}
+
 t_link_writes_claude_form() {
   # Given: a skill with one agent file and a Codex openai.yaml
   linked demo; agent demo helper; printf 'interface: {}\n' > skills/demo/agents/openai.yaml
@@ -443,7 +457,7 @@ t_link_removes_renamed_agent_forms() {
 
 t_link_writes_shared_agent_forms() {
   # Given: the shared explorer file
-  linked demo; mkdir -p shared/agents
+  linked demo; with_tiers; mkdir -p shared/agents
   printf -- '---\n%s\n---\nFind the fact.\n' "${full_agent/name: helper/name: explorer}" > shared/agents/explorer.md
   # When
   link_sh
@@ -1757,6 +1771,7 @@ cases=(
   "link keeps a hook that shares the gate's group|t_link_keeps_hook_in_gate_group"
   "link writes through a linked hook file|t_link_writes_through_linked_hook_file"
   "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
+  "link writes a tier-3 agent on each harness's own last try|t_link_writes_last_try"
   "link writes a shared agent's two forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"

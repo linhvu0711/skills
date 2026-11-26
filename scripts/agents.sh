@@ -50,7 +50,8 @@
 # is copied as written, so it must be one line.
 #
 # check: one problem per line on stdout, nothing for a good file. Exit 0.
-# render: the file of <harness> on stdout, <marker> in a comment at its top,
+# render: the file of <harness> on stdout, on the model and effort of the
+# last try of its try list, <marker> in a comment at its top,
 # exit 0; or the first problem on stderr, exit 1. <harness> is claude or
 # codex: Antigravity gets no agent file. tools: the agent's Claude Code tools on one line, every one
 # of them for a file with no tools line, exit 0. The subagent gate reads it.
@@ -202,7 +203,7 @@ LC_ALL=C awk -v mode="$mode" -v harness="$harness" -v marker="$marker" -v tiers=
       else entry_problems(k[1], k[2]) }
     if (mode == "check") { for (i = 1; i <= np; i++) print probs[i]; exit 0 }
     if (np) { print probs[1] > "/dev/stderr"; exit 1 }
-    split(entry["backup", harness], b, " ")
+    n = tries(harness, fm["tier"], fm["checker"]); split(tries_out[n], w, " "); b[1] = w[2]; b[2] = w[3]
     if (harness == "claude") {
       print "---"; print "# " marker; print rawname; print rawdesc
       if (rawtools != "") print rawtools

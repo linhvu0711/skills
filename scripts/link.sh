@@ -12,11 +12,12 @@
 # global skills folder, where each skill links to its link in the first
 # folder. Each skill agent, skills/<name>/agents/<agent>.md, and each shared
 # agent, the explorer and the runner in shared/agents/<agent>.md, becomes a file per
-# harness, on that harness's backup model, written by scripts/agents.sh:
+# harness, on the last try of its try list for that harness, written by
+# scripts/agents.sh:
 # ${CLAUDE_AGENTS_HOME:-$HOME/.claude/agents}/<agent>.md for Claude Code and
 # ${CODEX_AGENTS_HOME:-$HOME/.codex/agents}/<agent>.toml for Codex. Antigravity
 # gets no agent file: it runs only inside T3, which starts each helper on its
-# home model. Only `.md` files in agents/ count, so a Codex openai.yaml
+# try list. Only `.md` files in agents/ count, so a Codex openai.yaml
 # stays out. Each file it writes starts with a mark that names its source; a file it wrote whose source is gone, and
 # a link it made that now points to nothing, after a rename or delete, is
 # removed. A name already taken by something else stays as it is.

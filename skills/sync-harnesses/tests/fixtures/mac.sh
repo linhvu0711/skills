@@ -22,12 +22,15 @@ r="$dir/repo"; h="$dir/home"
 mkdir -p "$r/shared" "$r/skills/demo/agents"
 cp -R "$src/scripts" "$r/scripts"
 cp -R "$src/shared/gate" "$r/shared/gate"
+cp "$src/shared/model-tiers.md" "$r/shared/"
 cp -R "$src/skills/sync-harnesses" "$r/skills/sync-harnesses"
 printf -- '---\nname: demo\ndescription: demo\n---\n' > "$r/skills/demo/SKILL.md"
 cat > "$r/skills/demo/agents/helper.md" <<'AGENT'
 ---
 name: helper
 description: Helps.
+tier: 2
+checker: no
 home:
   claude: devin swe-2-high high
   codex: claude claude-haiku-5-5 high
