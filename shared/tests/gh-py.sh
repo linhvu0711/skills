@@ -44,7 +44,7 @@ t_gp_stop_gh_cannot_start() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin"; printf '#!/bin/sh\n' > "$T/bin/gh"; chmod -x "$T/bin/gh"
   # The interpreter itself: a shim such as pyenv's needs bash from PATH.
-  ln -s "$(python3 -c 'import sys; print(sys.executable)')" "$T/bin/python3"
+  ln -s "$(python3 -I -c 'import sys; print(sys.executable)')" "$T/bin/python3"
   local gp_path="$T/bin"
   # When
   gp_run 'gh.stop("list runs", "run", "list")'
