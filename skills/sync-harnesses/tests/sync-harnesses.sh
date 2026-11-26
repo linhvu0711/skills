@@ -20,7 +20,7 @@ json() { jq "$2" "$1" > "$1.new"; mv "$1.new" "$1"; }
 healthy='claude       skills 2/2 · subagents 1/1 · gates 6/6 · rules 1/1
 codex        skills 2/2 · subagents 1/1 · gates 6/6 · rules 1/1
 antigravity  skills 2/2 · gates 6/6 · rules 2/2
-devin in T3  on · swe-2-high answers'
+devin in T3  on · swe-2-1-medium answers'
 
 t_sync_healthy() {
   # Given: a healthy fake Mac
@@ -144,8 +144,8 @@ t_sync_second_run_fixes_nothing() {
   eq stdout "$healthy" "$out"
 }
 
-t_sync_names_stale_home_model() {
-  # Given: T3's Antigravity list without the helper's home model
+t_sync_names_stale_tier_model() {
+  # Given: T3's Antigravity list without the tier tables' Antigravity model
   mac
   printf '{"models":[{"slug":"gemini-4-argon"}]}\n' > "$H/.t3/caches/antigravity.json"
   before="$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
@@ -153,19 +153,31 @@ t_sync_names_stale_home_model() {
   sync_mac
   # Then
   eq exit 1 "$code"
-  has problem 'problem: skills/demo/agents/helper.md: home for antigravity: T3 Antigravity does not offer gemini-4-neon' "$out"
+  has problem 'problem: shared/model-tiers.md: T3 Antigravity does not offer gemini-4-neon' "$out"
   eq agent "$before" "$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
 }
 
-t_sync_names_stale_backup_model() {
-  # Given: Codex's own list without the helper's Codex backup
+t_sync_skips_models_of_company_not_in_use() {
+  # Given: Codex, not in use, with an empty model list of its own
   mac
   printf '{"models":[]}' > "$H/.codex/models_cache.json"
   # When
   sync_mac
   # Then
+  eq exit 0 "$code"
+  lacks problem 'problem:' "$out"
+}
+
+t_sync_names_try_order_not_in_use() {
+  # Given: the Claude try order of tier 2, checker no, reaches Codex, which
+  # is not in use
+  mac
+  sed -i.bak "s/^2 no$(printf '\t')devin, claude$(printf '\t')/2 no$(printf '\t')devin, codex, claude$(printf '\t')/" "$T/mac/repo/shared/model-tiers.md"
+  # When
+  sync_mac
+  # Then
   eq exit 1 "$code"
-  has problem 'problem: skills/demo/agents/helper.md: backup for codex: Codex does not offer gpt-6-luna' "$out"
+  has problem 'problem: shared/model-tiers.md: try order 2 no for claude reaches codex, which is not in use' "$out"
 }
 
 t_sync_skips_models_of_place_off() {
@@ -177,7 +189,7 @@ t_sync_skips_models_of_place_off() {
   sync_mac
   # Then
   eq exit 0 "$code"
-  has skip 'skip: Antigravity is off in T3, so its home models are not checked' "$out"
+  has skip 'skip: Antigravity is off in T3, so its models are not checked' "$out"
   lacks problem 'problem:' "$out"
 }
 
@@ -190,7 +202,7 @@ t_sync_warns_devin_off() {
   # Then
   eq exit 0 "$code"
   has devin 'devin in T3  off' "$out"
-  has warn 'warn: Devin is off in T3, so these run on their backup: helper' "$out"
+  has warn 'warn: Devin is off in T3, so these move to their next try: helper' "$out"
   [ ! -e "$T/mac/devin.calls" ] || eq devin.calls absent there
 }
 
@@ -202,8 +214,8 @@ t_sync_warns_swe2_refused() {
   sync_mac
   # Then
   eq exit 0 "$code"
-  has devin 'devin in T3  on · swe-2-high refused' "$out"
-  has warn "warn: swe-2-high refused (Error: Unknown model: 'swe-2-high'), so these run on their backup: helper" "$out"
+  has devin 'devin in T3  on · swe-2-1-medium refused' "$out"
+  has warn "warn: swe-2-1-medium refused (Error: Unknown model: 'swe-2-1-medium'), so these move to their next try: helper" "$out"
 }
 
 t_sync_skips_harness_not_installed() {
@@ -227,7 +239,7 @@ t_sync_devin_missing_from_t3() {
   # Then
   eq exit 0 "$code"
   has devin 'devin in T3  off' "$out"
-  has warn 'warn: Devin is off in T3, so these run on their backup: helper' "$out"
+  has warn 'warn: Devin is off in T3, so these move to their next try: helper' "$out"
   [ ! -e "$T/mac/devin.calls" ] || eq devin.calls absent there
 }
 
@@ -315,21 +327,6 @@ t_sync_linked_settings_not_json_once() {
   eq problems 'problem: ~/real-settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
 }
 
-t_sync_names_stale_second_home() {
-  # Given: the helper's Claude home lists Devin Neon second, a model T3's Devin
-  # list lacks
-  mac
-  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, devin gemini-4-neon-high high/' \
-    "$T/mac/repo/skills/demo/agents/helper.md"
-  # When
-  sync_mac
-  # Then
-  eq exit 1 "$code"
-  has problem 'problem: skills/demo/agents/helper.md: home 2 for claude: T3 Devin does not offer gemini-4-neon-high' "$out"
-  eq devin 'devin in T3  on · swe-2-high answers' "$(grep '^devin in T3' <<<"$out")"
-  lacks calls gemini-4-neon-high "$(cat "$T/mac/devin.calls")"
-}
-
 t_sync_linked_settings_into_absent_harness() {
   # Given: no Codex CLI, and Claude Code's settings a link to a file under
   # ~/.codex that is not JSON
@@ -342,61 +339,6 @@ t_sync_linked_settings_into_absent_harness() {
   # Then
   eq exit 1 "$code"
   eq problems 'problem: ~/.codex/shared-settings.json is not JSON' "$(grep '^problem:' <<<"$out")"
-}
-
-t_sync_warns_next_home_when_devin_off() {
-  # Given: Devin off in T3, and the helper's Claude home lists Antigravity after
-  # Devin
-  mac
-  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
-  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, antigravity gemini-4-neon high/' \
-    "$T/mac/repo/skills/demo/agents/helper.md"
-  # When
-  sync_mac
-  # Then
-  eq exit 0 "$code"
-  eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
-}
-
-t_sync_warns_backup_when_next_home_off() {
-  # Given: Devin and Antigravity off in T3, and the helper's Claude home lists
-  # Antigravity after Devin
-  mac
-  sed -i.bak -e '/Devin/s/true/false/' -e '/Antigravity/s/true/false/' "$H/.t3/userdata/settings.json"
-  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, antigravity gemini-4-neon high/' \
-    "$T/mac/repo/skills/demo/agents/helper.md"
-  # When
-  sync_mac
-  # Then
-  eq warns 'warn: Devin is off in T3, so these run on their backup: helper' "$(grep '^warn:' <<<"$out")"
-}
-
-t_sync_warns_third_home_when_second_off() {
-  # Given: Devin and Codex off in T3, and the helper's Claude home lists Codex,
-  # then Antigravity, after Devin
-  mac
-  sed -i.bak -e '/Devin/s/true/false/' -e '/"codex"/s/true/false/' "$H/.t3/userdata/settings.json"
-  sed -i.bak 's/^  claude: devin swe-2-high high$/  claude: devin swe-2-high high, codex gpt-6-luna high, antigravity gemini-4-neon high/' \
-    "$T/mac/repo/skills/demo/agents/helper.md"
-  # When
-  sync_mac
-  # Then
-  eq exit 0 "$code"
-  eq warns 'warn: Devin is off in T3, so these move to their next home: helper' "$(grep '^warn:' <<<"$out")"
-}
-
-t_sync_warns_antigravity_helper_fails_when_devin_off() {
-  # Given: Devin off in T3, and the helper's Antigravity home on Devin
-  mac
-  sed -i.bak '/Devin/s/true/false/' "$H/.t3/userdata/settings.json"
-  sed -i.bak 's/^  antigravity: antigravity gemini-4-neon high$/  antigravity: devin swe-2-high high/' \
-    "$T/mac/repo/skills/demo/agents/helper.md"
-  # When
-  sync_mac
-  # Then
-  eq exit 0 "$code"
-  eq warns 'warn: Devin is off in T3, so these run on their backup: helper
-warn: Devin is off in T3, so these fail in Antigravity, which has no backup: helper' "$(grep '^warn:' <<<"$out")"
 }
 
 t_sync_follows_link_env() {
@@ -413,9 +355,9 @@ t_sync_follows_link_env() {
 }
 
 t_sync_names_agent_link_cannot_render() {
-  # Given: a second agent with no Codex backup
+  # Given: a second agent with no tier line
   mac
-  sed -e 's/^name: helper$/name: helper2/' -e '/^  codex: gpt-6-luna high$/d' \
+  sed -e 's/^name: helper$/name: helper2/' -e '/^tier: 2$/d' \
     "$T/mac/repo/skills/demo/agents/helper.md" > "$T/mac/repo/skills/demo/agents/helper2.md"
   # When
   sync_mac
@@ -424,7 +366,7 @@ t_sync_names_agent_link_cannot_render() {
   has claude 'claude       skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
   has codex 'codex        skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
   has antigravity 'antigravity  skills 2/2 · gates 6/6 · rules 2/2' "$out"
-  eq problems 'problem: skills/demo/agents/helper2.md: missing backup for codex' "$(grep '^problem:' <<<"$out")"
+  eq problems 'problem: skills/demo/agents/helper2.md:5: no tier line' "$(grep '^problem:' <<<"$out")"
 }
 
 t_sync_names_gates_beside_unread_plugin_hooks() {
@@ -453,9 +395,10 @@ cases=(
   "sync names a hand-made subagent file|t_sync_names_hand_made_subagent"
   "sync names a blocked T3 plugins link|t_sync_names_blocked_plugins_link"
   "sync a second run fixes nothing|t_sync_second_run_fixes_nothing"
-  "sync names a home model T3 no longer offers|t_sync_names_stale_home_model"
-  "sync names a backup model Codex no longer offers|t_sync_names_stale_backup_model"
-  "sync skips the home models of a place that is off|t_sync_skips_models_of_place_off"
+  "sync names a tier model T3 no longer offers|t_sync_names_stale_tier_model"
+  "sync skips the models of a company not in use|t_sync_skips_models_of_company_not_in_use"
+  "sync names a try order that reaches a company not in use|t_sync_names_try_order_not_in_use"
+  "sync skips the models of a place that is off|t_sync_skips_models_of_place_off"
   "sync warns when Devin is off in T3|t_sync_warns_devin_off"
   "sync warns when SWE-2 is refused|t_sync_warns_swe2_refused"
   "sync skips a harness that is not installed|t_sync_skips_harness_not_installed"
@@ -467,12 +410,7 @@ cases=(
   "sync names a blocked shared skill link without Codex|t_sync_names_shared_skill_blocker"
   "sync counts T3 rules links only with the shared file|t_sync_t3_rules_links_need_shared_file"
   "sync names linked settings that are not JSON once|t_sync_linked_settings_not_json_once"
-  "sync names a second home model T3 no longer offers|t_sync_names_stale_second_home"
   "sync names linked settings under a harness not installed|t_sync_linked_settings_into_absent_harness"
-  "sync warns of the next home when Devin is off|t_sync_warns_next_home_when_devin_off"
-  "sync warns of the backup when the next home is off too|t_sync_warns_backup_when_next_home_off"
-  "sync warns the third home when the second is off|t_sync_warns_third_home_when_second_off"
-  "sync warns that an Antigravity helper on Devin fails when Devin is off|t_sync_warns_antigravity_helper_fails_when_devin_off"
   "sync checks the folders link.sh's env settings name|t_sync_follows_link_env"
   "sync names an agent link.sh cannot render once|t_sync_names_agent_link_cannot_render"
   "sync names the gates beside a plugin hooks file it cannot read|t_sync_names_gates_beside_unread_plugin_hooks"

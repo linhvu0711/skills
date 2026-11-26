@@ -60,7 +60,7 @@ start_rule() {
 }
 
 home_rule() {
-  printf 'Blocked by the subagent gate: in T3, start %s on its first home, %s, through T3'"'"'s delegate_task, per shared/facts.md § Skill agents. When no home can run, start it by name again: it then runs on its backup.' "$1" "$2"
+  printf 'Blocked by the subagent gate: in T3, start %s on its first try, %s, through T3'"'"'s delegate_task, per shared/facts.md § Skill agents. When no try can run, start it by name again: it then runs on its last try.' "$1" "$2"
 }
 
 t_gate_claude_refuses_main_first_t3_walker() {
@@ -69,7 +69,7 @@ t_gate_claude_refuses_main_first_t3_walker() {
   t3_gate claude "$(claude_main_start walker)"
   # Then
   eq exit 0 "$code"
-  eq stdout '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-high high')"'"}}' "$out"
+  eq stdout '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-1-medium high')"'"}}' "$out"
 }
 
 t_gate_t3_second_walker_start_goes_through() {
@@ -90,24 +90,33 @@ t_gate_t3_refuses_scope_reviewer_after_walker() {
   t3_gate claude "$(claude_main_start scope-reviewer)"
   # Then
   eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule scope-reviewer 'devin swe-2-high high')"'"' "$out"
+  has stdout '"permissionDecisionReason":"'"$(home_rule scope-reviewer 'devin swe-2-1-medium high')"'"' "$out"
 }
 
-t_gate_codex_refuses_main_first_t3_explorer() {
-  # Given: T3 is on; the Codex main agent, with no agent_id, starts the explorer
+t_gate_codex_refuses_main_first_t3_walker() {
+  # Given: T3 is on; the Codex main agent, with no agent_id, starts the walker
   # When
-  t3_gate codex '{"session_id":"s1","turn_id":"t1","cwd":"/tmp","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"explorer","message":"x"}}'
+  t3_gate codex '{"session_id":"s1","turn_id":"t1","cwd":"/tmp","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"walker","message":"x"}}'
   # Then
   eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
+  has stdout '"permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-1-medium high')"'"' "$out"
+}
+
+t_gate_claude_refuses_main_first_t3_logic_reviewer() {
+  # Given: T3 is on; the logic reviewer is a tier-3 checker
+  # When
+  t3_gate claude "$(claude_main_start logic-reviewer)"
+  # Then
+  eq exit 0 "$code"
+  has stdout '"permissionDecisionReason":"'"$(home_rule logic-reviewer 'devin swe-2-1-medium xhigh')"'"' "$out"
 }
 
 # codex_log_start <originator>: outside T3's env, a Codex main agent starts
-# the explorer in a chat whose log was opened by that app.
+# the walker in a chat whose log was opened by that app.
 codex_log_start() {
   local log; log="$(mktemp)"
   printf '{"type":"session_meta","payload":{"id":"s1","originator":"%s"}}\n' "$1" > "$log"
-  gate codex '{"session_id":"s1","transcript_path":"'"$log"'","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"explorer","message":"x"}}'
+  gate codex '{"session_id":"s1","transcript_path":"'"$log"'","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"walker","message":"x"}}'
 }
 
 t_gate_codex_refuses_main_in_t3_log() {
@@ -116,7 +125,7 @@ t_gate_codex_refuses_main_in_t3_log() {
   codex_log_start 'T3 Code'
   # Then
   eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule explorer 'claude claude-haiku-5-5 high')"'"' "$out"
+  has stdout '"permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-1-medium high')"'"' "$out"
 }
 
 t_gate_codex_main_outside_t3_log() {
@@ -288,13 +297,14 @@ cases=(
   "gate blocks a codex explorer's start|t_gate_codex_blocks_explorer_start"
   "gate blocks a codex explorer's edit|t_gate_codex_blocks_explorer_edit"
   "gate refuses a claude main agent's first T3 start of the walker|t_gate_claude_refuses_main_first_t3_walker"
-  "gate refuses a codex main agent's first T3 start of the explorer|t_gate_codex_refuses_main_first_t3_explorer"
+  "gate refuses a codex main agent's first T3 start of the walker|t_gate_codex_refuses_main_first_t3_walker"
+  "gate refuses a claude main agent's first T3 start of the logic reviewer|t_gate_claude_refuses_main_first_t3_logic_reviewer"
   "gate lets a claude main agent start the explorer in T3|t_gate_claude_main_t3_explorer"
   "gate lets a claude main agent start the walker outside T3|t_gate_claude_main_walker_outside_t3"
   "gate lets an unreadable T3 payload through|t_gate_t3_unreadable_payload"
   "gate lets a T3 start of an agent with no file through|t_gate_t3_agent_without_file"
   "gate lets a second T3 start of the walker through|t_gate_t3_second_walker_start_goes_through"
   "gate refuses the scope reviewer after it refused the walker|t_gate_t3_refuses_scope_reviewer_after_walker"
-  "gate refuses a codex main agent's first start of the explorer in a T3 chat log|t_gate_codex_refuses_main_in_t3_log"
-  "gate lets a codex main agent start the explorer outside T3|t_gate_codex_main_outside_t3_log"
+  "gate refuses a codex main agent's first start of the walker in a T3 chat log|t_gate_codex_refuses_main_in_t3_log"
+  "gate lets a codex main agent start the walker outside T3|t_gate_codex_main_outside_t3_log"
 )

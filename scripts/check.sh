@@ -42,8 +42,8 @@
 # `#!` has the run bit, mode 100755 in the index. Each skill agent,
 # `skills/<name>/agents/<agent>.md`, and each shared agent, the explorer and
 # the runner in `shared/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
-# file name without `.md`, a `description` that is not empty, and a home and a
-# backup entry for each harness in a form that harness takes, as
+# file name without `.md`, a `description` that is not empty, and a `tier:`
+# and a `checker:` line, and shared/model-tiers.md well-formed tables, as
 # `scripts/agents.sh` says.
 #
 # With --commit-msg, the subject check comes first: the first message line that
@@ -411,14 +411,21 @@ if [ ${#paths[@]} -eq 0 ]; then
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,
   # and each shared agent, shared/agents/<agent>.md,
-  # has one whose `name` is its file name, and the home and backup entries
-  # agents.sh checks.
+  # has one whose `name` is its file name, and the tier and checker lines
+  # agents.sh checks against the index copy of shared/model-tiers.md.
   while IFS= read -r skill; do
     while IFS= read -r p; do problems+=("$skill/SKILL.md: $p"); done < <(git show ":$skill/SKILL.md" | frontmatter_problems --limits "${skill#skills/}" folder)
   done < <(skill_dirs)
+  export MODEL_TIERS="$tmp/model-tiers.md"
+  if in_index shared/model-tiers.md; then
+    git show ":shared/model-tiers.md" > "$MODEL_TIERS"
+    while IFS= read -r p; do problems+=("shared/model-tiers.md:$p"); done < <(bash "$scripts/agents.sh" tiers)
+  elif [ -n "$(agent_files)" ]; then
+    problems+=("shared/model-tiers.md: missing")
+  fi
   while IFS= read -r f; do
     while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | frontmatter_problems "$(basename "$f" .md)" file)
-    while IFS= read -r p; do problems+=("$f: $p"); done < <(git show ":$f" | bash "$scripts/agents.sh" check)
+    while IFS= read -r p; do problems+=("$f:$p"); done < <(git show ":$f" | bash "$scripts/agents.sh" check)
   done < <(agent_files)
 fi
 if [ -n "$words" ]; then

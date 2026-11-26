@@ -1,5 +1,5 @@
 ---
-status: amends ADR-0020, ADR-0023, amended by ADR-0028
+status: superseded by ADR-0042
 ---
 
 # Each helper agent runs on the model its job needs

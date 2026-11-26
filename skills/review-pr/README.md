@@ -21,7 +21,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 ## Needs
 
 - `git` and `gh`, signed in.
-- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents on the home models its file names for your harness, tried in order, or on its backup, and explorers that read the Standard and the ADRs. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent files into Claude Code and Codex.
+- Subagents: the axis agents `logic-reviewer`, `scope-reviewer`, and `standards-reviewer`, in `agents/`, each started per `../../shared/facts.md` § Skill agents on the try list its tier gives for your harness, and explorers that read the Standard and the ADRs. The harness table, `../../shared/harness.md`, says how your harness starts them. [link.sh](../../scripts/link.sh) installs the agent files into Claude Code and Codex.
 - The shared core files `../../shared/facts.md`, `../../shared/review/general-rules.md`, and `../../shared/coding-standards/standard.md`, which says which lines of the Standard are rules.
 
 ## Fits with

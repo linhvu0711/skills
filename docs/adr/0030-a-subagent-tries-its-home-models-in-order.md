@@ -1,5 +1,5 @@
 ---
-status: amends ADR-0028
+status: superseded by ADR-0042
 ---
 
 # A subagent tries its home models in order

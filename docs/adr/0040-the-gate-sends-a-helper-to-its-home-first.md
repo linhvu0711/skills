@@ -1,5 +1,5 @@
 ---
-status: amends ADR-0030
+status: amends ADR-0030, amended by ADR-0042
 ---
 
 # The gate sends a helper to its home first

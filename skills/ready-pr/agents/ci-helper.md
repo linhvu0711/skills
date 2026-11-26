@@ -2,13 +2,8 @@
 name: ci-helper
 description: "Reads the failed CI logs of one group of red checks for /ready-pr and gives the cause one class: ours, base, flaky, or outside. Spawned only by ready-pr, in the background. Read-only."
 tools: Read, Grep, Glob, Bash
-home:
-  claude: claude claude-haiku-5-5 high
-  codex: claude claude-haiku-5-5 high
-  antigravity: claude claude-haiku-5-5 high
-backup:
-  claude: claude-haiku-5-5 high
-  codex: gpt-6-luna high
+tier: 1
+checker: no
 ---
 
 You find why one group of CI checks failed.

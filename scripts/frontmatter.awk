@@ -7,12 +7,14 @@
 #                 value is its indented lines, less the first line's indent,
 #                 joined by newlines, as YAML reads it.
 #   fm_raw[k]     the line of key k as written
+#   fm_nr[k]      the line number of key k
 #   fm_block[k]   1 when k's value is a block scalar: `|` or `>`, with an
 #                 optional `-` or `+`
 #   fm_map[k, s]  the value, by val, of an indented `s: value` line under a
 #                 key k with no value of its own
 #   fm_keys[n]    each `k SUBSEP s` of fm_map in file order, fm_nkeys of them
 #   fm_body[n]    each line under the closing `---`, fm_nbody of them
+#   fm_end        the line number of the closing `---`
 #
 # Outside a block scalar, a blank line or a `#` comment line is skipped and
 # ends no map. Any other unindented line ends a block scalar or a map.
@@ -48,9 +50,9 @@ fm_bk != "" && /^[ \t]/ {
   fm_map[fm_mk, fm_sub] = val(fm_line); fm_keys[++fm_nkeys] = fm_mk SUBSEP fm_sub; next
 }
 { fm_mk = "" }
-$0 == "---" { fm_closed = 1; next }
+$0 == "---" { fm_closed = 1; fm_end = NR; next }
 /^[^:]+:/ {
-  fm_k = $0; sub(/:.*$/, "", fm_k); fm_raw[fm_k] = $0; fm[fm_k] = val($0); fm_block[fm_k] = 0
+  fm_k = $0; sub(/:.*$/, "", fm_k); fm_raw[fm_k] = $0; fm_nr[fm_k] = NR; fm[fm_k] = val($0); fm_block[fm_k] = 0
   if (fm[fm_k] ~ /^[|>][-+]?$/) { fm[fm_k] = ""; fm_block[fm_k] = 1; fm_bk = fm_k }
   else if (fm[fm_k] == "") fm_mk = fm_k
 }

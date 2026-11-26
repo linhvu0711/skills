@@ -2,13 +2,8 @@
 name: hack-judge
 description: "Finds hacks in about ten files for /prune-codebase: code that goes around a problem and does not solve it, read with the history of its line, and whether each is new since the span start. Spawned only by prune-codebase. Read-only."
 tools: Read, Grep, Glob, Bash
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
+tier: 2
+checker: no
 ---
 
 You find hacks in a few files, so a skill can show the user which workarounds teach agents that going around a problem is fine.

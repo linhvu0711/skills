@@ -8,7 +8,7 @@
 # The rules, read from the agent files through scripts/agents.sh tools, so
 # no second list of agent names exists here:
 #   - The main agent is blocked once per chat and helper in T3, when the
-#     helper's first home is not its harness on the backup's model and effort.
+#     helper's first try is not its harness.
 #   - A subagent may start another only when its agent file lists the Agent
 #     tool, and only a shared agent, one in shared/agents/. Neither of those
 #     lists Agent, so nesting stops at two levels.
@@ -96,7 +96,7 @@ if [ -z "$caller" ]; then
   [[ "$session" =~ ^[A-Za-z0-9_-]+$ ]] || exit 0
   notes="${TMPDIR:-/tmp}/subagent-gate-$(id -u)/$session"
   mkdir -p "$notes" 2>/dev/null && mkdir "$notes/$target" 2>/dev/null || exit 0
-  deny "Blocked by the subagent gate: in T3, start $target on its first home, ${home#t3 }, through T3's delegate_task, per shared/facts.md § Skill agents. When no home can run, start it by name again: it then runs on its backup."
+  deny "Blocked by the subagent gate: in T3, start $target on its first try, ${home#t3 }, through T3's delegate_task, per shared/facts.md § Skill agents. When no try can run, start it by name again: it then runs on its last try."
 fi
 
 if [ "$action" = start ]; then

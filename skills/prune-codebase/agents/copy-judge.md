@@ -2,13 +2,8 @@
 name: copy-judge
 description: "Judges groups of repeated code for /prune-codebase: which are the same code in two or more places, and whether each is new since the span start. Spawned only by prune-codebase. Read-only."
 tools: Read, Grep, Glob, Bash
-home:
-  claude: claude claude-sonnet-5-5 high
-  codex: claude claude-sonnet-5-5 high
-  antigravity: claude claude-sonnet-5-5 high
-backup:
-  claude: claude-sonnet-5-5 high
-  codex: gpt-6.2-sol medium
+tier: 1
+checker: no
 ---
 
 You judge groups of repeated code, so a skill can show the user which copies teach agents to paste one more.

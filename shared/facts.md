@@ -37,25 +37,27 @@ The runner installs nothing, so before its brief goes out, the lead puts every p
 
 ### Skill agents
 
-A subagent's file names one or more homes for each main harness, and a backup for Claude Code and for Codex. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
+A subagent's file names its tier, 1 to 4, and its checker line, yes or no. `model-tiers.md`, next to this file, turns the two into a try list for each main harness: the companies it tries, in order, each with a model and an effort. A skill agent's file is `agents/<agent>.md` in the skill's folder; the explorer's and the runner's are `agents/<agent>.md` next to this file. `harness.md`, next to this file, names your harness's tool for each step below.
 
-**Start.** In T3, when T3's `delegate_task` is in your tools under any of its names (`harness.md` § T3), read the file's `home:` line for your harness: one home, or several joined by `, `. Try them from left to right. When a home's place is your harness and your harness's `backup:` line names the same model and effort, start it by name with your harness's own tool. Else start it through T3 on the home's place, model, and effort. Outside T3, start it by name with your own tool: its file runs it on your harness's backup. Antigravity has no agent files, so there a helper starts only through T3.
+**Try list.** `bash ../scripts/agents.sh tries <harness> < <agent file>` prints it, one try per line as `<company> <model> <effort>`; `<harness>` is yours: `claude`, `codex`, or `antigravity`.
 
-**Gate.** In T3, the subagent gate refuses your first start by name of a helper whose first home is not your harness with your backup's model and effort, and names the home. Start it through T3 per **Start**. When no home can run, start it by name again: the gate lets the second start through, and it runs on the backup.
+**Start.** In T3, when T3's `delegate_task` is in your tools under any of its names (`harness.md` § T3), take each try in turn. A try whose company is your harness: start it by name with your harness's own tool. Any other try: start it through T3 on its company, model, and effort. Outside T3, start it by name with your own tool: its file runs it on the last try, your own harness's model. Antigravity has no agent files, so there every try starts through T3.
+
+**Gate.** In T3, the subagent gate refuses your first start by name of a helper whose first try is not your harness, and names that try. Start it through T3 per **Start**. When no try can run, start it by name again: the gate lets the second start through, and it runs on the last try.
 
 **Brief.** A start by name loads the file, so the brief is the skill's brief alone. A start that loads no file, through T3 or as the plain subagent, puts the file's body, word for word, above the skill's brief.
 
-**Next home.** A home cannot run when T3 lists its place as off, lists no such model, or refuses the start, or when its place is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then try the next home on the line. With no home left, start it by name with your own tool, on the backup. The backup is your own harness's model, so it fails only when you fail: there is no try after it. An Antigravity main agent has no backup: link.sh installs no agent there. So with no home left, the helper failed: follow the skill's own rule for a failed helper.
+**Next try.** A try cannot run when T3 lists its company as off, lists no such model, or refuses the start, or when its company is Antigravity and your mode is not `full-access` (`harness.md` § T3). Then take the next try. From Claude Code or Codex, the last try is your own harness's model, so it fails only when you fail. From Antigravity, a helper with no try left stops the skill, so no step runs without it. Say `<agent> cannot start: <try>, <why>; <try>, <why>.`, with each try in order as in **Report line**, as in `design-judge cannot start: antigravity gemini-4-neon medium, Antigravity needs full-access.`, and stop. This comes before a skill's own rule for a failed helper, such as plan-up's `failed · <why>` line: that rule is for a helper that started, then failed.
 
-**Report line.** A helper that did not run on its first home puts one line in the skill's report, just above its last line:
+**Report line.** A helper that did not run on its first try puts one line in the skill's report, just above its last line:
 
 ```
-<agent> ran on <where>: <home>, <why>; <home>, <why>.
+<agent> ran on <where>: <try>, <why>; <try>, <why>.
 ```
 
-`<where>` is the home that ran, `<place> <model> <effort>`, or `backup <model> <effort>`. Each `<home>, <why>` pair is a home tried before it, in order, and why it could not run, as in `logic-reviewer ran on devin gemini-4-neon-high high: antigravity gemini-4-neon high, Antigravity needs full-access.` and `logic-reviewer ran on backup claude-opus-5-5 xhigh: antigravity gemini-4-neon high, Antigravity is off in T3; devin gemini-4-neon-high high, Devin lists no such model.`
+`<where>` is the try that ran, `<company> <model> <effort>`. Each `<try>, <why>` pair is a try before it, in order, and why it could not run, as in `logic-reviewer ran on antigravity gemini-4-neon medium: devin swe-2-1-medium xhigh, Devin is off in T3.` and `logic-reviewer ran on claude claude-opus-5-5 high: devin swe-2-1-medium xhigh, Devin lists no such model; antigravity gemini-4-neon medium, Antigravity needs full-access.`
 
-**Not found.** Your harness says the agent is not found: start the plain subagent, with the backup's model and effort as far as your harness's start call takes them (`harness.md`), and print this line:
+**Not found.** Your harness says the agent is not found: start the plain subagent, with the last try's model and effort as far as your harness's start call takes them (`harness.md`), and print this line:
 
 ```
 <agent> not found, ran on <plain subagent>. Run scripts/link.sh to fix.

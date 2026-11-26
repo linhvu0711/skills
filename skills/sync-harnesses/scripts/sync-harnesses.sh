@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # sync-harnesses.sh: check that Claude Code, Codex, and Antigravity on this
 # Mac have the repo's skills and subagents and the owner's rules and gates,
-# and that Devin in T3 answers on its home models.
+# that each model the try orders of shared/model-tiers.md reach is offered,
+# for the companies it marks in use, and that Devin in T3 answers on the
+# models helpers try first.
 #
 #   sync-harnesses.sh
 #
@@ -151,7 +153,7 @@ check_codex() {
 # Antigravity, and each private folder T3 runs it from. Antigravity reads the
 # hooks.json of every plugin in its plugins folder, and link.sh's status
 # lines name each T3 folder. It has no subagents: it runs only in T3, which
-# starts each helper on its home model.
+# starts each helper on its try list.
 check_antigravity() {
   local t st kind h name
   count_targets antigravity skill skill; s="$got"
@@ -202,13 +204,6 @@ for t in ${targets[@]+"${targets[@]}"}; do
   link_problems+=("$l")
 done
 
-# Every agent's models, one row each: <agent file> <map> <harness> <place>
-# <model>, as agents.sh's models mode lists them.
-rows=()
-for a in ${agents[@]+"${agents[@]}"}; do
-  while read -r r; do rows+=("$a $r"); done < <(bash "$root/scripts/agents.sh" models < "$root/$a")
-done
-
 notes=()
 # note <line>: add a skip line once.
 note() {
@@ -217,7 +212,7 @@ note() {
   notes+=("$1")
 }
 
-# t3_id <place>: the T3 provider of a place, and its name in the report.
+# t3_id <company>: the T3 provider of a company, and its name in the report.
 t3_id() {
   case "$1" in
     claude) id=claudeAgent; name=Claude ;;
@@ -238,67 +233,66 @@ t3_on() {
 # offers <list file> <model>: whether the list holds the model.
 offers() { jq -e --arg m "$2" 'any(.models[]?; .slug == $m)' "$1" >/dev/null 2>&1; }
 
-# Models: a home against the T3 list of its place, a Claude Code backup
-# against T3's Claude list, a Codex backup against Codex's own list. A
-# backup of a harness the Mac lacks never runs, so it is not checked.
-for row in ${rows[@]+"${rows[@]}"}; do
-  read -r a map h place model <<< "$row"
-  label="$map"; case "$map" in home?*) label="home ${map#home}" ;; esac
-  if [ "${map#home}" != "$map" ]; then
-    t3_id "$place"; [ -n "$id" ] || continue
-    if ! t3_on "$id"; then note "skip: $name is off in T3, so its home models are not checked"; continue; fi
-    list="$HOME/.t3/caches/$id.json"; source="T3 $name"
-  else
-    is_absent "$h" && continue
-    case "$h" in
-      claude) t3_id claude; list="$HOME/.t3/caches/$id.json"; source="Claude Code" ;;
+# The companies shared/model-tiers.md marks in use. Only a main harness in
+# use has its try orders read, and only a company in use has its models
+# checked.
+in_use=" $(bash "$root/scripts/agents.sh" in-use | tr '\n' ' ')"
+used() { case "$in_use" in *" $1 "*) return 0 ;; esac; return 1; }
+
+# Models: each company and model a try order of a main harness in use
+# reaches, checked once. Claude's against T3's Claude list, Codex's against
+# Codex's own list, Antigravity's and Devin's against T3's list for them
+# while T3 has them on.
+checked=" "
+for h in claude codex antigravity; do
+  used "$h" || continue
+  while read -r tier chk company model _; do
+    if ! used "$company"; then
+      problem "shared/model-tiers.md: try order $tier $chk for $h reaches $company, which is not in use"; continue
+    fi
+    case "$checked" in *" $company/$model "*) continue ;; esac
+    checked="$checked$company/$model "
+    t3_id "$company"
+    case "$company" in
+      claude) list="$HOME/.t3/caches/$id.json"; source="T3 Claude" ;;
       codex) list="$HOME/.codex/models_cache.json"; source=Codex ;;
-      *) continue ;;
+      *) if ! t3_on "$id"; then note "skip: $name is off in T3, so its models are not checked"; continue; fi
+         list="$HOME/.t3/caches/$id.json"; source="T3 $name" ;;
     esac
-  fi
-  if [ ! -f "$list" ]; then note "skip: no model list at $(tilde "$list"), so $source models are not checked"; continue; fi
-  offers "$list" "$model" || problem "$a: $label for $h: $source does not offer $model"
+    if [ ! -f "$list" ]; then note "skip: no model list at $(tilde "$list"), so $source models are not checked"; continue; fi
+    offers "$list" "$model" || problem "shared/model-tiers.md: $source does not offer $model"
+  done < <(bash "$root/scripts/agents.sh" orders "$h")
 done
 
-# The agents whose first home starts them in Devin, one `<agent> <model> <then>`
-# line each, <then> being where a Devin failure sends it: next when the entry
-# lists another home whose place is on in T3, else backup, or fail for an
-# Antigravity main agent, which has no backup. A later home on Devin is only a
-# fallback, so its loss sends no one on.
-devin_homes=()
-for row in ${rows[@]+"${rows[@]}"}; do
-  read -r a map h place model <<< "$row"
-  if [ "$map" = home ] && [ "$place" = devin ]; then
-    if [ "$h" = antigravity ]; then then=fail; else then=backup; fi
-    for r in ${rows[@]+"${rows[@]}"}; do
-      read -r ra rmap rh next _ <<< "$r"
-      case "$rmap" in home[0-9]*) ;; *) continue ;; esac
-      [ "$ra" = "$a" ] && [ "$rh" = "$h" ] || continue
-      t3_id "$next"
-      if [ -n "$id" ] && t3_on "$id"; then then=next; fi
-    done
-    devin_homes+=("$(basename "$a" .md) $model $then")
-  fi
+# The agents whose first try, under a main harness in use, is Devin, one
+# `<agent> <model>` line each. An agent file agents.sh cannot read gives no
+# line: link.sh --status names it already.
+devin_first=()
+for a in ${agents[@]+"${agents[@]}"}; do
+  for h in claude codex antigravity; do
+    used "$h" || continue
+    first="$(bash "$root/scripts/agents.sh" tries "$h" < "$root/$a" 2>/dev/null | sed -n 1p)" || true
+    read -r company model _ <<< "$first"
+    [ "$company" = devin ] && devin_first+=("$(basename "$a" .md) $model")
+  done
 done
 
-# on_devin <then> [model]: those agents a failure sends to <then>, on the
-# model when one is named, sorted, joined by ", ".
+# on_devin [model]: those agents, on the model when one is named, sorted,
+# joined by ", ".
 on_devin() {
-  printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk -v t="$1" -v m="${2:-}" 'NF && $3 == t && (m == "" || $2 == m) { print $1 }' \
+  printf '%s\n' ${devin_first[@]+"${devin_first[@]}"} | awk -v m="${1:-}" 'NF && (m == "" || $2 == m) { print $1 }' \
     | sort -u | paste -sd, - | sed 's/,/, /g'
 }
 
-# devin_warn <cause> [model]: a warning per place a Devin failure sends agents.
+# devin_warn <cause> [model]: a warning for the agents a Devin failure
+# moves on. A try list always has a try after Devin.
 devin_warn() {
-  local b n f
-  b="$(on_devin backup "${2:-}")"; n="$(on_devin next "${2:-}")"; f="$(on_devin fail "${2:-}")"
-  [ -z "$b" ] || warns+=("warn: $1, so these run on their backup: $b")
-  [ -z "$n" ] || warns+=("warn: $1, so these move to their next home: $n")
-  [ -z "$f" ] || warns+=("warn: $1, so these fail in Antigravity, which has no backup: $f")
+  local n
+  n="$(on_devin "${2:-}")"
+  [ -z "$n" ] || warns+=("warn: $1, so these move to their next try: $n")
 }
 
-# Devin: one live call per model a first home starts on in Devin. A helper
-# whose home Devin cannot run moves on, so each such case is a warning.
+# Devin: one live call per model a first try starts on in Devin.
 warns=()
 t3_id devin
 if ! t3_on "$id"; then
@@ -320,7 +314,7 @@ else
       devin="$devin · $m refused"
       devin_warn "$m refused ($(printf '%s\n' "$reply" | head -n 1))" "$m"
     fi
-  done < <(printf '%s\n' ${devin_homes[@]+"${devin_homes[@]}"} | awk 'NF { print $2 }' | sort -u)
+  done < <(printf '%s\n' ${devin_first[@]+"${devin_first[@]}"} | awk 'NF { print $2 }' | sort -u)
 fi
 
 printf '%s\n' "${report[@]}"

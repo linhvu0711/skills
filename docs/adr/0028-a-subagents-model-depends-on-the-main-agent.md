@@ -1,5 +1,5 @@
 ---
-status: amends ADR-0025
+status: superseded by ADR-0042
 ---
 
 # A subagent's model depends on the main agent
