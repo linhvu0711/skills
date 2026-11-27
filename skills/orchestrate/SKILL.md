@@ -16,7 +16,7 @@ The orchestrator starts threads, and does two things in a thread it started: the
 
 `/orchestrate <set>`, in a T3 Code thread.
 
-1. **Set.** Turn the user's words into issue words, once: `n` for an issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/kickoff/target.md` § Resolving the target from the session, steps 1 and 2. A list stays a list; an epic is its number; a rule is a search, as `assigned to me` is `gh issue list --assignee @me --state open --json number`. Name the set in a few words: `#12 #14`, `epic #70 Order export`, `assigned to me`.
+1. **Set.** Turn the user's words into issue words, once: `n` for an issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/route/target.md` § Resolving the target from the session, steps 1 and 2. A list stays a list; an epic is its number; a rule is a search, as `assigned to me` is `gh issue list --assignee @me --state open --json number`. Name the set in a few words: `#12 #14`, `epic #70 Order export`, `assigned to me`.
 2. **Thread.** `t3_thread_update` with `action: rename`, no `threadId`, `title: 🧭 <name>`. Then `t3_thread_list` with `titleContains` that title, and hold the `threadId` of the thread with that exact title: no environment variable names this thread. Then `t3_environment_read`, and hold its `environmentId`: the board's thread links need it, and no `t3` command prints it.
 3. **Run.**
 
@@ -99,18 +99,9 @@ T3 still alerts on a turn in a snoozed thread today; once it stops, the quiet tu
 
 The refs in `propose` are unlabeled issues with no proposal yet. For each, in order, with `<n>` its number and `<label>` its label:
 
-1. **Read.** `gh issue view <n> --repo <the ref's owner/repo> --json number,title,body,labels,comments`. It fails: the route is `unsure`, and the line is `<label> · not sure: could not read <label>: <gh's last stderr line>`.
-2. **Route.** The first case that holds:
-   1. A person must do it outside the repo, per `../../shared/issue-rules.md` § Task body: `task`.
-   2. Something is broken or slow today, by the bug words in `../capture/SKILL.md` § Hard rules: `triage`.
-   3. It passes `## Readiness gate` in `../../shared/issue-rules.md`, at any size by `../../shared/size.md`, XL too: `ship`.
-   4. It has sub-issues: the check makes it an epic first, so it never comes here.
-   5. Its row's `prs` holds an open PR, or its text links one: `ready-pr`.
-   6. It is done, a duplicate, or out of date: `close`, with the proof: the PR, the issue, or the line that shows it.
-   7. An idea that is not decided yet: `grill`.
-   8. No case holds for sure: `unsure`, with the two best guesses and a reason for each.
-3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and guess the lines the change will add and remove, on the scale of `../../shared/size.md`. Hold the size and its estimate line, as `size.md` writes it: `S: about 20 lines, 2 files`. Any other route takes no size. XXL is never one ticket: step 4 records it as `xxl`, with no `--size`, so no answer starts a thread, and its line in the list is `<label> <title> · <estimate line> · Cut it with /file-epic`, as `#42 Export orders · XXL: about 1,200 lines, 30 files · Cut it with /file-epic`.
-4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, plus `--size <size>` when step 3 gave one. It prints one JSON line: the `model` and `effort` the thread would get, from the same table the launch reads, or both `null` with a `why`.
+1. **Read.** `gh issue view <n> --repo <the ref's owner/repo> --json number,title,body,labels,comments`.
+2. **Route and size.** Per `../../shared/route/propose.md`. A read that fails: the route is `unsure`, and the line is `<label> · not sure: could not read <label>: <gh's last stderr line>`.
+3. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, with `<route>` one of `grill`, `triage`, `ship`, `ready-pr`, `task`, `close`, `xxl`, or `unsure`, plus `--size <size>` when step 2 gave one below XXL. It prints one JSON line: the `model` and `effort` the thread would get, from the same Router the launch asks, or both `null` with a `why`.
 
 Then post one list:
 
@@ -120,7 +111,7 @@ Proposals. Answer in one reply: all yes, <label> <skill>, <label> yes, or skip <
 <label> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size line> · "<quote>"
 ```
 
-`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`. `<size line>` is step 3's estimate line; no size, leave it out. `<model> <effort>` is from step 4's line, as `opus medium`; `null`: `no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
+`<what>` is `/<skill>`, `yours` for `task`, `close it` for `close`, or `Cut it with /file-epic` for `xxl`, as `#42 Export orders · Cut it with /file-epic · XXL: about 1,200 lines, 30 files`. `<size line>` is step 2's estimate line; no size, leave it out. `<model> <effort>` is from step 3's line, as `opus medium`; `null`: `no model: <why>`; `task`, `close`, or `xxl`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
 
 ## Commands
 

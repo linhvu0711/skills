@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-A script decides what to start; you start it with T3's tools. Read `../../shared/kickoff/target.md` first: the target forms, the flags, the table, and how to turn the user's words into a target.
+A script decides what to start; you start it with T3's tools. Read `../../shared/route/target.md` first: the target forms, the flags, the table, and how to turn the user's words into a target.
 
 ## Steps
 
