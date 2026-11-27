@@ -903,10 +903,11 @@ cmd_proposed() {
 # issue as its label, per answer_label, after a read of the issue. The label
 # the old answer wrote comes off in the same edit, so a changed answer
 # leaves one label. An issue another label, or its state, already routes
-# gets none: the Router reads that one first. Prints one line per ref whose
+# gets none: the Router reads that one first. A label the repo lacks is
+# made from label_spec, then the edit runs once more. Prints one line per ref whose
 # answer has or had a label; the thread starts either way.
 label_answers() {
-  local refs=() r got j new old edit=() routed
+  local refs=() r got j new old edit=() routed made spec ok
   while IFS= read -r r; do refs+=("$r"); done <<<"$2"
   if ! got="$(read_issues "${refs[@]}")"; then
     for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
@@ -919,6 +920,9 @@ label_answers() {
       "$(jq -r --arg r "$r" '.[$r].size // empty' <<<"$1")")"
     [ "$old" != "$new" ] || old=""
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
+    # Only a label the issue holds comes off: a remove of one the repo
+    # lacks fails the whole edit.
+    jq -e --arg o "$old" 'any(.labels.nodes[]?; (.name | ascii_downcase) == ($o | ascii_downcase))' <<<"$j" >/dev/null 2>&1 || old=""
     if [ "$j" = null ] || jq -e .error <<<"$j" >/dev/null; then
       [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): $(jq -r '.error // "not found"' <<<"$j")"
       continue
@@ -934,9 +938,19 @@ label_answers() {
     [ -z "$new" ] || edit+=(--add-label "$new")
     [ -z "$old" ] || edit+=(--remove-label "$old")
     [ ${#edit[@]} -gt 0 ] || continue
-    if gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+    made=""; ok=true
+    if ! gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+      ok=false
+      spec=""
+      [ -z "$new" ] || [[ "$err" != *"'$new' not found"* ]] || spec="$(label_spec "$new")"
+      if [ -n "$spec" ] && gh_out label create "$new" --repo "${r%#*}" --color "$(sed -n 1p <<<"$spec")" --description "$(sed -n 2p <<<"$spec")" \
+          && gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+        ok=true; made=" (made the label)"
+      fi
+    fi
+    if [ "$ok" = true ]; then
       if [ -z "$new" ]; then echo "took $old off $(label_of "$r")"
-      else echo "labeled $(label_of "$r") $new${old:+, took off $old}"; fi
+      else echo "labeled $(label_of "$r") $new${old:+, took off $old}$made"; fi
     else
       echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
     fi

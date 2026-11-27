@@ -76,6 +76,19 @@ t_kl_answer_repo_size() {
   eq stdout "Size: Medium" "$out"
 }
 
+t_kl_label_spec() {
+  # Given: labels.sh sourced
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  local l got="" sep=""
+  for l in manual seed bug "Size: Medium"; do
+    # When
+    run bash -c '. "$1"; label_spec "$2"' _ "$L" "$l"
+    got="$got$sep$(head -1 <<<"$out")"; sep=,
+  done
+  # Then
+  eq colors "6E7781,C5DEF5,8250DF,3FA9B0" "$got"
+}
+
 cases=(
   "size/M reads as M|t_kl_size_slash"
   "Size: Medium reads as M|t_kl_size_words"
@@ -83,4 +96,5 @@ cases=(
   "an XXL label is XXL|t_kl_size_xxl"
   "answer_label names the label of each answer|t_kl_answer_labels"
   "answer_label uses the repo's size label|t_kl_answer_repo_size"
+  "label_spec gives each answer label its color|t_kl_label_spec"
 )

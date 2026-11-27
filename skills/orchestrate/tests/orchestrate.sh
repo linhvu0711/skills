@@ -2140,6 +2140,20 @@ t_fs_changed_answer_swaps_label() {
   eq "second edit" "issue edit 42 --repo acme/app --add-label size/M --remove-label seed" "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
 }
 
+t_fs_missing_label_made() {
+  # Given: unlabeled #42 proposed task, in a repo with no manual label
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task
+  printf "failed to update https://github.com/acme/app/issues/42: 'manual' not found\n" > "$FAKE_GH/issue-edit.1.fail"
+  echo https://github.com/acme/app/labels/manual > "$FAKE_GH/label-create.json"
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 manual (made the label)" "$out"
+  eq "label create" "label create manual --repo acme/app --color 6E7781 --description Work in a platform outside the repo; /complete-task drives it" "$(cat "$FAKE_GH/label-create.args")"
+  eq "edit calls" 2 "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
 t_fs_all_yes() {
   # Given: #42 proposed grill, #43 proposed triage and answered close, #44 unsure
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_start 42 43 44
@@ -3032,6 +3046,7 @@ cases=(
   "a second answer writes the label again|t_fs_second_answer_labels_again"
   "an issue its labels route gets no label|t_fs_routed_issue_not_labeled"
   "a changed answer swaps the label|t_fs_changed_answer_swaps_label"
+  "a missing label is made, then added|t_fs_missing_label_made"
   "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
   "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"

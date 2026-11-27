@@ -55,6 +55,26 @@ answer_label() {
   esac
 }
 
+# label_spec <label>: the color, then the description, one per line, that
+# an answer label the repo lacks is made with, per ../issue-rules.md
+# § Repo convention and capture's seed and bug. A size label of any name
+# gets its size's row. Nothing for another label.
+label_spec() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+    manual) printf '%s\n' 6E7781 "Work in a platform outside the repo; /complete-task drives it" ;;
+    seed) printf '%s\n' C5DEF5 "Captured idea. Not triaged. May be dropped." ;;
+    bug) printf '%s\n' 8250DF "Seen broken. Not triaged. Becomes a fix ticket through file-issue." ;;
+    *)
+      case "$(size_of "$1")" in
+        XS) printf '%s\n' BFDADC "0-9 changed lines" ;;
+        S) printf '%s\n' 7FC8CC "10-29 changed lines" ;;
+        M) printf '%s\n' 3FA9B0 "30-99 changed lines" ;;
+        L) printf '%s\n' 1B7A82 "100-499 changed lines" ;;
+        XL) printf '%s\n' 0F5C62 "500-999 changed lines" ;;
+      esac ;;
+  esac
+}
+
 # one_of <list> <word>: true when <word> is on the |-list.
 one_of() { [[ "$2" =~ ^($1)$ ]]; }
 
