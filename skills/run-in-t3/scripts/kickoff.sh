@@ -14,7 +14,8 @@
 #
 # route: one JSON line per issue, in the order named: number, title,
 # parent, and the Router's line (shared/route/router.sh). An open epic's
-# line is followed by one line per open sub-issue. It writes nothing.
+# line is followed by one line per open sub-issue; one in another repo gets
+# no step. parent is null for a parent in another repo. It writes nothing.
 #
 # thread: the line one thread starts from: step, model, model_from, effort,
 # effort_from, reason, path, slash_command, message, thread_title, and
@@ -116,7 +117,7 @@ nums=("${nums[@]#\#}")
 
 # read_issues <n>...: the issues in one GraphQL call, in the shape the Router
 # reads, printed as one object keyed by number.
-fields='number title state url parent { number } labels(first:50){nodes{name}} subIssues(first:100){nodes{number state}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}'
+fields='number title state url parent { number repository { nameWithOwner } } labels(first:50){nodes{name}} subIssues(first:100){nodes{number title state repository { nameWithOwner }}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{url state}}'
 read_issues() {
   local q="" n
   for n in "$@"; do q="$q i$n: issue(number: $n) { $fields }"; done
@@ -158,11 +159,21 @@ route_one() {
   [ -z "$a" ] || flags+=(--answer "$a")
   [ -z "$z" ] || [ "$a" != ship ] || flags+=(--size "$z")
   line="$(bash "$core/route/router.sh" ${router_flags[@]+"${router_flags[@]}"} ${flags[@]+"${flags[@]}"} <<<"$1")" || exit
-  jq -c --argjson r "$line" '{number, title, parent: (.parent.number // null)} + $r' <<<"$1"
+  jq -c --argjson r "$line" --arg s "$slug" \
+    '{number, title, parent: (if .parent.repository.nameWithOwner == $s then .parent.number else null end)} + $r' <<<"$1"
 }
 
-# open_subs <issue json>: the numbers of its open sub-issues, one per line.
-open_subs() { jq -r '(.subIssues.nodes // [])[] | select(.state == "OPEN") | .number' <<<"$1"; }
+# open_subs <issue json>: the numbers of its open sub-issues in this repo,
+# one per line. An issue number names an issue only within its repo.
+open_subs() { jq -r --arg s "$slug" '(.subIssues.nodes // [])[] | select(.state == "OPEN" and .repository.nameWithOwner == $s) | .number' <<<"$1"; }
+
+# elsewhere <issue json>: one route line, with no step, per open sub-issue
+# in another repo, as it is started from there.
+elsewhere() {
+  jq -c --arg s "$slug" '.number as $p | (.subIssues.nodes // [])[] | select(.state == "OPEN" and .repository.nameWithOwner != $s)
+    | {number, title, parent: $p, stage: null, step: null, stop: false, model: null, model_from: null,
+       effort: null, effort_from: null, reason: "in \(.repository.nameWithOwner): start it from there", pr: null}' <<<"$1"
+}
 
 issues="$(read_issues "${nums[@]}")"
 
@@ -173,9 +184,11 @@ if [ "$cmd" = route ]; then
     line="$(route_one "$i")"; lines+=("$line"); routed+=("$n")
     [ "$(jq -r .stage <<<"$line")" = epic ] || continue
     subs=(); while IFS= read -r s; do [ -z "$s" ] || subs+=("$s"); done < <(open_subs "$i")
-    [ "${#subs[@]}" -gt 0 ] || continue
-    sub_issues="$(read_issues "${subs[@]}")"
-    for s in "${subs[@]}"; do lines+=("$(route_one "$(issue_of "$sub_issues" "$s")")"); routed+=("$s"); done
+    if [ "${#subs[@]}" -gt 0 ]; then
+      sub_issues="$(read_issues "${subs[@]}")"
+      for s in "${subs[@]}"; do lines+=("$(route_one "$(issue_of "$sub_issues" "$s")")"); routed+=("$s"); done
+    fi
+    while IFS= read -r line; do [ -z "$line" ] || lines+=("$line"); done < <(elsewhere "$i")
   done
   check_given "${routed[@]}"
   printf '%s\n' "${lines[@]}"
@@ -213,6 +226,7 @@ if [ "$(jq '(.subIssues.nodes // []) | length' <<<"$first")" -gt 0 ]; then
   [ "${#nums[@]}" -eq 1 ] && [ "$step" = ship ] && [ -z "$on" ] || die_usage "$usage" "name an epic alone, or its tickets"
   epic="${nums[0]}"
   [ "$(jq -r .state <<<"$first")" = OPEN ] || die "#$epic is closed"
+  [ -z "$(elsewhere "$first")" ] || die "#$epic has tickets in other repos: name its tickets in $slug"
   while IFS= read -r s; do [ -z "$s" ] || counted+=("$s"); done < <(open_subs "$first")
   [ "${#counted[@]}" -gt 0 ] || die "#$epic has no open ticket for /ship"
   issues="$(read_issues "${counted[@]}")"

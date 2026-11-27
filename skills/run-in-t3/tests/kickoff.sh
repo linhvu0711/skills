@@ -43,16 +43,17 @@ kt_issue() {
   jq -cn --argjson n "$1" --arg t "$2" --arg l "$3" --arg p "${4:-}" --arg s "${5:-}" --arg r "${6:-}" '
     def list: if . == "" then [] else split(",") end;
     {number: $n, title: $t, state: "OPEN", url: "https://github.com/acme/app/issues/\($n)",
-     parent: (if $p == "" then null else {number: ($p | tonumber)} end),
+     parent: (if $p == "" then null else {number: ($p | tonumber), repository: {nameWithOwner: "acme/app"}} end),
      labels: {nodes: [$l | list | .[] | {name: .}]},
-     subIssues: {nodes: [$s | list | .[] | {number: tonumber, state: "OPEN"}]},
+     subIssues: {nodes: [$s | list | .[] | {number: tonumber, title: "", state: "OPEN", repository: {nameWithOwner: "acme/app"}}]},
      closedByPullRequestsReferences: {nodes: [$r | list | .[] | {url: ., state: "OPEN"}]}}'
 }
 
 # kt_issues: the repo's issues, keyed as kickoff.sh asks for them.
 # #12 and #14 are tickets of epic #70; #42 a bug, #43 has open PR #80, #44
 # is size S, #18 size M, #15 and #17 bugs, #16 has no label, and #71 a
-# closed epic with open ticket #12.
+# closed epic with open ticket #12. Epic #72 holds #44 and acme/lib#42;
+# #46 and #47 are size S tickets of acme/lib#9.
 kt_issues() {
   jq -cn \
     --argjson i12 "$(kt_issue 12 "Add CSV" size/S 70)" \
@@ -66,7 +67,10 @@ kt_issues() {
     --argjson i17 "$(kt_issue 17 "Bad link" bug)" \
     --argjson i16 "$(kt_issue 16 "Old idea" "")" \
     --argjson i71 "$(kt_issue 71 "Old export" "" "" 12 | jq -c '.state = "CLOSED"')" \
-    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71}}}'
+    --argjson i72 "$(kt_issue 72 "Shared login" "" "" 44 | jq -c '.subIssues.nodes += [{number: 42, title: "Lib login", state: "OPEN", repository: {nameWithOwner: "acme/lib"}}]')" \
+    --argjson i46 "$(kt_issue 46 "Lib CSV" size/S 9 | jq -c '.parent.repository.nameWithOwner = "acme/lib"')" \
+    --argjson i47 "$(kt_issue 47 "Lib JSON" size/S 9 | jq -c '.parent.repository.nameWithOwner = "acme/lib"')" \
+    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71, i72: $i72, i46: $i46, i47: $i47}}}'
 }
 
 # kt_go [outside|off-path] <args...>: kickoff from T, with the search root
@@ -283,6 +287,39 @@ t_kt_thread_closed_epic() {
   eq stdout "" "$out"
 }
 
+t_kt_route_other_repo_child() {
+  # Given: epic #72 holds #44 (size S; its own data names no parent) and
+  # acme/lib#42; acme/app#42 is a bug
+  kt_setup found
+  # When
+  kt_go route acme/app 72
+  # Then
+  eq exit 0 "$code"
+  eq lines '72|epic||null|has sub-issues: the caller routes its open ones
+44|ticket|ship|null|size S
+42|null||72|in acme/lib: start it from there' "$(jq -r '[.number, .stage, (.step // ""), .parent, .reason] | map(tostring) | join("|")' <<<"$out")"
+}
+
+t_kt_thread_other_repo_child() {
+  # Given: epic #72 holds #44 (size S) and acme/lib#42
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 72
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: #72 has tickets in other repos: name its tickets in acme/app" "$(printf '%s\n' "$err" | tail -1)"
+}
+
+t_kt_other_repo_parent() {
+  # Given: #46 and #47, size S tickets of acme/lib#9
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 46 47
+  # Then
+  eq exit 0 "$code"
+  eq message "/ship #46 #47" "$(jq -r .message <<<"$out")"
+}
+
 t_kt_bug_in_ship() {
   # Given: #44 size S, #15 a bug
   kt_setup found
@@ -363,6 +400,9 @@ cases=(
   "route opens an epic|t_kt_route_epic"
   "route keeps a closed epic shut|t_kt_route_closed_epic"
   "a closed epic gets no thread|t_kt_thread_closed_epic"
+  "route gives a child in another repo no step|t_kt_route_other_repo_child"
+  "an epic with a child in another repo stops|t_kt_thread_other_repo_child"
+  "a parent in another repo makes no run|t_kt_other_repo_parent"
   "a bug in a ship thread stops|t_kt_bug_in_ship"
   "only ship takes several issues|t_kt_only_ship_many"
   "an answer gives the proposal its effort|t_kt_answer_effort"
