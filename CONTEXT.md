@@ -394,6 +394,10 @@ _Avoid_: first run, main run
 The issues a Run must close. It is fixed at the start, from a list, an epic, or a rule such as "assigned to me". The user adds or removes issues. Issues the Run makes (sub-issues, follow-ups) join by themselves. Its issues can live in any repo.
 _Avoid_: queue, backlog, scope
 
+**Router**:
+The shared script that reads one issue and gives the step its next thread runs and the effort that thread gets, or no step with the reason. Both run-in-t3 and the orchestrator use it.
+_Avoid_: decider, dispatcher, kickoff
+
 **Proposal**:
 The step the agent guesses for an issue with no label that picks one, read from the issue and, for `/ship`, the code. It starts nothing until the user says yes. The skill then writes the answer to the issue as a label when one fits.
 _Avoid_: suggestion, route guess

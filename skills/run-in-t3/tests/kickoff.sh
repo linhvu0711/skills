@@ -1,22 +1,23 @@
-# kickoff.sh: the cases for this skill's kickoff.sh: the T3 check, the
-# project add, and the launch line it prints, seen through a fake t3. The
-# repo's test.sh sources this file after test-lib.sh and runs its cases.
+# kickoff.sh: the cases for this skill's kickoff.sh: route, thread, and
+# label, the T3 check, and the project add, seen through the fake gh and a
+# fake t3. The repo's test.sh sources this file after test-lib.sh and runs
+# its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # The kickoff script.
 K="$here/../scripts/kickoff.sh"
 
-# kt_setup <project>: a fresh temp folder T, the fake gh with issue #42
-# "Export orders" labelled size/L, one checkout of acme/app at $T/dev/app,
-# and a fake t3 first on PATH. t3 logs each call as one line in $T/t3.log.
-# <project> is `found` (the checkout is a T3 project), `missing` (it is one
-# once `project add` ran), or `broken` (`project add` fails with boom).
+# kt_setup <project>: a fresh temp folder T, the fake gh, one checkout of
+# acme/app at $T/dev/app, and a fake t3 first on PATH. t3 logs each call as
+# one line in $T/t3.log. <project> is `found` (the checkout is a T3 project),
+# `missing` (it is one once `project add` ran), or `broken` (`project add`
+# fails with boom). GitHub holds the issues of kt_issues.
 kt_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
-  printf '{"number":42,"title":"Export orders","labels":[{"name":"size/L"}],"subIssues":{"nodes":[]},"state":"OPEN"}\n' > "$FAKE_GH/issue-view.json"
   printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
+  kt_issues > "$FAKE_GH/graphql.app.json"
   git init -q -b main "$T/dev/app"
   git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
@@ -35,15 +36,46 @@ EOF
   export FAKE_T3_DIR="$T" FAKE_T3_MODE="$1"
 }
 
-# kt_go [outside|off-path]: kickoff on issue #42 of acme/app from T, with the
-# search root and the repo map inside T; inside T3 Code unless `outside` is
-# given. `off-path` moves the fake t3 out of PATH and drops every PATH folder
-# that holds a t3, so only T3CODE_CLI_PATH names it and the real T3 app is
-# never reached.
+# kt_issue <n> <title> <labels> [parent] [subs] [prs]: one issue as GitHub's
+# GraphQL gives it. <labels> is a comma list, [parent] a number, [subs] a
+# comma list of open sub-issue numbers, [prs] a comma list of open PR URLs.
+kt_issue() {
+  jq -cn --argjson n "$1" --arg t "$2" --arg l "$3" --arg p "${4:-}" --arg s "${5:-}" --arg r "${6:-}" '
+    def list: if . == "" then [] else split(",") end;
+    {number: $n, title: $t, state: "OPEN", url: "https://github.com/acme/app/issues/\($n)",
+     parent: (if $p == "" then null else {number: ($p | tonumber)} end),
+     labels: {nodes: [$l | list | .[] | {name: .}]},
+     subIssues: {nodes: [$s | list | .[] | {number: tonumber, state: "OPEN"}]},
+     closedByPullRequestsReferences: {nodes: [$r | list | .[] | {url: ., state: "OPEN"}]}}'
+}
+
+# kt_issues: the repo's issues, keyed as kickoff.sh asks for them.
+# #12 and #14 are tickets of epic #70; #42 a bug, #43 has open PR #80, #44
+# is size S, #15 and #17 bugs, #16 has no label.
+kt_issues() {
+  jq -cn \
+    --argjson i12 "$(kt_issue 12 "Add CSV" size/S 70)" \
+    --argjson i14 "$(kt_issue 14 "Add JSON" size/M 70)" \
+    --argjson i70 "$(kt_issue 70 "Order export" "" "" 12,14)" \
+    --argjson i42 "$(kt_issue 42 "Login fails" bug)" \
+    --argjson i43 "$(kt_issue 43 "Fix export" "" "" "" https://github.com/acme/app/pull/80)" \
+    --argjson i44 "$(kt_issue 44 "Export orders" size/S)" \
+    --argjson i15 "$(kt_issue 15 "Slow page" bug)" \
+    --argjson i17 "$(kt_issue 17 "Bad link" bug)" \
+    --argjson i16 "$(kt_issue 16 "Old idea" "")" \
+    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i15: $i15, i17: $i17, i16: $i16}}}'
+}
+
+# kt_go [outside|off-path] <args...>: kickoff from T, with the search root
+# and the repo map inside T; inside T3 Code unless `outside` is given.
+# `off-path` moves the fake t3 out of PATH and drops every PATH folder that
+# holds a t3, so only T3CODE_CLI_PATH names it and the real T3 app is never
+# reached.
 kt_go() {
   local t3="T3CODE_CLI_PATH=$T/bin/t3" path="$PATH" dir
-  [ "${1:-}" != outside ] || t3="KT_OUTSIDE=1"
+  if [ "${1:-}" = outside ]; then t3="KT_OUTSIDE=1"; shift; fi
   if [ "${1:-}" = off-path ]; then
+    shift
     mkdir -p "$T/t3home"; mv "$T/bin/t3" "$T/t3home/t3"; t3="T3CODE_CLI_PATH=$T/t3home/t3"
     path=""
     while IFS= read -r dir; do
@@ -51,65 +83,123 @@ kt_go() {
     done < <(tr ':' '\n' <<<"$PATH")
   fi
   cd "$T"
-  run env -u T3CODE_CLI_PATH PATH="$path" "$t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" bash "$K" https://github.com/acme/app/issues/42
+  run env -u T3CODE_CLI_PATH PATH="$path" "$t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" bash "$K" "$@"
 }
 
-# kt_line <project>: the launch line kickoff prints for #42 when the project
-# was found or added.
-kt_line() {
-  printf '{"number":42,"title":"Export orders","form":"issue","args":"#42","command":"ship","command_from":"default","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"size L","base":"main","path":"%s","heading":"#42","slash_command":"/ship","message":"/ship #42","thread_title":"#42 Export orders","project":"%s"}' "$T/dev/app" "$1"
+# kt_thread <step> <effort> <reason> <message> <title> <project>: the thread
+# line for the checkout at $T/dev/app.
+kt_thread() {
+  jq -cn --arg step "$1" --arg effort "$2" --arg reason "$3" --arg message "$4" --arg title "$5" --arg project "$6" --arg path "$T/dev/app" \
+    '{step: $step, model: "opus", model_from: "default", effort: $effort, effort_from: "default", reason: $reason,
+      path: $path, slash_command: "/\($step)", message: $message, thread_title: $title, project: $project}'
 }
 
-t_kt_launch_line() {
-  # Given: #42 size/L, the checkout is a T3 project, inside T3 Code
+t_kt_route_steps() {
+  # Given: #42 a bug, #43 with open PR #80, #44 size S
   kt_setup found
   # When
-  kt_go
+  kt_go route acme/app 42 43 44
   # Then
   eq exit 0 "$code"
-  eq stdout "$(kt_line found)" "$out"
+  eq stdout '{"number":42,"title":"Login fails","parent":null,"stage":"bug","step":"triage","stop":false,"model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"bug","pr":null}
+{"number":43,"title":"Fix export","parent":null,"stage":"pr","step":"ready-pr","stop":false,"model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"open PR https://github.com/acme/app/pull/80","pr":"https://github.com/acme/app/pull/80"}
+{"number":44,"title":"Export orders","parent":null,"stage":"ticket","step":"ship","stop":false,"model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S","pr":null}' "$out"
 }
 
-t_kt_t3_off_path() {
-  # Given: #42 size/L, not a T3 project yet, and no t3 on PATH; only
-  # T3CODE_CLI_PATH names the t3 command
-  kt_setup missing
+t_kt_bug_thread() {
+  # Given: #42 a bug
+  kt_setup found
   # When
-  kt_go off-path
+  kt_go thread acme/app triage 42
   # Then
   eq exit 0 "$code"
-  eq stdout "$(kt_line added)" "$out"
+  eq stdout "$(kt_thread triage high bug "/triage #42" "#42 Login fails" found)" "$out"
 }
 
-t_kt_adds_project_once() {
-  # Given: #42 size/L, the checkout is not a T3 project yet
-  kt_setup missing
-  # When: kickoff runs twice
-  kt_go; first="$out"
-  kt_go
+t_kt_pr_thread() {
+  # Given: #43 with open PR #80
+  kt_setup found
+  # When
+  kt_go thread acme/app ready-pr 43
   # Then
-  eq "project add calls" "project add $T/dev/app" "$(grep '^project add' "$T/t3.log")"
-  eq "run 1" "$(kt_line added)" "$first"
-  eq "run 2" "$(kt_line found)" "$out"
+  eq exit 0 "$code"
+  eq stdout "$(kt_thread ready-pr medium "open PR https://github.com/acme/app/pull/80" "/ready-pr #80" "#43 Fix export" found)" "$out"
+}
+
+t_kt_ship_thread() {
+  # Given: #44 size S
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 44
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" found)" "$out"
+}
+
+t_kt_gh_fails() {
+  # Given: GitHub answers the issue read with HTTP 502
+  kt_setup found
+  rm "$FAKE_GH/graphql.app.json"; echo "HTTP 502" > "$FAKE_GH/graphql.app.fail"
+  # When
+  kt_go route acme/app 42
+  # Then
+  eq exit 2 "$code"
+  eq "last stderr line" "stop: gh could not read acme/app: HTTP 502" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+}
+
+t_kt_no_checkout() {
+  # Given: #44 size S, and no checkout of acme/app
+  kt_setup found
+  rm -rf "$T/dev/app"; mkdir -p "$T/dev"
+  # When
+  kt_go thread acme/app ship 44
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+  [ ! -e "$T/t3.log" ] || lacks "t3 calls" "project add" "$(cat "$T/t3.log")"
 }
 
 t_kt_outside_t3() {
-  # Given: #42 size/L, T3CODE_CLI_PATH not set
+  # Given: #42 a bug, T3CODE_CLI_PATH not set
   kt_setup found
   # When
-  kt_go outside
+  kt_go outside route acme/app 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: not inside T3 Code" "$err"
-  [ ! -e "$T/t3.log" ] || eq "t3 calls" "" "$(cat "$T/t3.log")"
-  [ ! -e "$FAKE_GH/issue-view.calls" ] || eq "issue view calls" "" "$(cat "$FAKE_GH/issue-view.calls")"
+  [ ! -e "$FAKE_GH/graphql.calls" ] || eq "graphql calls" "" "$(cat "$FAKE_GH/graphql.calls")"
+}
+
+t_kt_adds_project_once() {
+  # Given: #44 size S, the checkout is not a T3 project yet
+  kt_setup missing
+  # When: the thread line is made twice
+  kt_go thread acme/app ship 44; first="$out"
+  kt_go thread acme/app ship 44
+  # Then
+  eq "project add calls" "project add $T/dev/app" "$(grep '^project add' "$T/t3.log")"
+  eq "run 1" "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" added)" "$first"
+  eq "run 2" "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" found)" "$out"
+}
+
+t_kt_t3_off_path() {
+  # Given: #44 size S, not a T3 project yet, and no t3 on PATH; only
+  # T3CODE_CLI_PATH names the t3 command
+  kt_setup missing
+  # When
+  kt_go off-path thread acme/app ship 44
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" added)" "$out"
 }
 
 t_kt_project_add_fails() {
-  # Given: #42 size/L, not a T3 project, and `t3 project add` fails with boom
+  # Given: #44 size S, not a T3 project, and `t3 project add` fails with boom
   kt_setup broken
   # When
-  kt_go
+  kt_go thread acme/app ship 44
   # Then
   eq exit 1 "$code"
   eq "last stderr line" "stop: could not add $T/dev/app as a T3 project: boom" "$(printf '%s\n' "$err" | tail -1)"
@@ -117,20 +207,25 @@ t_kt_project_add_fails() {
 }
 
 t_kt_runs_by_path() {
-  # Given: #42 size/L, T3CODE_CLI_PATH not set
+  # Given: #42 a bug, T3CODE_CLI_PATH not set
   kt_setup found
   # When: the script runs by path, with no bash in front, as SKILL.md runs it
   cd "$T"
-  run env -u T3CODE_CLI_PATH "$K" https://github.com/acme/app/issues/42
+  run env -u T3CODE_CLI_PATH "$K" route acme/app 42
   # Then
   eq exit 1 "$code"
   eq stderr "stop: not inside T3 Code" "$err"
 }
 
 cases=(
-  "the launch line holds the row|t_kt_launch_line"
-  "a repo with no project is added once|t_kt_adds_project_once"
+  "route gives each issue its step|t_kt_route_steps"
+  "a bug thread is triage at high|t_kt_bug_thread"
+  "a PR thread names the PR|t_kt_pr_thread"
+  "a size S thread is ship at medium|t_kt_ship_thread"
+  "an unreadable GitHub stops|t_kt_gh_fails"
+  "no checkout stops the thread line|t_kt_no_checkout"
   "outside T3 it stops|t_kt_outside_t3"
+  "a repo with no project is added once|t_kt_adds_project_once"
   "it runs the t3 that T3CODE_CLI_PATH names|t_kt_t3_off_path"
   "a project add that fails stops|t_kt_project_add_fails"
   "kickoff runs by path|t_kt_runs_by_path"
