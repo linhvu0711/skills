@@ -53,7 +53,8 @@ kt_issue() {
 # #12 and #14 are tickets of epic #70; #42 a bug, #43 has open PR #80, #44
 # is size S, #18 size M, #15 and #17 bugs, #16 has no label, and #71 a
 # closed epic with open ticket #12. Epic #72 holds #44 and acme/lib#42;
-# #46 and #47 are size S tickets of acme/lib#9.
+# #46 and #47 are size S tickets of acme/lib#9. GitHub spells the repo of
+# epic #73's ticket #44 Acme/App.
 kt_issues() {
   jq -cn \
     --argjson i12 "$(kt_issue 12 "Add CSV" size/S 70)" \
@@ -70,7 +71,8 @@ kt_issues() {
     --argjson i72 "$(kt_issue 72 "Shared login" "" "" 44 | jq -c '.subIssues.nodes += [{number: 42, title: "Lib login", state: "OPEN", repository: {nameWithOwner: "acme/lib"}}]')" \
     --argjson i46 "$(kt_issue 46 "Lib CSV" size/S 9 | jq -c '.parent.repository.nameWithOwner = "acme/lib"')" \
     --argjson i47 "$(kt_issue 47 "Lib JSON" size/S 9 | jq -c '.parent.repository.nameWithOwner = "acme/lib"')" \
-    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71, i72: $i72, i46: $i46, i47: $i47}}}'
+    --argjson i73 "$(kt_issue 73 "Spelled export" "" "" 44 | jq -c '.subIssues.nodes[0].repository.nameWithOwner = "Acme/App"')" \
+    '{data: {repository: {i73: $i73, i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71, i72: $i72, i46: $i46, i47: $i47}}}'
 }
 
 # kt_go [outside|off-path] <args...>: kickoff from T, with the search root
@@ -310,6 +312,16 @@ t_kt_thread_other_repo_child() {
   eq "last stderr line" "stop: #72 has tickets in other repos: name its tickets in acme/app" "$(printf '%s\n' "$err" | tail -1)"
 }
 
+t_kt_repo_case() {
+  # Given: epic #73 holds #44 (size S), in a repo GitHub spells Acme/App
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 73
+  # Then
+  eq exit 0 "$code"
+  eq message "/ship #73" "$(jq -r .message <<<"$out")"
+}
+
 t_kt_other_repo_parent() {
   # Given: #46 and #47, size S tickets of acme/lib#9
   kt_setup found
@@ -321,9 +333,9 @@ t_kt_other_repo_parent() {
 }
 
 t_kt_stack_on_open_pr() {
-  # Given: #44 size S, and PR #80 open
+  # Given: #44 size S, and PR #80 open, in a repo GitHub spells Acme/App
   kt_setup found
-  echo '{"state":"OPEN","url":"https://github.com/acme/app/pull/80"}' > "$FAKE_GH/pr-view.json"
+  echo '{"state":"OPEN","url":"https://github.com/Acme/App/pull/80"}' > "$FAKE_GH/pr-view.json"
   # When
   kt_go thread acme/app --on 80 ship 44
   # Then
@@ -447,6 +459,7 @@ cases=(
   "route gives a child in another repo no step|t_kt_route_other_repo_child"
   "an epic with a child in another repo stops|t_kt_thread_other_repo_child"
   "a parent in another repo makes no run|t_kt_other_repo_parent"
+  "a repo spelled in another case is the same repo|t_kt_repo_case"
   "a stack on an open PR names it|t_kt_stack_on_open_pr"
   "a stack on a merged PR stops|t_kt_stack_on_merged_pr"
   "a stack PR gh cannot read stops|t_kt_stack_pr_unreadable"

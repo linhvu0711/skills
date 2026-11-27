@@ -173,17 +173,18 @@ route_one() {
   [ -z "$z" ] || [ "$a" != ship ] || flags+=(--size "$z")
   line="$(bash "$core/route/router.sh" ${router_flags[@]+"${router_flags[@]}"} ${flags[@]+"${flags[@]}"} <<<"$1")" || exit
   jq -c --argjson r "$line" --arg s "$slug" \
-    '{number, title, parent: (if .parent.repository.nameWithOwner == $s then .parent.number else null end)} + $r' <<<"$1"
+    '{number, title, parent: (if (.parent.repository.nameWithOwner // "" | ascii_downcase) == ($s | ascii_downcase) then .parent.number else null end)} + $r' <<<"$1"
 }
 
 # open_subs <issue json>: the numbers of its open sub-issues in this repo,
-# one per line. An issue number names an issue only within its repo.
-open_subs() { jq -r --arg s "$slug" '(.subIssues.nodes // [])[] | select(.state == "OPEN" and .repository.nameWithOwner == $s) | .number' <<<"$1"; }
+# one per line. An issue number names an issue only within its repo; GitHub
+# matches a repo name in any case.
+open_subs() { jq -r --arg s "$slug" '(.subIssues.nodes // [])[] | select(.state == "OPEN" and (.repository.nameWithOwner | ascii_downcase) == ($s | ascii_downcase)) | .number' <<<"$1"; }
 
 # elsewhere <issue json>: one route line, with no step, per open sub-issue
 # in another repo, as it is started from there.
 elsewhere() {
-  jq -c --arg s "$slug" '.number as $p | (.subIssues.nodes // [])[] | select(.state == "OPEN" and .repository.nameWithOwner != $s)
+  jq -c --arg s "$slug" '.number as $p | (.subIssues.nodes // [])[] | select(.state == "OPEN" and (.repository.nameWithOwner | ascii_downcase) != ($s | ascii_downcase))
     | {number, title, parent: $p, stage: null, step: null, stop: false, model: null, model_from: null,
        effort: null, effort_from: null, reason: "in \(.repository.nameWithOwner): start it from there", pr: null}' <<<"$1"
 }
@@ -286,10 +287,10 @@ elif [ "${#nums[@]}" -gt 1 ]; then
 else
   largs=("$(issue_url "${nums[0]}")")
   if [ -n "$on" ]; then
-    gh_out pr view "$on" --repo "$slug" --json state,url \
+    gh_out pr view "$on" --repo "$slug" --json state \
       || { printf 'stop: gh could not read PR #%s in %s: %s\n' "$on" "$slug" "$err" >&2; exit 2; }
     [ "$(jq -r .state <<<"$out")" = OPEN ] || die "PR #$on is $(jq -r '.state | ascii_downcase' <<<"$out"), not open: nothing to stack on"
-    largs+=(on "$(jq -r .url <<<"$out")")
+    largs+=(on "https://github.com/$slug/pull/$on")
   fi
 fi
 [ -z "$mode" ] || largs+=(--mode "$mode")
