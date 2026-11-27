@@ -6,10 +6,10 @@
 #        orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
 #        orchestrate.sh settled <owner/repo> <thread-id> <run-id> [--kept <why>]
-#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
+#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
-#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
+#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close|xxl [--size S]
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #        orchestrate.sh sync <owner/repo>
@@ -23,7 +23,9 @@
 # copy the page in as board.html, so one folder serves both.
 #
 # check reads every issue of the set from GitHub and the threads from T3,
-# puts each issue in its stage, and prints the threads to start. Each start
+# asks the Router, shared/route/router.sh, for each issue's stage and step,
+# and the launcher, shared/launch/line.sh, for each thread's line, and
+# prints the threads to start. Each start
 # is claimed in the state file before it is printed, so a second check never
 # starts it again. It launches nothing: the agent starts each thread with
 # T3's tools and records it with `started`. It also lists the unlabeled
@@ -52,7 +54,7 @@
 #
 # Exit 0: one JSON line on stdout for start, check, proposed, timer, and
 # resume; one line of text per repo for sync and per epic for close-epics;
-# nothing for started and change.
+# nothing for started and change, but one line per label for change answer.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Exit 64: a wrong command line, `stop: <why>` when there is one, then the
 # usage, on stderr.
@@ -60,7 +62,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
-. "$core/kickoff/labels.sh"
+. "$core/route/labels.sh"
 . "$core/gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -228,7 +230,7 @@ read_issues() {
   printf '%s\n' "$all"
 }
 # obsf holds the Run read's own stop line: inside it, read_issues and
-# decide_for write gh's stderr to errf.
+# launch_for write their stderr to errf.
 errf="$(mktemp)"; obsf="$(mktemp)"; locked=(); tmps=(); trap 'rm -f "$errf" "$obsf" ${tmps[@]+"${tmps[@]}"}; [ ${#locked[@]} -eq 0 ] || rm -rf "${locked[@]}"' EXIT
 
 # size_label <issue json>: the issue's size, from its first size label.
@@ -265,41 +267,6 @@ chip() {
   esac
 }
 
-# stage <issue json> <run start>: where the issue is: closed, a task,
-# an epic, and an open PR first, then the kind. Closed comes first, since a
-# closed seed keeps its label. A task with the `waiting` label waits on
-# someone outside: it starts nothing and holds no task turn. A PR counts
-# only when it was open before the run: a PR the run's own thread opened is
-# that thread's work.
-stage() {
-  local kind
-  kind="$(label_kind "$1")"
-  if [ "$(jq -r .state <<<"$1")" = CLOSED ]; then echo done
-  elif [ "$kind" = task ] && jq -e '[.labels.nodes[].name | ascii_downcase] | index("waiting")' <<<"$1" >/dev/null; then echo waiting
-  elif [ "$kind" = task ]; then echo task
-  elif [ "$(jq '.subIssues.nodes | length' <<<"$1")" -gt 0 ]; then echo epic
-  elif [ "$(jq --arg t "$2" '[.closedByPullRequestsReferences.nodes[] | select(.state == "OPEN" and .createdAt < $t)] | length' <<<"$1")" -gt 0 ]; then echo pr
-  else
-    case "$kind" in
-      sized) echo ticket ;;
-      *) echo "$kind" ;;
-    esac
-  fi
-}
-
-# skill <stage>: the command a thread at that stage starts with, or
-# nothing. A ticket starts /ship; ship_mode says how far it goes. A task
-# starts /complete-task, whose message from decide.sh waits for the user's go.
-skill() {
-  case "$1" in
-    seed) echo grill ;;
-    bug) echo triage ;;
-    ticket) echo ship ;;
-    pr) echo ready-pr ;;
-    task) echo complete-task ;;
-  esac
-}
-
 # The ship mode the user set for issue $n, or "" when the /ship thread picks it.
 # shellcheck disable=SC2016 # the $ names are jq variables
 ship_mode_jq='def ship_mode($n): .ship[$n] // .ship.default // "";'
@@ -312,35 +279,50 @@ fail_limit=3
 good_check_jq='def good_check($at): .timer.fails = 0 | .timer.alerted = false | .timer.why = null | .timer.checked_at = $at;'
 ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 
-# answer_skill <word>: the skill an answer or a proposed route names, or
-# nothing for one that starts no thread.
-answer_skill() {
-  case "$1" in
-    grill|triage|ship|ready-pr) echo "$1" ;;
-  esac
-}
-
-# routes: the words a proposal or an answer names a route by.
-routes='grill|triage|ship|ready-pr|task|close'
-
-# decide_for <ref> <skill>: decide.sh's line for the issue's thread, with the
-# ship mode the user set for a /ship thread and
-# run's model and effort picks, so a proposal and its launch read the same
-# row. The proposal's size goes every time: decide.sh ignores it for a ticket
-# with a size label, so the label picks the row. Its stop line is left in errf.
-decide_for() {
-  local flags=() model effort size="" mode
+# route_for <ref> <issue json> [<answer>]: the Router's line for the issue,
+# with the model and effort the user set, and the answer: the one given,
+# else the proposal's when it names a route. A ship answer goes with the
+# proposal's size; one with no size counts as none.
+route_for() {
+  local flags=() model effort answer="${3:-}" size
   model="$(jq -r --arg r "$1" '.use[$r].model // .use.all.model // empty' <<<"$S")"
   effort="$(jq -r --arg r "$1" '.use[$r].effort // .use.all.effort // empty' <<<"$S")"
+  [ -n "$answer" ] || answer="$(jq -r --arg r "$1" '(.proposals // {})[$r].answer // empty' <<<"$S")"
+  one_of "$route_list" "$answer" || answer=""
   size="$(jq -r --arg r "$1" '(.proposals // {})[$r].size // empty' <<<"$S")"
+  if [ "$answer" = ship ] && [ -z "$size" ]; then answer=""; fi
   [ -z "$model" ] || flags+=(--model "$model")
   [ -z "$effort" ] || flags+=(--effort "$effort")
-  [ -z "$size" ] || flags+=(--size "${1##*#}=$size")
-  if [ "$2" = ship ]; then
+  [ -z "$answer" ] || flags+=(--answer "$answer")
+  [ "$answer" != ship ] || flags+=(--size "$size")
+  run_prs "$2" "$answer" | bash "$core/route/router.sh" ${flags[@]+"${flags[@]}"}
+}
+
+# run_prs <issue json> [<answer>]: the issue with the PRs the Router counts.
+# With no open PR from before the run, a PR the run's own thread opened is
+# that thread's work, so the PRs from after the run start go. Once one from
+# before is there, every open PR counts, so two of them still make the
+# issue wait. A ready-pr answer counts every PR, since the user named that
+# PR's step.
+run_prs() {
+  jq -c --arg t "$(jq -r .started_at <<<"$S")" --arg a "${2:-}" '
+    if $a == "ready-pr" or any(.closedByPullRequestsReferences.nodes[]; .state == "OPEN" and .createdAt < $t) then .
+    else .closedByPullRequestsReferences.nodes |= map(select(.createdAt < $t)) end' <<<"$1"
+}
+
+# launch_for <ref> <route json>: the launch line for the route's step, with
+# the ship mode the user set for a /ship thread. Its stop line is left in
+# errf.
+launch_for() {
+  local flags=() step mode pr
+  step="$(jq -r .step <<<"$2")"
+  pr="$(jq -r '.pr // empty' <<<"$2")"
+  if [ "$step" = ship ]; then
     mode="$(ship_mode "$1")"
     [ -z "$mode" ] || flags+=(--mode "$mode")
   fi
-  bash "$core/kickoff/decide.sh" --command "$2" ${flags[@]+"${flags[@]}"} "$(issue_url "$1")" 2>"$errf"
+  [ -z "$pr" ] || flags+=(--pr "$pr")
+  bash "$core/launch/line.sh" "$(issue_url "$1")" "$step" ${flags[@]+"${flags[@]}"} 2>"$errf"
 }
 
 # joins: a jq program on the issues just read, with the state as $S: the
@@ -455,6 +437,7 @@ board='
     (.prs | map(select(.state == "OPEN")) | first) as $pr
     | if .stage == "done" then {mark: "done", action: "closed"}
       elif .ask then you(.ask)
+      elif .stage == "too-big" or (.stage == "unlabeled" and .answer == "xxl") then you("Cut it with /file-epic")
       elif .blocked_by != [] then held("blocked by " + (.blocked_by | map(ref_label($S.repo)) | join(" ")))
       elif $rec.status == "failed" then you("Launch failed: say restart \(.label)")
       elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)")
@@ -470,7 +453,7 @@ board='
       elif .stage == "unlabeled" and .answer == "task" then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
-          ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
+          ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it", xxl: ": cut it with /file-epic"}[.proposal] // ""))
       elif .stage == "unlabeled" and .answer == "close" then you("Close it")
       elif .stage == "unlabeled" and .answer == "skip" then held("skipped")
       elif $S.status == "paused" then held("paused: starts on resume")
@@ -592,14 +575,19 @@ observe() {
   done < <(jq -r "$run_repos_jq"'run_repos[].path' <<<"$S")
   statuses="$(jq -c 'map({key: .threadId, value: {status, createdAt, updatedAt, settled, run: .latestRunId}}) | from_entries' <<<"$t3list")"
 
-  local r j st sk free blocked rec prop line wait ask own rc gone row conf owners others stages turn
+  local r j st sk free blocked rec prop line wait ask own gone row conf owners others stages turn route routes item
   local starts rows claims cards gone_rows sends sent holders task_turn done propose settles
   starts="[]"; rows="[]"; claims="[]"; cards="{}"; gone_rows="[]"; sends="[]"; sent="[]"
-  stages="{}"
+  stages="{}"; routes="{}"
   while IFS= read -r r; do
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$issues")"
     [ "$j" != null ] || continue
-    if jq -e .error <<<"$j" >/dev/null; then st=unread; else st="$(stage "$j" "$(jq -r .started_at <<<"$S")")"; fi
+    if jq -e .error <<<"$j" >/dev/null; then st=unread
+    else
+      route="$(route_for "$r" "$j")"
+      routes="$(jq -c --arg r "$r" --argjson x "$route" '.[$r] = $x' <<<"$routes")"
+      st="$(jq -r .stage <<<"$route")"
+    fi
     stages="$(jq -c --arg r "$r" --arg s "$st" '.[$r] = $s' <<<"$stages")"
   done < <(jq -r '.set[], .removed[]' <<<"$S")
   holders="$(turn_holders "$stages")"
@@ -633,11 +621,8 @@ observe() {
       continue
     fi
     # The stage stays unlabeled; the user's answer only picks the skill.
-    if [ "$st" = unlabeled ]; then
-      sk="$(answer_skill "$(jq -r --arg r "$r" '(.proposals // {})[$r].answer // empty' <<<"$S")")"
-    else
-      sk="$(skill "$st")"
-    fi
+    route="$(jq -c --arg r "$r" '.[$r]' <<<"$routes")"
+    sk="$(jq -r '.step // empty' <<<"$route")"
     blocked="$(jq -c '[.blockedBy.nodes[] | select(.state == "OPEN") | "\(.repository.nameWithOwner)#\(.number)"]' <<<"$j")"
     if [ "$blocked" = "[]" ]; then free=true; else free=false; fi
     # A run started before proposals existed has no key; it reads as none.
@@ -646,17 +631,17 @@ observe() {
     own="$(jq -r --argjson S "$S" --arg r "$r" "$owner_jq"'owner_of($r)' <<<"$others")"
     [ "$gone" = false ] || wait="removed from the set"
     [ "$gone" = true ] || [ -z "$own" ] || wait="owned by $own"
+    # A step that should run and cannot: two open PRs, or a ready-pr answer
+    # with none.
+    if [ -z "$wait" ] && [ "$(jq -r .stop <<<"$route")" = true ]; then wait="$(jq -r .reason <<<"$route")"; fi
     if [ "$gone" = false ] && [ -z "$own" ] && [ -n "$sk" ] && [ "$free" = true ] && [ "$(jq -r .status <<<"$S")" = running ] \
        && [ "$(jq --arg r "$r" --arg s "$st" '[.threads[] | select(.ref == $r and .stage == $s)] | length' <<<"$S")" -eq 0 ]; then
       if [ "$st" = task ] && [ -n "$turn" ]; then
         wait="waits for the task turn: $turn"
       else
-        # decide.sh exits 2 when gh failed, and that fails the check; any
-        # other stop is this issue's alone, and it waits.
-        rc=0; line="$(decide_for "$r" "$sk")" || rc=$?
-        if [ "$rc" -ne 0 ]; then
+        # A stop is this issue's alone, and it waits.
+        if ! line="$(launch_for "$r" "$route")"; then
           wait="$(sed -n 's/^stop: //p' "$errf" | tail -1)"; line=""
-          [ "$rc" -ne 2 ] || die "$wait"
           # The repo is not on this Mac: only the user can clone it.
           case "$wait" in "no checkout of "*) ask="$wait"; wait="" ;; esac
         elif [ "$st" = task ]; then
@@ -665,9 +650,13 @@ observe() {
       fi
     fi
     if [ -n "$line" ]; then
-      starts="$(jq -c --argjson l "$line" --arg st "$st" --arg r "$r" --arg label "$(label_of "$r")" \
-        '. + [$l + {ref: $r, stage: $st, label: $label, thread_title: "\($l.heading) \($l.title)"}]' <<<"$starts")"
-      claims="$(jq -c --arg r "$r" --arg st "$st" --argjson l "$line" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      item="$(jq -cn --argjson l "$line" --argjson x "$route" --argjson j "$j" --arg st "$st" --arg r "$r" --arg label "$(label_of "$r")" \
+        '{ref: $r, stage: $st, label: $label, number: $j.number, title: $j.title, command: $l.command, mode: $l.mode,
+          model: $x.model, model_from: $x.model_from, effort: $x.effort, effort_from: $x.effort_from, reason: $x.reason,
+          pr: $x.pr, path: $l.path, slash_command: $l.slash_command, message: $l.message,
+          thread_title: "#\($j.number) \($j.title)"}')"
+      starts="$(jq -c --argjson i "$item" '. + [$i]' <<<"$starts")"
+      claims="$(jq -c --arg r "$r" --arg st "$st" --argjson l "$item" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '. + [{ref: $r, repo: ($r | split("#")[0]), path: $l.path, stage: $st, thread: null, link: null, status: "pending", why: null,
                at: $at, command: $l.command, mode: $l.mode, model: $l.model, effort: $l.effort}]' <<<"$claims")"
     fi
@@ -716,8 +705,10 @@ observe() {
     $rows != [] and all($rows[];
       (.stage == "done" or (.stage == "epic" and ready(.ref)))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
-  # propose: the unlabeled issues with no proposal yet.
-  propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.ref] == null)) | .ref]' <<<"$S")"
+  # propose: the unlabeled issues with no proposal yet, and those answered
+  # ship with no size, as a run saved them before a ship answer needed one.
+  propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled"
+    and (($S.proposals // {})[.ref] | . == null or (.answer == "ship" and .size == null))) | .ref]' <<<"$S")"
   # settles: the /grill and /triage threads whose issue moved to a new stage,
   # once they finished or failed, while T3 shows them not settled. A thread
   # the run settled stays the user's after that; one it kept waits for a new
@@ -782,7 +773,7 @@ cmd_check() {
   # A thread launches in its repo's T3 project, so a start's folder becomes
   # one first. A folder T3 will not take fails that claim alone.
   while IFS=$'\t' read -r sr sp; do
-    bash "$core/kickoff/project.sh" "$sp" >/dev/null 2>"$errf" && continue
+    bash "$core/launch/project.sh" "$sp" >/dev/null 2>"$errf" && continue
     why="$(tail -1 "$errf" | sed 's/^stop: //')"
     obs="$(jq -c --arg r "$sr" --arg why "$why" '.starts |= map(select(.ref != $r))
       | .claims |= map(if .ref == $r then .status = "failed" | .why = $why else . end)' <<<"$obs")"
@@ -811,7 +802,7 @@ cmd_check() {
         stages: (reduce ($S.threads[] | select(.ref == $r) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.ref == $r and .link != null) | .link]}],
         removed: $S.removed, paths: ($S | run_repos | map(.path))}
-      # The retro reads everything the run did; analysis gets the row decide.sh gives grill and triage.
+      # The retro reads everything the run did; analysis gets the row the Router gives grill and triage.
       # A run with issues taken out is not the whole work, so it gets no retro yet.
       + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
           effort: ($S.use.all.effort // $ae), path: $S.path,
@@ -866,13 +857,13 @@ cmd_settled() {
 # proposed <n> <route> [--size S]: the route the agent proposed for unlabeled
 # #n, and the size it read from the code, kept with any answer the user
 # already gave. `unsure` is a proposal with no route. A ship needs the size;
-# a task and a close take none, since neither builds code. Prints the model
-# and effort the thread would get; a decide stop keeps the proposal and
-# prints its reason as `why`.
+# a task, a close, and an xxl take none, since none builds code. Prints the model
+# and effort the thread would get, from the Router. A Router stop, or an
+# issue it could not read, keeps the proposal and prints the reason as `why`.
 cmd_proposed() {
-  local pusage="usage: orchestrate.sh proposed <owner/repo> <issue> $routes|unsure [--size $size_list]"
-  [ $# -ge 2 ] && [[ "$2" =~ ^($routes|unsure)$ ]] || die_usage "$pusage"
-  local word="$1" r route="$2" size="" sk line why=""
+  local pusage="usage: orchestrate.sh proposed <owner/repo> <issue> $route_list|unsure [--size $size_list]"
+  [ $# -ge 2 ] && [[ "$2" =~ ^($route_list|unsure)$ ]] || die_usage "$pusage"
+  local word="$1" r route="$2" size="" got j line why=""
   shift 2
   if [ $# -gt 0 ]; then
     [ $# -eq 2 ] && [ "$1" = --size ] || die_usage "$pusage"
@@ -881,22 +872,95 @@ cmd_proposed() {
   fi
   case "$route" in
     ship) [ -n "$size" ] || die "a ship proposal needs --size $size_list" ;;
-    task|close) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
+    task|close|xxl) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
   esac
   newest_run
   r="$(to_ref "$word")" || exit
   [ "$(jq --arg r "$r" '.set | index([$r]) != null' <<<"$S")" = true ] || die "$(label_of "$r") is not in the set"
   S="$(jq -c --arg i "$r" --arg r "$route" --arg z "$size" \
-    '.proposals[$i] = {route: $r, answer: ((.proposals // {})[$i].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
+    '((.proposals // {})[$i] // {}) as $p | .proposals[$i] = {route: $r, answer: $p.answer}
+       + (if $p.labeled then {labeled: $p.labeled} else {} end) + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
-  sk="$(answer_skill "$route")"
   line="null"
-  if [ -n "$sk" ] && ! line="$(decide_for "$r" "$sk")"; then
-    line="null"; why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
+  if one_of "$route_list" "$route"; then
+    if ! got="$(read_issues "$r")"; then
+      why="$(tail -1 "$errf")"
+    else
+      j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
+      if [ "$j" = null ]; then why="not found"
+      elif jq -e .error <<<"$j" >/dev/null; then why="$(jq -r .error <<<"$j")"
+      else
+        line="$(route_for "$r" "$j" "$route")"
+        [ "$(jq -r .stop <<<"$line")" != true ] || why="$(jq -r .reason <<<"$line")"
+      fi
+    fi
   fi
   jq -cn --arg i "$r" --arg label "$(label_of "$r")" --arg r "$route" --arg z "$size" --argjson l "$line" --arg why "$why" \
     '{ref: $i, label: $label, route: $r, size: (if $z == "" then null else $z end), model: $l.model, effort: $l.effort}
      + (if $why == "" then {} else {why: $why} end)'
+}
+
+# label_answers <proposals before> <refs>: write each ref's answer to its
+# issue as its label, per answer_label, after a read of the issue, and keep
+# it as the proposal's `labeled`. That label comes off in the same edit when
+# the answer changes, so a changed answer leaves one label. An issue another label, or its state, already routes
+# gets none: the Router reads that one first. A label the repo lacks is
+# made from label_spec, then the edit runs once more. Prints one line per ref whose
+# answer has or had a label; the thread starts either way.
+label_answers() {
+  local refs=() r got j new old edit=() routed made spec ok
+  while IFS= read -r r; do refs+=("$r"); done <<<"$2"
+  if ! got="$(read_issues "${refs[@]}")"; then
+    for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
+    return
+  fi
+  for r in "${refs[@]}"; do
+    new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
+      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
+    # Only the label this run wrote comes off: one a teammate added stays.
+    old="$(jq -r --arg r "$r" '.[$r].labeled // empty' <<<"$1")"
+    [ "$old" != "$new" ] || old=""
+    j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
+    if [ "$j" = null ] || jq -e .error <<<"$j" >/dev/null; then
+      [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): $(jq -r '.error // "not found"' <<<"$j")"
+      continue
+    fi
+    # A label the run wrote that is gone from the issue is no longer the
+    # run's: one put back later is a teammate's.
+    if [ -n "$old" ] && ! jq -e --arg o "$old" 'any(.labels.nodes[]?; (.name | ascii_downcase) == ($o | ascii_downcase))' <<<"$j" >/dev/null; then
+      old=""
+      S="$(jq -c --arg r "$r" '.proposals[$r] |= del(.labeled)' <<<"$S")"; save
+    fi
+    # The old answer's label is ours to replace, so it does not count.
+    j="$(jq -c --arg o "$old" '.labels.nodes |= map(select((.name | ascii_downcase) != ($o | ascii_downcase)))' <<<"$j")"
+    routed="$(run_prs "$j" | bash "$core/route/router.sh")"
+    if [ "$(jq -r .stage <<<"$routed")" != unlabeled ]; then
+      [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): its labels route it: $(jq -r .reason <<<"$routed")"
+      continue
+    fi
+    edit=()
+    [ -z "$new" ] || edit+=(--add-label "$new")
+    [ -z "$old" ] || edit+=(--remove-label "$old")
+    [ ${#edit[@]} -gt 0 ] || continue
+    made=""; ok=true
+    if ! gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+      ok=false
+      spec=""
+      [ -z "$new" ] || [[ "$err" != *"'$new' not found"* ]] || spec="$(label_spec "$new")"
+      if [ -n "$spec" ] && gh_out label create "$new" --repo "${r%#*}" --color "$(sed -n 1p <<<"$spec")" --description "$(sed -n 2p <<<"$spec")" \
+          && gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+        ok=true; made=" (made the label)"
+      fi
+    fi
+    if [ "$ok" = true ]; then
+      # Saved before the next issue, so a batch cut short keeps it.
+      S="$(jq -c --arg r "$r" --arg n "$new" '.proposals[$r] |= (if $n == "" then del(.labeled) else .labeled = $n end)' <<<"$S")"; save
+      if [ -z "$new" ]; then echo "took $old off $(label_of "$r")"
+      else echo "labeled $(label_of "$r") $new${old:+, took off $old}$made"; fi
+    else
+      echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
+    fi
+  done
 }
 
 # ---------- change ----------
@@ -909,9 +973,12 @@ cmd_proposed() {
 # issues whose ticket thread has not started: for `all`, each started one
 # keeps the old default as its own, "" when the thread picked. An unlabeled issue answered `ship` started its
 # ticket thread at stage unlabeled.
-# change answer <n>|all <word>: the user's answer to a proposal. `yes` takes
-# the proposed route; `all` takes only `yes` or `skip`, and fills only the
-# proposals with no answer yet, so a per-issue answer given first stays.
+# change answer <n>|all <word> [--size S]: the user's answer to a proposal.
+# `yes` takes the proposed route; `all` takes only `yes` or `skip`, and fills
+# only the proposals with no answer yet, so a per-issue answer given first
+# stays. A ship answer needs a size, given with --size or on the proposal.
+# Each answer this call set is then written to its issue as a label, per
+# label_answers.
 # change use <n>|all: the model and effort a thread gets, for one issue or
 # for all; one issue's value wins, field by field.
 cmd_change() {
@@ -972,9 +1039,17 @@ cmd_change() {
       S="$(jq -c --arg k "$key" --argjson p "$pick" '.use[$k] = ((.use[$k] // {}) + $p)' <<<"$S")"
       ;;
     answer)
-      local ausage="usage: orchestrate.sh change <owner/repo> answer <issue>|all yes|skip|$routes"
-      [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$routes)$ ]] || die_usage "$ausage"
-      local word="$3"
+      local ausage="usage: orchestrate.sh change <owner/repo> answer <issue>|all yes|skip|$route_list [--size $size_list]"
+      local size=""
+      if [ $# -eq 5 ] && [ "$4" = --size ]; then
+        size="$(printf '%s' "$5" | tr '[:lower:]' '[:upper:]')"
+        one_of "$size_list" "$size" || die_usage "$ausage" "--size must be $(spelled "$size_list"), got: $5"
+        [ "$3" = ship ] || die_usage "$ausage" "--size goes only with ship"
+        set -- "$1" "$2" "$3"
+      fi
+      [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$route_list)$ ]] || die_usage "$ausage"
+      local word="$3" before
+      before="$(jq -c '.proposals // {}' <<<"$S")"
       if [ "$2" = all ]; then
         case "$word" in yes|skip) ;; *) die_usage "$ausage" ;; esac
         S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
@@ -989,8 +1064,20 @@ cmd_change() {
           word="$(jq -r --arg r "$r" '(.proposals // {})[$r].route // "unsure"' <<<"$S")"
           [ "$word" != unsure ] || die "$(label_of "$r") has no proposal to say yes to; name a skill"
         fi
-        S="$(jq -c --arg r "$r" --arg w "$word" '.proposals[$r] = ((.proposals // {})[$r] // {}) + {route: ((.proposals // {})[$r].route), answer: $w}' <<<"$S")"
+        [ "$word" != ship ] || [ -n "$size" ] || [ -n "$(jq -r --arg r "$r" '(.proposals // {})[$r].size // empty' <<<"$S")" ] \
+          || die "$(label_of "$r") has no size for /ship: size it from the code, then answer ship --size $size_list"
+        S="$(jq -c --arg r "$r" --arg w "$word" --arg z "$size" '.proposals[$r] = ((.proposals // {})[$r] // {})
+          + {route: ((.proposals // {})[$r].route), answer: $w} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
       fi
+      save
+      local set_refs
+      if [ "$2" = all ]; then
+        set_refs="$(jq -r --argjson b "$before" '. as $S | .set[] | select(($S.proposals // {})[.].answer != null and $b[.].answer == null)' <<<"$S")"
+      else
+        set_refs="$r"
+      fi
+      [ -z "$set_refs" ] || label_answers "$before" "$set_refs"
+      return
       ;;
     *) die_usage "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac

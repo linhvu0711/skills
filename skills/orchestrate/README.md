@@ -21,7 +21,8 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 |---|---|---|
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
-| ticket | a size label | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
+| ticket | a size label XS to XL, or `ready-to-build` | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
+| too big | an XXL size label | none: cut it with [file-epic](../file-epic/), and its new sub-issues join the set. Under an epic, file-epic puts the new pieces beside it in that epic: add them with `add #n` |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>`, or the PR's URL when it is in another repo |
 | task | a `manual` label | `/complete-task --ready`: the thread says it is ready and waits for your `go`. One task at a time on this Mac. |
 | waiting | a `waiting` label on a task | none: say `resume #n` when the wait is over |
@@ -29,15 +30,15 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
 | done | closed | none |
 
-The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
+The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. Your answer goes on the issue as a label: `bug` for triage, `seed` for grill, the size label for ship, and `manual` for a task, which starts `/complete-task`. A `close` answer starts nothing and is yours. Change your answer, and the label the orchestrator wrote for the old one comes off; a label a teammate added stays. An issue whose labels already pick a step, as one a teammate sized meanwhile, gets no label. A label the repo lacks is made first, in the color the [issue rules](../../shared/issue-rules.md) give it. A label GitHub refuses is named in the thread, and the thread starts anyway. Change a proposal to `#14 ship`, and the orchestrator sizes it from the code first. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket; an XXL one gets the proposal `Cut it with /file-epic` and starts nothing.
 
-An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`:
+An issue starts only when every issue that blocks it is closed. The Router, `../../shared/route/router.sh`, picks the stage, the skill, and the effort, and you can name a model or effort that wins:
 
 | Issue | Model | Effort |
 |---|---|---|
 | `ready-to-build`, XS, or S | opus | medium |
 | M or L | opus | high |
-| XL, or no size | opus | xhigh |
+| XL | opus | xhigh |
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
 | `/complete-task` | opus | medium |
@@ -63,7 +64,7 @@ Say these in the orchestrator thread:
 
 A check that cannot read GitHub or T3 starts nothing, and the watcher writes why to `watch.log`. After three in a row, the watcher wakes the thread, and it tells you why and what to do. When every issue is closed, with no open PR left on one, the watcher ends, and the orchestrator posts one summary line per issue (its stages, its PR, its threads), closes each epic of the run that is still open, since all its sub-issues are closed (an epic inside another epic of the run counts as done once its own sub-issues are, and closes first; it reads each epic again just before, so an epic whose sub-issue opened again stays open; an epic GitHub will not close stays open too, and its line says why), fast-forwards the default branch of the main checkout of each repo it started work in to GitHub's, so the cleanup sees the merged work (it skips a branch with your own commits or with edits in the way, and says why; the retro reads the branch you have checked out, so it sees the merged work only when that is the default branch), runs [clean-worktrees](../clean-worktrees/) in each of those repos, and starts one more thread that runs [retrospect](../retrospect/) on everything the run did: its sessions and its PRs, unless you took issues out of the run; then it posts the `/retrospect run` line for you to type when the work is done. If that thread cannot start, it posts the `/retrospect run` line for you to type. It closes no other issue, and no epic outside the run, such as the parent epic of a ticket you named.
 
-The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the watcher and its interval, its proposals: each route, size, and answer, and `task_turn`: the task issues this run holds the task turn for, which the other running runs read, so only one task thread runs on this Mac at a time. Next to it sit `board.json`, the page's only data, `board.html`, the page, and `watch.log`, a line for each watcher check that failed, woke the thread, or sent `/ready-pr`. Every save writes the run's status and failed checks into `board.json`, and only a good check writes its cards. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
+The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`, outside every checkout (set `ORCHESTRATE_HOME` to move it). It holds only what GitHub and T3 do not: the set, the ship modes, the model choices, each thread's id, the watcher and its interval, its proposals: each route, size, answer, and the label it wrote for that answer, and `task_turn`: the task issues this run holds the task turn for, which the other running runs read, so only one task thread runs on this Mac at a time. Next to it sit `board.json`, the page's only data, `board.html`, the page, and `watch.log`, a line for each watcher check that failed, woke the thread, or sent `/ready-pr`. Every save writes the run's status and failed checks into `board.json`, and only a good check writes its cards. One run per repo is live at a time; `/orchestrate` in a repo with a live run links that run's thread and stops.
 
 ## Needs
 
@@ -75,7 +76,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Fits with
 
-- Starts each thread the way [run-in-t3](../run-in-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/kickoff/launch-t3.md`, start the thread in the permission mode of this chat. Run it from a chat in full access, so the threads' helpers in Antigravity run without asking you at each command.
+- Starts each thread through the shared core: the Router, `../../shared/route/router.sh`, picks the skill and effort, the launcher, `../../shared/launch/line.sh`, gives the folder and first message, and the launch steps, `../../shared/launch/launch-t3.md`, start the thread in the permission mode of this chat. Run it from a chat in full access, so the threads' helpers in Antigravity run without asking you at each command.
 - Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
 - [capture](../capture/) makes the seeds and bugs it starts from; [file-epic](../file-epic/) makes the epics.
 - When a run is done, unless you took issues out of it, it starts [retrospect](../retrospect/) on the run, which suggests changes to the repo's agent setup from what the run's sessions and PRs show.

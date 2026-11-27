@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-A script decides what to start; you start it with T3's tools. Read `../../shared/kickoff/target.md` first: the target forms, the flags, the table, and how to turn the user's words into a target.
+A script decides what to start; you start it with T3's tools. Read `../../shared/route/target.md` first: the target forms, the flags, the table, and how to turn the user's words into a target.
 
 ## Steps
 
@@ -18,7 +18,7 @@ A script decides what to start; you start it with T3's tools. Read `../../shared
    ```
 
    Any other exit: the last `stop:` line on stderr says why. Exit 64 is a wrong command line, and the usage follows it. Show them as they are and stop. Nothing started. Exit 0: hold the one JSON line it prints. Its keys: `number`, `title`, `command`, `command_from`, `mode`, `model`, `model_from`, `effort`, `effort_from`, `reason`, `base`, `path`, `slash_command`, `thread_title`, `message`, `project`.
-3. **Launch.** Follow `../../shared/kickoff/launch-t3.md` with the line from step 2. Its stop lines are yours. Hold the model id it picked and the thread's `link`.
+3. **Launch.** Follow `../../shared/launch/launch-t3.md` with the line from step 2. Its stop lines are yours. Hold the model id it picked and the thread's `link`.
 4. **Report.** Print one line and stop:
 
    ```

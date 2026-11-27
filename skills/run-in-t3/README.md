@@ -48,10 +48,10 @@ Your tree stays as it is: any branch, edits or not.
 ## Fits with
 
 - Starts [ship](../ship/) in the new thread. It sets a ship mode only when you name one; else the `/ship` run picks it.
-- Runs the shared decide script, `../../shared/kickoff/decide.sh`, which gives the command as the thread runs it, as `/ship --merge`, in its own field, and reads `../../shared/kickoff/target.md`.
-- Its thread launch steps (model, project, thread) live in the shared core, `../../shared/kickoff/launch-t3.md`, so another skill can start a T3 thread the same way: [orchestrate](../orchestrate/) does.
+- Runs the shared decide script, `../../shared/kickoff/decide.sh`, which gives the command as the thread runs it, as `/ship --merge`, in its own field, and reads `../../shared/route/target.md`.
+- Its thread launch steps (model, project, thread) live in the shared core, `../../shared/launch/launch-t3.md`, so another skill can start a T3 thread the same way: [orchestrate](../orchestrate/) does.
 - Often follows [file-issue](../file-issue/) or [capture](../capture/), which make the issue.
 
 ## Tests
 
-The cases for [kickoff.sh](scripts/kickoff.sh), the T3 check, the project add, and the line it prints, are in [tests/kickoff.sh](tests/kickoff.sh). The project add lives in the shared core's [project.sh](../../shared/kickoff/project.sh), which orchestrate shares. The cases run on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
+The cases for [kickoff.sh](scripts/kickoff.sh), the T3 check, the project add, and the line it prints, are in [tests/kickoff.sh](tests/kickoff.sh). The project add lives in the shared core's [project.sh](../../shared/launch/project.sh), which orchestrate shares. The cases run on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

@@ -32,7 +32,7 @@ decided="$(bash "$here/../../../shared/kickoff/decide.sh" "$@")" || exit
 path="$(jq -r .path <<<"$decided")"
 
 # ---------- project ----------
-project="$(bash "$here/../../../shared/kickoff/project.sh" "$path")" || exit 1
+project="$(bash "$here/../../../shared/launch/project.sh" "$path")" || exit 1
 
 jq -c --arg project "$project" \
   '. + {thread_title: "\(.heading) \(.title)", project: $project}' \

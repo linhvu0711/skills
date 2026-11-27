@@ -10,13 +10,13 @@ This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the ru
 
 ## Never
 
-The orchestrator starts threads, and does two things in a thread it started: the script's watcher sends `/ready-pr <pr-url>` when that thread's PR has conflicts, and you settle a finished /grill or /triage thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is the user's from its first turn: leave it to them. So the orchestrator starts a thread once, and a thread that failed or ended with no new stage waits for the user's `restart #n`. It writes nothing to GitHub: no comment, no label, no close, no merge. Two exceptions: `resume #n` takes the `waiting` label off a task, as § Commands says, since the user asked for it; and § Done closes each epic of the run that is still open, since its sub-issues are all closed (ADR 0039).
+The orchestrator starts threads, and does two things in a thread it started: the script's watcher sends `/ready-pr <pr-url>` when that thread's PR has conflicts, and you settle a finished /grill or /triage thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is the user's from its first turn: leave it to them. So the orchestrator starts a thread once, and a thread that failed or ended with no new stage waits for the user's `restart #n`. It writes nothing to GitHub: no comment, no close, no merge, and only the labels below. Three exceptions: `resume #n` takes the `waiting` label off a task, as § Commands says, since the user asked for it; and § Done closes each epic of the run that is still open, since its sub-issues are all closed (ADR 0039), and an answer to a Proposal is written to the issue as its label, made first when the repo lacks it, per § Commands (ADR 0013).
 
 ## Start
 
 `/orchestrate <set>`, in a T3 Code thread.
 
-1. **Set.** Turn the user's words into issue words, once: `n` for an issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/kickoff/target.md` § Resolving the target from the session, steps 1 and 2. A list stays a list; an epic is its number; a rule is a search, as `assigned to me` is `gh issue list --assignee @me --state open --json number`. Name the set in a few words: `#12 #14`, `epic #70 Order export`, `assigned to me`.
+1. **Set.** Turn the user's words into issue words, once: `n` for an issue in this repo, `owner/repo#n` for one in another repo, per `../../shared/route/target.md` § Resolving the target from the session, steps 1 and 2. A list stays a list; an epic is its number; a rule is a search, as `assigned to me` is `gh issue list --assignee @me --state open --json number`. Name the set in a few words: `#12 #14`, `epic #70 Order export`, `assigned to me`.
 2. **Thread.** `t3_thread_update` with `action: rename`, no `threadId`, `title: 🧭 <name>`. Then `t3_thread_list` with `titleContains` that title, and hold the `threadId` of the thread with that exact title: no environment variable names this thread. Then `t3_environment_read`, and hold its `environmentId`: the board's thread links need it, and no `t3` command prints it.
 3. **Run.**
 
@@ -46,7 +46,7 @@ Exit 1: post the `stop:` line in this thread as it is. One that says `You must a
 
 Exit 0: one JSON line. For each item of `starts`, in order:
 
-1. Follow `../../shared/kickoff/launch-t3.md` with the item as its line. Its stop lines end this item only.
+1. Follow `../../shared/launch/launch-t3.md` with the item as its line. Its stop lines end this item only.
 2. Started: `scripts/orchestrate.sh started <owner/repo> <ref> <stage> <threadId> "<link>"`.
    Not started: `scripts/orchestrate.sh started <owner/repo> <ref> <stage> --failed "<the stop line>"`.
    `<ref>` is the item's `ref`.
@@ -65,7 +65,7 @@ One line per issue, set order. An issue's `ref` is `owner/repo#n`; its label is 
 <label> <title> · <stage> · <what happens>
 ```
 
-`<what happens>` is the started thread's link and `/<skill>`, the issue's `ask` (only the user can settle it: a repo not read, or not on this Mac), its `wait`, `blocked by` and the label of each `blocked_by` ref, its thread's link and `thread_status`, `launch failed: <why>; say restart <label>` when `claim` is `failed`, or `done`. A `task` thread's line reads `/complete-task`, and the thread waits for the user's `go`. A `waiting` issue reads `waits outside; say resume <label>`. An `unlabeled` issue goes by its `answer`: none, `waits: your answer`, plus ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`; `task`, `yours`; `close`, `yours to close`; a skill, as any other stage. The `ship` skill reads `/ship`, plus `--review`, `--ready`, or `--merge` when the user set that ship mode for the issue or for all; with none, the `/ship` thread picks the ship mode from its own plan. Lead with `Joined:` and the label of each `joined` ref when `joined` is not empty, and with `Paused.` when `status` is `paused`. `"done": true`: § Done. `propose` not empty: § Propose, after these lines. `settles` not empty: one line per item, after the issue lines, per § Settle.
+`<what happens>` is the started thread's link and `/<skill>`, the issue's `ask` (only the user can settle it: a repo not read, or not on this Mac), its `wait`, `blocked by` and the label of each `blocked_by` ref, its thread's link and `thread_status`, `launch failed: <why>; say restart <label>` when `claim` is `failed`, or `done`. A `task` thread's line reads `/complete-task`, and the thread waits for the user's `go`. A `waiting` issue reads `waits outside; say resume <label>`. A `too-big` issue reads `Cut it with /file-epic`, and so does an `unlabeled` one answered `xxl`. An `unlabeled` issue goes by its `answer`: none, `waits: your answer`, plus ` (proposed /<skill>)` when `proposal` names a skill; `skip`, `skipped`; `task`, `yours`; `close`, `yours to close`; a skill, as any other stage. The `ship` skill reads `/ship`, plus `--review`, `--ready`, or `--merge` when the user set that ship mode for the issue or for all; with none, the `/ship` thread picks the ship mode from its own plan. Lead with `Joined:` and the label of each `joined` ref when `joined` is not empty, and with `Paused.` when `status` is `paused`. `"done": true`: § Done. `propose` not empty: § Propose, after these lines. `settles` not empty: one line per item, after the issue lines, per § Settle.
 
 ## Settle
 
@@ -99,18 +99,9 @@ T3 still alerts on a turn in a snoozed thread today; once it stops, the quiet tu
 
 The refs in `propose` are unlabeled issues with no proposal yet. For each, in order, with `<n>` its number and `<label>` its label:
 
-1. **Read.** `gh issue view <n> --repo <the ref's owner/repo> --json number,title,body,labels,comments`. It fails: the route is `unsure`, and the line is `<label> · not sure: could not read <label>: <gh's last stderr line>`.
-2. **Route.** The first case that holds:
-   1. A person must do it outside the repo, per `../../shared/issue-rules.md` § Task body: `task`.
-   2. Something is broken or slow today, by the bug words in `../capture/SKILL.md` § Hard rules: `triage`.
-   3. It passes `## Readiness gate` in `../../shared/issue-rules.md`, at any size by `../../shared/size.md`, XL too: `ship`.
-   4. It has sub-issues: the check makes it an epic first, so it never comes here.
-   5. Its row's `prs` holds an open PR, or its text links one: `ready-pr`.
-   6. It is done, a duplicate, or out of date: `close`, with the proof: the PR, the issue, or the line that shows it.
-   7. An idea that is not decided yet: `grill`.
-   8. No case holds for sure: `unsure`, with the two best guesses and a reason for each.
-3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and guess the lines the change will add and remove, on the scale of `../../shared/size.md`. Hold the size and its estimate line, as `size.md` writes it: `S: about 20 lines, 2 files`. Any other route takes no size. XXL is never one ticket: step 4 records it as `unsure`, with no `--size`, so no answer launches it and `all skip` skips it, and its line in the list is `<label> <title> · <estimate line> · Cut it with /file-epic`, as `#42 Export orders · XXL: about 1,200 lines, 30 files · Cut it with /file-epic`.
-4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, plus `--size <size>` when step 3 gave one. It prints one JSON line: the `model` and `effort` the thread would get, from the same table the launch reads, or both `null` with a `why`.
+1. **Read.** `gh issue view <n> --repo <the ref's owner/repo> --json number,title,body,labels,comments`.
+2. **Route and size.** Per `../../shared/route/propose.md`. A read that fails: the route is `unsure`, and the line is `<label> · not sure: could not read <label>: <gh's last stderr line>`.
+3. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, with `<route>` one of `grill`, `triage`, `ship`, `ready-pr`, `task`, `close`, `xxl`, or `unsure`, plus `--size <size>` when step 2 gave one below XXL. It prints one JSON line: the `model` and `effort` the thread would get, from the same Router the launch asks, or both `null` with a `why`.
 
 Then post one list:
 
@@ -120,7 +111,7 @@ Proposals. Answer in one reply: all yes, <label> <skill>, <label> yes, or skip <
 <label> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size line> · "<quote>"
 ```
 
-`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`. `<size line>` is step 3's estimate line; no size, leave it out. `<model> <effort>` is from step 4's line, as `opus medium`; `null`: `no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
+`<what>` is `/<skill>`, `yours` for `task`, `close it` for `close`, or `Cut it with /file-epic` for `xxl`, as `#42 Export orders · Cut it with /file-epic · XXL: about 1,200 lines, 30 files`. `<size line>` is step 2's estimate line; no size, leave it out. `<model> <effort>` is from step 3's line, as `opus medium`; `null`: `no model: <why>`; `task`, `close`, or `xxl`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
 
 ## Commands
 
@@ -142,7 +133,7 @@ A live run takes these, said in this thread. Each runs one `orchestrate.sh` call
   runs on.
 - Answers to § Propose: `all yes`, `all skip`, `#n yes`, `#n <skill>`, `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
   <word>` per part, the per-issue parts first, so `all` fills only the
-  rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`, `ready-pr`, `task`, and `close`; `ship`, `ship review`, `ship ready`, or `ship merge` is `ship`, and a ship mode also runs `change
+  rest; then § Check. Post each line the answer prints: `labeled #n <label>`, with `, took off <old label>` when a changed answer swapped its label, and ` (made the label)` when the repo lacked it; `took <label> off #n`; or `not labeled #n: <why>`, after which the thread still starts. `#n ship` on a proposal with no size: size it per `../../shared/route/propose.md` § Size first, then `change <owner/repo> answer <n> ship --size <size>`. The words are `yes`, `skip`, `grill`, `triage`, `ready-pr`, `task`, `close`, and `xxl`; `ship`, `ship review`, `ship ready`, or `ship merge` is `ship`, and a ship mode also runs `change
   <owner/repo> ship review|ready|merge <n>`, so the issue ships the way
   the user said, whatever the run's default. A new answer reaches an issue whose thread started only after `restart #n`.
 - `ship review #n`, `ship ready #n`, `ship merge #n`, or the same with `all` (also `ship --merge #n`): `change <owner/repo> ship review|ready|merge <n>|all`. Only issues whose ticket thread has not started take it. With no ship mode set, the `/ship` thread picks it.
@@ -170,4 +161,4 @@ A check printed `"done": true`.
 3. `scripts/orchestrate.sh close-epics <owner/repo>`, and post its lines as they are, one per epic of the run that was still open. Each closes that epic on GitHub as completed, since the done rule waited for every sub-issue. A `not closed` line leaves that epic open; go on.
 4. `scripts/orchestrate.sh sync <owner/repo>`, and post its lines as they are, one per repo the run worked in. Each fast-forwards the default branch of that repo's main checkout to origin's, so clean-worktrees judges by the merged work. The retro reads the files of the branch that is checked out, so it sees the merged work only when that branch is the default one. A `not updated` line leaves the branch as it was; go on.
 5. From each folder in the check line's `paths` (the main checkouts), run `bash ../clean-worktrees/scripts/prune-worktrees.sh` and post its lines as they are, as `/ship` does after its merges.
-6. The check's line has no `retro` (issues were taken out of the run): post `Run ended with <label a> <label b> taken out. Start the retro yourself when the work is done: /retrospect run <run>`, with the label of each ref in `removed` and `run` from the line, and start no thread. Else start the retro: follow `../../shared/kickoff/launch-t3.md` with the check's `retro` line, so one thread runs `/retrospect run <run>` on everything the run did. Post its link. A `stop:` line or an error there: post `Start it yourself: /retrospect run <run>`, with `run` from the check's line. The run is done either way.
+6. The check's line has no `retro` (issues were taken out of the run): post `Run ended with <label a> <label b> taken out. Start the retro yourself when the work is done: /retrospect run <run>`, with the label of each ref in `removed` and `run` from the line, and start no thread. Else start the retro: follow `../../shared/launch/launch-t3.md` with the check's `retro` line, so one thread runs `/retrospect run <run>` on everything the run did. Post its link. A `stop:` line or an error there: post `Start it yourself: /retrospect run <run>`, with `run` from the check's line. The run is done either way.

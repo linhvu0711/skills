@@ -42,6 +42,7 @@ esac
 EOF
   chmod +x "$T/bin/t3"
   echo '[]' > "$T/t3-threads.json"
+  echo https://github.com/acme/app/issues/42 > "$FAKE_GH/issue-edit.json"
   mkdir -p "$T/issues"
   export FAKE_T3_DIR="$T"
 }
@@ -50,8 +51,7 @@ EOF
 # in the GraphQL answer of acme/app, or of acme/$FS_REPO when that is set.
 # <labels> is a JSON list of names; the rest are JSON lists of nodes, empty
 # when left out. A blocker or sub-issue node with no repository is in the
-# issue's repo. The title is "Export orders" unless given. decide.sh's
-# `issue view` gets the same issue.
+# issue's repo. The title is "Export orders" unless given.
 fs_issue() {
   local title="${7:-Export orders}" dir="$T/issues${FS_REPO:+-$FS_REPO}"
   mkdir -p "$dir"
@@ -63,14 +63,13 @@ fs_issue() {
       blockedBy: {nodes: ($b | inrepo)}, closedByPullRequestsReferences: {nodes: $p}}' > "$dir/$1.json"
   jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$dir"/*.json \
     > "$FAKE_GH/graphql${FS_REPO:+.$FS_REPO}.json"
-  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$dir/$1.json" > "$FAKE_GH/issue-view.json"
 }
 
 # fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
-# the repo map, and the orchestrator home inside T.
+# the repo map, the orchestrator home, and the issue conventions store inside T.
 fs_go() {
   cd "$T"
-  run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" \
+  run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" GH_ISSUE_STORE="$T/conv.json" \
     ORCHESTRATE_HOME="$T/orchestrate" bash "$F" "$@"
 }
 
@@ -142,7 +141,7 @@ t_fs_ticket_starts_ship() {
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
+  has stdout '"command":"ship","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
   has stdout '"message":"/ship #42"' "$out"
   has stdout '"thread_title":"#42 Export orders"' "$out"
   lacks stdout '"runtime_mode"' "$out"
@@ -210,7 +209,7 @@ t_fs_seed_starts_grill() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"grill","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"command":"grill","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
   has stdout '"message":"/grill #42"' "$out"
 }
 
@@ -497,7 +496,6 @@ t_fs_failed_task_launch_frees_turn() {
 
 t_fs_closed_task_frees_turn() {
   # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 closed
-  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
   fs_record 42 task t42
   fs_issue 42 CLOSED '["manual"]'; fs_issue 43 OPEN '["manual"]'
@@ -635,6 +633,43 @@ t_fs_epic_brings_subs() {
   has stdout '"label":"#70","url":"https://github.com/acme/app/issues/70","title":"Order export","stage":"epic"' "$out"
   has stdout '"ref":"acme/app#71","stage":"ticket"' "$out"
   eq set '["acme/app#70","acme/app#71"]' "$(fs_state .set)"
+}
+
+t_fs_xxl_starts_nothing() {
+  # Given: a run of #42 "Rewrite the order store", open, size/XXL
+  fs_setup; fs_issue 42 OPEN '["size/XXL"]' '[]' '[]' '[]' "Rewrite the order store"; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"too-big"' "$out"
+  eq card '{"column":"shape","mark":"you","action":"Cut it with /file-epic","chip":"ticket · XXL"}' \
+    "$(fs_board '.issues[0] | {column, mark, action, chip}')"
+}
+
+t_fs_xxl_answer_starts_nothing() {
+  # Given: a run of unlabeled #42, proposed xxl and answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  fs_go proposed acme/app 42 xxl; fs_go change acme/app answer 42 yes
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  eq card '{"mark":"you","action":"Cut it with /file-epic"}' "$(fs_board '.issues[0] | {mark, action}')"
+}
+
+t_fs_cut_xxl_brings_subs() {
+  # Given: a run of #42, size/XXL, checked once; then cut into #43, size/S
+  fs_setup; fs_issue 42 OPEN '["size/XXL"]'; fs_start 42; fs_go check acme/app
+  fs_issue 43 OPEN '["size/S"]'; fs_issue 42 OPEN '[]' '[]' '[]' '[{"number":43,"state":"OPEN"}]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"joined":["acme/app#43"]' "$out"
+  has stdout '"message":"/ship #43"' "$out"
 }
 
 t_fs_followup_joins() {
@@ -877,7 +912,7 @@ t_fs_ship_merge_one() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"ship","command_from":"set","mode":"merge"' "$out"
+  has stdout '"command":"ship","mode":"merge"' "$out"
   has stdout '"message":"/ship --merge #42"' "$out"
 }
 
@@ -923,18 +958,6 @@ t_fs_gh_fail_starts_nothing() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
-  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
-}
-
-t_fs_decide_gh_fail_starts_nothing() {
-  # Given: a run of #42, size/S; the check's own read works, decide's issue view fails
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/issue-view.fail"
-  # When
-  fs_go check acme/app
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: check failed: gh could not read https://github.com/acme/app/issues/42: HTTP 502: Bad gateway" "$err"
   eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
 }
 
@@ -984,6 +1007,31 @@ t_fs_two_prs_waits() {
   eq exit 0 "$code"
   has stdout '"starts":[]' "$out"
   has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
+}
+
+t_fs_new_pr_keeps_two_prs_wait() {
+  # Given: #42 has an open PR from before the run and one from after it
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
+}
+
+t_fs_sizeless_ship_answer_proposes() {
+  # Given: unlabeled #42 answered ship with no size, as a run before sizes were needed saved it
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  local st; st="$(fs_run)/state.json"
+  jq '.proposals["acme/app#42"] = {route: null, answer: "ship"}' "$st" > "$st.new" && mv "$st.new" "$st"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"propose":["acme/app#42"]' "$out"
 }
 
 t_fs_all_closed_done() {
@@ -1786,7 +1834,7 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 64 "$code"
-  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
@@ -1831,6 +1879,16 @@ t_fs_proposed_ship_needs_size() {
   eq proposals '{}' "$(fs_state .proposals)"
 }
 
+t_fs_proposed_xxl_no_size() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 xxl --size L
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a xxl proposal takes no --size" "$err"
+}
+
 t_fs_proposed_task_no_size() {
   # Given: a run of unlabeled #42
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -1848,7 +1906,7 @@ t_fs_proposed_bad_size() {
   fs_go proposed acme/app 42 ship --size huge
   # Then
   eq exit 64 "$code"
-  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size XS|S|M|L|XL]" "$err"
 }
 
 t_fs_use_bad_effort() {
@@ -1895,7 +1953,6 @@ t_fs_proposed_no_model() {
 t_fs_proposed_decide_stop() {
   # Given: a run of unlabeled #42, no PR closes it
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
-  printf '{"data":{"repository":{"issue":{"closedByPullRequestsReferences":{"nodes":[]}}}}}\n' > "$FAKE_GH/graphql.json"
   # When
   fs_go proposed acme/app 42 ready-pr
   # Then
@@ -1911,7 +1968,7 @@ t_fs_answer_keeps_size() {
   fs_go change acme/app answer 42 yes
   # Then
   eq exit 0 "$code"
-  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S","labeled":"size/S"}}' "$(fs_state .proposals)"
 }
 
 t_fs_ship_proposal_size_launches() {
@@ -1921,7 +1978,7 @@ t_fs_ship_proposal_size_launches() {
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
+  has stdout '"command":"ship","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"answer ship, size S"' "$out"
 }
 
 t_fs_label_wins_proposal_size() {
@@ -1958,13 +2015,169 @@ t_fs_grill_answer_starts() {
 }
 
 t_fs_ship_answer_starts() {
-  # Given: unlabeled #42, answered ship with no proposal
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  # Given: unlabeled #42, answered ship at size S with no proposal
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship --size S
   eq "answer exit" 0 "$code"
   # When
   fs_go check acme/app
   # Then
   has stdout '"message":"/ship #42"' "$out"
+}
+
+t_fs_ready_to_build_ships() {
+  # Given: a run of #42, open, ready-to-build with no size label
+  fs_setup; fs_issue 42 OPEN '["ready-to-build"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/ship #42"' "$out"
+  has stdout '"effort":"medium"' "$out"
+  has stdout '"stage":"ticket"' "$out"
+}
+
+t_fs_ship_answer_needs_size() {
+  # Given: a run of unlabeled #42, proposed grill, so the proposal holds no size
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go change acme/app answer 42 ship
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no size for /ship: size it from the code, then answer ship --size XS|S|M|L|XL" "$err"
+}
+
+t_fs_yes_writes_labels() {
+  # Given: unlabeled #42 to #45, proposed grill, triage, ship at S, and task
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_issue 45 OPEN '[]'
+  fs_start 42 43 44 45
+  fs_go proposed acme/app 42 grill; fs_go proposed acme/app 43 triage
+  fs_go proposed acme/app 44 ship --size S; fs_go proposed acme/app 45 task
+  # When
+  fs_go change acme/app answer all yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 seed
+labeled #43 bug
+labeled #44 size/S
+labeled #45 manual" "$out"
+  eq "first edit" "issue edit 42 --repo acme/app --add-label seed" "$(sed -n 1p "$FAKE_GH/issue-edit.args")"
+}
+
+t_fs_no_label_answers() {
+  # Given: unlabeled #42 to #45
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_issue 45 OPEN '[]'
+  fs_start 42 43 44 45
+  local a got=""
+  for a in "42 close" "43 skip" "44 ready-pr" "45 xxl"; do
+    # When
+    # shellcheck disable=SC2086 # the issue and the answer, as two words
+    fs_go change acme/app answer $a
+    got="$got[$code:$out]"
+  done
+  # Then
+  eq answers "[0:][0:][0:][0:]" "$got"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
+}
+
+t_fs_refused_label_starts() {
+  # Given: unlabeled #42, proposed grill; GitHub refuses the label
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  printf 'HTTP 403: Resource not accessible by integration\n' > "$FAKE_GH/issue-edit.fail"
+  # When
+  fs_go change acme/app answer 42 yes
+  eq "answer exit" 0 "$code"
+  eq "answer stdout" "not labeled #42: HTTP 403: Resource not accessible by integration" "$out"
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/grill #42"' "$out"
+}
+
+t_fs_ship_answer_size_starts() {
+  # Given: unlabeled #42, proposed grill
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  eq "answer stdout" "labeled #42 size/M" "$out"
+  eq proposal '{"route":"grill","answer":"ship","size":"M","labeled":"size/M"}' "$(fs_state '.proposals["acme/app#42"]')"
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship #42"' "$out"
+  has stdout '"effort":"high"' "$out"
+}
+
+t_fs_second_answer_labels_again() {
+  # Given: unlabeled #42, proposed grill, answered yes once
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 seed" "$out"
+  eq "edit calls" 2 "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
+t_fs_routed_issue_not_labeled() {
+  # Given: unlabeled #42 proposed grill; then a teammate labels it size/M
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  fs_issue 42 OPEN '["size/M"]'
+  # When
+  fs_go change acme/app answer all yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: size M" "$out"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
+}
+
+t_fs_changed_answer_swaps_label() {
+  # Given: unlabeled #42 answered grill, so GitHub gave it seed
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  fs_issue 42 OPEN '["p1","seed"]'
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 size/M, took off seed" "$out"
+  eq "second edit" "issue edit 42 --repo acme/app --add-label size/M --remove-label seed" "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
+}
+
+t_fs_teammate_label_stays() {
+  # Given: #42 proposed grill; a teammate labels it seed before the yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  fs_issue 42 OPEN '["p1","seed"]'; fs_go change acme/app answer 42 yes
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: seed" "$out"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
+}
+
+t_fs_removed_label_not_owned() {
+  # Given: #42 answered grill, so it got seed; seed came off on GitHub, the
+  # user skipped it, and a teammate put seed back
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  fs_issue 42 OPEN '["p1"]'; fs_go change acme/app answer 42 skip
+  fs_issue 42 OPEN '["p1","seed"]'
+  # When
+  fs_go change acme/app answer 42 triage
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: seed" "$out"
+  eq "edit calls" 1 "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
+t_fs_missing_label_made() {
+  # Given: unlabeled #42 proposed task, in a repo with no manual label
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task
+  printf "failed to update https://github.com/acme/app/issues/42: 'manual' not found\n" > "$FAKE_GH/issue-edit.1.fail"
+  echo https://github.com/acme/app/labels/manual > "$FAKE_GH/label-create.json"
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 manual (made the label)" "$out"
+  eq "label create" "label create manual --repo acme/app --color 6E7781 --description Work in a platform outside the repo; /complete-task drives it" "$(cat "$FAKE_GH/label-create.args")"
+  eq "edit calls" 2 "$(cat "$FAKE_GH/issue-edit.calls")"
 }
 
 t_fs_all_yes() {
@@ -2038,7 +2251,7 @@ t_fs_label_wins_answer() {
 
 t_fs_ship_started_answer() {
   # Given: unlabeled #42 answered ship and set to ready; its thread t42 started
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship --size S
   fs_go change acme/app ship ready 42; fs_record 42 unlabeled t42
   # When
   fs_go change acme/app ship merge 42
@@ -2188,7 +2401,6 @@ t_fs_board_launch_failed_yours() {
 
 t_fs_waiting_task_no_turn() {
   # Given: #42 manual and waiting, whose task thread started; #43 manual
-  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
   fs_record 42 task t42
   # When
@@ -2378,7 +2590,6 @@ t_fs_board_links() {
 t_fs_board_order() {
   # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a
   # ticket whose launch failed
-  # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'
   fs_start 42 43 44
   fs_set_state '.threads += [{number: 44, stage: "ticket", thread: null, link: null, status: "failed", why: "no reply"}]'
@@ -2766,7 +2977,6 @@ cases=(
   "a started issue keeps its ship mode|t_fs_ship_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
   "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
-  "a gh failure in decide fails the check|t_fs_decide_gh_fail_starts_nothing"
   "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
   "the third failure in a row asks the user to act|t_fs_third_failure_asks"
   "the check writes nothing to GitHub|t_fs_check_writes_nothing"
@@ -2842,6 +3052,10 @@ cases=(
   "a ship proposal needs a size|t_fs_proposed_ship_needs_size"
   "proposed refuses a bad size|t_fs_proposed_bad_size"
   "a task proposal takes no size|t_fs_proposed_task_no_size"
+  "an xxl proposal takes no size|t_fs_proposed_xxl_no_size"
+  "an XXL issue starts nothing and asks you to cut it|t_fs_xxl_starts_nothing"
+  "an xxl proposal answered yes starts nothing|t_fs_xxl_answer_starts_nothing"
+  "a cut XXL issue brings its sub-issues|t_fs_cut_xxl_brings_subs"
   "a close proposal has no model|t_fs_proposed_no_model"
   "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
   "an answer keeps the size|t_fs_answer_keeps_size"
@@ -2849,6 +3063,20 @@ cases=(
   "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
   "a ship answer starts ship|t_fs_ship_answer_starts"
+  "a ready-to-build ticket with no size ships|t_fs_ready_to_build_ships"
+  "a ship answer with no size stops|t_fs_ship_answer_needs_size"
+  "a yes writes the label that fits|t_fs_yes_writes_labels"
+  "close, skip, ready-pr, and xxl write no label|t_fs_no_label_answers"
+  "a refused label write still starts|t_fs_refused_label_starts"
+  "a ship answer records its size and starts|t_fs_ship_answer_size_starts"
+  "a second answer writes the label again|t_fs_second_answer_labels_again"
+  "an issue its labels route gets no label|t_fs_routed_issue_not_labeled"
+  "a changed answer swaps the label|t_fs_changed_answer_swaps_label"
+  "a missing label is made, then added|t_fs_missing_label_made"
+  "a teammate's label stays when the answer changes|t_fs_teammate_label_stays"
+  "a label gone from the issue is no longer the run's|t_fs_removed_label_not_owned"
+  "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
+  "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"
