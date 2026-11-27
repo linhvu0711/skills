@@ -1022,6 +1022,18 @@ t_fs_new_pr_keeps_two_prs_wait() {
   has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
 }
 
+t_fs_sizeless_ship_answer_proposes() {
+  # Given: unlabeled #42 answered ship with no size, as a run before sizes were needed saved it
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  local st; st="$(fs_run)/state.json"
+  jq '.proposals["acme/app#42"] = {route: null, answer: "ship"}' "$st" > "$st.new" && mv "$st.new" "$st"
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"propose":["acme/app#42"]' "$out"
+}
+
 t_fs_all_closed_done() {
   # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
@@ -2995,6 +3007,7 @@ cases=(
   "a ship answer records its size and starts|t_fs_ship_answer_size_starts"
   "a second answer writes the label again|t_fs_second_answer_labels_again"
   "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
+  "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"

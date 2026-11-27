@@ -705,8 +705,10 @@ observe() {
     $rows != [] and all($rows[];
       (.stage == "done" or (.stage == "epic" and ready(.ref)))
       and all(.prs[]; .state != "OPEN"))' <<<"null")"
-  # propose: the unlabeled issues with no proposal yet.
-  propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled" and (($S.proposals // {})[.ref] == null)) | .ref]' <<<"$S")"
+  # propose: the unlabeled issues with no proposal yet, and those answered
+  # ship with no size, as a run saved them before a ship answer needed one.
+  propose="$(jq -c --argjson rows "$rows" '. as $S | [$rows[] | select(.stage == "unlabeled"
+    and (($S.proposals // {})[.ref] | . == null or (.answer == "ship" and .size == null))) | .ref]' <<<"$S")"
   # settles: the /grill and /triage threads whose issue moved to a new stage,
   # once they finished or failed, while T3 shows them not settled. A thread
   # the run settled stays the user's after that; one it kept waits for a new
