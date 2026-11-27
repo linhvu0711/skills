@@ -207,17 +207,23 @@ A prompt with a `# Perf` block, or a layer with a `## Perf` block, measures afte
   Links into the Cursor app do not count as proof.
 <!-- /cursor -->
 <!-- /cloud -->
-- The size label. Size the PR's own diff with the table under § Size below, the same table the issue was sized with. The diff is against the branch under `Base` for that layer, so a stacked PR counts only its layer. Put the label the prompt names under `Size labels` for that size on the PR: `gh pr edit <n> --add-label "<label>"`. One size label per PR. A `Size labels` line that starts with `bot`: the repo's workflow puts the label on; your part is the facts and the sentence below. The issue's size (the `size` after the issue line, or the `Size` column of `Stack`) was a forecast; the diff is the measurement. Same size: nothing to say. Any other size: one sentence in `Summary`, as in `Issue said S; the PR is M: 7 files, one new route, because the form needed its own validator`, and the same line in the finish message. The plan stands as written and the PR stays one PR. An L or XL from an issue sized XS or S is more likely a wrong base or a committed generated file than real work: check the base branch and the file list before you label.
+- The size label. Count the PR's own diff with the script under § Size below, against the branch under `Base` for that layer, so a stacked PR counts only its layer, and put on the label the prompt names under `Size labels` for that size, per § The pull request, Label. One size label per PR. `Size labels: none`: no size label, and none created. A `Size labels` line that starts with `bot`: the repo's workflow puts the label on; your part is the sentence below. The issue's size (the `size` after the issue line, or the `Size` column of `Stack`) was a forecast; the count is the measurement. Same size: nothing to say. Any other size: one sentence in `Summary`, as in `Issue said S; the PR is M, because the form needed its own validator`, and the same line in the finish message. The plan stands as written and the PR stays one PR. An XL or XXL from an issue sized XS or S is more likely a wrong base or a committed generated file than real work: check the base branch and the file list before you label.
 <!-- devin -->
-- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label, or any gate is red.
+- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label while `Size labels` names some, or any gate is red.
 <!-- /devin -->
 <!-- cursor -->
-- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label, any check is red, or any gate is red.
+- A PR is not ready while any Done-when line has an empty `Test` cell, it has no size label while `Size labels` names some, any check is red, or any gate is red.
 <!-- /cursor -->
 
 ## Size
 
 <!-- include ../size.md -->
+
+The script `size.py`. Save it as `size.py` outside the repo and run `python3 <that file> origin/<base>` in the checkout:
+
+```python
+<!-- include ../size.py -->
+```
 
 ## After the PR opens
 
@@ -323,10 +329,10 @@ Sort each one:
 ## Finish
 
 <!-- devin -->
-When every gate holds, every Done-when line has its proof, and the review posts nothing: size the diff once more, since review fixes moved it, and when the size changed swap the label (`--remove-label` the old, `--add-label` the new). Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Then send one message with the PR URL, the size with its facts and line count, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL this session created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Then stop. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
+When every gate holds, every Done-when line has its proof, and the review posts nothing: run the count once more, since review fixes moved it, and when the size changed swap the label per § The pull request, Label. Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Then send one message with the PR URL, the size letter, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL this session created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Then stop. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
 <!-- /devin -->
 <!-- cursor -->
-When every gate holds, every check is green, every Done-when line has its proof, and the review posts nothing: size the diff once more, since review fixes moved it, and when the size changed swap the label (`--remove-label` the old, `--add-label` the new). Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Mark the PR ready, `gh pr ready <n>`. Then end the turn with one message: the PR URL, the size with its facts and line count, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL you created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
+When every gate holds, every check is green, every Done-when line has its proof, and the review posts nothing: run the count once more, since review fixes moved it, and when the size changed swap the label per § The pull request, Label. Check every review thread: each one resolved carries a commit SHA, an issue URL, or a push-back fact. Mark the PR ready, `gh pr ready <n>`. Then end the turn with one message: the PR URL, the size letter, then every surprise and every review comment, one line each with its verdict and its SHA or issue URL, and a `Filed:` line listing every issue URL you created (or `Filed: none`); in a run one such block per layer in stack order. The proof is already in the PR. Secrets, tokens, and keys stay out of the PR, the commits, the screenshots, and the videos.
 <!-- /cursor -->
 <!-- local -->
 When every slice is committed and its tests, the typecheck, and lint are green, end the turn with one message: every surprise, one line each, then as the last line `BUILT <branch>`, the branch under `Branch`. Something stays red and you could not close it: the same message, last line `NOT BUILT <branch>: <what is open>`. Secrets, tokens, and keys stay out of the commits.
