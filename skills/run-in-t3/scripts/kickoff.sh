@@ -135,10 +135,10 @@ issue_of() {
   printf '%s\n' "$i"
 }
 
-# given_for <list> <n>: the word or size a --answer or --size gave issue n.
+# given_for <n> <n=value>...: the value a --answer or --size gave issue n.
 given_for() {
-  local a
-  for a in $1; do [ "${a%%=*}" != "$2" ] || { echo "${a#*=}"; return; }; done
+  local n="$1" a; shift
+  for a in "$@"; do [ "${a%%=*}" != "$n" ] || { echo "${a#*=}"; return; }; done
 }
 
 # check_given <n>...: every --answer and --size names one of these issues.
@@ -154,7 +154,7 @@ check_given() {
 route_one() {
   local line n a z flags=()
   n="$(jq -r .number <<<"$1")"
-  a="$(given_for "${answers[*]-}" "$n")"; z="$(given_for "${sizes[*]-}" "$n")"
+  a="$(given_for "$n" ${answers[@]+"${answers[@]}"})"; z="$(given_for "$n" ${sizes[@]+"${sizes[@]}"})"
   [ -z "$a" ] || flags+=(--answer "$a")
   [ -z "$z" ] || [ "$a" != ship ] || flags+=(--size "$z")
   line="$(bash "$core/route/router.sh" ${router_flags[@]+"${router_flags[@]}"} ${flags[@]+"${flags[@]}"} <<<"$1")" || exit
