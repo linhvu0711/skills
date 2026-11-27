@@ -21,6 +21,8 @@ size_of() {
 # The allow-lists, each a |-list.
 effort_list='low|medium|high|xhigh|max'
 ship_mode_list='review|ready|merge'
+# The steps a user may pick by name, as "triage it", over the labels.
+pick_list='triage|grill|ready-pr'
 # A guess is never XXL: XXL work is cut into tickets (shared/size.md).
 size_list='XS|S|M|L|XL'
 # The words a proposal and an answer name a step by.

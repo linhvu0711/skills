@@ -354,6 +354,16 @@ t_kt_stack_pr_unreadable() {
   eq "last stderr line" "stop: gh could not read PR #999 in acme/app: no pull requests found" "$(printf '%s\n' "$err" | tail -1)"
 }
 
+t_kt_pick_thread() {
+  # Given: #44 size S, and the user said "triage it"
+  kt_setup found
+  # When
+  kt_go thread acme/app --pick 44=triage triage 44
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kt_thread triage high "you picked /triage" "/triage #44" "#44 Export orders" found)" "$out"
+}
+
 t_kt_bug_in_ship() {
   # Given: #44 size S, #15 a bug
   kt_setup found
@@ -440,6 +450,7 @@ cases=(
   "a stack on an open PR names it|t_kt_stack_on_open_pr"
   "a stack on a merged PR stops|t_kt_stack_on_merged_pr"
   "a stack PR gh cannot read stops|t_kt_stack_pr_unreadable"
+  "a picked step beats the size label|t_kt_pick_thread"
   "a bug in a ship thread stops|t_kt_bug_in_ship"
   "only ship takes several issues|t_kt_only_ship_many"
   "an answer gives the proposal its effort|t_kt_answer_effort"

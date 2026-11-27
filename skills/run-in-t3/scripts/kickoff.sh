@@ -2,12 +2,16 @@
 # kickoff.sh: read issues, ask the Router what each one's thread runs, and
 # build the line that starts a thread, for run-in-t3.
 #
-# Usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
+# Usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--pick <n>=<step>]...
+#                   [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
 #        kickoff.sh thread <owner/repo> [--heading H] [--mode review|ready|merge]
-#                   [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]...
+#                   [--model M] [--effort E] [--pick <n>=<step>]...
+#                   [--answer <n>=<word>]... [--size <n>=<size>]...
 #                   [--on <pr-n>] <step> <n>...
 #        kickoff.sh label <owner/repo> <n> <word> [--size <size>]
 #
+# --pick is a step the user named for issue <n>, a word of pick_list in
+# shared/route/labels.sh; it wins over the labels.
 # --answer is the user's answer to a Proposal for issue <n>, a word of
 # route_list in shared/route/labels.sh, and --size its size when the word is
 # ship. Each goes to the Router for that issue only; a label always wins.
@@ -49,8 +53,8 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
-       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... [--on <pr-n>] <step> <n>...
+usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--pick <n>=<step>]... [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
+       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--pick <n>=<step>]... [--answer <n>=<word>]... [--size <n>=<size>]... [--on <pr-n>] <step> <n>...
        kickoff.sh label <owner/repo> <n> <word> [--size <size>]"
 
 # The T3 check comes first, so nothing is read outside T3 Code.
@@ -63,7 +67,7 @@ slug="${1:-}"
 [[ "$slug" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || die_usage "$usage" "first argument must be <owner/repo>, got: ${slug:-nothing}"
 shift
 
-heading=""; mode=""; on=""; router_flags=(); nums=(); answers=(); sizes=(); label_size=""
+heading=""; mode=""; on=""; router_flags=(); nums=(); picks=(); answers=(); sizes=(); label_size=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --heading) [ "$cmd" = thread ] && [ -n "${2:-}" ] || die_usage "$usage" "--heading needs text, with thread"; heading="$2"; shift 2 ;;
@@ -72,6 +76,11 @@ while [ $# -gt 0 ]; do
       mode="$2"; shift 2 ;;
     --on) [ "$cmd" = thread ] && [[ "${2:-}" =~ ^#?[0-9]+$ ]] || die_usage "$usage" "--on needs a PR number, with thread"; on="${2#\#}"; shift 2 ;;
     --model|--effort) [ "$cmd" != label ] && [ -n "${2:-}" ] || die_usage "$usage" "$1 needs a value, with route or thread"; router_flags+=("$1" "$2"); shift 2 ;;
+    --pick)
+      a="${2:-}"; a="${a#\#}"
+      [ "$cmd" != label ] && [[ "$a" =~ ^[0-9]+= ]] && one_of "$pick_list" "${a#*=}" \
+        || die_usage "$usage" "--pick takes <n>=$(spelled "$pick_list"), with route or thread, got: ${2:-nothing}"
+      picks+=("$a"); shift 2 ;;
     --answer)
       a="${2:-}"; a="${a#\#}"
       [ "$cmd" != label ] && [[ "$a" =~ ^[0-9]+= ]] && one_of "$route_list" "${a#*=}" \
@@ -136,25 +145,29 @@ issue_of() {
   printf '%s\n' "$i"
 }
 
-# given_for <n> <n=value>...: the value a --answer or --size gave issue n.
+# given_for <n> <n=value>...: the value a --pick, --answer, or --size gave
+# issue n.
 given_for() {
   local n="$1" a; shift
   for a in "$@"; do [ "${a%%=*}" != "$n" ] || { echo "${a#*=}"; return; }; done
 }
 
-# check_given <n>...: every --answer and --size names one of these issues.
+# check_given <n>...: every --pick, --answer, and --size names one of these
+# issues.
 check_given() {
   local a
-  for a in ${answers[@]+"${answers[@]}"} ${sizes[@]+"${sizes[@]}"}; do
-    case " $* " in *" ${a%%=*} "*) ;; *) die_usage "$usage" "--answer or --size names #${a%%=*}, which is not in this call" ;; esac
+  for a in ${picks[@]+"${picks[@]}"} ${answers[@]+"${answers[@]}"} ${sizes[@]+"${sizes[@]}"}; do
+    case " $* " in *" ${a%%=*} "*) ;; *) die_usage "$usage" "--pick, --answer, or --size names #${a%%=*}, which is not in this call" ;; esac
   done
 }
 
-# route_one <issue json>: the issue's route line, with the user's answer
-# for it, if any.
+# route_one <issue json>: the issue's route line, with the user's pick and
+# answer for it, if any.
 route_one() {
-  local line n a z flags=()
+  local line n p a z flags=()
   n="$(jq -r .number <<<"$1")"
+  p="$(given_for "$n" ${picks[@]+"${picks[@]}"})"
+  [ -z "$p" ] || flags+=(--pick "$p")
   a="$(given_for "$n" ${answers[@]+"${answers[@]}"})"; z="$(given_for "$n" ${sizes[@]+"${sizes[@]}"})"
   [ -z "$a" ] || flags+=(--answer "$a")
   [ -z "$z" ] || [ "$a" != ship ] || flags+=(--size "$z")
