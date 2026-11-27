@@ -60,7 +60,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
-. "$core/kickoff/labels.sh"
+. "$core/route/labels.sh"
 . "$core/gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }

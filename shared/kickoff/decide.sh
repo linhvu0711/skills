@@ -37,8 +37,8 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-# shellcheck source=labels.sh
-. "$here/labels.sh"
+# shellcheck source=../route/labels.sh
+. "$here/../route/labels.sh"
 . "$here/../gh.sh"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }

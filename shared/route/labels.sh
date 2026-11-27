@@ -1,8 +1,8 @@
-# labels.sh: the size rule, the allow-lists, and the analysis row that
-# decide.sh and the orchestrator's script share. Source it; it defines values
-# and functions and runs nothing.
+# labels.sh: the label rule, the allow-lists, and the analysis row that the
+# Router, decide.sh, and the orchestrator's script share. Source it; it
+# defines values and functions and runs nothing.
 #
-# size_of <label>: XS, S, M, L, or XL when the label names a size, matched
+# size_of <label>: XS, S, M, L, XL, or XXL when the label names a size, matched
 # loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
 size_of() {
   case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
@@ -11,6 +11,7 @@ size_of() {
     m|med|medium) echo M ;;
     l|large) echo L ;;
     xl|xlarge|extralarge) echo XL ;;
+    xxl|xxlarge|extraextralarge) echo XXL ;;
   esac
 }
 
@@ -18,10 +19,13 @@ size_of() {
 # own sizes array.
 effort_list='low|medium|high|xhigh|max'
 ship_mode_list='review|ready|merge'
+# A guess is never XXL: XXL work is cut into tickets (shared/size.md).
 size_list='XS|S|M|L|XL'
+# The words a proposal and an answer name a step by.
+route_list='grill|triage|ship|ready-pr|task|close|xxl'
 
-# The analysis row: the model and effort decide.sh gives /grill and /triage,
-# and the orchestrator gives the retro.
+# The analysis row: the model and effort the Router and decide.sh give
+# /grill and /triage, and the orchestrator gives the retro.
 analysis_model=opus
 analysis_effort=high
 

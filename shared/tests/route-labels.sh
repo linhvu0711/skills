@@ -1,11 +1,11 @@
-# kickoff-labels.sh: the cases for the shared core's kickoff/labels.sh, the
-# size rule that decide.sh and the orchestrator's check both read. The repo's
+# route-labels.sh: the cases for the shared core's route/labels.sh, the
+# label rule the Router, decide.sh, and the orchestrator's check read. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # The size rule.
-L="$here/../kickoff/labels.sh"
+L="$here/../route/labels.sh"
 
 # kl_size <label>: size_of on the label, in a fresh shell that sourced L.
 kl_size() {
@@ -37,8 +37,17 @@ t_kl_no_size() {
   eq stdout "" "$out"
 }
 
+t_kl_size_xxl() {
+  # Given: labels.sh sourced
+  # When
+  kl_size size/XXL
+  # Then
+  eq stdout XXL "$out"
+}
+
 cases=(
   "size/M reads as M|t_kl_size_slash"
   "Size: Medium reads as M|t_kl_size_words"
   "p1 is no size|t_kl_no_size"
+  "an XXL label is XXL|t_kl_size_xxl"
 )
