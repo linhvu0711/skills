@@ -2,9 +2,15 @@
 # kickoff.sh: read issues, ask the Router what each one's thread runs, and
 # build the line that starts a thread, for run-in-t3.
 #
-# Usage: kickoff.sh route <owner/repo> [--model M] [--effort E] <n>...
+# Usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
 #        kickoff.sh thread <owner/repo> [--heading H] [--mode review|ready|merge]
-#                   [--model M] [--effort E] [--on <pr-n>] <step> <n>...
+#                   [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]...
+#                   [--on <pr-n>] <step> <n>...
+#        kickoff.sh label <owner/repo> <n> <word> [--size <size>]
+#
+# --answer is the user's answer to a Proposal for issue <n>, a word of
+# route_list in shared/route/labels.sh, and --size its size when the word is
+# ship. Each goes to the Router for that issue only; a label always wins.
 #
 # route: one JSON line per issue, in the order named: number, title,
 # parent, and the Router's line (shared/route/router.sh). An epic's line is
@@ -19,6 +25,12 @@
 # done, as /ship's plan lists tasks itself. The thread's effort is the
 # highest of its issues. --on <pr-n> makes one ticket a new layer on that
 # PR's stack.
+# label: write the answer <word> to issue <n> as the label that fits
+# (answer_label in labels.sh), through shared/route/edit-labels.sh. One
+# line: `labeled #<n> <label>`, with ` (made the label)` when the repo
+# lacked it; `not labeled #<n>: <why>` when its labels already route it or
+# GitHub refused. An answer with no label prints nothing.
+#
 # The agent starts the thread from this line with T3's tools, per
 # shared/launch/launch-t3.md: `t3 thread start` takes no effort, and a
 # script cannot call T3's tools.
@@ -36,20 +48,21 @@ core="$here/../../../shared"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] <n>...
-       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--on <pr-n>] <step> <n>..."
+usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
+       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... [--on <pr-n>] <step> <n>...
+       kickoff.sh label <owner/repo> <n> <word> [--size <size>]"
 
 # The T3 check comes first, so nothing is read outside T3 Code.
 bash "$core/t3-cli.sh" >/dev/null || exit 1
 for c in jq gh; do command -v "$c" >/dev/null || die "$c is not installed"; done
 
 cmd="${1:-}"
-case "$cmd" in route|thread) shift ;; *) die_usage "$usage" ;; esac
+case "$cmd" in route|thread|label) shift ;; *) die_usage "$usage" ;; esac
 slug="${1:-}"
 [[ "$slug" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || die_usage "$usage" "first argument must be <owner/repo>, got: ${slug:-nothing}"
 shift
 
-heading=""; mode=""; on=""; router_flags=(); nums=()
+heading=""; mode=""; on=""; router_flags=(); nums=(); answers=(); sizes=(); label_size=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --heading) [ "$cmd" = thread ] && [ -n "${2:-}" ] || die_usage "$usage" "--heading needs text, with thread"; heading="$2"; shift 2 ;;
@@ -57,7 +70,23 @@ while [ $# -gt 0 ]; do
       [ "$cmd" = thread ] && one_of "$ship_mode_list" "${2:-}" || die_usage "$usage" "--mode must be $(spelled "$ship_mode_list"), with thread, got: ${2:-nothing}"
       mode="$2"; shift 2 ;;
     --on) [ "$cmd" = thread ] && [[ "${2:-}" =~ ^#?[0-9]+$ ]] || die_usage "$usage" "--on needs a PR number, with thread"; on="${2#\#}"; shift 2 ;;
-    --model|--effort) [ -n "${2:-}" ] || die_usage "$usage" "$1 needs a value"; router_flags+=("$1" "$2"); shift 2 ;;
+    --model|--effort) [ "$cmd" != label ] && [ -n "${2:-}" ] || die_usage "$usage" "$1 needs a value, with route or thread"; router_flags+=("$1" "$2"); shift 2 ;;
+    --answer)
+      a="${2:-}"; a="${a#\#}"
+      [ "$cmd" != label ] && [[ "$a" =~ ^[0-9]+= ]] && one_of "$route_list" "${a#*=}" \
+        || die_usage "$usage" "--answer takes <n>=$(spelled "$route_list"), with route or thread, got: ${2:-nothing}"
+      answers+=("$a"); shift 2 ;;
+    --size)
+      z="$(printf '%s' "${2:-}" | tr '[:lower:]' '[:upper:]')"
+      if [ "$cmd" = label ]; then
+        one_of "$size_list" "$z" || die_usage "$usage" "--size must be $(spelled "$size_list"), got: ${2:-nothing}"
+        label_size="$z"
+      else
+        z="${z#\#}"
+        [[ "$z" =~ ^[0-9]+= ]] && one_of "$size_list" "${z#*=}" || die_usage "$usage" "--size takes <n>=$size_list, got: ${2:-nothing}"
+        sizes+=("$z")
+      fi
+      shift 2 ;;
     -*) die_usage "$usage" "unexpected argument: $1" ;;
     *) nums+=("$1"); shift ;;
   esac
@@ -71,6 +100,13 @@ if [ "$cmd" = thread ]; then
   [ "${#nums[@]}" -le 1 ] || [ "$step" = ship ] || die_usage "$usage" "only ship takes several issues"
   [ -z "$mode" ] || [ "$step" = ship ] || die_usage "$usage" "--mode goes only with ship"
   [ -z "$on" ] || { [ "$step" = ship ] && [ "${#nums[@]}" -eq 1 ]; } || die_usage "$usage" "--on goes only with ship and one issue"
+fi
+word=""
+if [ "$cmd" = label ]; then
+  [ "${#nums[@]}" -eq 2 ] || die_usage "$usage" "label takes one issue and one word"
+  word="${nums[1]}"; nums=("${nums[0]}")
+  one_of "$route_list" "$word" || die_usage "$usage" "the word must be $(spelled "$route_list"), got: $word"
+  [ "$word" != ship ] || [ -n "$label_size" ] || die_usage "$usage" "a ship answer needs --size"
 fi
 [ "${#nums[@]}" -gt 0 ] || die_usage "$usage" "name at least one issue"
 for n in "${nums[@]}"; do
@@ -99,10 +135,29 @@ issue_of() {
   printf '%s\n' "$i"
 }
 
-# route_one <issue json>: the issue's route line.
+# given_for <list> <n>: the word or size a --answer or --size gave issue n.
+given_for() {
+  local a
+  for a in $1; do [ "${a%%=*}" != "$2" ] || { echo "${a#*=}"; return; }; done
+}
+
+# check_given <n>...: every --answer and --size names one of these issues.
+check_given() {
+  local a
+  for a in ${answers[@]+"${answers[@]}"} ${sizes[@]+"${sizes[@]}"}; do
+    case " $* " in *" ${a%%=*} "*) ;; *) die_usage "$usage" "--answer or --size names #${a%%=*}, which is not in this call" ;; esac
+  done
+}
+
+# route_one <issue json>: the issue's route line, with the user's answer
+# for it, if any.
 route_one() {
-  local line
-  line="$(bash "$core/route/router.sh" ${router_flags[@]+"${router_flags[@]}"} <<<"$1")" || exit
+  local line n a z flags=()
+  n="$(jq -r .number <<<"$1")"
+  a="$(given_for "${answers[*]-}" "$n")"; z="$(given_for "${sizes[*]-}" "$n")"
+  [ -z "$a" ] || flags+=(--answer "$a")
+  [ -z "$z" ] || [ "$a" != ship ] || flags+=(--size "$z")
+  line="$(bash "$core/route/router.sh" ${router_flags[@]+"${router_flags[@]}"} ${flags[@]+"${flags[@]}"} <<<"$1")" || exit
   jq -c --argjson r "$line" '{number, title, parent: (.parent.number // null)} + $r' <<<"$1"
 }
 
@@ -112,14 +167,39 @@ open_subs() { jq -r '(.subIssues.nodes // [])[] | select(.state == "OPEN") | .nu
 issues="$(read_issues "${nums[@]}")"
 
 if [ "$cmd" = route ]; then
+  lines=(); routed=()
   for n in "${nums[@]}"; do
     i="$(issue_of "$issues" "$n")"
-    route_one "$i"
+    lines+=("$(route_one "$i")"); routed+=("$n")
     subs=(); while IFS= read -r s; do [ -z "$s" ] || subs+=("$s"); done < <(open_subs "$i")
     [ "${#subs[@]}" -gt 0 ] || continue
     sub_issues="$(read_issues "${subs[@]}")"
-    for s in "${subs[@]}"; do route_one "$(issue_of "$sub_issues" "$s")"; done
+    for s in "${subs[@]}"; do lines+=("$(route_one "$(issue_of "$sub_issues" "$s")")"); routed+=("$s"); done
   done
+  check_given "${routed[@]}"
+  printf '%s\n' "${lines[@]}"
+  exit 0
+fi
+
+# ---------- label ----------
+if [ "$cmd" = label ]; then
+  n="${nums[0]}"
+  lab="$(answer_label "$slug" "$word" "$label_size")" || exit 1
+  [ -n "$lab" ] || exit 0
+  i="$(issue_of "$issues" "$n")"
+  if jq -e --arg l "$lab" 'any(.labels.nodes[]?; (.name | ascii_downcase) == ($l | ascii_downcase))' <<<"$i" >/dev/null; then
+    echo "labeled #$n $lab"; exit 0
+  fi
+  r="$(route_one "$i")"
+  if [ "$(jq -r .stage <<<"$r")" != unlabeled ]; then
+    echo "not labeled #$n: its labels route it: $(jq -r .reason <<<"$r")"; exit 0
+  fi
+  errf="$(mktemp)"; trap 'rm -f "$errf"' EXIT
+  if edited="$(bash "$core/route/edit-labels.sh" "$slug" "$n" --add "$lab" 2>"$errf")"; then
+    if [ "$edited" = made ]; then echo "labeled #$n $lab (made the label)"; else echo "labeled #$n $lab"; fi
+  else
+    e="$(tail -1 "$errf")"; echo "not labeled #$n: ${e#stop: }"
+  fi
   exit 0
 fi
 
@@ -158,6 +238,7 @@ for n in "${counted[@]}"; do
   if [ -z "$top" ] || [ "$(rank "$(jq -r .effort <<<"$r")")" -gt "$(rank "$(jq -r .effort <<<"$top")")" ]; then top="$r"; fi
 done
 [ "$k" -gt 0 ] || die "#${nums[0]} has no open ticket for /ship"
+check_given "${counted[@]}"
 [ "$k" -eq 1 ] || top="$(jq -c --arg k "$k" '.reason += " of \($k) tickets"' <<<"$top")"
 
 # The /ship target: the whole epic, a run under the tickets' one parent, or

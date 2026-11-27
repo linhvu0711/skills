@@ -904,11 +904,11 @@ cmd_proposed() {
 # issue as its label, per answer_label, after a read of the issue, and keep
 # it as the proposal's `labeled`. That label comes off in the same edit when
 # the answer changes, so a changed answer leaves one label. An issue another label, or its state, already routes
-# gets none: the Router reads that one first. A label the repo lacks is
-# made from label_spec, then the edit runs once more. Prints one line per ref whose
+# gets none: the Router reads that one first. The shared label writer,
+# route/edit-labels.sh, makes a label the repo lacks. Prints one line per ref whose
 # answer has or had a label; the thread starts either way.
 label_answers() {
-  local refs=() r got j new old edit=() routed made spec ok
+  local refs=() r got j new old edit=() routed made edited ok
   while IFS= read -r r; do refs+=("$r"); done <<<"$2"
   if ! got="$(read_issues "${refs[@]}")"; then
     for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
@@ -939,18 +939,14 @@ label_answers() {
       continue
     fi
     edit=()
-    [ -z "$new" ] || edit+=(--add-label "$new")
-    [ -z "$old" ] || edit+=(--remove-label "$old")
+    [ -z "$new" ] || edit+=(--add "$new")
+    [ -z "$old" ] || edit+=(--remove "$old")
     [ ${#edit[@]} -gt 0 ] || continue
     made=""; ok=true
-    if ! gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
-      ok=false
-      spec=""
-      [ -z "$new" ] || [[ "$err" != *"'$new' not found"* ]] || spec="$(label_spec "$new")"
-      if [ -n "$spec" ] && gh_out label create "$new" --repo "${r%#*}" --color "$(sed -n 1p <<<"$spec")" --description "$(sed -n 2p <<<"$spec")" \
-          && gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
-        ok=true; made=" (made the label)"
-      fi
+    if edited="$(bash "$core/route/edit-labels.sh" "${r%#*}" "${r##*#}" "${edit[@]}" 2>"$errf")"; then
+      [ "$edited" != made ] || made=" (made the label)"
+    else
+      ok=false; err="$(tail -1 "$errf")"; err="${err#stop: }"
     fi
     if [ "$ok" = true ]; then
       # Saved before the next issue, so a batch cut short keeps it.

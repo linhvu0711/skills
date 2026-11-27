@@ -18,7 +18,23 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
    ```
 
    It prints one JSON line per issue: `number`, `title`, `parent`, and the Router's `stage`, `step`, `stop`, `model`, `model_from`, `effort`, `effort_from`, `reason`, and `pr`. Hold them.
-3. **Propose.** A line at stage `unlabeled` gets no thread: its report line is `no thread, no label picks a step`.
+3. **Propose.** Each line at stage `unlabeled` and with no step: read the issue (`gh issue view <n> --repo <owner/repo> --json number,title,body,labels,comments`) and guess its route and size per `../../shared/route/propose.md`. Run `route` again for those issues with `--answer <n>=<route>` and, for `ship`, `--size <n>=<size>`, for the model and effort the thread would get. Post one list, and wait. Nothing starts before the answer:
+
+   ```
+   Proposals. Answer in one reply: all yes, #n <skill>, #n yes, or skip #n.
+   #<n> <title> · <what> · <size line> · <model> <effort> · <reason> · "<quote>"
+   #<n> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size line> · "<quote>"
+   ```
+
+   `<what>` is `/<skill>`, `yours` for `task`, `close it` for `close`, or `Cut it with /file-epic` for `xxl`. `<size line>` is the estimate line from `propose.md` § Size; no size, leave it out. `<model> <effort>` is from the `route` line; leave it out for `task`, `close`, and `xxl`. `<quote>` is at most 12 words from the issue that back the reason.
+
+   Each yes, or a skill named for an issue: write it, and post the line it prints:
+
+   ```bash
+   scripts/kickoff.sh label <owner/repo> <n> <word> [--size <size>]
+   ```
+
+   A `#n ship` with no size: size it per `propose.md` § Size first. Then run `route` again with the same `--answer` and `--size` for the answered issues, and pass them to `thread` in step 5 as well, so an issue whose label was not written still routes. A skip, `close`, `task`, or `xxl` answer gets no thread: its report line is `skipped`, `close it`, `a task for you`, or `XXL, cut it with /file-epic`.
 4. **Group.** Put the issues whose line has a step and no `stop` into threads, by the user's words. Only `/ship` threads take several issues; every other step gets one thread per issue. An epic's line has no step: the lines after it are its tickets, and "the whole epic" is one `ship` thread named by the epic alone.
    - No grouping words, and every issue routes to `ship`: one thread for all of them.
    - No grouping words, and the issues route to different steps: ask one question that lists each issue and its step, and wait. Nothing starts before the answer.
@@ -29,7 +45,7 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
 5. **Lines.** For each thread, before any launch:
 
    ```bash
-   scripts/kickoff.sh thread <owner/repo> [--heading H] [--mode M] [--model M] [--effort E] [--on <pr-n>] <step> <n>...
+   scripts/kickoff.sh thread <owner/repo> [--heading H] [--mode M] [--model M] [--effort E] [--answer <n>=<word>]... [--size <n>=<size>]... [--on <pr-n>] <step> <n>...
    ```
 
    A `ship` thread names all its tickets, or one epic alone; `--on` names the PR a ticket stacks on. Pass `--mode` only to a `ship` thread. Hold each JSON line: `step`, `model`, `model_from`, `effort`, `effort_from`, `reason`, `path`, `slash_command`, `message`, `thread_title`, and `project`. A stop on any line starts no thread at all.
@@ -52,6 +68,10 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
 **User:** `/run-in-t3 12 14 15, the rest one thread each`; #12 is `size/S`, #14 `size/M`, #15 `bug`.
 
 `route` gives #12 and #14 `ship`, #15 `triage`. The words group the two tickets and give #15 its own thread: `thread acme/shop ship 12 14` gives `message` `/ship #12 #14`, effort `high`, reason `size M of 2 tickets`; `thread acme/shop triage 15` gives `/triage #15` at `high`. With no words after `12 14 15`, ask first: two steps.
+
+**User:** `/run-in-t3 16`; #16 has no label, and its body says the export button does nothing.
+
+`route` gives stage `unlabeled`. The body names something broken today, so the guess is `triage`. `route acme/shop --answer 16=triage 16` gives effort `high`. Post `Proposals. …` and `#16 Export button · /triage · opus high · broken today · "clicking Export does nothing"`, and wait. The user says `all yes`: `kickoff.sh label acme/shop 16 triage` prints `labeled #16 bug`, and `route` now gives step `triage` from the label.
 
 **User:** `/run-in-t3 42 with sonnet xhigh`, in a session about acme/shop.
 

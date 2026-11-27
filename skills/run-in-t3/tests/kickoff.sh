@@ -281,6 +281,54 @@ t_kt_only_ship_many() {
   eq "stderr line 1" "stop: only ship takes several issues" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_kt_answer_effort() {
+  # Given: #16 with no label
+  kt_setup found
+  # When
+  kt_go route acme/app --answer 16=ship --size 16=M 16
+  # Then
+  eq exit 0 "$code"
+  eq stdout '{"number":16,"title":"Old idea","parent":null,"stage":"unlabeled","step":"ship","stop":false,"model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"answer ship, size M","pr":null}' "$out"
+}
+
+t_kt_unlabeled_no_thread() {
+  # Given: #16 with no label, and no answer
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 16
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: #16 has no step: no label picks a step: propose one" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+}
+
+t_kt_label_once() {
+  # Given: #16 with no label; after the edit GitHub shows it labeled bug
+  kt_setup found
+  rm "$FAKE_GH/graphql.app.json"
+  kt_issues > "$FAKE_GH/graphql.1.json"
+  jq -cn --argjson i "$(kt_issue 16 "Old idea" bug)" '{data: {repository: {i16: $i}}}' > "$FAKE_GH/graphql.2.json"
+  : > "$FAKE_GH/issue-edit.json"
+  # When: the yes is written twice
+  kt_go label acme/app 16 triage; first="$out"
+  kt_go label acme/app 16 triage
+  # Then
+  eq "run 1" "labeled #16 bug" "$first"
+  eq "run 2" "labeled #16 bug" "$out"
+  eq "issue edit args" "issue edit 16 --repo acme/app --add-label bug" "$(cat "$FAKE_GH/issue-edit.args")"
+}
+
+t_kt_label_routed() {
+  # Given: #42 already labeled bug
+  kt_setup found
+  # When
+  kt_go label acme/app 42 grill
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: bug" "$out"
+  [ ! -e "$FAKE_GH/issue-edit.calls" ] || eq "issue edit calls" "" "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
 cases=(
   "route gives each issue its step|t_kt_route_steps"
   "a bug thread is triage at high|t_kt_bug_thread"
@@ -292,6 +340,10 @@ cases=(
   "route opens an epic|t_kt_route_epic"
   "a bug in a ship thread stops|t_kt_bug_in_ship"
   "only ship takes several issues|t_kt_only_ship_many"
+  "an answer gives the proposal its effort|t_kt_answer_effort"
+  "an unlabeled issue gets no thread line|t_kt_unlabeled_no_thread"
+  "a yes writes its label once|t_kt_label_once"
+  "a yes on a routed issue writes nothing|t_kt_label_routed"
   "an unreadable GitHub stops|t_kt_gh_fails"
   "no checkout stops the thread line|t_kt_no_checkout"
   "outside T3 it stops|t_kt_outside_t3"
