@@ -79,6 +79,30 @@ t_size_lock_and_generated() {
   eq stdout S "$out"
 }
 
+t_size_odd_names() {
+  # Given
+  repo; printf '"gen/API Client.ts" linguist-generated\n' > .gitattributes
+  commit_all "mark generated file"; git branch base
+  lines "gen/API Client.ts" 300 g; lines "$(printf 'tab\there.py')" 40 t; lines 'quote"d.py' 40 q
+  commit_all "add files with odd names"
+  # When
+  size base
+  # Then
+  eq stdout M "$out"
+}
+
+t_size_not_utf8() {
+  # Given
+  base_repo
+  for i in $(seq 1 20); do printf 'caf\351 %s\n' "$i"; done > app.c
+  commit_all "add a Latin-1 file"
+  # When
+  size base
+  # Then
+  eq exit 0 "$code"
+  eq stdout S "$out"
+}
+
 t_size_empty() {
   # Given
   base_repo
@@ -130,6 +154,8 @@ cases=(
   "size: test files are the four kinds|t_size_test_kinds"
   "size: whitespace and blank lines add nothing|t_size_whitespace"
   "size: lockfiles and generated files add nothing|t_size_lock_and_generated"
+  "size: names with a space, a tab, or a quote are read whole|t_size_odd_names"
+  "size: bytes that are not UTF-8 still count|t_size_not_utf8"
   "size: an empty diff prints XS|t_size_empty"
   "size: the scale edges|t_size_edges"
   "size: outside a checkout it stops|t_size_outside_checkout"

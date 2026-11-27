@@ -17,6 +17,7 @@ nothing from this repo.
 """
 
 import argparse
+import codecs
 import fnmatch
 import os
 import shutil
@@ -34,8 +35,15 @@ TEST_PATTERNS = ("*.test.*", "*.spec.*")
 SCALE = ((10, "XS"), (30, "S"), (100, "M"), (500, "L"), (1000, "XL"))
 
 
+# A changed line can hold any bytes, as from a Latin-1 file; surrogateescape
+# reads them without a crash and gives a path back to git unchanged.
+def run(args, stdin=None):
+    return subprocess.run(args, input=stdin, capture_output=True, text=True,
+                          encoding="utf-8", errors="surrogateescape")
+
+
 def git(*args):
-    return subprocess.run(["git", *args], capture_output=True, text=True)
+    return run(["git", *args])
 
 
 def is_lockfile(path):
@@ -46,6 +54,20 @@ def is_lockfile(path):
 def is_test(path):
     parts = path.split("/")
     return bool(TEST_FOLDERS.intersection(parts[:-1])) or any(fnmatch.fnmatch(parts[-1], p) for p in TEST_PATTERNS)
+
+
+def header_path(rest, side):
+    """The path of a `--- ` or `+++ ` line, or None for /dev/null.
+
+    git puts a name with a quote, a backslash, or a control byte in C quotes,
+    and ends a name that holds a space with a tab.
+    """
+    if rest.startswith('"'):
+        raw = rest[1:rest.rindex('"')].encode("utf-8", "surrogateescape")
+        rest = codecs.escape_decode(raw)[0].decode("utf-8", "surrogateescape")
+    elif rest.endswith("\t"):
+        rest = rest[:-1]
+    return rest[2:] if rest.startswith(side + "/") else None
 
 
 def changed_lines(base):
@@ -65,9 +87,9 @@ def changed_lines(base):
         if line.startswith("diff --git "):
             path, old, in_hunk = None, None, False
         elif not in_hunk and line.startswith("--- "):
-            old = line[6:] if line.startswith("--- a/") else None
+            old = header_path(line[4:], "a")
         elif not in_hunk and line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") else old
+            path = header_path(line[4:], "b") or old
         elif line.startswith("@@"):
             in_hunk = True
         elif in_hunk and line[:1] in ("+", "-") and line[1:].strip() and path:
@@ -78,8 +100,7 @@ def changed_lines(base):
 def generated(paths):
     if not paths:
         return set()
-    r = subprocess.run(["git", "check-attr", "-z", "--stdin", "linguist-generated"],
-                       input="\0".join(paths) + "\0", capture_output=True, text=True)
+    r = run(["git", "check-attr", "-z", "--stdin", "linguist-generated"], "\0".join(paths) + "\0")
     if r.returncode != 0:
         sys.exit(f"stop: git check-attr failed: {r.stderr.strip()}")
     f = r.stdout.split("\0")
