@@ -25,7 +25,7 @@
 # the whole epic. A ship thread skips a ticket that is a task, waits, or is
 # done, as /ship's plan lists tasks itself. The thread's effort is the
 # highest of its issues. --on <pr-n> makes one ticket a new layer on that
-# PR's stack.
+# PR's stack; the PR must be open.
 # label: write the answer <word> to issue <n> as the label that fits
 # (answer_label in labels.sh), through shared/route/edit-labels.sh. One
 # line: `labeled #<n> <label>`, with ` (made the label)` when the repo
@@ -272,7 +272,12 @@ elif [ "${#nums[@]}" -gt 1 ]; then
   fi
 else
   largs=("$(issue_url "${nums[0]}")")
-  [ -z "$on" ] || largs+=(on "https://github.com/$slug/pull/$on")
+  if [ -n "$on" ]; then
+    gh_out pr view "$on" --repo "$slug" --json state,url \
+      || { printf 'stop: gh could not read PR #%s in %s: %s\n' "$on" "$slug" "$err" >&2; exit 2; }
+    [ "$(jq -r .state <<<"$out")" = OPEN ] || die "PR #$on is $(jq -r '.state | ascii_downcase' <<<"$out"), not open: nothing to stack on"
+    largs+=(on "$(jq -r .url <<<"$out")")
+  fi
 fi
 [ -z "$mode" ] || largs+=(--mode "$mode")
 [ "$step" != ready-pr ] || largs+=(--pr "$(jq -r .pr <<<"$top")")

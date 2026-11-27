@@ -320,6 +320,40 @@ t_kt_other_repo_parent() {
   eq message "/ship #46 #47" "$(jq -r .message <<<"$out")"
 }
 
+t_kt_stack_on_open_pr() {
+  # Given: #44 size S, and PR #80 open
+  kt_setup found
+  echo '{"state":"OPEN","url":"https://github.com/acme/app/pull/80"}' > "$FAKE_GH/pr-view.json"
+  # When
+  kt_go thread acme/app --on 80 ship 44
+  # Then
+  eq exit 0 "$code"
+  eq line "/ship #44 on #80|#44 on #80 Export orders" "$(jq -r '[.message, .thread_title] | join("|")' <<<"$out")"
+}
+
+t_kt_stack_on_merged_pr() {
+  # Given: #44 size S, and PR #80 merged
+  kt_setup found
+  echo '{"state":"MERGED","url":"https://github.com/acme/app/pull/80"}' > "$FAKE_GH/pr-view.json"
+  # When
+  kt_go thread acme/app --on 80 ship 44
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: PR #80 is merged, not open: nothing to stack on" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+}
+
+t_kt_stack_pr_unreadable() {
+  # Given: #44 size S, and GitHub cannot find PR #999
+  kt_setup found
+  echo "no pull requests found" > "$FAKE_GH/pr-view.fail"
+  # When
+  kt_go thread acme/app --on 999 ship 44
+  # Then
+  eq exit 2 "$code"
+  eq "last stderr line" "stop: gh could not read PR #999 in acme/app: no pull requests found" "$(printf '%s\n' "$err" | tail -1)"
+}
+
 t_kt_bug_in_ship() {
   # Given: #44 size S, #15 a bug
   kt_setup found
@@ -403,6 +437,9 @@ cases=(
   "route gives a child in another repo no step|t_kt_route_other_repo_child"
   "an epic with a child in another repo stops|t_kt_thread_other_repo_child"
   "a parent in another repo makes no run|t_kt_other_repo_parent"
+  "a stack on an open PR names it|t_kt_stack_on_open_pr"
+  "a stack on a merged PR stops|t_kt_stack_on_merged_pr"
+  "a stack PR gh cannot read stops|t_kt_stack_pr_unreadable"
   "a bug in a ship thread stops|t_kt_bug_in_ship"
   "only ship takes several issues|t_kt_only_ship_many"
   "an answer gives the proposal its effort|t_kt_answer_effort"
