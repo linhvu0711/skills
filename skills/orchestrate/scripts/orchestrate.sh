@@ -6,10 +6,10 @@
 #        orchestrate.sh started <owner/repo> <n> <stage> <thread-id> <link>
 #        orchestrate.sh started <owner/repo> <n> <stage> --failed <why>
 #        orchestrate.sh settled <owner/repo> <thread-id> <run-id> [--kept <why>]
-#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|unsure [--size S]
+#        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
-#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close
+#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close|xxl
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #        orchestrate.sh sync <owner/repo>
@@ -430,6 +430,7 @@ board='
     (.prs | map(select(.state == "OPEN")) | first) as $pr
     | if .stage == "done" then {mark: "done", action: "closed"}
       elif .ask then you(.ask)
+      elif .stage == "too-big" or (.stage == "unlabeled" and .answer == "xxl") then you("Cut it with /file-epic")
       elif .blocked_by != [] then held("blocked by " + (.blocked_by | map(ref_label($S.repo)) | join(" ")))
       elif $rec.status == "failed" then you("Launch failed: say restart \(.label)")
       elif $rec.status == "pending" then agent("starting /\($rec.command // .skill)\(if ($rec.mode // "") != "" then " --\($rec.mode)" else "" end)")
@@ -445,7 +446,7 @@ board='
       elif .stage == "unlabeled" and .answer == "task" then you("Do the task, then close it")
       elif .stage == "unlabeled" and .answer == null and .proposal == null then agent("proposing a route")
       elif .stage == "unlabeled" and .answer == null then you("Answer the proposal" + ({grill: ": /grill", triage: ": /triage",
-          ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it"}[.proposal] // ""))
+          ship: ": /ship", "ready-pr": ": /ready-pr", task: ": yours", close: ": close it", xxl: ": cut it with /file-epic"}[.proposal] // ""))
       elif .stage == "unlabeled" and .answer == "close" then you("Close it")
       elif .stage == "unlabeled" and .answer == "skip" then held("skipped")
       elif $S.status == "paused" then held("paused: starts on resume")
@@ -847,7 +848,7 @@ cmd_settled() {
 # proposed <n> <route> [--size S]: the route the agent proposed for unlabeled
 # #n, and the size it read from the code, kept with any answer the user
 # already gave. `unsure` is a proposal with no route. A ship needs the size;
-# a task and a close take none, since neither builds code. Prints the model
+# a task, a close, and an xxl take none, since none builds code. Prints the model
 # and effort the thread would get, from the Router. A Router stop, or an
 # issue it could not read, keeps the proposal and prints the reason as `why`.
 cmd_proposed() {
@@ -862,7 +863,7 @@ cmd_proposed() {
   fi
   case "$route" in
     ship) [ -n "$size" ] || die "a ship proposal needs --size $size_list" ;;
-    task|close) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
+    task|close|xxl) [ -z "$size" ] || die "a $route proposal takes no --size" ;;
   esac
   newest_run
   r="$(to_ref "$word")" || exit

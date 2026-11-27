@@ -22,6 +22,7 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
 | ticket | a size label XS to XL, or `ready-to-build` | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
+| too big | an XXL size label | none: cut it with [file-epic](../file-epic/), and its new sub-issues join the set |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>`, or the PR's URL when it is in another repo |
 | task | a `manual` label | `/complete-task --ready`: the thread says it is ready and waits for your `go`. One task at a time on this Mac. |
 | waiting | a `waiting` label on a task | none: say `resume #n` when the wait is over |
@@ -29,7 +30,7 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | unlabeled | none of the above | the one you answer to the orchestrator's proposal, or none |
 | done | closed | none |
 
-The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
+The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket; an XXL one gets the proposal `Cut it with /file-epic` and starts nothing.
 
 An issue starts only when every issue that blocks it is closed. The Router, `../../shared/route/router.sh`, picks the stage, the skill, and the effort, and you can name a model or effort that wins:
 

@@ -634,6 +634,43 @@ t_fs_epic_brings_subs() {
   eq set '["acme/app#70","acme/app#71"]' "$(fs_state .set)"
 }
 
+t_fs_xxl_starts_nothing() {
+  # Given: a run of #42 "Rewrite the order store", open, size/XXL
+  fs_setup; fs_issue 42 OPEN '["size/XXL"]' '[]' '[]' '[]' "Rewrite the order store"; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"stage":"too-big"' "$out"
+  eq card '{"column":"shape","mark":"you","action":"Cut it with /file-epic","chip":"ticket · XXL"}' \
+    "$(fs_board '.issues[0] | {column, mark, action, chip}')"
+}
+
+t_fs_xxl_answer_starts_nothing() {
+  # Given: a run of unlabeled #42, proposed xxl and answered yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  fs_go proposed acme/app 42 xxl; fs_go change acme/app answer 42 yes
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  eq card '{"mark":"you","action":"Cut it with /file-epic"}' "$(fs_board '.issues[0] | {mark, action}')"
+}
+
+t_fs_cut_xxl_brings_subs() {
+  # Given: a run of #42, size/XXL, checked once; then cut into #43, size/S
+  fs_setup; fs_issue 42 OPEN '["size/XXL"]'; fs_start 42; fs_go check acme/app
+  fs_issue 43 OPEN '["size/S"]'; fs_issue 42 OPEN '[]' '[]' '[]' '[{"number":43,"state":"OPEN"}]'
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"joined":["acme/app#43"]' "$out"
+  has stdout '"message":"/ship #43"' "$out"
+}
+
 t_fs_followup_joins() {
   # Given: a run of #42, since closed by merged PR 43, whose Follow-ups name #50, an open seed
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":"## Summary\n\nx\n\n## Follow-ups\n\n#50: retry the export\n"}'
@@ -1816,6 +1853,16 @@ t_fs_proposed_ship_needs_size() {
   eq proposals '{}' "$(fs_state .proposals)"
 }
 
+t_fs_proposed_xxl_no_size() {
+  # Given: a run of unlabeled #42
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
+  # When
+  fs_go proposed acme/app 42 xxl --size L
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: a xxl proposal takes no --size" "$err"
+}
+
 t_fs_proposed_task_no_size() {
   # Given: a run of unlabeled #42
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
@@ -2845,6 +2892,10 @@ cases=(
   "a ship proposal needs a size|t_fs_proposed_ship_needs_size"
   "proposed refuses a bad size|t_fs_proposed_bad_size"
   "a task proposal takes no size|t_fs_proposed_task_no_size"
+  "an xxl proposal takes no size|t_fs_proposed_xxl_no_size"
+  "an XXL issue starts nothing and asks you to cut it|t_fs_xxl_starts_nothing"
+  "an xxl proposal answered yes starts nothing|t_fs_xxl_answer_starts_nothing"
+  "a cut XXL issue brings its sub-issues|t_fs_cut_xxl_brings_subs"
   "a close proposal has no model|t_fs_proposed_no_model"
   "a decide stop keeps the proposal and says why|t_fs_proposed_decide_stop"
   "an answer keeps the size|t_fs_answer_keeps_size"
