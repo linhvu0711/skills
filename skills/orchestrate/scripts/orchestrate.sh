@@ -782,7 +782,7 @@ cmd_check() {
   # A thread launches in its repo's T3 project, so a start's folder becomes
   # one first. A folder T3 will not take fails that claim alone.
   while IFS=$'\t' read -r sr sp; do
-    bash "$core/kickoff/project.sh" "$sp" >/dev/null 2>"$errf" && continue
+    bash "$core/launch/project.sh" "$sp" >/dev/null 2>"$errf" && continue
     why="$(tail -1 "$errf" | sed 's/^stop: //')"
     obs="$(jq -c --arg r "$sr" --arg why "$why" '.starts |= map(select(.ref != $r))
       | .claims |= map(if .ref == $r then .status = "failed" | .why = $why else . end)' <<<"$obs")"
