@@ -63,7 +63,7 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
 
 **User:** `/run-in-t3 https://github.com/acme/shop/issues/42`, in a T3 chat; #42 is `size/S`.
 
-`kickoff.sh route acme/shop 42` gives step `ship`, effort `medium`. `kickoff.sh thread acme/shop ship 42` gives `message` `/ship #42`. `opus` maps to `claude-opus-5-5`, and the project with that `workspaceRoot` is found. One `t3_thread_launch`. Say `#42 Export orders as CSV → [#42 Export orders as CSV](t3-thread://v1/…) · /ship · effort medium (default) · size S`. Stop.
+`kickoff.sh route acme/shop 42` gives step `ship`, effort `medium`. `kickoff.sh thread acme/shop ship 42` gives `message` `/ship #42`. `opus` maps to `claude-opus-5-5`, and the project with that `workspaceRoot` is found. One thread launch. Say `#42 Export orders as CSV → [#42 Export orders as CSV](t3-thread://v1/…) · /ship · effort medium (default) · size S`. Stop.
 
 **User:** `/run-in-t3 12 14 15, the rest one thread each`; #12 is `size/S`, #14 `size/M`, #15 `bug`.
 
