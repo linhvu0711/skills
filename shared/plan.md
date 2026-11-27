@@ -173,7 +173,7 @@ Date: YYYY-MM-DD
 |---|---|---|---|---|
 | 1 | #71 Team entity | main | M | 4 |
 | 2 | #73 Add a member | layer 1 | S | 2 |
-Points: 6 (XS 1, S 2, M 4, L 8)
+Points: 6 (XS 1, S 2, M 4, L 8, XL 16)
 
 ## Review
 <the stack's: Change, Approach, Blast radius, Risks, In, Out, as above,

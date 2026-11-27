@@ -68,17 +68,15 @@ Priority and size never appear in the title. They are labels.
 
 ## Size
 
-The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
+The ruler is `size.md`; read it. A ticket's size is a guess of its changed lines on that scale, from the files the chat and the lookup round name, said as one estimate line, as `L: about 300 lines, 6 files`. The PR's script measures the same scale, so the ticket's label and the PR's label mean the same thing. XL is a ticket like any other.
 
-XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `file-epic`. XL in `file-epic`: cut it further.
+XXL in `file-issue`: stop, give the estimate line, and say the work needs `file-epic`. XXL in `file-epic`: cut it further.
 
-A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
+A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the scale, the lookup for size, and the XXL check.
 
 When the facts are unknown and the chat does not settle them, one read-only lookup round is allowed (see Lookup). Still unknown after that: pick the larger size and write the unknown under `Open` in Context.
 
-XS is special. By the time a ticket is XS, the chat plus the one lookup round already say which lines change and what to copy. So an XS ticket carries a `Steps` section (see Body) and the `ready-to-build` label. The Steps are final: `plan-up` trusts them and takes its short path (no repo read for seams, no forks), and the executor gets a plan built from them. If the steps cannot be written from what is known, the ticket was never XS. Make it S, and drop Steps and the label.
-
-S gets Steps only when they are free. Free means every step names a file and line that the chat or the lookup actually showed, and no step needs a choice the chat did not make. Then write Steps and add `ready-to-build`, same as XS. One step that would be a guess: no Steps, no label. M and L never carry Steps.
+XS and S get Steps when the steps can be written: every step names a file and line that the chat or the lookup actually showed, and no step needs a choice the chat did not make. Then write a `Steps` section (see Body) and add `ready-to-build`. The Steps are final: `plan-up` trusts them and takes its short path (no repo read for seams, no forks), and the executor gets a plan built from them. One step that would be a guess: no Steps, no label, and the size stays. M and up never carry Steps.
 
 ## Labels
 
@@ -109,7 +107,7 @@ Every new issue these skills create is assigned to the user who runs them: `--as
 
 ## Body
 
-Write it to a temp file, pass it with `--body-file`. Four sections, in this order. XS adds a fifth, `Steps`, after Done when, and S adds it when the steps are free (see Size). `Docs to write` comes last, only when the chat settled doc text (see Docs to write below). Every line is from the user's view: what someone sees, runs, or gets. Without Steps, implementation plans and file-by-file instructions stay out; the worker owns those. With Steps the ticket owns them.
+Write it to a temp file, pass it with `--body-file`. Four sections, in this order. XS and S add a fifth, `Steps`, after Done when, when the steps can be written (see Size). `Docs to write` comes last, only when the chat settled doc text (see Docs to write below). Every line is from the user's view: what someone sees, runs, or gets. Without Steps, implementation plans and file-by-file instructions stay out; the worker owns those. With Steps the ticket owns them.
 
 ```markdown
 ## What to build
@@ -125,7 +123,7 @@ see at the end. Two to six sentences.
       Scope.
 
 ## Steps
-(XS always, S when free. See the Steps rules below.)
+(XS and S when the steps can be written. See the Steps rules below.)
 1. In `path/to/file:42`, <one concrete change>. Copy the shape of `path/to/other:17`.
 2. …
 N. Add or update `path/to/test.ts`, case `<name>`. Run `<command>`; it passes.
@@ -262,7 +260,7 @@ Sometimes the chat already ran the thing: called the vendor's API, sent the webh
 
 One line, one fact, one proof: "Refunds on ACH come back `status: pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test mode, 2026-09-08". A fact the chat only read about is not Known. It stays out, or goes under Open when it still needs proof.
 
-### Steps (XS always, S when free)
+### Steps (XS and S when the steps can be written)
 
 Three to seven numbered steps a worker can follow cold, in order, each from a line seen in the chat or the lookup (see Size). A `task` has its own Steps rules under Task body.
 

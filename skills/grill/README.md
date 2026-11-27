@@ -16,7 +16,7 @@ At the end you get the settled list, and the docs go with the work. When there i
 Grill done.
 - Export streams in one request; no job queue.
 - "Order" means a placed order, never a cart.
-https://github.com/acme/shop/issues/12 · size/M · feat
+https://github.com/acme/shop/issues/12 · M: about 60 lines, 3 files · feat
 ```
 
 When no code follows ("we will not build X", or a word for code that exists), the docs are true now, so you get one docs PR, opened by [make-pr](../make-pr/). It never merges the PR.

@@ -109,18 +109,18 @@ The refs in `propose` are unlabeled issues with no proposal yet. For each, in or
    6. It is done, a duplicate, or out of date: `close`, with the proof: the PR, the issue, or the line that shows it.
    7. An idea that is not decided yet: `grill`.
    8. No case holds for sure: `unsure`, with the two best guesses and a reason for each.
-3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and pick the row of `../../shared/size.md` whose every fact holds. Hold the size and its facts line, as `size.md` writes it: `S: one path, about 4 files`. Any other route takes no size.
+3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and guess the lines the change will add and remove, on the scale of `../../shared/size.md`. Hold the size and its estimate line, as `size.md` writes it: `S: about 20 lines, 2 files`. Any other route takes no size.
 4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, plus `--size <size>` when step 3 gave one. It prints one JSON line: the `model` and `effort` the thread would get, from the same table the launch reads, or both `null` with a `why`.
 
 Then post one list:
 
 ```
 Proposals. Answer in one reply: all yes, <label> <skill>, <label> yes, or skip <label>.
-<label> <title> · <what> · <size facts> · <model> <effort> · <reason> · "<quote>"
-<label> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size facts> · "<quote>"
+<label> <title> · <what> · <size line> · <model> <effort> · <reason> · "<quote>"
+<label> <title> · not sure: /<a> (<reason a>) or /<b> (<reason b>) · <size line> · "<quote>"
 ```
 
-`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`. `<size facts>` is step 3's facts line; no size, leave it out. `<model> <effort>` is from step 4's line, as `opus medium`; `null`: `no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
+`<what>` is `/<skill>`, `yours` for `task`, or `close it` for `close`. `<size line>` is step 3's estimate line; no size, leave it out. `<model> <effort>` is from step 4's line, as `opus medium`; `null`: `no model: <why>`; `task` or `close`: leave it out. `<quote>` is at most 12 words from the issue that back the reason.
 
 ## Commands
 

@@ -21,7 +21,7 @@ flowchart LR
   discover --> toissue
   discover --> toepic
   triage --> toissue
-  toissue -->|XL| toepic
+  toissue -->|XXL| toepic
 ```
 
 - Start with [grill](skills/grill/) when you have a plan or a design to settle.

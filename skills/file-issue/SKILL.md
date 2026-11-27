@@ -15,11 +15,11 @@ Read `../../shared/issue-rules.md` first. It holds the gate, types, sizes, label
 
 2. **Repo convention.** Load it, or learn it once. Done when `style`, `size` labels, and (only if the user named a priority) the priority label are known.
 
-3. **Type and size.** Pick the type from the table. Size from the facts table. When a size fact is unknown, run the one lookup round, then decide. When the ticket looks XS or S, the same round also fetches the lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so Steps can be written. XL: say which facts push it over the ceiling and that `file-epic` is the tool for it, and stop. Nothing is created. `task`: no size, no XL check. The lookup round goes to the platform's docs instead, per the rules file § Lookup, so Steps can be written.
+3. **Type and size.** Pick the type from the table. Size: the estimate line, per the rules file § Size. When a size fact is unknown, run the one lookup round, then decide. When the ticket looks XS or S, the same round also fetches the lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so Steps can be written. XXL: give the estimate line, say `file-epic` is the tool for it, and stop. Nothing is created. `task`: no size, no XXL check. The lookup round goes to the platform's docs instead, per the rules file § Lookup, so Steps can be written.
 
 4. **Duplicate check.** Two searches, open then closed, in the issue's repo, per the rules file § Duplicates and seeds. Same open work, not a seed: show it, stop. Origin found: remember its number, and whether it is a bug, a seed, or a map. A closed match goes on the Related line.
 
-5. **Write.** Title per the title rule. Body per the template, with the type variant when it applies. Every Done-when line is observable from outside the code. For `feat` and `fix`, walk the five unhappy-path states per the rules file: copy the Standard's rule, else the repo's pattern, else default and mark Open, else the gate fails and you ask in one block. XS also gets Steps, per the Steps rules. S gets Steps only when every step comes from a line that was seen and no choice is open. A step that needs a decision the chat never made: XS becomes S, and S gets no Steps. `task`: body per the rules file § Task body, Steps always. Doc text the chat agreed on (a glossary entry, an ADR) goes under `## Docs to write`, word for word, per the rules file. A cleared map as origin becomes the ticket when its work fits one ticket; its `## Docs to write` entries move into the ticket's.
+5. **Write.** Title per the title rule. Body per the template, with the type variant when it applies. Every Done-when line is observable from outside the code. For `feat` and `fix`, walk the five unhappy-path states per the rules file: copy the Standard's rule, else the repo's pattern, else default and mark Open, else the gate fails and you ask in one block. XS and S get Steps when every step comes from a line that was seen and no choice is open, per the Steps rules. A step that needs a decision the chat never made: no Steps, and the size stays. `task`: body per the rules file § Task body, Steps always. Doc text the chat agreed on (a glossary entry, an ADR) goes under `## Docs to write`, word for word, per the rules file. A cleared map as origin becomes the ticket when its work fits one ticket; its `## Docs to write` entries move into the ticket's.
 
 6. **Create.** Origin bug or seed: rewrite it instead, per the rules file § Origin bug or § Origin seed, with the same labels and `--repo`. Nothing new is created, and nothing is closed. Otherwise:
 
@@ -33,7 +33,7 @@ Read `../../shared/issue-rules.md` first. It holds the gate, types, sizes, label
 
    A missing label from the rules file: create it, retry once. An assignee failure: per the rules file § Assignee, Check first and Never twice. Any other failure: show the error, stop.
 
-7. **Report.** One line: the URL, also put on the clipboard, then the size and the type.
+7. **Report.** One line: the URL, also put on the clipboard, then the estimate line and the type, as `https://github.com/acme/shop/issues/42 · M: about 60 lines, 3 files · feat`.
 
 ## Examples
 
@@ -63,4 +63,4 @@ Type `task`. Title `task: create the X developer app for sign-in`. Label `manual
 
 **User:** `/file-issue` for "move all services to the new config loader".
 
-Lookup counts 41 files across 6 packages. Size is XL. Reply names the count and the packages, and says the work needs `file-epic`.
+Lookup counts 41 files across 6 packages, about 1,400 lines. Size is XXL. Reply gives the estimate line and says the work needs `file-epic`.
