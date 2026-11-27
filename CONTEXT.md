@@ -166,6 +166,10 @@ _Avoid_: rework, second pass, iteration
 
 ## PRs
 
+**Size**:
+How many lines a change adds and removes, leaving out tests (unless it changes only tests), whitespace-only and blank-line changes, lockfiles, and `linguist-generated` files. XS is 0–9 lines, S 10–29, M 30–99, L 100–499, XL 500–999, XXL 1,000 or more. A script counts a PR's Size. A ticket's Size is a guess on the same scale, and no ticket is XXL.
+_Avoid_: scope, effort, weight
+
 **Readiness verdict**:
 The one answer the readiness module gives for a PR: ready, waiting, or blocked, with the reason.
 _Avoid_: PR status, ready state
