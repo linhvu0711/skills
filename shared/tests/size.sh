@@ -81,9 +81,9 @@ t_size_lock_and_generated() {
 
 t_size_odd_names() {
   # Given
-  repo; printf '"gen/API Client.ts" linguist-generated\n' > .gitattributes
-  commit_all "mark generated file"; git branch base
-  lines "gen/API Client.ts" 300 g; lines "$(printf 'tab\there.py')" 20 t; lines 'quote"d.py' 20 q
+  repo; printf '"gen/API Client.ts" linguist-generated\n"cr\\rname.ts" linguist-generated\n' > .gitattributes
+  commit_all "mark generated files"; git branch base
+  lines "gen/API Client.ts" 300 g; lines "$(printf 'cr\rname.ts')" 300 g; lines "$(printf 'tab\there.py')" 20 t; lines 'quote"d.py' 20 q
   commit_all "add files with odd names"
   # When
   size base
@@ -154,7 +154,7 @@ cases=(
   "size: test files are the four kinds|t_size_test_kinds"
   "size: whitespace and blank lines add nothing|t_size_whitespace"
   "size: lockfiles and generated files add nothing|t_size_lock_and_generated"
-  "size: names with a space, a tab, or a quote are read whole|t_size_odd_names"
+  "size: names with a space, a tab, a quote, or a carriage return are read whole|t_size_odd_names"
   "size: bytes that are not UTF-8 still count|t_size_not_utf8"
   "size: an empty diff prints XS|t_size_empty"
   "size: the scale edges|t_size_edges"
