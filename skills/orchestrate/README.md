@@ -21,7 +21,7 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 |---|---|---|
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
-| ticket | a size label | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
+| ticket | a size label XS to XL, or `ready-to-build` | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>`, or the PR's URL when it is in another repo |
 | task | a `manual` label | `/complete-task --ready`: the thread says it is ready and waits for your `go`. One task at a time on this Mac. |
 | waiting | a `waiting` label on a task | none: say `resume #n` when the wait is over |
@@ -31,13 +31,13 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 
 The orchestrator proposes a skill for each unlabeled issue, in one list in its thread: the proposal, the model and effort its thread would get, the reason, and a quote from the issue. For an issue it would ship, it also reads the code the issue touches and gives a size by the [size rules](../../shared/size.md), with the facts behind it, such as `S: one path, about 4 files`. That size picks the model, so a small unlabeled issue no longer runs on the biggest row. Answer the whole list in one reply, such as `all yes, but #14 is grill`, or `skip #15`. An answered issue starts as soon as it is free. A `close` or `task` answer starts nothing and is yours. Answers live in the state file, so `/orchestrate resume` keeps them. An XL issue ships like any ticket.
 
-An issue starts only when every issue that blocks it is closed. The model and effort come from the same table kickoff uses, `../../shared/kickoff/decide.sh`:
+An issue starts only when every issue that blocks it is closed. The Router, `../../shared/route/router.sh`, picks the stage, the skill, and the effort, and you can name a model or effort that wins:
 
 | Issue | Model | Effort |
 |---|---|---|
 | `ready-to-build`, XS, or S | opus | medium |
 | M or L | opus | high |
-| XL, or no size | opus | xhigh |
+| XL | opus | xhigh |
 | `/triage` or `/grill` | opus | high |
 | `/ready-pr` | opus | medium |
 | `/complete-task` | opus | medium |
@@ -75,7 +75,7 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 
 ## Fits with
 
-- Starts each thread the way [run-in-t3](../run-in-t3/) does: the shared decide script, `../../shared/kickoff/decide.sh`, picks the model, effort, and command, and the shared launch steps, `../../shared/launch/launch-t3.md`, start the thread in the permission mode of this chat. Run it from a chat in full access, so the threads' helpers in Antigravity run without asking you at each command.
+- Starts each thread through the shared core: the Router, `../../shared/route/router.sh`, picks the skill and effort, the launcher, `../../shared/launch/line.sh`, gives the folder and first message, and the launch steps, `../../shared/launch/launch-t3.md`, start the thread in the permission mode of this chat. Run it from a chat in full access, so the threads' helpers in Antigravity run without asking you at each command.
 - Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
 - [capture](../capture/) makes the seeds and bugs it starts from; [file-epic](../file-epic/) makes the epics.
 - When a run is done, unless you took issues out of it, it starts [retrospect](../retrospect/) on the run, which suggests changes to the repo's agent setup from what the run's sessions and PRs show.

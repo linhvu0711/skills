@@ -50,8 +50,7 @@ EOF
 # in the GraphQL answer of acme/app, or of acme/$FS_REPO when that is set.
 # <labels> is a JSON list of names; the rest are JSON lists of nodes, empty
 # when left out. A blocker or sub-issue node with no repository is in the
-# issue's repo. The title is "Export orders" unless given. decide.sh's
-# `issue view` gets the same issue.
+# issue's repo. The title is "Export orders" unless given.
 fs_issue() {
   local title="${7:-Export orders}" dir="$T/issues${FS_REPO:+-$FS_REPO}"
   mkdir -p "$dir"
@@ -63,7 +62,6 @@ fs_issue() {
       blockedBy: {nodes: ($b | inrepo)}, closedByPullRequestsReferences: {nodes: $p}}' > "$dir/$1.json"
   jq -s '{data: {repository: (map({key: "i\(.number)", value: .}) | from_entries)}}' "$dir"/*.json \
     > "$FAKE_GH/graphql${FS_REPO:+.$FS_REPO}.json"
-  jq -c '{number, title, state, labels: .labels.nodes, subIssues}' "$dir/$1.json" > "$FAKE_GH/issue-view.json"
 }
 
 # fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
@@ -142,7 +140,7 @@ t_fs_ticket_starts_ship() {
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
+  has stdout '"command":"ship","mode":"","model":"opus","model_from":"default","effort":"high","effort_from":"default"' "$out"
   has stdout '"message":"/ship #42"' "$out"
   has stdout '"thread_title":"#42 Export orders"' "$out"
   lacks stdout '"runtime_mode"' "$out"
@@ -210,7 +208,7 @@ t_fs_seed_starts_grill() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"grill","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"command":"grill","mode":"","model":"opus","model_from":"default","effort":"high"' "$out"
   has stdout '"message":"/grill #42"' "$out"
 }
 
@@ -497,7 +495,6 @@ t_fs_failed_task_launch_frees_turn() {
 
 t_fs_closed_task_frees_turn() {
   # Given: a run of #42 and #43, both manual; #42's task thread started, then #42 closed
-  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
   fs_record 42 task t42
   fs_issue 42 CLOSED '["manual"]'; fs_issue 43 OPEN '["manual"]'
@@ -877,7 +874,7 @@ t_fs_ship_merge_one() {
   # When
   fs_go check acme/app
   # Then
-  has stdout '"command":"ship","command_from":"set","mode":"merge"' "$out"
+  has stdout '"command":"ship","mode":"merge"' "$out"
   has stdout '"message":"/ship --merge #42"' "$out"
 }
 
@@ -923,18 +920,6 @@ t_fs_gh_fail_starts_nothing() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: check failed: HTTP 401: Bad credentials" "$err"
-  eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
-}
-
-t_fs_decide_gh_fail_starts_nothing() {
-  # Given: a run of #42, size/S; the check's own read works, decide's issue view fails
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42
-  printf 'HTTP 502: Bad gateway\n' > "$FAKE_GH/issue-view.fail"
-  # When
-  fs_go check acme/app
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: check failed: gh could not read https://github.com/acme/app/issues/42: HTTP 502: Bad gateway" "$err"
   eq state '{"threads":[],"fails":1}' "$(fs_state '{threads, fails: .timer.fails}')"
 }
 
@@ -1786,7 +1771,7 @@ t_fs_proposed_route_word() {
   # When: a word that is no route, then unsure twice
   fs_go proposed acme/app 42 to-epic
   eq "to-epic exit" 64 "$code"
-  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size XS|S|M|L|XL]" "$err"
   fs_go proposed acme/app 42 unsure
   eq "first exit" 0 "$code"
   fs_go proposed acme/app 42 unsure
@@ -1848,7 +1833,7 @@ t_fs_proposed_bad_size() {
   fs_go proposed acme/app 42 ship --size huge
   # Then
   eq exit 64 "$code"
-  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|unsure [--size XS|S|M|L|XL]" "$err"
+  eq stderr "usage: orchestrate.sh proposed <owner/repo> <issue> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size XS|S|M|L|XL]" "$err"
 }
 
 t_fs_use_bad_effort() {
@@ -1895,7 +1880,6 @@ t_fs_proposed_no_model() {
 t_fs_proposed_decide_stop() {
   # Given: a run of unlabeled #42, no PR closes it
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42
-  printf '{"data":{"repository":{"issue":{"closedByPullRequestsReferences":{"nodes":[]}}}}}\n' > "$FAKE_GH/graphql.json"
   # When
   fs_go proposed acme/app 42 ready-pr
   # Then
@@ -1921,7 +1905,7 @@ t_fs_ship_proposal_size_launches() {
   fs_go check acme/app
   # Then
   eq exit 0 "$code"
-  has stdout '"command":"ship","command_from":"set","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"size S, guessed"' "$out"
+  has stdout '"command":"ship","mode":"","model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"answer ship, size S"' "$out"
 }
 
 t_fs_label_wins_proposal_size() {
@@ -1958,13 +1942,35 @@ t_fs_grill_answer_starts() {
 }
 
 t_fs_ship_answer_starts() {
-  # Given: unlabeled #42, answered ship with no proposal
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  # Given: unlabeled #42, answered ship at size S with no proposal
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship --size S
   eq "answer exit" 0 "$code"
   # When
   fs_go check acme/app
   # Then
   has stdout '"message":"/ship #42"' "$out"
+}
+
+t_fs_ready_to_build_ships() {
+  # Given: a run of #42, open, ready-to-build with no size label
+  fs_setup; fs_issue 42 OPEN '["ready-to-build"]'; fs_start 42
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"message":"/ship #42"' "$out"
+  has stdout '"effort":"medium"' "$out"
+  has stdout '"stage":"ticket"' "$out"
+}
+
+t_fs_ship_answer_needs_size() {
+  # Given: a run of unlabeled #42, proposed grill, so the proposal holds no size
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go change acme/app answer 42 ship
+  # Then
+  eq exit 1 "$code"
+  eq stderr "stop: #42 has no size for /ship: size it from the code, then answer ship --size XS|S|M|L|XL" "$err"
 }
 
 t_fs_all_yes() {
@@ -2038,7 +2044,7 @@ t_fs_label_wins_answer() {
 
 t_fs_ship_started_answer() {
   # Given: unlabeled #42 answered ship and set to ready; its thread t42 started
-  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go change acme/app answer 42 ship --size S
   fs_go change acme/app ship ready 42; fs_record 42 unlabeled t42
   # When
   fs_go change acme/app ship merge 42
@@ -2188,7 +2194,6 @@ t_fs_board_launch_failed_yours() {
 
 t_fs_waiting_task_no_turn() {
   # Given: #42 manual and waiting, whose task thread started; #43 manual
-  # (#43 given last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["manual","waiting"]'; fs_issue 43 OPEN '["manual"]'; fs_start 42 43
   fs_record 42 task t42
   # When
@@ -2378,7 +2383,6 @@ t_fs_board_links() {
 t_fs_board_order() {
   # Given: in Build, #42 blocked by open #9, #43 a ticket about to start, #44 a
   # ticket whose launch failed
-  # (#43 last, since decide.sh's fake `issue view` answers with the last issue given)
   fs_setup; fs_issue 42 OPEN '["size/S"]' '[{"number":9,"state":"OPEN"}]'; fs_issue 44 OPEN '["size/S"]'; fs_issue 43 OPEN '["size/S"]'
   fs_start 42 43 44
   fs_set_state '.threads += [{number: 44, stage: "ticket", thread: null, link: null, status: "failed", why: "no reply"}]'
@@ -2766,7 +2770,6 @@ cases=(
   "a started issue keeps its ship mode|t_fs_ship_started"
   "an override for one issue wins over all|t_fs_override_one_wins"
   "a failed gh call starts nothing|t_fs_gh_fail_starts_nothing"
-  "a gh failure in decide fails the check|t_fs_decide_gh_fail_starts_nothing"
   "T3 not answering starts nothing|t_fs_t3_fail_starts_nothing"
   "the third failure in a row asks the user to act|t_fs_third_failure_asks"
   "the check writes nothing to GitHub|t_fs_check_writes_nothing"
@@ -2849,6 +2852,8 @@ cases=(
   "a size label wins over the proposal's size|t_fs_label_wins_proposal_size"
   "a grill answer starts grill|t_fs_grill_answer_starts"
   "a ship answer starts ship|t_fs_ship_answer_starts"
+  "a ready-to-build ticket with no size ships|t_fs_ready_to_build_ships"
+  "a ship answer with no size stops|t_fs_ship_answer_needs_size"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"
