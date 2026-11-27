@@ -878,7 +878,8 @@ cmd_proposed() {
   r="$(to_ref "$word")" || exit
   [ "$(jq --arg r "$r" '.set | index([$r]) != null' <<<"$S")" = true ] || die "$(label_of "$r") is not in the set"
   S="$(jq -c --arg i "$r" --arg r "$route" --arg z "$size" \
-    '.proposals[$i] = {route: $r, answer: ((.proposals // {})[$i].answer)} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
+    '((.proposals // {})[$i] // {}) as $p | .proposals[$i] = {route: $r, answer: $p.answer}
+       + (if $p.labeled then {labeled: $p.labeled} else {} end) + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
   save
   line="null"
   if one_of "$route_list" "$route"; then
@@ -900,9 +901,9 @@ cmd_proposed() {
 }
 
 # label_answers <proposals before> <refs>: write each ref's answer to its
-# issue as its label, per answer_label, after a read of the issue. The label
-# the old answer wrote comes off in the same edit, so a changed answer
-# leaves one label. An issue another label, or its state, already routes
+# issue as its label, per answer_label, after a read of the issue, and keep
+# it as the proposal's `labeled`. That label comes off in the same edit when
+# the answer changes, so a changed answer leaves one label. An issue another label, or its state, already routes
 # gets none: the Router reads that one first. A label the repo lacks is
 # made from label_spec, then the edit runs once more. Prints one line per ref whose
 # answer has or had a label; the thread starts either way.
@@ -916,8 +917,8 @@ label_answers() {
   for r in "${refs[@]}"; do
     new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
       "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
-    old="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.[$r].answer // empty' <<<"$1")" \
-      "$(jq -r --arg r "$r" '.[$r].size // empty' <<<"$1")")"
+    # Only the label this run wrote comes off: one a teammate added stays.
+    old="$(jq -r --arg r "$r" '.[$r].labeled // empty' <<<"$1")"
     [ "$old" != "$new" ] || old=""
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
     # Only a label the issue holds comes off: a remove of one the repo
@@ -949,12 +950,14 @@ label_answers() {
       fi
     fi
     if [ "$ok" = true ]; then
+      S="$(jq -c --arg r "$r" --arg n "$new" '.proposals[$r] |= (if $n == "" then del(.labeled) else .labeled = $n end)' <<<"$S")"
       if [ -z "$new" ]; then echo "took $old off $(label_of "$r")"
       else echo "labeled $(label_of "$r") $new${old:+, took off $old}$made"; fi
     else
       echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
     fi
   done
+  save
 }
 
 # ---------- change ----------

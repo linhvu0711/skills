@@ -1968,7 +1968,7 @@ t_fs_answer_keeps_size() {
   fs_go change acme/app answer 42 yes
   # Then
   eq exit 0 "$code"
-  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S"}}' "$(fs_state .proposals)"
+  eq proposals '{"acme/app#42":{"route":"ship","answer":"ship","size":"S","labeled":"size/S"}}' "$(fs_state .proposals)"
 }
 
 t_fs_ship_proposal_size_launches() {
@@ -2098,7 +2098,7 @@ t_fs_ship_answer_size_starts() {
   # When
   fs_go change acme/app answer 42 ship --size M
   eq "answer stdout" "labeled #42 size/M" "$out"
-  eq proposal '{"route":"grill","answer":"ship","size":"M"}' "$(fs_state '.proposals["acme/app#42"]')"
+  eq proposal '{"route":"grill","answer":"ship","size":"M","labeled":"size/M"}' "$(fs_state '.proposals["acme/app#42"]')"
   fs_go check acme/app
   # Then
   has stdout '"message":"/ship #42"' "$out"
@@ -2138,6 +2138,18 @@ t_fs_changed_answer_swaps_label() {
   eq exit 0 "$code"
   eq stdout "labeled #42 size/M, took off seed" "$out"
   eq "second edit" "issue edit 42 --repo acme/app --add-label size/M --remove-label seed" "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
+}
+
+t_fs_teammate_label_stays() {
+  # Given: #42 proposed grill; a teammate labels it seed before the yes
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  fs_issue 42 OPEN '["p1","seed"]'; fs_go change acme/app answer 42 yes
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: seed" "$out"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
 }
 
 t_fs_missing_label_made() {
@@ -3047,6 +3059,7 @@ cases=(
   "an issue its labels route gets no label|t_fs_routed_issue_not_labeled"
   "a changed answer swaps the label|t_fs_changed_answer_swaps_label"
   "a missing label is made, then added|t_fs_missing_label_made"
+  "a teammate's label stays when the answer changes|t_fs_teammate_label_stays"
   "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
   "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"
