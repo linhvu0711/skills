@@ -899,6 +899,50 @@ cmd_proposed() {
      + (if $why == "" then {} else {why: $why} end)'
 }
 
+# label_answers <proposals before> <refs>: write each ref's answer to its
+# issue as its label, per answer_label, after a read of the issue. The label
+# the old answer wrote comes off in the same edit, so a changed answer
+# leaves one label. An issue another label, or its state, already routes
+# gets none: the Router reads that one first. Prints one line per ref whose
+# answer has or had a label; the thread starts either way.
+label_answers() {
+  local refs=() r got j new old edit=() routed
+  while IFS= read -r r; do refs+=("$r"); done <<<"$2"
+  if ! got="$(read_issues "${refs[@]}")"; then
+    for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
+    return
+  fi
+  for r in "${refs[@]}"; do
+    new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
+      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
+    old="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.[$r].answer // empty' <<<"$1")" \
+      "$(jq -r --arg r "$r" '.[$r].size // empty' <<<"$1")")"
+    [ "$old" != "$new" ] || old=""
+    j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
+    if [ "$j" = null ] || jq -e .error <<<"$j" >/dev/null; then
+      [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): $(jq -r '.error // "not found"' <<<"$j")"
+      continue
+    fi
+    # The old answer's label is ours to replace, so it does not count.
+    j="$(jq -c --arg o "$old" '.labels.nodes |= map(select((.name | ascii_downcase) != ($o | ascii_downcase)))' <<<"$j")"
+    routed="$(run_prs "$j" | bash "$core/route/router.sh")"
+    if [ "$(jq -r .stage <<<"$routed")" != unlabeled ]; then
+      [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): its labels route it: $(jq -r .reason <<<"$routed")"
+      continue
+    fi
+    edit=()
+    [ -z "$new" ] || edit+=(--add-label "$new")
+    [ -z "$old" ] || edit+=(--remove-label "$old")
+    [ ${#edit[@]} -gt 0 ] || continue
+    if gh_out issue edit "${r##*#}" --repo "${r%#*}" "${edit[@]}"; then
+      if [ -z "$new" ]; then echo "took $old off $(label_of "$r")"
+      else echo "labeled $(label_of "$r") $new${old:+, took off $old}"; fi
+    else
+      echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
+    fi
+  done
+}
+
 # ---------- change ----------
 # change add <issue>... and remove <issue>...: the set. A removed issue keeps its
 # thread records and never joins again by itself.
@@ -914,8 +958,7 @@ cmd_proposed() {
 # only the proposals with no answer yet, so a per-issue answer given first
 # stays. A ship answer needs a size, given with --size or on the proposal.
 # Each answer this call set is then written to its issue as a label, per
-# answer_label in labels.sh: `labeled <label> <name>`, or `not labeled
-# <label>: <why>` when GitHub refuses it, and the thread starts either way.
+# label_answers.
 # change use <n>|all: the model and effort a thread gets, for one issue or
 # for all; one issue's value wins, field by field.
 cmd_change() {
@@ -986,7 +1029,7 @@ cmd_change() {
       fi
       [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$route_list)$ ]] || die_usage "$ausage"
       local word="$3" before
-      before="$(jq -c '(.proposals // {}) | map_values(.answer)' <<<"$S")"
+      before="$(jq -c '.proposals // {}' <<<"$S")"
       if [ "$2" = all ]; then
         case "$word" in yes|skip) ;; *) die_usage "$ausage" ;; esac
         S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
@@ -1007,23 +1050,13 @@ cmd_change() {
           + {route: ((.proposals // {})[$r].route), answer: $w} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
       fi
       save
-      local set_refs lab
+      local set_refs
       if [ "$2" = all ]; then
-        set_refs="$(jq -r --argjson b "$before" '. as $S | .set[] | select(($S.proposals // {})[.].answer != null and $b[.] == null)' <<<"$S")"
+        set_refs="$(jq -r --argjson b "$before" '. as $S | .set[] | select(($S.proposals // {})[.].answer != null and $b[.].answer == null)' <<<"$S")"
       else
         set_refs="$r"
       fi
-      while IFS= read -r r; do
-        [ -n "$r" ] || continue
-        lab="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
-          "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
-        [ -n "$lab" ] || continue
-        if gh_out issue edit "${r##*#}" --repo "${r%#*}" --add-label "$lab"; then
-          echo "labeled $(label_of "$r") $lab"
-        else
-          echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
-        fi
-      done <<<"$set_refs"
+      [ -z "$set_refs" ] || label_answers "$before" "$set_refs"
       return
       ;;
     *) die_usage "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;

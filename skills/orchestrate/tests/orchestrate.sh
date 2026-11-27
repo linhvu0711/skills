@@ -2116,6 +2116,30 @@ t_fs_second_answer_labels_again() {
   eq "edit calls" 2 "$(cat "$FAKE_GH/issue-edit.calls")"
 }
 
+t_fs_routed_issue_not_labeled() {
+  # Given: unlabeled #42 proposed grill; then a teammate labels it size/M
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  fs_issue 42 OPEN '["size/M"]'
+  # When
+  fs_go change acme/app answer all yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: size M" "$out"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
+}
+
+t_fs_changed_answer_swaps_label() {
+  # Given: unlabeled #42 answered grill, so GitHub gave it seed
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  fs_issue 42 OPEN '["p1","seed"]'
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 size/M, took off seed" "$out"
+  eq "second edit" "issue edit 42 --repo acme/app --add-label size/M --remove-label seed" "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
+}
+
 t_fs_all_yes() {
   # Given: #42 proposed grill, #43 proposed triage and answered close, #44 unsure
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_start 42 43 44
@@ -3006,6 +3030,8 @@ cases=(
   "a refused label write still starts|t_fs_refused_label_starts"
   "a ship answer records its size and starts|t_fs_ship_answer_size_starts"
   "a second answer writes the label again|t_fs_second_answer_labels_again"
+  "an issue its labels route gets no label|t_fs_routed_issue_not_labeled"
+  "a changed answer swaps the label|t_fs_changed_answer_swaps_label"
   "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
   "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"
