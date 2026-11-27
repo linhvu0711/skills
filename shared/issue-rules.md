@@ -316,7 +316,7 @@ gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\
 
 - `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no pattern gives `bracket`.
 - `words`: when the repo's titles use a different word for one of our types (`bug` for `fix`, `feature` for `feat`), record it.
-- `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS to its smallest. A repo with none: `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL label, when the repo has one, is the PR-only label the handoff skills own; it stays out of the map.
+- `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L, XL, XXL. A repo that has three sizes but no XS: map XS to its smallest. A repo that has size labels but no XL or no XXL: take its L label with the size word swapped (`size/L` gives `size/XL` and `size/XXL`, `Size: Large` gives `Size: XL` and `Size: XXL`), created on first use. A repo with no size labels: `size/XS` to `size/XXL`, created on first use when a ticket needs one. A saved map with no XL or XXL reads as `MISS`: learn again. XXL never goes on a ticket; it is in the map for the PR label.
 - Priority: the shared store. `python3 issue_conventions.py priority-get owner/repo`. On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or `priority: …` family, or words: p0 = critical else high, p1 = high, p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created on demand) and save with `priority-set`.
 
 Save with `set` only when at least 5 titles were seen; otherwise use the defaults for this run and leave the store empty so the repo is learned later.
@@ -324,10 +324,12 @@ Save with `set` only when at least 5 titles were seen; otherwise use the default
 Label creation, only for labels this file names and only when `gh` fails on them:
 
 ```bash
-gh label create --repo owner/repo "size/XS" --color BFDADC --description "Fits one place, 1-2 files"
-gh label create --repo owner/repo "size/S"  --color 7FC8CC --description "One thin path, existing seams"
-gh label create --repo owner/repo "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
-gh label create --repo owner/repo "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
+gh label create --repo owner/repo "size/XS"  --color BFDADC --description "0-9 changed lines"
+gh label create --repo owner/repo "size/S"   --color 7FC8CC --description "10-29 changed lines"
+gh label create --repo owner/repo "size/M"   --color 3FA9B0 --description "30-99 changed lines"
+gh label create --repo owner/repo "size/L"   --color 1B7A82 --description "100-499 changed lines"
+gh label create --repo owner/repo "size/XL"  --color 0F5C62 --description "500-999 changed lines"
+gh label create --repo owner/repo "size/XXL" --color 0A3F44 --description "1,000+ changed lines; PR only, cut the work with file-epic"
 gh label create --repo owner/repo "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
 gh label create --repo owner/repo "manual" --color 6E7781 --description "Work in a platform outside the repo; /complete-task drives it"
 gh label create --repo owner/repo "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
