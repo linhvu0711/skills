@@ -324,6 +324,23 @@ t_render_names_handoff() {
   done
 }
 
+t_render_cloud_count_script() {
+  # Given: the shared count script
+  # When
+  render devin rules
+  # Then
+  eq exit 0 "$code"
+  has script "$(cat "$here/../size.py")" "$out"
+}
+
+t_render_cloud_six_size_labels() {
+  # Given: the prompt template
+  # When
+  render devin prompt
+  # Then
+  has labels 'XL size/XL · XXL size/XXL' "$out"
+}
+
 cases=(
   "local templates name no pane and no QUESTION line|t_render_local_no_pane"
   "local rules start no Sandbox for a plan with no UI|t_render_local_no_ui"
@@ -365,4 +382,6 @@ cases=(
   "cloud rules leave the per-slice e2e rule out|t_render_cloud_no_e2e"
   "render puts the box.sh path in local rules|t_render_names_box"
   "render names /dispatch as the caller for devin and cursor|t_render_names_handoff"
+  "cloud rules carry the count script|t_render_cloud_count_script"
+  "cloud prompt lists six size labels|t_render_cloud_six_size_labels"
 )

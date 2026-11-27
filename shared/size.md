@@ -1,24 +1,17 @@
-<!-- template: one ruler for tickets and PRs. file-issue and file-epic read it through issue-rules.md § Size; render.sh pastes it into the handoff rules under ## Size; make-pr reads it for the PR size label. Edit here only. -->
-One ruler sizes a ticket and the PR that ships it. Judge by the facts in the table, never by hours and never by lines changed.
+<!-- template: one ruler for tickets and PRs. issue-rules.md § Size reads it for tickets; pr-shape.md § Label and make-pr read it for the PR size label; render.sh pastes it into the handoff rules under ## Size. Edit here only. -->
+Size is the number of changed lines: the lines a change adds and removes.
 
-The **ceiling**: one fresh context window and one PR. Size splits the space under it.
-
-| Size | Facts |
+| Size | Changed lines |
 |---|---|
-| XS | One place. 1 to 2 files. No schema or API change. At most one test touched. |
-| S | One thin path through existing seams. About 3 to 5 files. Tests at one seam. Under half a window. |
-| M | Full vertical slice (schema, API, UI, tests) through existing seams, or one new seam. Fills most of a window. |
-| L | Vertical slice plus a new seam, a migration, or 2+ packages. Just fits one window and one PR. |
-| XL | Over the ceiling. A ticket is never XL: it becomes an epic. A PR lands XL only when the work outgrew its ticket, and the label says so. |
+| XS | 0 to 9 |
+| S | 10 to 29 |
+| M | 30 to 99 |
+| L | 100 to 499 |
+| XL | 500 to 999 |
+| XXL | 1,000 or more |
 
-Words. A *place* is one function, component, or command. A *seam* is a boundary the code already has: a module other code imports, a service, a route, a table. A *new seam* is one of those that did not exist before. A *package* is a unit the repo builds on its own: each `apps/*` and `packages/*`, or the one root when there is no split. A *schema or API change* is a migration, a schema file, or a route or handler that adds or changes an endpoint. Test files count as files.
+What does not count: test files, unless the change touches only tests, and then its test lines are the count; lines whose only change is whitespace, and blank lines added or removed; lockfiles (`*.lock`, `package-lock.json`, `pnpm-lock.yaml`, `npm-shrinkwrap.json`, `bun.lockb`, `go.sum`, `packages.lock.json`, `Package.resolved`, `conda-lock.yml`, `pylock.toml`, `pylock.*.toml`, `*.lockfile`); and files that `.gitattributes` marks `linguist-generated`. A test file sits under a `test/`, `tests/`, or `__tests__/` folder, or is named `*.test.*` or `*.spec.*`.
 
-Pick the smallest row whose every fact holds. One fact over a row's limit moves the work to the next row. Files a tool wrote whole (a lockfile, a `linguist-generated` file, a snapshot) do not count.
+A PR: the script `size.py` counts its diff against its base. Run `python3 size.py <base>` in the PR's checkout, with the base as `origin/<branch>`; it prints the size.
 
-Reading the facts off a diff, for the PR side:
-
-```bash
-git diff --name-status <base>...HEAD -- . ':!*.lock' ':!package-lock.json' ':!pnpm-lock.yaml'
-```
-
-Count the files, the distinct packages, the schema, migration, and route files, and the test files. A new seam is an added file that another changed file imports, an added route, or an added table. Say the size with its facts in one line, as in `M: 6 files, 1 package, one new route, 212 lines`. The line count (`git diff --shortstat`) tells the reader the review effort; it never picks the size.
+A ticket: a guess on the same scale, made before the code exists: the lines its change will add and remove, by the same rules. Say it in one line, as `L: about 300 lines, 6 files`. XL is a ticket like any other. XXL is never a ticket: the work goes to file-epic.

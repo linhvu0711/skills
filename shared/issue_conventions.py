@@ -7,7 +7,8 @@ Three stores, one per kind of fact. An env var moves each one.
     { "owner/repo": {
         "style": "bracket" | "colon",        # "[FEAT] title" or "feat: title"
         "words": {"fix": "bug"},             # type word the repo uses when it differs from ours
-        "size":  {"XS": "size/XS", "S": "size/S", "M": "size/M", "L": "size/L"},
+        "size":  {"XS": "size/XS", "S": "size/S", "M": "size/M", "L": "size/L",
+                  "XL": "size/XL", "XXL": "size/XXL"},
         "sampled": N, "learned_at": "YYYY-MM-DD" } }
 
   Priority: $GH_PRIORITY_STORE or ~/.config/gh-issues/priority-labels.json
@@ -22,9 +23,11 @@ Three stores, one per kind of fact. An env var moves each one.
 Usage:
   issue_conventions.py get <owner/repo>
       The issue type entry, with "priority" merged in when the repo has
-      priority labels, as JSON (exit 0), or "MISS" (exit 3).
+      priority labels, as JSON (exit 0), or "MISS" (exit 3). An entry whose
+      size map has no XL or XXL, saved before those were sizes, is a MISS too,
+      so the caller learns the repo again.
   issue_conventions.py set <owner/repo> --style bracket|colon
-      --xs L --s L --m L --l L [--word fix=bug ...] [--sampled N]
+      --xs L --s L --m L --l L --xl L --xxl L [--word fix=bug ...] [--sampled N]
   issue_conventions.py forget <owner/repo>
       Remove the issue type entry only.
   issue_conventions.py priority-get <owner/repo>
@@ -124,7 +127,7 @@ def main():
     s = sub.add_parser("set")
     s.add_argument("repo")
     s.add_argument("--style", required=True, choices=("bracket", "colon"))
-    for size in ("xs", "s", "m", "l"):
+    for size in ("xs", "s", "m", "l", "xl", "xxl"):
         s.add_argument(f"--{size}", required=True, help=f"label name for {size.upper()}")
     s.add_argument("--word", action="append", default=[],
                    help="type=repo_word, e.g. fix=bug. Repeatable.")
@@ -155,7 +158,7 @@ def main():
 
     if a.cmd == "get":
         entry = load(STORE).get(repo)
-        if not entry:
+        if not entry or not {"XL", "XXL"} <= entry.get("size", {}).keys():
             miss()
         show(with_priority(repo, entry))
         return
@@ -171,7 +174,7 @@ def main():
         data[repo] = {
             "style": a.style,
             "words": words,
-            "size": {"XS": a.xs, "S": a.s, "M": a.m, "L": a.l},
+            "size": {"XS": a.xs, "S": a.s, "M": a.m, "L": a.l, "XL": a.xl, "XXL": a.xxl},
             "sampled": a.sampled,
             "learned_at": time.strftime("%Y-%m-%d"),
         }

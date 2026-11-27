@@ -121,7 +121,7 @@ The arguments are `/plan-up`'s, every form of them, passed to it unchanged. An i
 9. **Report.** Chat gets this and nothing more:
 
    ```
-   Shipped: #42 login · feat/42-login · S: 4 files, 1 package, 96 lines
+   Shipped: #42 login · feat/42-login · size S
    Route: local · built by: session · walks: 3 in round 2 · review rounds: 2 · Filed: none
    Worktree: ~/development/worktrees/acme/app/feat-42-login
    After merge: /clean-worktrees

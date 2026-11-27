@@ -97,7 +97,7 @@ A sign that someone else is already on an issue: an open PR that closes or menti
 _Avoid_: lock, reservation
 
 **Plan check**:
-A second model's read of a finished plan, with only the issue, the plan, and the code, before the user sees it. It has two parts that run side by side: a correctness check and a design check. Plan-up starts each part on a plan of size M or more when the plan shows that part's signs. The findings sit at the end of the plan file.
+A second model's read of a finished plan, with only the issue, the plan, and the code, before the user sees it. It has two parts that run side by side: a correctness check and a design check. Plan-up starts each part on a plan of size L or more when the plan shows that part's signs. The findings sit at the end of the plan file.
 _Avoid_: plan review, critic, second opinion
 
 **Not proved**:
@@ -165,6 +165,10 @@ More work on a ticket after its first build: a change the user asks for, or a re
 _Avoid_: rework, second pass, iteration
 
 ## PRs
+
+**Size**:
+How many lines a change adds and removes, leaving out tests (unless it changes only tests), whitespace-only and blank-line changes, lockfiles, and `linguist-generated` files. XS is 0–9 lines, S 10–29, M 30–99, L 100–499, XL 500–999, XXL 1,000 or more. A script counts a PR's Size. A ticket's Size is a guess on the same scale, and no ticket is XXL.
+_Avoid_: scope, effort, weight
 
 **Readiness verdict**:
 The one answer the readiness module gives for a PR: ready, waiting, or blocked, with the reason.

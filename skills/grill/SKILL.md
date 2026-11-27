@@ -37,7 +37,7 @@ Each answer can expose a fact you have not seen: an answer names a file, a servi
 
 ## Gap check
 
-A second model reads the settled decisions once, with fresh eyes, before the grill files an epic. It runs when the user confirms shared understanding (`grilling.md` § Done), the seed has no close-out line, and the shape you named is an epic. An epic's tickets depend on each other, so a gap can sit between them; separate issues share none, and plan-up can still check a ticket of size M or more. Any other shape, a close-out line, or no work to file: skip to § Close out.
+A second model reads the settled decisions once, with fresh eyes, before the grill files an epic. It runs when the user confirms shared understanding (`grilling.md` § Done), the seed has no close-out line, and the shape you named is an epic. An epic's tickets depend on each other, so a gap can sit between them; separate issues share none, and plan-up can still check a ticket of size L or more. Any other shape, a close-out line, or no work to file: skip to § Close out.
 
 1. Start `gap-checker` per `../../shared/facts.md` § Skill agents. Its brief holds the grill's source (the seed, the issue's text, or the idea in the user's words), each settled decision with its reason, each option the user turned down with why, the shape, the repo folder, and the full path of `../../shared/facts.md`. Nothing else: no chat.
 2. Sort each finding. A Gap the chat already answered is `already settled`. A Wrong fact is never settled by the answer whose reason it disproves. Each other finding joins the frontier as a question in the `grilling.md` format, a code proof on its `Seen:` line.

@@ -4,17 +4,17 @@ Cuts a large piece of work into a phased GitHub epic: one parent issue, native s
 
 ## Use it when
 
-The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XL, or [discover-path](../discover-path/) printed `Map clear.` Type `/file-epic` in the same chat (`$file-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
+The work is settled but too big for one PR. [file-issue](../file-issue/) sized it XXL, or [discover-path](../discover-path/) printed `Map clear.` Type `/file-epic` in the same chat (`$file-epic` in Codex). If the work actually fits one ticket, it says so and points you back to file-issue.
 
 ## What you get
 
 First, a breakdown in chat: phases, and per ticket a title, type, size, blocked-by list, and one line of what it delivers. Each ticket is a thin vertical slice that can be verified alone. A ticket that leaves a stand-in, like a fake or a hard-coded value, names the later ticket that removes it, and that ticket checks it is gone. A ticket's Steps copy the way the repo's Standard (`CODING_STANDARDS.md`) names for each job, and point at the nearest pattern in the code only when the Standard has no rule for it. Work outside the repo, like an account or a key, is its own `task` ticket, never a note, and [complete-task](../complete-task/) drives it. It ends with three questions about granularity, edges, and splits, and loops on your changes until you say `go`.
 
-Then the parent and every sub-issue are created in phase order, with the edges wired, each assigned to you unless you name someone else or say no assignee, and the parent body rewritten with real numbers. When the work started as a `seed`, or as the map that [discover-path](../discover-path/) cleared, that issue becomes the parent: same number, new body, nothing closed. Before it creates anything, it searches open and closed issues. A closed issue on the same work does not stop it: the parent links it on its Related line, so work that came back keeps its history. Doc text agreed in a [grill](../grill/) (a glossary entry, an ADR) goes on the first sub-issue whose code makes it true, so it lands in that PR:
+Then the parent and every sub-issue are created in phase order, with the edges wired, each assigned to you unless you name someone else or say no assignee, and the parent body rewritten with real numbers. When the work started as a `seed`, or as the map that [discover-path](../discover-path/) cleared, that issue becomes the parent: same number, new body, nothing closed. An XXL issue becomes the parent; an XXL ticket inside an epic stays its first piece, and the new pieces join the same epic. Before it creates anything, it searches open and closed issues. A closed issue on the same work does not stop it: the parent links it on its Related line, so work that came back keeps its history. Doc text agreed in a [grill](../grill/) (a glossary entry, an ADR) goes on the first sub-issue whose code makes it true, so it lands in that PR:
 
 ```
 https://github.com/acme/shop/issues/40
-#41 [feat] Team entity with create and list · M · phase 1
+#41 [feat] Team entity with create and list · M: about 60 lines, 3 files · phase 1
 #42 [task] Create the Stripe Connect account · task · phase 1
 ...
 Free to start now: #41
@@ -37,7 +37,7 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 ## Fits with
 
-- Fed by [discover-path](../discover-path/) and [grill](../grill/). [file-issue](../file-issue/) sends XL work here, and this skill sends a one-ticket job back.
+- Fed by [discover-path](../discover-path/) and [grill](../grill/). [file-issue](../file-issue/) sends XXL work here, and this skill sends a one-ticket job back.
 - Its phases are run as a stack of PRs by [plan-up](../plan-up/) and [ship](../ship/), one ticket per layer.
 
 ## Credits

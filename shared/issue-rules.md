@@ -68,17 +68,15 @@ Priority and size never appear in the title. They are labels.
 
 ## Size
 
-The ruler is `size.md`; read it. It is one table, shared with the handoff rules that size the PR, so the ticket's label and the PR's label mean the same thing. XL is never a ticket label.
+The ruler is `size.md`; read it. A ticket's size is a guess of its changed lines on that scale, from the files the chat and the lookup round name, said as one estimate line, as `L: about 300 lines, 6 files`. The PR's script measures the same scale, so the ticket's label and the PR's label mean the same thing. XL is a ticket like any other.
 
-XL in `file-issue`: stop, state which facts push it over (files, seams, packages, migrations), and say the work needs `file-epic`. XL in `file-epic`: cut it further.
+XXL in `file-issue`: stop, give the estimate line, and say the work needs `file-epic`. XXL in `file-epic`: cut it further.
 
-A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the table, the lookup for size, and the XL check.
+A `task` has no size. Size measures code in a window; a task costs wall clock, and its `Lead time:` line carries that. Skip the scale, the lookup for size, and the XXL check.
 
 When the facts are unknown and the chat does not settle them, one read-only lookup round is allowed (see Lookup). Still unknown after that: pick the larger size and write the unknown under `Open` in Context.
 
-XS is special. By the time a ticket is XS, the chat plus the one lookup round already say which lines change and what to copy. So an XS ticket carries a `Steps` section (see Body) and the `ready-to-build` label. The Steps are final: `plan-up` trusts them and takes its short path (no repo read for seams, no forks), and the executor gets a plan built from them. If the steps cannot be written from what is known, the ticket was never XS. Make it S, and drop Steps and the label.
-
-S gets Steps only when they are free. Free means every step names a file and line that the chat or the lookup actually showed, and no step needs a choice the chat did not make. Then write Steps and add `ready-to-build`, same as XS. One step that would be a guess: no Steps, no label. M and L never carry Steps.
+XS and S get Steps when the steps can be written: every step names a file and line that the chat or the lookup actually showed, and no step needs a choice the chat did not make. Then write a `Steps` section (see Body) and add `ready-to-build`. The Steps are final: `plan-up` trusts them and takes its short path (no repo read for seams, no forks), and the executor gets a plan built from them. One step that would be a guess: no Steps, no label, and the size stays. M and up never carry Steps.
 
 ## Labels
 
@@ -109,7 +107,7 @@ Every new issue these skills create is assigned to the user who runs them: `--as
 
 ## Body
 
-Write it to a temp file, pass it with `--body-file`. Four sections, in this order. XS adds a fifth, `Steps`, after Done when, and S adds it when the steps are free (see Size). `Docs to write` comes last, only when the chat settled doc text (see Docs to write below). Every line is from the user's view: what someone sees, runs, or gets. Without Steps, implementation plans and file-by-file instructions stay out; the worker owns those. With Steps the ticket owns them.
+Write it to a temp file, pass it with `--body-file`. Four sections, in this order. XS and S add a fifth, `Steps`, after Done when, when the steps can be written (see Size). `Docs to write` comes last, only when the chat settled doc text (see Docs to write below). Every line is from the user's view: what someone sees, runs, or gets. Without Steps, implementation plans and file-by-file instructions stay out; the worker owns those. With Steps the ticket owns them.
 
 ```markdown
 ## What to build
@@ -125,7 +123,7 @@ see at the end. Two to six sentences.
       Scope.
 
 ## Steps
-(XS always, S when free. See the Steps rules below.)
+(XS and S when the steps can be written. See the Steps rules below.)
 1. In `path/to/file:42`, <one concrete change>. Copy the shape of `path/to/other:17`.
 2. …
 N. Add or update `path/to/test.ts`, case `<name>`. Run `<command>`; it passes.
@@ -262,7 +260,7 @@ Sometimes the chat already ran the thing: called the vendor's API, sent the webh
 
 One line, one fact, one proof: "Refunds on ACH come back `status: pending`, not `succeeded`: `POST /v1/refunds` on an ACH charge in test mode, 2026-09-08". A fact the chat only read about is not Known. It stays out, or goes under Open when it still needs proof.
 
-### Steps (XS always, S when free)
+### Steps (XS and S when the steps can be written)
 
 Three to seven numbered steps a worker can follow cold, in order, each from a line seen in the chat or the lookup (see Size). A `task` has its own Steps rules under Task body.
 
@@ -316,7 +314,7 @@ gh label list --repo owner/repo --limit 200 --json name,description -q '.[] | "\
 
 - `style`: most titles look like `[bug] …` gives `bracket`; `bug: …` or `feat(scope): …` gives `colon`; no pattern gives `bracket`.
 - `words`: when the repo's titles use a different word for one of our types (`bug` for `fix`, `feature` for `feat`), record it.
-- `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L. A repo that has three sizes but no XS: map XS to its smallest. A repo with none: `size/XS`, `size/S`, `size/M`, `size/L`, created on first use. An XL label, when the repo has one, is the PR-only label the handoff skills own; it stays out of the map.
+- `size`: labels that clearly denote size (`size/S`, `Size: Small`, `effort-large`, bare `S`), matched case-insensitively across separators, mapped onto XS, S, M, L, XL, XXL. A repo that has three sizes but no XS: map XS to its smallest. A repo that has size labels but no XL or no XXL: take its L label with the size word swapped (`size/L` gives `size/XL` and `size/XXL`, `Size: Large` gives `Size: XL` and `Size: XXL`), created on first use. A repo with no size labels: `size/XS` to `size/XXL`, created on first use when a ticket needs one. A saved map with no XL or XXL reads as `MISS`: learn again. XXL never goes on a ticket; it is in the map for the PR label.
 - Priority: the shared store. `python3 issue_conventions.py priority-get owner/repo`. On miss, learn as capture does (exact `p0..p3` names, a `priority/…` or `priority: …` family, or words: p0 = critical else high, p1 = high, p2 = medium, p3 = low; none = `p0`, `p1`, `p2`, `p3` created on demand) and save with `priority-set`.
 
 Save with `set` only when at least 5 titles were seen; otherwise use the defaults for this run and leave the store empty so the repo is learned later.
@@ -324,14 +322,18 @@ Save with `set` only when at least 5 titles were seen; otherwise use the default
 Label creation, only for labels this file names and only when `gh` fails on them:
 
 ```bash
-gh label create --repo owner/repo "size/XS" --color BFDADC --description "Fits one place, 1-2 files"
-gh label create --repo owner/repo "size/S"  --color 7FC8CC --description "One thin path, existing seams"
-gh label create --repo owner/repo "size/M"  --color 3FA9B0 --description "Full vertical slice, one window"
-gh label create --repo owner/repo "size/L"  --color 1B7A82 --description "Slice plus new seam or migration; ceiling"
+gh label create --repo owner/repo "size/XS"  --color BFDADC --description "0-9 changed lines"
+gh label create --repo owner/repo "size/S"   --color 7FC8CC --description "10-29 changed lines"
+gh label create --repo owner/repo "size/M"   --color 3FA9B0 --description "30-99 changed lines"
+gh label create --repo owner/repo "size/L"   --color 1B7A82 --description "100-499 changed lines"
+gh label create --repo owner/repo "size/XL"  --color 0F5C62 --description "500-999 changed lines"
+gh label create --repo owner/repo "size/XXL" --color 0A3F44 --description "1,000+ changed lines; PR only, cut the work with file-epic"
 gh label create --repo owner/repo "ready-to-build" --color 0E8A16 --description "Steps in the body are final; plan-up trusts them and takes its short path"
 gh label create --repo owner/repo "manual" --color 6E7781 --description "Work in a platform outside the repo; /complete-task drives it"
 gh label create --repo owner/repo "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
 ```
+
+**PR size label.** make-pr and ready-pr find a repo's size labels, XS to XXL, the way the `size` line above reads them: the saved map from `get`, else the labels that clearly name a size in `gh label list --repo owner/repo --limit 200 --json name -q '.[].name'`. A repo with no size labels: no PR label, and none created. A repo with size labels that lacks the one a PR needs, as `size/XXL` the first time: create it from the block above, then retry once.
 
 Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by `capture`.
 

@@ -26,7 +26,7 @@ Worktree: ~/development/worktrees/acme/shop/feat-42-export-orders-csv
 Proof folder: ~/.agents/artifacts/proof/acme-shop-42
 <!-- /local -->
 <!-- cloud -->
-Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
+Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL · XXL size/XXL
 <!-- /cloud -->
 Issue: #42 <title> (<url>) · size M
 
@@ -88,7 +88,7 @@ The headings are fixed. The rules block refers to them by name.
 <!-- cloud -->
 ## Size
 
-`Size labels` lists the five PR size labels in the repo's own spelling, as `{{caller}}` resolved and created them; the rules block picks one from the facts of the diff, with the same table the issue was sized by (§ Size in the rules). The line starts with `bot ·` when a workflow in the repo labels PRs by size; then the names are the bot's, and the executor leaves the labelling to it. `size M` after the issue line is the issue's size label mapped to its letter, `size none` when the issue has no size label. A run carries the letter per layer in the `Size` column of `Stack`, copied from the plan's Stack table without the `Points` column. The executor uses these only to say when the diff lands on another size than the forecast.
+`Size labels` lists the six PR size labels in the repo's own spelling, as `{{caller}}` resolved and created them; the rules block picks one with the count script (§ Size in the rules). A repo with no size labels gets `Size labels: none`, and its PR gets no size label. The line starts with `bot ·` when a workflow in the repo labels PRs by size; then the names are the bot's, and the executor leaves the labelling to it. `size M` after the issue line is the issue's size label mapped to its letter, `size none` when the issue has no size label. A run carries the letter per layer in the `Size` column of `Stack`, copied from the plan's Stack table without the `Points` column. The executor uses these only to say when the diff lands on another size than the forecast.
 
 <!-- /cloud -->
 <!-- cloud -->
@@ -102,7 +102,7 @@ Base branch: main
 <!-- cursor -->
 Author: Name <email>
 <!-- /cursor -->
-Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL
+Size labels: XS size/XS · S size/S · M size/M · L size/L · XL size/XL · XXL size/XXL
 
 # Stack
 | Layer | Issue | Base | Size |

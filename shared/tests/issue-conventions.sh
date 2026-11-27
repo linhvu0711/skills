@@ -18,7 +18,7 @@ conv() {
   run env -u GH_ISSUE_STORE -u GH_PRIORITY_STORE -u CAPTURE_STORE HOME="$T/home" python3 "$here/../issue_conventions.py" "$@"
 }
 
-set_types() { conv set O/R --style colon --xs size/XS --s size/S --m size/M --l size/L --word fix=bug --sampled 12; }
+set_types() { conv set O/R --style colon --xs size/XS --s size/S --m size/M --l size/L --xl size/XL --xxl size/XXL --word fix=bug --sampled 12; }
 set_prio() { conv priority-set o/r --p0 p0 --p1 p1 --p2 p2 --p3 p3; }
 
 t_ic_get_miss() {
@@ -38,19 +38,19 @@ t_ic_set_get() {
   conv get o/r
   # Then
   eq exit 0 "$code"
-  eq entry '{"sampled":12,"size":{"L":"size/L","M":"size/M","S":"size/S","XS":"size/XS"},"style":"colon","words":{"fix":"bug"}}' \
+  eq entry '{"sampled":12,"size":{"L":"size/L","M":"size/M","S":"size/S","XL":"size/XL","XS":"size/XS","XXL":"size/XXL"},"style":"colon","words":{"fix":"bug"}}' \
     "$(jq -c 'del(.learned_at)' <<<"$out")"
 }
 
 t_ic_set_twice() {
   # Given
   ic_setup; set_types
-  conv set o/r --style bracket --xs XS --s S --m M --l L
+  conv set o/r --style bracket --xs XS --s S --m M --l L --xl XL --xxl XXL
   # When
   conv get o/r
   # Then
   eq exit 0 "$code"
-  eq entry '{"sampled":0,"size":{"L":"L","M":"M","S":"S","XS":"XS"},"style":"bracket","words":{}}' \
+  eq entry '{"sampled":0,"size":{"L":"L","M":"M","S":"S","XL":"XL","XS":"XS","XXL":"XXL"},"style":"bracket","words":{}}' \
     "$(jq -c 'del(.learned_at)' <<<"$out")"
 }
 
@@ -112,14 +112,25 @@ t_ic_seed_old_bug_label() {
 t_ic_old_stores() {
   # Given
   ic_setup; mkdir -p "$(dirname "$ISS")"
-  printf '%s\n' '{"o/r":{"style":"bracket","words":{},"size":{"XS":"XS","S":"S","M":"M","L":"L"},"sampled":30,"learned_at":"2026-01-02"}}' > "$ISS"
+  printf '%s\n' '{"o/r":{"style":"bracket","words":{},"size":{"XS":"XS","S":"S","M":"M","L":"L","XL":"XL","XXL":"XXL"},"sampled":30,"learned_at":"2026-01-02"}}' > "$ISS"
   printf '%s\n' '{"o/r":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"}}' > "$PRI"
   # When
   conv get o/r
   # Then
   eq exit 0 "$code"
-  eq entry '{"learned_at":"2026-01-02","priority":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"},"sampled":30,"size":{"L":"L","M":"M","S":"S","XS":"XS"},"style":"bracket","words":{}}' \
+  eq entry '{"learned_at":"2026-01-02","priority":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"},"sampled":30,"size":{"L":"L","M":"M","S":"S","XL":"XL","XS":"XS","XXL":"XXL"},"style":"bracket","words":{}}' \
     "$(jq -c . <<<"$out")"
+}
+
+t_ic_old_size_map() {
+  # Given
+  ic_setup; mkdir -p "$(dirname "$ISS")"
+  printf '%s\n' '{"o/r":{"style":"bracket","words":{},"size":{"XS":"XS","S":"S","M":"M","L":"L"},"sampled":30,"learned_at":"2026-01-02"}}' > "$ISS"
+  # When
+  conv get o/r
+  # Then
+  eq exit 3 "$code"
+  eq stdout MISS "$out"
 }
 
 t_ic_corrupt() {
@@ -189,6 +200,7 @@ cases=(
   "conventions: seed-set prints the seed and the priority labels it saved|t_ic_seed_set_prints"
   "conventions: a seed saved before bug_label reads back with bug|t_ic_seed_old_bug_label"
   "conventions: stores written before the move read back unchanged|t_ic_old_stores"
+  "conventions: a size map saved before XL reads as MISS|t_ic_old_size_map"
   "conventions: a corrupt store is moved aside and read as empty|t_ic_corrupt"
   "conventions: forget drops the issue types and keeps the priority labels|t_ic_forget"
   "conventions: seed-forget drops the seed and the priority labels|t_ic_seed_forget"
