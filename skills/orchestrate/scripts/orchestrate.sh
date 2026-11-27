@@ -921,12 +921,15 @@ label_answers() {
     old="$(jq -r --arg r "$r" '.[$r].labeled // empty' <<<"$1")"
     [ "$old" != "$new" ] || old=""
     j="$(jq -c --arg r "$r" '.[$r]' <<<"$got")"
-    # Only a label the issue holds comes off: a remove of one the repo
-    # lacks fails the whole edit.
-    jq -e --arg o "$old" 'any(.labels.nodes[]?; (.name | ascii_downcase) == ($o | ascii_downcase))' <<<"$j" >/dev/null 2>&1 || old=""
     if [ "$j" = null ] || jq -e .error <<<"$j" >/dev/null; then
       [ -z "$new$old" ] || echo "not labeled $(label_of "$r"): $(jq -r '.error // "not found"' <<<"$j")"
       continue
+    fi
+    # A label the run wrote that is gone from the issue is no longer the
+    # run's: one put back later is a teammate's.
+    if [ -n "$old" ] && ! jq -e --arg o "$old" 'any(.labels.nodes[]?; (.name | ascii_downcase) == ($o | ascii_downcase))' <<<"$j" >/dev/null; then
+      old=""
+      S="$(jq -c --arg r "$r" '.proposals[$r] |= del(.labeled)' <<<"$S")"; save
     fi
     # The old answer's label is ours to replace, so it does not count.
     j="$(jq -c --arg o "$old" '.labels.nodes |= map(select((.name | ascii_downcase) != ($o | ascii_downcase)))' <<<"$j")"
@@ -950,14 +953,14 @@ label_answers() {
       fi
     fi
     if [ "$ok" = true ]; then
-      S="$(jq -c --arg r "$r" --arg n "$new" '.proposals[$r] |= (if $n == "" then del(.labeled) else .labeled = $n end)' <<<"$S")"
+      # Saved before the next issue, so a batch cut short keeps it.
+      S="$(jq -c --arg r "$r" --arg n "$new" '.proposals[$r] |= (if $n == "" then del(.labeled) else .labeled = $n end)' <<<"$S")"; save
       if [ -z "$new" ]; then echo "took $old off $(label_of "$r")"
       else echo "labeled $(label_of "$r") $new${old:+, took off $old}$made"; fi
     else
       echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
     fi
   done
-  save
 }
 
 # ---------- change ----------

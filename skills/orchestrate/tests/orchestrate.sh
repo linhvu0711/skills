@@ -2152,6 +2152,20 @@ t_fs_teammate_label_stays() {
   eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
 }
 
+t_fs_removed_label_not_owned() {
+  # Given: #42 answered grill, so it got seed; seed came off on GitHub, the
+  # user skipped it, and a teammate put seed back
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  fs_issue 42 OPEN '["p1"]'; fs_go change acme/app answer 42 skip
+  fs_issue 42 OPEN '["p1","seed"]'
+  # When
+  fs_go change acme/app answer 42 triage
+  # Then
+  eq exit 0 "$code"
+  eq stdout "not labeled #42: its labels route it: seed" "$out"
+  eq "edit calls" 1 "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
 t_fs_missing_label_made() {
   # Given: unlabeled #42 proposed task, in a repo with no manual label
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task
@@ -3060,6 +3074,7 @@ cases=(
   "a changed answer swaps the label|t_fs_changed_answer_swaps_label"
   "a missing label is made, then added|t_fs_missing_label_made"
   "a teammate's label stays when the answer changes|t_fs_teammate_label_stays"
+  "a label gone from the issue is no longer the run's|t_fs_removed_label_not_owned"
   "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
   "a sizeless ship answer is proposed again|t_fs_sizeless_ship_answer_proposes"
   "all yes takes every sure proposal|t_fs_all_yes"
