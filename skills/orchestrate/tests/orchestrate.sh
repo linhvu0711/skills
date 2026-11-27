@@ -1009,6 +1009,19 @@ t_fs_two_prs_waits() {
   has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
 }
 
+t_fs_new_pr_keeps_two_prs_wait() {
+  # Given: #42 has an open PR from before the run and one from after it
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  # When
+  fs_go check acme/app
+  # Then
+  eq exit 0 "$code"
+  has stdout '"starts":[]' "$out"
+  has stdout '"wait":"#42 has 2 open PRs: https://github.com/acme/app/pull/43 https://github.com/acme/app/pull/44"' "$out"
+}
+
 t_fs_all_closed_done() {
   # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
   local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
@@ -2981,6 +2994,7 @@ cases=(
   "a refused label write still starts|t_fs_refused_label_starts"
   "a ship answer records its size and starts|t_fs_ship_answer_size_starts"
   "a second answer writes the label again|t_fs_second_answer_labels_again"
+  "a new PR keeps the two-PR wait|t_fs_new_pr_keeps_two_prs_wait"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"

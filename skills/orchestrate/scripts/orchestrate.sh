@@ -282,10 +282,7 @@ ship_mode() { jq -r --arg n "$1" "$ship_mode_jq"' ship_mode($n)' <<<"$S"; }
 # route_for <ref> <issue json> [<answer>]: the Router's line for the issue,
 # with the model and effort the user set, and the answer: the one given,
 # else the proposal's when it names a route. A ship answer goes with the
-# proposal's size; one with no size counts as none. A PR counts only when it
-# was open before the run: a PR the run's own thread opened is that
-# thread's work. A ready-pr answer counts every PR, since the user named
-# that PR's step.
+# proposal's size; one with no size counts as none.
 route_for() {
   local flags=() model effort answer="${3:-}" size
   model="$(jq -r --arg r "$1" '.use[$r].model // .use.all.model // empty' <<<"$S")"
@@ -298,9 +295,19 @@ route_for() {
   [ -z "$effort" ] || flags+=(--effort "$effort")
   [ -z "$answer" ] || flags+=(--answer "$answer")
   [ "$answer" != ship ] || flags+=(--size "$size")
-  jq -c --arg t "$(jq -r .started_at <<<"$S")" --arg a "$answer" \
-    'if $a == "ready-pr" then . else .closedByPullRequestsReferences.nodes |= map(select(.createdAt < $t)) end' <<<"$2" \
-    | bash "$core/route/router.sh" ${flags[@]+"${flags[@]}"}
+  run_prs "$2" "$answer" | bash "$core/route/router.sh" ${flags[@]+"${flags[@]}"}
+}
+
+# run_prs <issue json> [<answer>]: the issue with the PRs the Router counts.
+# With no open PR from before the run, a PR the run's own thread opened is
+# that thread's work, so the PRs from after the run start go. Once one from
+# before is there, every open PR counts, so two of them still make the
+# issue wait. A ready-pr answer counts every PR, since the user named that
+# PR's step.
+run_prs() {
+  jq -c --arg t "$(jq -r .started_at <<<"$S")" --arg a "${2:-}" '
+    if $a == "ready-pr" or any(.closedByPullRequestsReferences.nodes[]; .state == "OPEN" and .createdAt < $t) then .
+    else .closedByPullRequestsReferences.nodes |= map(select(.createdAt < $t)) end' <<<"$1"
 }
 
 # launch_for <ref> <route json>: the launch line for the route's step, with
