@@ -36,10 +36,13 @@ SCALE = ((10, "XS"), (30, "S"), (100, "M"), (500, "L"), (1000, "XL"))
 
 
 # A changed line can hold any bytes, as from a Latin-1 file; surrogateescape
-# reads them without a crash and gives a path back to git unchanged.
+# reads them without a crash and gives a path back to git unchanged. Bytes,
+# not text mode, since text mode turns a carriage return in a name into \n.
 def run(args, stdin=None):
-    return subprocess.run(args, input=stdin, capture_output=True, text=True,
-                          encoding="utf-8", errors="surrogateescape")
+    r = subprocess.run(args, input=None if stdin is None else stdin.encode("utf-8", "surrogateescape"),
+                       capture_output=True)
+    r.stdout, r.stderr = (b.decode("utf-8", "surrogateescape") for b in (r.stdout, r.stderr))
+    return r
 
 
 def git(*args):
@@ -83,7 +86,7 @@ def changed_lines(base):
         sys.exit(f"stop: git diff failed: {r.stderr.strip()}")
     counts = {}
     path, old, in_hunk = None, None, False
-    for line in r.stdout.splitlines():
+    for line in r.stdout.split("\n"):
         if line.startswith("diff --git "):
             path, old, in_hunk = None, None, False
         elif not in_hunk and line.startswith("--- "):
