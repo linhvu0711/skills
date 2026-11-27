@@ -7,42 +7,38 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # The launch line.
 LL="$here/../launch/line.sh"
 
-# ll_setup [repo]: a fresh temp folder T and the fake gh, whose `repo view`
-# names main as the default branch and <repo>, acme/app unless given, as the
-# repo gh sees in the checkout.
+# ll_setup [repo]: a fresh temp folder T with the test repo at $T/repo, and
+# the fake gh, whose `repo view` names main as the default branch and
+# <repo>, acme/app unless given, as the repo gh sees in the checkout.
 ll_setup() {
-  T="$(cd "$(mktemp -d)" && pwd -P)"
+  repo
   fake_gh
-  printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"%s"}\n' "${1:-acme/app}" > "$FAKE_GH/repo-view.json"
+  jq -cn --arg r "${1:-acme/app}" '{defaultBranchRef: {name: "main"}, nameWithOwner: $r}' > "$FAKE_GH/repo-view.json"
 }
 
-# ll_clone <dir>: a main checkout at <dir> whose origin is acme/app on GitHub.
-ll_clone() {
-  git init -q -b main "$1"
-  git -C "$1" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
-  git -C "$1" remote add origin https://github.com/acme/app.git
-}
+# ll_clone: make the test repo a checkout of acme/app on GitHub.
+ll_clone() { git -C "$R" remote add origin https://github.com/acme/app.git; }
 
-# ll_run <args...>: line.sh from T, with the search root and the repo map
-# inside T.
+# ll_run <args...>: line.sh from T, with T as the search root and the repo
+# map inside T.
 ll_run() {
   cd "$T"
-  run env KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" bash "$LL" "$@"
+  run env KICKOFF_DEV_ROOT="$T" KICKOFF_REPO_MAP="$T/map.tsv" bash "$LL" "$@"
 }
 
 t_ll_ship_mode() {
   # Given: a checkout of acme/app; gh names acme/app
-  ll_setup; ll_clone "$T/dev/app"
+  ll_setup; ll_clone
   # When
   ll_run https://github.com/acme/app/issues/42 ship --mode merge
   # Then
   eq exit 0 "$code"
-  eq stdout "{\"path\":\"$T/dev/app\",\"command\":\"ship\",\"mode\":\"merge\",\"slash_command\":\"/ship --merge\",\"message\":\"/ship --merge #42\"}" "$out"
+  eq stdout "{\"path\":\"$T/repo\",\"command\":\"ship\",\"mode\":\"merge\",\"slash_command\":\"/ship --merge\",\"message\":\"/ship --merge #42\"}" "$out"
 }
 
 t_ll_ready_pr() {
   # Given: a checkout of acme/app; gh names acme/app
-  ll_setup; ll_clone "$T/dev/app"
+  ll_setup; ll_clone
   # When
   ll_run https://github.com/acme/app/issues/42 ready-pr --pr https://github.com/acme/app/pull/80
   # Then
@@ -52,7 +48,7 @@ t_ll_ready_pr() {
 
 t_ll_complete_task() {
   # Given: a checkout of acme/app; gh names acme/app
-  ll_setup; ll_clone "$T/dev/app"
+  ll_setup; ll_clone
   # When
   ll_run https://github.com/acme/app/issues/42 complete-task
   # Then
@@ -61,7 +57,7 @@ t_ll_complete_task() {
 
 t_ll_fork_url() {
   # Given: a checkout of acme/app; gh there names upstream/app
-  ll_setup upstream/app; ll_clone "$T/dev/app"
+  ll_setup upstream/app; ll_clone
   # When
   ll_run https://github.com/acme/app/issues/42 grill
   # Then
@@ -69,18 +65,18 @@ t_ll_fork_url() {
 }
 
 t_ll_no_checkout() {
-  # Given: no checkout under $T/dev
+  # Given: no checkout of acme/app under $T
   ll_setup
   # When
   ll_run https://github.com/acme/app/issues/42 ship
   # Then
   eq exit 1 "$code"
-  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
+  eq stderr "stop: no checkout of acme/app under $T. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
 }
 
 t_ll_mode_only_ship() {
   # Given: a checkout of acme/app; gh names acme/app
-  ll_setup; ll_clone "$T/dev/app"
+  ll_setup; ll_clone
   # When
   ll_run https://github.com/acme/app/issues/42 grill --mode merge
   # Then
