@@ -1,5 +1,5 @@
 ---
-status: supersedes ADR-0025, ADR-0028, ADR-0030; amends ADR-0020, ADR-0023, ADR-0040
+status: supersedes ADR-0025, ADR-0028, ADR-0030; amends ADR-0020, ADR-0023, ADR-0040; amended by ADR-0043
 ---
 
 # A subagent names a tier, and one table picks its models
