@@ -18,7 +18,7 @@ Name a model, an effort, or how far `/ship` goes ("review the plan first", "ship
 
 ## What you get
 
-The shared Router reads each issue's labels and open PRs and picks the skill and the effort. You can name `/triage`, `/grill`, or `/ready-pr` for an issue, as "triage 44", "grill it", or "ready the PR", and it beats the labels; a closed issue or an epic still gets no thread, and `/ready-pr` needs one open PR:
+The shared Router reads each issue's labels and open PRs and picks the skill and the effort. You can name `/triage`, `/grill`, or `/ready-pr` for an issue, as "triage 44", "grill it", or "ready the PR", and it beats the labels. A pick does not apply to a closed issue or to an epic itself, and `/ready-pr` needs one open PR:
 
 | Issue | Skill | Effort |
 |---|---|---|
