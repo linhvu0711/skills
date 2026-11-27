@@ -9,11 +9,13 @@ Read `../../shared/issue-rules.md` first. Every sub-issue obeys it. This file ad
 
 ## Steps
 
-1. **Gate.** The readiness gate, applied to the whole piece of work. Fail: list the gaps, stop. Then the mirror check: work that fits one ticket under the ceiling stops here, with `file-issue` named as the tool.
+1. **Gate.** The readiness gate, applied to the whole piece of work. Fail: list the gaps, stop. Then the mirror check: work that fits one ticket, XL or smaller, stops here, with `file-issue` named as the tool.
+
+   **An XXL issue.** The user names an issue whose work is XXL: read it with `gh issue view <n> --repo owner/repo --json number,title,body,labels,parent`. No parent: it is the origin and becomes the parent, as an origin seed does (step 7.1), and its size label comes off, since a parent has none. A parent: it stays a ticket of that epic as the first piece, keeps its number, and step 7 rewrites its body as that piece, with that piece's size label; the new pieces go under the same parent, `--parent <its parent>`, each with the `--blocked-by` edges the cut needs, and step 7.4 rewrites that parent's phase list. It never becomes a parent under an epic.
 
 2. **Repo convention.** Load or learn. Done when `style`, `size`, and (if named) the priority label are known.
 
-3. **Facts.** Cutting needs the seams, the layers each slice crosses, and for a wide refactor the call-site count per package or directory. Take them from the chat, and from the map's body when a cleared map is the origin: its Decisions so far and its `## Docs to write`. What the chat lacks, fetch in the one lookup round. For every ticket that looks XS or S, the same round also fetches its lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so its Steps can be written. Also list every thing outside the repo a ticket needs before it can land (an account, an app, a key, a bucket, DNS, billing) and every thing a person must do after it lands (set the variables, cut over, log in as the user and prove it live). Each one is a `task` ticket, and the same round fetches its platform docs and lead time, its brief asking for the web. Done when every ticket you are about to propose has its size facts, every task has its Steps and lead time, and every code ticket is pure (rules file, Types).
+3. **Facts.** Cutting needs the seams, the layers each slice crosses, and for a wide refactor the call-site count per package or directory. Take them from the chat, and from the map's body when a cleared map is the origin: its Decisions so far and its `## Docs to write`. What the chat lacks, fetch in the one lookup round. For every ticket that looks XS or S, the same round also fetches its lines, the pattern to copy (the Standard's way first, per the rules file § Lookup), and the test, so its Steps can be written. Also list every thing outside the repo a ticket needs before it can land (an account, an app, a key, a bucket, DNS, billing) and every thing a person must do after it lands (set the variables, cut over, log in as the user and prove it live). Each one is a `task` ticket, and the same round fetches its platform docs and lead time, its brief asking for the web. Done when every ticket you are about to propose has its estimate line, every task has its Steps and lead time, and every code ticket is pure (rules file, Types).
 
 4. **Cut.** Apply the cutting rules below. Output: phases, and per ticket a title, type, size, blocked-by list, one line of what it delivers, and the stand-ins it leaves with the ticket that removes each.
 
@@ -26,12 +28,12 @@ Read `../../shared/issue-rules.md` first. Every sub-issue obeys it. This file ad
 
    Any reply that is not `go` is a change request: apply it, show the full breakdown again, ask the three questions again. Nothing exists on GitHub before `go`.
 
-6. **Duplicate check.** Two searches on the epic's keywords, open then closed, per the rules file § Duplicates and seeds. Same open work, not a seed: show it, stop. Origin seed, or the map `/discover-path` cleared: remember it. It becomes the parent, per the rules file § Origin seed. A closed match goes on the parent's Related line.
+6. **Duplicate check.** Two searches on the epic's keywords, open then closed, per the rules file § Duplicates and seeds. Same open work, not a seed: show it, stop. Origin seed, or the map `/discover-path` cleared: remember it. It becomes the parent, per the rules file § Origin seed. The XXL issue named as input is the origin, never a duplicate: a search that finds it goes on. A closed match goes on the parent's Related line.
 
 7. **Create, in phase order.** Every `gh` call in this step names `--repo owner/repo`, the repo the rules file's gate found, so a run in one checkout files into the repo the chat named. Each call is one `gh issue create --repo owner/repo --assignee @me`, the parent and every sub-issue alike, per the rules file § Assignee. Numbers from earlier calls feed later ones.
 
    1. Parent: title with `epic` in the type slot, priority label if named, body per the parent template with the phase list holding titles only. The parent holds no prerequisite prose: every "before you start" item is a task ticket in the phase list. With an origin, `gh issue edit` it into the parent instead of creating one.
-   2. Phase 1 tickets: `--parent <P>`, size label, body per the rules file with `Part of #P`. XS tickets carry Steps and `--label ready-to-build`. S tickets carry both only when the steps are free, per the rules file. An XS ticket whose Steps cannot be written is really S: no Steps, no `ready-to-build`, the S size label. A `task` ticket, in this or any phase: `--parent <P>`, `--label manual`, no size label, body per the rules file § Task body. A task the code needs first: the code ticket carries `--blocked-by` the task's number. A task that follows the code: the task carries `--blocked-by` the code ticket's number. A ticket the Docs rule below gives doc text to carries it under `## Docs to write`.
+   2. Phase 1 tickets: `--parent <P>`, size label, body per the rules file with `Part of #P`. XS and S tickets carry Steps and `--label ready-to-build` when the steps can be written, per the rules file; a ticket whose Steps cannot be written keeps its size, with no Steps and no `ready-to-build`. A `task` ticket, in this or any phase: `--parent <P>`, `--label manual`, no size label, body per the rules file § Task body. A task the code needs first: the code ticket carries `--blocked-by` the task's number. A task that follows the code: the task carries `--blocked-by` the code ticket's number. A ticket the Docs rule below gives doc text to carries it under `## Docs to write`.
    3. Each later phase: same, plus `--blocked-by <n1>,<n2>` with the numbers of the tickets that gate it, and the `Related` and `Noted for later` lines filled with real numbers.
    4. Rewrite the parent body with the numbers filled in: `gh issue edit <P> --repo owner/repo --body-file "$f"`.
 
@@ -43,13 +45,13 @@ Read `../../shared/issue-rules.md` first. Every sub-issue obeys it. This file ad
 
    Match by title, skip those, resume the sequence, then finish step 7.4.
 
-8. **Report.** Parent URL on the clipboard. Then one line per ticket: number, title, size, phase. Then two lines: the tickets with no blockers, free for an agent now; and the tasks, which are yours.
+8. **Report.** Parent URL on the clipboard. Then one line per ticket: number, title, estimate line, phase. Then two lines: the tickets with no blockers, free for an agent now; and the tasks, which are yours.
 
 ## Cutting rules
 
 **Skyscraper.** Phase 1 is the foundation: the schema, contract, or seam that everything later stands on. A phase is done when the next phase can build on it without touching it again. Fewest phases wins, but a ticket that cannot be verified on its own goes one phase later, never earlier.
 
-**Vertical.** Each ticket cuts one narrow, complete path through every layer it needs (schema, API, UI, tests). A horizontal slice ("all the models", "all the endpoints") is not a ticket. A ticket is demoable or verifiable alone, and fits one fresh window and one PR: size XS to L, never XL.
+**Vertical.** Each ticket cuts one narrow, complete path through every layer it needs (schema, API, UI, tests). A horizontal slice ("all the models", "all the endpoints") is not a ticket. A ticket is demoable or verifiable alone, and fits one fresh window and one PR: size XS to XL, never XXL.
 
 **Edges.** A ticket is blocked by a ticket only when it cannot land green without it. Same phase means no edge between them. A ticket blocked by one ticket of the previous phase is free the moment that one closes; write only that one edge, so it can start early.
 
@@ -84,13 +86,13 @@ Fallback, only when even a batch cannot stay green alone: keep the same sequence
 ## <Epic title> · <n> tickets · <k> phases
 
 ### Phase 1 · <what this phase lays down>
-1. **<title>** · <type> · <size> · blocked by: none
+1. **<title>** · <type> · <size line> · blocked by: none
    Delivers: <end-to-end behaviour, one line>
    Leaves: <stand-in>, removed by 3
    Writes: `docs/adr/<next>-no-job-queue.md`, `CONTEXT.md` (Order)
 
 ### Phase 2 · <…>
-3. **<title>** · <type> · <size> · blocked by: 1
+3. **<title>** · <type> · <size line> · blocked by: 1
    Delivers: <…>
 4. **<title>** · task · lead time: <wait or none> · blocked by: none
    Delivers: <what exists at the end, and which ticket it unblocks>
