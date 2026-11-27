@@ -4,14 +4,21 @@
 #
 # Usage: kickoff.sh route <owner/repo> [--model M] [--effort E] <n>...
 #        kickoff.sh thread <owner/repo> [--heading H] [--mode review|ready|merge]
-#                   [--model M] [--effort E] <step> <n>
+#                   [--model M] [--effort E] [--on <pr-n>] <step> <n>...
 #
 # route: one JSON line per issue, in the order named: number, title,
-# parent, and the Router's line (shared/route/router.sh). It writes nothing.
+# parent, and the Router's line (shared/route/router.sh). An epic's line is
+# followed by one line per open sub-issue. It writes nothing.
 #
 # thread: the line one thread starts from: step, model, model_from, effort,
 # effort_from, reason, path, slash_command, message, thread_title, and
-# project (`found` or `added`). The Router must give the issue <step>.
+# project (`found` or `added`). The Router must give every issue <step>.
+# Only ship takes several issues: tickets that share one parent go as a run
+# under it, else as a set in the order given, and one epic named alone is
+# the whole epic. A ship thread skips a ticket that is a task, waits, or is
+# done, as /ship's plan lists tasks itself. The thread's effort is the
+# highest of its issues. --on <pr-n> makes one ticket a new layer on that
+# PR's stack.
 # The agent starts the thread from this line with T3's tools, per
 # shared/launch/launch-t3.md: `t3 thread start` takes no effort, and a
 # script cannot call T3's tools.
@@ -30,7 +37,7 @@ core="$here/../../../shared"
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] <n>...
-       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] <step> <n>"
+       kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--on <pr-n>] <step> <n>..."
 
 # The T3 check comes first, so nothing is read outside T3 Code.
 bash "$core/t3-cli.sh" >/dev/null || exit 1
@@ -42,13 +49,14 @@ slug="${1:-}"
 [[ "$slug" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || die_usage "$usage" "first argument must be <owner/repo>, got: ${slug:-nothing}"
 shift
 
-heading=""; mode=""; router_flags=(); nums=()
+heading=""; mode=""; on=""; router_flags=(); nums=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --heading) [ "$cmd" = thread ] && [ -n "${2:-}" ] || die_usage "$usage" "--heading needs text, with thread"; heading="$2"; shift 2 ;;
     --mode)
       [ "$cmd" = thread ] && one_of "$ship_mode_list" "${2:-}" || die_usage "$usage" "--mode must be $(spelled "$ship_mode_list"), with thread, got: ${2:-nothing}"
       mode="$2"; shift 2 ;;
+    --on) [ "$cmd" = thread ] && [[ "${2:-}" =~ ^#?[0-9]+$ ]] || die_usage "$usage" "--on needs a PR number, with thread"; on="${2#\#}"; shift 2 ;;
     --model|--effort) [ -n "${2:-}" ] || die_usage "$usage" "$1 needs a value"; router_flags+=("$1" "$2"); shift 2 ;;
     -*) die_usage "$usage" "unexpected argument: $1" ;;
     *) nums+=("$1"); shift ;;
@@ -60,8 +68,9 @@ if [ "$cmd" = thread ]; then
   step="${nums[0]:-}"
   one_of 'ship|triage|grill|ready-pr|complete-task' "$step" || die_usage "$usage" "step must be ship, triage, grill, ready-pr, or complete-task, got: ${step:-nothing}"
   nums=("${nums[@]:1}")
-  [ "${#nums[@]}" -eq 1 ] || die_usage "$usage" "thread takes one issue"
+  [ "${#nums[@]}" -le 1 ] || [ "$step" = ship ] || die_usage "$usage" "only ship takes several issues"
   [ -z "$mode" ] || [ "$step" = ship ] || die_usage "$usage" "--mode goes only with ship"
+  [ -z "$on" ] || { [ "$step" = ship ] && [ "${#nums[@]}" -eq 1 ]; } || die_usage "$usage" "--on goes only with ship and one issue"
 fi
 [ "${#nums[@]}" -gt 0 ] || die_usage "$usage" "name at least one issue"
 for n in "${nums[@]}"; do
@@ -82,6 +91,14 @@ read_issues() {
   jq -c '.data.repository | with_entries(.key |= ltrimstr("i"))' <<<"$out"
 }
 
+# issue_of <issues> <n>: one issue of a read_issues answer, or a stop.
+issue_of() {
+  local i
+  i="$(jq -c --arg n "$2" '.[$n]' <<<"$1")"
+  [ "$i" != null ] || die "no issue #$2 in $slug"
+  printf '%s\n' "$i"
+}
+
 # route_one <issue json>: the issue's route line.
 route_one() {
   local line
@@ -89,37 +106,96 @@ route_one() {
   jq -c --argjson r "$line" '{number, title, parent: (.parent.number // null)} + $r' <<<"$1"
 }
 
+# open_subs <issue json>: the numbers of its open sub-issues, one per line.
+open_subs() { jq -r '(.subIssues.nodes // [])[] | select(.state == "OPEN") | .number' <<<"$1"; }
+
 issues="$(read_issues "${nums[@]}")"
-lines=()
-for n in "${nums[@]}"; do
-  i="$(jq -c --arg n "$n" '.[$n]' <<<"$issues")"
-  [ "$i" != null ] || die "no issue #$n in $slug"
-  lines+=("$(route_one "$i")")
-done
 
 if [ "$cmd" = route ]; then
-  printf '%s\n' "${lines[@]}"
+  for n in "${nums[@]}"; do
+    i="$(issue_of "$issues" "$n")"
+    route_one "$i"
+    subs=(); while IFS= read -r s; do [ -z "$s" ] || subs+=("$s"); done < <(open_subs "$i")
+    [ "${#subs[@]}" -gt 0 ] || continue
+    sub_issues="$(read_issues "${subs[@]}")"
+    for s in "${subs[@]}"; do route_one "$(issue_of "$sub_issues" "$s")"; done
+  done
   exit 0
 fi
 
 # ---------- thread ----------
-r="${lines[0]}"; n="${nums[0]}"
-got="$(jq -r '.step // ""' <<<"$r")"
-[ "$(jq -r .stop <<<"$r")" != true ] || die "$(jq -r .reason <<<"$r")"
-[ -n "$got" ] || die "#$n has no step: $(jq -r .reason <<<"$r")"
-[ "$got" = "$step" ] || die "#$n goes to /$got, not /$step"
+first="$(issue_of "$issues" "${nums[0]}")"
+title="$(jq -r .title <<<"$first")"
+epic=""
+counted=()
+if [ "$(jq '(.subIssues.nodes // []) | length' <<<"$first")" -gt 0 ]; then
+  [ "${#nums[@]}" -eq 1 ] && [ "$step" = ship ] && [ -z "$on" ] || die_usage "$usage" "name an epic alone, or its tickets"
+  epic="${nums[0]}"
+  while IFS= read -r s; do [ -z "$s" ] || counted+=("$s"); done < <(open_subs "$first")
+  [ "${#counted[@]}" -gt 0 ] || die "#$epic has no open ticket for /ship"
+  issues="$(read_issues "${counted[@]}")"
+else
+  for n in "${nums[@]:1}"; do
+    [ "$(jq '(.subIssues.nodes // []) | length' <<<"$(issue_of "$issues" "$n")")" -eq 0 ] || die_usage "$usage" "name an epic alone, or its tickets"
+  done
+  counted=("${nums[@]}")
+fi
 
-url="$(jq -r --arg n "$n" '.[$n].url' <<<"$issues")"
-title="$(jq -r .title <<<"$r")"
-lflags=()
-[ -z "$mode" ] || lflags+=(--mode "$mode")
-[ "$step" != ready-pr ] || lflags+=(--pr "$(jq -r .pr <<<"$r")")
-launch="$(bash "$core/launch/line.sh" "$url" "$step" ${lflags[@]+"${lflags[@]}"})" || exit
+# rank <effort>: its place on the effort scale, so the highest wins.
+rank() { case "$1" in low) echo 1 ;; medium) echo 2 ;; high) echo 3 ;; xhigh) echo 4 ;; max) echo 5 ;; *) echo 0 ;; esac; }
+
+top=""; k=0; parents=""
+for n in "${counted[@]}"; do
+  i="$(issue_of "$issues" "$n")"
+  r="$(route_one "$i")"
+  if [ "$step" = ship ] && one_of 'task|waiting|done' "$(jq -r .stage <<<"$r")"; then continue; fi
+  [ "$(jq -r .stop <<<"$r")" != true ] || die "$(jq -r .reason <<<"$r")"
+  got="$(jq -r '.step // ""' <<<"$r")"
+  [ -n "$got" ] || die "#$n has no step: $(jq -r .reason <<<"$r")"
+  [ "$got" = "$step" ] || die "#$n goes to /$got, not /$step"
+  k=$((k+1))
+  parents="$parents$(jq -r '.parent // "none"' <<<"$r")"$'\n'
+  if [ -z "$top" ] || [ "$(rank "$(jq -r .effort <<<"$r")")" -gt "$(rank "$(jq -r .effort <<<"$top")")" ]; then top="$r"; fi
+done
+[ "$k" -gt 0 ] || die "#${nums[0]} has no open ticket for /ship"
+[ "$k" -eq 1 ] || top="$(jq -c --arg k "$k" '.reason += " of \($k) tickets"' <<<"$top")"
+
+# The /ship target: the whole epic, a run under the tickets' one parent, or
+# a set in the order given.
+issue_url() { printf 'https://github.com/%s/issues/%s' "$slug" "$1"; }
+largs=()
+if [ -n "$epic" ]; then
+  largs=("$(issue_url "$epic")")
+elif [ "${#nums[@]}" -gt 1 ]; then
+  parent="$(sort -u <<<"$parents" | grep -v '^$')"
+  if [ "$parent" != none ] && [ "$(grep -c . <<<"$parent")" -eq 1 ]; then
+    largs=("$(issue_url "$parent")"); for n in "${nums[@]}"; do largs+=("#$n"); done
+  else
+    largs=("$(issue_url "${nums[0]}")"); for n in "${nums[@]:1}"; do largs+=("#$n"); done
+  fi
+else
+  largs=("$(issue_url "${nums[0]}")")
+  [ -z "$on" ] || largs+=(on "https://github.com/$slug/pull/$on")
+fi
+[ -z "$mode" ] || largs+=(--mode "$mode")
+[ "$step" != ready-pr ] || largs+=(--pr "$(jq -r .pr <<<"$top")")
+launch="$(bash "$core/launch/line.sh" "${largs[0]}" "$step" "${largs[@]:1}")" || exit
 path="$(jq -r .path <<<"$launch")"
 project="$(bash "$core/launch/project.sh" "$path")" || exit
 
-[ -n "$heading" ] || heading="#$n"
-jq -cn --argjson r "$r" --argjson l "$launch" --arg title "$heading $title" --arg project "$project" \
+# The heading starts a T3 thread title, which takes any text: #42, #42 #43,
+# #42 on #80, and #70 for a whole epic. Too long: the numbers that fit in 27
+# characters, then +<the rest>. A heading the user named is used as typed.
+if [ -z "$heading" ]; then
+  heading="#${nums[0]}"; j=1
+  while [ "$j" -lt "${#nums[@]}" ] && [ $(( ${#heading} + ${#nums[$j]} + 2 )) -le 27 ]; do
+    heading="$heading #${nums[$j]}"; j=$((j+1))
+  done
+  if [ "$j" -lt "${#nums[@]}" ]; then heading="$heading +$(( ${#nums[@]} - j ))"; fi
+  [ -z "$on" ] || heading="$heading on #$on"
+fi
+
+jq -cn --argjson r "$top" --argjson l "$launch" --arg title "$heading $title" --arg project "$project" \
   '{step: $r.step, model: $r.model, model_from: $r.model_from, effort: $r.effort, effort_from: $r.effort_from,
     reason: $r.reason, path: $l.path, slash_command: $l.slash_command, message: $l.message,
     thread_title: $title, project: $project}'

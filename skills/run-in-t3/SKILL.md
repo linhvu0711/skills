@@ -19,14 +19,20 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
 
    It prints one JSON line per issue: `number`, `title`, `parent`, and the Router's `stage`, `step`, `stop`, `model`, `model_from`, `effort`, `effort_from`, `reason`, and `pr`. Hold them.
 3. **Propose.** A line at stage `unlabeled` gets no thread: its report line is `no thread, no label picks a step`.
-4. **Group.** One thread per issue whose line has a step and no `stop`. An issue with no step, or with `stop` true, gets no thread: its report line gives the line's `reason`.
+4. **Group.** Put the issues whose line has a step and no `stop` into threads, by the user's words. Only `/ship` threads take several issues; every other step gets one thread per issue. An epic's line has no step: the lines after it are its tickets, and "the whole epic" is one `ship` thread named by the epic alone.
+   - No grouping words, and every issue routes to `ship`: one thread for all of them.
+   - No grouping words, and the issues route to different steps: ask one question that lists each issue and its step, and wait. Nothing starts before the answer.
+   - Words that put issues of different steps in one thread, as "12 and 15 together" for a ticket and a bug: ask the same way, and wait.
+   - "The rest one thread each" and the like: each issue no group names gets its own thread.
+
+   An issue with no step, or with `stop` true, gets no thread: its report line gives the line's `reason`.
 5. **Lines.** For each thread, before any launch:
 
    ```bash
-   scripts/kickoff.sh thread <owner/repo> [--heading H] [--mode M] [--model M] [--effort E] <step> <n>
+   scripts/kickoff.sh thread <owner/repo> [--heading H] [--mode M] [--model M] [--effort E] [--on <pr-n>] <step> <n>...
    ```
 
-   Pass `--mode` only to a `ship` thread. Hold each JSON line: `step`, `model`, `model_from`, `effort`, `effort_from`, `reason`, `path`, `slash_command`, `message`, `thread_title`, and `project`. A stop on any line starts no thread at all.
+   A `ship` thread names all its tickets, or one epic alone; `--on` names the PR a ticket stacks on. Pass `--mode` only to a `ship` thread. Hold each JSON line: `step`, `model`, `model_from`, `effort`, `effort_from`, `reason`, `path`, `slash_command`, `message`, `thread_title`, and `project`. A stop on any line starts no thread at all.
 6. **Launch.** Follow `../../shared/launch/launch-t3.md` steps 1 and 2 for every line first, then step 3 for each line. A stop in steps 1 or 2 starts no thread at all. Hold each thread's `link`.
 7. **Report.** One line per thread, then one line per issue with no thread, and stop:
 
@@ -42,6 +48,10 @@ The Router, `../../shared/route/router.sh`, reads one issue and gives the step i
 **User:** `/run-in-t3 https://github.com/acme/shop/issues/42`, in a T3 chat; #42 is `size/S`.
 
 `kickoff.sh route acme/shop 42` gives step `ship`, effort `medium`. `kickoff.sh thread acme/shop ship 42` gives `message` `/ship #42`. `opus` maps to `claude-opus-5-5`, and the project with that `workspaceRoot` is found. One `t3_thread_launch`. Say `#42 Export orders as CSV → [#42 Export orders as CSV](t3-thread://v1/…) · /ship · effort medium (default) · size S`. Stop.
+
+**User:** `/run-in-t3 12 14 15, the rest one thread each`; #12 is `size/S`, #14 `size/M`, #15 `bug`.
+
+`route` gives #12 and #14 `ship`, #15 `triage`. The words group the two tickets and give #15 its own thread: `thread acme/shop ship 12 14` gives `message` `/ship #12 #14`, effort `high`, reason `size M of 2 tickets`; `thread acme/shop triage 15` gives `/triage #15` at `high`. With no words after `12 14 15`, ask first: two steps.
 
 **User:** `/run-in-t3 42 with sonnet xhigh`, in a session about acme/shop.
 

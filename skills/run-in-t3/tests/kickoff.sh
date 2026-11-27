@@ -51,7 +51,7 @@ kt_issue() {
 
 # kt_issues: the repo's issues, keyed as kickoff.sh asks for them.
 # #12 and #14 are tickets of epic #70; #42 a bug, #43 has open PR #80, #44
-# is size S, #15 and #17 bugs, #16 has no label.
+# is size S, #18 size M, #15 and #17 bugs, #16 has no label.
 kt_issues() {
   jq -cn \
     --argjson i12 "$(kt_issue 12 "Add CSV" size/S 70)" \
@@ -60,10 +60,11 @@ kt_issues() {
     --argjson i42 "$(kt_issue 42 "Login fails" bug)" \
     --argjson i43 "$(kt_issue 43 "Fix export" "" "" "" https://github.com/acme/app/pull/80)" \
     --argjson i44 "$(kt_issue 44 "Export orders" size/S)" \
+    --argjson i18 "$(kt_issue 18 "Export XML" size/M)" \
     --argjson i15 "$(kt_issue 15 "Slow page" bug)" \
     --argjson i17 "$(kt_issue 17 "Bad link" bug)" \
     --argjson i16 "$(kt_issue 16 "Old idea" "")" \
-    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i15: $i15, i17: $i17, i16: $i16}}}'
+    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16}}}'
 }
 
 # kt_go [outside|off-path] <args...>: kickoff from T, with the search root
@@ -217,11 +218,80 @@ t_kt_runs_by_path() {
   eq stderr "stop: not inside T3 Code" "$err"
 }
 
+t_kt_highest_effort() {
+  # Given: #44 size S and #18 size M, with no parent
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 44 18
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(kt_thread ship high "size M of 2 tickets" "/ship #44 #18" "#44 #18 Export orders" found)" "$out"
+}
+
+t_kt_run_of_epic() {
+  # Given: #12 and #14, both tickets of epic #70
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 12 14
+  # Then
+  eq exit 0 "$code"
+  eq message "/ship #70 #12 #14" "$(jq -r .message <<<"$out")"
+}
+
+t_kt_whole_epic() {
+  # Given: epic #70 with open tickets #12 (size S) and #14 (size M)
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 70
+  # Then
+  eq exit 0 "$code"
+  eq line "/ship #70|size M of 2 tickets|#70 Order export" "$(jq -r '[.message, .reason, .thread_title] | join("|")' <<<"$out")"
+}
+
+t_kt_route_epic() {
+  # Given: epic #70 with open tickets #12 and #14
+  kt_setup found
+  # When
+  kt_go route acme/app 70
+  # Then
+  eq exit 0 "$code"
+  eq lines '70|epic||null
+12|ticket|ship|70
+14|ticket|ship|70' "$(jq -r '[.number, .stage, (.step // ""), .parent] | map(tostring) | join("|")' <<<"$out")"
+}
+
+t_kt_bug_in_ship() {
+  # Given: #44 size S, #15 a bug
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 44 15
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: #15 goes to /triage, not /ship" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+}
+
+t_kt_only_ship_many() {
+  # Given: #15 and #17, both bugs
+  kt_setup found
+  # When
+  kt_go thread acme/app triage 15 17
+  # Then
+  eq exit 64 "$code"
+  eq "stderr line 1" "stop: only ship takes several issues" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 cases=(
   "route gives each issue its step|t_kt_route_steps"
   "a bug thread is triage at high|t_kt_bug_thread"
   "a PR thread names the PR|t_kt_pr_thread"
   "a size S thread is ship at medium|t_kt_ship_thread"
+  "a ship thread takes the highest effort|t_kt_highest_effort"
+  "tickets of one epic go as a run|t_kt_run_of_epic"
+  "a whole epic is one ship thread|t_kt_whole_epic"
+  "route opens an epic|t_kt_route_epic"
+  "a bug in a ship thread stops|t_kt_bug_in_ship"
+  "only ship takes several issues|t_kt_only_ship_many"
   "an unreadable GitHub stops|t_kt_gh_fails"
   "no checkout stops the thread line|t_kt_no_checkout"
   "outside T3 it stops|t_kt_outside_t3"
