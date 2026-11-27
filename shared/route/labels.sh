@@ -1,5 +1,5 @@
 # labels.sh: the label rule, the allow-lists, and the analysis row that the
-# Router, decide.sh, and the orchestrator's script share. Source it; it
+# Router, run-in-t3's kickoff.sh, and the orchestrator's script share. Source it; it
 # defines values and functions and runs nothing.
 
 route_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -18,8 +18,7 @@ size_of() {
   esac
 }
 
-# The allow-lists, each a |-list. The _list names keep clear of decide.sh's
-# own sizes array.
+# The allow-lists, each a |-list.
 effort_list='low|medium|high|xhigh|max'
 ship_mode_list='review|ready|merge'
 # A guess is never XXL: XXL work is cut into tickets (shared/size.md).
@@ -27,8 +26,8 @@ size_list='XS|S|M|L|XL'
 # The words a proposal and an answer name a step by.
 route_list='grill|triage|ship|ready-pr|task|close|xxl'
 
-# The analysis row: the model and effort the Router and decide.sh give
-# /grill and /triage, and the orchestrator gives the retro.
+# The analysis row: the model and effort the Router gives /grill and
+# /triage, and the orchestrator gives the retro.
 analysis_model=opus
 analysis_effort=high
 

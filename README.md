@@ -39,7 +39,7 @@ flowchart LR
   ticket --> kickofft3[run-in-t3]
   ticket --> orchestrate[orchestrate]
   ticket --> planup[plan-up]
-  kickofft3 -->|new thread| ship
+  kickofft3 -->|thread per issue step| ship
   orchestrate -->|thread per stage| ship
   subgraph ship [ship: one run]
     direction LR
@@ -84,7 +84,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 
 | Skill | What it does |
 |---|---|
-| [run-in-t3](skills/run-in-t3/) | Starts `/ship` in a new T3 Code thread on an issue, a run of tickets, or an epic. |
+| [run-in-t3](skills/run-in-t3/) | Starts the skill each issue needs in a new T3 Code thread: /ship, /triage, /grill, /ready-pr, or /complete-task. |
 | [orchestrate](skills/orchestrate/) | Runs a set of issues to closed from one pinned T3 Code thread, starting one thread per issue at each new stage. |
 | [ship](skills/ship/) | Takes an issue from plan to a pull request in one run. After the plan it picks how far to go: wait for your review of the plan, stop at a ready PR, or merge it. You can pick it yourself. |
 | [plan-up](skills/plan-up/) | Turns a ready issue, or a run of tickets, into a plan a coding agent can follow cold: seams, tests, slices, doc updates, UI walks. |
