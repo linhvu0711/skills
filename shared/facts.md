@@ -55,7 +55,7 @@ A subagent's file names its tier, 1 to 4, and its checker line, yes or no. `mode
 <agent> ran on <where>: <try>, <why>; <try>, <why>.
 ```
 
-`<where>` is the try that ran, `<company> <model> <effort>`. Each `<try>, <why>` pair is a try before it, in order, and why it could not run, as in `logic-reviewer ran on antigravity gemini-4-neon medium: devin swe-2-1-medium xhigh, Devin is off in T3.` and `logic-reviewer ran on claude claude-opus-5-5 high: devin swe-2-1-medium xhigh, Devin lists no such model; antigravity gemini-4-neon medium, Antigravity needs full-access.`
+`<where>` is the try that ran, `<company> <model> <effort>`. Each `<try>, <why>` pair is a try before it, in order, and why it could not run, as in `scope-reviewer ran on claude claude-sonnet-5-5 high: devin swe-2-1-medium high, Devin is off in T3.` and `logic-reviewer ran on claude claude-opus-5-5 high: antigravity gemini-4-neon medium, Antigravity needs full-access.`
 
 **Not found.** Your harness says the agent is not found: start the plain subagent, with the last try's model and effort as far as your harness's start call takes them (`harness.md`), and print this line:
 

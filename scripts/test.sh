@@ -415,7 +415,7 @@ t_agents_tries_lists_checker() {
   run bash scripts/agents.sh tries claude < skills/demo/agents/helper.md
   # Then
   eq exit 0 "$code"
-  eq stdout "$(printf '%s\n' 'devin swe-2-1-medium xhigh' 'antigravity gemini-4-neon medium' 'claude claude-opus-5-5 high')" "$out"
+  eq stdout "$(printf '%s\n' 'antigravity gemini-4-neon medium' 'claude claude-opus-5-5 high')" "$out"
 }
 
 t_agents_tries_follow_tier_cell() {

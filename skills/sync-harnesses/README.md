@@ -42,8 +42,8 @@ It also checks each model a helper can try, from `shared/model-tiers.md`, for th
 The Devin line comes from one live call to SWE-2.1 through Devin's CLI, for each model a helper tries first in Devin. A call takes about 4 seconds and costs nothing in Devin. When Devin is off in T3 or not set up there, or it refuses the model, the helpers whose first try is Devin move to their next try, and a `warn:` line names them:
 
 ```
-warn: Devin is off in T3, so these move to their next try: gap-checker, hack-judge, logic-reviewer, plan-correctness-checker, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
-warn: swe-2-1-medium refused (Error: Unknown model: 'swe-2-1-medium'), so these move to their next try: gap-checker, hack-judge, logic-reviewer, plan-correctness-checker, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
+warn: Devin is off in T3, so these move to their next try: hack-judge, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
+warn: swe-2-1-medium refused (Error: Unknown model: 'swe-2-1-medium'), so these move to their next try: hack-judge, rule-judge, scope-reviewer, standards-reviewer, walker, way-judge
 ```
 
 A warning does not fail the run.
