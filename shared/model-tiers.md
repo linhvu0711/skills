@@ -14,7 +14,7 @@ Can do: read and judge real code, apply a long list of rules, run long multi-ste
 Slips on: open problems with no frame, subtle bugs that need deep tracing.
 Example job: "Check this file against these 30 rules."
 
-**Tier 3: the deep thinker** (Opus, Sol, SWE-2.1 xhigh).
+**Tier 3: the deep thinker** (Opus, Sol).
 Can do: reason through unclear problems, trace causes across many files, find what is missing or wrong, check a claim hard.
 Slips on: rarely on reasoning; it costs more and takes longer.
 Example job: "Find every way this change can break a caller."
@@ -40,7 +40,7 @@ Example job: "Is this the right shape for code that does not exist yet?"
 tier	claude	codex	antigravity	devin
 1	claude-haiku-5-5 high	gpt-6.1-terra low	none	none
 2	claude-sonnet-5-5 high	gpt-6.1-terra medium	gemini-4-neon low	swe-2-1-medium high
-3	claude-opus-5-5 high	gpt-6.2-sol medium	gemini-4-neon medium	swe-2-1-medium xhigh
+3	claude-opus-5-5 high	gpt-6.2-sol medium	gemini-4-neon medium	none
 4	claude-fable-5-2 high	gpt-6.2-astra high	gemini-4-neon high	none
 ```
 
@@ -55,7 +55,7 @@ row	claude	codex	antigravity
 2 no	devin, claude	devin, codex	devin, antigravity
 2 yes	devin, claude	devin, codex	devin, antigravity
 3 no	claude	codex	antigravity
-3 yes	devin, antigravity, claude	devin, claude, codex	devin, claude, antigravity
+3 yes	antigravity, claude	claude, codex	claude, antigravity
 4 no	claude	codex	antigravity
 4 yes	antigravity, claude	claude, codex	claude, antigravity
 ```

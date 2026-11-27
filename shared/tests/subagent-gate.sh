@@ -108,7 +108,7 @@ t_gate_claude_refuses_main_first_t3_logic_reviewer() {
   t3_gate claude "$(claude_main_start logic-reviewer)"
   # Then
   eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule logic-reviewer 'devin swe-2-1-medium xhigh')"'"' "$out"
+  has stdout '"permissionDecisionReason":"'"$(home_rule logic-reviewer 'antigravity gemini-4-neon medium')"'"' "$out"
 }
 
 # codex_log_start <originator>: outside T3's env, a Codex main agent starts
