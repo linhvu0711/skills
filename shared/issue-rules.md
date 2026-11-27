@@ -335,6 +335,8 @@ gh label create --repo owner/repo "manual" --color 6E7781 --description "Work in
 gh label create --repo owner/repo "waiting" --color D4C5F9 --description "A task that waits on someone outside; the task turn moves on"
 ```
 
+**PR size label.** make-pr and ready-pr find a repo's size labels, XS to XXL, the way the `size` line above reads them: the saved map from `get`, else the labels that clearly name a size in `gh label list --repo owner/repo --limit 200 --json name -q '.[].name'`. A repo with no size labels: no PR label, and none created. A repo with size labels that lacks the one a PR needs, as `size/XXL` the first time: create it from the block above, then retry once.
+
 Priority labels: `p0` `B60205`, `p1` `D93F0B`, `p2` `FBCA04`, `p3` `FEF2C0`, a heat ramp. Seed: `seed` `C5DEF5` and bug: `bug` `8250DF`, both owned by `capture`.
 
 One hue per family, never reused: size teal, priority red to yellow, ready-to-build green, manual grey, seed light blue, bug purple, `discovery/*` pink (`../skills/discover-path/references/map.md`).
