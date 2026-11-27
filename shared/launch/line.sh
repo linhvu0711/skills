@@ -14,8 +14,8 @@
 # --ready, as `/ship --merge`; message is slash_command, a space, and the
 # target, as `/ship --merge #42`. The target is a number when gh in the
 # checkout names the issue's repo, else the URL.
-# Exit 1: no checkout of the repo, its reason the last `stop:` line on
-# stderr. Exit 64: a wrong command line, with the usage after the reason.
+# Exit 1: no checkout of the repo, or a CLI it needs is not installed, its
+# reason the last `stop:` line on stderr. Exit 64: a wrong command line, with the usage after the reason.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -23,10 +23,13 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/../route/labels.sh"
 . "$here/../gh.sh"
 
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 step_list='ship|triage|grill|ready-pr|complete-task'
 usage="usage: line.sh <issue-url> $step_list [--mode $ship_mode_list] [--pr <pr-url>]"
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
+for c in git gh jq; do command -v "$c" >/dev/null || die "$c is not installed"; done
 
 args=(); mode=""; pr_url=""
 while [ $# -gt 0 ]; do

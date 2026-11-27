@@ -34,6 +34,7 @@
 # effort_from, reason, pr. A null step has null model and effort. stop is
 # true when a step should run and cannot, so the caller shows the reason as
 # a wait: two or more open PRs, or a ready-pr answer with no open PR.
+# Exit 1: jq is not installed, `stop: jq is not installed` on stderr.
 # Exit 64: a wrong command line, or stdin that is not one issue, with the
 # usage after the reason on stderr.
 set -euo pipefail
@@ -42,8 +43,11 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
 
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 usage="usage: router.sh [--answer $route_list] [--size $size_list] [--model M] [--effort E] < <issue json>"
+
+command -v jq >/dev/null || die "jq is not installed"
 
 answer=""; size=""; set_model=""; set_effort=""
 while [ $# -gt 0 ]; do

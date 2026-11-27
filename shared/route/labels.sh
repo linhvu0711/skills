@@ -36,13 +36,17 @@ analysis_effort=high
 # proposal writes on the issue, so no skill guesses it again: bug for
 # triage, seed for grill, manual for task, and for ship the repo's own size
 # label, or size/<size> when the repo has none saved. Nothing for the rest.
+# Returns 1, with `stop:` on stderr, when python3 or jq is not installed.
 answer_label() {
-  local conv
+  local conv c
   case "$2" in
     triage) echo bug ;;
     grill) echo seed ;;
     task) echo manual ;;
     ship)
+      for c in python3 jq; do
+        command -v "$c" >/dev/null || { printf 'stop: %s is not installed\n' "$c" >&2; return 1; }
+      done
       if conv="$(python3 "$route_dir/../issue_conventions.py" get "$1" 2>/dev/null)"; then
         jq -r --arg z "$3" '.size[$z] // "size/\($z)"' <<<"$conv"
       else
