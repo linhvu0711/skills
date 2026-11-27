@@ -13,8 +13,8 @@
 # ship. Each goes to the Router for that issue only; a label always wins.
 #
 # route: one JSON line per issue, in the order named: number, title,
-# parent, and the Router's line (shared/route/router.sh). An epic's line is
-# followed by one line per open sub-issue. It writes nothing.
+# parent, and the Router's line (shared/route/router.sh). An open epic's
+# line is followed by one line per open sub-issue. It writes nothing.
 #
 # thread: the line one thread starts from: step, model, model_from, effort,
 # effort_from, reason, path, slash_command, message, thread_title, and
@@ -170,7 +170,8 @@ if [ "$cmd" = route ]; then
   lines=(); routed=()
   for n in "${nums[@]}"; do
     i="$(issue_of "$issues" "$n")"
-    lines+=("$(route_one "$i")"); routed+=("$n")
+    line="$(route_one "$i")"; lines+=("$line"); routed+=("$n")
+    [ "$(jq -r .stage <<<"$line")" = epic ] || continue
     subs=(); while IFS= read -r s; do [ -z "$s" ] || subs+=("$s"); done < <(open_subs "$i")
     [ "${#subs[@]}" -gt 0 ] || continue
     sub_issues="$(read_issues "${subs[@]}")"
@@ -211,6 +212,7 @@ counted=()
 if [ "$(jq '(.subIssues.nodes // []) | length' <<<"$first")" -gt 0 ]; then
   [ "${#nums[@]}" -eq 1 ] && [ "$step" = ship ] && [ -z "$on" ] || die_usage "$usage" "name an epic alone, or its tickets"
   epic="${nums[0]}"
+  [ "$(jq -r .state <<<"$first")" = OPEN ] || die "#$epic is closed"
   while IFS= read -r s; do [ -z "$s" ] || counted+=("$s"); done < <(open_subs "$first")
   [ "${#counted[@]}" -gt 0 ] || die "#$epic has no open ticket for /ship"
   issues="$(read_issues "${counted[@]}")"

@@ -51,7 +51,8 @@ kt_issue() {
 
 # kt_issues: the repo's issues, keyed as kickoff.sh asks for them.
 # #12 and #14 are tickets of epic #70; #42 a bug, #43 has open PR #80, #44
-# is size S, #18 size M, #15 and #17 bugs, #16 has no label.
+# is size S, #18 size M, #15 and #17 bugs, #16 has no label, and #71 a
+# closed epic with open ticket #12.
 kt_issues() {
   jq -cn \
     --argjson i12 "$(kt_issue 12 "Add CSV" size/S 70)" \
@@ -64,7 +65,8 @@ kt_issues() {
     --argjson i15 "$(kt_issue 15 "Slow page" bug)" \
     --argjson i17 "$(kt_issue 17 "Bad link" bug)" \
     --argjson i16 "$(kt_issue 16 "Old idea" "")" \
-    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16}}}'
+    --argjson i71 "$(kt_issue 71 "Old export" "" "" 12 | jq -c '.state = "CLOSED"')" \
+    '{data: {repository: {i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71}}}'
 }
 
 # kt_go [outside|off-path] <args...>: kickoff from T, with the search root
@@ -260,6 +262,27 @@ t_kt_route_epic() {
 14|ticket|ship|70' "$(jq -r '[.number, .stage, (.step // ""), .parent] | map(tostring) | join("|")' <<<"$out")"
 }
 
+t_kt_route_closed_epic() {
+  # Given: closed epic #71 with open ticket #12
+  kt_setup found
+  # When
+  kt_go route acme/app 71
+  # Then
+  eq exit 0 "$code"
+  eq lines '71|done|' "$(jq -r '[.number, .stage, (.step // "")] | map(tostring) | join("|")' <<<"$out")"
+}
+
+t_kt_thread_closed_epic() {
+  # Given: closed epic #71 with open ticket #12
+  kt_setup found
+  # When
+  kt_go thread acme/app ship 71
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: #71 is closed" "$(printf '%s\n' "$err" | tail -1)"
+  eq stdout "" "$out"
+}
+
 t_kt_bug_in_ship() {
   # Given: #44 size S, #15 a bug
   kt_setup found
@@ -338,6 +361,8 @@ cases=(
   "tickets of one epic go as a run|t_kt_run_of_epic"
   "a whole epic is one ship thread|t_kt_whole_epic"
   "route opens an epic|t_kt_route_epic"
+  "route keeps a closed epic shut|t_kt_route_closed_epic"
+  "a closed epic gets no thread|t_kt_thread_closed_epic"
   "a bug in a ship thread stops|t_kt_bug_in_ship"
   "only ship takes several issues|t_kt_only_ship_many"
   "an answer gives the proposal its effort|t_kt_answer_effort"
