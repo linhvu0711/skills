@@ -83,7 +83,8 @@ t_size_odd_names() {
   # Given
   repo; printf '"gen/API Client.ts" linguist-generated\n"cr\\rname.ts" linguist-generated\n' > .gitattributes
   commit_all "mark generated files"; git branch base
-  lines "gen/API Client.ts" 300 g; lines "$(printf 'cr\rname.ts')" 300 g; lines "$(printf 'tab\there.py')" 20 t; lines 'quote"d.py' 20 q
+  lines "gen/API Client.ts" 300 g; lines "$(printf 'cr\rname.ts')" 300 g; lines "$(printf 'cr\rcode.py')" 10 c
+  lines "$(printf 'tab\there.py')" 10 t; lines 'quote"d.py' 10 q
   commit_all "add files with odd names"
   # When
   size base
