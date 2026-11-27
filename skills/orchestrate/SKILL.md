@@ -109,7 +109,7 @@ The refs in `propose` are unlabeled issues with no proposal yet. For each, in or
    6. It is done, a duplicate, or out of date: `close`, with the proof: the PR, the issue, or the line that shows it.
    7. An idea that is not decided yet: `grill`.
    8. No case holds for sure: `unsure`, with the two best guesses and a reason for each.
-3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and guess the lines the change will add and remove, on the scale of `../../shared/size.md`. Hold the size and its estimate line, as `size.md` writes it: `S: about 20 lines, 2 files`. Any other route takes no size.
+3. **Size.** Route `ship`, or `unsure` with `ship` as a guess: size the work from the code, never from the title. Find the code the issue touches, with an Explore agent per `../../shared/facts.md` when it is more than a few files, and guess the lines the change will add and remove, on the scale of `../../shared/size.md`. Hold the size and its estimate line, as `size.md` writes it: `S: about 20 lines, 2 files`. Any other route takes no size. XXL is never one ticket: skip step 4, record nothing, and its line in the list is `<label> <title> · <estimate line> · Cut it with /file-epic`, as `#42 Export orders · XXL: about 1,200 lines, 30 files · Cut it with /file-epic`.
 4. **Record.** `scripts/orchestrate.sh proposed <owner/repo> <ref> <route>`, plus `--size <size>` when step 3 gave one. It prints one JSON line: the `model` and `effort` the thread would get, from the same table the launch reads, or both `null` with a `why`.
 
 Then post one list:
