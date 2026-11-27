@@ -394,6 +394,10 @@ _Avoid_: first run, main run
 The issues a Run must close. It is fixed at the start, from a list, an epic, or a rule such as "assigned to me". The user adds or removes issues. Issues the Run makes (sub-issues, follow-ups) join by themselves. Its issues can live in any repo.
 _Avoid_: queue, backlog, scope
 
+**Proposal**:
+The step the agent guesses for an issue with no label that picks one, read from the issue and, for `/ship`, the code. It starts nothing until the user says yes. The skill then writes the answer to the issue as a label when one fits.
+_Avoid_: suggestion, route guess
+
 **Stage**:
 Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, too big (XXL), PR open, task, waiting, epic, or done. The Router turns a Stage into the skill a new thread starts with; at unlabeled, the user's answer to a Proposal picks it. One thread for each issue at each Stage.
 _Avoid_: status, state, phase

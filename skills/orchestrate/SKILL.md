@@ -10,7 +10,7 @@ This thread is the orchestrator. A script, `scripts/orchestrate.sh`, owns the ru
 
 ## Never
 
-The orchestrator starts threads, and does two things in a thread it started: the script's watcher sends `/ready-pr <pr-url>` when that thread's PR has conflicts, and you settle a finished /grill or /triage thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is the user's from its first turn: leave it to them. So the orchestrator starts a thread once, and a thread that failed or ended with no new stage waits for the user's `restart #n`. It writes nothing to GitHub: no comment, no label, no close, no merge. Two exceptions: `resume #n` takes the `waiting` label off a task, as § Commands says, since the user asked for it; and § Done closes each epic of the run that is still open, since its sub-issues are all closed (ADR 0039).
+The orchestrator starts threads, and does two things in a thread it started: the script's watcher sends `/ready-pr <pr-url>` when that thread's PR has conflicts, and you settle a finished /grill or /triage thread per § Settle (ADR 0013, ADR 0015, ADR 0024). Each thread it starts is the user's from its first turn: leave it to them. So the orchestrator starts a thread once, and a thread that failed or ended with no new stage waits for the user's `restart #n`. It writes nothing to GitHub: no comment, no close, no merge, and only the labels below. Three exceptions: `resume #n` takes the `waiting` label off a task, as § Commands says, since the user asked for it; and § Done closes each epic of the run that is still open, since its sub-issues are all closed (ADR 0039), and an answer to a Proposal is written to the issue as its label, per § Commands (ADR 0013).
 
 ## Start
 
@@ -133,7 +133,7 @@ A live run takes these, said in this thread. Each runs one `orchestrate.sh` call
   runs on.
 - Answers to § Propose: `all yes`, `all skip`, `#n yes`, `#n <skill>`, `skip #n`, many in one reply. One `change <owner/repo> answer <n>|all
   <word>` per part, the per-issue parts first, so `all` fills only the
-  rest; then § Check. The words are `yes`, `skip`, `grill`, `triage`, `ready-pr`, `task`, `close`, and `xxl`; `ship`, `ship review`, `ship ready`, or `ship merge` is `ship`, and a ship mode also runs `change
+  rest; then § Check. Post each line the answer prints: `labeled #n <label>`, or `not labeled #n: <why>`, after which the thread still starts. `#n ship` on a proposal with no size: size it per `../../shared/route/propose.md` § Size first, then `change <owner/repo> answer <n> ship --size <size>`. The words are `yes`, `skip`, `grill`, `triage`, `ready-pr`, `task`, `close`, and `xxl`; `ship`, `ship review`, `ship ready`, or `ship merge` is `ship`, and a ship mode also runs `change
   <owner/repo> ship review|ready|merge <n>`, so the issue ships the way
   the user said, whatever the run's default. A new answer reaches an issue whose thread started only after `restart #n`.
 - `ship review #n`, `ship ready #n`, `ship merge #n`, or the same with `all` (also `ship --merge #n`): `change <owner/repo> ship review|ready|merge <n>|all`. Only issues whose ticket thread has not started take it. With no ship mode set, the `/ship` thread picks it.

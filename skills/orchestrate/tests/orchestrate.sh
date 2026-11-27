@@ -42,6 +42,7 @@ esac
 EOF
   chmod +x "$T/bin/t3"
   echo '[]' > "$T/t3-threads.json"
+  echo https://github.com/acme/app/issues/42 > "$FAKE_GH/issue-edit.json"
   mkdir -p "$T/issues"
   export FAKE_T3_DIR="$T"
 }
@@ -65,10 +66,10 @@ fs_issue() {
 }
 
 # fs_go <args...>: orchestrate.sh from T, inside T3 Code, with the search root,
-# the repo map, and the orchestrator home inside T.
+# the repo map, the orchestrator home, and the issue conventions store inside T.
 fs_go() {
   cd "$T"
-  run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" \
+  run env T3CODE_CLI_PATH="$T/bin/t3" KICKOFF_DEV_ROOT="$T/dev" KICKOFF_REPO_MAP="$T/map.tsv" GH_ISSUE_STORE="$T/conv.json" \
     ORCHESTRATE_HOME="$T/orchestrate" bash "$F" "$@"
 }
 
@@ -2020,6 +2021,76 @@ t_fs_ship_answer_needs_size() {
   eq stderr "stop: #42 has no size for /ship: size it from the code, then answer ship --size XS|S|M|L|XL" "$err"
 }
 
+t_fs_yes_writes_labels() {
+  # Given: unlabeled #42 to #45, proposed grill, triage, ship at S, and task
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_issue 45 OPEN '[]'
+  fs_start 42 43 44 45
+  fs_go proposed acme/app 42 grill; fs_go proposed acme/app 43 triage
+  fs_go proposed acme/app 44 ship --size S; fs_go proposed acme/app 45 task
+  # When
+  fs_go change acme/app answer all yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 seed
+labeled #43 bug
+labeled #44 size/S
+labeled #45 manual" "$out"
+  eq "first edit" "issue edit 42 --repo acme/app --add-label seed" "$(sed -n 1p "$FAKE_GH/issue-edit.args")"
+}
+
+t_fs_no_label_answers() {
+  # Given: unlabeled #42 to #45
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_issue 45 OPEN '[]'
+  fs_start 42 43 44 45
+  local a got=""
+  for a in "42 close" "43 skip" "44 ready-pr" "45 xxl"; do
+    # When
+    # shellcheck disable=SC2086 # the issue and the answer, as two words
+    fs_go change acme/app answer $a
+    got="$got[$code:$out]"
+  done
+  # Then
+  eq answers "[0:][0:][0:][0:]" "$got"
+  eq "edit calls" no "$([ -e "$FAKE_GH/issue-edit.calls" ] && echo yes || echo no)"
+}
+
+t_fs_refused_label_starts() {
+  # Given: unlabeled #42, proposed grill; GitHub refuses the label
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  printf 'HTTP 403: Resource not accessible by integration\n' > "$FAKE_GH/issue-edit.fail"
+  # When
+  fs_go change acme/app answer 42 yes
+  eq "answer exit" 0 "$code"
+  eq "answer stdout" "not labeled #42: HTTP 403: Resource not accessible by integration" "$out"
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/grill #42"' "$out"
+}
+
+t_fs_ship_answer_size_starts() {
+  # Given: unlabeled #42, proposed grill
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill
+  # When
+  fs_go change acme/app answer 42 ship --size M
+  eq "answer stdout" "labeled #42 size/M" "$out"
+  eq proposal '{"route":"grill","answer":"ship","size":"M"}' "$(fs_state '.proposals["acme/app#42"]')"
+  fs_go check acme/app
+  # Then
+  has stdout '"message":"/ship #42"' "$out"
+  has stdout '"effort":"high"' "$out"
+}
+
+t_fs_second_answer_labels_again() {
+  # Given: unlabeled #42, proposed grill, answered yes once
+  fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 grill; fs_go change acme/app answer 42 yes
+  # When
+  fs_go change acme/app answer 42 yes
+  # Then
+  eq exit 0 "$code"
+  eq stdout "labeled #42 seed" "$out"
+  eq "edit calls" 2 "$(cat "$FAKE_GH/issue-edit.calls")"
+}
+
 t_fs_all_yes() {
   # Given: #42 proposed grill, #43 proposed triage and answered close, #44 unsure
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_issue 43 OPEN '[]'; fs_issue 44 OPEN '[]'; fs_start 42 43 44
@@ -2905,6 +2976,11 @@ cases=(
   "a ship answer starts ship|t_fs_ship_answer_starts"
   "a ready-to-build ticket with no size ships|t_fs_ready_to_build_ships"
   "a ship answer with no size stops|t_fs_ship_answer_needs_size"
+  "a yes writes the label that fits|t_fs_yes_writes_labels"
+  "close, skip, ready-pr, and xxl write no label|t_fs_no_label_answers"
+  "a refused label write still starts|t_fs_refused_label_starts"
+  "a ship answer records its size and starts|t_fs_ship_answer_size_starts"
+  "a second answer writes the label again|t_fs_second_answer_labels_again"
   "all yes takes every sure proposal|t_fs_all_yes"
   "yes on an unsure proposal stops|t_fs_yes_on_unsure"
   "an answered issue waits for its blocker|t_fs_answered_waits_blocker"

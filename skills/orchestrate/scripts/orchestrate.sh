@@ -9,7 +9,7 @@
 #        orchestrate.sh proposed <owner/repo> <n> grill|triage|ship|ready-pr|task|close|xxl|unsure [--size S]
 #        orchestrate.sh change <owner/repo> add <n>... | remove <n>... | restart <n>
 #                          | ship review|ready|merge <n>|all | use <n>|all [--model M] [--effort E]
-#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close|xxl
+#                          | answer <n>|all yes|skip|grill|triage|ship|ready-pr|task|close|xxl [--size S]
 #        orchestrate.sh timer <owner/repo> --every <min> | pause | resume | stop
 #        orchestrate.sh resume <owner/repo> --thread <thread-id> --env <environment-id>
 #        orchestrate.sh sync <owner/repo>
@@ -54,7 +54,7 @@
 #
 # Exit 0: one JSON line on stdout for start, check, proposed, timer, and
 # resume; one line of text per repo for sync and per epic for close-epics;
-# nothing for started and change.
+# nothing for started and change, but one line per label for change answer.
 # Exit 1: something stopped us; the reason is the last line on stderr.
 # Exit 64: a wrong command line, `stop: <why>` when there is one, then the
 # usage, on stderr.
@@ -904,6 +904,9 @@ cmd_proposed() {
 # `yes` takes the proposed route; `all` takes only `yes` or `skip`, and fills
 # only the proposals with no answer yet, so a per-issue answer given first
 # stays. A ship answer needs a size, given with --size or on the proposal.
+# Each answer this call set is then written to its issue as a label, per
+# answer_label in labels.sh: `labeled <label> <name>`, or `not labeled
+# <label>: <why>` when GitHub refuses it, and the thread starts either way.
 # change use <n>|all: the model and effort a thread gets, for one issue or
 # for all; one issue's value wins, field by field.
 cmd_change() {
@@ -973,7 +976,8 @@ cmd_change() {
         set -- "$1" "$2" "$3"
       fi
       [ $# -eq 3 ] && [[ "$3" =~ ^(yes|skip|$route_list)$ ]] || die_usage "$ausage"
-      local word="$3"
+      local word="$3" before
+      before="$(jq -c '(.proposals // {}) | map_values(.answer)' <<<"$S")"
       if [ "$2" = all ]; then
         case "$word" in yes|skip) ;; *) die_usage "$ausage" ;; esac
         S="$(jq -c --arg w "$word" '.proposals = ((.proposals // {}) | map_values(
@@ -993,6 +997,25 @@ cmd_change() {
         S="$(jq -c --arg r "$r" --arg w "$word" --arg z "$size" '.proposals[$r] = ((.proposals // {})[$r] // {})
           + {route: ((.proposals // {})[$r].route), answer: $w} + (if $z == "" then {} else {size: $z} end)' <<<"$S")"
       fi
+      save
+      local set_refs lab
+      if [ "$2" = all ]; then
+        set_refs="$(jq -r --argjson b "$before" '. as $S | .set[] | select(($S.proposals // {})[.].answer != null and $b[.] == null)' <<<"$S")"
+      else
+        set_refs="$r"
+      fi
+      while IFS= read -r r; do
+        [ -n "$r" ] || continue
+        lab="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
+          "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
+        [ -n "$lab" ] || continue
+        if gh_out issue edit "${r##*#}" --repo "${r%#*}" --add-label "$lab"; then
+          echo "labeled $(label_of "$r") $lab"
+        else
+          echo "not labeled $(label_of "$r"): $(tail -1 <<<"$err")"
+        fi
+      done <<<"$set_refs"
+      return
       ;;
     *) die_usage "usage: orchestrate.sh change <owner/repo> add|remove|restart|ship|use|answer ..." ;;
   esac

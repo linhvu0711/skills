@@ -1,6 +1,9 @@
 # labels.sh: the label rule, the allow-lists, and the analysis row that the
 # Router, decide.sh, and the orchestrator's script share. Source it; it
 # defines values and functions and runs nothing.
+
+route_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
 #
 # size_of <label>: XS, S, M, L, XL, or XXL when the label names a size, matched
 # loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
@@ -28,6 +31,25 @@ route_list='grill|triage|ship|ready-pr|task|close|xxl'
 # /grill and /triage, and the orchestrator gives the retro.
 analysis_model=opus
 analysis_effort=high
+
+# answer_label <owner/repo> <answer> [<size>]: the label an answer to a
+# proposal writes on the issue, so no skill guesses it again: bug for
+# triage, seed for grill, manual for task, and for ship the repo's own size
+# label, or size/<size> when the repo has none saved. Nothing for the rest.
+answer_label() {
+  local conv
+  case "$2" in
+    triage) echo bug ;;
+    grill) echo seed ;;
+    task) echo manual ;;
+    ship)
+      if conv="$(python3 "$route_dir/../issue_conventions.py" get "$1" 2>/dev/null)"; then
+        jq -r --arg z "$3" '.size[$z] // "size/\($z)"' <<<"$conv"
+      else
+        echo "size/$3"
+      fi ;;
+  esac
+}
 
 # one_of <list> <word>: true when <word> is on the |-list.
 one_of() { [[ "$2" =~ ^($1)$ ]]; }
