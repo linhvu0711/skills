@@ -22,7 +22,7 @@ Each issue gets a thread, titled with its number and title as `#42 Export orders
 | seed | a `seed` label | `/grill` |
 | bug | a `bug` label | `/triage` |
 | ticket | a size label XS to XL, or `ready-to-build` | `/ship`, which picks its own ship mode from its plan, or the ship mode you set |
-| too big | an XXL size label | none: cut it with [file-epic](../file-epic/), and its new sub-issues join the set |
+| too big | an XXL size label | none: cut it with [file-epic](../file-epic/), and its new sub-issues join the set. Under an epic, file-epic puts the new pieces beside it in that epic: add them with `add #n` |
 | PR open | an open PR that closes it, opened before the run | `/ready-pr #<pr>`, or the PR's URL when it is in another repo |
 | task | a `manual` label | `/complete-task --ready`: the thread says it is ready and waits for your `go`. One task at a time on this Mac. |
 | waiting | a `waiting` label on a task | none: say `resume #n` when the wait is over |
