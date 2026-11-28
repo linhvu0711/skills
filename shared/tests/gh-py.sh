@@ -27,6 +27,23 @@ t_gp_run_hint_kept_out() {
   eq answer "0|[]" "$code|$out"
 }
 
+t_gp_error_status() {
+  # Given: an api call that fails with a 404 error body on stdout
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  fake_gh
+  printf 'gh: Not Found (HTTP 404)\n' > "$FAKE_GH/repo.fail"
+  printf '{"message":"Not Found","status":"404"}\n' > "$FAKE_GH/repo.body"
+  # When
+  gp_run '
+try:
+    gh.run("api", "repos/acme/app/contents/x")
+except gh.GhError as e:
+    print(e.status, end="")'
+  # Then
+  eq status 404 "$out"
+}
+
 cases=(
   "run keeps a hint out of the answer|t_gp_run_hint_kept_out"
+  "a failed api call carries its status|t_gp_error_status"
 )
