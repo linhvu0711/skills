@@ -77,7 +77,7 @@ The page builder checks the plan before it writes the page:
 - A `[perf]` ticket or run layer needs a `## Perf` block with all four lines. The block shows on the Overview tab under the facts.
 - A plan with no issue ends with a `## Brief` block that holds a `Task:` line and a `Done when:` list, since the build prompt quotes them. A `## Plan check` block may follow it and leaves the page as it was.
 - A long dash or a curly quote outside backticks is refused, with its line.
-- A walk's `--viewport-size` is at most 795 px tall, the tallest page the linux Sandbox shows under its browser bars and taskbar, so the video shows the whole page. Plans use 1440x795 for laptop and 390x664 for phone.
+- A walk's `--viewport-size` is at most 1432x795 on linux and 1200x580 on macOS, the biggest page each Sandbox shows whole, so the video shows all of it. Linux plans use 1432x795 for laptop and 390x664 for phone. Mac plans use 1200x580 and 390x580.
 - A web walk opens its page with the `walk-browser` starter in place of `playwright open`. The starter logs the page's errors and failed requests, so a web walk's `Must not` can name `no console error` and `no failed request`; the walker reads both from the browser log each video saves.
 - A walk `Setup` is `none` or a seed or fixture command in backticks, so the walker never clicks in its test data.
 - A slice or a walk can prove several lines, joined by commas, `and`, or both, as in `#1, #2, and #3`. A video shows one walk, as in `shows walk 9`, or several, as in `shows walks 1, 3`. A quoted file location in the map stays whole, even when its path holds a comma.
