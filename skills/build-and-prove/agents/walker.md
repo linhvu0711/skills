@@ -71,7 +71,7 @@ Stop it only this way. `pkill` and `killall` match by name, and the name also ma
 
 ## Mode before
 
-For each walk whose `Before` line names steps: do the walk's `Setup`, or, when the `Before` line starts with a backticked command, run that command in its place; go to `Where`, do the steps the `Before` line names, and take `proofbox screenshot <id> --out <folder>/before-<walk>.png`. Check that it shows what the `Before` line says. A walk whose `Before` is `none` or `as walk n` gets no shot. No recording in this mode. After the last shot, close the browser (§ Close the browser). Then write the report (§ Report).
+For each walk whose `Before` line names steps: do the walk's `Setup`, or, when the `Before` line starts with a backticked command, run that command in its place; go to `Where`, and check that the whole page is on the screen, `bash <box.sh> fit <folder>`, as step 1 of § Mode after does. On `FIT ...`, do the steps the `Before` line names, and take `proofbox screenshot <id> --out <folder>/before-<walk>.png`. Check that it shows what the `Before` line says. On `TALL`, `WIDE`, or both, take no before shot: take `proofbox screenshot <id> --out <folder>/fail-<walk>.png`, close the browser (§ Close the browser), and report the walk with the `FAIL` line that step 1 of § Mode after gives for those lines. On exit 125 with `Sandbox <id> is gone`: end as § Report says. A walk whose `Before` is `none` or `as walk n` gets no shot. No recording in this mode. After the last shot, close the browser (§ Close the browser). Then write the report (§ Report).
 
 ## Mode after
 
@@ -122,6 +122,7 @@ In mode before, write `<folder>/walk-report-before-<round>.md` and end with the 
 BEFORE <shots>/<walks> · round 1
 walk 1: before-1.png · shows the hint cut at column 60
 walk 3: FAIL · saw the login page; the Before line says the orders list · before-3.png
+walk 4: FAIL · page taller than the screen: window bottom 985, screen bottom 880 · fail-4.png
 ```
 
 `<shots>` counts the shots that show what their `Before` line says, `<walks>` the walks whose `Before` names steps.
