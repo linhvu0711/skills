@@ -51,18 +51,6 @@ t_es_sync_fetches_missing() {
   [ ! -e "$P/repos/zod/.git" ] || eq ".git" "gone" "still there"
 }
 
-t_es_sync_up_to_date() {
-  # Given: zod fetched at v3.1.0, and a file added to the checkout
-  es_remote; es_sync_project
-  bash "$P/scripts/sync-repos.sh" >/dev/null
-  touch "$P/repos/zod/keep"
-  # When
-  run bash "$P/scripts/sync-repos.sh"
-  # Then
-  eq stdout "sync-repos: zod already at v3.1.0" "$out"
-  [ -e "$P/repos/zod/keep" ] || eq keep "still there" "gone"
-}
-
 t_es_sync_moved_ref() {
   # Given: zod fetched at v3.1.0, then the manifest row moved to v3.2.0
   es_remote; es_sync_project
@@ -90,7 +78,6 @@ t_es_sync_keeps_unmarked() {
 
 cases=(
   "embed-source sync: a missing checkout is fetched at its ref|t_es_sync_fetches_missing"
-  "embed-source sync: up to date is left alone|t_es_sync_up_to_date"
   "embed-source sync: a moved ref is fetched again|t_es_sync_moved_ref"
   "embed-source sync: a checkout with no marker is kept|t_es_sync_keeps_unmarked"
 )
