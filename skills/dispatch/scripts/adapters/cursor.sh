@@ -236,8 +236,9 @@ cmd_poll() {
   esac
   [[ "$prs" != "-" ]] && IFS=',' read -ra arr <<<"$prs"
   if [[ -n "$repo" ]]; then
-    if gh_out pr list -R "$repo" --state all --limit 50 --json url,headRefName \
-      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"; then ghprs="$out"; else ghprs=""; fi
+    gh_or_stop pr list -R "$repo" --state all --limit 50 --json url,headRefName \
+      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"
+    ghprs="$out"
     while IFS= read -r p; do [[ -z "$p" ]] || arr+=("$p"); done <<<"$ghprs"
   fi
   for p in ${arr[@]+"${arr[@]}"}; do
