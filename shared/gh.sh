@@ -7,16 +7,20 @@
 #
 # gh_out <args>: runs `gh <args>`. Exit 0: its stdout in `out`, return 0.
 # Else the last non-empty line of its stderr in `err` (`gh exited <n>` when it
-# printed none), return 1.
+# printed none), return 1. On a failure, status holds the HTTP status from the
+# error body gh api prints, or is empty.
 gh_out() {
   # No EXIT trap, since this file is sourced, see docs/adr/0051-a-sourced-helper-sets-no-trap.md
   local f rc=0
+  status=""
   f="$(mktemp)"
   out="$(gh "$@" 2>"$f")" || rc=$?
   if [ "$rc" -eq 0 ]; then rm -f "$f"; return 0; fi
   err="$(awk 'NF {l = $0} END {print l}' "$f")"
   rm -f "$f"
   [ -n "$err" ] || err="gh exited $rc"
+  # Only gh api prints a JSON error body; any other gh command has no status.
+  status="$(jq -r 'objects | .status // empty' <<<"$out" 2>/dev/null)" || status=""
   return 1
 }
 

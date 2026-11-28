@@ -1395,6 +1395,8 @@ t_fs_missing_label_made() {
   # Given: unlabeled #42 proposed task, in a repo with no manual label
   fs_setup; fs_issue 42 OPEN '["p1"]'; fs_start 42; fs_go proposed acme/app 42 task
   printf "failed to update https://github.com/acme/app/issues/42: 'manual' not found\n" > "$FAKE_GH/issue-edit.1.fail"
+  printf 'gh: Not Found (HTTP 404)\n' > "$FAKE_GH/label.1.fail"
+  printf '{"message":"Not Found","status":"404"}\n' > "$FAKE_GH/label.1.body"
   echo https://github.com/acme/app/labels/manual > "$FAKE_GH/label-create.json"
   # When
   fs_go change acme/app answer 42 yes

@@ -58,7 +58,7 @@ lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; e
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
 # `api repos/…/status` status, `api repos/…/check-runs` check-runs,
 # `api repos/…/actions/jobs/…` job, `api repos/…/attempts/…/jobs` attempt-jobs,
-# `api repos/…/actions/runs/…/jobs` run-jobs, any other
+# `api repos/…/actions/runs/…/jobs` run-jobs, `api repos/…/labels/…` label, any other
 # `api repos/…` repo, and `pr merge` pr-merge. Each
 # route counts its calls in <route>.calls and logs their args in
 # <route>.args, one line per call (a newline inside an arg becomes a space).
@@ -106,6 +106,7 @@ case "$args" in
   " api repos/"*/actions/jobs/*) key=job ;;
   " api repos/"*/attempts/*/jobs*) key=attempt-jobs ;;
   " api repos/"*/actions/runs/*/jobs*) key=run-jobs ;;
+  " api repos/"*/labels/*) key=label ;;
   " api repos/"*) key=repo ;;
   " pr merge"*) key=pr-merge ;;
   *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;

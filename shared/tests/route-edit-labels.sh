@@ -15,7 +15,9 @@ el_gh() {
 t_el_makes_missing() {
   # Given: the repo has no seed label
   el_gh
-  echo "could not add label: 'seed' not found" > "$FAKE_GH/issue-edit.1.fail"
+  echo "could not add the labels" > "$FAKE_GH/issue-edit.1.fail"
+  printf 'gh: Not Found (HTTP 404)\n' > "$FAKE_GH/label.1.fail"
+  printf '{"message":"Not Found","status":"404"}\n' > "$FAKE_GH/label.1.body"
   # When
   run bash "$EL" acme/app 16 --add seed
   # Then
