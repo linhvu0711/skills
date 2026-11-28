@@ -7,12 +7,17 @@ Prints `page: <html path>` and exits 0. Prints each problem on stderr and
 exits 1 without changing the old page when a block is bad.
 """
 import argparse
-import json
+import importlib.util
 import os
 import sys
 
 import plan_reader
 from plan_reader import BLAST
+
+# page.py sits in the shared core, off sys.path, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("page", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "page.py"))
+page = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(page)
 
 
 def text(values):
@@ -136,18 +141,7 @@ def main():
     with open(os.path.join(assets, "layout.js"), encoding="utf-8") as f:
         layout = f.read()
     output = os.path.splitext(path)[0] + ".html"
-    tmp = output + ".tmp"
-    payload = json.dumps(data, ensure_ascii=False).replace("</", r"<\/")
-    try:
-        page = (shell.replace("const DATA = {};", "const DATA = " + payload + ";")
-                .replace('<script src="layout.js"></script>', "<script>\n" + layout + "</script>"))
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(page)
-        os.replace(tmp, output)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-    print(f"page: {output}")
+    page.write(output, page.fill(shell, data).replace('<script src="layout.js"></script>', "<script>\n" + layout + "</script>"))
 
 
 if __name__ == "__main__":

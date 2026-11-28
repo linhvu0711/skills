@@ -124,7 +124,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ### Page JS
 
-- A page is one HTML file with its script inline, and its data goes in as `const DATA = …` with `<` escaped as `<`.
+- A page is one HTML file with its script inline, and its data goes in as `const DATA = …` with each `<` escaped as `\u003c`, by `fill()` of `shared/page.py`.
 - A Node script is a `.cjs` file that runs its main code only when `require.main === module` (node-docs-modules).
 
 ### GitHub Actions
