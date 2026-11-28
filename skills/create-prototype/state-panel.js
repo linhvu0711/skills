@@ -84,7 +84,8 @@ window.StatePanel = (function () {
   }
 
   function set(id, value, silent) {
-    if (!(id in state) || state[id] === value) return
+    if (!Object.prototype.hasOwnProperty.call(state, id)) throw new Error('StatePanel.set: unknown row id "' + id + '"');
+    if (state[id] === value) return;
     state[id] = value
     renderRows()
     if (!silent) onChange(get(), id)
@@ -129,7 +130,7 @@ window.StatePanel = (function () {
       if (!moving) return
       moving = false
       head.classList.remove('sp-dragging')
-      try { head.releasePointerCapture(e.pointerId) } catch (_) {}
+      if (head.hasPointerCapture(e.pointerId)) head.releasePointerCapture(e.pointerId);
       save(clamp())
     }
     head.addEventListener('pointerup', end)

@@ -744,8 +744,9 @@ def problems(plan):
         for k, s in enumerate(layer["slices"], 1):
             if s.get("deletes") and k > 1:
                 yield f"slices: layer {n} slice {k} deletes dead code; only slice 1 may"
-            elif s.get("deletes") and s["n"] != 1:
-                yield f"slices: layer {n} delete slice is headed `Slice {s['n']}`; it is `Slice 1`"
+            elif s["n"] != k:
+                # The page names each slice card by its place, so a file row's `S<k>` must be the k-th slice.
+                yield f"slices: layer {n} slice {k} is headed `Slice {s['n']}`; number the slices 1, 2, 3 in order"
         yield from file_problems(layer, n)
         for row in layer["proof"]:
             if row["cells"] != 6:

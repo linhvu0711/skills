@@ -423,6 +423,8 @@ const DATA = {};
   const nodeEls = new Map(), edgeEls = new Map(), groupEls = new Map();
 
   const geo = new Map();
+  // check_data.py refuses an unknown ref; a page that skipped it fails here, by name.
+  const known = (map, id, what) => { const v = map.get(id); if (v === undefined) throw new Error(`DATA: ${what} "${id}" is not known; run scripts/check_data.py on this page`); return v; };
   function nodeSize(n) {
     const k = n.kind || 'box';
     const textW = Math.max(
@@ -546,8 +548,7 @@ const DATA = {};
     };
   }
   function edgePath(e, idx, count) {
-    const a = geo.get(e.from), b = geo.get(e.to);
-    if (!a || !b) return null;
+    const a = known(geo, e.from, 'edge from'), b = known(geo, e.to, 'edge to');
     if (e.from === e.to) {
       const x = a.x + a.w, y = a.cy - 12;
       return { d: `M${x},${y} C${x + 50},${y - 30} ${x + 50},${y + 54} ${x},${y + 24}`, mid: { x: x + 40, y: y + 12 } };
@@ -568,7 +569,6 @@ const DATA = {};
   }
   function drawEdge(e, parent, idx, count) {
     const p = edgePath(e, idx, count);
-    if (!p) return;
     const col = e.change && mode !== 'current' ? e.change : 'base';
     const el = svgEl('g', { class: `e ${e.kind || 'solid'}${changeClass(e)}`, 'data-from': e.from, 'data-to': e.to }, parent);
     svgEl('path', { class: 'hit', d: p.d }, el);
@@ -599,7 +599,8 @@ const DATA = {};
       let r = geo.get(id);
       if (!r) {
         const sub = (D.groups || []).find((g) => g.id === id);
-        if (sub && !seen.has(id)) { const b = bboxOf(sub, seen); r = b && { x: b.x, y: b.y, w: b.w, h: b.h }; }
+        if (!sub) throw new Error(`DATA: group "${gr.id}" member "${id}" is not a node or group`);
+        if (!seen.has(id)) { const b = bboxOf(sub, seen); r = b && { x: b.x, y: b.y, w: b.w, h: b.h }; }
       }
       if (!r) return;
       x1 = Math.min(x1, r.x); y1 = Math.min(y1, r.y); x2 = Math.max(x2, r.x + r.w); y2 = Math.max(y2, r.y + r.h);
@@ -645,6 +646,7 @@ const DATA = {};
     viewport.innerHTML = '';
     nodeEls.clear(); edgeEls.clear(); groupEls.clear();
     const parts = D.participants || [], steps = D.steps || [];
+    const step = (i, what) => { if (!Number.isInteger(i) || i < 0 || i >= steps.length) throw new Error(`DATA: ${what} ${JSON.stringify(i)} is not a step; run scripts/check_data.py on this page`); return i; };
     const fl = svgEl('g', { class: 'frames' }, viewport);
     const ll = svgEl('g', { class: 'lifelines' }, viewport);
     const pl = svgEl('g', { class: 'nodes' }, viewport);
@@ -677,10 +679,11 @@ const DATA = {};
       nodeEls.set(p.id, el);
     });
     (D.frames || []).forEach((f) => {
-      const cols = (f.participants || parts.map((p) => p.id)).map((id) => seqX.get(id)).filter((x) => x != null);
+      const cols = (f.participants || parts.map((p) => p.id)).map((id) => known(seqX, id, 'frame participant'));
+      const from = step(f.from, 'frame from'), to = step(f.to, 'frame to');
       if (!cols.length) return;
       const x1 = Math.min.apply(null, cols) - L.colWidth / 2 + 14, x2 = Math.max.apply(null, cols) + L.colWidth / 2 - 14;
-      const y1 = seqTop + f.from * L.rowHeight - L.rowHeight * 0.95, y2 = seqTop + f.to * L.rowHeight + L.rowHeight * 0.4;
+      const y1 = seqTop + from * L.rowHeight - L.rowHeight * 0.95, y2 = seqTop + to * L.rowHeight + L.rowHeight * 0.4;
       const el = svgEl('g', { class: `frame${changeClass(f)}` }, fl);
       svgEl('rect', { x: x1, y: y1, width: x2 - x1, height: y2 - y1, rx: 4 }, el);
       const t = text(el, x1 + 8, y1 + 13, f.label || '', {});
@@ -690,8 +693,7 @@ const DATA = {};
     });
     steps.forEach((s, i) => {
       const y = seqTop + i * L.rowHeight;
-      const xa = seqX.get(s.from), xb = seqX.get(s.to);
-      if (xa == null || xb == null) return;
+      const xa = known(seqX, s.from, 'step from'), xb = known(seqX, s.to, 'step to');
       const col = s.change && mode !== 'current' ? s.change : 'base';
       const kind = s.kind || 'sync';
       const cls = kind === 'return' ? 'dashed' : 'solid';
@@ -725,8 +727,8 @@ const DATA = {};
       edgeEls.set(s, el);
     });
     (D.notes || []).forEach((nt) => {
-      const x = seqX.get(nt.at); if (x == null) return;
-      const y = seqTop + (nt.after == null ? -1 : nt.after) * L.rowHeight + L.rowHeight * 0.45;
+      const x = known(seqX, nt.at, 'note at');
+      const y = seqTop + (nt.after == null ? -1 : step(nt.after, 'note after')) * L.rowHeight + L.rowHeight * 0.45;
       const el = svgEl('g', { class: `snote${changeClass(nt)}` }, ml);
       const t = text(el, x + 18, y + 13, nt.text || '', {});
       const bb = t.getBBox();
@@ -910,7 +912,7 @@ const DATA = {};
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 3) {
       drag.moved = true; canvas.classList.add('dragging');
-      try { canvas.setPointerCapture(drag.id); } catch (_) {}
+      canvas.setPointerCapture(drag.id);
     }
     if (!drag.moved) return;
     tx = drag.tx + dx; ty = drag.ty + dy; apply();
