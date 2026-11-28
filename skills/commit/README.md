@@ -19,7 +19,7 @@ to reduce LTE bandwidth on cold-launch screens.
 
 ## Needs
 
-Nothing but the agent. It reads the change you describe or the diff in front of it and runs no tools.
+Nothing but the agent and the shared [repo-rules.md](../../shared/repo-rules.md), for the repo rules that come first. It reads the change you describe or the diff in front of it and runs no tools.
 
 ## Fits with
 

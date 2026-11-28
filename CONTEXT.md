@@ -247,8 +247,12 @@ _Avoid_: outdated (that is a rule that names a tool, path, or version the repo n
 The table in `docs/standards/sources.md` that lists each source a rule cites, and the main page searched for a stack part that gave no rule: stack part, name, link, version, and the date it was checked. The audit uses it to know which stack parts to check again.
 
 **Standard**:
-`CODING_STANDARDS.md` at the repo root, with the `docs/standards/` files it links to. It is the only rules file of a repo.
+`CODING_STANDARDS.md` at the repo root, with the `docs/standards/` files it links to. It holds the repo's code rules, the clean-codebase skills write rules into it, and every skill reads it as part of the repo rules.
 _Avoid_: style guide, conventions file, rule book
+
+**Repo rules**:
+What a repo's agent files (`CLAUDE.md`, `AGENTS.md`) say, the files they point to that touch the task, and the Standard. They win over a skill's own rule where the two differ, and add what the skill lacks; elsewhere, the skill's rules hold.
+_Avoid_: project conventions, house rules
 
 **One way for each job**:
 The first area of the Standard: for each job the code does in many places, the one thing to use.

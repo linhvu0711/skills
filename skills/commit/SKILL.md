@@ -7,6 +7,8 @@ Paths in this skill are relative to its real folder: the one that holds this `SK
 
 Write commit messages terse and exact. Conventional Commits format. No fluff. Why over what.
 
+The repo rules come first, per `../../shared/repo-rules.md`: a commit style they set wins over the rules below.
+
 ## Rules
 
 **Subject line:**
