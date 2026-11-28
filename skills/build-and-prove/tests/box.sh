@@ -421,7 +421,7 @@ t_box_gates_ci_on_local() {
   # Then
   eq exit 0 "$code"
   eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)
-pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
+pwd · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
 }
 
 t_box_gates_ci_up_all_ci() {
@@ -651,7 +651,7 @@ cases=(
   "gates --ci leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_ci"
   "gates --ci needs no Sandbox when CI runs every Gate|t_box_gates_ci_no_sandbox"
   "gates --ci needs no proofbox when CI runs every Gate|t_box_gates_ci_no_proofbox"
-  "gates --ci runs an --on-local Gate on the local machine though CI names it|t_box_gates_ci_on_local"
+  "box gates leaves an --on-local Gate CI runs to CI|t_box_gates_ci_on_local"
   "gates --ci runs no Gate in an up Sandbox when CI runs every Gate|t_box_gates_ci_up_all_ci"
   "gates --ci runs every Gate in the Sandbox when the repo has no CI|t_box_gates_ci_no_ci"
   "gates --ci keeps going after a red Gate in the Sandbox and exits 3|t_box_gates_ci_red"

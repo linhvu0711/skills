@@ -26,7 +26,7 @@ One run of a plan with walks has one proofbox Sandbox. It starts after Coding an
   <proof-dir>` are the walker's: they start its browser or terminal in
   its own process group and end that group, waiting up to 10 s before the kill. Neither uploads or makes a gone Sandbox again.
 - `box.sh fit <proof-dir>` is the walker's check before each recording, that the browser window ends above the taskbar: `FIT`, `TALL` with exit 3, or `FIT not checked on macos`. Like `open`, it neither uploads nor makes a gone Sandbox again.
-- `box.sh gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs each command as `run` does, keeps each one's own exit code and full output in a temp file, and writes every line of `<proof-dir>/checks.txt` (step 8). `--ci` leaves to CI each Gate after `--` that the PR's CI runs, read from that worktree's workflows; an `--on-local` Gate still runs on the local machine.
+- `box.sh gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local '<command>']… [--not-run '<command>' '<why>']… -- '<command>'…` runs each command as `run` does, keeps each one's own exit code and full output in a temp file, and writes every line of `<proof-dir>/checks.txt` (step 8). `--ci` leaves to CI each Gate, after `--` or as `--on-local`, that the PR's CI runs, read from that worktree's workflows; the other `--on-local` Gates run on the local machine.
 - `box.sh down <proof-dir>` deletes it and prints `REMADE=<n>`, how many times it was made again.
 
 `stop:` on stderr is the reason to stop. Every stop after `up` runs `down` first, so no Sandbox is left running; the worktree and its commits stay.
