@@ -40,7 +40,9 @@
 # Anthropic's limits: a body under 500 lines, a `description` of at most 1024
 # characters, and a `name` of at most 64. The top AGENTS.md stays under 200
 # lines, Anthropic's limit for a CLAUDE.md. A tracked file that starts with
-# `#!` has the run bit, mode 100755 in the index. Each skill agent,
+# `#!` has the run bit, mode 100755 in the index. No file sits in a `tests/`
+# folder inside a skill folder or shared/: tests live in the top-level tests/
+# folder. Each skill agent,
 # `skills/<name>/agents/<agent>.md`, and each shared agent, the explorer and
 # the runner in `shared/agents/<agent>.md`, needs a frontmatter, a `name` equal to its
 # file name without `.md`, a `description` that is not empty, and a `tier:`
@@ -416,6 +418,12 @@ if [ ${#paths[@]} -eq 0 ]; then
       problems+=("$f: starts with #! but is not executable")
     fi
   done < <(git grep --cached -lz -I -e '^#!')
+
+  # Tests live in the top-level tests/ folder: link.sh links each skill
+  # folder into every harness, so a test there ships with the skill.
+  while IFS= read -r f; do
+    problems+=("$f: test file in a skill folder or shared/; tests go in the top-level tests/ folder")
+  done < <(git -c core.quotePath=false ls-files -- skills shared | awk -F/ '{ for (i = ($1 == "skills" ? 3 : 2); i < NF; i++) if ($i == "tests") { print; next } }')
 
   # Each SKILL.md opens with a frontmatter whose `name` is the folder and whose
   # `description` is not empty, inside Anthropic's limits; each skill agent, skills/<name>/agents/<agent>.md,

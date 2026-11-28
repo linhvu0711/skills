@@ -61,6 +61,17 @@ t_hook_stops_home_path() {
   has stderr "notes.md:1: home path: $mac_home" "$err"
 }
 
+t_hook_stops_test_in_skill_folder() {
+  # Given: a test file in a skill folder, staged
+  hooked; mkdir -p skills/demo/tests; printf 'echo hi\n' > skills/demo/tests/a.sh; git add skills
+  # When
+  run git commit -m test
+  # Then
+  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
+  has stderr "skills/demo/tests/a.sh: test file in a skill folder" "$err"
+  eq commits 1 "$(git rev-list --count HEAD)"
+}
+
 t_flags_private_word_in_path() {
   hooked skills/secretskill; mkdir -p skills/secretskill
   printf 'hi\n' > skills/secretskill/SKILL.md; git add skills
@@ -672,6 +683,7 @@ cases=(
   "flags an email|t_flags_email"
   "hook stops a commit that adds a private word|t_hook_stops_private_word"
   "hook stops a commit that adds a home path|t_hook_stops_home_path"
+  "hook stops a commit that adds a test in a skill folder|t_hook_stops_test_in_skill_folder"
   "flags a private word in an added path|t_flags_private_word_in_path"
   "tree mode scans every tracked file|t_tree_scans_tracked_files"
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
