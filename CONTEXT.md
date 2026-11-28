@@ -411,7 +411,7 @@ Where an issue is, read from GitHub: unlabeled, seed, bug, ticket, too big (XXL)
 _Avoid_: status, state, phase
 
 **Task turn**:
-The one slot on a Mac for a task issue that has a thread. Its Run holds it while the issue is open, until the issue gets `waiting` or is removed. Other task issues wait for it.
+The one slot on the local machine for a task issue that has a thread. Its Run holds it while the issue is open, until the issue gets `waiting` or is removed. Other task issues wait for it.
 _Avoid_: lock, queue
 
 **Check**:
