@@ -369,7 +369,7 @@ _Avoid_: lane, path, mode (alone), auto
 ## Tasks
 
 **Your step**:
-A step of a task that only the user does: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, or moving a secret.
+A step of a task that only the user does: a password, a passkey or 2FA check, a payment, a system permission pop-up, or moving a secret.
 _Avoid_: manual step, human step
 
 **Ready thread**:

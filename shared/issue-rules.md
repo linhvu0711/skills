@@ -50,7 +50,7 @@ Nine. The type is the leading word of the title.
 
 Security work is `fix` or `feat`. Design or UX work is `spike` until a behaviour is decided, then `feat`.
 
-A `task` needs a person's login or hands. The complete-task skill drives it, and the person does only their own steps: a password, a passkey or 2FA check, a payment, a Mac pop-up, moving a secret. Setup an agent can run from a CLI with a token (`railway init`, `wrangler r2 bucket create`) is a `chore` that lands as a script. One task per platform and account: Railway and Cloudflare R2 are two tasks, two logins, two owners.
+A `task` needs a person's login or hands. The complete-task skill drives it, and the person does only their own steps: a password, a passkey or 2FA check, a payment, a system permission pop-up, moving a secret. Setup an agent can run from a CLI with a token (`railway init`, `wrangler r2 bucket create`) is a `chore` that lands as a script. One task per platform and account: Railway and Cloudflare R2 are two tasks, two logins, two owners.
 
 A ticket is **pure**: all code, or all human work. Walk the Done when list and ask of each line: can an agent tick it from the repo, with no login of the user's? A line that needs a person's login, a platform page, or a real account (set a variable, paste a secret, cut over DNS, log in as the user and prove it live) leaves the code ticket and becomes its own `task`. Human work the code needs first is a task that blocks the code ticket. Human work that comes after the code lands is a task blocked by the code ticket. The code ticket's Done when then ends on what an agent can prove alone: tests green, a local build, an image that starts, a doc that names the variables.
 

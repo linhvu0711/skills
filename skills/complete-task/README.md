@@ -10,7 +10,7 @@ An issue has the `manual` label, and you want the agent to do it. Type `/complet
 
 The task done, and the issue closed with a result comment and its proved Done-when boxes ticked. A box it cannot prove keeps the issue open, and the comment says what is left.
 
-The agent opens its own browser window and finds its tab by ID, so you keep working in your own tabs. It uses a CLI first when one is signed in already. It stops only for your steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, or moving a secret. Each comes as numbered steps that name the tab, the field, and the word to send back, such as `done`.
+The agent opens its own browser window and finds its tab by ID, so you keep working in your own tabs. It uses a CLI first when one is signed in already. It stops only for your steps: a password, a passkey or 2FA check, a payment, a system permission pop-up, or moving a secret. Each comes as numbered steps that name the tab, the field, and the word to send back, such as `done`.
 
 It never reads a secret. It opens the page with the secret and the place it goes, with the name filled in; you copy and paste; it checks only that the name is there.
 
