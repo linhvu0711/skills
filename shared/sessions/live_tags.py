@@ -12,7 +12,8 @@ right after `- `:
   a branch tags as its newest PR;
 - `[branch only]`: a branch with no PR, local or on GitHub;
 - `[branch gone]`: a branch with no PR, not local, and a 404 from GitHub;
-- `[state unknown]`: `gh` could not say.
+- `[state unknown]`: `gh` could not say, or `git` cannot run for a branch
+  with no PR.
 
 Every `gh` and `git` call runs in `--cwd`, the current folder by default.
 A failed `gh` call is checked with `gh api user`. When that works too,
@@ -29,6 +30,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -57,12 +59,6 @@ class Tagger:
         if self.gh_down:
             print(f"live tags: gh failed: no folder {cwd}", file=sys.stderr)
 
-    def run(self, *args):
-        try:
-            return subprocess.run(args, cwd=self.cwd, capture_output=True, text=True)
-        except FileNotFoundError:
-            return subprocess.CompletedProcess(args, 127, "", f"{args[0]}: command not found")
-
     def gh(self, *args):
         if self.gh_down:
             raise GhDown
@@ -79,7 +75,10 @@ class Tagger:
         raise LookupFailed(error)
 
     def branch_tag(self, branch):
-        if self.run("git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}").returncode == 0:
+        if not shutil.which("git"):
+            return "[state unknown]"
+        if subprocess.run(["git", "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"],
+                          cwd=self.cwd, capture_output=True).returncode == 0:
             return "[branch only]"
         try:
             self.gh("api", f"repos/{{owner}}/{{repo}}/branches/{branch}")

@@ -25,7 +25,7 @@ Sessions: 2 (Claude Code 1, Codex 1, Antigravity 0)
 Next: /ready-pr #45
 ```
 
-Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, a branch that is gone, or `[state unknown]` when `gh` cannot answer. The last line is the one next step. Recall only reads: it writes nothing and starts no work.
+Each PR and branch carries its live state from `gh` and `git`: merged, open, closed, a branch with no PR, a branch that is gone, or `[state unknown]` when `gh` or `git` cannot answer. The last line is the one next step. Recall only reads: it writes nothing and starts no work.
 
 - No session on the topic, or a topic of only common words such as `the`: `No sessions on <topic>.`, and it stops.
 - More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
