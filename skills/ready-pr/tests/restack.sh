@@ -72,12 +72,9 @@ sibling() {
   printf '%s\n' "13 feat/a feat/d https://github.com/o/r/pull/13 fork=false" >> "$T/stack"
 }
 
-t_restack_moves_all_owned_stack() {
-  # Given: stack file lines 11 (feat/a to feat/b), 12 (feat/b to feat/c)
-  stack
-  # When
-  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 11,12
-  # Then
+# moved_stack: the checks of a move of the whole stack from `stack`: PRs 11 and 12
+# moved, and feat/c holds c1 b1 a1 over main.
+moved_stack() {
   eq exit 0 "$code"
   eq "line 1" "MOVED https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 1p | cut -d' ' -f1-2)"
   eq "line 2" "MOVED https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 2p | cut -d' ' -f1-2)"
@@ -85,6 +82,15 @@ t_restack_moves_all_owned_stack() {
   eq "commits on main" "c1
 b1
 a1" "$(git log --format=%s origin/main..origin/feat/c)"
+}
+
+t_restack_moves_all_owned_stack() {
+  # Given: stack file lines 11 (feat/a to feat/b), 12 (feat/b to feat/c)
+  stack
+  # When
+  run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack" --own 11,12
+  # Then
+  moved_stack
 }
 
 t_restack_leaves_foreign_pr_in_middle() {
@@ -138,13 +144,7 @@ t_restack_moves_child_behind_left_fork_of_same_name() {
 t_restack_moves_children_bottom_first() {
   stack
   run bash "$restack" move "$R" feat/a "$A_OLD" "$T/stack"
-  eq exit 0 "$code"
-  eq "line 1" "MOVED https://github.com/o/r/pull/11" "$(printf '%s\n' "$out" | sed -n 1p | cut -d' ' -f1-2)"
-  eq "line 2" "MOVED https://github.com/o/r/pull/12" "$(printf '%s\n' "$out" | sed -n 2p | cut -d' ' -f1-2)"
-  eq "line 3" "RESTACK=moved 2" "$(printf '%s\n' "$out" | sed -n 3p)"
-  eq "commits on main" "c1
-b1
-a1" "$(git log --format=%s origin/main..origin/feat/c)"
+  moved_stack
   eq "feat/b's parent" "$(git rev-parse origin/feat/a)" "$(git rev-parse origin/feat/b~1)"
   eq "local feat/c" "$(git rev-parse origin/feat/c)" "$(git rev-parse feat/c)"
   eq worktrees 1 "$(git worktree list | wc -l | tr -d ' ')"

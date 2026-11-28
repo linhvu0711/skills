@@ -10,10 +10,10 @@ bt_lagging() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   git init -q --bare -b main "$T/origin.git"
   git clone -q "$T/origin.git" "$T/dev/app" 2>/dev/null
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m one
+  git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m one
   git -C "$T/dev/app" push -q origin HEAD:main
   git clone -q "$T/origin.git" "$T/other" 2>/dev/null
-  git -C "$T/other" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m two
+  git -C "$T/other" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m two
   git -C "$T/other" push -q origin HEAD:main
   new="$(git -C "$T/other" rev-parse HEAD)"
 }

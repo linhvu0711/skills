@@ -1157,6 +1157,13 @@ core() {
   printf '<!-- include ../size.md -->\n' > shared/handoff/rules.md
 }
 
+# bare_core_skill <text>: a hooked repo with core, shared/y.md holding <text>,
+# and skill demo reading y.md, committed.
+bare_core_skill() {
+  hooked; core; printf '%s\n' "$1" > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+}
+
 t_readme_hook_asks_named_core() {
   hooked; core; skill demo 'read `../../shared/x.md`'; git add -A; git commit -qm skill
   printf 'more\n' >> shared/x.md; git add -A
@@ -1168,8 +1175,7 @@ t_readme_hook_asks_named_core() {
 
 t_readme_hook_asks_core_named_bare() {
   # Given: skill demo reads shared/y.md, which names its sibling x.md bare
-  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md'
   # When
   printf 'more\n' >> shared/x.md; git add -A
   run git commit -m test
@@ -1181,8 +1187,7 @@ t_readme_hook_asks_core_named_bare() {
 
 t_readme_hook_asks_core_named_bare_at_end() {
   # Given: as above, with the bare name at the end of a sentence
-  hooked; core; printf 'see x.md.\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md.'
   # When
   printf 'more\n' >> shared/x.md; git add -A
   run git commit -m test
@@ -1194,8 +1199,7 @@ t_readme_hook_asks_core_named_bare_at_end() {
 
 t_readme_hook_asks_core_named_bare_deleted() {
   # Given: skill demo reads shared/y.md, which names its sibling x.md bare
-  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md'
   # When: the commit deletes x.md
   git rm -q shared/x.md
   run git commit -m test
@@ -1208,8 +1212,7 @@ t_readme_hook_asks_core_named_bare_deleted() {
 t_readme_hook_asks_core_named_bare_staged_only() {
   # Given: skill demo reads shared/y.md, which names new.md bare; HEAD has
   # no shared/new.md
-  hooked; core; printf 'see new.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see new.md'
   # When: the commit adds new.md, and its working copy is removed
   printf 'hi\n' > shared/new.md; git add -A; rm shared/new.md
   run git commit -m test
@@ -1226,7 +1229,7 @@ t_readme_hook_asks_core_named_bare_staged_only() {
 t_runner_keeps_cases_out_of_caller() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   git init -q --bare "$T/origin.git"; git init -q "$T/caller"; cd "$T/caller"
-  git config user.email "t""@""example.invalid"; git config user.name t
+  git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   git remote add origin "$T/origin.git"
   git commit -q --allow-empty -m init; git push -q origin HEAD:refs/heads/main

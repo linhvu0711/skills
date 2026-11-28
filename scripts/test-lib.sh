@@ -2,9 +2,6 @@
 # fake curl, and the fake nsc. test.sh sources this file first, then each
 # skills/*/tests/*.sh and shared/tests/*.sh, so the cases there call these
 # helpers by name.
-#
-# Every leak string below is joined from two halves at runtime, so this file
-# holds nothing check.sh flags.
 
 # Run from a git hook or `git rebase --exec`, git sets GIT_DIR and its kin,
 # and every temp repo below would write into the caller's repo instead.
@@ -33,7 +30,7 @@ repo() {
   T="$(cd "$(mktemp -d)" && pwd -P)"; R="$T/repo"
   mkdir -p "$R"; cd "$R"
   git init -q
-  git config user.email "t""@""example.invalid"; git config user.name t
+  git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   cp -R "$scripts_dir" "$R/scripts"
   git add scripts; git commit -qm init

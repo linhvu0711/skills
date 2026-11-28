@@ -8,7 +8,8 @@
 #                          the subject and README checks only, on the index and that message (the commit-msg hook)
 #
 # Checks: an absolute home path, an email address unless it is on the allow
-# list below, and each pattern in the owner's private word list,
+# list below or in the reserved .invalid domain, and each pattern in the
+# owner's private word list,
 # ${PRIVATE_WORDS:-<git common dir>/info/private-words}: one word or regex per
 # line, case-insensitive, blank and `#` lines skipped. The list is local and
 # never tracked; without it that check is skipped. Private words are matched
@@ -322,6 +323,8 @@ scan() {
   while IFS= read -r hit; do
     file="${hit%%:*}"; line="${hit#*:}"; line="${line%%:*}"; match="${hit#*:*:}"
     case "$kind:$match" in "home path:/"[Uh]*) ;; "home path:"*) match="${match:1}" ;; esac
+    # RFC 2606 reserves .invalid, so no one can receive mail there; tests write one whole.
+    case "$kind:$match" in "email:"*.invalid) continue ;; esac
     [ -n "$allowed" ] && printf '%s\n' "$allowed" | grep -qxF -e "$match" && continue
     problems+=("$file:$line: $kind: $match")
   done < <(cd "$root" && grep -nHIo "$@" -- "${files[@]}" || true)
