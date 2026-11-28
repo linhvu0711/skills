@@ -73,7 +73,7 @@ Repo: owner/name        Base: main
 Test: <cmd>             Typecheck: <cmd>      Lint: <cmd>       Build: <cmd>
 Run: <cmd>              UI: web | desktop | terminal | none
 Open: <how the executor reaches the UI after Run>
-Screen: <web: 1440x795 and 390x664 | desktop: window size | terminal: cols x rows>
+Screen: <web on linux: 1432x795 and 390x664 | web on macos: 1200x580 and 390x580 | desktop: window size | terminal: cols x rows>
 Platform: linux | windows | macos-outpost
 Standards: <the Standard first when the repo has one, then the other files that hold rules, or "the code">
 
@@ -299,7 +299,7 @@ A run writes the block in each layer, after the layer's Review. The page draws i
 
 ### Facts
 
-Every command is read from CI config, package scripts, or the README, never guessed. `Open` says how the executor reaches the UI from a fresh machine: a URL after `Run`, a window that appears, a command to type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as `../skills/plan-up/references/executor.md` describes it; its screen is 1024x768, so a wide layout needs a scroll or zoom step in the walk. A web walk on the linux Sandbox opens its page with the browser starter, `walk-browser <url> --viewport-size=1440,795`, at laptop size, and `--viewport-size=390,664` at phone size, the page of an iPhone 13 or 14. The 900 px screen loses 85 px to the browser bars and 20 px to the taskbar, so a taller page runs under the taskbar or off the screen, and the video hides its bottom. `../skills/plan-up/scripts/build_page.py` refuses a `--viewport-size` taller than 795.
+Every command is read from CI config, package scripts, or the README, never guessed. `Open` says how the executor reaches the UI from a fresh machine: a URL after `Run`, a window that appears, a command to type in a terminal of the size `Screen` names. `Platform` and `Screen` fit the executor as `../skills/plan-up/references/executor.md` describes it; its screen is 1024x768, so a wide layout needs a scroll or zoom step in the walk. A web walk on the linux Sandbox opens its page with the browser starter, `walk-browser <url> --viewport-size=1432,795`, at laptop size, and `--viewport-size=390,664` at phone size, the page of an iPhone 13 or 14. The browser draws 4 px on each side of the page and 85 px of bars, and the taskbar takes 20 px of the 1440x900 screen, so a wider page runs off the right and a taller one under the taskbar, and the video hides that part. A web walk on the macos Sandbox, 1280x800, uses `--viewport-size=1200,580` at laptop size and `--viewport-size=390,580` at phone size: the window opens 53 px from the top, the browser bars take 80 px, and the Dock ends the free area at 726 to 729 px, and macOS shrinks a taller window, which cuts the page. `../skills/plan-up/scripts/build_page.py` refuses a `--viewport-size` over 1432x795 on linux, and over 1200x580 for `Platform: macos-outpost`.
 
 ### Proved
 

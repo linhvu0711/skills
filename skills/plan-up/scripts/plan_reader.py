@@ -43,8 +43,11 @@ LINES_MAX, LAYER_CHANGE_MAX, SUMMARY_MAX = 4, 2, 3
 # A Decided line marked (hard to undo) is not counted: Choices must hold
 # each one, since /ship reads them.
 DECIDED_MAX, RISKS_MAX, MAPS_MAX, PARTS_MAX = 3, 3, 2, 12
-# The tallest page the linux Sandbox shows: a 900 px screen, a 20 px taskbar, and 85 px of browser bars and frame.
-PAGE_MAX = 795
+# The biggest page each Sandbox shows whole, as (width, height, the sizes a plan uses). Linux: a 1440x900 screen,
+# a 20 px taskbar, 85 px of browser bars, and a 4 px browser edge on each side of the page. macOS: a 1280x800
+# screen whose window opens 53 px from the top, 80 px of browser bars, and a Dock that ends the free area at
+# 726 to 729 px; macOS shrinks a taller window and cuts the page.
+PAGE_MAX = {"linux": (1432, 795, "1432,795 or 390,664"), "macos-outpost": (1200, 580, "1200,580 or 390,580")}
 VIEWPORT = re.compile(r'--viewport-size[= ]"?(\d+),\s*(\d+)')
 
 
@@ -713,12 +716,15 @@ def viewport_problems(plan):
             places.append((f"{name}walk {walk['n']} before", walk.get("before", "")))
         for video in layer["videos"]:
             places += [(f"{name}video {video['n']} step {k}", step) for k, step in enumerate(video["steps"], 1)]
+    platform = "macos-outpost" if plan["facts"].get("platform", "").strip() == "macos-outpost" else "linux"
+    width_max, height_max, sizes = PAGE_MAX[platform]
     for where, text in places:
         for m in VIEWPORT.finditer(text):
-            width, height = m.group(1), int(m.group(2))
-            if height > PAGE_MAX:
-                yield (f"{where}: `--viewport-size={width},{height}` is {height} px tall; the Sandbox shows a page"
-                       f" at most {PAGE_MAX} px tall under the browser bars and the taskbar, so use 1440,795 or 390,664")
+            width, height = int(m.group(1)), int(m.group(2))
+            too = [f"{width} px wide"] * (width > width_max) + [f"{height} px tall"] * (height > height_max)
+            if too:
+                yield (f"{where}: `--viewport-size={width},{height}` is {' and '.join(too)}; the {platform} Sandbox"
+                       f" shows a page at most {width_max}x{height_max}, so use {sizes}")
 
 
 def problems(plan):

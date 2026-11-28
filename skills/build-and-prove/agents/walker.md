@@ -79,7 +79,9 @@ One recording per video under `Videos`, in order:
 
 1. Do the video's `Setup` (the `Setup` of its first walk), go to `Where`, and get the screen ready before you record. Then check that the whole page is on the screen: `bash <box.sh> fit <folder>`.
    - `FIT ...`: go on to step 2.
-   - `TALL window bottom <b> · screen bottom <s>`: the page runs under the taskbar or off the screen, so its video would hide the bottom. Record no video. For each walk of the video, take `proofbox screenshot <id> --out <folder>/fail-<walk>.png`. Close the browser (§ Close the browser), and report each walk as `FAIL · page taller than the screen: window bottom <b>, screen bottom <s> · fail-<walk>.png`. Go on to the next video.
+   - `TALL window bottom <b> · screen bottom <s>`: the page runs under the taskbar or the Dock, or off the screen, so its video would hide the bottom. Record no video. For each walk of the video, take `proofbox screenshot <id> --out <folder>/fail-<walk>.png`. Close the browser (§ Close the browser), and report each walk as `FAIL · page taller than the screen: window bottom <b>, screen bottom <s> · fail-<walk>.png`. Go on to the next video.
+   - `WIDE window right <r> · screen right <s>`: the page runs past the screen's right edge, so its video would hide the right side. Do as for `TALL`, and report each walk as `FAIL · page wider than the screen: window right <r>, screen right <s> · fail-<walk>.png`.
+   - Both lines: do as for `TALL`, and report each walk once, with both reasons: `FAIL · page taller than the screen: window bottom <b>, screen bottom <s>; page wider than the screen: window right <r>, screen right <s> · fail-<walk>.png`.
    - Exit 125 with `Sandbox <id> is gone`: end as § Report says.
 2. `proofbox record start <id>`.
 3. For each numbered step: do its first action with `--mark 'step <k>:
