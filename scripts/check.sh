@@ -252,8 +252,12 @@ if [ -n "$msg" ]; then
   grep '^shared/' "$tmp/changed" > "$tmp/core" || true
   if [ -s "$tmp/core" ]; then
     # A bare name links to a file the commit holds, or one HEAD holds that the
-    # commit deletes, whatever the work tree has.
-    files=$'\n'"$({ git -c core.quotePath=false ls-files; git -c core.quotePath=false ls-tree -r --name-only HEAD 2>/dev/null || true; } | sort -u)"$'\n'
+    # commit deletes, whatever the work tree has. A first commit has no HEAD yet.
+    head_files=""
+    if git rev-parse -q --verify HEAD >/dev/null; then
+      head_files="$(git -c core.quotePath=false ls-tree -r --name-only HEAD)"
+    fi
+    files=$'\n'"$({ git -c core.quotePath=false ls-files; printf '%s\n' "$head_files"; } | sort -u)"$'\n'
     while IFS= read -r f; do
       printf '%s\n' "$f" | core_refs "$files" | awk -v f="$f" '{ print f "\t" $0 }'
     done < <(git ls-files -- shared) > "$tmp/edges"
