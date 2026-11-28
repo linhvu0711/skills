@@ -4,7 +4,7 @@
 # orchestrator ask it; it never calls GitHub, so a caller that holds many
 # issues reads them once and asks for each.
 #
-# Usage: router.sh [--answer <word>] [--size XS|S|M|L|XL] [--model M] [--effort E] < <issue json>
+# Usage: router.sh [--pick <step>] [--answer <word>] [--size XS|S|M|L|XL] [--model M] [--effort E] < <issue json>
 #
 # stdin: one issue in the shape GitHub's GraphQL API gives it: number,
 # state, labels {nodes {name}}, subIssues {nodes}, and
@@ -12,6 +12,8 @@
 # the PRs it counts: the orchestrator leaves out the ones its own threads
 # opened.
 #
+# --pick is a step the user named for this issue, a word of pick_list in
+# labels.sh: it wins over every label, but not over a closed issue or an epic.
 # --answer is the user's answer to a proposal, a word of route_list in
 # labels.sh, and --size goes with --answer ship. An answer counts only when
 # no label routes the issue: a label always wins. --model and --effort are
@@ -20,6 +22,7 @@
 # The rows, the first that holds:
 #   closed                      done      no step
 #   has sub-issues              epic      no step: the caller routes its open ones
+#   a pick                      picked    the picked step; ready-pr needs one open PR
 #   manual and waiting          waiting   no step
 #   manual                      task      /complete-task
 #   one open PR                 pr        /ready-pr <that PR>; two or more: no step, a stop
@@ -33,7 +36,7 @@
 # Exit 0: one JSON line: stage, step, stop, model, model_from, effort,
 # effort_from, reason, pr. A null step has null model and effort. stop is
 # true when a step should run and cannot, so the caller shows the reason as
-# a wait: two or more open PRs, or a ready-pr answer with no open PR.
+# a wait: two or more open PRs, or a ready-pr pick or answer with no open PR.
 # Exit 1: jq is not installed, `stop: jq is not installed` on stderr.
 # Exit 64: a wrong command line, or stdin that is not one issue, with the
 # usage after the reason on stderr.
@@ -45,13 +48,16 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage="usage: router.sh [--answer $route_list] [--size $size_list] [--model M] [--effort E] < <issue json>"
+usage="usage: router.sh [--pick $pick_list] [--answer $route_list] [--size $size_list] [--model M] [--effort E] < <issue json>"
 
 command -v jq >/dev/null || die "jq is not installed"
 
-answer=""; size=""; set_model=""; set_effort=""
+pick=""; answer=""; size=""; set_model=""; set_effort=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --pick)
+      one_of "$pick_list" "${2:-}" || die_usage "$usage" "--pick must be $(spelled "$pick_list"), got: ${2:-nothing}"
+      pick="$2"; shift 2 ;;
     --answer)
       one_of "$route_list" "${2:-}" || die_usage "$usage" "--answer must be $(spelled "$route_list"), got: ${2:-nothing}"
       answer="$2"; shift 2 ;;
@@ -113,6 +119,13 @@ out() {
 
 [ "$(jq -r .state <<<"$issue")" != CLOSED ] || out done "" closed
 [ "$(jq '(.subIssues.nodes // []) | length' <<<"$issue")" -eq 0 ] || out epic "" "has sub-issues: the caller routes its open ones"
+case "$pick" in
+  triage|grill) out picked "$pick" "you picked /$pick" ;;
+  ready-pr)
+    if [ "$pr_count" -eq 1 ]; then out picked ready-pr "you picked /ready-pr: open PR $prs" false "$prs"; fi
+    if [ "$pr_count" -gt 1 ]; then out picked "" "#$number has $pr_count open PRs: $(tr '\n' ' ' <<<"$prs" | sed 's/ $//')" true; fi
+    out picked "" "#$number has no open PR" true ;;
+esac
 if has manual; then
   if has waiting; then out waiting "" "a task that waits outside"; fi
   out task complete-task manual

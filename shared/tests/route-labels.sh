@@ -1,5 +1,5 @@
 # route-labels.sh: the cases for the shared core's route/labels.sh, the
-# label rule the Router, decide.sh, and the orchestrator's check read. The repo's
+# label rule the Router, run-in-t3's kickoff.sh, and the orchestrator's check read. The repo's
 # test.sh sources this file after test-lib.sh and runs its cases.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

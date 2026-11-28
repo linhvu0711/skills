@@ -196,7 +196,7 @@ fs_set_state() {
   jq "$@" "$f" > "$f.new" && mv "$f.new" "$f"
 }
 
-# fs_prs <node>...: decide.sh's GraphQL answer for #42's closing PRs, kept in
+# fs_prs <node>...: the GraphQL answer for #42's closing PRs, kept in
 # the same graphql.json as the issues.
 fs_prs() {
   jq --argjson p "[$(IFS=,; printf '%s' "$*")]" '.data.repository.issue = {closedByPullRequestsReferences: {nodes: $p}}' \

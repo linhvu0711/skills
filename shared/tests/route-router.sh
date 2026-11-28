@@ -170,6 +170,42 @@ t_rr_close_answer() {
   has stdout '"reason":"answer close: yours to close"' "$out"
 }
 
+t_rr_pick_beats_label() {
+  # Given: an S ticket the user picked triage for
+  # When
+  rr_go '["size/S"]' -- --pick triage
+  # Then
+  has stdout '"stage":"picked","step":"triage","stop":false,"model":"opus","model_from":"default","effort":"high"' "$out"
+  has stdout '"reason":"you picked /triage"' "$out"
+}
+
+t_rr_closed_beats_pick() {
+  # Given: a closed bug the user picked grill for
+  # When
+  rr_go '["bug"]' CLOSED -- --pick grill
+  # Then
+  has stdout '"stage":"done","step":null' "$out"
+}
+
+t_rr_pick_ready_pr() {
+  # Given: a bug with open PR #80, the user picked ready-pr
+  # When
+  rr_go '["bug"]' OPEN '[]' "[$pr80]" -- --pick ready-pr
+  # Then
+  has stdout '"stage":"picked","step":"ready-pr","stop":false' "$out"
+  has stdout '"effort":"medium"' "$out"
+  has stdout '"pr":"https://github.com/acme/app/pull/80"' "$out"
+}
+
+t_rr_pick_ready_pr_no_pr() {
+  # Given: an S ticket with no PR, the user picked ready-pr
+  # When
+  rr_go '["size/S"]' -- --pick ready-pr
+  # Then
+  has stdout '"stage":"picked","step":null,"stop":true' "$out"
+  has stdout '"reason":"#42 has no open PR"' "$out"
+}
+
 t_rr_named_model_effort() {
   # Given: an S ticket, a model and an effort named
   # When
@@ -204,6 +240,10 @@ cases=(
   "a label beats the answer|t_rr_label_beats_answer"
   "a ready-pr answer with no PR gets no step|t_rr_ready_pr_answer_no_pr"
   "a close answer starts nothing|t_rr_close_answer"
+  "a pick beats the labels|t_rr_pick_beats_label"
+  "closed beats a pick|t_rr_closed_beats_pick"
+  "a ready-pr pick takes the one open PR|t_rr_pick_ready_pr"
+  "a ready-pr pick with no PR gets no step|t_rr_pick_ready_pr_no_pr"
   "a named model and effort win|t_rr_named_model_effort"
   "a ship answer needs a size|t_rr_ship_answer_needs_size"
 )

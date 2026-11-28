@@ -84,7 +84,40 @@ t_ll_mode_only_ship() {
   eq "stderr line 1" "stop: --mode goes only with ship" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
+t_ll_ship_run() {
+  # Given: a checkout of acme/app; gh names acme/app
+  ll_setup; ll_clone
+  # When
+  ll_run https://github.com/acme/app/issues/70 ship '#12' '#14'
+  # Then
+  eq exit 0 "$code"
+  eq stdout "{\"path\":\"$T/repo\",\"command\":\"ship\",\"mode\":\"\",\"slash_command\":\"/ship\",\"message\":\"/ship #70 #12 #14\"}" "$out"
+}
+
+t_ll_ship_on() {
+  # Given: a checkout of acme/app; gh names acme/app
+  ll_setup; ll_clone
+  # When
+  ll_run https://github.com/acme/app/issues/42 ship on https://github.com/acme/app/pull/80
+  # Then
+  eq exit 0 "$code"
+  eq stdout "{\"path\":\"$T/repo\",\"command\":\"ship\",\"mode\":\"\",\"slash_command\":\"/ship\",\"message\":\"/ship #42 on #80\"}" "$out"
+}
+
+t_ll_more_only_ship() {
+  # Given: a checkout of acme/app; gh names acme/app
+  ll_setup; ll_clone
+  # When
+  ll_run https://github.com/acme/app/issues/42 triage '#14'
+  # Then
+  eq exit 64 "$code"
+  eq "stderr line 1" "stop: #n and on go only with ship" "$(printf '%s\n' "$err" | sed -n 1p)"
+}
+
 cases=(
+  "ship takes the run's tickets|t_ll_ship_run"
+  "ship on a stack names the PR|t_ll_ship_on"
+  "more tickets go only with ship|t_ll_more_only_ship"
   "ship with a mode names the issue by number|t_ll_ship_mode"
   "ready-pr names the PR|t_ll_ready_pr"
   "complete-task waits for go|t_ll_complete_task"
