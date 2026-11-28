@@ -22,6 +22,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+# gh reads --add-label and --remove-label as a CSV row, so a raw `Size, Small`
+# is two labels. The q variable keeps the replace safe on macOS Bash 3.2.
+csv_field() { local q='"'; printf '"%s"' "${1//$q/$q$q}"; }
 usage="usage: edit-labels.sh <owner/repo> <n> [--add <label>] [--remove <label>]"
 
 command -v gh >/dev/null || die "gh is not installed"
@@ -34,8 +37,8 @@ slug="$1"; n="$2"; shift 2
 add=""; edit=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    --add) [ -n "${2:-}" ] || die_usage "$usage" "--add needs a label"; add="$2"; edit+=(--add-label "$2"); shift 2 ;;
-    --remove) [ -n "${2:-}" ] || die_usage "$usage" "--remove needs a label"; edit+=(--remove-label "$2"); shift 2 ;;
+    --add) [ -n "${2:-}" ] || die_usage "$usage" "--add needs a label"; add="$2"; edit+=(--add-label "$(csv_field "$2")"); shift 2 ;;
+    --remove) [ -n "${2:-}" ] || die_usage "$usage" "--remove needs a label"; edit+=(--remove-label "$(csv_field "$2")"); shift 2 ;;
     *) die_usage "$usage" "unexpected argument: $1" ;;
   esac
 done

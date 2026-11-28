@@ -319,7 +319,7 @@ t_kt_label_once() {
   # Then
   eq "run 1" "labeled #16 bug" "$first"
   eq "run 2" "labeled #16 bug" "$out"
-  eq "issue edit args" "issue edit 16 --repo acme/app --add-label bug" "$(cat "$FAKE_GH/issue-edit.args")"
+  eq "issue edit args" 'issue edit 16 --repo acme/app --add-label "bug"' "$(cat "$FAKE_GH/issue-edit.args")"
 }
 
 t_kt_label_routed() {

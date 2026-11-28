@@ -1315,7 +1315,7 @@ t_fs_yes_writes_labels() {
 labeled #43 bug
 labeled #44 size/S
 labeled #45 manual" "$out"
-  eq "first edit" "issue edit 42 --repo acme/app --add-label seed" "$(sed -n 1p "$FAKE_GH/issue-edit.args")"
+  eq "first edit" 'issue edit 42 --repo acme/app --add-label "seed"' "$(sed -n 1p "$FAKE_GH/issue-edit.args")"
 }
 
 t_fs_no_label_answers() {
@@ -1368,7 +1368,7 @@ t_fs_changed_answer_swaps_label() {
   # Then
   eq exit 0 "$code"
   eq stdout "labeled #42 size/M, took off seed" "$out"
-  eq "second edit" "issue edit 42 --repo acme/app --add-label size/M --remove-label seed" "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
+  eq "second edit" 'issue edit 42 --repo acme/app --add-label "size/M" --remove-label "seed"' "$(sed -n 2p "$FAKE_GH/issue-edit.args")"
 }
 
 t_fs_teammate_label_stays() {
