@@ -1,6 +1,6 @@
 # sync-harnesses
 
-Checks that Claude Code, Codex, and Antigravity on your Mac have the repo's skills, your rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.1.
+Checks that Claude Code, Codex, and Antigravity on this machine have the repo's skills, your rules and gates, and, in Claude Code and Codex, the repo's subagents, and that Devin in T3 answers on SWE-2.1.
 
 ## Use it when
 
@@ -10,7 +10,7 @@ You added a skill, set up a harness, or updated T3, or a skill acts as if a help
 
 First it runs the repo's [link.sh](../../scripts/link.sh), which makes every missing link and agent file. Each one it makes shows as a `fixed:` line, as `fixed: linked ~/.claude/skills/demo`. Each one it finds but cannot own, such as an agent file you wrote by hand, shows as a `problem:` line in link.sh's words. Then it asks link.sh, with `--status`, where each link and file is and which folder holds it. So the check reads the folders link.sh wrote, each T3 Antigravity folder too, even when one of link.sh's env settings moves a folder. It reads the Antigravity gates from the plugins folder that link.sh links into each T3 folder, `ANTIGRAVITY_PLUGINS_HOME` when you set it. link.sh does nothing in a worktree, so run the skill from its installed copy, which points at the main checkout.
 
-Then one line per harness, then one line for Devin in T3. On a Mac where all is well:
+Then one line per harness, then one line for Devin in T3. On a machine where all is well:
 
 ```
 claude       skills 41/41 · subagents 11/11 · gates 6/6 · rules 1/1
