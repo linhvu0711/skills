@@ -14,7 +14,8 @@ the best-matching snippet, so the obvious matches float to the top. It does NOT
 decide the final match or touch the clipboard — that judgment is left to the
 caller, which is better at fuzzy/semantic matching than keyword counting.
 
-Read-only: never modifies any .jsonl.
+Read-only: never modifies any .jsonl. A transcript it cannot open is listed
+under "unreadable" in --json.
 
 Usage:
     find_sessions.py "rewrite the landing page hero"   # score + rank by the query
@@ -99,7 +100,7 @@ def strip_wrappers(text):
         return ""
     stripped = text.strip()
     # Command, caveat, or reminder markup is not a human prompt, but a slash command is kept.
-    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped):
+    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped, "claude"):
         # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
         if not m:
@@ -119,7 +120,7 @@ def is_bare_command(text):
 
 
 def parse_session(path):
-    """Return a dict of metadata for one .jsonl transcript, or None if unreadable."""
+    """Return a dict of metadata for one .jsonl transcript."""
     sid = os.path.basename(path)[: -len(".jsonl")]
     title = None
     cwd = None
@@ -131,47 +132,44 @@ def parse_session(path):
     prompt_len = 0
     body_parts = []
     body_len = 0
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            for d in chat_log.rows(f):
-                t = d.get("type")
-                if t in ("ai-title", "summary"):
-                    # Current Claude Code writes {"type":"ai-title","aiTitle":...};
-                    # older transcripts used {"type":"summary","summary":...}.
-                    s = d.get("aiTitle") or d.get("summary")
-                    if s:
-                        title = s  # keep the latest one as the title
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for d in chat_log.rows(f):
+            t = d.get("type")
+            if t in ("ai-title", "summary"):
+                # Current Claude Code writes {"type":"ai-title","aiTitle":...};
+                # older transcripts used {"type":"summary","summary":...}.
+                s = d.get("aiTitle") or d.get("summary")
+                if s:
+                    title = s  # keep the latest one as the title
+                continue
+            if t == "last-prompt":
+                lp = d.get("lastPrompt")
+                if isinstance(lp, str) and lp.strip():
+                    last_prompt = strip_wrappers(lp) or last_prompt
+                continue
+            if cwd is None and d.get("cwd"):
+                cwd = d["cwd"]
+            if t == "user":
+                if d.get("isMeta") or d.get("isSidechain"):
                     continue
-                if t == "last-prompt":
-                    lp = d.get("lastPrompt")
-                    if isinstance(lp, str) and lp.strip():
-                        last_prompt = strip_wrappers(lp) or last_prompt
+                human = strip_wrappers(chat_log.text_of(d.get("message", {}).get("content")))
+                if human:
+                    n_prompts += 1
+                    if first_prompt is None:
+                        first_prompt = human
+                    if first_substantive is None and not is_bare_command(human):
+                        first_substantive = human
+                    last_prompt = human
+                    if prompt_len < BODY_CAP:
+                        prompt_parts.append(human)
+                        prompt_len += len(human)
+            elif t == "assistant":
+                if d.get("isSidechain"):
                     continue
-                if cwd is None and d.get("cwd"):
-                    cwd = d["cwd"]
-                if t == "user":
-                    if d.get("isMeta") or d.get("isSidechain"):
-                        continue
-                    human = strip_wrappers(chat_log.text_of(d.get("message", {}).get("content")))
-                    if human:
-                        n_prompts += 1
-                        if first_prompt is None:
-                            first_prompt = human
-                        if first_substantive is None and not is_bare_command(human):
-                            first_substantive = human
-                        last_prompt = human
-                        if prompt_len < BODY_CAP:
-                            prompt_parts.append(human)
-                            prompt_len += len(human)
-                elif t == "assistant":
-                    if d.get("isSidechain"):
-                        continue
-                    txt = chat_log.text_of(d.get("message", {}).get("content"))
-                    if txt and body_len < BODY_CAP:
-                        body_parts.append(txt)
-                        body_len += len(txt)
-    except OSError:
-        return None
+                txt = chat_log.text_of(d.get("message", {}).get("content"))
+                if txt and body_len < BODY_CAP:
+                    body_parts.append(txt)
+                    body_len += len(txt)
 
     return {
         "id": sid,
@@ -215,7 +213,7 @@ def main():
                f"Looked in: {sess_dir}\n"
                f"(Derived from project dir: {os.path.abspath(project_dirs[0])})")
         if args.json:
-            print(json.dumps({"error": "no_project_dir", "session_dir": sess_dir, "sessions": []}))
+            print(json.dumps({"session_dir": sess_dir, "sessions": []}))
         else:
             print(msg)
         return
@@ -223,9 +221,19 @@ def main():
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
     files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
     scope = adapter_lib.Scope.last_days(None if args.all_projects else project_dirs, args.include_subdirs, args.days)
-    files = [p for p in files if scope.in_window(os.path.getmtime(p))]
-    sessions = [s for s in (parse_session(p) for p in files)
-                if s and (scope.in_roots(s.get("cwd")) or (not s.get("cwd") and folder_is_root(s, scope.roots)))]
+    # Each mtime is read once: a file can be gone by the time it is parsed.
+    modified = {p: os.path.getmtime(p) for p in files}
+    files = [p for p in files if scope.in_window(modified[p])]
+    sessions, unreadable = [], []
+    for p in files:
+        try:
+            s = parse_session(p)
+        except OSError as e:
+            # Its cwd is inside the file, so it is not checked against the roots.
+            unreadable.append({"path": p, "modified": modified[p], "why": e.strerror or str(e)})
+            continue
+        if scope.in_roots(s.get("cwd")) or (not s.get("cwd") and folder_is_root(s, scope.roots)):
+            sessions.append(s)
 
     ranked, use_query = rank.pick(sessions, sessions, args.query, WEIGHTS, args.all)
 
@@ -243,6 +251,7 @@ def main():
             "current_session_id": current_id,
             "total_sessions": len(sessions),
             "matched": len(ranked) if use_query else len(sessions),
+            "unreadable": unreadable,
             "sessions": [
                 {k: s[k] for k in ("id", "title", "first_prompt", "last_prompt",
                                    "n_prompts", "score", "snippet", "is_current",

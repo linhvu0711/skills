@@ -21,7 +21,7 @@ ck_setup() {
 ck() {
   local slug="$1" dir="$2" bare="$T/remotes/$1.git"
   git init -q -b main "$dir"
-  git -C "$dir" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$dir" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   if [ ! -d "$bare" ]; then mkdir -p "$(dirname "$bare")"; git clone -q --bare "$dir" "$bare"; fi
   git -C "$dir" remote add origin "https://github.com/$slug.git"
   git -C "$dir" config "url.$bare.insteadOf" "https://github.com/$slug.git"
@@ -57,26 +57,6 @@ t_ck_stops_dirty() {
   eq stderr "$(printf 'stop: dirty worktree at %s:\n?? a.txt' "$T/root/app/feat-2-y")" "$err"
 }
 
-t_ck_default_form() {
-  # Given: GitHub names main as the default branch
-  ck_setup; ck acme/app "$T/dev/app"
-  # When
-  resolve default acme/app
-  # Then
-  eq default "0|main" "$code|$out"
-}
-
-t_ck_default_form_gh_fails() {
-  # Given: gh fails, and origin/HEAD is not set
-  ck_setup; ck acme/app "$T/dev/app"
-  git -C "$T/dev/app" remote set-head origin -d
-  printf 'HTTP 502\n' > "$FAKE_GH/repo-view.fail"
-  # When
-  resolve default acme/app
-  # Then
-  eq default "2|stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$code|$err"
-}
-
 t_ck_reuses_spaced_path() {
   ck_setup; ck acme/app "$T/dev/app"
   git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/my wt/feat-2-y" main
@@ -87,7 +67,7 @@ t_ck_reuses_spaced_path() {
 t_ck_alias_origin() {
   ck_setup
   git init -q -b main "$T/dev/app"
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" branch feat/4-a
   git -C "$T/dev/app" remote add origin gh:acme/app
   git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
@@ -141,7 +121,7 @@ ck_listed() {
   printf '%s\n' "$2" > "$1/.gitignore"
   printf '%s\n' "$3" > "$1/.worktreeinclude"
   git -C "$1" add .gitignore .worktreeinclude
-  git -C "$1" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m list
+  git -C "$1" -c user.email=t@example.invalid -c user.name=t commit -q -m list
   git -C "$1" push -q origin main
 }
 
@@ -255,8 +235,6 @@ cases=(
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
-  "default prints GitHub's default branch|t_ck_default_form"
-  "default exits 2 when gh and origin/HEAD both fail|t_ck_default_form_gh_fails"
   "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
   "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"
   "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"

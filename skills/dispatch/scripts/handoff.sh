@@ -7,7 +7,7 @@
 #                                                             -> "<session>\t<link>"
 #   handoff.sh status <executor> <session> [poll options]     -> state, PR, link, last message
 #   handoff.sh say <executor> <session> <note-file>           -> sends a follow-up
-#   handoff.sh watch <executor> <session> [--interval S] [--max S] [--once] [--follow] [poll options]
+#   handoff.sh watch <executor> <session> [--interval S] [--once] [--follow] [poll options]
 #                                                             -> one line per event; exits when it ends
 #   handoff.sh facts <executor>                               -> one fact a line: repo, model, or mode
 #   handoff.sh release <session>                              -> frees what the session holds
@@ -26,9 +26,8 @@
 # `pr <url>` once per PR, and `<state> <link> :: <message>` when it blocks,
 # finishes, errors, is cancelled, expires, or is suspended. --once exits on
 # the first event, for a caller that only sees the process end; --follow
-# keeps going past the end, for a session that gets a follow-up. At --max
-# seconds it prints `still running <link>`. A failed poll is tried again; after
-# three in a row it prints `stop: poll failed <link> :: <the adapter's error>` on
+# keeps going past the end, for a session that gets a follow-up. A failed
+# poll is tried again; after three in a row it prints `stop: poll failed <link> :: <the adapter's error>` on
 # stderr and exits 1. Each line a working poll writes on stderr is printed too, stamped.
 # When a run ends, watch runs the adapter's release, on each poll until it
 # works, and prints its stderr lines stamped, such as a Mac it could not give
@@ -131,20 +130,18 @@ cmd_watch() {
   local e; e=$(executor "${1:-}"); shift || true
   local id="${1:-}"; shift || true
   [[ -n "$id" ]] || die_usage "$(usage_text)" "session id required"
-  local interval="" max=0 once=0 follow=0 opts=()
+  local interval="" once=0 follow=0 opts=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --interval) interval="$2"; shift 2 ;;
-      --max) max="$2"; shift 2 ;;
       --once) once=1; shift ;;
       --follow) follow=1; shift ;;
       *) opts+=("$1"); shift ;;
     esac
   done
   [[ -n "$interval" ]] || interval=$(adapter "$e" interval)
-  local start prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed="" why
+  local prev_key="" seen=" " last_link="$id" line st key prs link msg p arr errf relf fails=0 w freed="" why
   errf=$(mktemp); relf=$(mktemp); trap "rm -f '$errf' '$relf'" EXIT
-  start=$(date +%s)
   while :; do
     if ! line=$(adapter "$e" poll "$id" ${opts[@]+"${opts[@]}"} 2>"$errf"); then
       # One failure is often the network; three in a row is a key, a
@@ -208,10 +205,6 @@ cmd_watch() {
       if (( follow == 0 )); then
         case "$st" in finished|error|cancelled|expired) exit 0 ;; esac
       fi
-    fi
-    if (( max > 0 && $(date +%s) - start >= max )); then
-      echo "[$(date +%H:%M)] still running $last_link"
-      exit 0
     fi
     sleep "$interval"
   done

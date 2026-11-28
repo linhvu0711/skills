@@ -64,8 +64,9 @@ t_walk_browser_logs() {
   # Given
   fake_playwright events
   cd "$T/app"
+  export WALK_BROWSER_LOG="$T/walk.log"
   # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --log "$T/walk.log"
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
   # Then
   eq exit 0 "$code"
   eq log "error: boom · http://localhost:3000/app.js
@@ -78,31 +79,16 @@ t_walk_browser_clean_page() {
   # Given
   fake_playwright quiet
   cd "$T/app"
+  export WALK_BROWSER_LOG="$T/walk.log"
   # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --log "$T/walk.log"
+  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
   # Then
   eq exit 0 "$code"
   [ -f "$T/walk.log" ] || eq log "an empty file" "no file"
   eq log "" "$(cat "$T/walk.log")"
 }
 
-t_walk_browser_env_log() {
-  # Given
-  fake_playwright events
-  cd "$T/app"
-  export WALK_BROWSER_LOG="$T/walk.log"
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
-  # Then
-  eq exit 0 "$code"
-  eq log "error: boom · http://localhost:3000/app.js
-error: Uncaught TypeError: x is undefined · http://localhost:3000/
-request: 500 http://localhost:3000/api/wishes
-request: net::ERR_CONNECTION_REFUSED http://localhost:4000/feed" "$(cat "$T/walk.log")"
-}
-
 cases=(
   "logs the page's errors and failed requests|t_walk_browser_logs"
   "leaves an empty log when the page logs nothing|t_walk_browser_clean_page"
-  "takes its log from WALK_BROWSER_LOG|t_walk_browser_env_log"
 )

@@ -5,8 +5,10 @@ archived one, under the same name, to ``~/.codex/archived_sessions/``.
 
 Codex keeps older rollouts as ``rollout-*.jsonl.zst``. Python reads zstd
 itself from 3.14 (``compression.zstd``); an older Python reads it through the
-``zstd`` command. With neither, opening a compressed rollout raises NoZstd, so
-a caller can list the file as not read instead of skipping it silently.
+``zstd`` command. With neither, opening a compressed rollout raises NoZstd, an
+OSError, and a zstd command that fails on a file read to its end raises
+OSError with its message, so a caller can list the file as not read instead
+of skipping it silently.
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ def data_folders() -> list[str]:
     return [os.path.join(codex, "sessions"), os.path.join(codex, "archived_sessions")]
 
 
-class NoZstd(Exception):
+class NoZstd(OSError):
     pass
 
 
@@ -52,10 +54,16 @@ def open_rollout(path):
     if not shutil.which("zstd"):
         raise NoZstd(NO_ZSTD)
     proc = subprocess.Popen(["zstd", "-dcq", path], stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace")
+                            stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     try:
         yield proc.stdout
+        # A reader that stopped early, as at line 1, leaves zstd running and its
+        # code says nothing; only a read to the end can see that zstd failed.
+        if not proc.stdout.read(1) and proc.wait() != 0:
+            err = proc.stderr.read().strip().splitlines()
+            raise OSError(err[-1] if err else f"zstd exited {proc.returncode}")
     finally:
         proc.stdout.close()
+        proc.stderr.close()
         proc.kill()
         proc.wait()

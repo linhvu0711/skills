@@ -119,7 +119,60 @@ t_fa_other_io_encoding() {
   eq rows "export café 🚀 codex" "$(jq -r '.sessions | "\(.[0].first_prompt) \(.[1].harness)"' "$T/out")"
 }
 
+t_fa_unreadable_claude() {
+  # Given: s1, and s2 that cannot be opened
+  fa_home
+  local f="$HOME/.claude/projects/-p-app/s2.jsonl"
+  printf '{"type":"user","message":{"role":"user","content":"export the csv"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s2"}\n' > "$f"
+  chmod 000 "$f"
+  # When
+  run python3 "$S" --root /p/app
+  # Then
+  eq claude "s1 false
+null true" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "claude") | "\(.id) \(.unreadable != null)"')"
+}
+
+t_fa_unreadable_codex() {
+  # Given: c1, and c2 that cannot be opened
+  fa_home
+  local f="$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c2.jsonl"
+  printf '{"type":"session_meta","payload":{"id":"c2","cwd":"/p/app","timestamp":"2026-10-01T10:00:00Z","source":"cli"}}\n' > "$f"
+  chmod 000 "$f"
+  # When
+  run python3 "$S" --root /p/app
+  # Then
+  eq codex "c1 false
+null true" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "codex") | "\(.id) \(.unreadable != null)"')"
+}
+
+t_fa_empty_harness() {
+  # Given: sessions for /p/app only
+  fa_home
+  # When
+  run python3 "$S" --root /p/other
+  # Then
+  eq claude '[{"harness":"claude","label":"Claude Code","installed":true},0]' "$(printf '%s' "$out" | jq -c '[(.harnesses[] | select(.harness == "claude")), ([.sessions[] | select(.harness == "claude")] | length)]')"
+}
+
+t_fa_other_harness_marker() {
+  # Given: a Claude prompt that starts with a Codex marker, and a Codex prompt that starts with a Claude one
+  fa_home
+  printf '{"type":"user","message":{"role":"user","content":"<environment_context>fix the export"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s1"}\n' > "$HOME/.claude/projects/-p-app/s1.jsonl"
+  local f="$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c1.jsonl"
+  printf '{"type":"session_meta","payload":{"id":"c1","cwd":"/p/app","timestamp":"2026-10-01T10:00:00Z","source":"cli"}}\n' > "$f"
+  printf '{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<bash-input>add the flag"}]}}\n' >> "$f"
+  # When
+  run python3 "$S" --root /p/app
+  # Then
+  eq prompts "claude 1
+codex 1" "$(printf '%s' "$out" | jq -r '.sessions[] | "\(.harness) \(.prompts)"')"
+}
+
 cases=(
+  "find-all lists an unreadable Claude session as an unreadable row|t_fa_unreadable_claude"
+  "find-all keeps a prompt that only another harness's marker matches|t_fa_other_harness_marker"
+  "find-all gives no row and no error for a harness with no sessions here|t_fa_empty_harness"
+  "find-all lists an unreadable Codex rollout as an unreadable row|t_fa_unreadable_codex"
   "find-all lists every harness and its sessions|t_fa_lists_harnesses"
   "find-all keeps to the window|t_fa_window"
   "find-all names a harness with data and no adapter|t_fa_names_no_adapter_harness"

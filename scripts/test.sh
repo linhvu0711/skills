@@ -9,7 +9,7 @@
 #
 # Each case starts in an empty temp folder with set -e on, builds its own git
 # repo in a temp folder, copies this scripts/ folder in, and runs the command
-# there. Every leak string
+# there. Each case's temp folders go when the case ends. Every leak string
 # below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
@@ -1157,6 +1157,13 @@ core() {
   printf '<!-- include ../size.md -->\n' > shared/handoff/rules.md
 }
 
+# bare_core_skill <text>: a hooked repo with core, shared/y.md holding <text>,
+# and skill demo reading y.md, committed.
+bare_core_skill() {
+  hooked; core; printf '%s\n' "$1" > shared/y.md; skill demo 'read `../../shared/y.md`'
+  git add -A; git commit -qm skill
+}
+
 t_readme_hook_asks_named_core() {
   hooked; core; skill demo 'read `../../shared/x.md`'; git add -A; git commit -qm skill
   printf 'more\n' >> shared/x.md; git add -A
@@ -1168,8 +1175,7 @@ t_readme_hook_asks_named_core() {
 
 t_readme_hook_asks_core_named_bare() {
   # Given: skill demo reads shared/y.md, which names its sibling x.md bare
-  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md'
   # When
   printf 'more\n' >> shared/x.md; git add -A
   run git commit -m test
@@ -1181,8 +1187,7 @@ t_readme_hook_asks_core_named_bare() {
 
 t_readme_hook_asks_core_named_bare_at_end() {
   # Given: as above, with the bare name at the end of a sentence
-  hooked; core; printf 'see x.md.\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md.'
   # When
   printf 'more\n' >> shared/x.md; git add -A
   run git commit -m test
@@ -1194,8 +1199,7 @@ t_readme_hook_asks_core_named_bare_at_end() {
 
 t_readme_hook_asks_core_named_bare_deleted() {
   # Given: skill demo reads shared/y.md, which names its sibling x.md bare
-  hooked; core; printf 'see x.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see x.md'
   # When: the commit deletes x.md
   git rm -q shared/x.md
   run git commit -m test
@@ -1208,8 +1212,7 @@ t_readme_hook_asks_core_named_bare_deleted() {
 t_readme_hook_asks_core_named_bare_staged_only() {
   # Given: skill demo reads shared/y.md, which names new.md bare; HEAD has
   # no shared/new.md
-  hooked; core; printf 'see new.md\n' > shared/y.md; skill demo 'read `../../shared/y.md`'
-  git add -A; git commit -qm skill
+  bare_core_skill 'see new.md'
   # When: the commit adds new.md, and its working copy is removed
   printf 'hi\n' > shared/new.md; git add -A; rm shared/new.md
   run git commit -m test
@@ -1226,7 +1229,7 @@ t_readme_hook_asks_core_named_bare_staged_only() {
 t_runner_keeps_cases_out_of_caller() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   git init -q --bare "$T/origin.git"; git init -q "$T/caller"; cd "$T/caller"
-  git config user.email "t""@""example.invalid"; git config user.name t
+  git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   git remote add origin "$T/origin.git"
   git commit -q --allow-empty -m init; git push -q origin HEAD:refs/heads/main
@@ -1240,6 +1243,24 @@ t_runner_keeps_cases_out_of_caller() {
   eq marker no "$([ -e "$T/marker" ] && echo yes || echo no)"
   eq "caller HEAD" "$head" "$(git -C "$T/caller" rev-parse HEAD)"
   eq "origin branches" refs/heads/main "$(git -C "$T/origin.git" for-each-ref --format='%(refname)' refs/heads)"
+}
+
+# t_runner_removes_case_temp_folders: run_cases runs one passing and one failing
+# case, each making a temp folder and a temp file with a bare mktemp. None of
+# the four is left after either case.
+t_runner_removes_case_temp_folders() {
+  # Given: a passing and a failing case that each note the temp paths they make
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  t_temp_pass() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; }
+  t_temp_fail() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; false; }
+  local -a cases=("pass|t_temp_pass" "fail|t_temp_fail")
+  local pass=0 fail=0 log="$T/log" p left=""
+  # When
+  run_cases >"$T/out" 2>&1
+  # Then
+  eq failed 1 "$fail"
+  while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done <"$T/made"
+  eq "temp left" "" "$left"
 }
 
 cases=(
@@ -1340,16 +1361,21 @@ cases=(
   "flags a missing try-order row|t_flags_missing_try_order_row"
   "flags a shared agent with no tier line|t_flags_shared_agent_no_tier"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
+  "runner removes each case's temp folders|t_runner_removes_case_temp_folders"
 )
 
 # run_cases: run each case of `cases` in a subshell with set -e on, from a new
 # empty temp folder that git finds no repo above, print `ok <name>` or
-# `FAIL <name>: <why>`, and add to pass and fail.
+# `FAIL <name>: <why>`, and add to pass and fail. The folder sits in a root
+# that is the case's TMPDIR, with the mktemp wrapper first on PATH, and the
+# root is removed when the case ends, pass or fail.
 run_cases() {
-  local c name fn
+  local c name fn root
   for c in "${cases[@]}"; do
     name="${c%%|*}"; fn="${c##*|}"
-    rc=0; set +e; ( set -e; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    root="$(mktemp -d)"
+    rc=0; set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    rm -rf "$root"
     if [ "$rc" -eq 0 ]; then
       printf 'ok %s\n' "$name"; pass=$((pass + 1))
     else
@@ -1362,7 +1388,20 @@ run_cases() {
 # the next file is sourced, so a helper name in one file never replaces
 # another file's.
 pass=0; fail=0
+case_bin="${SKILLS_HOME%/agents}/case-bin"; mkdir -p "$case_bin"
+# A case that links mktemp into a PATH of its own links this wrapper, so the
+# wrapper names the real mktemp by its full path.
+{ printf '#!/bin/sh\nreal='\''%s'\''\n' "$(command -v mktemp)"; cat <<'EOF'
+# macOS mktemp ignores TMPDIR when it gets no template (man mktemp), so a
+# case's temp files would land outside its root; -p puts them there.
+for a in "$@"; do case "$a" in *XXX*) exec "$real" "$@" ;; esac; done
+[ -n "${TMPDIR:-}" ] || exec "$real" "$@"
+exec "$real" -p "$TMPDIR" "$@"
+EOF
+} > "$case_bin/mktemp"
+chmod +x "$case_bin/mktemp"
 log="$(mktemp)"
+trap 'rm -rf "$log" "${SKILLS_HOME%/agents}"' EXIT
 run_cases
 for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases

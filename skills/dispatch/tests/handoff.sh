@@ -186,19 +186,20 @@ t_release_through_adapter() {
 }
 
 t_watch_releases_once() {
-  # Given: the run ends on poll 2 and stays ended
+  # Given: the run ends on poll 2 and stays ended on poll 3; polls 4 to 6
+  # fail, the one way a --follow watch ends
   fake_adapters
   printf 'working\trun-2|RUNNING\t-\thttps://cursor.com/agents/bc-1\t-\n' > "$FAKE_AD/cursor.poll.1.out"
   printf 'finished\trun-2|FINISHED\t-\thttps://cursor.com/agents/bc-1\tDone\n' > "$FAKE_AD/cursor.poll.out"
+  for n in 4 5 6; do printf 'HTTP 502\n' > "$FAKE_AD/cursor.poll.$n.fail"; done
   printf 'bc-1: destroyed mac-1\n' > "$FAKE_AD/cursor.release.out"
   # When
-  handoff watch cursor bc-1 --interval 0 --follow --max 2
+  handoff watch cursor bc-1 --interval 0 --follow
   # Then
-  eq exit 0 "$code"
+  eq exit 1 "$code"
   eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls")"
   eq "release args" "bc-1" "$(cat "$FAKE_AD/cursor.release.args")"
-  eq stdout "finished https://cursor.com/agents/bc-1 :: Done
-still running https://cursor.com/agents/bc-1" "$(unstamped)"
+  eq stdout "finished https://cursor.com/agents/bc-1 :: Done" "$(unstamped)"
 }
 
 t_watch_once_releases_before_pr() {

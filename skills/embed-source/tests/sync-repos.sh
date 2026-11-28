@@ -15,7 +15,7 @@ es_remote() {
   local r="$T/zod"
   mkdir -p "$r"
   git -C "$r" init -q
-  git -C "$r" config user.email "t""@""example.invalid"; git -C "$r" config user.name t
+  git -C "$r" config user.email t@example.invalid; git -C "$r" config user.name t
   git -C "$r" config commit.gpgsign false
   printf '{"version":"3.1.0"}\n' > "$r/package.json"
   git -C "$r" add package.json; git -C "$r" commit -qm 3.1.0; git -C "$r" tag v3.1.0

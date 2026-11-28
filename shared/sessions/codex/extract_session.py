@@ -242,7 +242,7 @@ def read(rows):
                 if role == "assistant":
                     messages.append(printer.Message("assistant", txt))
                 elif role == "user" and not have_event_users:
-                    if not adapter_lib.injected(txt):
+                    if not adapter_lib.injected(txt, "codex"):
                         messages.append(printer.Message("user", txt))
                 # developer/system roles are skipped
             elif pt == "reasoning":

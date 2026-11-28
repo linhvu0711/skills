@@ -368,11 +368,10 @@ const DATA = {};
   function openSlice(i, n) {
     cur = i; render(); show('slices');
     const c = panels.querySelector(`section.on [data-ref="S${n}"]`);
-    if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); }
+    c.open = true; c.scrollIntoView({ block: 'start' });
   }
   function filesView(L, li) {
-    const files = L.files || [];
-    if (!files.length) return empty('Missing.');
+    const files = L.files;
     const st = fileView[li] || (fileView[li] = { kind: null, gen: true });
     const box = el('div', {});
     const draw = () => {
@@ -391,12 +390,12 @@ const DATA = {};
       const rows = PlanLayout.fileTree(shown).map((r) => r.dir
         ? el('div', { class: 'ft-row dir' }, el('span', {}), el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, r.branch), r.name + '/'), el('span', {}), el('span', {}))
         : el('div', { class: 'ft-row ' + r.file.change + (r.file.generated ? ' gen' : '') },
-          el('span', { class: 'mk ' + r.file.change, title: r.file.change }, MARKS[r.file.change] || '?'),
+          el('span', { class: 'mk ' + r.file.change, title: r.file.change }, MARKS[r.file.change]),
           el('span', { class: 'ft-name' }, el('span', { class: 'ft-br' }, r.branch), el('span', { class: 'ft-nm' }, r.name)),
           el('span', { class: 'ft-note' },
             [r.file.from ? ['from ', el('span', { class: 'ft-was' }, r.file.from)] : null, r.file.note || null, r.file.generated ? 'generated' : null]
               .filter(b => b != null).map((b, j) => j ? [' · ', b] : b)),
-          el('span', { class: 'ft-sl' }, (r.file.slices || []).map((n, j) => el('button', {
+          el('span', { class: 'ft-sl' }, r.file.slices.map((n, j) => el('button', {
             class: 'ref' + (j ? '' : ' first'), title: `open slice ${n}`, onclick: () => openSlice(li, n) }, 'S' + n)))));
       box.append(el('div', { class: 'ft' }, rows));
     };
@@ -413,7 +412,7 @@ const DATA = {};
     return e;
   };
   const TONE = { new: ['var(--ok)', 'var(--ok-soft)'], changed: ['var(--warn)', 'var(--warn-soft)'], removed: ['var(--bad)', 'var(--bad-soft)'], same: ['var(--muted)', 'var(--panel)'] };
-  const tone = (c) => TONE[c] || TONE.same;
+  const tone = (c) => TONE[c];
   const measure = document.createElement('canvas').getContext('2d');
   const textWidth = (s, font) => { measure.font = `${font} ${getComputedStyle(document.body).fontFamily}`; return measure.measureText(s).width; };
 
@@ -441,7 +440,7 @@ const DATA = {};
       labels.append(text);
     }
     for (const p of L.parts) {
-      const c = p.change || 'same', [ink, soft] = tone(c), x = p.cx - p.w / 2, y = p.cy - p.h / 2;
+      const c = p.change, [ink, soft] = tone(c), x = p.cx - p.w / 2, y = p.cy - p.h / 2;
       const g = sv('g', {});
       const at = Array.isArray(p.at) ? p.at.join('\n') : (p.at ? `made by ${p.at}` : '');
       g.append(sv('title', {}, `${p.ref} ${p.name}${at ? '\n' + at : ''}`));
@@ -466,32 +465,31 @@ const DATA = {};
 
   // The key names only the marks this map uses.
   function mapKey(m) {
-    const parts = m.parts || [], flows = m.flows || [];
+    const parts = m.parts, flows = m.flows;
     const sw = (paint) => { const s = sv('svg', { width: 30, height: 18, viewBox: '0 0 30 18', 'aria-hidden': 'true' }); paint(s); return s; };
     const items = [];
     const partLabel = { new: 'New part', changed: 'Job changed', removed: 'Removed part', same: 'No change' };
     const flowLabel = { new: 'New flow', changed: 'Changed flow', removed: 'Removed flow', same: 'Flow, no change' };
-    for (const c of Object.keys(TONE)) if (parts.some((p) => (p.change || 'same') === c))
+    for (const c of Object.keys(TONE)) if (parts.some((p) => p.change === c))
       items.push([sw((s) => s.append(sv('rect', { x: 2, y: 2, width: 26, height: 14, rx: 3, 'stroke-width': 1.5, style: `fill:${tone(c)[1]};stroke:${tone(c)[0]}` }))), partLabel[c]]);
     if (parts.some((p) => p.kind === 'store')) items.push([sw((s) => { s.append(sv('path', { d: 'M6,4 A9,2.5 0 0 1 24,4 V14 A9,2.5 0 0 1 6,14 Z', 'stroke-width': 1.3, style: 'fill:var(--panel);stroke:var(--muted)' })); s.append(sv('path', { d: 'M6,4 A9,2.5 0 0 0 24,4', fill: 'none', 'stroke-width': 1.3, style: 'stroke:var(--muted)' })); }), 'Data store']);
     if (parts.some((p) => p.kind === 'outside')) items.push([sw((s) => s.append(sv('rect', { x: 2, y: 2, width: 26, height: 14, rx: 3, 'stroke-width': 1.5, 'stroke-dasharray': '4 3', style: 'fill:none;stroke:var(--muted)' }))), 'Dashed: outside the repo']);
     if (parts.some((p) => p.group)) items.push([sw((s) => s.append(sv('rect', { x: 1, y: 1, width: 28, height: 16, rx: 4, style: 'fill:var(--neutral-soft);stroke:var(--line)' }))), 'App or package']);
-    for (const c of Object.keys(TONE)) if (flows.some((f) => (f.change || 'same') === c))
+    for (const c of Object.keys(TONE)) if (flows.some((f) => f.change === c))
       items.push([sw((s) => { s.append(sv('line', { x1: 2, y1: 9, x2: 22, y2: 9, 'stroke-width': 2, style: `stroke:${tone(c)[0]}` })); s.append(sv('path', { d: 'M21,5 L28,9 L21,13 z', style: `fill:${tone(c)[0]}` })); }), flowLabel[c]]);
     return el('div', { class: 'mapkey' }, el('b', {}, 'Key'), items.map(([s, t]) => el('span', {}, s, t)));
   }
 
   function mapView() {
-    if (d.maps == null) return null;
     if (!d.maps.length) return el('p', { class: 'empty', style: 'margin-top:10px' }, d.noMap);
     return d.maps.map((m, i) => el('div', { class: 'map' }, m.area ? el('h4', {}, m.area) : null, mapKey(m), el('div', { class: 'mapwrap' }, mapSvg(m, `map${i}`))));
   }
   // The M refs a run's layer makes: its parts, and the parts its flows touch.
   function layerRefs(n) {
     const tag = `L${n}`, refs = new Set();
-    for (const m of d.maps || []) {
-      for (const p of m.parts || []) if (p.layer === tag) refs.add(p.ref);
-      for (const f of m.flows || []) if (f.layer === tag) { refs.add(f.from); refs.add(f.to); }
+    for (const m of d.maps) {
+      for (const p of m.parts) if (p.layer === tag) refs.add(p.ref);
+      for (const f of m.flows) if (f.layer === tag) { refs.add(f.from); refs.add(f.to); }
     }
     return [...refs].sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
   }

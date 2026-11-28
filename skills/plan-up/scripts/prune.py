@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Delete plan files whose work is done.
 
-    prune.py [-n]      -n: print what would go, delete nothing
+    prune.py
 
 A slug goes when its `plan-<slug>.md` has a `Repo: owner/repo` line and
 every issue the slug names is closed: the number(s) in the slug, plus,
@@ -55,8 +55,7 @@ def files(folder):
 def main():
     folder = os.environ.get("PLAN_DIR") or os.path.expanduser("~/.agents/artifacts/plan")
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("-n", dest="dry", action="store_true", help="print what would go, delete nothing")
-    dry = ap.parse_args().dry
+    ap.parse_args()
     if not os.path.isdir(folder):
         return
     cache, pruned, kept = {}, 0, 0
@@ -83,8 +82,7 @@ def main():
             kept += 1
             continue
         print(f"pruned {slug}")
-        if not dry:
-            delete(folder, slug)
+        delete(folder, slug)
         pruned += 1
     # Listed again: the deletes above leave fewer files.
     for name in files(folder):
@@ -92,7 +90,7 @@ def main():
         if m and os.path.exists(os.path.join(folder, f"plan-{m.group(2)}.md")):
             continue
         print(f"stray {name}")
-    print(f"pruned {pruned}, kept {kept}{' (dry run)' if dry else ''}")
+    print(f"pruned {pruned}, kept {kept}")
 
 
 if __name__ == "__main__":

@@ -20,9 +20,9 @@ The user comes back to a topic after some days. This skill finds the sessions of
    python3 scripts/find.py "<topic>"
    ```
 
-   One line per session, newest first: `<tool> <id> <age> · <n> prompts · <title>`, with `<tool>` `claude`, `codex`, or `antigravity`. At most 10; a `Skipped <k> older sessions.` line says how many more matched. A `<Tool> is not installed: <the others> sessions only.` line, as in `Codex is not installed: Antigravity and Claude Code sessions only.`, means that tool was not searched. Both go on the brief's `Sessions:` line in step 5, as in `Sessions: 10 (Claude Code 10, Codex 0, Antigravity 0) · skipped 2 older · Codex is not installed`.
+   One line per session, newest first: `<tool> <id> <age> · <n> prompts · <title>`, with `<tool>` `claude`, `codex`, or `antigravity`. At most 10; a `Skipped <k> older sessions.` line says how many more matched. A `<Tool> is not installed: <the others> sessions only.` line, as in `Codex is not installed: Antigravity and Claude Code sessions only.`, means that tool was not searched. A `Could not read <Tool> …` line names a tool whose sessions, or some of its session files, could not be read. All three go on the brief's `Sessions:` line in step 5, as in `Sessions: 10 (Claude Code 10, Codex 0, Antigravity 0) · skipped 2 older · Codex is not installed · could not read 1 Claude Code session file`.
 
-   Exit 1: no session is on the topic. Show its last line, `No sessions on <topic>.`, and stop.
+   Exit 1: no session is on the topic, or the search failed. Show each `Could not read` line and the last line, `No sessions on <topic>.`, or the `stop:` line on stderr, and stop.
 
 3. **Render** each session's transcript for its brief writer, in summary mode, through its tool's adapter. `<tool>` is the line's first word. `<out>` is `<scratch>/recall-<id8>.md`, where `<scratch>` is the scratch folder that `../../shared/harness.md` names for your harness.
 

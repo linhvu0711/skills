@@ -1,7 +1,6 @@
 // layout.js: where the plan page draws each Change map box, flow, and label,
 // and the rows of its Files tree.
-// No page calls: build_page.py puts this file into the page, and the node
-// tests in tests/layout.sh run it alone.
+// No page calls: build_page.py puts this file into the page.
 const PlanLayout = (() => {
   'use strict';
   const SIGN = { new: '+ ', removed: '− ' };
@@ -14,7 +13,7 @@ const PlanLayout = (() => {
   // A map's boxes, group areas, flow paths, and labels. `textWidth(text, font)`
   // measures text as the page draws it.
   function map(m, textWidth) {
-    const parts = m.parts || [], flows = m.flows || [];
+    const parts = m.parts, flows = m.flows;
     const W = (Math.max(0, ...parts.map((p) => p.x)) + 1) * CW + PAD * 2;
     const H = (Math.max(0, ...parts.map((p) => p.y)) + 1) * RH + PAD;
     const pos = {};
@@ -123,8 +122,7 @@ const PlanLayout = (() => {
     const placed = [], drawn = [];
     for (const f of flows) {
       const a = pos[f.from], b = pos[f.to];
-      if (!a || !b) continue;
-      const c = f.change || 'same';
+      const c = f.change;
       const len = Math.hypot(b.cx - a.cx, b.cy - a.cy) || 1, mx = (a.cx + b.cx) / 2, my = (a.cy + b.cy) / 2;
       const curved = (off) => curve(a, b, mx - (b.cy - a.cy) / len * off, my + (b.cx - a.cx) / len * off);
       // A flow takes the gentlest curve that clears every wall; when none
@@ -133,7 +131,7 @@ const PlanLayout = (() => {
       const path = tries.find(([, n]) => !n)?.[0] || laneRoute(f, a, b) || tries.reduce((p, q) => (q[1] < p[1] ? q : p))[0];
       // The label sits on its flow at the spot nearest the middle that covers no box, title, or other
       // label: on one line where one fits, else on two.
-      const t = (f.layer ? f.layer + ' · ' : '') + (SIGN[c] || '') + (f.label || '');
+      const t = (f.layer ? f.layer + ' · ' : '') + (SIGN[c] || '') + f.label;
       let spot, least = Infinity;
       search: for (const lines of layouts(t)) {
         const tw = Math.max(...lines.map((l) => textWidth(l, '12px'))) + 10, th = lines.length * 14 + 6;
@@ -149,7 +147,7 @@ const PlanLayout = (() => {
     }
     return {
       width: W, height: H, groups, flows: drawn,
-      parts: parts.map((p) => ({ ...p, ...pos[p.ref], text: (SIGN[p.change || 'same'] || '') + p.name })),
+      parts: parts.map((p) => ({ ...p, ...pos[p.ref], text: (SIGN[p.change] || '') + p.name })),
     };
   }
 
