@@ -7,19 +7,24 @@
 # and every temp repo below would write into the caller's repo instead.
 while IFS= read -r v; do unset "$v"; done < <(git rev-parse --local-env-vars)
 
-# A case's commit or checkout with the hooks on runs link.sh, which links
-# skills, skill agents, the Antigravity plugins folder, and the subagent
-# gate's hook entries into these folders and files; keep it off the real ones. The one T3 folder keeps its no-folder line quiet.
-SKILLS_HOME="$(mktemp -d)/agents"; CLAUDE_SKILLS_HOME="${SKILLS_HOME%/agents}/claude"
-CLAUDE_AGENTS_HOME="${SKILLS_HOME%/agents}/claude-agents"
-CODEX_AGENTS_HOME="${SKILLS_HOME%/agents}/codex-agents"
-ANTIGRAVITY_SKILLS_HOME="${SKILLS_HOME%/agents}/antigravity-skills"
-ANTIGRAVITY_PLUGINS_HOME="${SKILLS_HOME%/agents}/antigravity-plugins"
-T3_ANTIGRAVITY_HOME="${SKILLS_HOME%/agents}/t3"; mkdir -p "$T3_ANTIGRAVITY_HOME/p1"
-CLAUDE_SETTINGS_FILE="${SKILLS_HOME%/agents}/claude-settings.json"
-CODEX_HOOKS_FILE="${SKILLS_HOME%/agents}/codex-hooks.json"
-export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME CODEX_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME ANTIGRAVITY_PLUGINS_HOME T3_ANTIGRAVITY_HOME \
-  CLAUDE_SETTINGS_FILE CODEX_HOOKS_FILE
+# fake_home: new folders and files for link.sh, which a case's commit or
+# checkout with the hooks on runs: it links skills, skill agents, the
+# Antigravity plugins folder, and the subagent gate's hook entries into them,
+# so it keeps off the real ones. The runner calls it for each case, since
+# cases run at the same time. The one T3 folder keeps its no-folder line quiet.
+fake_home() {
+  local root; root="$(mktemp -d)"
+  SKILLS_HOME="$root/agents"; CLAUDE_SKILLS_HOME="$root/claude"
+  CLAUDE_AGENTS_HOME="$root/claude-agents"
+  CODEX_AGENTS_HOME="$root/codex-agents"
+  ANTIGRAVITY_SKILLS_HOME="$root/antigravity-skills"
+  ANTIGRAVITY_PLUGINS_HOME="$root/antigravity-plugins"
+  T3_ANTIGRAVITY_HOME="$root/t3"; mkdir -p "$T3_ANTIGRAVITY_HOME/p1"
+  CLAUDE_SETTINGS_FILE="$root/claude-settings.json"
+  CODEX_HOOKS_FILE="$root/codex-hooks.json"
+  export SKILLS_HOME CLAUDE_SKILLS_HOME CLAUDE_AGENTS_HOME CODEX_AGENTS_HOME ANTIGRAVITY_SKILLS_HOME ANTIGRAVITY_PLUGINS_HOME T3_ANTIGRAVITY_HOME \
+    CLAUDE_SETTINGS_FILE CODEX_HOOKS_FILE
+}
 
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
