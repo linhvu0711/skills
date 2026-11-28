@@ -252,7 +252,7 @@ fi
 # rank <effort>: its place on the effort scale, so the highest wins.
 rank() { case "$1" in low) echo 1 ;; medium) echo 2 ;; high) echo 3 ;; xhigh) echo 4 ;; max) echo 5 ;; *) echo 0 ;; esac; }
 
-top=""; k=0; parents=""
+top=""; k=0; parents=()
 for n in "${counted[@]}"; do
   i="$(issue_of "$issues" "$n")"
   r="$(route_one "$i")"
@@ -262,7 +262,7 @@ for n in "${counted[@]}"; do
   [ -n "$got" ] || die "#$n has no step: $(jq -r .reason <<<"$r")"
   [ "$got" = "$step" ] || die "#$n goes to /$got, not /$step"
   k=$((k+1))
-  parents="$parents$(jq -r '.parent // "none"' <<<"$r")"$'\n'
+  parents+=("$(jq -r '.parent // "none"' <<<"$r")")
   if [ -z "$top" ] || [ "$(rank "$(jq -r .effort <<<"$r")")" -gt "$(rank "$(jq -r .effort <<<"$top")")" ]; then top="$r"; fi
 done
 [ "$k" -gt 0 ] || die "#${nums[0]} has no open ticket for /ship"
@@ -276,7 +276,7 @@ largs=()
 if [ -n "$epic" ]; then
   largs=("$(issue_url "$epic")")
 elif [ "${#nums[@]}" -gt 1 ]; then
-  parent="$(sort -u <<<"$parents" | grep -v '^$')"
+  parent="$(printf '%s\n' "${parents[@]}" | sort -u)"
   if [ "$parent" != none ] && [ "$(grep -c . <<<"$parent")" -eq 1 ]; then
     largs=("$(issue_url "$parent")"); for n in "${nums[@]}"; do largs+=("#$n"); done
   else

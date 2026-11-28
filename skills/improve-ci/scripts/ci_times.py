@@ -3,9 +3,9 @@
 how long its setup, its work, each step, and the whole job take, how long
 a PR commit waits for its last result, and which runs needed a re-run.
 
-    ci_times.py <owner/repo> [--runs N] [--setup <step name>]...
+    ci_times.py <owner/repo> [--setup <step name>]...
 
-Reads the last N completed runs (default 150) with `gh`, then each run's
+Reads the last 150 completed runs with `gh`, then each run's
 jobs. Prints one JSON object:
 
     {"repo", "asked", "runs", "from", "to",
@@ -54,6 +54,7 @@ LEFT_OUT = {"skipped", "cancelled"}
 SETUP_NAMES = {"Set up job", "Complete job"}
 SETUP_STARTS = ("Post ", "Run actions/checkout", "Run actions/setup-", "Run actions/cache")
 PAGE = 100
+RUNS = 150
 
 
 def gh(what, *args):
@@ -173,16 +174,15 @@ def list_reruns(repo, runs):
 def main():
     parser = argparse.ArgumentParser(description="Time a repo's GitHub Actions runs.")
     parser.add_argument("repo")
-    parser.add_argument("--runs", type=int, default=150)
     parser.add_argument("--setup", action="append", default=[], metavar="STEP")
     args = parser.parse_args()
 
-    runs = gh("list runs", "run", "list", "-R", args.repo, "-L", str(args.runs), "--status", "completed", "--json", RUN_FIELDS)
+    runs = gh("list runs", "run", "list", "-R", args.repo, "-L", str(RUNS), "--status", "completed", "--json", RUN_FIELDS)
     jobs_by_run = {run["databaseId"]: jobs_of(args.repo, run["databaseId"], f"list the jobs of run {run['databaseId']}") for run in runs}
     dates = sorted(run["createdAt"][:10] for run in runs)
     print(json.dumps({
         "repo": args.repo,
-        "asked": args.runs,
+        "asked": RUNS,
         "runs": len(runs),
         "from": dates[0] if dates else None,
         "to": dates[-1] if dates else None,

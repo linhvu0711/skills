@@ -86,17 +86,15 @@ codex_hooks="${CODEX_HOOKS_FILE:-$HOME/.codex/hooks.json}"
 gate="$repo/shared/gate/subagent-gate.sh"
 scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 
-# unlink_dead <folder> <target-prefix>...: remove each link in the folder that
-# points to no file and whose target is one of the prefixes plus its name. A
-# prefix is a pattern, so `*` stands for a skill folder a rename removed.
+# unlink_dead <folder> <target>...: remove each link in the folder that points
+# to no file and whose target is one of the targets plus its name.
 unlink_dead() {
   local dir="$1" l n p; shift
   for l in "$dir"/*; do
     [ -L "$l" ] && [ ! -e "$l" ] || continue
     n="$(basename "$l")"
     for p in "$@"; do
-      # shellcheck disable=SC2053
-      if [[ "$(readlink "$l")" == $p/"$n" ]]; then
+      if [ "$(readlink "$l")" = "$p/$n" ]; then
         rm "$l"; printf 'unlinked %s\n' "$l"; break
       fi
     done

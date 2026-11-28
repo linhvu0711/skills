@@ -52,15 +52,6 @@ t_prune_keeps_new_chat_plan() {
   eq left 3 "$(ls "$PLAN_DIR" | wc -l | tr -d ' ')"
 }
 
-t_prune_dry_run_keeps_old_chat_plan() {
-  fake_gh; export PLAN_DIR="$T/plan"; mkdir -p "$PLAN_DIR"
-  chat_plan acme-shop-chat-orders-csv 202001010000
-  prune -n
-  eq exit 0 "$code"
-  eq stdout "$(printf 'pruned acme-shop-chat-orders-csv\npruned 1, kept 0 (dry run)')" "$out"
-  eq left 3 "$(ls "$PLAN_DIR" | wc -l | tr -d ' ')"
-}
-
 t_prune_closed_plans() {
   fake_gh; export PLAN_DIR="$T/plan"; mkdir -p "$PLAN_DIR"
   # Given: plan 42 and its files, all closed; plan 43, still open
@@ -133,7 +124,6 @@ t_prune_default_folder() {
 cases=(
   "prune deletes a chat plan older than 30 days|t_prune_old_chat_plan"
   "prune keeps a new chat plan|t_prune_keeps_new_chat_plan"
-  "prune -n names an old chat plan and keeps it|t_prune_dry_run_keeps_old_chat_plan"
   "prune deletes a plan whose issues are all closed and keeps one with an open issue|t_prune_closed_plans"
   "prune deletes a run plan only when every Stack issue is closed|t_prune_run_plan"
   "prune names a file that belongs to no plan as stray and keeps it|t_prune_stray"

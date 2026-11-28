@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # checkout.sh: find a repo's main checkout, make or reuse a worktree for a
-# branch, name the repo's default branch, name a checkout's GitHub repo
-# (`checkout.sh slug <dir>`), and name the worktree that holds a branch
-# (`checkout.sh holder <dir> <branch>`).
+# branch, name a checkout's GitHub repo (`checkout.sh slug <dir>`), and name
+# the worktree that holds a branch (`checkout.sh holder <dir> <branch>`).
 #
 #   checkout.sh <owner/repo> <branch> [--base <ref>]
 #
@@ -49,13 +48,6 @@
 #
 # Finds only the main checkout, by the order above, with no gh call. Exit 0:
 # one line, `FROM=<map|cwd|search> MAIN=<dir>`, the path last.
-#
-#   checkout.sh default <owner/repo>
-#
-# Names the repo's default branch by the rule above, from the main checkout
-# the order above finds. Exit 0: one line, the branch. Exit 2: gh failed and
-# origin/HEAD is not set, so a caller can tell a GitHub outage from a missing
-# checkout, which stays exit 1.
 #
 #   checkout.sh slug <dir>
 #
@@ -180,9 +172,9 @@ find_main() {
   fi
 }
 
-# default_branch <owner/repo> <main> [<code>]: sets default to GitHub's
-# default branch; when gh fails, origin/HEAD's, with no fetch. When both fail,
-# the stop line and exit <code>, 1 when not given.
+# default_branch <owner/repo> <main>: sets default to GitHub's default branch;
+# when gh fails, origin/HEAD's, with no fetch. When both fail, the stop line
+# and exit 1.
 default_branch() {
   if gh_out repo view "$1" --json defaultBranchRef -q .defaultBranchRef.name; then default="$out"; else default=""; fi
   if [ -z "$default" ]; then
@@ -191,7 +183,7 @@ default_branch() {
   fi
   [ -n "$default" ] && return 0
   printf 'stop: could not find the default branch of %s: gh failed and origin/HEAD is not set. Set it with: git -C %s remote set-head origin --auto\n' "$1" "$2" >&2
-  exit "${3:-1}"
+  exit 1
 }
 
 # The forms that make no worktree.
@@ -215,11 +207,6 @@ case "${1:-}" in
     [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh main <owner/repo>"
     find_main "$2"
     printf 'FROM=%s MAIN=%s\n' "$main_from" "$main"; exit 0 ;;
-  default)
-    [ $# -eq 2 ] && [[ "$2" =~ ^[^/]+/[^/]+$ ]] || die_usage "usage: checkout.sh default <owner/repo>"
-    find_main "$2"
-    default_branch "$2" "$main" 2
-    printf '%s\n' "$default"; exit 0 ;;
 esac
 
 usage="usage: checkout.sh <owner/repo> <branch> [--base <ref>]"
