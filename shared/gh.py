@@ -15,7 +15,7 @@ run(*args, cwd=None): gh's stdout. A failure raises GhError, whose text is
 the last non-empty line of gh's stderr, `gh exited <n>` when it printed none,
 `gh: command not found`, or `gh: could not start: <why>`.
 
-stop(what, *args, cwd=None): run's stdout, or `stop: gh could not <what>:
+stop(what, *args): run's stdout, or `stop: gh could not <what>:
 <line>` on stderr and exit 1.
 """
 
@@ -40,8 +40,8 @@ def run(*args, cwd=None):
     return done.stdout
 
 
-def stop(what, *args, cwd=None):
+def stop(what, *args):
     try:
-        return run(*args, cwd=cwd)
+        return run(*args)
     except GhError as e:
         sys.exit(f"stop: gh could not {what}: {e}")

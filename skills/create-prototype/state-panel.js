@@ -167,5 +167,5 @@ window.StatePanel = (function () {
     onChange(get(), null)
   }
 
-  return { init: init, set: set, get: get, reset: reset, hide: function () { setHidden(true) }, show: function () { setHidden(false) } }
+  return { init: init, set: set, get: get, reset: reset }
 })()
