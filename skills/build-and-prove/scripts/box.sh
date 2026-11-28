@@ -82,10 +82,14 @@
 # `FIT window bottom <b> · screen bottom <s>`, or `TALL ...` and exits 3 when
 # the window runs past the free bottom; on macos also when it ends within
 # 2 px of it, since macOS shrinks a window that is too tall until it stops at
-# the Dock, while the page keeps its height. A page cannot tell: Playwright
-# makes its screen size the viewport's. A measure that fails, or finds no
-# front window, stops with `cannot measure the window: <why>`. Like open, it
-# neither uploads nor makes a gone Sandbox again.
+# the Dock, while the page keeps its height. On both, a window whose right
+# edge is past the screen's, the work area's on linux and the screen's on
+# macos, prints `WIDE window right <r> · screen right <s>` and exits 3; a
+# window too tall and too wide prints the `TALL` line, then the `WIDE` line.
+# A page cannot tell: Playwright makes its screen size the viewport's. A
+# measure that fails, or finds no front window, stops with `cannot measure
+# the window: <why>`. Like open, it neither uploads nor makes a gone Sandbox
+# again.
 #
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
@@ -431,11 +435,11 @@ case "$verb" in
     # the page keeps its height, so a window that reaches within 2 px of the
     # free bottom is too tall too.
     limit="$area"; [ "$BOX_OS" != macos ] || limit=$((area - 3))
-    if [ "$bottom" -le "$limit" ]; then
-      echo "FIT window bottom $bottom · screen bottom $area"
-    else
-      echo "TALL window bottom $bottom · screen bottom $area"; exit 3
-    fi
+    cut=""
+    if [ "$bottom" -gt "$limit" ]; then echo "TALL window bottom $bottom · screen bottom $area"; cut=1; fi
+    if [ "$right" -gt "$edge" ]; then echo "WIDE window right $right · screen right $edge"; cut=1; fi
+    [ -z "$cut" ] || exit 3
+    echo "FIT window bottom $bottom · screen bottom $area"
     ;;
   gates)
     [ $# -ge 1 ] || die_usage "$usage"

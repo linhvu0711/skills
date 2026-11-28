@@ -695,6 +695,31 @@ t_box_fit_linux_fits() {
   has log "_NET_WORKAREA" "$(cat "$FAKE_PB/log")"
 }
 
+t_box_fit_linux_wide() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "880 880 1448 1440" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 3 "$code"
+  eq stdout "WIDE window right 1448 · screen right 1440" "$out"
+}
+
+t_box_fit_macos_tall_and_wide() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  echo "726 728 1464 1280" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 3 "$code"
+  eq "stdout line 1" "TALL window bottom 726 · screen bottom 728" "$(line 1 "$out")"
+  eq "stdout line 2" "WIDE window right 1464 · screen right 1280" "$(line 2 "$out")"
+}
+
 cases=(
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
   "gates writes a --not-run line|t_box_gates_not_run"
@@ -741,4 +766,6 @@ cases=(
   "fit on macos passes a window above the Dock|t_box_fit_macos_fits"
   "fit on macos stops when it finds no front window|t_box_fit_macos_no_window"
   "fit on linux passes a window inside the work area|t_box_fit_linux_fits"
+  "fit on linux reads a window past the right edge as WIDE|t_box_fit_linux_wide"
+  "fit on macos prints both lines for a window too tall and too wide|t_box_fit_macos_tall_and_wide"
 )
