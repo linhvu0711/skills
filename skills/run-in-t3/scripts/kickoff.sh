@@ -50,9 +50,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
 . "$core/route/labels.sh"
 . "$core/gh.sh"
-
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$core/die.sh"
 usage="usage: kickoff.sh route <owner/repo> [--model M] [--effort E] [--pick <n>=<step>]... [--answer <n>=<word>]... [--size <n>=<size>]... <n>...
        kickoff.sh thread <owner/repo> [--heading H] [--mode $ship_mode_list] [--model M] [--effort E] [--pick <n>=<step>]... [--answer <n>=<word>]... [--size <n>=<size>]... [--on <pr-n>] <step> <n>...
        kickoff.sh label <owner/repo> <n> <word> [--size <size>]"

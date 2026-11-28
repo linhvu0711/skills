@@ -18,10 +18,9 @@
 # <dir>/../install.log.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage='usage: base-copy.sh <base> | --remove <dir>'
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
+usage='usage: base-copy.sh <base> | --remove <dir>'
 tree="$here/../../../shared/base-tree.sh"
 
 case "${1:-}" in

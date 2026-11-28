@@ -73,10 +73,9 @@
 # Exit 64: a wrong command line, its usage on stderr.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-usage='usage: check.sh [<path>... | --staged | --commit-msg <file>]'
 scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$scripts/../shared/die.sh"
+usage='usage: check.sh [<path>... | --staged | --commit-msg <file>]'
 
 # report: print the problems and exit 1, or print `check: clean` and exit 0.
 report() {

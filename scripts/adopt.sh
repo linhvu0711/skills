@@ -14,15 +14,14 @@
 # Exit 64: a wrong command line, its usage on stderr.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../shared/die.sh"
 usage='usage: adopt.sh <name>'
 
 [ $# -eq 1 ] && [ -n "$1" ] || die_usage "$usage"
 name="$1"
 [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die_usage "$usage" "not a skill name: $name"
 home="${SKILLS_HOME:-$HOME/.agents/skills}"
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$(git -C "$here/.." rev-parse --show-toplevel)" || die "adopt.sh is not inside a git repo"
 
 [ ! -L "$home/$name" ] || die "$home/$name is already a link"

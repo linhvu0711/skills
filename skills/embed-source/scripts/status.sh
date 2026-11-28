@@ -5,10 +5,10 @@
 # Usage: status.sh [repo-root]
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 command -v jq >/dev/null || die "jq is not installed: status.sh reads package.json versions with it"
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # The sync script owns the manifest format, so the two never disagree.
 . "$here/../templates/sync-repos.sh"
 

@@ -58,8 +58,8 @@
 # usage line on stderr, exit 64.
 set -euo pipefail
 
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../shared/die.sh"
 
 case "$#:${1:-}" in
   0:) visit=fix ;;
@@ -67,7 +67,6 @@ case "$#:${1:-}" in
   *) die_usage 'usage: link.sh [--status]' ;;
 esac
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$(git -C "$here/.." rev-parse --show-toplevel)"
 git_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-dir)" && pwd -P)"
 common_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)" && pwd -P)"

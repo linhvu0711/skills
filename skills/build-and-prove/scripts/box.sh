@@ -131,14 +131,13 @@
 # usage, on stderr.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 
 scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 
 idle() { [ "$1" = macos ] && echo 10m || echo 30m; }
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 walk_log=/tmp/walk-browser.log
 cover="$here/../../../shared/ci-covers.sh"
 

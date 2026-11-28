@@ -65,9 +65,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 core="$here/../../../shared"
 . "$core/route/labels.sh"
 . "$core/gh.sh"
-
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$core/die.sh"
 
 usage="usage: orchestrate.sh start|check|started|settled|proposed|change|timer|resume|sync|close-epics|watch <owner/repo> ..."
 [ $# -ge 2 ] || die_usage "$usage"

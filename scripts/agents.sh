@@ -65,7 +65,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 tiers="${MODEL_TIERS:-$here/../shared/model-tiers.md}"
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../shared/die.sh"
 
 mode="${1:-}"
 case "$mode" in

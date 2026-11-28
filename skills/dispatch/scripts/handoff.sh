@@ -44,8 +44,7 @@ ADAPTERS="${HANDOFF_ADAPTERS:-$here/adapters}"
 LEDGER="${HOME}/.config/dispatch/handoff.tsv"
 DEFAULT_EXECUTOR=devin
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../../../shared/die.sh"
 usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
 # executor NAME -> NAME, or dies naming the executors the adapter files give,

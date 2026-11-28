@@ -61,7 +61,8 @@
 # stderr, exit 64. Never merges.
 set -euo pipefail
 
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 usage='usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]'
 
 repo=""; num=""; me=""; watch_sha=""; settle=60; timeout=1680; poll=60
@@ -90,7 +91,6 @@ url="https://github.com/$repo/pull/$num"  # gh pr view's URL replaces it once re
 
 # gh_out <args>, the shared one: gh's answer in `out`; when it fails, its
 # last error line in `err` and return 1.
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/../../../shared/gh.sh"
 
 # gh_failed <err>: the BLOCKED verdict for a gh call that failed.
