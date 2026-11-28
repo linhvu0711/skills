@@ -31,7 +31,7 @@ URL=$("<shared core>/serve.sh" "$DIR" "plan-<slug>.html")
 
 It reuses a server only when that server gives back this exact file. A server on 8765 that holds another folder is left running, and the page gets the next free port. Never start `http.server` by hand: a port that is only in use is not a port that serves this folder, and the person gets a 404. Run the script again after every rebuild; the port can differ between plans, so use the URL it prints.
 
-**The review**, in the person's own browser: `open "<url>"` on macOS, `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the build prints `page:`. This is the step the person sees. Run it on the first build and after every rebuild. Bump `v` on every rebuild, or the browser shows the old page. Leave the page open. Do not open the page with browser tools: `shell.html` and `layout.js` are fixed, and a render bug in them gets fixed there, once, not worked around in the plan.
+**The review**, in the person's own browser: `open "<url>"` on macOS, `xdg-open "<url>"` on Linux, with `"$URL?v=<n>"`, after the build prints `page:`. This is the step the person sees. Run it on the first build and after every rebuild. Bump `v` on every rebuild, or the browser shows the old page. Leave the page open. Do not open the page with browser tools: `shell.html`, `layout.js`, and the theme in `page-theme.css` next to this file are fixed, and a render bug in them gets fixed there, once, not worked around in the plan.
 
 ## Headless host
 

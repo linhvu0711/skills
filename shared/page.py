@@ -7,14 +7,20 @@ the shared core:
     page = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(page)
 
-fill(shell, data): the shell with `const DATA = {};` set to the data.
+fill(shell, data): the shell with its `/* THEME */` line set to page-theme.css,
+the theme block the clean report and the plan page share, and `const DATA = {};` set to the data.
 write(output, html): writes the page and prints `page: <output>`.
 """
 import json
 import os
 
 
+THEME = os.path.join(os.path.dirname(os.path.realpath(__file__)), "page-theme.css")
+
+
 def fill(shell, data):
+    with open(THEME, encoding="utf-8") as f:
+        shell = shell.replace("  /* THEME */\n", f.read())
     # A `<` inside the data could close the page's <script> tag, so each one is escaped.
     payload = json.dumps(data, ensure_ascii=False).replace("<", r"\u003c")
     return shell.replace("const DATA = {};", "const DATA = " + payload + ";")
