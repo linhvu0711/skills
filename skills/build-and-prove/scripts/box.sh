@@ -280,10 +280,11 @@ group_argv() {
 }
 
 # group_stop <pid file> <limit>: TERM the group whose id is in <pid file>, wait
-# up to <limit> s for it to end, then KILL it. No pid file: nothing to stop. It
-# ends `true`, so a group that already ended is no failure.
+# up to <limit> s for it to end, then KILL it. No pid file: nothing to stop. A
+# group that already ended is no failure: kill says `No such process`, in dash
+# and bash alike. Any other kill error is shown on stderr and exits 1.
 group_stop() {
-  bare sh -c 'g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true' sh "$1" "$2"
+  bare sh -c 'g=$(cat "$1" 2>/dev/null) || exit 0; k() { e=$(kill "$1" -"$g" 2>&1) || case "$e" in *"No such process"*) ;; *) printf "%s\n" "$e" >&2; exit 1 ;; esac; }; k -TERM; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -0 -"$g" 2>/dev/null || exit 0; k -KILL' sh "$1" "$2"
 }
 
 case "$verb" in
