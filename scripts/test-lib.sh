@@ -55,7 +55,7 @@ lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; e
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in
 # $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `issue view`
-# issue-view, `issue list` issue-list, `issue close` issue-close, `issue edit` issue-edit, `label create` label-create, `run view` run-view, `run list` run-list, `repo view` repo-view, `api graphql` graphql, `api user` user, `auth token` auth-token,
+# issue-view, `issue list` issue-list, `issue close` issue-close, `issue edit` issue-edit, `label create` label-create, `label list` label-list, `run view` run-view, `run list` run-list, `repo view` repo-view, `api graphql` graphql, `api user` user, `auth token` auth-token,
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
 # `api repos/…/status` status, `api repos/…/check-runs` check-runs,
 # `api repos/…/actions/jobs/…` job, `api repos/…/attempts/…/jobs` attempt-jobs,
@@ -94,6 +94,7 @@ case "$args" in
   " issue close"*) key=issue-close ;;
   " issue edit"*) key=issue-edit ;;
   " label create"*) key=label-create ;;
+  " label list"*) key=label-list ;;
   " run view"*) key=run-view ;;
   " run list"*) key=run-list ;;
   " repo view"*) key=repo-view ;;
