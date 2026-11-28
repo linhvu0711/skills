@@ -119,7 +119,7 @@ Mark each item in progress as it starts and done as it ends. A step the run does
 
    A Gate that prints `not found` gets a `missing tool:` line on stderr. It sorts in this order. First, a tool no setup script can make work in the Sandbox, such as `docker`, which needs a daemon and root: the Gate runs on the local machine, below. Any other tool, such as one the `Test`, `Lint`, or `Build` line names, is a Sandbox fault (§ Sandbox), whatever its exit code: fix it, then the Gates again.
 
-   A Gate the Sandbox cannot run in any case, such as `pnpm test:docker` with no Docker in the Sandbox (`docker: command not found`, or its output names a service the Sandbox lacks): run `gates` again with it as `--on-local '<command>'` in place of its place after `--`. `box.sh` runs it on the local machine in the worktree, and its line ends `(local machine)`. A Gate that can run in neither place goes in as `--not-run '<command>' '<why>'`, and its line is `<command> ·
+   A Gate the Sandbox cannot run in any case, such as `pnpm test:docker` with no Docker in the Sandbox (`docker: command not found`, or its output names a service the Sandbox lacks): run `gates` again with it as `--on-local '<command>'` in place of its place after `--`. `box.sh` runs it on the local machine in the worktree, and its line ends `(local machine)`; with `--ci`, one the PR's CI runs is left to CI, as any Gate is. A Gate that can run in neither place goes in as `--not-run '<command>' '<why>'`, and its line is `<command> ·
    <short SHA> · not run: <why>`. Pass both options on every later
    `gates` call: each call writes every line of `checks.txt`.
 
