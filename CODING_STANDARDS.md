@@ -19,8 +19,8 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 - Work with file paths in Python: `os.path`. Old way: `pathlib` (#410).
 - Limit a CI workflow: `timeout-minutes` on each job, a `concurrency` group that cancels the older run of the same ref, and `push` on `main` only (github-actions-workflow-syntax, github-actions-events).
 - Do a job every session adapter needs (load a sibling module, skip injected context, keep the project's sessions of the last N days): a helper in `shared/sessions/adapter_lib.py`. Old way: an adapter's own `load()` or its own injected-context check (#410).
-- Set up a git repo in a test: `repo` from `scripts/test-lib.sh`. Old way: own setup code (#408).
-- Check a result in a test: `eq`, `has`, and `lacks` from `scripts/test-lib.sh`. Old way: a bare `[ -e … ] || exit 1` check (#408).
+- Set up a git repo in a test: `repo` from `tests/lib.sh`. Old way: own setup code (#408).
+- Check a result in a test: `eq`, `has`, and `lacks` from `tests/lib.sh`. Old way: a bare `[ -e … ] || exit 1` check (#408).
 - Start another skill from skill text: "start the `<name>` skill"; `shared/harness.md` names each harness's way.
 - Lay out Markdown: one line per paragraph, list item, or table row.
 
@@ -58,10 +58,10 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## Tests
 
-- A test for a skill's script goes in `skills/<name>/tests/`, one file per script, and its cases go in its own `cases` list, which `scripts/test.sh` runs.
+- A test for a skill's script goes in `skills/<name>/tests/`, one file per script, and its cases go in its own `cases` list, which `tests/run.sh` runs.
 - A test for a shared core script goes in `shared/tests/`, one file per script.
-- A test uses the helpers and the fake `gh`, `curl`, and `nsc` of `scripts/test-lib.sh`, and marks its steps with `# Given`, `# When`, and `# Then`.
-- A test case shares no file or folder with another case, because `scripts/test.sh` runs the cases at the same time.
+- A test uses the helpers and the fake `gh`, `curl`, and `nsc` of `tests/lib.sh`, and marks its steps with `# Given`, `# When`, and `# Then`.
+- A test case shares no file or folder with another case, because `tests/run.sh` runs the cases at the same time.
 - A script gets a test only when a break would go unseen and do harm: it writes files, links, GitHub, or data another script reads. A break a person sees at once, such as a wrong label on a page, gets no test. `SKILL.md` text gets no test.
 - A test checks what the script does (the files, links, GitHub writes, and exit code), not the exact words it prints.
 - An edge case gets a test only after it happened in real use.

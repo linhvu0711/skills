@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
-# adopt.sh, link.sh and the hooks that run it. It sources test-lib.sh, the
-# helpers, the one fake gh, and the fake curl that every case shares, starts
-# its own cases, then sources each skills/*/tests/*.sh and shared/tests/*.sh
-# in turn and starts that file's cases.
+# run.sh: runs every test case of the repo. It sources lib.sh, the helpers,
+# the one fake gh, and the fake curl that every case shares, starts its own
+# cases, then sources each test file in turn and starts that file's cases.
 #
-#   test.sh
+#   tests/run.sh
 #
 # Each case runs as a background job, one per CPU core at a time. It starts in
 # an empty temp folder with set -e on and its own fake home, builds its own git
-# repo in a temp folder, copies this scripts/ folder in, and runs the command
+# repo in a temp folder, copies the repo's scripts/ folder in, and runs the command
 # there. Each case's temp folders go when the case ends. Every leak string
 # below is joined from two halves at runtime, so this file holds nothing
 # check.sh flags.
@@ -19,7 +17,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-. "$here/test-lib.sh"
+. "$here/lib.sh"
 mac_home="/Us""ers/alice"
 linux_home="/ho""me/bob"
 email="alice""@""example.com"

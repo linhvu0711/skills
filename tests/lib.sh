@@ -1,7 +1,6 @@
-# test-lib.sh: the helpers every test case shares, the one fake gh, the
-# fake curl, and the fake nsc. test.sh sources this file first, then each
-# skills/*/tests/*.sh and shared/tests/*.sh, so the cases there call these
-# helpers by name.
+# lib.sh: the helpers every test case shares, the one fake gh, the fake
+# curl, and the fake nsc. tests/run.sh sources this file first, then each
+# test file, so the cases there call these helpers by name.
 
 # Run from a git hook or `git rebase --exec`, git sets GIT_DIR and its kin,
 # and every temp repo below would write into the caller's repo instead.
@@ -26,8 +25,9 @@ fake_home() {
     CLAUDE_SETTINGS_FILE CODEX_HOOKS_FILE
 }
 
-# This scripts/ folder. A sourced skill test file sets its own `here`.
-scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# The repo's scripts/ folder, which repo copies into each case's repo. A
+# sourced test file sets its own `here`.
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd -P)"
 
 # repo: a fresh repo in a temp folder with scripts/ and shared/die.sh, which
 # its scripts source, committed; cd into it.
