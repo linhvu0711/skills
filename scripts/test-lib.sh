@@ -154,7 +154,9 @@ EOF
 # writes -d to <route>.data, writes <route>.json to the -o file, and with -w
 # prints <route>.code, or 200, as real curl prints nothing on stdout with -o
 # and no -w. A route with no fixture answers 404; a <route>.exit
-# fixture makes the call exit with that code instead.
+# fixture makes the call exit with that code instead. A call whose query has
+# after=<c> answers <route>.after-<c>.json when there is one, so a test can
+# serve each page of a paged answer.
 fake_curl() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin" "$T/curl"
@@ -175,13 +177,16 @@ while [ $# -gt 0 ]; do
 done
 path="/${url#*://*/}"; path="${path%%\?*}"
 key="$method$(printf '%s' "$path" | tr / _)"
+after=""; case "$url" in *"?after="*|*"&after="*) after="${url##*after=}"; after="${after%%&*}" ;; esac
 printf '%s %s\n' "$method" "$path" >> "$FAKE_CURL/calls"
 [ -z "$data" ] || printf '%s\n' "$data" > "$FAKE_CURL/$key.data"
 # A <key>.exit file makes the call fail with that curl exit code, as a
 # timeout (28) does.
 [ ! -f "$FAKE_CURL/$key.exit" ] || exit "$(cat "$FAKE_CURL/$key.exit")"
-if [ -f "$FAKE_CURL/$key.json" ]; then
-  cat "$FAKE_CURL/$key.json" > "$out"
+page="$FAKE_CURL/$key.json"
+[ -z "$after" ] || [ ! -f "$FAKE_CURL/$key.after-$after.json" ] || page="$FAKE_CURL/$key.after-$after.json"
+if [ -f "$page" ]; then
+  cat "$page" > "$out"
   [ -z "$w" ] || cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200
 else
   printf '{"detail":"fake curl: no fixture %s"}\n' "$key" > "$out"

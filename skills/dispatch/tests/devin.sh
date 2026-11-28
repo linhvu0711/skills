@@ -61,10 +61,42 @@ t_devin_release() {
   [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
 }
 
+t_devin_facts_pages() {
+  # Given: two pages of repos, the second behind the cursor c2
+  fake_curl
+  printf '{"items":[{"repo_full_name":"o/a"}],"has_next_page":true,"end_cursor":"c2"}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_repositories.json"
+  printf '{"items":[{"repo_full_name":"git.example.com/o/b"}],"has_next_page":false}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_repositories.after-c2.json"
+  # When
+  devin facts
+  # Then
+  eq exit 0 "$code"
+  eq stdout "$(printf 'repo\thttps://github.com/o/a\nrepo\thttps://git.example.com/o/b\nmode\tnormal\nmode\tfast\nmode\tlite\nmode\tultra\nmode\tfusion')" "$out"
+}
+
+t_devin_poll_pages() {
+  # Given: a session whose messages span two pages
+  fake_curl
+  printf '{"session_id":"devin-abc","status":"running","status_detail":"waiting_for_user","pull_requests":[{"pr_url":"https://github.com/o/r/pull/5"}],"url":"https://app.devin.ai/sessions/abc"}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_sessions_devin-abc.json"
+  printf '{"items":[{"source":"devin","message":"First"}],"has_next_page":true,"end_cursor":"c2"}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_sessions_devin-abc_messages.json"
+  printf '{"items":[{"source":"devin","message":"Second"},{"source":"user","message":"ok"}],"has_next_page":false}\n' \
+    > "$FAKE_CURL/GET_v3_organizations_org1_sessions_devin-abc_messages.after-c2.json"
+  # When
+  devin poll abc
+  # Then
+  eq exit 0 "$code"
+  eq stdout "blocked	blocked|Second	https://github.com/o/r/pull/5	https://app.devin.ai/sessions/abc	Second" "$out"
+}
+
 cases=(
   "devin release holds nothing|t_devin_release"
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"
   "devin poll lists every PR of the session|t_devin_poll_every_pr"
   "devin say sends the note|t_devin_say"
+  "devin facts reads every page|t_devin_facts_pages"
+  "devin poll keeps the last devin message across pages|t_devin_poll_pages"
 )
