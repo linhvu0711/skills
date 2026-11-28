@@ -213,7 +213,7 @@ def main():
                f"Looked in: {sess_dir}\n"
                f"(Derived from project dir: {os.path.abspath(project_dirs[0])})")
         if args.json:
-            print(json.dumps({"error": "no_project_dir", "session_dir": sess_dir, "sessions": []}))
+            print(json.dumps({"session_dir": sess_dir, "sessions": []}))
         else:
             print(msg)
         return

@@ -145,8 +145,18 @@ t_fa_unreadable_codex() {
 null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "codex") | "\(.id) \(.unreadable)"')"
 }
 
+t_fa_empty_harness() {
+  # Given: sessions for /p/app only
+  fa_home
+  # When
+  run python3 "$S" --root /p/other
+  # Then
+  eq claude '[{"harness":"claude","label":"Claude Code","installed":true},0]' "$(printf '%s' "$out" | jq -c '[(.harnesses[] | select(.harness == "claude")), ([.sessions[] | select(.harness == "claude")] | length)]')"
+}
+
 cases=(
   "find-all lists an unreadable Claude session as an unreadable row|t_fa_unreadable_claude"
+  "find-all gives no row and no error for a harness with no sessions here|t_fa_empty_harness"
   "find-all lists an unreadable Codex rollout as an unreadable row|t_fa_unreadable_codex"
   "find-all lists every harness and its sessions|t_fa_lists_harnesses"
   "find-all keeps to the window|t_fa_window"

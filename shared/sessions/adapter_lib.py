@@ -211,8 +211,6 @@ def find(h: Harness, args) -> list[dict]:
     except ValueError:
         last = (done.stderr or done.stdout).strip().splitlines()[-1:] or ["no output"]
         raise Failed(f"{h.name} finder failed: {last[0]}")
-    if out.get("error"):
-        return []
     rows = []
     current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):
