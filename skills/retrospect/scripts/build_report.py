@@ -8,10 +8,16 @@ exits 0. Prints each problem on stderr and exits 1 without changing the old
 page when the cards file is bad.
 """
 import argparse
+import importlib.util
 import json
 import os
 import sys
 from html import escape
+
+# page.py sits in the shared core, off sys.path, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("page", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "page.py"))
+pages = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(pages)
 
 
 KEYS = ["repo", "scope", "window", "counts", "read", "items", "cards", "questions", "top_why"]
@@ -294,15 +300,7 @@ def main():
     with open(os.path.join(assets, "report.html"), encoding="utf-8") as f:
         shell = f.read()
     output = os.path.join(os.path.dirname(path), "report.html")
-    tmp = output + ".tmp"
-    try:
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(page(cards, shell))
-        os.replace(tmp, output)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-    print(f"page: {output}")
+    pages.write(output, page(cards, shell))
 
 
 if __name__ == "__main__":
