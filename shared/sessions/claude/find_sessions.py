@@ -221,14 +221,16 @@ def main():
     current_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
     files = [os.path.join(d, f) for d in dirs for f in os.listdir(d) if f.endswith(".jsonl")]
     scope = adapter_lib.Scope.last_days(None if args.all_projects else project_dirs, args.include_subdirs, args.days)
-    files = [p for p in files if scope.in_window(os.path.getmtime(p))]
+    # Each mtime is read once: a file can be gone by the time it is parsed.
+    modified = {p: os.path.getmtime(p) for p in files}
+    files = [p for p in files if scope.in_window(modified[p])]
     sessions, unreadable = [], []
     for p in files:
         try:
             s = parse_session(p)
         except OSError as e:
             # Its cwd is inside the file, so it is not checked against the roots.
-            unreadable.append({"path": p, "modified": os.path.getmtime(p), "why": e.strerror or str(e)})
+            unreadable.append({"path": p, "modified": modified[p], "why": e.strerror or str(e)})
             continue
         if scope.in_roots(s.get("cwd")) or (not s.get("cwd") and folder_is_root(s, scope.roots)):
             sessions.append(s)
