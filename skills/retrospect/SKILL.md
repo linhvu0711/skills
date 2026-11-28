@@ -103,7 +103,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
 
 ## Run scope
 
-`/retrospect run <folder>`, as orchestrate starts it when a run is done. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread` and `threads[].path`. `set` and `removed` hold refs, `owner/repo#n`; an old run's bare number is an issue in the run's `repo`.
+`/retrospect run <folder>`: an orchestrate run. The folder holds the run's `state.json`; read `repo`, `path`, `started_at`, `set`, `removed`, and each `threads[].thread` and `threads[].path`. `set` and `removed` hold refs, `owner/repo#n`; an old run's bare number is an issue in the run's `repo`.
 
 - **Sessions.** `python3 ../../shared/sessions/t3/thread_session.py <thread>...` prints the harness and session behind each thread. Find each with that harness's adapter, `find --root <folder> --since <started_at day> --id <session>`, with one `--root` for each distinct folder: the run's `path` and each `threads[].path`. An `error` row is a session not found, named in the report. The run's sessions are the scope: skip `find_all.py`, and keep its `unread` lines out.
 - **GitHub.** `scripts/github.py list <repo> --transcripts <scratch> --issues <numbers>`, once per repo in the set minus removed, with that repo's numbers; the lists join.

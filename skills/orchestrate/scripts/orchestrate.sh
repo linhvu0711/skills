@@ -784,7 +784,7 @@ cmd_check() {
   # A start counts as a change even on a row that did not move, as after a
   # resume: the post must link the new thread. The conflicts are the
   # watcher's to send, so the line lists none.
-  jq -cn --arg run "$run" --arg am "$analysis_model" --arg ae "$analysis_effort" --argjson S "$S" --argjson o "$obs" --argjson seen "$seen" "$run_repos_jq"'
+  jq -cn --arg run "$run" --argjson S "$S" --argjson o "$obs" --argjson seen "$seen" "$run_repos_jq"'
     $o.starts as $starts | $o.rows as $rows | $o.joined as $joined | $o.done as $done
     | $o.propose as $propose | $o.settles as $settles
     | ($rows | map(. as $r | . + {changed: (($starts | any(.ref == $r.ref))
@@ -795,12 +795,7 @@ cmd_check() {
     + if $done then {summary: [$rows[] | .ref as $r | {ref, label, number, title,
         stages: (reduce ($S.threads[] | select(.ref == $r) | .stage) as $x ([]; if index([$x]) then . else . + [$x] end)),
         prs, threads: [$S.threads[] | select(.ref == $r and .link != null) | .link]}],
-        removed: $S.removed, paths: ($S | run_repos | map(.path))}
-      # The retro reads everything the run did; analysis gets the row the Router gives grill and triage.
-      # A run with issues taken out is not the whole work, so it gets no retro yet.
-      + (if ($S.removed | length) == 0 then {retro: {model: ($S.use.all.model // $am),
-          effort: ($S.use.all.effort // $ae), path: $S.path,
-          thread_title: "retro: \($S.name)", message: "/retrospect run \($run)"}} else {} end)
+        paths: ($S | run_repos | map(.path))}
       else {} end'
 }
 
@@ -1112,10 +1107,10 @@ cmd_resume() {
 }
 
 # sync: the default branch of each main checkout the newest run worked in,
-# fast-forwarded to origin's, one line per repo, led by the repo's name, so clean-worktrees judges, and the retro reads, the merged
+# fast-forwarded to origin's, one line per repo, led by the repo's name, so clean-worktrees judges the merged
 # work. It only fast-forwards: the checkout is the user's, so their branch,
 # commits, and edits stay. A branch that cannot move exits 0 with a
-# `not updated` line, since the done run goes on to prune and retro anyway.
+# `not updated` line, since the done run goes on to prune anyway.
 cmd_sync() {
   [ $# -eq 0 ] || die_usage "usage: orchestrate.sh sync <owner/repo>"
   newest_run

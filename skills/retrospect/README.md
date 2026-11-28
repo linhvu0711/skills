@@ -6,7 +6,7 @@ Looks back over your coding sessions, from every harness it can read, and over t
 
 A session felt harder than it should have, the same kind of trouble keeps coming back, or you want to know what to change after a stretch of work. Type `/retrospect` for the session you are in. Name a range, IDs, a topic, or sources to read more: `/retrospect today`, `/retrospect last 3 days`, `/retrospect from 2026-10-01 to 2026-10-05`, `/retrospect the handoff sessions this week`, `/retrospect only claude sessions`, `/retrospect PRs from last week`, `/retrospect last 3 days, all projects`. Many sessions and PRs show what one cannot: the same mistake, the same slow search, the same review comment, the same correction you keep typing, the same good habit.
 
-[orchestrate](../orchestrate/) starts it for you when a run is done, as `/retrospect run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
+To look back over an [orchestrate](../orchestrate/) run, type `/retrospect run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
 
 ## What you get
 
@@ -31,7 +31,7 @@ If nothing is worth changing, or every card is already fixed, it says `Nothing w
 
 ## Fits with
 
-- Use it after a build worth learning from, such as one run with [ship](../ship/). [orchestrate](../orchestrate/) starts it at the end of every run.
+- Use it after a build worth learning from, such as one run with [ship](../ship/) or a run of [orchestrate](../orchestrate/).
 - Fixes it proposes often land through [audit-coding-standards](../audit-coding-standards/), and through [write-for-agents](../write-for-agents/) for any skill or steering text.
 
 ## Credits

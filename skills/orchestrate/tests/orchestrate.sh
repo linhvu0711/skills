@@ -1048,32 +1048,6 @@ t_fs_all_closed_done() {
   eq status done "$(fs_state -r .status)"
 }
 
-t_fs_done_starts_retro() {
-  # Given: a run of #42, which went from bug (t1) to ticket (t2) and is now closed by merged PR 43
-  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
-  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
-  # When
-  fs_go check acme/app
-  # Then
-  has retro '"thread_title":"retro: #42","message":"/retrospect run '"$(ls -1d "$T"/orchestrate/acme-app/*/ | sort | tail -1 | sed 's:/$::')"'"' "$out"
-  lacks retro '"runtime_mode"' "$out"
-}
-
-t_fs_done_removed_no_retro() {
-  # Given: a run of #42 and #44, #44 removed, and #42 closed by merged PR 43
-  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 44 OPEN '["size/S"]'; fs_issue 42 OPEN '["bug"]'; fs_start 42 44; fs_go change acme/app remove 44
-  fs_record 42 bug t1; fs_record 42 ticket t2
-  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
-  # When
-  fs_go check acme/app
-  # Then
-  has stdout '"done":true' "$out"
-  has stdout '"removed":["acme/app#44"]' "$out"
-  eq line false "$(jq -c 'has("retro")' <<<"$out")"
-}
-
 t_fs_sync_gh_fails() {
   # Given: a run of #42, and gh cannot read the repo
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
@@ -1926,17 +1900,6 @@ t_fs_ship_bad_mode() {
   # Then
   eq exit 64 "$code"
   eq stderr "usage: orchestrate.sh change <owner/repo> ship review|ready|merge <issue>|all" "$err"
-}
-
-t_fs_done_retro_row() {
-  # Given: a run of #42, closed by merged PR 43, with no use pick
-  local pr='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"MERGED","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 42 OPEN '["bug"]'; fs_start 42; fs_record 42 bug t1; fs_record 42 ticket t2
-  fs_issue 42 CLOSED '["size/S"]' '[]' "[$pr]"
-  # When
-  fs_go check acme/app
-  # Then
-  has retro '"retro":{"model":"opus","effort":"high","path":' "$out"
 }
 
 t_fs_proposed_no_model() {
@@ -2982,9 +2945,6 @@ cases=(
   "two open PRs make the issue wait|t_fs_two_prs_waits"
   "all closed ends the run with a summary|t_fs_all_closed_done"
   "an epic with closed sub-issues is done|t_fs_epic_done"
-  "a done run prints the retro thread line|t_fs_done_starts_retro"
-  "the retro gets the analysis row|t_fs_done_retro_row"
-  "a done run with a removed issue prints no retro line|t_fs_done_removed_no_retro"
   "sync fast-forwards the checked-out default branch|t_fs_sync_fast_forwards"
   "sync fast-forwards each repo the run worked in|t_fs_sync_each_repo"
   "sync reports a failed fetch and exits 0|t_fs_sync_fetch_fails"
