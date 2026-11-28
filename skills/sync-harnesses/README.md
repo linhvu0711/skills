@@ -59,7 +59,3 @@ A warning does not fail the run.
 - [link.sh](../../scripts/link.sh) makes every link the check counts.
 - The [subagent gate](../../shared/gate/) is one of the gates it counts.
 - [review-pr](../review-pr/) and [build-and-prove](../build-and-prove/) start the helpers whose files it counts.
-
-## Tests
-
-The cases are in [tests/sync-harnesses.sh](tests/sync-harnesses.sh). Each runs on a fake Mac that [tests/fixtures/mac.sh](tests/fixtures/mac.sh) builds. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

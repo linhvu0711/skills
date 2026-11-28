@@ -50,7 +50,3 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 ## Credits
 
 The order for a red check takes an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.
-
-## Tests
-
-The cases for its scripts are in [tests/](tests/), one file per script, on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

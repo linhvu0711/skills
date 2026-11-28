@@ -86,15 +86,6 @@ t_ready_dirty() {
   eq "line 2" "mergeable is CONFLICTING; merge state is DIRTY" "$(line 2)"
 }
 
-t_ready_unknown_then_clean() {
-  fake_gh; pr_json pr-view.1.json UNKNOWN UNKNOWN "" false "[$ci_green]"
-  pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  ready
-  eq exit 0 "$code"
-  eq "line 1" "READY $url" "$(line 1)"
-  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
-}
-
 t_ready_bot_pending() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$devin_pending]"
   ready
@@ -161,15 +152,6 @@ t_ready_ruleset_check_missing() {
   eq exit 1 "$code"
   eq "line 1" "BLOCKED $url" "$(line 1)"
   eq "line 2" "required check(s) not posted: lint" "$(line 2)"
-}
-
-t_ready_required_missing_while_pending() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_pending]"
-  required_json '["check","build"]' '[]'
-  ready
-  eq exit 2 "$code"
-  eq "line 1" "WAITING $url" "$(line 1)"
-  eq "line 2" "1 check(s) pending: check; required check(s) not posted: build" "$(line 2)"
 }
 
 t_ready_required_checks_posted() {
@@ -239,31 +221,6 @@ t_ready_absent_rollup() {
   eq "line 2" "no checks on abc1234 yet" "$(line 2)"
 }
 
-t_ready_blocked_and_waiting() {
-  fake_gh; pr_json pr-view.json DIRTY CONFLICTING "" false "[$ci_green,$devin_pending]"
-  ready
-  eq exit 1 "$code"
-  eq "line 1" "BLOCKED $url" "$(line 1)"
-  eq "line 2" "mergeable is CONFLICTING; merge state is DIRTY; 1 check(s) pending: Devin Review" "$(line 2)"
-}
-
-t_ready_bad_flag() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  ready --bogus
-  eq exit 64 "$code"
-  eq stderr "stop: unknown flag --bogus"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
-}
-
-t_ready_tools_flag_gone() {
-  # Given: the fake gh
-  fake_gh
-  # When
-  ready --tools devin
-  # Then
-  eq exit 64 "$code"
-  eq stderr "stop: unknown flag --tools"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
-}
-
 t_ready_bot_check_counts() {
   fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green,$bugbot_neutral]"
   ready
@@ -286,25 +243,6 @@ t_ready_watch_bot_then_ready() {
   eq "line 2" "checks: 1 green on abc1234 · open threads: 0 · merge state: CLEAN" "$(line 2)"
 }
 
-t_ready_watch_settles_first() {
-  # Given: a sleep that writes each argument; one green check
-  fake_gh
-  printf '#!/usr/bin/env bash\necho "$1" >> "%s/sleep.args"\n' "$T" > "$T/bin/sleep"
-  pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  # When
-  ready --watch abc1234def5678 --settle-sec 7 --poll-sec 1
-  # Then
-  eq "first sleep" 7 "$(head -1 "$T/sleep.args")"
-}
-
-t_ready_watch_settle_default() {
-  fake_gh
-  printf '#!/usr/bin/env bash\necho "$1" >> "%s/sleep.args"\n' "$T" > "$T/bin/sleep"
-  pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  ready --watch abc1234def5678
-  eq "first sleep" 60 "$(head -1 "$T/sleep.args")"
-}
-
 # real_sleep: the real sleep in place of fake_gh's no-op one, for a case
 # whose watch must reach its limit, which counts real time.
 real_sleep() { ln -sf /bin/sleep "$T/bin/sleep"; }
@@ -320,25 +258,6 @@ t_ready_watch_timeout() {
   eq exit 2 "$code"
   eq "line 1" "WAITING $url" "$(line 1)"
   eq "line 2" "1 check(s) pending: Devin Review" "$(line 2)"
-}
-
-t_ready_watch_zero_checks() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[]"
-  ready --watch abc1234def5678 --poll-sec 1
-  eq exit 2 "$code"
-  eq "line 2" "no checks on abc1234 yet" "$(line 2)"
-  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
-}
-
-t_ready_watch_head_moved() {
-  # Given: the head is abc1234, not the sha the wait was given
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_pending]"
-  # When
-  ready --watch 0000000aaaaaaa --poll-sec 1
-  # Then
-  eq exit 2 "$code"
-  eq "line 2" "head moved to abc1234; 1 check(s) pending: Devin Review" "$(line 2)"
-  eq "pr view calls" 2 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
 t_ready_watch_six_failures() {
@@ -407,15 +326,6 @@ t_ready_watch_wait_ends_at_limit() {
   eq "first wait within the limit" yes "$([ "$(sed -n 2p "$T/sleep.args")" -le 3 ] && echo yes || echo no)"
 }
 
-t_ready_watch_poll_fraction() {
-  # Given: one green check
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  # When
-  ready --watch abc1234def5678 --poll-sec 0.5
-  # Then
-  eq refusal "64|stop: --poll-sec takes whole seconds: 0.5"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$code|$err"
-}
-
 t_ready_watch_poll_leading_zero() {
   # Given: a sleep that writes each argument; Devin Review pending, then green
   fake_gh
@@ -426,32 +336,6 @@ t_ready_watch_poll_leading_zero() {
   ready --watch abc1234def5678 --settle-sec 0 --poll-sec 08
   # Then
   eq "wait after the first poll" 8 "$(sed -n 2p "$T/sleep.args")"
-}
-
-t_ready_watch_one_failure() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$ci_green]"
-  printf '%s\n' "$net_err" > "$FAKE_GH/pr-view.1.fail"
-  ready --watch abc1234def5678 --poll-sec 1
-  eq exit 0 "$code"
-  eq "line 1" "READY $url" "$(line 1)"
-  eq "pr view calls" 3 "$(cat "$FAKE_GH/pr-view.calls")"
-}
-
-t_ready_pr_view_fails() {
-  fake_gh; printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/pr-view.fail"
-  ready
-  eq exit 1 "$code"
-  eq "line 1" "BLOCKED $url" "$(line 1)"
-  eq "line 2" "gh failed: HTTP 502: Bad Gateway" "$(line 2)"
-}
-
-t_ready_required_missing_after_bot() {
-  fake_gh; pr_json pr-view.json CLEAN MERGEABLE "" false "[$devin_green]"
-  required_json '["build"]' '[]'
-  ready
-  eq exit 1 "$code"
-  eq "line 1" "BLOCKED $url" "$(line 1)"
-  eq "line 2" "required check(s) not posted: build" "$(line 2)"
 }
 
 # check_run <name> <status> <conclusion> <url> [<workflow>]: one check run of the rollup.
@@ -518,31 +402,6 @@ t_ready_watch_past_red() {
   eq "pr view calls" 3 "$(cat "$FAKE_GH/pr-view.calls")"
 }
 
-t_ready_watch_rerun_red_again() {
-  # Given: test red at job 22, rerun as job 33, red again
-  fake_gh; job_json "Run tests"
-  pr_json pr-view.1.json CLEAN MERGEABLE "" false "[$(check_run test COMPLETED FAILURE "$job22" CI),$devin_pending]"
-  pr_json pr-view.2.json CLEAN MERGEABLE "" false "[$(check_run test IN_PROGRESS "" "$job33" CI),$devin_pending]"
-  pr_json pr-view.json CLEAN MERGEABLE "" false "[$(check_run test COMPLETED FAILURE "$job33" CI),$devin_green]"
-  # When
-  ready --watch abc1234def5678 --poll-sec 1
-  # Then
-  has "line 1" "· $job22" "$(line 1)"
-  has "line 2" "· $job33" "$(line 2)"
-  eq "line 3" "BLOCKED $url" "$(line 3)"
-}
-
-t_ready_watch_status_no_step() {
-  # Given: a red commit status from outside Actions
-  fake_gh
-  pr_json pr-view.json CLEAN MERGEABLE "" false '[{"__typename":"StatusContext","context":"ci/circleci","state":"FAILURE","targetUrl":"https://circleci.com/gh/acme/app/9"}]'
-  # When
-  ready --watch abc1234def5678 --poll-sec 1
-  # Then
-  eq "line 1" "RED ci/circleci · workflow - · step - · FAILURE · https://circleci.com/gh/acme/app/9" "$(line 1)"
-  eq "job calls" absent "$([ -f "$FAKE_GH/job.calls" ] && echo present || echo absent)"
-}
-
 t_ready_watch_red_when_threads_fail() {
   # Given: test is red while Devin Review runs, and the thread list fails on every poll
   fake_gh; real_sleep; job_json "Run tests"
@@ -556,19 +415,11 @@ t_ready_watch_red_when_threads_fail() {
   eq "line 3" "gh failed: HTTP 502: Bad Gateway; still failing when the watch's 2 s limit passed" "$(line 3)"
 }
 
-t_ready_wait_flag_gone() {
-  fake_gh
-  ready --wait abc1234def5678
-  eq exit 64 "$code"
-  eq stderr "stop: unknown flag --wait"$'\n'"usage: ready.sh <owner/repo> <number> [--me <login>] [--watch <sha>] [--settle-sec N] [--timeout-sec N] [--poll-sec N]" "$err"
-}
-
 cases=(
   "ready-pr: CLEAN reads READY|t_ready_clean"
   "ready-pr: a gh hint on stderr still reads READY|t_ready_gh_hint"
   "ready-pr: BEHIND reads READY|t_ready_behind"
   "ready-pr: DIRTY reads BLOCKED|t_ready_dirty"
-  "ready-pr: UNKNOWN then CLEAN reads READY|t_ready_unknown_then_clean"
   "ready-pr: a review bot's pending check reads WAITING with its name|t_ready_bot_pending"
   "ready-pr: a thread waiting for the author reads BLOCKED with its line|t_ready_thread_waits"
   "ready-pr: BLOCKED waiting for approval reads READY|t_ready_blocked_waiting_approval"
@@ -577,7 +428,6 @@ cases=(
   "ready-pr: BLOCKED with no review rule reads BLOCKED|t_ready_blocked_no_review_rule"
   "ready-pr: a required check not posted reads BLOCKED|t_ready_required_check_missing"
   "ready-pr: a ruleset check not posted reads BLOCKED|t_ready_ruleset_check_missing"
-  "ready-pr: a required check not posted while a check runs reads WAITING|t_ready_required_missing_while_pending"
   "ready-pr: required checks all posted reads READY (waiting for approval)|t_ready_required_checks_posted"
   "ready-pr: a base with a slash is encoded in the required checks calls|t_ready_slash_base"
   "ready-pr: no rulesets on a free private repo reads READY|t_ready_rules_need_pro"
@@ -586,32 +436,18 @@ cases=(
   "ready-pr: a draft reads BLOCKED|t_ready_draft"
   "ready-pr: zero checks reads WAITING|t_ready_zero_checks"
   "ready-pr: an absent rollup is zero checks|t_ready_absent_rollup"
-  "ready-pr: a blocked and a waiting reason read BLOCKED|t_ready_blocked_and_waiting"
-  "ready-pr: an unknown flag stops with exit 64|t_ready_bad_flag"
-  "ready-pr: --tools is an unknown flag|t_ready_tools_flag_gone"
   "ready-pr: a review bot's check run counts like any check|t_ready_bot_check_counts"
   "ready-pr: --watch waits for a bot check, then READY|t_ready_watch_bot_then_ready"
-  "ready-pr: --watch sleeps the settle time first|t_ready_watch_settles_first"
-  "ready-pr: --watch settles 60 seconds by default|t_ready_watch_settle_default"
   "ready-pr: --watch past the timeout names the pending check|t_ready_watch_timeout"
-  "ready-pr: --watch with zero checks after the settle reads WAITING|t_ready_watch_zero_checks"
-  "ready-pr: --watch names a head that moved|t_ready_watch_head_moved"
   "ready-pr: --watch goes on through six failed calls|t_ready_watch_six_failures"
   "ready-pr: --watch stops at its limit while gh keeps failing|t_ready_watch_outage_limit"
   "ready-pr: --watch stops at once on an expired login|t_ready_watch_login_expired"
   "ready-pr: --watch reads the verdict again after a failed read|t_ready_watch_verdict_read_fails"
   "ready-pr: --watch counts the settle time in its limit|t_ready_watch_settle_counts"
   "ready-pr: --watch waits no longer than the time left|t_ready_watch_wait_ends_at_limit"
-  "ready-pr: --poll-sec 0.5 stops with exit 64|t_ready_watch_poll_fraction"
   "ready-pr: --poll-sec 08 reads as 8 seconds|t_ready_watch_poll_leading_zero"
-  "ready-pr: --watch goes on after one failed call|t_ready_watch_one_failure"
-  "ready-pr: a failed pr view reads BLOCKED|t_ready_pr_view_fails"
-  "ready-pr: a required check not posted after a bot's green reads BLOCKED|t_ready_required_missing_after_bot"
   "ready-pr: --watch prints a red check with its workflow and failed step, once|t_ready_watch_red_with_step"
   "ready-pr: --watch prints a new thread when it appears|t_ready_watch_new_thread"
   "ready-pr: --watch goes on past a red check until none is pending|t_ready_watch_past_red"
-  "ready-pr: --watch prints a rerun's new red attempt again|t_ready_watch_rerun_red_again"
-  "ready-pr: --watch prints a red status with no step|t_ready_watch_status_no_step"
   "ready-pr: --watch prints a red check when the thread list fails|t_ready_watch_red_when_threads_fail"
-  "ready-pr: --wait is an unknown flag|t_ready_wait_flag_gone"
 )

@@ -88,7 +88,3 @@ Each fact it states carries an evidence label (Seen, Inferred, Guess, or Unknown
 ## Credits
 
 The todo list and the order for a red check in [ready-pr](../ready-pr/) take an idea from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). The split between a run that stops at a ready PR and a run that merges takes the idea of `full-stop` and `full-send` from [tstack](https://github.com/t3dotgg/tstack) by Theo Browne (MIT). No text was copied.
-
-## Tests
-
-The cases for its script are in [tests/](tests/), one file per script, on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
