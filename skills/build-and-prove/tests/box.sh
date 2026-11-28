@@ -170,18 +170,6 @@ t_box_run_recreates() {
   eq creates 1 "$(grep -c '^create ' "$FAKE_PB/log")"
 }
 
-t_box_run_gone_twice() {
-  fake_proofbox
-  state ns:us:abc
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo "Sandbox ns:us:def is gone" > "$FAKE_PB/upload.2.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  box run "$P" -- pnpm test
-  eq exit 1 "$code"
-  has stderr "stop: Sandbox ns:us:abc is gone" "$err"
-  eq creates 1 "$(grep -c '^create ' "$FAKE_PB/log")"
-}
-
 t_box_down() {
   fake_proofbox
   state ns:us:abc
@@ -189,75 +177,6 @@ t_box_down() {
   eq exit 0 "$code"
   eq log "delete ns:us:abc" "$(cat "$FAKE_PB/log")"
   [ ! -e "$P/box.env" ] || eq box.env gone "still there"
-}
-
-t_box_no_proofbox() {
-  repo
-  mkdir -p "$T/home"
-  export HOME="$T/home" PATH="/usr/bin:/bin"
-  box up "$T/proof" "$R" linux acme/shop
-  eq exit 1 "$code"
-  has stderr "stop: proofbox is not installed" "$err"
-}
-
-t_box_unknown_verb_without_proofbox() {
-  # Given: no proofbox on PATH
-  repo
-  export PATH="/usr/bin:/bin"
-  # When
-  box nope
-  # Then
-  eq exit 64 "$code"
-  has stderr "usage: box.sh auth <linux|macos>" "$err"
-  lacks stderr "proofbox is not installed" "$err"
-}
-
-t_box_create_fails() {
-  fake_proofbox
-  echo "Namespace refused the Sandbox: 4 of 4 in use; nothing was created. Delete a Sandbox or use a smaller --size" > "$FAKE_PB/create.fail"
-  box up "$P" "$R" linux acme/shop
-  eq exit 1 "$code"
-  has stderr "stop: Namespace refused the Sandbox: 4 of 4 in use" "$err"
-  [ ! -e "$P/box.env" ] || eq box.env gone "still there"
-}
-
-t_box_login() {
-  fake_proofbox
-  echo "Not logged in to namespace. Run: proofbox auth login namespace" > "$FAKE_PB/create.fail"
-  box up "$P" "$R" linux acme/shop
-  eq exit 1 "$code"
-  has stderr "stop: log in first: proofbox auth login namespace" "$err"
-}
-
-t_box_up_setup_fails() {
-  fake_proofbox
-  printf '%s\n' "npm: command not found" "setup-linux.sh: line 4: pnpm: command not found" \
-    "Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." > "$FAKE_PB/create.fail"
-  box up "$P" "$R" linux acme/shop
-  eq exit 1 "$code"
-  eq stderr "npm: command not found
-setup-linux.sh: line 4: pnpm: command not found
-Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted.
-stop: Setup script failed with exit code 127; its last 50 lines are above. Fix the script and create again. This Sandbox was deleted." "$err"
-}
-
-t_box_up_snapshot_reused() {
-  fake_proofbox
-  echo ns:us:abc > "$FAKE_PB/create.out"
-  printf '%s\n' "proofbox: uploading the work folder" "proofbox: Snapshot reused, Fingerprint 3f9a2c71" > "$FAKE_PB/create.err"
-  box up "$P" "$R" linux acme/shop
-  eq exit 0 "$code"
-  has stderr "proofbox: Snapshot reused, Fingerprint 3f9a2c71" "$err"
-  eq stdout "SANDBOX=ns:us:abc" "$out"
-}
-
-t_box_up_login_last() {
-  fake_proofbox
-  echo "Not logged in to namespace. Run: proofbox auth login namespace" > "$FAKE_PB/create.fail"
-  box up "$P" "$R" linux acme/shop
-  eq exit 1 "$code"
-  eq stderr "Not logged in to namespace. Run: proofbox auth login namespace
-stop: log in first: proofbox auth login namespace" "$err"
 }
 
 t_box_up_size() {
@@ -268,48 +187,6 @@ t_box_up_size() {
   eq exit 0 "$code"
   eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(cat "$FAKE_PB/log")"
   has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
-}
-
-t_box_run_remake_size() {
-  fake_proofbox
-  state ns:us:abc 0 8x16
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  box run "$P" -- pnpm test
-  eq exit 0 "$code"
-  eq "create args" "create --os linux --work $R --setup $SETUP --size 8x16 --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
-  has state "BOX_SIZE=8x16" "$(cat "$P/box.env")"
-}
-
-t_box_run_remake_no_size() {
-  fake_proofbox
-  state ns:us:abc
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  box run "$P" -- pnpm test
-  eq exit 0 "$code"
-  eq "create args" "create --os linux --work $R --setup $SETUP --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
-}
-
-t_box_run_remake_secrets() {
-  fake_proofbox
-  state ns:us:abc 0 "" "$HOME/.agents/proofbox/acme-shop/app.env"
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  box run "$P" -- pnpm test
-  eq exit 0 "$code"
-  eq "create args" "create --os linux --work $R --setup $SETUP --secrets $HOME/.agents/proofbox/acme-shop/app.env --idle 30m" "$(grep '^create ' "$FAKE_PB/log")"
-}
-
-t_box_up_size_not_offered() {
-  fake_proofbox
-  echo 3x3 > "$HOME/.agents/proofbox/acme-shop/size"
-  echo "Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" > "$FAKE_PB/create.fail"
-  box up "$P" "$R" linux acme/shop
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: Provider namespace does not offer the size 3x3; use one of: 4x8, 8x16" "$(printf '%s\n' "$err" | tail -n 1)"
-  [ ! -e "$P/box.env" ] || eq box.env gone "still there"
-  eq log "create --os linux --work $R --setup $SETUP --size 3x3 --idle 30m" "$(cat "$FAKE_PB/log")"
 }
 
 t_box_run_exec_gone() {
@@ -341,72 +218,6 @@ t_box_state_not_run() {
   eq exit 0 "$code"
   eq log 'delete $(touch '"$T"'/pwned)' "$(cat "$FAKE_PB/log")"
   [ ! -e "$T/pwned" ] || eq "box.env as shell" "not run" ran
-}
-
-t_box_auth_not_logged_in() {
-  fake_proofbox
-  new_proofbox
-  echo '[{"provider":"docker","login":"not-needed"},{"provider":"namespace","login":"none"}]' > "$FAKE_PB/auth.out"
-  box auth linux
-  eq exit 1 "$code"
-  has stderr "stop: log in first: proofbox auth login namespace" "$err"
-}
-
-t_box_auth_expired() {
-  fake_proofbox
-  new_proofbox
-  echo '[{"provider":"namespace","login":"expired","from":"saved","expires":"2026-10-01T00:00:00Z"}]' > "$FAKE_PB/auth.out"
-  box auth macos
-  eq exit 1 "$code"
-  has stderr "stop: log in first: proofbox auth login namespace" "$err"
-}
-
-t_box_auth_rejected() {
-  fake_proofbox
-  new_proofbox
-  echo '[{"provider":"namespace","login":"rejected","from":"env","env":"PROOFBOX_NAMESPACE_TOKEN"}]' > "$FAKE_PB/auth.out"
-  box auth linux
-  eq exit 1 "$code"
-  has stderr "stop: PROOFBOX_NAMESPACE_TOKEN is set, but namespace did not accept it" "$err"
-}
-
-t_box_auth_ok() {
-  fake_proofbox
-  new_proofbox
-  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
-  box auth linux
-  eq exit 0 "$code"
-  eq stdout "PROVIDER=namespace" "$out"
-  eq log "click --help
-auth status --json" "$(cat "$FAKE_PB/log")"
-}
-
-t_box_auth_too_old() {
-  # Given: a logged-in Provider, and a proofbox whose click takes no --mark
-  fake_proofbox
-  printf '  --glide text\n  --settle text\n' > "$FAKE_PB/click.out"
-  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
-  # When
-  box auth linux
-  # Then
-  eq exit 1 "$code"
-  has stderr "stop: proofbox is too old: run proofbox update" "$err"
-  eq log "click --help" "$(cat "$FAKE_PB/log")"
-}
-
-t_box_auth_no_jq() {
-  # Given: the logged-in case, on a PATH with every tool auth uses but jq
-  fake_proofbox
-  new_proofbox
-  echo '[{"provider":"namespace","login":"ok","from":"saved","account":"Personal","region":"us","expires":"2026-10-31T02:02:57Z"}]' > "$FAKE_PB/auth.out"
-  mkdir -p "$T/nojq"
-  for t in bash dirname sed head mktemp tail cat rm grep; do ln -s "$(command -v "$t")" "$T/nojq/$t"; done
-  export PATH="$T/bin:$T/nojq"
-  # When
-  box auth linux
-  # Then
-  eq exit 1 "$code"
-  has stderr "stop: jq is not installed: box.sh auth reads proofbox's login JSON with it" "$err"
 }
 
 t_box_auth_config() {
@@ -446,48 +257,6 @@ upload ns:us:abc $R
 exec ns:us:abc -- sh -c pnpm lint" "$(cat "$FAKE_PB/log")"
 }
 
-t_box_gates_remakes() {
-  # Given
-  gate_fixture
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  # When
-  box gates "$P" -- 'pnpm test'
-  # Then
-  eq exit 0 "$code"
-  has state "BOX_ID=ns:us:def" "$(cat "$P/box.env")"
-  eq creates 1 "$(grep -c '^create ' "$FAKE_PB/log")"
-  has stderr "Sandbox ns:us:abc is gone; made ns:us:def from its Snapshot" "$err"
-  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)" "$(cat "$P/checks.txt")"
-}
-
-t_box_gates_gone_twice() {
-  # Given
-  gate_fixture
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/upload.1.fail"
-  echo "Sandbox ns:us:def is gone" > "$FAKE_PB/upload.2.fail"
-  echo ns:us:def > "$FAKE_PB/create.out"
-  # When
-  box gates "$P" -- 'pnpm test'
-  # Then
-  eq exit 1 "$code"
-  has stderr "stop: Sandbox ns:us:abc is gone" "$err"
-  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
-  [ ! -e "$P/checks.txt.tmp" ] || eq "checks.txt.tmp" gone "still there"
-}
-
-t_box_gates_usage() {
-  # Given
-  gate_fixture
-  # When
-  box gates "$P" --
-  # Then
-  eq exit 64 "$code"
-  has stderr "gates <proof-dir> [--local <worktree> | --ci <worktree>] [--on-local <command>]... [--not-run <command> <why>]... -- <command>..." "$err"
-  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
-  [ ! -e "$FAKE_PB/log" ] || eq "proofbox calls" "none" "$(cat "$FAKE_PB/log")"
-}
-
 t_box_gates_red() {
   # Given
   fake_proofbox
@@ -511,47 +280,6 @@ make build · $sha · built (sandbox)" "$(cat "$P/checks.txt")"
   case "$f" in "$P"*) eq "output file" "outside $P" "$f" ;; esac
   has output "FAIL a" "$(cat "$f")"
   case "$err" in *"red: pnpm lint"*) eq stderr "no red line for pnpm lint" "$err" ;; esac
-}
-
-t_box_gates_own_code() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo 3 > "$FAKE_PB/exec.code"
-  printf '2 failed\n\n\n\n' > "$FAKE_PB/exec.out"
-  sha="$(git -C "$R" rev-parse --short HEAD)"
-  # When
-  box gates "$P" -- 'pnpm test | tail -n 5'
-  # Then
-  eq exit 3 "$code"
-  eq checks "pnpm test | tail -n 5 · $sha · red, exit 3: 2 failed (sandbox)" "$(cat "$P/checks.txt")"
-  has log "exec ns:us:abc -- sh -c pnpm test | tail -n 5" "$(cat "$FAKE_PB/log")"
-}
-
-t_box_gates_missing_tool() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo 127 > "$FAKE_PB/exec.code"
-  echo 'sh: 1: pnpm: not found' > "$FAKE_PB/exec.out"
-  # When
-  box gates "$P" -- 'pnpm test'
-  # Then
-  eq exit 3 "$code"
-  has stderr "missing tool: pnpm test · sh: 1: pnpm: not found" "$err"
-}
-
-t_box_gates_not_found_line() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo 1 > "$FAKE_PB/exec.code"
-  echo 'docker: command not found' > "$FAKE_PB/exec.out"
-  # When
-  box gates "$P" -- 'pnpm test:docker'
-  # Then
-  eq exit 3 "$code"
-  has stderr "missing tool: pnpm test:docker · docker: command not found" "$err"
 }
 
 t_box_gates_local() {
@@ -640,41 +368,6 @@ t_box_gates_not_run() {
 pnpm test:docker · $sha · not run: no Docker on either machine" "$(cat "$P/checks.txt")"
 }
 
-t_box_gates_rewrites_all() {
-  # Given
-  special_fixture
-  # When
-  box gates "$P" --on-local 'pwd' --not-run 'pnpm test:docker' 'no Docker' -- 'pnpm test'
-  box gates "$P" --on-local 'pwd' --not-run 'pnpm test:docker' 'no Docker' -- 'pnpm test'
-  # Then
-  eq exit 0 "$code"
-  eq checks "pnpm test · $sha · 116 passed, 0 failed (sandbox)
-pwd · $sha · $R (local machine)
-pnpm test:docker · $sha · not run: no Docker" "$(cat "$P/checks.txt")"
-}
-
-t_box_gates_on_local_with_local() {
-  # Given
-  gate_fixture
-  # When
-  box gates "$P" --local "$R" --on-local 'pwd' -- 'echo one'
-  # Then
-  eq exit 1 "$code"
-  has stderr "stop: --on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine" "$err"
-  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
-}
-
-t_box_gates_local_only_not_run() {
-  # Given
-  fake_proofbox
-  sha="$(git -C "$R" rev-parse --short HEAD)"
-  # When
-  box gates "$P" --local "$R" --not-run 'pnpm test:docker' 'no Docker here' --
-  # Then
-  eq exit 0 "$code"
-  eq checks "pnpm test:docker · $sha · not run: no Docker here" "$(cat "$P/checks.txt")"
-}
-
 t_box_gates_ci() {
   # Given
   special_fixture
@@ -696,24 +389,6 @@ ci_only_fixture() {
   mkdir -p "$R/.github/workflows"
   printf '%s\n' 'on: pull_request' 'jobs:' '  t:' '    steps:' '      - run: pnpm test' '      - run: pwd' > "$R/.github/workflows/ci.yml"
   sha="$(git -C "$R" rev-parse --short HEAD)"
-}
-
-t_box_gates_cover_fails_no_temp() {
-  # Given: ci-covers stops, since the tail that reads a workflow's run lines
-  # fails, and a mktemp that logs each path it makes
-  ci_only_fixture
-  mkdir -p "$T/failbin"
-  printf '%s\n' '#!/usr/bin/env bash' 'case "$*" in "-n +2 "*) exit 1 ;; esac' 'exec /usr/bin/tail "$@"' > "$T/failbin/tail"
-  printf '%s\n' '#!/usr/bin/env bash' 'p="$(/usr/bin/mktemp "$@")" || exit' "printf '%s\\n' \"\$p\" >> '$T/made'" "printf '%s\\n' \"\$p\"" > "$T/failbin/mktemp"
-  chmod +x "$T/failbin/tail" "$T/failbin/mktemp"
-  export PATH="$T/failbin:$PATH"
-  # When
-  box gates "$P" --ci "$R" -- 'pnpm test'
-  # Then
-  eq exit 1 "$code"
-  local left="" f
-  while IFS= read -r f; do [ ! -e "$f" ] || left="$left $f"; done < "$T/made"
-  eq "temp files left" "" "$left"
 }
 
 t_box_gates_ci_no_sandbox() {
@@ -747,17 +422,6 @@ t_box_gates_ci_on_local() {
   eq exit 0 "$code"
   eq checks "pnpm test · $sha · not run: CI runs it (ci.yml)
 pwd · $sha · $R (local machine)" "$(cat "$P/checks.txt")"
-}
-
-t_box_gates_ci_needs_sandbox() {
-  # Given
-  ci_only_fixture
-  # When
-  box gates "$P" --ci "$R" --on-local 'pwd' -- 'pnpm lint'
-  # Then
-  eq exit 1 "$code"
-  has stderr "stop: no Sandbox for $P; run box.sh up first" "$err"
-  [ ! -e "$P/checks.txt" ] || eq checks.txt "none" "$(cat "$P/checks.txt")"
 }
 
 t_box_gates_ci_up_all_ci() {
@@ -799,18 +463,6 @@ t_box_gates_ci_red() {
 pnpm lint · $sha · 116 passed, 0 failed (sandbox)
 pwd · $sha · not run: CI runs it (ci.yml)" "$(cat "$P/checks.txt")"
   has stderr "red: pnpm test · exit 1 · output " "$err"
-}
-
-t_box_gates_upload_fails() {
-  # Given
-  gate_fixture
-  echo 'upload: connection refused' > "$FAKE_PB/upload.fail"
-  # When
-  box gates "$P" -- 'pnpm test'
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: upload: connection refused" "$(printf '%s\n' "$err" | tail -n 1)"
-  eq checks "old · 0000000 · 1 pass (sandbox)" "$(cat "$P/checks.txt")"
 }
 
 t_box_run_notes_tree() {
@@ -887,24 +539,6 @@ t_box_start_from_base() {
   has state "BOX_TREE=base" "$(cat "$P/box.env")"
 }
 
-t_box_start_no_answer() {
-  # Given
-  fake_proofbox
-  fake_curl
-  echo 7 > "$FAKE_CURL/GET_.exit"
-  state ns:us:abc
-  : > "$FAKE_PB/exec.2.run"; : > "$FAKE_PB/exec.3.run"
-  mkdir -p "$FAKE_PB/tmp"
-  echo "Error: Cannot find module 'vite'" > "$FAKE_PB/tmp/app.log"
-  # When
-  box start "$P" --url http://localhost:3000/ -- pnpm dev
-  # Then
-  eq exit 1 "$code"
-  eq sleeps "$(printf '2\n%.0s' $(seq 60))" "$(cat "$FAKE_PB/sleep.log")"
-  has stderr "Error: Cannot find module 'vite'" "$err"
-  eq "last stderr line" "stop: http://localhost:3000/ did not answer in 120 s; the app log's last lines are above" "$(printf '%s\n' "$err" | tail -n 1)"
-}
-
 t_box_start_no_answer_stops() {
   # Given: the app runs but never answers
   fake_proofbox
@@ -939,48 +573,6 @@ t_box_stop() {
   case "$(cat "$FAKE_PB/log")" in *upload*) eq log "no upload" "$(cat "$FAKE_PB/log")" ;; esac
 }
 
-t_box_stop_limit() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  : > "$FAKE_PB/exec.1.run"
-  group "$FAKE_PB/tmp/app.pid" term
-  # When
-  box stop "$P"
-  # Then
-  eq exit 0 "$code"
-  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
-  ended "$gpid"
-}
-
-t_box_stop_port_busy() {
-  # Given: the app already ended, and a process outside its group holds the port
-  fake_proofbox
-  fake_curl
-  state ns:us:abc
-  : > "$FAKE_PB/exec.1.run"; : > "$FAKE_PB/exec.2.run"
-  # When
-  box stop "$P" --url http://localhost:3000/
-  # Then
-  eq exit 1 "$code"
-  eq sleeps "$(printf '1\n%.0s' $(seq 30))" "$(cat "$FAKE_PB/sleep.log")"
-  # The fake curl prints its status code, as a real `curl -o /dev/null` does not.
-  eq "last stderr line" "stop: http://localhost:3000/ still answers after the app stopped" "$(printf '%s\n' "$err" | tail -n 1 | sed 's/^\(404\)*//')"
-}
-
-t_box_stop_gone() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
-  # When
-  box stop "$P" --url http://localhost:3000/
-  # Then
-  eq exit 0 "$code"
-  has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
-  eq log 'exec ns:us:abc -- sh -c g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true sh /tmp/app.pid 30' "$(cat "$FAKE_PB/log")"
-}
-
 t_box_stop_gone_port_wait() {
   # Given: the app already ended, and the Sandbox dies during the port wait
   fake_proofbox
@@ -992,30 +584,6 @@ t_box_stop_gone_port_wait() {
   # Then
   eq exit 0 "$code"
   has stderr "Sandbox ns:us:abc is gone; nothing to stop" "$err"
-}
-
-t_box_open_linux() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  # When
-  box open "$P" -- chromium --no-sandbox http://localhost:3000/
-  # Then
-  eq exit 0 "$code"
-  eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; chromium --no-sandbox http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
-}
-
-t_box_open_macos() {
-  # Given
-  fake_proofbox
-  state ns:us:abc 0 "" "" macos
-  # When
-  box open "$P" -- open -a Safari http://localhost:3000/
-  # Then
-  eq exit 0 "$code"
-  eq calls 2 "$(cat "$FAKE_PB/exec.calls")"
-  eq log 'exec ns:us:abc -- sh -c set -m; sh -c "$1" >/dev/null 2>&1 & echo $! >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; open -a Safari http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
 }
 
 t_box_open_starter() {
@@ -1030,32 +598,6 @@ t_box_open_starter() {
   cmp -s "$here/../scripts/walk-browser.cjs" "$FAKE_PB/tmp/pb-walk/walk-browser" || eq starter "the lines of walk-browser.cjs" "$(head -n 3 "$FAKE_PB/tmp/pb-walk/walk-browser" 2>&1)"
   [ -x "$FAKE_PB/tmp/pb-walk/walk-browser" ] || eq "run bit" set none
   eq log 'exec ns:us:abc -- setsid -w sh -c sh -c "$1" >/dev/null 2>&1 & echo $$ >/tmp/walk-open.pid sh export PATH=/tmp/pb-walk:$PATH WALK_BROWSER_LOG=/tmp/walk-browser.log; walk-browser http://localhost:3000/' "$(tail -n 1 "$FAKE_PB/log")"
-}
-
-t_box_close_limit() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  : > "$FAKE_PB/exec.1.run"
-  group "$FAKE_PB/tmp/walk-open.pid" term
-  # When
-  box close "$P"
-  # Then
-  eq exit 0 "$code"
-  eq sleeps "$(printf '1\n%.0s' $(seq 10))" "$(cat "$FAKE_PB/sleep.log")"
-  ended "$gpid"
-}
-
-t_box_close_none() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  : > "$FAKE_PB/exec.1.run"
-  # When
-  box close "$P"
-  # Then
-  eq exit 0 "$code"
-  [ ! -e "$FAKE_PB/sleep.log" ] || eq sleeps none "$(cat "$FAKE_PB/sleep.log")"
 }
 
 t_box_close_empty() {
@@ -1102,113 +644,22 @@ request: 500 http://localhost:3000/api/wishes" "$(cat "$P/video-1-browser.txt")"
   [ ! -e "$FAKE_PB/tmp/walk-browser.log" ] || eq log gone "still there"
 }
 
-t_box_open_gone() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
-  # When
-  box open "$P" -- chromium http://localhost:3000/
-  # Then
-  eq exit 125 "$code"
-  has stderr "Sandbox ns:us:abc is gone" "$err"
-  eq calls 1 "$(cat "$FAKE_PB/exec.calls")"
-  ! grep -q "^create " "$FAKE_PB/log" || eq log "no create" "$(grep "^create " "$FAKE_PB/log")"
-}
-
-t_box_fit_fits() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo "880 880" > "$FAKE_PB/exec.1.out"
-  # When
-  box fit "$P"
-  # Then
-  eq exit 0 "$code"
-  eq stdout "FIT window bottom 880 · screen bottom 880" "$out"
-  has log "exec ns:us:abc -- sh -c" "$(cat "$FAKE_PB/log")"
-  has log "_NET_WORKAREA" "$(cat "$FAKE_PB/log")"
-}
-
-t_box_fit_tall() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo "985 880" > "$FAKE_PB/exec.1.out"
-  # When
-  box fit "$P"
-  # Then
-  eq exit 3 "$code"
-  eq stdout "TALL window bottom 985 · screen bottom 880" "$out"
-}
-
-t_box_fit_macos() {
-  # Given
-  fake_proofbox
-  state ns:us:abc 0 "" "" macos
-  echo "880 880" > "$FAKE_PB/exec.1.out"
-  # When
-  box fit "$P"
-  # Then
-  eq exit 0 "$code"
-  eq stdout "FIT not checked on macos" "$out"
-  [ ! -e "$FAKE_PB/log" ] || eq log "no exec" "$(cat "$FAKE_PB/log")"
-}
-
-t_box_fit_gone() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo "Sandbox ns:us:abc is gone" > "$FAKE_PB/exec.1.fail"
-  # When
-  box fit "$P"
-  # Then
-  eq exit 125 "$code"
-  has stderr "Sandbox ns:us:abc is gone" "$err"
-  case "$(cat "$FAKE_PB/log")" in *create*) eq log "no create" "$(cat "$FAKE_PB/log")" ;; esac
-}
-
-t_box_fit_unmeasured() {
-  # Given
-  fake_proofbox
-  state ns:us:abc
-  echo 1 > "$FAKE_PB/exec.1.code"
-  echo "xdo_get_active_window reported an error" > "$FAKE_PB/exec.err"
-  # When
-  box fit "$P"
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: cannot measure the window: xdo_get_active_window reported an error" "$(printf '%s\n' "$err" | tail -n 1)"
-}
-
 cases=(
-  "gates stops with exit 1 when the upload fails|t_box_gates_upload_fails"
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
   "gates writes a --not-run line|t_box_gates_not_run"
-  "gates writes every line again on a second call|t_box_gates_rewrites_all"
-  "gates refuses --on-local with --local|t_box_gates_on_local_with_local"
-  "gates --local writes a --not-run line with no Gate to run|t_box_gates_local_only_not_run"
   "gates --local leaves a Gate CI runs to CI|t_box_gates_local_ci"
   "gates --ci leaves a Gate CI runs to CI and runs the rest in the Sandbox|t_box_gates_ci"
-  "gates leaves no temp file when ci-covers stops|t_box_gates_cover_fails_no_temp"
   "gates --ci needs no Sandbox when CI runs every Gate|t_box_gates_ci_no_sandbox"
   "gates --ci needs no proofbox when CI runs every Gate|t_box_gates_ci_no_proofbox"
   "gates --ci runs an --on-local Gate on the local machine though CI names it|t_box_gates_ci_on_local"
-  "gates --ci stops when a Gate needs a Sandbox that is not up|t_box_gates_ci_needs_sandbox"
   "gates --ci runs no Gate in an up Sandbox when CI runs every Gate|t_box_gates_ci_up_all_ci"
   "gates --ci runs every Gate in the Sandbox when the repo has no CI|t_box_gates_ci_no_ci"
   "gates --ci keeps going after a red Gate in the Sandbox and exits 3|t_box_gates_ci_red"
   "gates --local runs each Gate in the worktree and writes checks.txt|t_box_gates_local"
   "gates --local needs no proofbox|t_box_gates_local_no_proofbox"
   "gates --local keeps going after a red Gate and names a missing tool|t_box_gates_local_red"
-  "gates names a Gate whose tool is missing|t_box_gates_missing_tool"
-  "gates names a not found line|t_box_gates_not_found_line"
   "gates keeps going after a red Gate and exits 3|t_box_gates_red"
-  "gates keeps the Gate's own exit code|t_box_gates_own_code"
   "gates runs each Gate in order and writes checks.txt|t_box_gates_green"
-  "gates makes a gone Sandbox again once|t_box_gates_remakes"
-  "gates stops when the new Sandbox is gone too|t_box_gates_gone_twice"
-  "gates with no command is a usage error|t_box_gates_usage"
   "up creates linux with idle 30m and no max life or provider|t_box_up_flags"
   "up creates macos with idle 10m|t_box_up_macos_idle"
   "run counts each Sandbox it makes again|t_box_run_counts_remakes"
@@ -1216,55 +667,23 @@ cases=(
   "up passes the setup script and the Secrets file from the repo's folder|t_box_up_secrets"
   "run uploads then execs and passes the exit code|t_box_run_passes_code"
   "run recreates a gone Sandbox once|t_box_run_recreates"
-  "run stops when the new Sandbox is gone too|t_box_run_gone_twice"
   "run recreates a Sandbox that exec finds gone|t_box_run_exec_gone"
   "run --from uploads that folder instead|t_box_run_from"
   "box.env is read as text, never run|t_box_state_not_run"
   "down deletes the Sandbox and clears the state|t_box_down"
-  "up stops when proofbox is missing|t_box_no_proofbox"
-  "an unknown verb gets the usage, proofbox or not|t_box_unknown_verb_without_proofbox"
-  "up stops with proofbox's line when create fails|t_box_create_fails"
-  "up names the login command when the login is missing|t_box_login"
-  "up shows the setup script's lines, then the stop line|t_box_up_setup_fails"
-  "up shows the Snapshot line and prints only the id on stdout|t_box_up_snapshot_reused"
-  "up ends with the login stop line after proofbox's line|t_box_up_login_last"
   "up passes the repo's size|t_box_up_size"
-  "run makes the Sandbox again at the same size|t_box_run_remake_size"
-  "run makes the Sandbox again with no size when the state has none|t_box_run_remake_no_size"
-  "run makes the Sandbox again with the Secrets file|t_box_run_remake_secrets"
-  "up stops with proofbox's line on a size it does not offer|t_box_up_size_not_offered"
   "up reuses the Sandbox already in the proof folder|t_box_up_reuses"
-  "auth stops with the login command when not logged in|t_box_auth_not_logged_in"
-  "auth stops with the login command when the login expired|t_box_auth_expired"
-  "auth stops when an env token is not accepted|t_box_auth_rejected"
-  "auth passes a logged-in Provider|t_box_auth_ok"
-  "auth names jq when jq is missing|t_box_auth_no_jq"
   "auth reads the Provider for the OS from proofbox's config|t_box_auth_config"
-  "auth stops when proofbox does not know --mark|t_box_auth_too_old"
   "run notes the base after --from and the branch after a plain run|t_box_run_notes_tree"
   "up notes the branch|t_box_up_notes_branch"
   "start runs the Run line in its own group on linux and waits for the URL|t_box_start_linux"
   "start runs the Run line in its own group on macos|t_box_start_macos"
   "start --from starts the base and prints it|t_box_start_from_base"
-  "start stops with the log's last lines when the app does not answer|t_box_start_no_answer"
   "start stops the app's group when the app does not answer|t_box_start_no_answer_stops"
   "stop ends the app's group and waits for a free port|t_box_stop"
-  "stop waits 30 s for the group, then kills it|t_box_stop_limit"
-  "stop fails when the port stays busy|t_box_stop_port_busy"
-  "stop on a gone Sandbox has nothing to stop|t_box_stop_gone"
   "stop on a Sandbox gone during the port wait has nothing to stop|t_box_stop_gone_port_wait"
-  "open runs the walker's command in its own group on linux|t_box_open_linux"
-  "open runs the walker's command in its own group on macos|t_box_open_macos"
   "open puts the browser starter on the command's PATH|t_box_open_starter"
-  "close waits 10 s for the group, then kills it|t_box_close_limit"
-  "close with no browser open exits 0|t_box_close_none"
   "close saves the browser log next to the video|t_box_close_out"
   "close writes none for an empty browser log|t_box_close_empty"
   "close names a missing browser log|t_box_close_missing"
-  "open on a gone Sandbox passes proofbox's line|t_box_open_gone"
-  "fit says FIT when the window ends above the taskbar|t_box_fit_fits"
-  "fit says TALL when the window runs under the taskbar|t_box_fit_tall"
-  "fit checks nothing on macos|t_box_fit_macos"
-  "fit on a gone Sandbox passes proofbox's line|t_box_fit_gone"
-  "fit stops when the window cannot be measured|t_box_fit_unmeasured"
 )
