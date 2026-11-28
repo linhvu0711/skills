@@ -71,7 +71,7 @@ repo="$(git -C "$here/.." rev-parse --show-toplevel)"
 git_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-dir)" && pwd -P)"
 common_dir="$(cd "$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir)" && pwd -P)"
 [ "$git_dir" = "$common_dir" ] || exit 0
-command -v jq >/dev/null || die "link.sh needs jq to read and write hook files; install it, as with brew install jq"
+command -v jq >/dev/null || die "link.sh needs jq to read and write hook files; install it, as with brew install jq or apt install jq"
 
 agents="${SKILLS_HOME:-$HOME/.agents/skills}"
 claude="${CLAUDE_SKILLS_HOME:-$HOME/.claude/skills}"
