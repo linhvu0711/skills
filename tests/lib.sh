@@ -54,6 +54,25 @@ eq() { [ "$2" = "$3" ] || { printf '%s: expected [%s], got [%s]\n' "$1" "$2" "$3
 has() { case "$3" in *"$2"*) ;; *) printf '%s: [%s] not in [%s]\n' "$1" "$2" "$3" >&2; exit 1 ;; esac; }
 lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; exit 1 ;; esac; }
 
+# with_tiers: this checkout's shared/model-tiers.md in the repo, which every
+# agent file needs for its models.
+with_tiers() { mkdir -p shared && cp "$scripts_dir/../shared/model-tiers.md" shared/; }
+
+# full_agent: the frontmatter lines of a skill agent `helper` with every field.
+full_agent='name: helper
+description: Reviews one "demo" diff.
+tools: Read, Grep, Glob, Bash
+tier: 1
+checker: no'
+
+# agent <skill> <name>: a skill agent file skills/<skill>/agents/<name>.md,
+# full_agent under that name, with a two-line body.
+agent() {
+  [ -f shared/model-tiers.md ] || with_tiers
+  mkdir -p "skills/$1/agents"
+  printf -- '---\n%s\n---\nReview the diff.\nMatch \\d+ in "x".\n' "${full_agent/name: helper/name: $2}" > "skills/$1/agents/$2.md"
+}
+
 # fake_gh: a fake gh and a no-op sleep first on PATH, in the temp folder T
 # (made when T is not set yet). The gh answers from fixture files in
 # $FAKE_GH, by route: `pr list` is pr-list, `pr view` pr-view, `issue view`

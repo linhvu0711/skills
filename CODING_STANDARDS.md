@@ -59,7 +59,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 ## Tests
 
 - A test for a skill's script goes in `skills/<name>/tests/`, one file per script, and its cases go in its own `cases` list, which `tests/run.sh` runs.
-- A test for a shared core script goes in `shared/tests/`, one file per script.
+- A test for a shared core script goes in `shared/tests/`, and a test for a script in `scripts/` goes in `tests/scripts/`, one file per script.
 - A test uses the helpers and the fake `gh`, `curl`, and `nsc` of `tests/lib.sh`, and marks its steps with `# Given`, `# When`, and `# Then`.
 - A test case shares no file or folder with another case, because `tests/run.sh` runs the cases at the same time.
 - A script gets a test only when a break would go unseen and do harm: it writes files, links, GitHub, or data another script reads. A break a person sees at once, such as a wrong label on a page, gets no test. `SKILL.md` text gets no test.
