@@ -10,9 +10,9 @@
 # other session) is left alone, and the next free port gets a new server.
 set -eu
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-# sh has no local, so u is a plain variable.
-die_usage() { u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+# sh has no BASH_SOURCE; serve.sh is run, never sourced, so $0 names it.
+here=$(cd "$(dirname "$0")" && pwd -P)
+. "$here/die.sh"
 [ $# -eq 2 ] || die_usage 'usage: serve.sh <dir> <file.html>'
 dir=$1 file=$2
 [ -f "$dir/$file" ] || die "$dir/$file: not found"

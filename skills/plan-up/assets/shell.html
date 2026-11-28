@@ -6,35 +6,7 @@
 <link rel="icon" href="data:,">
 <title>Plan</title>
 <style>
-  :root {
-    color-scheme: light dark;
-    --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2230; --muted: #5d6675; --line: #e2e6ec;
-    --accent: #2f6fed; --accent-ink: #ffffff; --soft: #eef3ff;
-    --ok: #1f8a4c; --ok-soft: #e6f5ec; --warn: #b3660b; --warn-soft: #fff4e3; --neutral-soft: #f1f3f6;
-    --bad: #c23b32; --bad-soft: #fbe9e7;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
-    --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
-      --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
-      --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
-      --bad: #f07a70; --bad-soft: #3a2220;
-      --shadow: none;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #98a2b3; --line: #2a3140;
-    --accent: #7aa2ff; --accent-ink: #0f1218; --soft: #1c2740;
-    --ok: #5fcf8a; --ok-soft: #14301f; --warn: #f0b35a; --warn-soft: #3a2a10; --neutral-soft: #1f2530;
-    --bad: #f07a70; --bad-soft: #3a2220;
-    --shadow: none;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); padding: 0 20px 64px; }
+  /* THEME */
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
   code, .path { font-family: var(--mono); font-size: 12.5px; }

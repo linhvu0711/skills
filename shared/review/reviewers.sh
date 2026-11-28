@@ -19,7 +19,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/../gh.sh"
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 usage='usage: reviewers.sh <owner/repo> <number>'
 [ $# -eq 2 ] || die_usage "$usage"
 repo="$1"; num="$2"

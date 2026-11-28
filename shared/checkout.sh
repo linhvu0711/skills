@@ -70,10 +70,8 @@
 # worktree holds the branch.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/die.sh"
 . "$here/gh.sh"
 tmps=(); trap 'rm -f ${tmps[@]+"${tmps[@]}"}' EXIT
 

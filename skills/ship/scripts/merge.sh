@@ -20,8 +20,8 @@
 # A wrong command line prints the usage on stderr, exit 64.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$1" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 usage='usage: merge.sh <owner/repo> <number> --sha <sha>'
 [ $# -eq 4 ] && [ "$3" = --sha ] || die_usage "$usage"
 repo="$1"; number="$2"; sha="$4"
@@ -29,7 +29,6 @@ repo="$1"; number="$2"; sha="$4"
 # A short SHA never equals GitHub's headRefOid, so it would read as a moved head.
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "--sha needs the full 40-character head SHA, got: $sha"
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 . "$here/../../../shared/gh.sh"
 
 # view: the PR's url, state, head, and merge commit, one per line.

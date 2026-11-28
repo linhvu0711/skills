@@ -25,7 +25,7 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo="$here/../.."
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 usage='usage: subagent-gate.sh <claude|codex> [matcher]'
 
 harness="${1:-}"

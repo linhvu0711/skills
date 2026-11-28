@@ -4,13 +4,14 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## One way for each job
 
-- Stop a script with an error: `die()` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python.
+- Stop a script with an error: `die` of `shared/die.sh` in shell, which prints `stop: <why>` on stderr and exits 1; `sys.exit("stop: <why>")` in Python.
 - Call GitHub: `shared/gh.sh` in shell, `shared/gh.py` in Python.
 - Find a script's own folder: `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`.
 - Read JSON in shell: `jq`. Old way: `grep -o`, kept only in the text `skills/dispatch/scripts/mac.sh` runs on a Mac, where `jq` may be missing.
 - Write JSON in shell: literal text for a fixed fixture, `jq -n --arg` when a value comes from a variable. Old way: a hand-written string with a variable in it (#409).
 - Clean up temp files: a `trap … EXIT` in shell, `try`/`finally` in Python (bash-manual). Old way: `rm` after use, kept only in `gh_out` of `shared/gh.sh`, where a trap would replace its caller's.
 - Replace a file: write a temp file in the same folder, then `mv`; Python: `os.replace`.
+- Write a page that a builder makes from a shell: `fill()` and `write()` of `shared/page.py`.
 - Loop over a command's output lines: `while IFS= read -r`.
 - Test a condition in shell: `[ ]` with quoted values for a plain test, `[[ ]]` for `=~` and patterns.
 - Name a Python file: snake_case, since only a snake_case module can be imported (pep-8). Old way: dashes, as `build-report.py` (#410).
@@ -44,7 +45,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ## Errors
 
-- A wrong command line prints the usage line on stderr and exits non-zero: 64 through `die_usage <usage> [why]` for a shell script, which prints `stop: <why>` when given, then the usage; argparse's own 2 for a Python script; and 1 through `stop()` for a Node script.
+- A wrong command line prints the usage line on stderr and exits non-zero: 64 through `die_usage <usage> [why]` of `shared/die.sh` for a shell script, which prints `stop: <why>` when given, then the usage; argparse's own 2 for a Python script; and 1 through `stop()` for a Node script.
 - A script whose exit code carries an answer, as `ready.sh` returns 0, 1, or 2, keeps its codes and lists them in its usage.
 - A stop message says what went wrong, what was expected, and what to try (agentskills-using-scripts).
 - A missing optional tool prints `warn: <what>` on stderr, and the script goes on.
@@ -123,7 +124,7 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 ### Page JS
 
-- A page is one HTML file with its script inline, and its data goes in as `const DATA = …` with `<` escaped as `<`.
+- A page is one HTML file with its script inline, and its data goes in as `const DATA = …` with each `<` escaped as `\u003c`, by `fill()` of `shared/page.py`.
 - A Node script is a `.cjs` file that runs its main code only when `require.main === module` (node-docs-modules).
 
 ### GitHub Actions

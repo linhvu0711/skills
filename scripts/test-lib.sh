@@ -29,7 +29,8 @@ fake_home() {
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# repo: a fresh repo in a temp folder with scripts/ committed; cd into it.
+# repo: a fresh repo in a temp folder with scripts/ and shared/die.sh, which
+# its scripts source, committed; cd into it.
 # Sets T (the temp folder) and R (the repo, a physical path).
 repo() {
   T="$(cd "$(mktemp -d)" && pwd -P)"; R="$T/repo"
@@ -38,7 +39,8 @@ repo() {
   git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   cp -R "$scripts_dir" "$R/scripts"
-  git add scripts; git commit -qm init
+  mkdir -p "$R/shared"; cp "$scripts_dir/../shared/die.sh" "$R/shared/"
+  git add scripts shared; git commit -qm init
 }
 
 # run <cmd...>: run it, keep its exit code in `code`, stdout in `out`, stderr in `err`.
@@ -154,7 +156,9 @@ EOF
 # writes -d to <route>.data, writes <route>.json to the -o file, and with -w
 # prints <route>.code, or 200, as real curl prints nothing on stdout with -o
 # and no -w. A route with no fixture answers 404; a <route>.exit
-# fixture makes the call exit with that code instead.
+# fixture makes the call exit with that code instead. A call whose query has
+# after=<c> answers <route>.after-<c>.json when there is one, so a test can
+# serve each page of a paged answer.
 fake_curl() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
   mkdir -p "$T/bin" "$T/curl"
@@ -175,13 +179,16 @@ while [ $# -gt 0 ]; do
 done
 path="/${url#*://*/}"; path="${path%%\?*}"
 key="$method$(printf '%s' "$path" | tr / _)"
+after=""; case "$url" in *"?after="*|*"&after="*) after="${url##*after=}"; after="${after%%&*}" ;; esac
 printf '%s %s\n' "$method" "$path" >> "$FAKE_CURL/calls"
 [ -z "$data" ] || printf '%s\n' "$data" > "$FAKE_CURL/$key.data"
 # A <key>.exit file makes the call fail with that curl exit code, as a
 # timeout (28) does.
 [ ! -f "$FAKE_CURL/$key.exit" ] || exit "$(cat "$FAKE_CURL/$key.exit")"
-if [ -f "$FAKE_CURL/$key.json" ]; then
-  cat "$FAKE_CURL/$key.json" > "$out"
+page="$FAKE_CURL/$key.json"
+[ -z "$after" ] || [ ! -f "$FAKE_CURL/$key.after-$after.json" ] || page="$FAKE_CURL/$key.after-$after.json"
+if [ -f "$page" ]; then
+  cat "$page" > "$out"
   [ -z "$w" ] || cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200
 else
   printf '{"detail":"fake curl: no fixture %s"}\n' "$key" > "$out"

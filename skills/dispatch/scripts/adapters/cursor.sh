@@ -44,9 +44,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 MAC="${HANDOFF_MAC:-$here/../mac.sh}"
 SELF="$here/$(basename "${BASH_SOURCE[0]}")"
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 . "$here/../../../../shared/gh.sh"
+. "$here/../../../../shared/die.sh"
 scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
 
 usage_text() {

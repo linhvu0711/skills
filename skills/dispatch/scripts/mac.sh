@@ -67,9 +67,9 @@ HOURS="${HANDOFF_MAC_HOURS:-4}"
 MAC_MGMT_ADDR=127.0.0.1:47199
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../shared/gh.sh"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
+. "$here/../../../shared/gh.sh"
 scratch="$(mktemp -d)"; tmps=(); trap 'rm -rf "$scratch" ${tmps[@]+"${tmps[@]}"}' EXIT
 usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 

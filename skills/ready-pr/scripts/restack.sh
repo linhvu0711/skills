@@ -35,11 +35,10 @@
 # A wrong command line prints the usage on stderr, exit 64.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 
 usage='usage: restack.sh list <owner/repo> <branch> | move <checkout> <branch> <old-sha> <stack-file> [--own <n>[,<n>...]]'
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 checkout="$here/../../../shared/checkout.sh"
 . "$here/../../../shared/gh.sh"
 

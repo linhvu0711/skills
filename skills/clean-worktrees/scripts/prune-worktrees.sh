@@ -55,9 +55,8 @@
 # Exit 64: a wrong command line, its usage on stderr, and nothing was removed.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/../../../shared/die.sh"
 checkout="$here/../../../shared/checkout.sh"
 . "$here/../../../shared/gh.sh"
 # The .git directory a checkout or worktree belongs to, symlinks resolved.
