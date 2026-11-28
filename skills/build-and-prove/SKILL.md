@@ -70,7 +70,7 @@ Mark each item in progress as it starts and done as it ends. A step the run does
    - `stop: proofbox is too old: run proofbox update`: show it, copy `proofbox update` the same way, and stop. Coding has not started.
    - Any other `stop:`: show it, stop.
 
-3. **Worktree.** The branch follows the PR shape § Branch (`../../shared/pr-shape.md`): the issue's type, its number, two to four words, as in `fix/133-uninstall-reverses-setup`. A chat plan: the type from its title, then the words of its slug after `chat-`, as in `feat/export-orders-csv` for `acme-shop-chat-export-orders-csv`. The slug was picked so that no branch had this name, so an existing branch here is this plan's follow-up (§ Follow-up).
+3. **Worktree.** The branch follows a branch name the repo rules set, per `../../shared/repo-rules.md`; else the PR shape § Branch (`../../shared/pr-shape.md`): the issue's type, its number, two to four words, as in `fix/133-uninstall-reverses-setup`. A chat plan: the type from its title, then the words of its slug after `chat-`, as in `feat/export-orders-csv` for `acme-shop-chat-export-orders-csv`. The slug was picked so that no branch had this name, so an existing branch here is this plan's follow-up (§ Follow-up).
 
    ```bash
    bash ../../shared/checkout.sh <REPO> <branch> --base <BASE>

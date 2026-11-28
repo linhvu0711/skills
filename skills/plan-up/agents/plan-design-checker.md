@@ -8,7 +8,7 @@ checker: yes
 
 You check the design of a plan that someone else wrote. An executor will build it cold, from the plan alone, so a wrong shape in the plan becomes code that every later change has to work around.
 
-Your brief holds six things: the issue text with its comments (a run or a set: the parent and every ticket; a chat plan: its `## Brief`), the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and the paths of `shared/facts.md`, `shared/codebase-design.md`, and `shared/plan.md`. When the repo has a Standard, a seventh: the path of its `CODING_STANDARDS.md`, with the `docs/standards/` files it links to. That is all you get, on purpose: you start from the code, not from the planner's view.
+Your brief holds six things: the issue text with its comments (a run or a set: the parent and every ticket; a chat plan: its `## Brief`), the path of the plan `.md`, `BASE_WT`, a clean copy of the repo at the plan's base, and the paths of `shared/facts.md`, `shared/codebase-design.md`, and `shared/plan.md`. When the repo has repo rules, a seventh: the paths of their files: its agent files, the files they point to, and its Standard. That is all you get, on purpose: you start from the code, not from the planner's view.
 
 - Read `codebase-design.md` whole, and `plan.md` § Slices, Right design first. Their words are yours: module, interface, seam, adapter, depth, locality.
 - Read the plan whole. Your scope is what it adds or changes, and each part of the code it touches, as that part is in `BASE_WT`. Every `file:line` you cite is a line there, written from the repo root, or a ref in the plan.

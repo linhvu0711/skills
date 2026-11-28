@@ -27,7 +27,7 @@ A `perf` PR proves its speed line with one Proof row: the metric and unit, `befo
 - `gh`, signed in, and `git`. With a proof folder, `gh` 2.99 or newer, and `ffmpeg`, to read a video's frames for the leak check.
 - [commit](../commit/), for the commit messages.
 - [unslop](../unslop/), for the prose of the title and body.
-- From the shared core: [pr-shape.md](../../shared/pr-shape.md), [size.md](../../shared/size.md) and its count script [size.py](../../shared/size.py), and [issue-rules.md](../../shared/issue-rules.md) for the repo's size labels.
+- From the shared core: [pr-shape.md](../../shared/pr-shape.md), [repo-rules.md](../../shared/repo-rules.md) for the repo rules that come before it, [size.md](../../shared/size.md) and its count script [size.py](../../shared/size.py), and [issue-rules.md](../../shared/issue-rules.md) for the repo's size labels.
 - `python3`, for the saved size-label map in the shared core's [issue_conventions.py](../../shared/issue_conventions.py).
 
 ## Fits with

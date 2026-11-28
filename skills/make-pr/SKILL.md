@@ -5,7 +5,7 @@ description: "Open or update the pull request for the work in this checkout, in 
 
 Paths in this skill are relative to its real folder: the one that holds this `SKILL.md`, after links are followed, as `realpath` prints it. Before you run or read one of them, put that real folder's absolute path in front of it.
 
-Turn the work in this checkout into one pull request. Read `../../shared/pr-shape.md` first: it owns the branch name, the title, the body, and the label. This skill owns the steps around it. It stops when the PR is open, and it never merges.
+Turn the work in this checkout into one pull request. Read `../../shared/pr-shape.md` first: it owns the branch name, the title, the body, and the label. The repo rules come before it, per `../../shared/repo-rules.md`: a branch name, title, body part, or label they set wins over the shape. This skill owns the steps around it. It stops when the PR is open, and it never merges.
 
 ## When a skill calls you
 
