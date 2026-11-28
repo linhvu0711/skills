@@ -48,7 +48,7 @@ DECIDED_MAX, RISKS_MAX, MAPS_MAX, PARTS_MAX = 3, 3, 2, 12
 # screen whose window opens 53 px from the top, 80 px of browser bars, and a Dock that ends the free area at
 # 726 to 729 px; macOS shrinks a taller window and cuts the page.
 PAGE_MAX = {"linux": (1432, 795, "1432,795 or 390,664"), "macos-outpost": (1200, 580, "1200,580 or 390,580")}
-VIEWPORT = re.compile(r"""--viewport-size(?:=|\s+)["']?(\d+),\s*(\d+)""")
+VIEWPORT = re.compile(r"""--viewport-size(?:=|[ \t]+)["']?(\d+),\s*(\d+)""")
 
 
 def blocks(lines):
