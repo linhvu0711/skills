@@ -28,8 +28,7 @@ size_list='XS|S|M|L|XL'
 # The words a proposal and an answer name a step by.
 route_list='grill|triage|ship|ready-pr|task|close|xxl'
 
-# The analysis row: the model and effort the Router gives /grill and
-# /triage, and the orchestrator gives the retro.
+# The analysis row: the model and effort the Router gives /grill and /triage.
 analysis_model=opus
 analysis_effort=high
 
