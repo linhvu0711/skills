@@ -108,6 +108,26 @@ fs_push() {
 # fs_short <dir> <rev>: the 7-character SHA of the rev.
 fs_short() { git -C "$1" rev-parse --short=7 "$2"; }
 
+# fs_two_prs <created-at>: a run of #42 started 2026-10-28T12:00:00Z, with two
+# open PRs: #43 from 2026-10-27T09:00:00Z and #44 from <created-at>.
+fs_two_prs() {
+  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
+  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"'"$1"'","body":""}'
+  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+}
+
+# fs_origin_ahead: a run of #42 whose origin main is one commit ahead of the
+# checkout's main.
+fs_origin_ahead() { fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote; fs_push a.txt one; }
+
+# fs_edit_in_the_way: a run of #42 synced to origin's a.txt "one"; origin then
+# writes "two", and the checkout has an edit "mine" to a.txt, not committed.
+fs_edit_in_the_way() {
+  fs_origin_ahead; fs_go sync acme/app
+  fs_push a.txt two
+  printf 'mine\n' > "$T/dev/app/a.txt"
+}
+
 t_fs_start_writes_run() {
   # Given: #42 "Export orders", open, size/L
   fs_setup; fs_issue 42 OPEN '["size/L"]'
@@ -738,9 +758,7 @@ t_fs_check_writes_nothing() {
 
 t_fs_two_prs_waits() {
   # Given: #42 has two open PRs from before the run
-  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
-  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-27T10:00:00Z","body":""}'
-  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  fs_two_prs 2026-10-27T10:00:00Z
   # When
   fs_go check acme/app
   # Then
@@ -751,9 +769,7 @@ t_fs_two_prs_waits() {
 
 t_fs_new_pr_keeps_two_prs_wait() {
   # Given: #42 has an open PR from before the run and one from after it
-  local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
-  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"2026-10-28T13:00:00Z","body":""}'
-  fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
+  fs_two_prs 2026-10-28T13:00:00Z
   # When
   fs_go check acme/app
   # Then
@@ -791,9 +807,8 @@ t_fs_all_closed_done() {
 
 t_fs_sync_fast_forwards() {
   # Given: a run of #42; origin's main is one commit ahead of the checked-out main
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_origin_ahead
   local was; was="$(fs_short "$T/dev/app" main)"
-  fs_push a.txt one
   # When
   fs_go sync acme/app
   # Then
@@ -843,12 +858,8 @@ t_fs_sync_own_commits() {
 t_fs_sync_edits_in_the_way() {
   # Given: a run of #42 synced to origin's a.txt "one"; origin then writes "two",
   # and the checkout has an edit "mine" to a.txt, not committed
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
-  fs_push a.txt one
-  fs_go sync acme/app
+  fs_edit_in_the_way
   local one; one="$(git -C "$T/dev/app" rev-parse main)"
-  fs_push a.txt two
-  printf 'mine\n' > "$T/dev/app/a.txt"
   # When
   fs_go sync acme/app
   # Then
@@ -860,12 +871,8 @@ t_fs_sync_edits_in_the_way() {
 
 t_fs_sync_edits_in_the_way_autostash() {
   # Given: as in the edits-in-the-way case, with merge.autoStash on in the checkout
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
-  fs_push a.txt one
-  fs_go sync acme/app
+  fs_edit_in_the_way
   local one; one="$(git -C "$T/dev/app" rev-parse main)"
-  fs_push a.txt two
-  printf 'mine\n' > "$T/dev/app/a.txt"
   git -C "$T/dev/app" config merge.autoStash true
   # When
   fs_go sync acme/app
@@ -895,10 +902,9 @@ t_fs_sync_ignored_file_in_the_way() {
 t_fs_sync_narrow_fetch_refspec() {
   # Given: a run of #42; the checkout's fetch refspec names only another
   # branch, and origin's main is one commit ahead
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_origin_ahead
   git -C "$T/dev/app" config remote.origin.fetch '+refs/heads/release:refs/remotes/origin/release'
   local was; was="$(fs_short "$T/dev/app" main)"
-  fs_push a.txt one
   # When
   fs_go sync acme/app
   # Then
@@ -908,10 +914,9 @@ t_fs_sync_narrow_fetch_refspec() {
 
 t_fs_sync_other_branch() {
   # Given: a run of #42; the checkout is on feat/x, and origin's main is one commit ahead
-  fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
+  fs_origin_ahead
   git -C "$T/dev/app" switch -q -c feat/x
   local was; was="$(fs_short "$T/dev/app" main)"
-  fs_push a.txt one
   # When
   fs_go sync acme/app
   # Then
