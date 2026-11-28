@@ -5,7 +5,7 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # cursor <args>: run the Cursor adapter on the fake curl, with HOME in the
-# temp folder (no .zshrc).
+# temp folder.
 cursor() { run env HOME="$T/home" CURSOR_API_URL=https://cursor.test CURSOR_API_KEY=k bash "$here/../scripts/adapters/cursor.sh" "$@"; }
 
 agent_bc1='{"id":"bc-1","status":"RUNNING","latestRunId":"run-2","url":"https://cursor.com/agents/bc-1"}'
@@ -28,6 +28,20 @@ t_cursor_poll() {
   cursor poll bc-1
   eq exit 0 "$code"
   eq stdout "finished	run-2|FINISHED	https://github.com/o/r/pull/9	https://cursor.com/agents/bc-1	Opened the PR" "$out"
+}
+
+t_cursor_poll_gh_fails() {
+  # Given
+  fake_curl; fake_gh
+  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
+  printf '{"id":"run-2","status":"FINISHED","result":"Done"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
+  printf 'To get started with GitHub CLI, please run:  gh auth login\n' > "$FAKE_GH/pr-list.fail"
+  # When
+  cursor poll bc-1 --repo o/r --issue 12
+  # Then
+  eq exit 1 "$code"
+  has stderr "stop: gh failed: To get started with GitHub CLI, please run:  gh auth login" "$err"
+  eq stdout "" "$out"
 }
 
 t_cursor_say() {
@@ -149,6 +163,7 @@ cases=(
   "cursor release fails when the run cannot be read|t_cursor_release_check_fails"
   "cursor start sends the prompt and prints the agent|t_cursor_start"
   "cursor poll reads the latest run|t_cursor_poll"
+  "cursor poll stops when the PR lookup fails|t_cursor_poll_gh_fails"
   "cursor say starts a new run|t_cursor_say"
   "cursor start on macos rents a Mac and targets its worker|t_cursor_start_macos"
   "cursor poll leaves the Mac when the run ended|t_cursor_poll_leaves_mac"

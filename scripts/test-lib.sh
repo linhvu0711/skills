@@ -145,8 +145,9 @@ EOF
 # The curl answers from fixture files in $FAKE_CURL, by route: the method and
 # the URL's path, query dropped, every / as _, as in
 # POST_v3_organizations_org1_sessions. It logs `<METHOD> <path>` to calls,
-# writes -d to <route>.data, writes <route>.json to the -o file, and prints
-# <route>.code, or 200. A route with no fixture answers 404; a <route>.exit
+# writes -d to <route>.data, writes <route>.json to the -o file, and with -w
+# prints <route>.code, or 200, as real curl prints nothing on stdout with -o
+# and no -w. A route with no fixture answers 404; a <route>.exit
 # fixture makes the call exit with that code instead.
 fake_curl() {
   [ -n "${T:-}" ] || T="$(cd "$(mktemp -d)" && pwd -P)"
@@ -154,13 +155,14 @@ fake_curl() {
   cat > "$T/bin/curl" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-out=""; method=GET; data=""; url=""
+out=""; method=GET; data=""; url=""; w=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -o) out="$2"; shift 2 ;;
     -X) method="$2"; shift 2 ;;
     -d) data="$2"; shift 2 ;;
-    -H|-F|-w) shift 2 ;;
+    -w) w="$2"; shift 2 ;;
+    -H|-F) shift 2 ;;
     -*) shift ;;
     *) url="$1"; shift ;;
   esac
@@ -174,10 +176,10 @@ printf '%s %s\n' "$method" "$path" >> "$FAKE_CURL/calls"
 [ ! -f "$FAKE_CURL/$key.exit" ] || exit "$(cat "$FAKE_CURL/$key.exit")"
 if [ -f "$FAKE_CURL/$key.json" ]; then
   cat "$FAKE_CURL/$key.json" > "$out"
-  cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200
+  [ -z "$w" ] || cat "$FAKE_CURL/$key.code" 2>/dev/null || printf 200
 else
   printf '{"detail":"fake curl: no fixture %s"}\n' "$key" > "$out"
-  printf 404
+  [ -z "$w" ] || printf 404
 fi
 EOF
   chmod +x "$T/bin/curl"

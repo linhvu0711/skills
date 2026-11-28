@@ -27,7 +27,8 @@
 # finishes, errors, is cancelled, expires, or is suspended. --once exits on
 # the first event, for a caller that only sees the process end; --follow
 # keeps going past the end, for a session that gets a follow-up. A failed
-# poll is tried again; after three in a row it prints `stop: poll failed <link> :: <the adapter's error>` on
+# poll is tried again; after three in a row it runs the adapter's release, unless
+# it gave back this run already, then prints `stop: poll failed <link> :: <the adapter's error>` on
 # stderr and exits 1. Each line a working poll writes on stderr is printed too, stamped.
 # When a run ends, watch runs the adapter's release, on each poll until it
 # works, and prints its stderr lines stamped, such as a Mac it could not give
@@ -148,6 +149,14 @@ cmd_watch() {
       # session, or an outage the caller has to see.
       fails=$((fails + 1))
       if (( fails >= 3 )); then
+        # The poll can fail where the release does not, as when gh is signed
+        # out after the run ended. The release keeps a Mac whose run goes on.
+        if [[ -z "${key:-}" || "$key" != "$freed" ]]; then
+          adapter "$e" release "$id" >/dev/null 2>"$relf" || true
+          while IFS= read -r w; do
+            if [[ -n "$w" ]]; then echo "[$(date +%H:%M)] $w"; fi
+          done <"$relf"
+        fi
         # A wrong command line prints its usage after the stop: line.
         why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
         [[ -n "$why" ]] || why="$(tail -1 "$errf")"

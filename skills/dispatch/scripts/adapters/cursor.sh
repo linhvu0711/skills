@@ -31,8 +31,9 @@
 # any state whose head is `<type>/<issue>-…` and reports those.
 # --platform macos runs the agent on a rented Mac with a Cursor worker on it.
 # Why: see docs/adr/0047-cursor-macos-runs-use-a-rented-mac.md
-# Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
-# leaves a stale value in a running shell). Never printed.
+# Key: CURSOR_API_KEY from the env, read at each call. A key added to
+# ~/.zshrc reaches the script only after a new shell or an app restart.
+# Never printed.
 # A wrong command line: `stop: <why>` when there is one, then the usage lines
 # on stderr, exit 64.
 set -euo pipefail
@@ -63,13 +64,8 @@ EOF
 }
 
 key() {
-  local k=""
-  if [[ -f "$HOME/.zshrc" ]]; then
-    k=$(grep -E '^export CURSOR_API_KEY=' "$HOME/.zshrc" | tail -1 \
-        | sed -E 's/^export CURSOR_API_KEY="?([^"]*)"?$/\1/')
-  fi
-  [[ -z "$k" || "$k" == crsr_PASTE* ]] && k="${CURSOR_API_KEY:-}"
-  [[ -z "$k" || "$k" == crsr_PASTE* ]] && die "no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)"
+  local k="${CURSOR_API_KEY:-}"
+  [[ -z "$k" || "$k" == crsr_PASTE* ]] && die "no CURSOR_API_KEY in the env (make one at cursor.com/dashboard, API Keys)"
   printf %s "$k"
 }
 
@@ -207,7 +203,7 @@ cmd_start() {
     + (if $w != "" then { env: { type: "machine", name: $w } } else {} end)' "$file")
   if [[ -n "$worker" ]]; then
     bf=$(mktemp "$scratch/body.XXXXXX"); printf '%s' "$body" >"$bf"
-    res=$(CURSOR_API_KEY="$(key)" bash "$MAC" rent "$worker" "$repo" "$base" -- bash "$SELF" create "$bf" "$worker") \
+    res=$(bash "$MAC" rent "$worker" "$repo" "$base" -- bash "$SELF" create "$bf" "$worker") \
       || exit 1
     printf '%s\n' "$res"
     return 0
@@ -236,8 +232,9 @@ cmd_poll() {
   esac
   [[ "$prs" != "-" ]] && IFS=',' read -ra arr <<<"$prs"
   if [[ -n "$repo" ]]; then
-    if gh_out pr list -R "$repo" --state all --limit 50 --json url,headRefName \
-      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"; then ghprs="$out"; else ghprs=""; fi
+    gh_or_stop pr list -R "$repo" --state all --limit 50 --json url,headRefName \
+      -q ".[] | select(.headRefName | test(\"^[a-z]+/${issue}-\")) | .url"
+    ghprs="$out"
     while IFS= read -r p; do [[ -z "$p" ]] || arr+=("$p"); done <<<"$ghprs"
   fi
   for p in ${arr[@]+"${arr[@]}"}; do
@@ -251,7 +248,7 @@ cmd_say() {
   local id; id=$(aid "${1:-}")
   local file="${2:-}"
   [[ -s "$file" ]] || die "note file missing or empty: $file"
-  CURSOR_API_KEY="$(key)" bash "$MAC" renew "$id" -- bash "$SELF" send "$id" "$file"
+  bash "$MAC" renew "$id" -- bash "$SELF" send "$id" "$file"
 }
 
 # send AGENT NOTE_FILE -> posts the note as a new run; mac.sh renew runs it,
@@ -281,7 +278,7 @@ cmd_ended() {
 
 cmd_release() {
   local id; id=$(aid "${1:-}")
-  CURSOR_API_KEY="$(key)" bash "$MAC" return "$id" -- bash "$SELF" ended "$id"
+  bash "$MAC" return "$id" -- bash "$SELF" ended "$id"
 }
 
 cmd_facts() {

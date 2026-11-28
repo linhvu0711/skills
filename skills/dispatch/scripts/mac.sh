@@ -11,8 +11,12 @@
 #                                             agent's row, prints the command's
 #                                             output; a failed command gives the
 #                                             Mac back and writes no row
-#   mac.sh renew <agent> -- <command>      -> the agent's Mac runs, or it has none:
-#                                             runs the command (the send). Else gives
+#   mac.sh renew <agent> -- <command>      -> the agent's worker answers /healthz, or
+#                                             it has no Mac: runs the command (the
+#                                             send). A check that cannot run stops,
+#                                             with no note sent and no Mac rented.
+#                                             Else, the worker does not answer or
+#                                             Namespace no longer holds the Mac: gives
 #                                             the old Mac back, rents a new one under
 #                                             the same worker name and ID, runs the
 #                                             command with MAC_NEW_BASE=<base>, and
@@ -34,7 +38,10 @@
 # HANDOFF_MAC_HOURS hours (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
 # the user's GitHub login (`gh auth token`) through stdin into a file only the
 # Mac's user reads, never on a command line, installs the Cursor CLI, clones
-# the repo at <base>, and starts `agent worker start --name <worker>` in it.
+# the repo at <base>, and starts `agent worker --management-addr
+# 127.0.0.1:47199 start --name <worker>` in it. It waits until the worker's
+# /readyz answers 200: Cursor's health server listens only once the worker
+# can take runs, and by then the worker's ID is saved.
 # Cursor sends an agent's runs to the worker ID it first ran on, not to the
 # name, and the CLI keeps that ID per name in ~/.cursor/agent-cli-state.json.
 # So rent keeps the worker's ID in the row, and renew writes it there
@@ -57,6 +64,7 @@
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
+MAC_MGMT_ADDR=127.0.0.1:47199
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -155,9 +163,9 @@ cmd_up() {
     mkdir -p ~/work && cd ~/work && rm -rf $(printf %q "$name")
     git clone -q --branch $(printf %q "$base") $(printf %q "$repo.git") $(printf %q "$name")
     cd $(printf %q "$name")
-    (. ~/.ho-env; ~/.local/bin/agent worker start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
+    (. ~/.ho-env; ~/.local/bin/agent worker --management-addr $MAC_MGMT_ADDR start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
     for i in \$(seq 1 45); do
-      if grep -q 'Worker is now running' ~/worker.log 2>/dev/null; then
+      if curl -fsS -o /dev/null http://$MAC_MGMT_ADDR/readyz 2>/dev/null; then
         w=\$(grep -o '\"$worker\": *\"[0-9a-f-]*\"' ~/.cursor/agent-cli-state.json 2>/dev/null | grep -o '[0-9a-f-]\{36\}' || true)
         if [ -n \"\$w\" ]; then echo \"\$w\"; exit 0; fi
       fi
@@ -171,11 +179,19 @@ cmd_up() {
   printf '%s\t%s\n' "$id" "$wid"
 }
 
-cmd_alive() {
-  local id="${1:-}"
-  [[ -n "$id" && "$id" != "-" ]] || return 1
+# worker_state MAC -> "alive" or "dead"; stops when the check cannot run.
+# nsc's own failure exits 1 as a failed remote command can, so the remote
+# check prints a word, and only that word counts. A Mac Namespace no longer
+# holds is dead: nsc prints "Failed: <id>: does not exist.".
+worker_state() {
+  local id="$1" out last
+  if [[ "$id" == "-" ]]; then echo dead; return 0; fi
   need_tools
-  remote "$id" 'pgrep -f "worker start" >/dev/null' >/dev/null 2>&1 || return 1
+  out=$(remote "$id" "if curl -fsS -o /dev/null --max-time 10 http://$MAC_MGMT_ADDR/healthz; then echo alive; else c=\$?; if [ \$c -eq 7 ]; then echo dead; else echo \"curl exit \$c\"; fi; fi" 2>&1) || true
+  last=$(awk 'NF { l = $0 } END { print l }' <<<"$out")
+  case "$last" in alive|dead) echo "$last"; return 0 ;; esac
+  if grep -q 'does not exist\.' <<<"$out"; then echo dead; return 0; fi
+  die "could not check the worker on $id (${last:-no output}); no note sent and no Mac rented"
 }
 
 cmd_down() {
@@ -183,7 +199,8 @@ cmd_down() {
   [[ -n "$id" && "$id" != "-" ]] || die "instance id required"
   need_tools
   # A Mac whose worker hangs must still be destroyed, so this step may fail.
-  remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
+  # The [a] keeps the pattern from matching this remote shell's own command line.
+  remote "$id" 'pkill -f "[a]gent worker"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
   log=$(mktemp "$scratch/destroy.XXXXXX")
   if nsc destroy "$id" --force </dev/null >"$log" 2>&1; then
     echo "destroyed $id"; return 0
@@ -214,12 +231,13 @@ cmd_rent() {
 }
 
 cmd_renew() {
-  local agent="${1:-}" row w wid r b mac up new
+  local agent="${1:-}" row w wid r b mac up new st
   verb=renew; shift || true; after_dashes "$@"; shift
   row=$(row_get "$agent")
   if [[ -z "$row" ]]; then "$@"; return; fi
   IFS=$'\t' read -r w wid r b mac <<<"$row"
-  if cmd_alive "$mac" 2>/dev/null; then "$@"; return; fi
+  st=$(worker_state "$mac") || exit 1
+  if [[ "$st" == alive ]]; then "$@"; return; fi
   key_check
   # Renting now would replace the only row that names the old Mac.
   if [[ "$mac" != "-" ]] && ! cmd_down "$mac" >/dev/null; then

@@ -113,10 +113,10 @@
 # there. Its lines end `(local machine)` in place of `(sandbox)`; the rest is
 # the same, so checks.txt keeps one writer and one line shape.
 #
-# gates --ci <worktree> leaves to the PR's CI each Gate after -- that
-# ci-covers.sh finds in <worktree>'s workflows, with the same `not run: CI runs
-# it` line, and runs the rest as above; --on-local Gates still run on the local
-# machine. It needs proofbox and loads the Sandbox only when a
+# gates --ci <worktree> leaves to the PR's CI each Gate after -- and each
+# --on-local Gate that ci-covers.sh finds in <worktree>'s workflows, with the
+# same `not run: CI runs it` line, and runs the rest as above; the other
+# --on-local Gates run on the local machine. It needs proofbox and loads the Sandbox only when a
 # Gate after -- is left for it; with no Sandbox up, that is a stop that names
 # `box.sh up`. The short SHA comes from <worktree>.
 #
@@ -280,10 +280,11 @@ group_argv() {
 }
 
 # group_stop <pid file> <limit>: TERM the group whose id is in <pid file>, wait
-# up to <limit> s for it to end, then KILL it. No pid file: nothing to stop. It
-# ends `true`, so a group that already ended is no failure.
+# up to <limit> s for it to end, then KILL it. No pid file: nothing to stop. A
+# group that already ended is no failure: kill says `No such process`, in dash
+# and bash alike. Any other kill error is shown on stderr and exits 1.
 group_stop() {
-  bare sh -c 'g=$(cat "$1" 2>/dev/null) || exit 0; kill -TERM -"$g" 2>/dev/null; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -KILL -"$g" 2>/dev/null; true' sh "$1" "$2"
+  bare sh -c 'g=$(cat "$1" 2>/dev/null) || exit 0; k() { e=$(kill "$1" -"$g" 2>&1) || case "$e" in *"No such process"*) ;; *) printf "%s\n" "$e" >&2; exit 1 ;; esac; }; k -TERM; i=0; while kill -0 -"$g" 2>/dev/null && [ $i -lt "$2" ]; do i=$((i+1)); sleep 1; done; kill -0 -"$g" 2>/dev/null || exit 0; k -KILL' sh "$1" "$2"
 }
 
 case "$verb" in
@@ -441,13 +442,11 @@ case "$verb" in
     [ -z "$local_wt" ] || [ ${#on_local[@]} -eq 0 ] \
       || die "--on-local runs a Gate the Sandbox cannot; with --local every Gate runs on the local machine"
     # covered[i] is the workflow file that runs that Gate on the PR, or
-    # empty. An --on-local Gate always runs here: ci-covers does not follow
-    # `needs:`, so a CI job it finds may still skip this PR, and nothing else
-    # would run the Gate.
+    # empty: first the Gates after --, then the --on-local Gates.
     covered=()
-    if [ -n "$ci_wt" ] && [ $# -ge 1 ]; then
+    if [ -n "$ci_wt" ] && { [ $# -ge 1 ] || [ ${#on_local[@]} -ge 1 ]; }; then
       cerr="$(mktemp "$scratch/cerr.XXXXXX")"
-      cover_out="$(bash "$cover" "$ci_wt" -- "$@" 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
+      cover_out="$(bash "$cover" "$ci_wt" -- "$@" ${on_local[@]+"${on_local[@]}"} 2>"$cerr")" || die "$(tail -n 1 "$cerr")"
       while IFS= read -r v; do
         v="${v%% · *}"
         case "$v" in "ci "*) covered+=("${v#ci }") ;; *) covered+=("") ;; esac
@@ -505,7 +504,14 @@ case "$verb" in
         gate "$cmd" "$mode"
       fi
     done
-    for cmd in ${on_local[@]+"${on_local[@]}"}; do gate "$cmd" local; done
+    for cmd in ${on_local[@]+"${on_local[@]}"}; do
+      i=$((i + 1))
+      if [ -n "${covered[$((i - 1))]:-}" ]; then
+        printf '%s · %s · not run: CI runs it (%s)\n' "$cmd" "$sha" "${covered[$((i - 1))]}" >> "$tmp"
+      else
+        gate "$cmd" local
+      fi
+    done
     set -- ${not_run[@]+"${not_run[@]}"}
     while [ $# -ge 2 ]; do
       printf '%s · %s · not run: %s\n' "$1" "$sha" "$2" >> "$tmp"; shift 2
