@@ -94,7 +94,7 @@ unlink_dead() {
     [ -L "$l" ] && [ ! -e "$l" ] || continue
     n="$(basename "$l")"
     for p in "$@"; do
-      if [[ "$(readlink "$l")" == "$p/$n" ]]; then
+      if [ "$(readlink "$l")" = "$p/$n" ]; then
         rm "$l"; printf 'unlinked %s\n' "$l"; break
       fi
     done
