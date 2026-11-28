@@ -119,7 +119,21 @@ t_fa_other_io_encoding() {
   eq rows "export café 🚀 codex" "$(jq -r '.sessions | "\(.[0].first_prompt) \(.[1].harness)"' "$T/out")"
 }
 
+t_fa_unreadable_claude() {
+  # Given: s1, and s2 that cannot be opened
+  fa_home
+  local f="$HOME/.claude/projects/-p-app/s2.jsonl"
+  printf '{"type":"user","message":{"role":"user","content":"export the csv"},"timestamp":"2026-10-01T10:00:00Z","cwd":"/p/app","sessionId":"s2"}\n' > "$f"
+  chmod 000 "$f"
+  # When
+  run python3 "$S" --root /p/app
+  # Then
+  eq claude "s1 null
+null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "claude") | "\(.id) \(.unreadable)"')"
+}
+
 cases=(
+  "find-all lists an unreadable Claude session as an unreadable row|t_fa_unreadable_claude"
   "find-all lists every harness and its sessions|t_fa_lists_harnesses"
   "find-all keeps to the window|t_fa_window"
   "find-all names a harness with data and no adapter|t_fa_names_no_adapter_harness"
