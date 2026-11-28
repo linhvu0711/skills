@@ -120,7 +120,7 @@ Solid line: next step. Dotted line: a skill it calls during its run.
 | [search-by-meaning](skills/search-by-meaning/) | Finds code by what it does, with `semble`, before the agent falls back to grep. |
 | [embed-source](skills/embed-source/) | Puts a library's full source next to your repo, at the version you install, so agents read real code. |
 | [use-mac](skills/use-mac/) | Works in the desktop apps on your Mac in the background: opens, reads, clicks, and types across apps, and proves each step. |
-| [sync-harnesses](skills/sync-harnesses/) | Checks that every harness on your Mac has the skills, subagents, rules, and gates, remakes missing links, and reports the rest. |
+| [sync-harnesses](skills/sync-harnesses/) | Checks that every harness on this machine has the skills, subagents, rules, and gates, remakes missing links, and reports the rest. |
 
 ## Install
 

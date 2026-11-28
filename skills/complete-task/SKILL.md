@@ -1,6 +1,6 @@
 ---
 name: complete-task
-description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, moving a secret. Use when the user types /complete-task with a task issue."
+description: "Do one task issue, an issue with the `manual` label whose work lives in a platform outside the repo, in the user's own browser and Mac apps with use-mac. The user does only their own steps: a password, a passkey or 2FA check, a payment, a system permission pop-up, moving a secret. Use when the user types /complete-task with a task issue."
 disable-model-invocation: true
 ---
 
@@ -14,7 +14,7 @@ Input: `[--ready] <issue number or URL>`. The repo is the URL's, or this checkou
 
 ## Your step
 
-A **your step** is a step only the user can do: a password, a passkey or 2FA check, a payment, a Mac permission pop-up, or moving a secret (§ Secret). Hand it over as numbered steps, one action each, that name the window or tab by its title, the field or button, and the word to send back. Then wait for that word.
+A **your step** is a step only the user can do: a password, a passkey or 2FA check, a payment, a system permission pop-up, or moving a secret (§ Secret). Hand it over as numbered steps, one action each, that name the window or tab by its title, the field or button, and the word to send back. Then wait for that word.
 
 ```
 Your step, in the Brave window "Cloudflare | Sign in":

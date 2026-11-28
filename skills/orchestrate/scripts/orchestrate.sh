@@ -342,7 +342,7 @@ joins='
 # thread's link once the thread has the title `🧭 <name>`.
 thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 
-# The task turn: one task issue with a thread per Mac, since two tasks at
+# The task turn: one task issue with a thread per machine, since two tasks at
 # once can fight over the browser and the user. This run holds it for a
 # task whose task thread is pending or started; when it holds none, a
 # running run of any repo may. A paused or stopped run has no watcher to
@@ -635,7 +635,7 @@ observe() {
         # A stop is this issue's alone, and it waits.
         if ! line="$(launch_for "$r" "$route")"; then
           wait="$(sed -n 's/^stop: //p' "$errf" | tail -1)"; line=""
-          # The repo is not on this Mac: only the user can clone it.
+          # The repo is not on this machine: only the user can clone it.
           case "$wait" in "no checkout of "*) ask="$wait"; wait="" ;; esac
         elif [ "$st" = task ]; then
           turn="$r"; task_turn="$(jq -c --arg r "$r" '. + [$r]' <<<"$task_turn")"

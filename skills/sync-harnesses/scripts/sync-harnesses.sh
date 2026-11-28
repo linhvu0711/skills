@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sync-harnesses.sh: check that Claude Code, Codex, and Antigravity on this
-# Mac have the repo's skills and subagents and the owner's rules and gates,
+# machine have the repo's skills and subagents and the owner's rules and gates,
 # that each model the try orders of shared/model-tiers.md reach is offered,
 # for the companies it marks in use, and that Devin in T3 answers on the
 # models helpers try first.
@@ -175,7 +175,7 @@ check_antigravity() {
 }
 
 # harness <name> <cli>: the harness's report line, or skipped when its CLI is
-# not on PATH, since a harness the Mac lacks is no failure.
+# not on PATH, since a harness the machine lacks is no failure.
 report=(); absent=()
 harness() {
   if command -v "$2" >/dev/null 2>&1; then "check_$1"
@@ -193,7 +193,7 @@ is_absent() {
 }
 
 # Each target link.sh could not own is a problem, unless it belongs to a
-# harness this Mac does not have. No harness owns the shared skills folder.
+# harness this machine does not have. No harness owns the shared skills folder.
 # An agent link.sh cannot render gives the same why for each harness, so a
 # why already named is not named again.
 for t in ${targets[@]+"${targets[@]}"}; do

@@ -3,16 +3,16 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# mac: a healthy fake Mac in $T/mac, per fixtures/mac.sh. Sets T, and H, its
+# fake_machine: a healthy fake machine in $T/machine, per fixtures/machine.sh. Sets T, and H, its
 # home.
-mac() {
+fake_machine() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
-  bash "$here/fixtures/mac.sh" "$T/mac"
-  H="$T/mac/home"
+  bash "$here/fixtures/machine.sh" "$T/machine"
+  H="$T/machine/home"
 }
 
-# sync_mac: run the check on the fake Mac.
-sync_mac() { run "$T/mac/sync"; }
+# sync_machine: run the check on the fake machine.
+sync_machine() { run "$T/machine/sync"; }
 
 # json <file> <filter>: rewrite a JSON file through jq.
 json() { jq "$2" "$1" > "$1.new"; mv "$1.new" "$1"; }
@@ -24,10 +24,10 @@ devin in T3  on · swe-2-1-medium answers'
 
 t_sync_gate_not_wired() {
   # Given: Codex's hooks with the question gate taken out
-  mac
+  fake_machine
   json "$H/.codex/hooks.json" '.hooks.UserPromptSubmit[0].hooks |= map(select(.command | contains("question-gate") | not))'
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 1 "$code"
   has codex 'codex        skills 2/2 · subagents 1/1 · gates 5/6 · rules 1/1' "$out"
@@ -36,10 +36,10 @@ t_sync_gate_not_wired() {
 
 t_sync_remakes_skill_link() {
   # Given: Claude Code's link to the demo skill removed
-  mac
+  fake_machine
   rm "$H/.claude/skills/demo"
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 0 "$code"
   eq stdout "$healthy
@@ -48,10 +48,10 @@ fixed: linked ~/.claude/skills/demo" "$out"
 
 t_sync_rewrites_subagent_file() {
   # Given: Codex's helper agent file removed
-  mac
+  fake_machine
   rm "$H/.codex/agents/helper.toml"
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 0 "$code"
   has fixed 'fixed: wrote ~/.codex/agents/helper.toml' "$out"
@@ -60,10 +60,10 @@ t_sync_rewrites_subagent_file() {
 
 t_sync_puts_back_subagent_gate() {
   # Given: Claude Code's settings with the subagent gate's entry taken out
-  mac
+  fake_machine
   json "$H/.claude/settings.json" '.hooks.PreToolUse |= map(select(any(.hooks[]?; .command | contains("shared/gate/subagent-gate.sh")) | not))'
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 0 "$code"
   has fixed 'fixed: wrote ~/.claude/settings.json' "$out"
@@ -72,37 +72,37 @@ t_sync_puts_back_subagent_gate() {
 
 t_sync_names_stale_tier_model() {
   # Given: T3's Antigravity list without the tier tables' Antigravity model
-  mac
+  fake_machine
   printf '{"models":[{"slug":"gemini-4-argon"}]}\n' > "$H/.t3/caches/antigravity.json"
-  before="$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
+  before="$(cat "$T/machine/repo/skills/demo/agents/helper.md")"
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 1 "$code"
   has problem 'problem: shared/model-tiers.md: T3 Antigravity does not offer gemini-4-neon' "$out"
-  eq agent "$before" "$(cat "$T/mac/repo/skills/demo/agents/helper.md")"
+  eq agent "$before" "$(cat "$T/machine/repo/skills/demo/agents/helper.md")"
 }
 
 t_sync_devin_missing_from_t3() {
   # Given: T3 with no Devin entry at all
-  mac
+  fake_machine
   json "$H/.t3/userdata/settings.json" '.providerInstances |= del(.acpRegistry_devin)'
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 0 "$code"
   has devin 'devin in T3  off' "$out"
   has warn 'warn: Devin is off in T3, so these move to their next try: helper' "$out"
-  [ ! -e "$T/mac/devin.calls" ] || eq devin.calls absent there
+  [ ! -e "$T/machine/devin.calls" ] || eq devin.calls absent there
 }
 
 t_sync_names_agent_link_cannot_render() {
   # Given: a second agent with no tier line
-  mac
+  fake_machine
   sed -e 's/^name: helper$/name: helper2/' -e '/^tier: 2$/d' \
-    "$T/mac/repo/skills/demo/agents/helper.md" > "$T/mac/repo/skills/demo/agents/helper2.md"
+    "$T/machine/repo/skills/demo/agents/helper.md" > "$T/machine/repo/skills/demo/agents/helper2.md"
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 1 "$code"
   has claude 'claude       skills 2/2 · subagents 1/2 · gates 6/6 · rules 1/1' "$out"
@@ -114,12 +114,12 @@ t_sync_names_agent_link_cannot_render() {
 t_sync_names_gates_beside_unread_plugin_hooks() {
   # Given: another plugin's hooks.json that is not JSON, and the personal
   # plugin with the question gate taken out
-  mac
+  fake_machine
   mkdir -p "$H/.gemini/config/plugins/other"
   printf 'not json\n' > "$H/.gemini/config/plugins/other/hooks.json"
   json "$H/.gemini/config/plugins/personal/hooks.json" '.personal.PreToolUse[0].hooks |= map(select(.command | contains("question-gate") | not))'
   # When
-  sync_mac
+  sync_machine
   # Then
   eq exit 1 "$code"
   has antigravity 'antigravity  skills 2/2 · gates 5/6 · rules 2/2' "$out"

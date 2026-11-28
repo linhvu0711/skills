@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# mac.sh <dir>: a fake Mac in <dir> for the sync-harnesses cases and walks.
+# machine.sh <dir>: a fake machine in <dir> for the sync-harnesses cases and walks.
 #
 #   <dir>/repo   a fresh git repo with this checkout's scripts/, shared/gate/,
 #                and skills/sync-harnesses/, plus a skill `demo` with one
 #                agent `helper`
 #   <dir>/home   a home where every harness is installed and wired, as the
-#                owner's Mac is when all is well
+#                owner's machine is when all is well
 #   <dir>/sync   runs the check on that home
 #
 # Both link.sh and the check run under `env -i`, so no path the test runner
 # exports reaches them and both follow the fake HOME.
 set -euo pipefail
 
-[ $# -eq 1 ] || { echo "usage: mac.sh <dir>" >&2; exit 2; }
+[ $# -eq 1 ] || { echo "usage: machine.sh <dir>" >&2; exit 2; }
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 src="$(cd "$here/../../.." && pwd -P)"
 rm -rf "$1"; mkdir -p "$1"

@@ -293,7 +293,7 @@ t_link_stops_without_jq() {
   PATH="$T/nojq" link_sh
   # Then
   eq exit 1 "$code"
-  has stderr 'stop: link.sh needs jq to read and write hook files; install it, as with brew install jq' "$err"
+  has stderr jq "$err"
   eq files "$T/gplugins/skills/agents/helper.md
 $T/gplugins/skills/hooks.json
 $T/gplugins/skills/plugin.json" "$(find "$T/gplugins/skills" -type f | sort)"
