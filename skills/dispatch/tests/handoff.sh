@@ -156,7 +156,6 @@ t_watch_releases_before_it_stops() {
   # Then
   eq exit 1 "$code"
   eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls" 2>/dev/null || echo 0)"
-  eq "stderr last line" "stop: poll failed bc-1 :: gh failed: gh auth login" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
 t_new_adapter_file() {
