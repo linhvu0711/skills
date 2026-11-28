@@ -6,9 +6,10 @@ archived one, under the same name, to ``~/.codex/archived_sessions/``.
 Codex keeps older rollouts as ``rollout-*.jsonl.zst``. Python reads zstd
 itself from 3.14 (``compression.zstd``); an older Python reads it through the
 ``zstd`` command. With neither, opening a compressed rollout raises NoZstd, an
-OSError, and a zstd command that fails on a file read to its end raises
-OSError with its message, so a caller can list the file as not read instead
-of skipping it silently.
+OSError. A compressed rollout that is cut off or corrupt raises OSError with
+the reader's message, from ``compression.zstd`` at any read, or from the zstd
+command on a file read to its end, so a caller can list the file as not read
+instead of skipping it silently.
 """
 
 from __future__ import annotations
@@ -48,8 +49,11 @@ def open_rollout(path):
     except ImportError:
         zstd = None
     if zstd is not None:
-        with zstd.open(path, "rt", encoding="utf-8", errors="replace") as h:
-            yield h
+        try:
+            with zstd.open(path, "rt", encoding="utf-8", errors="replace") as h:
+                yield h
+        except (EOFError, zstd.ZstdError) as e:
+            raise OSError(str(e)) from e
         return
     if not shutil.which("zstd"):
         raise NoZstd(NO_ZSTD)
