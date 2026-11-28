@@ -30,6 +30,7 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 - No session on the topic, or a topic of only common words such as `the`: `No sessions on <topic>.`, and it stops.
 - More than 10 sessions: it uses the 10 newest, and the `Sessions:` line says how many it skipped.
 - No Codex on this machine: the other tools' sessions only, and the `Sessions:` line says so.
+- A session file it cannot open, or a tool whose search fails: a line names the tool and the first such file, and the `Sessions:` line says so.
 
 ## Needs
 
