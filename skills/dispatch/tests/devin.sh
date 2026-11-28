@@ -5,7 +5,7 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # devin <args>: run the Devin adapter on the fake curl, with HOME in the temp
-# folder (no .zshrc) and only the keys a case gives.
+# folder and only the keys a case gives.
 devin() { run env -u DEVIN_USER_ID HOME="$T/home" DEVIN_API_URL=https://devin.test DEVIN_ORG_ID=org1 DEVIN_API_KEY=k bash "$here/../scripts/adapters/devin.sh" "$@"; }
 
 t_devin_start() {

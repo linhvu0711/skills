@@ -36,8 +36,9 @@ On a `perf` plan the cloud executor runs the plan's command in turns on the base
 
 ## Needs
 
-- For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID`, in the environment or as `export` lines in `~/.zshrc`. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.
-- For Cursor: cloud agents and an API key in `CURSOR_API_KEY` (environment or `~/.zshrc`), the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
+- For Devin: an account with API access, `DEVIN_API_KEY` and `DEVIN_ORG_ID` in the environment. Optional `DEVIN_USER_ID` makes a service-user key start sessions as you. A `GH_TOKEN` secret in Devin's settings, holding your GitHub token, so Devin opens the PR and replies as you.
+- For Cursor: cloud agents and an API key in `CURSOR_API_KEY` in the environment, the repo connected to Cursor, and a `GH_TOKEN` secret in Cursor's Cloud Agents settings with `repo` scope. Without it the agent can push but cannot open the PR.
+- The scripts read keys from the environment only. A key you add or change in `~/.zshrc` needs a new shell, or a restart of the app that runs the agent.
 - For Cursor on macOS: the Namespace CLI `nsc`, signed in, and a personal Cursor API key that starts with `crsr_`, since a Cursor worker refuses the `grok_` keys grok.com makes. The Mac gets your GitHub login from `gh` for the run, because Cursor's saved secrets do not reach your own machines.
 - `curl`, `jq`, `gh` (signed in), `git`, and `python3`.
 - The harness table, `../../shared/harness.md`, for how your harness watches the session line by line.

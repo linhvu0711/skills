@@ -21,10 +21,10 @@
 # length. They upload it as an attachment and send a short prompt that
 # keeps the head lines (everything before the first "# " heading) and
 # points at the file with the exact line Devin needs, ATTACHMENT:"<url>".
-# Keys: ~/.zshrc `export DEVIN_API_KEY=` (a cog_ service-user key or
-# PAT) and `export DEVIN_ORG_ID=` win over the env (a rotated key leaves
-# a stale value in a running shell). Optional `export DEVIN_USER_ID=`
-# makes a service-user key create sessions as that user. Never printed.
+# Keys: DEVIN_API_KEY (a cog_ service-user key or PAT) and DEVIN_ORG_ID
+# from the env, read at each call; optional DEVIN_USER_ID makes a
+# service-user key create sessions as that user. A key added to ~/.zshrc
+# reaches the script only after a new shell or an app restart. Never printed.
 # A wrong command line: `stop: <why>` when there is one, then this header on
 # stderr, exit 64.
 set -euo pipefail
@@ -34,26 +34,15 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
 usage_text() { awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"; }
 
-# zvar NAME -> value from ~/.zshrc, else env, else empty
-zvar() {
-  local n="$1" v=""
-  if [[ -f "$HOME/.zshrc" ]]; then
-    v=$(grep -E "^export $n=" "$HOME/.zshrc" | tail -1 \
-        | sed -E "s/^export $n=\"?([^\"]*)\"?\$/\1/")
-  fi
-  [[ -z "$v" ]] && v=$(eval "printf %s \"\${$n:-}\"")
-  printf %s "$v"
-}
-
 key() {
-  local k; k=$(zvar DEVIN_API_KEY)
-  [[ -z "$k" ]] && die "no DEVIN_API_KEY in ~/.zshrc or env"
+  local k="${DEVIN_API_KEY:-}"
+  [[ -z "$k" ]] && die "no DEVIN_API_KEY in the env"
   printf %s "$k"
 }
 
 org() {
-  local o; o=$(zvar DEVIN_ORG_ID)
-  [[ -z "$o" ]] && die "no DEVIN_ORG_ID in ~/.zshrc or env (Devin → Settings → Service Users)"
+  local o="${DEVIN_ORG_ID:-}"
+  [[ -z "$o" ]] && die "no DEVIN_ORG_ID in the env (Devin → Settings → Service Users)"
   printf %s "$o"
 }
 
@@ -175,7 +164,7 @@ cmd_start() {
   case "$platform" in ""|linux) platform="" ;; esac
   local url body res id surl user
   url=$(upload "$file")
-  user=$(zvar DEVIN_USER_ID)
+  user="${DEVIN_USER_ID:-}"
   body=$(pointer "$file" brief "$url" | jq -Rs \
     --arg t "${title:0:100}" --arg u "$url" --arg p "$platform" --arg m "$mode" --arg as "$user" '
     {prompt: ., title: $t, tags: ["dispatch"]}
