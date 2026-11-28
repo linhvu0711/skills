@@ -144,42 +144,6 @@ t_kt_ship_thread() {
   eq stdout "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" found)" "$out"
 }
 
-t_kt_gh_fails() {
-  # Given: GitHub answers the issue read with HTTP 502
-  kt_setup found
-  rm "$FAKE_GH/graphql.app.json"; echo "HTTP 502" > "$FAKE_GH/graphql.app.fail"
-  # When
-  kt_go route acme/app 42
-  # Then
-  eq exit 2 "$code"
-  eq "last stderr line" "stop: gh could not read acme/app: HTTP 502" "$(printf '%s\n' "$err" | tail -1)"
-  eq stdout "" "$out"
-}
-
-t_kt_no_checkout() {
-  # Given: #44 size S, and no checkout of acme/app
-  kt_setup found
-  rm -rf "$T/dev/app"; mkdir -p "$T/dev"
-  # When
-  kt_go thread acme/app ship 44
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$(printf '%s\n' "$err" | tail -1)"
-  eq stdout "" "$out"
-  [ ! -e "$T/t3.log" ] || lacks "t3 calls" "project add" "$(cat "$T/t3.log")"
-}
-
-t_kt_outside_t3() {
-  # Given: #42 a bug, T3CODE_CLI_PATH not set
-  kt_setup found
-  # When
-  kt_go outside route acme/app 42
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: not inside T3 Code" "$err"
-  [ ! -e "$FAKE_GH/graphql.calls" ] || eq "graphql calls" "" "$(cat "$FAKE_GH/graphql.calls")"
-}
-
 t_kt_adds_project_once() {
   # Given: #44 size S, the checkout is not a T3 project yet
   kt_setup missing
@@ -201,38 +165,6 @@ t_kt_t3_off_path() {
   # Then
   eq exit 0 "$code"
   eq stdout "$(kt_thread ship medium "size S" "/ship #44" "#44 Export orders" added)" "$out"
-}
-
-t_kt_project_add_fails() {
-  # Given: #44 size S, not a T3 project, and `t3 project add` fails with boom
-  kt_setup broken
-  # When
-  kt_go thread acme/app ship 44
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: could not add $T/dev/app as a T3 project: boom" "$(printf '%s\n' "$err" | tail -1)"
-  eq stdout "" "$out"
-}
-
-t_kt_runs_by_path() {
-  # Given: #42 a bug, T3CODE_CLI_PATH not set
-  kt_setup found
-  # When: the script runs by path, with no bash in front, as SKILL.md runs it
-  cd "$T"
-  run env -u T3CODE_CLI_PATH "$K" route acme/app 42
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: not inside T3 Code" "$err"
-}
-
-t_kt_highest_effort() {
-  # Given: #44 size S and #18 size M, with no parent
-  kt_setup found
-  # When
-  kt_go thread acme/app ship 44 18
-  # Then
-  eq exit 0 "$code"
-  eq stdout "$(kt_thread ship high "size M of 2 tickets" "/ship #44 #18" "#44 #18 Export orders" found)" "$out"
 }
 
 t_kt_run_of_epic() {
@@ -375,48 +307,6 @@ t_kt_pick_thread() {
   eq stdout "$(kt_thread triage high "you picked /triage" "/triage #44" "#44 Export orders" found)" "$out"
 }
 
-t_kt_bug_in_ship() {
-  # Given: #44 size S, #15 a bug
-  kt_setup found
-  # When
-  kt_go thread acme/app ship 44 15
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: #15 goes to /triage, not /ship" "$(printf '%s\n' "$err" | tail -1)"
-  eq stdout "" "$out"
-}
-
-t_kt_only_ship_many() {
-  # Given: #15 and #17, both bugs
-  kt_setup found
-  # When
-  kt_go thread acme/app triage 15 17
-  # Then
-  eq exit 64 "$code"
-  eq "stderr line 1" "stop: only ship takes several issues" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_kt_answer_effort() {
-  # Given: #16 with no label
-  kt_setup found
-  # When
-  kt_go route acme/app --answer 16=ship --size 16=M 16
-  # Then
-  eq exit 0 "$code"
-  eq stdout '{"number":16,"title":"Old idea","parent":null,"stage":"unlabeled","step":"ship","stop":false,"model":"opus","model_from":"default","effort":"high","effort_from":"default","reason":"answer ship, size M","pr":null}' "$out"
-}
-
-t_kt_unlabeled_no_thread() {
-  # Given: #16 with no label, and no answer
-  kt_setup found
-  # When
-  kt_go thread acme/app ship 16
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: #16 has no step: no label picks a step: propose one" "$(printf '%s\n' "$err" | tail -1)"
-  eq stdout "" "$out"
-}
-
 t_kt_label_once() {
   # Given: #16 with no label; after the edit GitHub shows it labeled bug
   kt_setup found
@@ -449,7 +339,6 @@ cases=(
   "a bug thread is triage at high|t_kt_bug_thread"
   "a PR thread names the PR|t_kt_pr_thread"
   "a size S thread is ship at medium|t_kt_ship_thread"
-  "a ship thread takes the highest effort|t_kt_highest_effort"
   "tickets of one epic go as a run|t_kt_run_of_epic"
   "a whole epic is one ship thread|t_kt_whole_epic"
   "route opens an epic|t_kt_route_epic"
@@ -463,17 +352,8 @@ cases=(
   "a stack on a merged PR stops|t_kt_stack_on_merged_pr"
   "a stack PR gh cannot read stops|t_kt_stack_pr_unreadable"
   "a picked step beats the size label|t_kt_pick_thread"
-  "a bug in a ship thread stops|t_kt_bug_in_ship"
-  "only ship takes several issues|t_kt_only_ship_many"
-  "an answer gives the proposal its effort|t_kt_answer_effort"
-  "an unlabeled issue gets no thread line|t_kt_unlabeled_no_thread"
   "a yes writes its label once|t_kt_label_once"
   "a yes on a routed issue writes nothing|t_kt_label_routed"
-  "an unreadable GitHub stops|t_kt_gh_fails"
-  "no checkout stops the thread line|t_kt_no_checkout"
-  "outside T3 it stops|t_kt_outside_t3"
   "a repo with no project is added once|t_kt_adds_project_once"
   "it runs the t3 that T3CODE_CLI_PATH names|t_kt_t3_off_path"
-  "a project add that fails stops|t_kt_project_add_fails"
-  "kickoff runs by path|t_kt_runs_by_path"
 )

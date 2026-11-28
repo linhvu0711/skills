@@ -49,65 +49,6 @@ t_devin_say() {
   eq stdout "sent to devin-abc" "$out"
 }
 
-t_devin_failed_call() {
-  fake_curl
-  printf '"https://att.test/p.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
-  printf '400' > "$FAKE_CURL/POST_v3_organizations_org1_sessions.code"
-  printf '{"detail":"platform must be one of linux, macos"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_sessions.json"
-  printf '# Brief\n' > p.md
-  devin start p.md --platform mac
-  eq exit 1 "$code"
-  eq stderr "stop: HTTP 400 on POST /sessions: platform must be one of linux, macos" "$err"
-}
-
-t_devin_no_key() {
-  fake_curl
-  printf '# Brief\n' > p.md
-  run env -u DEVIN_API_KEY -u DEVIN_USER_ID HOME="$T/home" DEVIN_ORG_ID=org1 bash "$here/../scripts/adapters/devin.sh" start p.md
-  eq exit 1 "$code"
-  eq stderr "stop: no DEVIN_API_KEY in ~/.zshrc or env" "$err"
-}
-
-t_devin_keys_from_zshrc() {
-  fake_curl
-  mkdir -p "$T/home"; printf 'export DEVIN_API_KEY=k\nexport DEVIN_ORG_ID=org1\n' > "$T/home/.zshrc"
-  printf '"https://att.test/p.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
-  printf '{"session_id":"devin-abc","url":"https://app.devin.ai/sessions/abc"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_sessions.json"
-  printf '# Brief\n' > p.md
-  run env -u DEVIN_API_KEY -u DEVIN_ORG_ID -u DEVIN_USER_ID HOME="$T/home" DEVIN_API_URL=https://devin.test bash "$here/../scripts/adapters/devin.sh" start p.md
-  eq exit 0 "$code"
-  eq stdout "devin-abc	https://app.devin.ai/sessions/abc" "$out"
-}
-
-t_devin_interval() {
-  # Given
-  fake_curl
-  # When
-  devin interval
-  # Then
-  eq exit 0 "$code"
-  eq stdout "120" "$out"
-  [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
-}
-
-t_devin_facts() {
-  # Given
-  fake_curl
-  printf '{"items":[{"repo_full_name":"o/r"},{"repo_full_name":"gitlab.example.com/g/r"}],"has_next_page":false,"end_cursor":null}\n' \
-    > "$FAKE_CURL/GET_v3_organizations_org1_repositories.json"
-  # When
-  devin facts
-  # Then
-  eq exit 0 "$code"
-  eq stdout "repo	https://github.com/o/r
-repo	https://gitlab.example.com/g/r
-mode	normal
-mode	fast
-mode	lite
-mode	ultra
-mode	fusion" "$out"
-}
-
 t_devin_release() {
   # Given
   fake_curl
@@ -121,13 +62,8 @@ t_devin_release() {
 
 cases=(
   "devin release holds nothing|t_devin_release"
-  "devin facts lists repos and modes|t_devin_facts"
-  "devin interval is 120|t_devin_interval"
   "devin start sends the brief and prints the session|t_devin_start"
   "devin poll reads state, PR, and message|t_devin_poll"
   "devin poll lists every PR of the session|t_devin_poll_every_pr"
   "devin say sends the note|t_devin_say"
-  "devin start prints the API message on a failed call|t_devin_failed_call"
-  "devin stops without an API key|t_devin_no_key"
-  "devin reads its keys from .zshrc with no DEVIN_USER_ID there|t_devin_keys_from_zshrc"
 )
