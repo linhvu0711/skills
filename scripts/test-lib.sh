@@ -8,8 +8,7 @@
 
 # Run from a git hook or `git rebase --exec`, git sets GIT_DIR and its kin,
 # and every temp repo below would write into the caller's repo instead.
-# shellcheck disable=SC2046
-unset $(git rev-parse --local-env-vars)
+while IFS= read -r v; do unset "$v"; done < <(git rev-parse --local-env-vars)
 
 # A case's commit or checkout with the hooks on runs link.sh, which links
 # skills, skill agents, the Antigravity plugins folder, and the subagent
