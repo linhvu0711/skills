@@ -2008,6 +2008,7 @@ EOF
 } > "$case_bin/mktemp"
 chmod +x "$case_bin/mktemp"
 log="$(mktemp)"
+trap 'rm -rf "$log" "${SKILLS_HOME%/agents}"' EXIT
 run_cases
 for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases
