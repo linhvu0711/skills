@@ -89,20 +89,25 @@ state() {
     else $s end'
 }
 
-# last_devin ID -> the last Devin message, one line, cut (pages to the end)
-last_devin() {
-  local id="$1" after="" res msg="-" next
+# pages PATH -> each page of a list answer, one JSON line per page, from PATH
+# on through each next page's end_cursor
+pages() {
+  local after="" res
   while :; do
-    res=$(api GET "/sessions/$id/messages?first=200${after:+&after=$after}")
-    next=$(jq -r '[ .items[] | select(.source == "devin") ] | last | .message // empty' <<<"$res")
-    [[ -n "$next" ]] && msg="$next"
-    if [[ "$(jq -r '.has_next_page // false' <<<"$res")" == "true" ]]; then
-      after=$(jq -r '.end_cursor // empty' <<<"$res"); [[ -z "$after" ]] && break
-    else
-      break
-    fi
+    res=$(api GET "$1${after:+&after=$after}")
+    jq -c . <<<"$res"
+    [ "$(jq -r '.has_next_page // false' <<<"$res")" = true ] || break
+    after=$(jq -r '.end_cursor // empty' <<<"$res")
+    [ -n "$after" ] || break
   done
-  printf %s "$msg" | tr '\t\r\n' '   ' | head -c 600  # one short poll line, as cursor.sh cuts it
+}
+
+# last_devin ID -> the last Devin message, one line, cut (pages to the end).
+# Each page gives its last Devin message, and an empty one keeps the page before.
+last_devin() {
+  pages "/sessions/$1/messages?first=200" |
+    jq -sj '[.[] | [.items[] | select(.source == "devin")] | last | .message // empty | select(. != "")] | last // "-"' |
+    tr '\t\r\n' '   ' | head -c 600  # one short poll line, as cursor.sh cuts it
 }
 
 # summary ID -> "state<TAB>prs, comma joined<TAB>url<TAB>last devin message"
@@ -189,16 +194,8 @@ cmd_poll() {
 # github.com and starts with its host elsewhere (docs.devin.ai, List
 # repositories), so a first part with a dot is a host.
 cmd_facts() {
-  local after="" res
-  while :; do
-    res=$(api GET "/repositories?first=100&load_indexing_status=false${after:+&after=$after}")
-    jq -r '.items[].repo_full_name | if (split("/")[0] | contains(".")) then "repo\thttps://" + . else "repo\thttps://github.com/" + . end' <<<"$res"
-    if [[ "$(jq -r '.has_next_page // false' <<<"$res")" == "true" ]]; then
-      after=$(jq -r '.end_cursor // empty' <<<"$res"); [[ -z "$after" ]] && break
-    else
-      break
-    fi
-  done
+  pages "/repositories?first=100&load_indexing_status=false" |
+    jq -r '.items[].repo_full_name | if (split("/")[0] | contains(".")) then "repo\thttps://" + . else "repo\thttps://github.com/" + . end'
   printf 'mode\t%s\n' normal fast lite ultra fusion
 }
 
