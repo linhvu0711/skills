@@ -100,10 +100,7 @@ def summarize_tool_input(name, inp):
         if key in inp and isinstance(inp[key], str):
             v = inp[key].replace("\n", " ")
             return v[:200] + ("…" if len(v) > 200 else "")
-    try:
-        v = json.dumps(inp, ensure_ascii=False)
-    except Exception:
-        v = str(inp)
+    v = json.dumps(inp, ensure_ascii=False)
     return v[:200] + ("…" if len(v) > 200 else "")
 
 
@@ -115,7 +112,7 @@ def read(rows):
     messages = []
 
     def add_user_text(txt, is_compact):
-        if not txt or adapter_lib.injected(txt):
+        if not txt or adapter_lib.injected(txt, "claude"):
             return
         if is_compact:
             messages.append(printer.Message("compact", txt.strip()))

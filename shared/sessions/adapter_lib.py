@@ -22,7 +22,7 @@ the whole session. The finders keep their own flags and keys; this hides
 those differences. find_all.py, next to
 this file, runs every adapter's find in one call through ``find`` and
 ``installed``. ``load`` loads a sibling module by its path, and ``injected`` says whether
-a user message is text a harness put there.
+a user message is text that harness put there.
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from typing import Callable
 
 
@@ -60,18 +61,20 @@ def first_day(days: int | None) -> dt.date | None:
     return dt.date.today() - dt.timedelta(days=days - 1) if days else None
 
 
+@dataclass
 class Scope:
     """Which sessions a find keeps: those whose cwd is a root, or below one
     with subdirs (roots None: every project), and whose last activity falls
     from since to until, in local days, both ends kept."""
 
-    # A plain class, not a dataclass: most loaders run this file without
-    # putting it in sys.modules, and a dataclass fails that way on Python 3.11
-    # and older.
-    def __init__(self, roots, subdirs: bool = False, since: dt.date | None = None,
-                 until: dt.date | None = None):
-        self.roots = None if roots is None else tuple(os.path.abspath(os.path.expanduser(r)) for r in roots)
-        self.subdirs, self.since, self.until = subdirs, since, until
+    roots: tuple | None
+    subdirs: bool = False
+    since: dt.date | None = None
+    until: dt.date | None = None
+
+    def __post_init__(self):
+        if self.roots is not None:
+            self.roots = tuple(os.path.abspath(os.path.expanduser(r)) for r in self.roots)
 
     @classmethod
     def last_days(cls, roots, subdirs: bool, days: int | None) -> "Scope":
@@ -124,30 +127,36 @@ def load(name, path):
     return module
 
 
-# What a harness puts at the start of a user message the user did not type:
-# Claude Code's command output and shell wrappers, then Codex's instructions
-# and context blocks.
-INJECTED = (
-    "<local-command-caveat>",
-    "<local-command-stdout>",
-    "<command-stdout>",
-    "<bash-stdout>",
-    "<bash-input>",
-    "# AGENTS.md instructions",
-    "AGENTS.md instructions for",
-    "<INSTRUCTIONS>",
-    "<environment_context>",
-    "<user_instructions>",
-    "# Collaboration Mode",
-    "<user_shell_environment>",
-    "<recommended_plugins>",
-    "========= MEMORY_SUMMARY BEGINS =========",
-)
+# What each harness puts at the start of a user message the user did not
+# type, by harness name. One harness's marker can open a real prompt in
+# another, so each reads only its own.
+INJECTED = {
+    # Claude Code's command output and shell wrappers.
+    "claude": (
+        "<local-command-caveat>",
+        "<local-command-stdout>",
+        "<command-stdout>",
+        "<bash-stdout>",
+        "<bash-input>",
+    ),
+    # Codex's instructions and context blocks.
+    "codex": (
+        "# AGENTS.md instructions",
+        "AGENTS.md instructions for",
+        "<INSTRUCTIONS>",
+        "<environment_context>",
+        "<user_instructions>",
+        "# Collaboration Mode",
+        "<user_shell_environment>",
+        "<recommended_plugins>",
+        "========= MEMORY_SUMMARY BEGINS =========",
+    ),
+}
 
 
-def injected(text: str) -> bool:
-    """True when a user message is text a harness injected, not a prompt."""
-    return text.lstrip().startswith(INJECTED)
+def injected(text: str, harness: str) -> bool:
+    """True when a user message is text this harness injected, not a prompt."""
+    return text.lstrip().startswith(INJECTED[harness])
 
 
 def _day(value: str) -> dt.date:
@@ -211,8 +220,6 @@ def find(h: Harness, args) -> list[dict]:
     except ValueError:
         last = (done.stderr or done.stdout).strip().splitlines()[-1:] or ["no output"]
         raise Failed(f"{h.name} finder failed: {last[0]}")
-    if out.get("error"):
-        return []
     rows = []
     current = os.environ.get(h.current, "")
     for s in out.get("sessions", []):

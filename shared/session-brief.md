@@ -49,7 +49,7 @@ python3 sessions/live_tags.py <file> --cwd <folder>
 | `[closed #n]` | it was closed without a merge |
 | `[branch only]` | a branch with no PR, here or on GitHub |
 | `[branch gone]` | a branch with no PR, not here, and GitHub says it does not exist |
-| `[state unknown]` | `gh` cannot find the PR or see the branch, cannot be reached, or is not logged in |
+| `[state unknown]` | `gh` cannot find the PR or see the branch, cannot be reached, or is not logged in; or `git` cannot run |
 
 The tags never stop the brief. A PR `gh` cannot find is `[state unknown]`, and the next lines are still asked. When `gh` itself fails, the script prints one `live tags: gh failed: <reason>` line on stderr, that line and every later one is `[state unknown]`, and the brief shows.
 
