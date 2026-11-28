@@ -7,9 +7,10 @@ route_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 #
 # size_of <label>: XS, S, M, L, XL, or XXL when the label names a size, matched
-# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
+# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing. Digits
+# stay, so a severity label such as `S1` names no size.
 size_of() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z0-9]//g')" in
     xs|xsmall|extrasmall) echo XS ;;
     s|small) echo S ;;
     m|med|medium) echo M ;;
