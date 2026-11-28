@@ -34,7 +34,10 @@
 # HANDOFF_MAC_HOURS hours (default 4), so a Mac no one destroys still ends. It sends the Cursor key and
 # the user's GitHub login (`gh auth token`) through stdin into a file only the
 # Mac's user reads, never on a command line, installs the Cursor CLI, clones
-# the repo at <base>, and starts `agent worker start --name <worker>` in it.
+# the repo at <base>, and starts `agent worker --management-addr
+# 127.0.0.1:47199 start --name <worker>` in it. It waits until the worker's
+# /readyz answers 200: Cursor's health server listens only once the worker
+# can take runs, and by then the worker's ID is saved.
 # Cursor sends an agent's runs to the worker ID it first ran on, not to the
 # name, and the CLI keeps that ID per name in ~/.cursor/agent-cli-state.json.
 # So rent keeps the worker's ID in the row, and renew writes it there
@@ -57,6 +60,7 @@
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
+MGMT=127.0.0.1:47199
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -155,9 +159,9 @@ cmd_up() {
     mkdir -p ~/work && cd ~/work && rm -rf $(printf %q "$name")
     git clone -q --branch $(printf %q "$base") $(printf %q "$repo.git") $(printf %q "$name")
     cd $(printf %q "$name")
-    (. ~/.ho-env; ~/.local/bin/agent worker start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
+    (. ~/.ho-env; ~/.local/bin/agent worker --management-addr $MGMT start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
     for i in \$(seq 1 45); do
-      if grep -q 'Worker is now running' ~/worker.log 2>/dev/null; then
+      if curl -fsS -o /dev/null http://$MGMT/readyz 2>/dev/null; then
         w=\$(grep -o '\"$worker\": *\"[0-9a-f-]*\"' ~/.cursor/agent-cli-state.json 2>/dev/null | grep -o '[0-9a-f-]\{36\}' || true)
         if [ -n \"\$w\" ]; then echo \"\$w\"; exit 0; fi
       fi
@@ -183,7 +187,8 @@ cmd_down() {
   [[ -n "$id" && "$id" != "-" ]] || die "instance id required"
   need_tools
   # A Mac whose worker hangs must still be destroyed, so this step may fail.
-  remote "$id" 'pkill -f "worker start"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
+  # The [a] keeps the pattern from matching this remote shell's own command line.
+  remote "$id" 'pkill -f "[a]gent worker"; rm -f ~/.ho-env' >/dev/null 2>&1 || true
   log=$(mktemp "$scratch/destroy.XXXXXX")
   if nsc destroy "$id" --force </dev/null >"$log" 2>&1; then
     echo "destroyed $id"; return 0
