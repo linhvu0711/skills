@@ -34,7 +34,7 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 
 2. **Task.** The task is what the PR is supposed to do, in this order: the linked issue and its parent epic, else the PR description, else "no task found".
 
-   - `closingIssuesReferences` non-empty: `gh issue view <n> --json title,body` for each. If the body names a parent or epic issue, fetch that one too.
+   - `closingIssuesReferences` non-empty: `gh issue view <n> --json title,body,comments` for each, comments too, since a later comment can report a case seen in real use. If the body names a parent or epic issue, fetch that one too.
    - Empty, PR body present: the body is the task.
    - Neither: the task is "no task found".
 
@@ -44,16 +44,16 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 
    The general block is always `../../shared/review/general-rules.md`, read now. Split it into its three `##` sections. That is the general text per axis.
 
-   Then the repo rules, per `../../shared/repo-rules.md`, and the ADRs in `docs/adr/`. `git ls-files CLAUDE.md AGENTS.md CODING_STANDARDS.md docs/adr` shows which exist. One explorer for the repo rules and one for the ADRs, each when its files exist, both in one message, each brief with the repo root and the read-only line from § Facts:
+   Then the repo rules, per `../../shared/repo-rules.md`, and the ADRs in `docs/adr/`. `git ls-tree -r --name-only <base> -- CLAUDE.md AGENTS.md CODING_STANDARDS.md docs/adr` shows which exist on the base. One explorer for the repo rules and one for the ADRs, each when its files exist, both in one message, each brief with the repo root, the base, and the read-only line from § Facts. Each reads every file on the base, `git show <base>:<path>`, so a PR that edits a rule file does not grade itself:
 
    - The repo rules: the changed files, from `git diff --name-status <base>...HEAD`, pasted. Read the agent files and each file they point to that touches the changed files; in them, a rule is a line that says what to do or not do. Then the Standard, per `../../shared/coding-standards/standard.md` § Reading the Standard, pasted in full. Return one line per rule, `<path:line> | <the rule, verbatim>`.
    - The ADRs: the changed files, from `git diff --name-status <base>...HEAD`, pasted. Read each `docs/adr/*.md`. Leave out one whose `status:` line starts with `proposed`, `deprecated`, or `superseded`: it is not in force. Keep one whose decision is about a changed file: it names the file, its folder, or the part the file belongs to. An ADR kept whose `status:` line says `amended by` another: read each amending ADR too, and give the decision as the newest amendment leaves it, with the clauses of the older one that still hold; that amending ADR gets no line of its own. Return one line per ADR kept, `<path>[, <amending path>…] | <the decision in force, one sentence>`.
 
-   Each line that comes back is a repo rule. Sort each into the axis that checks it: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). A rule that fits none goes to Standards.
+   Each line that comes back is a repo rule. Sort each into the axis that checks it: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). A rule that changes a general check goes to that check's axis. A rule that fits none goes to Standards.
 
    No `CODING_STANDARDS.md`: the report's `## Notes` carries one line, "no CODING_STANDARDS.md; run /audit-coding-standards". Nothing comes back from either explorer: no repo rules, and the review runs on the general rules alone.
 
-   Per axis, the rule text is the general section followed by `## Repo rules` and that axis's lines, or "None." Done when three rule texts exist and every repo rule line sits under exactly one axis.
+   Per axis, the rule text is the general section followed by `## Repo rules`, the line `These come before the rules above: where one differs from them, follow it.`, and that axis's lines, or "None." Done when three rule texts exist and every repo rule line sits under exactly one axis.
 
 4. **Dispatch.** Three skill agents, one per axis, all in one message: `logic-reviewer`, `scope-reviewer`, `standards-reviewer`. Each brief holds, inline and complete:
 
