@@ -108,11 +108,14 @@ This file is the Standard: the rules for how code is written in this repo. Read 
 
 - A script that runs starts with `#!/usr/bin/env bash` and `set -euo pipefail`; a sourced helper has neither (bash-manual).
 - Every `$name` and `$(…)` sits in double quotes, a function's variables are `local`, and command substitution is `$(…)` (bash-manual).
+- An array that can be empty expands as `${a[@]+"${a[@]}"}`.
+  Why: macOS ships Bash 3.2, which stops with `unbound variable` on `"${a[@]}"` of an empty array under `set -u`.
 
 ### Python
 
 - Scripts use the Python 3 standard library only.
 - A script runs `main()` under `if __name__ == "__main__":`.
+- A script that adds a folder to `sys.path` imports from it after that line, and each such import ends in `# noqa: E402` and a comment that says why.
 
 ### Page JS
 
