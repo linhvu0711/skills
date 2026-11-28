@@ -44,6 +44,14 @@ t_kl_numbered_no_size() {
   eq stdout "" "$out"
 }
 
+t_kl_size_with_range() {
+  # Given: labels.sh sourced
+  # When
+  kl_size "Size: S (10-29)"
+  # Then
+  eq stdout S "$out"
+}
+
 t_kl_size_xxl() {
   # Given: labels.sh sourced
   # When
@@ -158,6 +166,7 @@ cases=(
   "Size: Medium reads as M|t_kl_size_words"
   "p1 is no size|t_kl_no_size"
   "a numbered label such as S1 is no size|t_kl_numbered_no_size"
+  "a size label with a line range reads as its size|t_kl_size_with_range"
   "an XXL label is XXL|t_kl_size_xxl"
   "answer_label names the label of each answer|t_kl_answer_labels"
   "answer_label reads a broken store as none saved|t_kl_broken_store"
