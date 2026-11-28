@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fetch every library listed in repos/README.md into repos/<lib> at its pinned tag.
 # Safe to run twice: a folder already at the right tag is left alone.
-# Without network it warns and exits 0; any other failure stops it.
+# When the repo cannot be reached, as without network, it warns and exits 0;
+# a missing tag or any other failure stops it.
 # Set EMBED_SOURCE_SKIP=1 to skip (for example in CI that only lints and tests).
 #
 # This file also defines the manifest and the marker for the skill's status
@@ -61,6 +62,13 @@ while IFS='|' read -r lib _package repo ref _vfile; do
       printf '%s\n' "$ref" > "$marker"
       echo "sync-repos: $lib ready ($(du -sh "$dir" | cut -f1))"
     else
+      # Only a repo that cannot be reached is the expected failure: ls-remote
+      # exits 128 then, and 2 when the repo answers but lacks the tag.
+      reach=0; git ls-remote --exit-code "$repo" "$ref" >/dev/null 2>&1 || reach=$?
+      if [ "$reach" -ne 128 ]; then
+        echo "stop: could not fetch $lib at $ref, though $repo answers; check the tag in $EMBED_MANIFEST" >&2
+        exit 1
+      fi
       if [[ -d "$dir" ]]; then
         echo "sync-repos: could not fetch $lib at $ref (offline?), keeping the current copy"
       else
