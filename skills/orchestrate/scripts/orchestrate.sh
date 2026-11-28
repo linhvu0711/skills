@@ -901,8 +901,12 @@ label_answers() {
     return
   fi
   for r in "${refs[@]}"; do
-    new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
-      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
+    if ! new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
+      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")" 2>"$errf")"; then
+      # The answer is saved already, so a batch that stopped here would never label the rest.
+      err="$(tail -1 "$errf")"; echo "not labeled $(label_of "$r"): ${err#stop: }"
+      continue
+    fi
     # Only the label this run wrote comes off: one a teammate added stays.
     old="$(jq -r --arg r "$r" '.[$r].labeled // empty' <<<"$1")"
     [ "$old" != "$new" ] || old=""
