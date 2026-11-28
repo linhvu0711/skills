@@ -84,7 +84,8 @@ window.StatePanel = (function () {
   }
 
   function set(id, value, silent) {
-    if (!(id in state) || state[id] === value) return
+    if (!(id in state)) throw new Error('StatePanel.set: unknown row id "' + id + '"')
+    if (state[id] === value) return
     state[id] = value
     renderRows()
     if (!silent) onChange(get(), id)
