@@ -9,6 +9,7 @@
 # Else the last non-empty line of its stderr in `err` (`gh exited <n>` when it
 # printed none), return 1.
 gh_out() {
+  # No EXIT trap, since this file is sourced, see docs/adr/0051-a-sourced-helper-sets-no-trap.md
   local f rc=0
   f="$(mktemp)"
   out="$(gh "$@" 2>"$f")" || rc=$?

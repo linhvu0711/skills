@@ -11,7 +11,7 @@ import sys
 here = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
 sys.path.insert(0, os.path.dirname(here))
-import adapter_lib as lib  # noqa: E402
+import adapter_lib as lib  # noqa: E402  # adapter_lib imports only after the sys.path line above
 
 store = lib.load("store", os.path.join(here, "store.py"))
 

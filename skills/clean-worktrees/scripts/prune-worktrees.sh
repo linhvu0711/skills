@@ -202,7 +202,8 @@ named() {
 
 # sort_one <main> <owner/repo> <path> <branch> <locked>: puts one worktree in
 # kept or removals. With --remove, only a named worktree, and it is removed
-# whatever the reason, unless the session is in it or it is locked; its branch
+# whatever the reason, unless the session is in it, a process uses it, or it
+# is locked; its branch
 # keeps the flag judge gives, -d for any reason.
 sort_one() {
   local main="$1" path="$3" branch="$4"
@@ -299,6 +300,7 @@ load_users() {
     users=()
     while IFS= read -r l; do [ -z "$l" ] || users+=("$l"); done <<<"$cwds"
   else
+    # The check could not run: warn and go on, see docs/adr/0054-a-failed-in-use-check-warns-and-goes-on.md
     in_use_note="$cwds"
   fi
 }

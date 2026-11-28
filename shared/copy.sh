@@ -10,7 +10,7 @@
 # first one fails.
 #
 # Exit 0: the text is on the clipboard.
-# Exit 1: `copy.sh: no clipboard tool` on stderr, and nothing is copied.
+# Exit 1: `stop: no clipboard tool: …` on stderr, and nothing is copied.
 # Any other failure is the tool's: its exit code and its stderr.
 set -euo pipefail
 

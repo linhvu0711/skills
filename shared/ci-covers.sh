@@ -30,7 +30,7 @@
 #   ci <workflow file> · <command>     the first such workflow, by file name
 #   here · <command>
 #
-# Exit 0 with those lines. Exit 1: `stop: <why>` on stderr. Exit 64: a
+# Exit 0 with those lines. Exit 64: a
 # wrong command line, its usage on stderr.
 set -euo pipefail
 

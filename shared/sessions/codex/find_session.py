@@ -49,7 +49,7 @@ import tempfile
 here = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
 sys.path.insert(0, os.path.dirname(here))
-import adapter_lib  # noqa: E402
+import adapter_lib  # noqa: E402  # adapter_lib imports only after the sys.path line above
 
 rollout_io = adapter_lib.load("rollout_io", os.path.join(here, "rollout_io.py"))
 rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
@@ -71,7 +71,6 @@ BLOB_LEN = 20_000
 WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
-# ---------------------------------------------------------------- parsing
 
 def is_blob(text: str) -> bool:
     return len(text) > BLOB_LEN or adapter_lib.injected(text)
@@ -149,7 +148,6 @@ def parse_content(path: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------- index
 
 def load_index() -> dict:
     for path in INDEX_PATHS:
@@ -279,7 +277,6 @@ def helper_paths(sid, helpers: dict, files: dict) -> list[str]:
     return sorted(found)
 
 
-# ---------------------------------------------------------------- cli
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Find Codex sessions for a project by description.")

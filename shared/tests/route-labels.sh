@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The size rule.
 L="$here/../route/labels.sh"
 
 # kl_size <label>: size_of on the label, in a fresh shell that sourced L.

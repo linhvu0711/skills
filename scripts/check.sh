@@ -438,6 +438,7 @@ if [ ${#paths[@]} -eq 0 ]; then
     lock="$(git show ":$skill/SKILL.md" | LC_ALL=C awk -f "$scripts/frontmatter.awk" -f <(printf '%s\n' 'END { print fm["disable-model-invocation"] }'))"
     codex=""
     if in_index "$yaml"; then
+      # One frontmatter reader for both files, see docs/adr/0050-one-frontmatter-reader-reads-openai-yaml.md
       codex="$({ printf -- '---\n'; git show ":$yaml"; } | LC_ALL=C awk -f "$scripts/frontmatter.awk" -f <(printf '%s\n' 'END { print fm_map["policy", "allow_implicit_invocation"] }'))"
     fi
     if [ "$lock" = true ] && ! in_index "$yaml"; then

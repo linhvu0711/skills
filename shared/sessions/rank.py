@@ -13,7 +13,8 @@ Each session is a dict of named text fields, as {"title": ..., "prompts": ...,
 
 A score above 0 means at least one search word is in the session; callers
 such as recall rely on that. `pick` is the one keep-and-order rule every
-finder uses, and `best_snippet` and `cap` are how every finder shows a hit.
+finder uses, and `best_snippet` and `cap` are how the claude and codex
+finders show a hit.
 """
 
 from __future__ import annotations

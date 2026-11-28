@@ -233,7 +233,6 @@
   .panel .finding { border-left: 3px solid var(--modify); padding-left: 10px; margin: 0 0 10px; }
   .panel .empty { color: var(--muted); }
 
-  /* SVG */
   .canvas { font-family: var(--font); }
   .canvas text { fill: var(--ink); font-size: 12.5px; user-select: none; }
   .canvas .sub { fill: var(--muted); font-size: 10.5px; font-family: var(--mono); }
@@ -286,7 +285,6 @@
   .canvas .n.hidden, .canvas .e.hidden, .canvas .g.hidden { display: none; }
   .canvas .dim { opacity: 0.28; }
 
-  /* sequence */
   .canvas .life { stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 4 4; }
   .canvas .act { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
   .canvas .frame rect { fill: none; stroke: var(--line); stroke-width: 1.2; }
@@ -386,7 +384,6 @@ const DATA = {};
   const canvas = $('#canvas'), viewport = $('#viewport'), defs = $('#defs');
   const panel = $('#panel'), legendBox = $('#legend');
 
-  // ---------- markers ----------
   const COLORS = { base: 'var(--edge)', accent: 'var(--accent)', add: 'var(--add)', remove: 'var(--remove)', modify: 'var(--modify)' };
   const HEADS = {
     arrow: (m, c) => svgEl('path', { d: 'M0,0 L10,5 L0,10 z', style: `fill:${c}` }, m),
@@ -409,7 +406,6 @@ const DATA = {};
   }
   const markerUrl = (head, col) => (head && head !== 'none' ? `url(#mk-${head}-${col})` : null);
 
-  // ---------- mode ----------
   const items = [].concat(D.nodes || [], D.edges || [], D.groups || [], D.participants || [], D.steps || [], D.frames || []);
   const hasChange = items.some((i) => i && i.change);
   let mode = hasChange ? (D.mode || 'diff') : 'current';
@@ -423,11 +419,9 @@ const DATA = {};
   };
   const changeClass = (item) => (item && item.change && mode !== 'current' ? ` ${item.change}` : '');
 
-  // ---------- state ----------
   let selected = null;
   const nodeEls = new Map(), edgeEls = new Map(), groupEls = new Map();
 
-  // ================= GRAPH =================
   const geo = new Map();
   function nodeSize(n) {
     const k = n.kind || 'box';
@@ -645,7 +639,6 @@ const DATA = {};
     applyMode();
   }
 
-  // ================= SEQUENCE =================
   const seqX = new Map();
   let seqTop = 0;
   function renderSequence() {
@@ -742,7 +735,6 @@ const DATA = {};
     applyMode();
   }
 
-  // ---------- mode + visibility ----------
   function applyMode() {
     modesBox.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
     const hiddenNodes = new Set();
@@ -768,7 +760,6 @@ const DATA = {};
     if (selected) select(selected, true);
   });
 
-  // ---------- hover / search / select ----------
   function hover(id, on) {
     if (searchTerm) return;
     edgeEls.forEach((el, e) => {
@@ -804,7 +795,6 @@ const DATA = {};
   canvas.addEventListener('click', () => select(null));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') select(null); });
 
-  // ---------- panel ----------
   const chg = (item) => item && item.change ? `<span class="kind chg ${item.change}">${item.change === 'add' ? 'added by plan' : item.change === 'remove' ? 'removed by plan' : 'changed by plan'}</span> ` : '';
   const pathHtml = (p) => p ? [].concat(p).map((x) => `<span class="path">${esc(x)}</span>`).join('') : '';
   const nodeLink = (id) => {
@@ -860,7 +850,6 @@ const DATA = {};
     }));
   }
 
-  // ---------- legend ----------
   function renderLegend() {
     const rows = (D.legend || []).slice();
     if (hasChange) rows.push({ mark: 'add', label: 'Added by plan' }, { mark: 'modify', label: 'Changed by plan' }, { mark: 'remove', label: 'Removed by plan' });
@@ -882,7 +871,6 @@ const DATA = {};
     }).join('');
   }
 
-  // ---------- pan / zoom ----------
   let tx = 0, ty = 0, sc = 1;
   const apply = () => viewport.setAttribute('transform', `translate(${tx},${ty}) scale(${sc})`);
   function fit() {
@@ -939,7 +927,6 @@ const DATA = {};
   $('#fit').addEventListener('click', () => { viewport.classList.remove('live'); fit(); });
   window.addEventListener('resize', fit);
 
-  // ---------- boot ----------
   function render() { if (isSeq) renderSequence(); else renderGraph(); }
   render();
   renderLegend();

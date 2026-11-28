@@ -18,7 +18,8 @@
 #                                             command with MAC_NEW_BASE=<base>, and
 #                                             names the new Mac in the row only after
 #                                             it works; when it fails, gives the new
-#                                             Mac back and leaves the row
+#                                             Mac back, and names it in the row
+#                                             when that give-back fails too
 #   mac.sh return <agent> -- <command>     -> reads the row, then runs the command
 #                                             (the run check); it passes: gives the
 #                                             Mac back, "<agent>: destroyed <id>";
@@ -141,6 +142,7 @@ cmd_up() {
   { printf 'export CURSOR_API_KEY=%q\n' "$key"; printf 'export GH_TOKEN=%q\n' "$token"; } \
     | remote_in "$id" 'umask 077; cat > ~/.ho-env' >/dev/null \
     || { cmd_down "$id" >/dev/null || true; die "could not send the keys to $id"; }
+  # Cursor has no flag to pick the worker ID, so this writes Cursor's own state file, see #455
   [[ -n "$wid" ]] && state="mkdir -p ~/.cursor && printf '{\"version\":1,\"workerIdsByDisplayName\":{\"%s\":\"%s\"}}\n' $worker $wid > ~/.cursor/agent-cli-state.json"
   # git asks the helper for the token each time, so the token never sits in
   # .git/config; the image's keychain helper is dropped, as SSH cannot write

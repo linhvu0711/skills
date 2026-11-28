@@ -5,7 +5,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The kickoff script.
 K="$here/../scripts/kickoff.sh"
 
 # kt_setup <project>: a fresh temp folder T, the fake gh, one checkout of

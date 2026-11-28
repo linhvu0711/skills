@@ -2,5 +2,6 @@
 # post-commit, post-checkout, post-merge, post-rewrite: run scripts/link.sh,
 # which links the repo's skills, skill agents, and subagent gate into each
 # harness. The other three are links to this file. Installed by
-# `git config core.hooksPath scripts/hooks`. It never fails the git command.
+# `git config core.hooksPath scripts/hooks`. It never fails the git command,
+# see docs/adr/0049-git-hooks-never-fail-a-git-command.md.
 bash "$(git rev-parse --show-toplevel)/scripts/link.sh" || true

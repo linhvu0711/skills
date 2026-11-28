@@ -3,10 +3,8 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The prune-worktrees script.
 P="$here/../scripts/prune-worktrees.sh"
 
-# wt_repo: repo, on a branch named main.
 wt_repo() { repo; git branch -M main; }
 
 # gh_remote: an origin on GitHub that is never contacted, with origin/main

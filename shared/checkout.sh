@@ -111,7 +111,6 @@ worktrees() {
   done < <(printf '%s\n\n' "$listed")
 }
 
-# ---------- main checkout ----------
 map="${KICKOFF_REPO_MAP:-$HOME/.config/kickoff/repos.tsv}"
 dev_root="${KICKOFF_DEV_ROOT:-$HOME/development}"
 
@@ -148,7 +147,6 @@ is_main_checkout() { [ -d "$1/.git" ]; }  # a .git file is a worktree
 find_main() {
   local slug="$1" cand tmp gitdir d matches
   main=""; main_from=""
-  # 1. the map
   if [ -f "$map" ]; then
     cand="$(awk -F'\t' -v s="$slug" '$1==s {print $2; exit}' "$map")"
     if [ -n "$cand" ]; then
@@ -161,11 +159,9 @@ find_main() {
       fi
     fi
   fi
-  # 2. the current folder
   if [ -z "$main" ] && is_main_checkout "$PWD" && origin_is "$PWD" "$slug"; then
     main="$PWD"; main_from="cwd"
   fi
-  # 3. search the dev root
   if [ -z "$main" ]; then
     matches=()
     while IFS= read -r gitdir; do
@@ -198,7 +194,7 @@ default_branch() {
   exit "${3:-1}"
 }
 
-# The forms that take no branch.
+# The forms that make no worktree.
 case "${1:-}" in
   slug)
     [ $# -eq 2 ] && [ -n "$2" ] || die_usage "usage: checkout.sh slug <dir>"
@@ -244,7 +240,6 @@ git -C "$main" check-ref-format --branch "$branch" >/dev/null 2>&1 || die "not a
 
 default_branch "$slug" "$main"
 
-# ---------- worktree ----------
 root="${WORKTREES_ROOT:-$HOME/development/worktrees}"
 dir="$root/$slug/$(printf '%s' "$branch" | tr '/' '-')"
 
@@ -335,7 +330,6 @@ if [ -n "$where" ]; then
   exit 0
 fi
 
-# Something else in the folder?
 if [ -e "$dir" ]; then
   [ -f "$dir/.git" ] || die "$dir exists and is not a worktree"
   owner="$(common_dir "$dir")" || die "$dir is a worktree whose repo is gone"
@@ -343,7 +337,6 @@ if [ -e "$dir" ]; then
   die "$dir is on '$(git -C "$dir" branch --show-current 2>/dev/null || true)', not '$branch'"
 fi
 
-# Where is the branch?
 from=""
 if git -C "$main" show-ref --verify --quiet "refs/heads/$branch"; then
   from="local"

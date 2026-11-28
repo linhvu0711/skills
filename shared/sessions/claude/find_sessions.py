@@ -37,7 +37,7 @@ import sys
 here = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
 sys.path.insert(0, os.path.dirname(here))
-import adapter_lib  # noqa: E402
+import adapter_lib  # noqa: E402  # adapter_lib imports only after the sys.path line above
 
 rank = adapter_lib.load("rank", os.path.join(here, "..", "rank.py"))
 chat_log = adapter_lib.load("chat_log", os.path.join(here, "..", "chat_log.py"))
@@ -98,7 +98,7 @@ def strip_wrappers(text):
     if not text:
         return ""
     stripped = text.strip()
-    # Whole message is just command/caveat/reminder scaffolding -> not a human prompt.
+    # Command, caveat, or reminder markup is not a human prompt, but a slash command is kept.
     if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped):
         # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
@@ -108,7 +108,6 @@ def strip_wrappers(text):
         return f"{m.group(1).strip()} {a.group(1).strip() if a else ''}".strip()
     if stripped.startswith("<system-reminder>") and stripped.endswith("</system-reminder>"):
         return ""
-    # Remove any embedded reminder/caveat blocks but keep surrounding prose.
     cleaned = re.sub(r"<system-reminder>.*?</system-reminder>", " ", text, flags=re.S)
     cleaned = re.sub(r"<local-command-caveat>.*?</local-command-caveat>", " ", cleaned, flags=re.S)
     return cleaned.strip()
@@ -177,7 +176,7 @@ def parse_session(path):
     return {
         "id": sid,
         "title": title,
-        # Display fields are capped; the full text still lives in ``prompts`` for scoring.
+        # Display fields are capped; scoring reads ``prompts``, up to BODY_CAP characters.
         "first_prompt": rank.cap(first_substantive or first_prompt),
         "last_prompt": rank.cap(last_prompt),
         "n_prompts": n_prompts,
@@ -255,7 +254,6 @@ def main():
         print(json.dumps(out, indent=2, ensure_ascii=False))
         return
 
-    # Pretty text output
     print(f"Project session dir: {sess_dir}" if len(dirs) == 1 and dirs[0] == sess_dir
           else f"Project session dirs: {len(dirs)}")
     print(f"Total sessions in project: {len(sessions)}")

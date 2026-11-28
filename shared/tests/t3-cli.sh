@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The T3 lookup.
 C="$here/../t3-cli.sh"
 
 # t3_setup: a temp folder T with an executable file $T/t3.
