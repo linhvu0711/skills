@@ -36,6 +36,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from typing import Callable
 
 
@@ -60,18 +61,20 @@ def first_day(days: int | None) -> dt.date | None:
     return dt.date.today() - dt.timedelta(days=days - 1) if days else None
 
 
+@dataclass
 class Scope:
     """Which sessions a find keeps: those whose cwd is a root, or below one
     with subdirs (roots None: every project), and whose last activity falls
     from since to until, in local days, both ends kept."""
 
-    # A plain class, not a dataclass: most loaders run this file without
-    # putting it in sys.modules, and a dataclass fails that way on Python 3.11
-    # and older.
-    def __init__(self, roots, subdirs: bool = False, since: dt.date | None = None,
-                 until: dt.date | None = None):
-        self.roots = None if roots is None else tuple(os.path.abspath(os.path.expanduser(r)) for r in roots)
-        self.subdirs, self.since, self.until = subdirs, since, until
+    roots: tuple | None
+    subdirs: bool = False
+    since: dt.date | None = None
+    until: dt.date | None = None
+
+    def __post_init__(self):
+        if self.roots is not None:
+            self.roots = tuple(os.path.abspath(os.path.expanduser(r)) for r in self.roots)
 
     @classmethod
     def last_days(cls, roots, subdirs: bool, days: int | None) -> "Scope":
