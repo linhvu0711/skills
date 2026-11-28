@@ -1801,13 +1801,16 @@ t_runner_keeps_cases_out_of_caller() {
 # case, each making a temp folder and a temp file with a bare mktemp. None of
 # the four is left after either case.
 t_runner_removes_case_temp_folders() {
+  # Given: a passing and a failing case that each note the temp paths they make
   T="$(cd "$(mktemp -d)" && pwd -P)"
   t_temp_pass() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; }
   t_temp_fail() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; false; }
-  cases=("pass|t_temp_pass" "fail|t_temp_fail"); pass=0; fail=0; log="$T/log"
+  local -a cases=("pass|t_temp_pass" "fail|t_temp_fail")
+  local pass=0 fail=0 log="$T/log" p left=""
+  # When
   run_cases >"$T/out" 2>&1
+  # Then
   eq failed 1 "$fail"
-  local p left=""
   while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done <"$T/made"
   eq "temp left" "" "$left"
 }
