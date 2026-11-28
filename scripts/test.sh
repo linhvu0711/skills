@@ -9,7 +9,7 @@
 #
 # Each case starts in an empty temp folder with set -e on, builds its own git
 # repo in a temp folder, copies this scripts/ folder in, and runs the command
-# there. Every leak string
+# there. Each case's temp folders go when the case ends. Every leak string
 # below is joined
 # from two halves at runtime, so this file holds nothing check.sh flags.
 #
@@ -1242,6 +1242,24 @@ t_runner_keeps_cases_out_of_caller() {
   eq "origin branches" refs/heads/main "$(git -C "$T/origin.git" for-each-ref --format='%(refname)' refs/heads)"
 }
 
+# t_runner_removes_case_temp_folders: run_cases runs one passing and one failing
+# case, each making a temp folder and a temp file with a bare mktemp. None of
+# the four is left after either case.
+t_runner_removes_case_temp_folders() {
+  # Given: a passing and a failing case that each note the temp paths they make
+  T="$(cd "$(mktemp -d)" && pwd -P)"
+  t_temp_pass() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; }
+  t_temp_fail() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; false; }
+  local -a cases=("pass|t_temp_pass" "fail|t_temp_fail")
+  local pass=0 fail=0 log="$T/log" p left=""
+  # When
+  run_cases >"$T/out" 2>&1
+  # Then
+  eq failed 1 "$fail"
+  while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done <"$T/made"
+  eq "temp left" "" "$left"
+}
+
 cases=(
   "flags a home path|t_flags_home_path"
   "flags a linux home path|t_flags_linux_home_path"
@@ -1340,16 +1358,21 @@ cases=(
   "flags a missing try-order row|t_flags_missing_try_order_row"
   "flags a shared agent with no tier line|t_flags_shared_agent_no_tier"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
+  "runner removes each case's temp folders|t_runner_removes_case_temp_folders"
 )
 
 # run_cases: run each case of `cases` in a subshell with set -e on, from a new
 # empty temp folder that git finds no repo above, print `ok <name>` or
-# `FAIL <name>: <why>`, and add to pass and fail.
+# `FAIL <name>: <why>`, and add to pass and fail. The folder sits in a root
+# that is the case's TMPDIR, with the mktemp wrapper first on PATH, and the
+# root is removed when the case ends, pass or fail.
 run_cases() {
-  local c name fn
+  local c name fn root
   for c in "${cases[@]}"; do
     name="${c%%|*}"; fn="${c##*|}"
-    rc=0; set +e; ( set -e; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    root="$(mktemp -d)"
+    rc=0; set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    rm -rf "$root"
     if [ "$rc" -eq 0 ]; then
       printf 'ok %s\n' "$name"; pass=$((pass + 1))
     else
@@ -1362,7 +1385,20 @@ run_cases() {
 # the next file is sourced, so a helper name in one file never replaces
 # another file's.
 pass=0; fail=0
+case_bin="${SKILLS_HOME%/agents}/case-bin"; mkdir -p "$case_bin"
+# A case that links mktemp into a PATH of its own links this wrapper, so the
+# wrapper names the real mktemp by its full path.
+{ printf '#!/bin/sh\nreal='\''%s'\''\n' "$(command -v mktemp)"; cat <<'EOF'
+# macOS mktemp ignores TMPDIR when it gets no template (man mktemp), so a
+# case's temp files would land outside its root; -p puts them there.
+for a in "$@"; do case "$a" in *XXX*) exec "$real" "$@" ;; esac; done
+[ -n "${TMPDIR:-}" ] || exec "$real" "$@"
+exec "$real" -p "$TMPDIR" "$@"
+EOF
+} > "$case_bin/mktemp"
+chmod +x "$case_bin/mktemp"
 log="$(mktemp)"
+trap 'rm -rf "$log" "${SKILLS_HOME%/agents}"' EXIT
 run_cases
 for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases
