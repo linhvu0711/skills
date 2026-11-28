@@ -21,4 +21,4 @@ jobs:
       - name: Look for leaks
         run: bash scripts/check.sh
       - name: Test the checks
-        run: bash scripts/test.sh
+        run: bash tests/run.sh
