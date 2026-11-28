@@ -27,8 +27,8 @@
 #   SKIP <url>: push refused: <git's last line>
 # then `LEFT <url>` for each PR after a stop. Last line `RESTACK=moved <n>`
 # (exit 0) or `RESTACK=stopped` (exit 1). Nothing after a stop is pushed.
-# A temp worktree git cannot remove prints `WARN <path>: <git's last line>`,
-# and the move goes on.
+# A temp worktree git cannot remove prints `WARN <path>: <git's last line>` on
+# stderr, and the move goes on.
 # --own: the numbers of the PRs the caller owns. Each other PR, and each PR
 # stacked on a left one, prints `LEFT <url>` and is not pushed; the move goes
 # on with the next PR, and this is no stop. Without it, every PR is owned.
@@ -85,7 +85,7 @@ drop_tmp() {
   local err
   [ -n "$pwt" ] || return 0
   if ! err="$(g worktree remove --force "$pwt" 2>&1)"; then
-    printf 'WARN %s: %s\n' "$pwt" "$(printf '%s\n' "$err" | tail -1)"
+    printf 'WARN %s: %s\n' "$pwt" "$(printf '%s\n' "$err" | tail -1)" >&2
   fi
   pwt=""
 }
