@@ -20,7 +20,7 @@ fs_setup() {
   fake_gh
   printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
   git init -q -b main "$T/dev/app"
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
   cat > "$T/bin/t3" <<'EOF'
 #!/usr/bin/env bash
@@ -101,7 +101,7 @@ fs_remote() {
 fs_push() {
   printf '%s\n' "$2" > "$T/other/$1"
   git -C "$T/other" add "$1"
-  git -C "$T/other" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m "$2"
+  git -C "$T/other" -c user.email=t@example.invalid -c user.name=t commit -q -m "$2"
   git -C "$T/other" push -q origin main
 }
 
@@ -542,7 +542,7 @@ t_fs_followup_joins() {
 # fs_lib: a checkout of acme/lib at $T/dev/lib.
 fs_lib() {
   git init -q -b main "$T/dev/lib"
-  git -C "$T/dev/lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/lib" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/lib" remote add origin https://github.com/acme/lib.git
 }
 
@@ -816,7 +816,7 @@ t_fs_sync_each_repo() {
   was_app="$(fs_short "$T/dev/app" main)"; was_lib="$(fs_short "$T/dev/lib" main)"
   fs_push a.txt one
   printf 'two\n' > "$T/other-lib/b.txt"; git -C "$T/other-lib" add b.txt
-  git -C "$T/other-lib" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m two
+  git -C "$T/other-lib" -c user.email=t@example.invalid -c user.name=t commit -q -m two
   git -C "$T/other-lib" push -q origin main
   # When
   fs_go sync acme/app
@@ -830,7 +830,7 @@ t_fs_sync_own_commits() {
   # Given: a run of #42; origin's main has a.txt, and the local main has its own commit mine
   fs_setup; fs_issue 42 OPEN '["size/S"]'; fs_start 42; fs_remote
   fs_push a.txt one
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m mine
+  git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m mine
   local mine; mine="$(git -C "$T/dev/app" rev-parse main)"
   # When
   fs_go sync acme/app

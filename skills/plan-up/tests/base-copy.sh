@@ -12,7 +12,7 @@ origin() {
   T="$(cd "$(mktemp -d)" && pwd -P)"; R="$T/repo"
   git init -q --bare "$T/origin.git"
   git clone -q "$T/origin.git" "$R" 2>/dev/null; cd "$R"
-  git config user.email "t""@""example.invalid"; git config user.name t
+  git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   echo '{}' > package.json
   [ -z "${1:-}" ] || printf '%s\n' "${2:-lock}" > "$1"

@@ -1226,7 +1226,7 @@ t_readme_hook_asks_core_named_bare_staged_only() {
 t_runner_keeps_cases_out_of_caller() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   git init -q --bare "$T/origin.git"; git init -q "$T/caller"; cd "$T/caller"
-  git config user.email "t""@""example.invalid"; git config user.name t
+  git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   git remote add origin "$T/origin.git"
   git commit -q --allow-empty -m init; git push -q origin HEAD:refs/heads/main

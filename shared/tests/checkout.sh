@@ -21,7 +21,7 @@ ck_setup() {
 ck() {
   local slug="$1" dir="$2" bare="$T/remotes/$1.git"
   git init -q -b main "$dir"
-  git -C "$dir" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$dir" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   if [ ! -d "$bare" ]; then mkdir -p "$(dirname "$bare")"; git clone -q --bare "$dir" "$bare"; fi
   git -C "$dir" remote add origin "https://github.com/$slug.git"
   git -C "$dir" config "url.$bare.insteadOf" "https://github.com/$slug.git"
@@ -87,7 +87,7 @@ t_ck_reuses_spaced_path() {
 t_ck_alias_origin() {
   ck_setup
   git init -q -b main "$T/dev/app"
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
+  git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" branch feat/4-a
   git -C "$T/dev/app" remote add origin gh:acme/app
   git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
@@ -141,7 +141,7 @@ ck_listed() {
   printf '%s\n' "$2" > "$1/.gitignore"
   printf '%s\n' "$3" > "$1/.worktreeinclude"
   git -C "$1" add .gitignore .worktreeinclude
-  git -C "$1" -c user.email="t""@""example.invalid" -c user.name=t commit -q -m list
+  git -C "$1" -c user.email=t@example.invalid -c user.name=t commit -q -m list
   git -C "$1" push -q origin main
 }
 

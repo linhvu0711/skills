@@ -6,7 +6,7 @@ Read CODING_STANDARDS.md before you write or review code.
 
 ## Checks
 
-- `scripts/check.sh` looks for leaks: absolute home paths, email addresses, and the words in the owner's private list at `.git/info/private-words` (local, never committed).
+- `scripts/check.sh` looks for leaks: absolute home paths, email addresses outside the reserved `.invalid` domain, and the words in the owner's private list at `.git/info/private-words` (local, never committed).
 - `scripts/check.sh` also fails on a relative path in a skill or the shared core that points to no file. A skill's paths start at its folder; a shared core file's paths start at its own folder.
 - `scripts/check.sh` fails when a `copy` or `heavy adaptation` row in `THIRD_PARTY_NOTICES.md` has no `LICENSE` next to it: `skills/<name>/LICENSE`, or `shared/LICENSE-<owner>` for a shared core file.
 - `scripts/check.sh` fails when a skill has no `README.md`, or its README lacks one of `## Use it when`, `## What you get`, `## Needs`, `## Fits with`. A skill that `THIRD_PARTY_NOTICES.md` lists, itself or a file inside it, also needs `## Credits`.
