@@ -103,10 +103,11 @@ pages() {
 }
 
 # last_devin ID -> the last Devin message, one line, cut (pages to the end).
-# Each page gives its last Devin message, and an empty one keeps the page before.
+# Each page gives its last Devin message with its trailing newlines cut, and an
+# empty one keeps the page before.
 last_devin() {
   pages "/sessions/$1/messages?first=200" |
-    jq -sj '[.[] | [.items[] | select(.source == "devin")] | last | .message // empty | select(. != "")] | last // "-"' |
+    jq -sj '[.[] | [.items[] | select(.source == "devin")] | last | .message // empty | sub("\n+\\z"; "") | select(. != "")] | last // "-"' |
     tr '\t\r\n' '   ' | head -c 600  # one short poll line, as cursor.sh cuts it
 }
 
