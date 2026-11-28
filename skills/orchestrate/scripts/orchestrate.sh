@@ -894,7 +894,7 @@ cmd_proposed() {
 # route/edit-labels.sh, makes a label the repo lacks. Prints one line per ref whose
 # answer has or had a label; the thread starts either way.
 label_answers() {
-  local refs=() r got j new old edit=() routed made edited ok
+  local refs=() r got j new old edit=() routed made edited ok err
   while IFS= read -r r; do refs+=("$r"); done <<<"$2"
   if ! got="$(read_issues "${refs[@]}")"; then
     for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
