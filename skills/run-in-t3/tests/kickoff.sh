@@ -74,14 +74,13 @@ kt_issues() {
     '{data: {repository: {i73: $i73, i12: $i12, i14: $i14, i70: $i70, i42: $i42, i43: $i43, i44: $i44, i18: $i18, i15: $i15, i17: $i17, i16: $i16, i71: $i71, i72: $i72, i46: $i46, i47: $i47}}}'
 }
 
-# kt_go [outside|off-path] <args...>: kickoff from T, with the search root
-# and the repo map inside T; inside T3 Code unless `outside` is given.
+# kt_go [off-path] <args...>: kickoff from T, inside T3 Code, with the search root
+# and the repo map inside T.
 # `off-path` moves the fake t3 out of PATH and drops every PATH folder that
 # holds a t3, so only T3CODE_CLI_PATH names it and the real T3 app is never
 # reached.
 kt_go() {
   local t3="T3CODE_CLI_PATH=$T/bin/t3" path="$PATH" dir
-  if [ "${1:-}" = outside ]; then t3="KT_OUTSIDE=1"; shift; fi
   if [ "${1:-}" = off-path ]; then
     shift
     mkdir -p "$T/t3home"; mv "$T/bin/t3" "$T/t3home/t3"; t3="T3CODE_CLI_PATH=$T/t3home/t3"
