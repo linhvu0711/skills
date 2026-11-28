@@ -374,12 +374,12 @@ turn_holders() {
 # restart, holds no turn: no check of its own would ever free it. `owners`
 # lists, per ref, each live run (running or paused) that holds it: its link,
 # its start, and whether it has a thread for it that did not fail to launch.
-# Another run's file that does not parse holds nothing, so it never fails
-# this check.
+# Another run's file that does not parse stops the check: the run it hides
+# could hold an issue this run would take.
 other_runs() {
   local f one pid turn="" owners="{}"
   while IFS= read -r -d '' f; do
-    one="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$f" 2>/dev/null)" || continue
+    one="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$f")" || die "$f does not parse as JSON; fix it or remove it, then run check again"
     if [ -z "$turn" ]; then
       read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
         | "\(.task_turn[0]) \(.timer.watcher.pid // "")"' <<<"$one") || turn=""
@@ -894,15 +894,19 @@ cmd_proposed() {
 # route/edit-labels.sh, makes a label the repo lacks. Prints one line per ref whose
 # answer has or had a label; the thread starts either way.
 label_answers() {
-  local refs=() r got j new old edit=() routed made edited ok
+  local refs=() r got j new old edit=() routed made edited ok err
   while IFS= read -r r; do refs+=("$r"); done <<<"$2"
   if ! got="$(read_issues "${refs[@]}")"; then
     for r in "${refs[@]}"; do echo "not labeled $(label_of "$r"): $(tail -1 "$errf")"; done
     return
   fi
   for r in "${refs[@]}"; do
-    new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
-      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")")"
+    if ! new="$(answer_label "${r%#*}" "$(jq -r --arg r "$r" '.proposals[$r].answer' <<<"$S")" \
+      "$(jq -r --arg r "$r" '.proposals[$r].size // empty' <<<"$S")" 2>"$errf")"; then
+      # The answer is saved already, so a batch that stopped here would never label the rest.
+      err="$(tail -1 "$errf")"; echo "not labeled $(label_of "$r"): ${err#stop: }"
+      continue
+    fi
     # Only the label this run wrote comes off: one a teammate added stays.
     old="$(jq -r --arg r "$r" '.[$r].labeled // empty' <<<"$1")"
     [ "$old" != "$new" ] || old=""

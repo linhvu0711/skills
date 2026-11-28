@@ -51,6 +51,10 @@ class GhDown(Exception):
 class LookupFailed(Exception):
     """gh works, but this one lookup failed; the message is gh's error."""
 
+    def __init__(self, error):
+        super().__init__(str(error))
+        self.status = error.status
+
 
 class Tagger:
     def __init__(self, cwd):
@@ -65,7 +69,7 @@ class Tagger:
         try:
             return json.loads(GH.run(*args, cwd=self.cwd))
         except GH.GhError as e:
-            error = str(e)
+            error = e
         try:
             GH.run("api", "user", "--jq", ".login", cwd=self.cwd)
         except GH.GhError:
@@ -84,7 +88,7 @@ class Tagger:
             self.gh("api", f"repos/{{owner}}/{{repo}}/branches/{branch}")
             return "[branch only]"
         except LookupFailed as e:
-            return "[branch gone]" if "(HTTP 404)" in str(e) else "[state unknown]"
+            return "[branch gone]" if e.status == 404 else "[state unknown]"
 
     def tag(self, kind, ref):
         try:

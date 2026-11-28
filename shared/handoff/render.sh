@@ -7,7 +7,8 @@
 # block between `<!-- devin -->` and `<!-- /devin -->` (or `cursor`, or
 # `local`) is kept only for that executor; a block between
 # `<!-- cloud -->` and `<!-- /cloud -->` is kept for devin and cursor and
-# dropped for local. Blocks nest. The marker lines go. A line that starts
+# dropped for local. Blocks nest. A close marker that does not close the
+# last open block of its name stops the render. The marker lines go. A line that starts
 # with `<!-- template` is a note for editors and goes. A line
 # `<!-- include <path> -->` is replaced by that file, path relative to
 # this directory; its `<!-- template` lines go too.
@@ -34,10 +35,18 @@ esac
 awk -v ex="$ex" -v dir="$dir" '
   function keep(m) { return (m == ex) || (m == "cloud" && ex != "local") }
   function anyskip(  i) { for (i = 1; i <= n; i++) if (s[i]) return 1; return 0 }
-  /^<!-- (devin|cursor|local|cloud) -->$/  { n++; s[n] = !keep($2); skip = anyskip(); next }
-  /^<!-- \/(devin|cursor|local|cloud) -->$/ { if (n > 0) n--; skip = anyskip(); next }
+  /^<!-- (devin|cursor|local|cloud) -->$/  { n++; s[n] = !keep($2); m[n] = $2; skip = anyskip(); next }
+  /^<!-- \/(devin|cursor|local|cloud) -->$/ {
+    name = substr($2, 2)
+    if (n == 0 || m[n] != name) {
+      printf "stop: %s:%d: <!-- /%s --> closes no open <!-- %s --> block\n", FILENAME, FNR, name, name > "/dev/stderr"
+      bad = 1; exit 1
+    }
+    n--; skip = anyskip(); next
+  }
   /^<!-- template/             { next }
   /^<!-- include .* -->$/      { if (!skip) { f = dir "/" $3; while ((getline l < f) > 0) if (l !~ /^<!-- template/) print l; close(f) } next }
   !skip                         { print }
+  END                           { if (bad) exit 1 }
 ' "$dir/$f.md" \
 | sed -e "s/{{app}}/$app/g" -e "s/{{me}}/$ex/g" -e "s/{{session}}/$session/g" -e "s/{{here}}/$here/g" -e "s#{{caller}}#$caller#g" -e "s#{{skills}}#$skills#g"

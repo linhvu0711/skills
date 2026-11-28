@@ -58,7 +58,7 @@ RUNS = 150
 
 
 def gh(what, *args):
-    return json.loads(GH.stop(what, *args) or "null")
+    return json.loads(GH.stop(what, *args))
 
 
 def when(stamp):
@@ -71,7 +71,7 @@ def seconds(start, end):
 
 def rank(values, p):
     ordered = sorted(values)
-    return ordered[max(math.ceil(p / 100 * len(ordered)) - 1, 0)]
+    return ordered[math.ceil(p / 100 * len(ordered)) - 1]
 
 
 def spread(values):

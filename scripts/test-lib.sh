@@ -54,14 +54,15 @@ lacks() { case "$3" in *"$2"*) printf '%s: [%s] in [%s]\n' "$1" "$2" "$3" >&2; e
 # `api repos/…/rules/branches/…` rules, `api repos/…/branches/…` branch,
 # `api repos/…/status` status, `api repos/…/check-runs` check-runs,
 # `api repos/…/actions/jobs/…` job, `api repos/…/attempts/…/jobs` attempt-jobs,
-# `api repos/…/actions/runs/…/jobs` run-jobs, any other
+# `api repos/…/actions/runs/…/jobs` run-jobs, `api repos/…/labels/…` label, any other
 # `api repos/…` repo, and `pr merge` pr-merge. Each
 # route counts its calls in <route>.calls and logs their args in
 # <route>.args, one line per call (a newline inside an arg becomes a space).
 # `api graphql … -F r=<r>` prints graphql.<r>.fail to stderr and fails, or
 # prints graphql.<r>.json, when one exists, so each repo can answer its own.
 # Call n of a route prints <route>.<n>.fail or <route>.fail to stderr and
-# fails when one exists. Else it prints <route>.stderr to stderr when one
+# fails when one exists. A failing call also prints <route>.<n>.body or
+# <route>.body on stdout when one exists, as gh api prints its error body. Else it prints <route>.stderr to stderr when one
 # exists, as gh prints a hint beside its answer, and
 # `pr list … --base <b>` or `--head <b>` prints pr-list.<b, with / as _>.json,
 # or `[]` when there is none, and every other route prints <route>.<n>.json or
@@ -101,6 +102,7 @@ case "$args" in
   " api repos/"*/actions/jobs/*) key=job ;;
   " api repos/"*/attempts/*/jobs*) key=attempt-jobs ;;
   " api repos/"*/actions/runs/*/jobs*) key=run-jobs ;;
+  " api repos/"*/labels/*) key=label ;;
   " api repos/"*) key=repo ;;
   " pr merge"*) key=pr-merge ;;
   *) printf 'fake gh: no route for%s\n' "$args" >&2; exit 2 ;;
@@ -116,7 +118,12 @@ if [ "$key" = graphql ] && [[ "$args" =~ \ -F\ r=([^ ]+) ]]; then
   fi
 fi
 for f in "$FAKE_GH/$key.$n.fail" "$FAKE_GH/$key.fail"; do
-  if [ -f "$f" ]; then cat "$f" >&2; exit 1; fi
+  if [ -f "$f" ]; then
+    for b in "$FAKE_GH/$key.$n.body" "$FAKE_GH/$key.body"; do
+      if [ -f "$b" ]; then cat "$b"; break; fi
+    done
+    cat "$f" >&2; exit 1
+  fi
 done
 if [ -f "$FAKE_GH/$key.stderr" ]; then cat "$FAKE_GH/$key.stderr" >&2; fi
 if [ "$key" = pr-list ]; then

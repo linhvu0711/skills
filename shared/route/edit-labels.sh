@@ -5,9 +5,10 @@
 #
 # Usage: edit-labels.sh <owner/repo> <n> [--add <label>] [--remove <label>]
 #
-# A label the repo lacks is made from label_spec in labels.sh, then the edit
-# runs once more. A make that fails because the label exists by then, as
-# when a teammate made it a moment before, still runs the edit once more.
+# When the edit fails, a lookup of the label tells why: a 404 means the repo
+# lacks it, so it is made from label_spec in labels.sh and the edit runs once
+# more. A make that fails while a second lookup finds the label, as when a
+# teammate made it a moment before, still runs the edit once more.
 #
 # Exit 0: `edited`, or `made` when it made the label. Exit 1: `stop:` and
 # gh's last line on stderr; the issue is as it was. Exit 64: a wrong command
@@ -24,6 +25,7 @@ die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2;
 usage="usage: edit-labels.sh <owner/repo> <n> [--add <label>] [--remove <label>]"
 
 command -v gh >/dev/null || die "gh is not installed"
+command -v jq >/dev/null || die "jq is not installed"
 
 [ $# -ge 2 ] || die_usage "$usage"
 slug="$1"; n="$2"; shift 2
@@ -40,12 +42,17 @@ done
 [ ${#edit[@]} -gt 0 ] || die_usage "$usage" "name --add, --remove, or both"
 
 if gh_out issue edit "$n" --repo "$slug" "${edit[@]}"; then echo edited; exit 0; fi
-[ -n "$add" ] && [[ "$err" == *"'$add' not found"* ]] || die "$err"
+[ -n "$add" ] || die "$err"
+edit_err="$err"
+label_path="repos/$slug/labels/$(jq -rn --arg l "$add" '$l | @uri')"
+if gh_out api "$label_path"; then die "$edit_err"; fi
+[ "$status" = 404 ] || die "$err"
 spec="$(label_spec "$add")"
-[ -n "$spec" ] || die "$err"
+[ -n "$spec" ] || die "$edit_err"
 made=made
 if ! gh_out label create "$add" --repo "$slug" --color "$(sed -n 1p <<<"$spec")" --description "$(sed -n 2p <<<"$spec")"; then
-  [[ "$err" == *"already exists"* ]] || die "$err"
+  create_err="$err"
+  gh_out api "$label_path" || die "$create_err"
   made=edited
 fi
 gh_out issue edit "$n" --repo "$slug" "${edit[@]}" || die "$err"

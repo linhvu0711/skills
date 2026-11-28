@@ -49,7 +49,7 @@ Words from `CONTEXT.md` § Retro: **evidence list**, **pattern**, **one-time pro
    python3 scripts/github.py list <owner/repo> --transcripts <scratch> --since D [--until D]
    ```
 
-   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues` of each repo, into a second folder, under one folder per repo, so two repos' PR 12 stay apart:
+   A window-less scope (named IDs, the current session) uses the days its sessions span. Each `skipped` entry is a PR not read, with its reason, for the report. Each `cut` entry is a list GitHub had more of than the script reads, and each `warn: PR #<n> is cut` line a PR bundle that holds only the first page of a list: name both in the report's read line as read in part. Then write each `read_prs` entry's bundle, and one bundle for all `read_issues` of each repo, into a second folder, under one folder per repo, so two repos' PR 12 stay apart:
 
    ```bash
    mkdir -p <github>/<owner>/<repo>

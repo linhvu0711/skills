@@ -36,7 +36,7 @@ def closed_issues(repo, cache):
         try:
             cache[repo] = {i["number"] for i in json.loads(GH.run("issue", "list", "-R", repo, "--state", "closed",
                                                                   "-L", "100000", "--json", "number"))}
-        except (GH.GhError, ValueError, TypeError, KeyError):
+        except (GH.GhError, json.JSONDecodeError):
             cache[repo] = None
     return cache[repo]
 
