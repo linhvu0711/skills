@@ -36,9 +36,10 @@ analysis_effort=high
 # proposal writes on the issue, so no skill guesses it again: bug for
 # triage, seed for grill, manual for task, and for ship the repo's own size
 # label, or size/<size> when the repo has none saved. Nothing for the rest.
-# Returns 1, with `stop:` on stderr, when python3 or jq is not installed.
+# Returns 1, with `stop:` on stderr, when python3 or jq is not installed, or
+# when the saved size labels cannot be read.
 answer_label() {
-  local conv c
+  local conv c rc
   case "$2" in
     triage) echo bug ;;
     grill) echo seed ;;
@@ -47,11 +48,12 @@ answer_label() {
       for c in python3 jq; do
         command -v "$c" >/dev/null || { printf 'stop: %s is not installed\n' "$c" >&2; return 1; }
       done
-      if conv="$(python3 "$route_dir/../issue_conventions.py" get "$1" 2>/dev/null)"; then
-        jq -r --arg z "$3" '.size[$z] // "size/\($z)"' <<<"$conv"
-      else
-        echo "size/$3"
-      fi ;;
+      rc=0; conv="$(python3 "$route_dir/../issue_conventions.py" get "$1")" || rc=$?
+      case "$rc" in
+        0) jq -r --arg z "$3" '.size[$z] // "size/\($z)"' <<<"$conv" ;;
+        3) echo "size/$3" ;;  # MISS: the repo has no size labels saved
+        *) printf 'stop: could not read the saved size labels of %s (exit %s)\n' "$1" "$rc" >&2; return 1 ;;
+      esac ;;
   esac
 }
 
