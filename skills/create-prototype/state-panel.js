@@ -56,8 +56,8 @@ window.StatePanel = (function () {
     return el
   }
 
-  // Storage can be blocked, as in a private window. The panel still works, and a
-  // reload only goes back to the defaults, so a failed read or save says nothing.
+  // Storage can be blocked, as in a private window. The panel still works and only
+  // forgets where it sat and whether it was folded, so a failed read or save says nothing.
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { return {} } }
   function save(patch) {
     try {
