@@ -145,7 +145,7 @@ chmod +x "$case_bin/mktemp"
 run_init
 trap 'rm -rf "$run_tmp" "$run_dir"' EXIT
 run_cases
-for f in "$here"/scripts/*.sh "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
+for f in "$here"/*/*.sh; do
   cases=(); . "$f"; run_cases
 done
 run_wait
