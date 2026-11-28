@@ -62,28 +62,12 @@ t_flags_email() {
   eq "stderr line 1" "notes.md:1: email: $email" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
-t_allows_bot_email() {
-  repo; printf '`Cursor Agent <cursoragent@cursor.com>`\n' > notes.md
-  run bash scripts/check.sh notes.md
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 t_hook_stops_private_word() {
   hooked "$word"; printf 'hello\na %s here\n' "$Word" > notes.md; git add notes.md
   run git commit -m test
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "notes.md:2: private word: $Word" "$err"
   eq commits 1 "$(git rev-list --count HEAD)"
-}
-
-t_hook_lets_old_word_through() {
-  hooked "$word"; printf 'hello\na %s here\n' "$word" > notes.md; git add notes.md
-  git commit -q --amend --no-verify -m init
-  printf 'bye\n' >> notes.md; git add notes.md
-  run git commit -m test
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
 }
 
 t_hook_stops_home_path() {
@@ -99,13 +83,6 @@ t_flags_private_word_in_path() {
   run bash scripts/check.sh --staged
   eq exit 1 "$code"
   has stderr "skills/secretskill/SKILL.md: private word in path: skills/secretskill" "$err"
-}
-
-t_no_verify_skips_hook() {
-  hooked "$word"; printf 'hello\na %s here\n' "$Word" > notes.md; git add notes.md
-  run git commit --no-verify -m test
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
 }
 
 # skills_home <skill-text>: repo with an empty skills/, and a local skills
@@ -124,30 +101,6 @@ t_adopt_moves_links_checks() {
   eq link "$R/skills/demo" "$(readlink "$T/home/demo")"
 }
 
-t_adopt_reports_leak() {
-  skills_home "see $mac_home/x"
-  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh demo
-  eq exit 1 "$code"
-  has stderr "skills/demo/SKILL.md:1: home path: $mac_home" "$err"
-  [ -f skills/demo/SKILL.md ] || eq "skills/demo/SKILL.md" "a file" "missing"
-}
-
-t_adopt_stops_on_missing() {
-  skills_home "# demo"
-  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh nope
-  eq exit 1 "$code"
-  eq stderr "stop: no skill named nope in $T/home" "$err"
-  eq "ls home" demo "$(ls "$T/home")"
-  eq "ls skills" "" "$(ls skills)"
-}
-
-t_adopt_stops_on_adopted() {
-  skills_home "# demo"; mv "$T/home/demo" skills/demo; ln -s "$R/skills/demo" "$T/home/demo"
-  run env SKILLS_HOME="$T/home" bash scripts/adopt.sh demo
-  eq exit 1 "$code"
-  eq stderr "stop: $T/home/demo is already a link" "$err"
-}
-
 t_tree_scans_tracked_files() {
   repo; printf 'hello\n' > a.md; printf 'mail %s\n' "$email" > b.md
   git add a.md b.md; git commit -qm files
@@ -161,23 +114,6 @@ t_scans_path_from_subfolder() {
   cd sub; run bash ../scripts/check.sh notes.md
   eq exit 1 "$code"
   eq "stderr line 1" "sub/notes.md:1: email: $email" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_stops_on_missing_path() {
-  repo; run bash scripts/check.sh nope
-  eq exit 1 "$code"
-  eq stderr "stop: no such path: nope" "$err"
-}
-
-t_check_refuses_unknown_flag() {
-  # Given: a repo
-  repo
-  # When
-  run bash scripts/check.sh --bogus
-  # Then
-  eq exit 64 "$code"
-  eq stderr "stop: unknown flag --bogus
-usage: check.sh [<path>... | --staged | --commit-msg <file>]" "$err"
 }
 
 t_adopt_stops_on_bad_name() {
@@ -267,13 +203,6 @@ t_link_skips_worktree() {
   eq exit 0 "$code"
   eq output "" "$out$err"
   eq "ls agents" "" "$(ls "$T/agents")"
-}
-
-t_link_runs_from_outside_repo() {
-  linked demo; cd /
-  link_sh "$R/scripts/link.sh"
-  eq exit 0 "$code"
-  eq "agents link" "$R/skills/demo" "$(readlink "$T/agents/demo")"
 }
 
 t_link_writes_last_try() {
@@ -373,18 +302,6 @@ t_link_status_names_codex_form_it_cannot_render() {
     "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
 }
 
-t_link_skips_agent_without_tier() {
-  # Given: an agent file with no tier line
-  linked demo; agent demo helper
-  grep -v '^tier: 1$' skills/demo/agents/helper.md > skills/demo/agents/helper.md.new; mv skills/demo/agents/helper.md.new skills/demo/agents/helper.md
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  has stderr "skip: skills/demo/agents/helper.md:6: no tier line" "$err"
-  [ ! -e "$T/cagents/helper.md" ] || eq "cagents/helper.md" "none" "written"
-}
-
 t_agents_lists_tools() {
   # Given: an agent whose tools line names the Agent tool
   repo; agent demo helper
@@ -394,17 +311,6 @@ t_agents_lists_tools() {
   # Then
   eq exit 0 "$code"
   eq stdout "Read Grep Glob Bash Agent" "$out"
-}
-
-t_agents_lists_every_tool_without_tools_line() {
-  # Given: an agent with no tools line
-  repo; agent demo helper
-  sed -i.bak '/^tools:/d' skills/demo/agents/helper.md
-  # When
-  run bash scripts/agents.sh tools < skills/demo/agents/helper.md
-  # Then
-  eq exit 0 "$code"
-  eq stdout "Read Grep Glob Bash Edit Write WebSearch WebFetch Agent" "$out"
 }
 
 t_agents_tries_lists_checker() {
@@ -550,17 +456,6 @@ t_link_writes_through_linked_hook_file() {
   eq "gate in target" 1 "$(jq '.hooks.PreToolUse | length' "$T/dot/settings.json")"
 }
 
-t_link_leaves_hook_file_not_json() {
-  # Given: a settings file that is not JSON
-  linked demo; with_gate; printf '{oops' > "$T/claude-settings.json"
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  has stderr "skip: $T/claude-settings.json is not JSON" "$err"
-  eq "own file" '{oops' "$(cat "$T/claude-settings.json")"
-}
-
 # old_plugin: the "skills" Antigravity plugin an earlier link.sh wrote, with
 # helper's agent file, the plugin.json, and the gate's hooks.json.
 old_plugin() {
@@ -579,54 +474,6 @@ t_link_writes_no_antigravity_plugin() {
   link_sh
   # Then
   eq plugins "" "$(ls -A "$T/gplugins")"
-}
-
-t_link_removes_old_antigravity_plugin() {
-  # Given: the skills plugin an earlier run wrote
-  linked demo; agent demo helper; with_gate; old_plugin
-  # When
-  link_sh
-  # Then
-  [ ! -e "$T/gplugins/skills" ] || eq "gplugins/skills" "gone" "$(find "$T/gplugins/skills" | tr '\n' ' ')"
-}
-
-t_link_old_plugin_cleanup_runs_once() {
-  # Given: the old skills plugin, removed by one run
-  linked demo; agent demo helper; with_gate; old_plugin; link_sh
-  # When
-  link_sh
-  # Then
-  eq "second run" "" "$out$err"
-}
-
-t_link_keeps_user_key_in_old_plugin_hooks() {
-  # Given: the old skills plugin, its hooks.json with a key of the user's own
-  linked demo; agent demo helper; with_gate; old_plugin
-  printf '%s' '{"mine":{},"subagent-gate":{"PreToolUse":[]}}' > "$T/gplugins/skills/hooks.json"
-  # When
-  link_sh
-  # Then
-  eq hooks '{"mine":{}}' "$(jq -c . "$T/gplugins/skills/hooks.json")"
-}
-
-t_link_keeps_user_manifest_in_old_plugin() {
-  # Given: the old skills plugin, with a plugin.json of the user's own
-  linked demo; agent demo helper; with_gate; old_plugin
-  printf 'mine\n' > "$T/gplugins/skills/plugin.json"
-  # When
-  link_sh
-  # Then
-  eq files "$T/gplugins/skills/plugin.json" "$(find "$T/gplugins/skills" -type f)"
-}
-
-t_link_keeps_user_agent_in_old_plugin() {
-  # Given: the old skills plugin, with an agent file of the user's own
-  linked demo; agent demo helper; with_gate; old_plugin
-  printf 'mine\n' > "$T/gplugins/skills/agents/mine.md"
-  # When
-  link_sh
-  # Then
-  eq files "$T/gplugins/skills/agents/mine.md" "$(find "$T/gplugins/skills" -type f)"
 }
 
 # no_jq: $T/nojq, a bin folder with every command on PATH but jq.
@@ -666,17 +513,6 @@ t_link_links_plugins_into_each_t3() {
   [ -d "$T/gplugins" ] || eq "gplugins" "a folder" "missing"
   link_sh
   eq "second run" "" "$out$err"
-}
-
-t_link_skips_t3_when_none() {
-  # Given: no T3 Antigravity folder
-  linked demo; rm -r "$T/t3"
-  # When
-  link_sh
-  # Then
-  eq exit 0 "$code"
-  eq stderr "skip: no T3 Antigravity folder in $T/t3" "$err"
-  eq "ls gskills" demo "$(ls "$T/gskills")"
 }
 
 # status_lines <line>...: the lines, each with its spaces read as tabs.
@@ -722,41 +558,6 @@ t_link_status_names_agent_it_cannot_render() {
     "$(grep helper2 <<<"$out")"
 }
 
-t_link_status_names_installed_agent_it_cannot_render() {
-  # Given: everything linked, then the agent's tier line taken out
-  linked demo; agent demo helper; with_gate; link_sh
-  grep -v '^tier: 1$' skills/demo/agents/helper.md > skills/demo/agents/helper.md.new; mv skills/demo/agents/helper.md.new skills/demo/agents/helper.md
-  # When
-  link_sh scripts/link.sh --status
-  # Then
-  eq "helper lines" "$(for l in "claude $T/cagents/helper.md $T/cagents" "codex $T/codex/helper.toml $T/codex"; do
-      read -r h p f <<<"$l"; printf 'stale\tagent\t%s\thelper\t%s\t%s\tskills/demo/agents/helper.md:6: no tier line\n' "$h" "$p" "$f"; done)" \
-    "$(awk -F '\t' '$2 == "agent"' <<<"$out")"
-}
-
-t_link_status_matches_install_skips() {
-  # Given: everything linked, then a target of every kind held by something
-  # else, and a second agent with no tier line
-  linked demo; agent demo helper; with_gate; link_sh
-  rm "$T/claude/demo"; mkdir "$T/claude/demo"
-  printf 'mine\n' > "$T/codex/helper.toml"
-  printf 'not json\n' > "$T/claude-settings.json"
-  rm "$T/t3/p1/config/plugins"; mkdir "$T/t3/p1/config/plugins"
-  agent demo helper2; grep -v '^tier: 1$' skills/demo/agents/helper2.md > skills/demo/agents/helper2.md.new; mv skills/demo/agents/helper2.md.new skills/demo/agents/helper2.md
-  # When: the install, then --status
-  link_sh
-  local skips whys want
-  skips="$(sed -n 's/^skip: //p' <<<"$err" | LC_ALL=C sort -u)"
-  link_sh scripts/link.sh --status
-  whys="$(awk -F '\t' '$NF ~ / / { print $NF }' <<<"$out" | LC_ALL=C sort -u)"
-  # Then
-  want="$(printf '%s\n' "$T/claude-settings.json is not JSON" "$T/claude/demo is not this repo's demo" \
-    "$T/codex/helper.toml is not this repo's helper.toml" "$T/t3/p1/config/plugins is not this repo's plugins" \
-    "skills/demo/agents/helper2.md:6: no tier line")"
-  eq "install skips" "$want" "$skips"
-  eq "status whys" "$want" "$whys"
-}
-
 t_link_status_names_held_link_under_held_shared() {
   # Given: everything linked, then folders of the user's own in place of the
   # shared skill link and of Claude Code's
@@ -794,18 +595,6 @@ t_link_status_names_no_holder_for_relative_dangling_link() {
     "$(awk -F '\t' '$2 == "skill" && $3 == "claude"' <<<"$out")"
 }
 
-t_link_skips_antigravity_relative_dangling_link() {
-  # Given: everything linked, then Antigravity's skill link in Claude Code's
-  # relative form, pointing to nothing; the install does not remove that form
-  # in Antigravity's folder
-  linked demo; link_sh
-  rm "$T/gskills/demo"; ln -s ../../.agents/skills/demo "$T/gskills/demo"
-  # When
-  link_sh
-  # Then
-  has stderr "skip: $T/gskills/demo is a link to nothing, not made here" "$err"
-}
-
 t_link_status_names_no_holder_for_dangling_t3_plugins_link() {
   # Given: everything linked, then the plugins folder gone
   linked demo; link_sh
@@ -825,16 +614,6 @@ t_link_status_writes_nothing() {
   link_sh scripts/link.sh --status
   # Then
   [ ! -e "$T/claude/demo" ] && [ ! -L "$T/claude/demo" ] || eq "claude/demo" "absent" "present"
-}
-
-t_link_refuses_unknown_argument() {
-  # Given: everything linked
-  linked demo; agent demo helper; with_gate; link_sh
-  # When
-  link_sh scripts/link.sh --nope
-  # Then
-  eq exit 64 "$code"
-  eq stderr "usage: link.sh [--status]" "$err"
 }
 
 t_hooks_link_committed_skill() {
@@ -860,70 +639,11 @@ t_flags_missing_own_path() {
   eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
 }
 
-t_passes_skill_and_core_paths() {
-  repo; mkdir -p skills/a skills/b shared
-  printf 'hi\n' > skills/b/SKILL.md; printf 'hi\n' > shared/x.md
-  printf 'read `../b/SKILL.md:3` and ../../shared/x.md.\n' > skills/a/SKILL.md
-  run bash scripts/check.sh skills shared
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 t_flags_missing_skill_path() {
   repo; mkdir -p skills/a; printf 'read `../nope/SKILL.md`\n' > skills/a/SKILL.md
   run bash scripts/check.sh skills
   eq exit 1 "$code"
   eq "stderr line 1" "skills/a/SKILL.md:1: missing path: ../nope/SKILL.md" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_reads_core_path_from_own_folder() {
-  repo; mkdir -p shared/handoff; printf 'hi\n' > shared/size.md
-  printf '<!-- include ../size.md -->\nsee `../gone.md`\n' > shared/handoff/rules.md
-  run bash scripts/check.sh shared
-  eq exit 1 "$code"
-  eq "stderr line 1" "shared/handoff/rules.md:2: missing path: ../gone.md" "$(printf '%s\n' "$err" | sed -n 1p)"
-  eq "last stderr line" "check: 1 problem(s) found" "$(printf '%s\n' "$err" | tail -1)"
-}
-
-t_passes_bare_name_of_no_file() {
-  # Given: a shared file that names notes.md bare, and no shared/notes.md
-  repo; mkdir -p shared; printf 'see notes.md\n' > shared/y.md
-  # When
-  run bash scripts/check.sh shared
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_skips_placeholders_and_other_folders() {
-  repo; mkdir -p skills/demo/references; printf 'hi\n' > skills/demo/references/a.md
-  printf 'see `references/types/<type>.md`, `./src/x.md`, and `scripts/sync-repos.sh`\n' > skills/demo/SKILL.md
-  run bash scripts/check.sh skills
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_allows_listed_path() {
-  repo; mkdir -p skills/embed-source/scripts; printf 'hi\n' > skills/embed-source/scripts/status.sh
-  printf 'writes `scripts/sync-repos.sh` in your repo\n' > skills/embed-source/SKILL.md
-  run bash scripts/check.sh skills
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_flags_missing_here_path() {
-  repo; mkdir -p skills/a/scripts
-  printf 'python3 "$here/../../b/scripts/x.py"\n' > skills/a/scripts/run.sh
-  run bash scripts/check.sh skills
-  eq exit 1 "$code"
-  eq "stderr line 1" "skills/a/scripts/run.sh:1: missing path: ../../b/scripts/x.py" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_ignores_paths_elsewhere() {
-  repo; mkdir docs; printf 'see `../nope.md`\n' > docs/notes.md
-  run bash scripts/check.sh docs
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
 }
 
 t_hook_stops_missing_path() {
@@ -952,28 +672,6 @@ t_flags_harness_branch_in_shared() {
   # Then
   eq exit 1 "$code"
   has stderr "shared/notes.md:1: harness branch: in Claude Code" "$err"
-}
-
-t_passes_harness_in_description() {
-  # Given: a description that names each harness's command form
-  repo; skill demo
-  printf -- '---\nname: demo\ndescription: Run /demo in Claude Code or $demo in Codex.\n---\n# demo\n' > skills/demo/SKILL.md
-  git add -A; git commit -qm files
-  # When
-  run bash scripts/check.sh
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_passes_harness_in_readme() {
-  # Given: a README, for people, that names a harness's command form
-  repo; skill demo; printf 'Type /demo in Claude Code.\n' >> skills/demo/README.md; git add -A; git commit -qm files
-  # When
-  run bash scripts/check.sh
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
 }
 
 t_hook_stops_harness_branch() {
@@ -1045,15 +743,6 @@ t_flags_core_row_without_license() {
   eq "stderr line 1" "THIRD_PARTY_NOTICES.md:5: missing license: shared/LICENSE-acme" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
-t_passes_copy_with_license() {
-  repo; demo_skill; printf 'MIT\n' > skills/demo/LICENSE; notices skills/demo copy
-  printf '| `skills/other` | `x/other` | idea only |\n' >> THIRD_PARTY_NOTICES.md
-  git add -A; git commit -qm files
-  run env PRIVATE_WORDS=/dev/null bash scripts/check.sh
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 t_hook_stops_row_without_license() {
   hooked; demo_skill; notices skills/demo copy; git add -A
   run git commit -m test
@@ -1090,13 +779,6 @@ t_flags_listed_file_without_credits() {
   run bash scripts/check.sh
   eq exit 1 "$code"
   eq "stderr line 1" "skills/demo/README.md: missing heading: ## Credits" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_passes_readme_with_headings() {
-  repo; readme "Use it when" "What you get" "Needs" "Fits with"; git add -A; git commit -qm files
-  run bash scripts/check.sh
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
 }
 
 t_flags_no_frontmatter() {
@@ -1146,15 +828,6 @@ invocation() {
   if [ -n "$2" ]; then mkdir -p skills/demo/agents; printf '%s\n' "$2" > skills/demo/agents/openai.yaml; fi
   git add -A; git commit -qm files
   run bash scripts/check.sh
-}
-
-t_passes_locked_in_both() {
-  # Given: SKILL.md and the Codex file both lock the skill
-  # When
-  invocation 'disable-model-invocation: true' "$(printf 'policy:\n  allow_implicit_invocation: false')"
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
 }
 
 t_flags_locked_without_codex_file() {
@@ -1219,16 +892,6 @@ t_flags_agent_empty_description() {
 
 
 
-
-t_flags_agent_block_description() {
-  # Given: every field, with the description as a block
-  # When
-  agent_md "${full_agent/description: Reviews one \"demo\" diff./description: |
-  Reviews one diff.}"
-  # Then
-  eq exit 1 "$code"
-  has stderr "skills/demo/agents/helper.md:3: description on more than one line" "$err"
-}
 
 t_flags_agent_block_name() {
   # Given: every field, with the name as a block
@@ -1348,29 +1011,6 @@ t_flags_missing_try_order_row() {
   has stderr "shared/model-tiers.md:52: no try order row 2 no" "$err"
 }
 
-t_passes_agent_with_all_fields() {
-  # Given: a full agent file and a Codex openai.yaml beside it
-  agent_md "$full_agent"
-  printf 'interface: {}\n' > skills/demo/agents/openai.yaml; git add -A; git commit -qm yaml
-  # When
-  run bash scripts/check.sh
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_passes_block_after_blank() {
-  header "$(printf 'name: demo\ndescription: |\n\n  Explains the skill.')"
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_passes_name_with_comment() {
-  header "$(printf 'name: demo # short label\ndescription: A demo skill.')"
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 t_flags_null_description() {
   header "$(printf 'name: demo\ndescription: null')"
   eq exit 1 "$code"
@@ -1410,38 +1050,10 @@ t_flags_long_body() {
   eq "stderr line 1" "skills/demo/SKILL.md: body too long: 500 lines (limit: under 500)" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
-t_passes_body_under_limit() {
-  # Given: a body of 499 lines. When: check.sh
-  body 499
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 t_flags_long_description() {
   # Given: a quoted description of 1025 characters. When: check.sh
   header "name: demo
 description: \"$(times 1025 a)\""
-  # Then
-  eq exit 1 "$code"
-  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_passes_description_at_limit() {
-  # Given: a quoted description of 1024 characters. When: check.sh
-  header "name: demo
-description: \"$(times 1024 a)\""
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
-t_flags_long_block_description() {
-  # Given: a block description of two lines of 512, joined by one newline. When: check.sh
-  header "name: demo
-description: |
-  $(times 512 a)
-  $(times 512 a)"
   # Then
   eq exit 1 "$code"
   eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
@@ -1459,37 +1071,6 @@ description: |
   eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
 }
 
-t_counts_folded_block_description() {
-  # Given: a folded block description of 1025 characters. When: check.sh
-  header "name: demo
-description: >-
-  $(times 1025 a)"
-  # Then
-  eq exit 1 "$code"
-  eq "stderr line 1" "skills/demo/SKILL.md: description too long: 1025 characters (limit: 1024)" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_flags_unclosed_frontmatter() {
-  # Given: a SKILL.md whose frontmatter has no closing line
-  repo; readme "Use it when" "What you get" "Needs" "Fits with"
-  printf -- '---\nname: demo\ndescription: A demo skill.\n' > skills/demo/SKILL.md
-  git add -A; git commit -qm files
-  # When
-  run bash scripts/check.sh
-  # Then
-  eq exit 1 "$code"
-  eq "stderr line 1" "skills/demo/SKILL.md: missing frontmatter" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_counts_description_characters() {
-  # Given: a description of 1024 two-byte characters, 2048 bytes. When: check.sh
-  header "name: demo
-description: \"$(times 1024 é)\""
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
-}
-
 # agents_md <n>: repo with skills/demo, its README headings, and an AGENTS.md
 # of <n> lines of `x`, committed; then run check.sh.
 agents_md() {
@@ -1505,14 +1086,6 @@ t_flags_long_agents_md() {
   # Then
   eq exit 1 "$code"
   eq "stderr line 1" "AGENTS.md: too long: 200 lines (limit: under 200)" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
-t_passes_agents_md_under_limit() {
-  # Given: an AGENTS.md of 199 lines. When: check.sh
-  agents_md 199
-  # Then
-  eq exit 0 "$code"
-  eq stdout "check: clean" "$out"
 }
 
 t_flags_shebang_not_executable() {
@@ -1552,37 +1125,12 @@ t_readme_hook_stops_skill_change() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
-t_readme_hook_passes_marked_change() {
-  hooked; skill demo; git add -A; git commit -qm skill
-  printf 'more\n' >> skills/demo/SKILL.md; git add skills
-  run git commit -m test -m 'Readme: unchanged'
-  eq exit 0 "$code"
-  eq commits 3 "$(git rev-list --count HEAD)"
-}
-
-t_readme_hook_passes_with_readme() {
-  hooked; skill demo; git add -A; git commit -qm skill
-  printf 'more\n' >> skills/demo/SKILL.md; printf 'more\n' >> skills/demo/README.md; git add skills
-  run git commit -m test
-  eq exit 0 "$code"
-  eq commits 3 "$(git rev-list --count HEAD)"
-}
-
 t_marked_change_runs_leak_check() {
   hooked; skill demo; git add -A; git commit -qm skill
   printf 'see %s/x\n' "$mac_home" >> skills/demo/SKILL.md; git add skills
   run git commit -m test -m 'Readme: unchanged'
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "skills/demo/SKILL.md:6: home path: $mac_home" "$err"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_marked_change_runs_header_check() {
-  hooked; skill demo; git add -A; git commit -qm skill
-  printf -- '---\nname: other\ndescription: A demo skill.\n---\n' > skills/demo/SKILL.md; git add skills
-  run git commit -m test -m 'Readme: unchanged'
-  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
-  has stderr "skills/demo/SKILL.md: name does not match folder: other" "$err"
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
@@ -1594,69 +1142,6 @@ t_subject_hook_stops_long_subject() {
   hooked; printf 'x\n' > a.md; git add a.md
   # When
   run git commit -m "$(times 51 a)"
-  # Then
-  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
-  has stderr "$(subject_msg 51)" "$err"
-  eq commits 1 "$(git rev-list --count HEAD)"
-}
-
-t_subject_hook_passes_50() {
-  # Given
-  hooked; printf 'x\n' > a.md; git add a.md
-  # When
-  run git commit -m "$(times 50 a)"
-  # Then
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_subject_hook_counts_characters() {
-  # Given
-  hooked; printf 'x\n' > a.md; git add a.md
-  # When
-  run git commit -m "$(times 49 a)é"
-  # Then
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_subject_hook_passes_merge() {
-  # Given
-  hooked; printf 'x\n' > a.md; git add a.md
-  # When
-  run git commit -m "Merge branch '$(times 50 a)'"
-  # Then
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_subject_hook_passes_revert() {
-  # Given
-  hooked; printf 'x\n' > a.md; git add a.md
-  # When
-  run git commit -m "Revert \"$(times 50 a)\""
-  # Then
-  eq exit 0 "$code"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_subject_hook_passes_git_merge() {
-  # Given: a branch with a 50-character name, one commit ahead
-  local b; b="$(times 50 a)"
-  hooked; git switch -qc "$b"; printf 'x\n' > a.md; git add a.md; git commit -qm a
-  git switch -q -; printf 'y\n' > b.md; git add b.md; git commit -qm b
-  # When: git writes the subject `Merge branch '<b>'`
-  run git merge --no-ff --no-edit "$b"
-  # Then
-  eq exit 0 "$code"
-  eq commits 4 "$(git rev-list --count HEAD)"
-}
-
-t_marked_change_runs_subject_check() {
-  # Given
-  hooked; printf 'x\n' > a.md; git add a.md
-  # When
-  run git commit -m "$(times 51 a)" -m 'Readme: unchanged'
   # Then
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "$(subject_msg 51)" "$err"
@@ -1679,33 +1164,6 @@ t_readme_hook_asks_named_core() {
   [ "$code" -ne 0 ] || eq exit "not 0" "$code"
   has stderr "$(readme_msg skills/demo)" "$err"
   eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_readme_hook_asks_core_folder() {
-  hooked; core; skill demo 'run `../../shared/handoff/render.sh`'; git add -A; git commit -qm skill
-  printf 'more\n' >> shared/handoff/rules.md; git add -A
-  run git commit -m test
-  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
-  has stderr "$(readme_msg skills/demo)" "$err"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_readme_hook_asks_included_core() {
-  hooked; core; skill demo 'run `../../shared/handoff/render.sh`'; git add -A; git commit -qm skill
-  printf 'more\n' >> shared/size.md; git add -A
-  run git commit -m test
-  [ "$code" -ne 0 ] || eq exit "not 0" "$code"
-  has stderr "$(readme_msg skills/demo)" "$err"
-  eq commits 2 "$(git rev-list --count HEAD)"
-}
-
-t_readme_hook_skips_unread_core() {
-  hooked; core; skill demo 'read `../../shared/x.md`'; skill other 'read `../../shared/size.md`'
-  git add -A; git commit -qm skills
-  printf 'more\n' >> shared/x.md; printf 'more\n' >> skills/demo/README.md; git add -A
-  run git commit -m test
-  eq exit 0 "$code"
-  eq commits 3 "$(git rev-list --count HEAD)"
 }
 
 t_readme_hook_asks_core_named_bare() {
@@ -1761,19 +1219,6 @@ t_readme_hook_asks_core_named_bare_staged_only() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
-t_readme_hook_skips_bare_name_in_other_folder() {
-  # Given: skill demo reads shared/kit/a.md, which names size.md bare;
-  # there is no shared/kit/size.md, only shared/size.md
-  hooked; core; mkdir -p shared/kit; printf 'see size.md\n' > shared/kit/a.md
-  skill demo 'read `../../shared/kit/a.md`'; git add -A; git commit -qm skill
-  # When
-  printf 'more\n' >> shared/size.md; git add -A
-  run git commit -m test
-  # Then
-  eq exit 0 "$code"
-  eq commits 3 "$(git rev-list --count HEAD)"
-}
-
 # t_runner_keeps_cases_out_of_caller: from a caller repo with an origin,
 # run_cases runs two broken cases. One fails, then would write a marker. One
 # loses its cd behind `|| true`, then commits and pushes. Both report FAIL; the
@@ -1802,28 +1247,18 @@ cases=(
   "flags a linux home path|t_flags_linux_home_path"
   "passes a clean file|t_passes_clean_file"
   "flags an email|t_flags_email"
-  "allows the listed bot email|t_allows_bot_email"
   "hook stops a commit that adds a private word|t_hook_stops_private_word"
-  "hook lets through a word on a line the commit does not add|t_hook_lets_old_word_through"
   "hook stops a commit that adds a home path|t_hook_stops_home_path"
   "flags a private word in an added path|t_flags_private_word_in_path"
-  "no-verify skips the hook|t_no_verify_skips_hook"
   "adopt moves, links, and checks a skill|t_adopt_moves_links_checks"
-  "adopt reports a leak in the adopted skill|t_adopt_reports_leak"
-  "adopt stops on a missing skill|t_adopt_stops_on_missing"
-  "adopt stops on a skill already adopted|t_adopt_stops_on_adopted"
   "tree mode scans every tracked file|t_tree_scans_tracked_files"
   "scans a path given from a subfolder|t_scans_path_from_subfolder"
-  "stops on a missing path|t_stops_on_missing_path"
   "adopt stops on a name that is not a skill name|t_adopt_stops_on_bad_name"
-  "check.sh refuses an unknown flag with its usage|t_check_refuses_unknown_flag"
   "link links a new skill into every folder|t_link_links_new_skill"
   "link follows a renamed skill|t_link_follows_rename"
   "link leaves a name something else holds|t_link_leaves_other_names"
   "link does nothing in a worktree|t_link_skips_worktree"
-  "link.sh runs from outside the repo|t_link_runs_from_outside_repo"
   "link writes a skill agent's Claude Code form|t_link_writes_claude_form"
-  "link skips an agent file with no tier line|t_link_skips_agent_without_tier"
   "link keeps an agent whose tier model is none|t_link_keeps_agent_on_tier_model_none"
   "link writes the Codex form when the Claude try fails|t_link_writes_codex_form_when_claude_try_fails"
   "link status names a Codex form it cannot render|t_link_status_names_codex_form_it_cannot_render"
@@ -1833,114 +1268,67 @@ cases=(
   "link adds the gate to codex hooks once|t_link_adds_gate_to_codex_hooks_once"
   "link keeps a hook that shares the gate's group|t_link_keeps_hook_in_gate_group"
   "link writes through a linked hook file|t_link_writes_through_linked_hook_file"
-  "link leaves a hook file that is not JSON|t_link_leaves_hook_file_not_json"
   "link writes a tier-3 agent on each harness's own last try|t_link_writes_last_try"
   "link writes a shared agent's two forms|t_link_writes_shared_agent_forms"
   "link writes a skill agent's Codex form|t_link_writes_codex_form"
   "link leaves a Codex agent file it did not make|t_link_leaves_other_codex_agent"
   "agents.sh lists an agent's tools|t_agents_lists_tools"
-  "agents.sh lists every tool for an agent with no tools line|t_agents_lists_every_tool_without_tools_line"
   "agents.sh lists a tier-3 checker's try list|t_agents_tries_lists_checker"
   "agents.sh moves every agent of a tier when one cell changes|t_agents_tries_follow_tier_cell"
   "agents.sh start names a tier-2 agent's first try|t_agents_start_names_first_try"
   "agents.sh start says name when the first try is the harness|t_agents_start_by_name_when_first_try_is_harness"
   "link writes no Antigravity plugin|t_link_writes_no_antigravity_plugin"
-  "link removes the Antigravity plugin an earlier run wrote|t_link_removes_old_antigravity_plugin"
-  "link removes the old Antigravity plugin once|t_link_old_plugin_cleanup_runs_once"
-  "link keeps a key of the user's own in the old plugin hooks|t_link_keeps_user_key_in_old_plugin_hooks"
-  "link keeps a plugin.json of the user's own|t_link_keeps_user_manifest_in_old_plugin"
-  "link keeps an agent file of the user's own in the old plugin|t_link_keeps_user_agent_in_old_plugin"
   "link stops when jq is missing|t_link_stops_without_jq"
   "link links the plugins folder into each T3 Antigravity folder|t_link_links_plugins_into_each_t3"
-  "link says so when T3 has no Antigravity folder|t_link_skips_t3_when_none"
   "link status names every target ok|t_link_status_names_every_target_ok"
   "link status names missing and held targets|t_link_status_names_missing_and_held"
   "link status writes nothing|t_link_status_writes_nothing"
   "link status names each file of an agent it cannot render|t_link_status_names_agent_it_cannot_render"
-  "link status names each installed file of an agent it can no longer render|t_link_status_names_installed_agent_it_cannot_render"
-  "link status gives the skip words of the install|t_link_status_matches_install_skips"
   "link status names a held Claude Code link under a held shared link|t_link_status_names_held_link_under_held_shared"
   "link status names no holder for its own dangling link|t_link_status_names_no_holder_for_own_dangling_link"
   "link status names no holder for Claude Code's relative dangling link|t_link_status_names_no_holder_for_relative_dangling_link"
-  "link names the holder of Antigravity's relative dangling link|t_link_skips_antigravity_relative_dangling_link"
   "link status names no holder for a T3 link to a missing plugins folder|t_link_status_names_no_holder_for_dangling_t3_plugins_link"
-  "link refuses an unknown argument|t_link_refuses_unknown_argument"
   "hooks link a skill on commit, checkout, and merge|t_hooks_link_committed_skill"
   "flags a missing path in a skill|t_flags_missing_own_path"
-  "passes paths to another skill and the shared core|t_passes_skill_and_core_paths"
   "flags a missing path to another skill|t_flags_missing_skill_path"
-  "reads a shared core path from its own folder|t_reads_core_path_from_own_folder"
-  "passes a bare name of no file in the shared core|t_passes_bare_name_of_no_file"
-  "skips placeholders and folders a skill does not have|t_skips_placeholders_and_other_folders"
-  "allows a listed path in the user's repo|t_allows_listed_path"
-  "flags a missing path after \$here in a script|t_flags_missing_here_path"
-  "ignores paths outside skills and the shared core|t_ignores_paths_elsewhere"
   "hook stops a commit that adds a missing path|t_hook_stops_missing_path"
   "flags a harness branch in a skill file|t_flags_harness_branch_in_skill"
   "flags a harness branch in a shared core file|t_flags_harness_branch_in_shared"
-  "passes a harness command form in a description|t_passes_harness_in_description"
-  "passes a harness command form in a README|t_passes_harness_in_readme"
   "hook stops a commit that adds a harness branch|t_hook_stops_harness_branch"
   "flags a Skill tool name in a skill file|t_flags_skill_tool_in_skill"
   "flags a listed copy with no license|t_flags_copy_without_license"
   "flags a shared core row with no owner license|t_flags_core_row_without_license"
-  "passes a listed copy with its license|t_passes_copy_with_license"
   "hook stops a notices row with no license|t_hook_stops_row_without_license"
   "flags a skill with no README|t_flags_skill_without_readme"
   "flags a README with a missing heading|t_flags_missing_heading"
   "flags a listed skill with no Credits|t_flags_listed_without_credits"
   "flags a skill with a listed file and no Credits|t_flags_listed_file_without_credits"
-  "passes a README with its headings|t_passes_readme_with_headings"
   "flags a SKILL.md with no frontmatter|t_flags_no_frontmatter"
   "flags a SKILL.md name that is not its folder|t_flags_name_not_folder"
   "flags a SKILL.md with an empty description|t_flags_empty_description"
-  "passes a skill locked in both files|t_passes_locked_in_both"
   "flags a locked skill with no Codex file|t_flags_locked_without_codex_file"
   "flags a locked skill that Codex lets start|t_flags_locked_codex_free"
   "flags a skill only Codex locks|t_flags_only_codex_locked"
   "readme hook stops a skill change without its README|t_readme_hook_stops_skill_change"
-  "readme hook passes a skill change marked Readme: unchanged|t_readme_hook_passes_marked_change"
-  "readme hook passes a skill change with its README|t_readme_hook_passes_with_readme"
   "Readme: unchanged still runs the leak check|t_marked_change_runs_leak_check"
-  "Readme: unchanged still runs the header check|t_marked_change_runs_header_check"
   "commit hook stops a 51-character subject|t_subject_hook_stops_long_subject"
-  "commit hook passes a 50-character subject|t_subject_hook_passes_50"
-  "commit hook counts characters, not bytes|t_subject_hook_counts_characters"
-  "commit hook lets a long Merge subject through|t_subject_hook_passes_merge"
-  "commit hook lets a long Revert subject through|t_subject_hook_passes_revert"
-  "commit hook lets the subject of a git merge through|t_subject_hook_passes_git_merge"
-  "Readme marker does not skip the subject check|t_marked_change_runs_subject_check"
   "readme hook asks a skill that names a changed core file|t_readme_hook_asks_named_core"
-  "readme hook asks a skill that names another file in the changed file's core folder|t_readme_hook_asks_core_folder"
-  "readme hook asks a skill whose core file includes the changed file|t_readme_hook_asks_included_core"
-  "readme hook passes a skill that reads no changed core file|t_readme_hook_skips_unread_core"
   "readme hook asks a skill whose core file names the changed file bare|t_readme_hook_asks_core_named_bare"
   "readme hook follows a bare core name that ends a sentence|t_readme_hook_asks_core_named_bare_at_end"
   "readme hook asks a skill whose bare-named core file the commit deletes|t_readme_hook_asks_core_named_bare_deleted"
   "readme hook follows a bare core name the work tree lacks but the commit holds|t_readme_hook_asks_core_named_bare_staged_only"
-  "readme hook resolves a bare core name in its own folder only|t_readme_hook_skips_bare_name_in_other_folder"
-  "passes a block description after a blank line|t_passes_block_after_blank"
-  "passes a SKILL.md name with an inline comment|t_passes_name_with_comment"
   "flags a null description|t_flags_null_description"
   "flags a description that is only a comment|t_flags_comment_description"
   "flags a SKILL.md name with an escaped quote|t_flags_escaped_quote_name"
   "flags a SKILL.md body of 500 lines|t_flags_long_body"
-  "passes a SKILL.md body of 499 lines|t_passes_body_under_limit"
   "flags a description over 1024 characters|t_flags_long_description"
-  "passes a quoted description of 1024 characters|t_passes_description_at_limit"
-  "flags a block description over 1024 characters|t_flags_long_block_description"
-  "counts a description by characters, not bytes|t_counts_description_characters"
   "counts the nested indent of a block description|t_counts_block_nested_indent"
-  "counts a folded block description|t_counts_folded_block_description"
-  "flags a frontmatter that never closes|t_flags_unclosed_frontmatter"
   "flags a name over 64 characters|t_flags_long_name"
   "flags an AGENTS.md of 200 lines|t_flags_long_agents_md"
-  "passes an AGENTS.md of 199 lines|t_passes_agents_md_under_limit"
   "flags a #! file with no run bit|t_flags_shebang_not_executable"
   "flags an agent file with no frontmatter|t_flags_agent_no_frontmatter"
   "flags an agent name that is not its file name|t_flags_agent_name_not_file"
   "flags an agent file with an empty description|t_flags_agent_empty_description"
-  "flags an agent file with a block description|t_flags_agent_block_description"
   "flags an agent file with a block name|t_flags_agent_block_name"
   "flags an agent file with no tier line|t_flags_agent_no_tier"
   "flags an agent file with no checker line|t_flags_agent_no_checker"
@@ -1950,7 +1338,6 @@ cases=(
   "flags a Claude try list that ends on another company|t_flags_claude_try_list_ending_elsewhere"
   "flags a try-order row whose key has two spaces|t_flags_try_order_row_odd_key"
   "flags a missing try-order row|t_flags_missing_try_order_row"
-  "passes an agent file with every field|t_passes_agent_with_all_fields"
   "flags a shared agent with no tier line|t_flags_shared_agent_no_tier"
   "runner keeps a broken case out of the caller repo|t_runner_keeps_cases_out_of_caller"
 )

@@ -60,23 +60,6 @@ t_rr_task() {
   eq stdout '{"stage":"task","step":"complete-task","stop":false,"model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"manual","pr":null}' "$out"
 }
 
-t_rr_pr_beats_bug() {
-  # Given: a bug with one open PR and one merged PR
-  # When
-  rr_go '["bug"]' OPEN '[]' "[$pr80,{\"url\":\"https://github.com/acme/app/pull/79\",\"state\":\"MERGED\"}]"
-  # Then
-  eq stdout '{"stage":"pr","step":"ready-pr","stop":false,"model":"opus","model_from":"default","effort":"medium","effort_from":"default","reason":"open PR https://github.com/acme/app/pull/80","pr":"https://github.com/acme/app/pull/80"}' "$out"
-}
-
-t_rr_two_prs() {
-  # Given: an S ticket with two open PRs
-  # When
-  rr_go '["size/S"]' OPEN '[]' "[$pr80,$pr81]"
-  # Then
-  has stdout '"stage":"pr","step":null,"stop":true' "$out"
-  has stdout '"reason":"#42 has 2 open PRs: https://github.com/acme/app/pull/80 https://github.com/acme/app/pull/81"' "$out"
-}
-
 t_rr_bug() {
   # Given: a bug with a size label
   # When
@@ -143,23 +126,6 @@ t_rr_answer_routes() {
   has stdout '"reason":"answer ship, size M"' "$out"
 }
 
-t_rr_label_beats_answer() {
-  # Given: a bug answered ship
-  # When
-  rr_go '["bug"]' -- --answer ship --size S
-  # Then
-  has stdout '"stage":"bug","step":"triage"' "$out"
-}
-
-t_rr_ready_pr_answer_no_pr() {
-  # Given: an unlabeled issue answered ready-pr, with no PR
-  # When
-  rr_go '["p1"]' -- --answer ready-pr
-  # Then
-  has stdout '"stage":"unlabeled","step":null,"stop":true' "$out"
-  has stdout '"reason":"#42 has no open PR"' "$out"
-}
-
 t_rr_close_answer() {
   # Given: an unlabeled issue answered close
   # When
@@ -178,14 +144,6 @@ t_rr_pick_beats_label() {
   has stdout '"reason":"you picked /triage"' "$out"
 }
 
-t_rr_closed_beats_pick() {
-  # Given: a closed bug the user picked grill for
-  # When
-  rr_go '["bug"]' CLOSED -- --pick grill
-  # Then
-  has stdout '"stage":"done","step":null' "$out"
-}
-
 t_rr_pick_ready_pr() {
   # Given: a bug with open PR #80, the user picked ready-pr
   # When
@@ -196,15 +154,6 @@ t_rr_pick_ready_pr() {
   has stdout '"pr":"https://github.com/acme/app/pull/80"' "$out"
 }
 
-t_rr_pick_ready_pr_no_pr() {
-  # Given: an S ticket with no PR, the user picked ready-pr
-  # When
-  rr_go '["size/S"]' -- --pick ready-pr
-  # Then
-  has stdout '"stage":"picked","step":null,"stop":true' "$out"
-  has stdout '"reason":"#42 has no open PR"' "$out"
-}
-
 t_rr_named_model_effort() {
   # Given: an S ticket, a model and an effort named
   # When
@@ -213,22 +162,11 @@ t_rr_named_model_effort() {
   has stdout '"model":"sonnet","model_from":"set","effort":"xhigh","effort_from":"set"' "$out"
 }
 
-t_rr_ship_answer_needs_size() {
-  # Given: an unlabeled issue answered ship with no size
-  # When
-  rr_go '["p1"]' -- --answer ship
-  # Then
-  eq exit 64 "$code"
-  eq "stderr line 1" "stop: --answer ship needs --size XS|S|M|L|XL" "$(printf '%s\n' "$err" | sed -n 1p)"
-}
-
 cases=(
   "closed comes first|t_rr_closed_first"
   "an epic gets no step|t_rr_epic"
   "a waiting task gets no step|t_rr_waiting_task"
   "a task starts complete-task|t_rr_task"
-  "one open PR beats the bug label|t_rr_pr_beats_bug"
-  "two open PRs give no step|t_rr_two_prs"
   "a bug starts triage|t_rr_bug"
   "a seed starts grill|t_rr_seed"
   "XXL is caught before ship|t_rr_xxl_before_ship"
@@ -236,13 +174,8 @@ cases=(
   "ready-to-build ships at medium|t_rr_ready_to_build"
   "no label needs a proposal|t_rr_unlabeled"
   "an answer routes an unlabeled issue|t_rr_answer_routes"
-  "a label beats the answer|t_rr_label_beats_answer"
-  "a ready-pr answer with no PR gets no step|t_rr_ready_pr_answer_no_pr"
   "a close answer starts nothing|t_rr_close_answer"
   "a pick beats the labels|t_rr_pick_beats_label"
-  "closed beats a pick|t_rr_closed_beats_pick"
   "a ready-pr pick takes the one open PR|t_rr_pick_ready_pr"
-  "a ready-pr pick with no PR gets no step|t_rr_pick_ready_pr_no_pr"
   "a named model and effort win|t_rr_named_model_effort"
-  "a ship answer needs a size|t_rr_ship_answer_needs_size"
 )

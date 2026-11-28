@@ -61,7 +61,3 @@ The script makes the repo a T3 project if it is not one yet. The agent starts ea
 - Builds each thread's folder and first message with the shared launcher, `../../shared/launch/line.sh`, and starts it by the shared launch steps, `../../shared/launch/launch-t3.md`.
 - Guesses a step for an unlabeled issue by the shared rules in `../../shared/route/propose.md`, and writes your yes with the shared label writer, `../../shared/route/edit-labels.sh`.
 - Often follows [file-issue](../file-issue/) or [capture](../capture/), which make the issue.
-
-## Tests
-
-The cases for [kickoff.sh](scripts/kickoff.sh), its routes, thread lines, labels, the T3 check, and the project add, are in [tests/kickoff.sh](tests/kickoff.sh). The project add lives in the shared core's [project.sh](../../shared/launch/project.sh), which orchestrate shares. The cases run on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of their own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.

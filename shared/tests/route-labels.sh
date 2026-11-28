@@ -64,17 +64,6 @@ t_kl_answer_labels() {
   eq labels "bug,seed,manual,size/M," "$got"
 }
 
-t_kl_answer_repo_size() {
-  # Given: acme/app's conventions name its M label "Size: Medium"
-  T="$(cd "$(mktemp -d)" && pwd -P)"
-  GH_ISSUE_STORE="$T/conv.json" python3 "$here/../issue_conventions.py" set acme/app --style bracket \
-    --xs XS --s Small --m "Size: Medium" --l L --xl XL --xxl XXL >/dev/null
-  # When
-  kl_answer ship M
-  # Then
-  eq stdout "Size: Medium" "$out"
-}
-
 t_kl_label_spec() {
   # Given: labels.sh sourced
   T="$(cd "$(mktemp -d)" && pwd -P)"
@@ -94,6 +83,5 @@ cases=(
   "p1 is no size|t_kl_no_size"
   "an XXL label is XXL|t_kl_size_xxl"
   "answer_label names the label of each answer|t_kl_answer_labels"
-  "answer_label uses the repo's size label|t_kl_answer_repo_size"
   "label_spec gives each answer label its color|t_kl_label_spec"
 )

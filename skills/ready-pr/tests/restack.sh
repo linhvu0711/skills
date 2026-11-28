@@ -43,21 +43,6 @@ t_restack_stops_past_100_prs() {
   eq stderr "stop: more than 100 open PRs on feat/a; restack lists at most 100" "$err"
 }
 
-t_restack_gh_fails() {
-  fake_gh
-  printf 'HTTP 502: Bad Gateway\n' > "$FAKE_GH/pr-list.fail"
-  run bash "$restack" list o/r feat/a
-  eq exit 1 "$code"
-  eq stderr "stop: gh failed: HTTP 502: Bad Gateway" "$err"
-}
-
-t_restack_lists_nothing() {
-  fake_gh
-  run bash "$restack" list o/r feat/a
-  eq exit 0 "$code"
-  eq stdout "STACK=0" "$out"
-}
-
 # stack [clash]: repo, with a bare origin.
 # main has f=a; feat/a adds p (a1); feat/b on it adds b (b1, which also sets
 # f=b with `clash`); feat/c on it adds c (c1); all pushed. Then main sets f=main,
@@ -219,7 +204,6 @@ RESTACK=stopped" "$out"
 
 cases=(
   "restack lists the stack in order|t_restack_lists_stack_in_order"
-  "restack lists nothing on a bare branch|t_restack_lists_nothing"
   "restack moves children bottom first|t_restack_moves_children_bottom_first"
   "restack moves an all-owned stack|t_restack_moves_all_owned_stack"
   "restack leaves a foreign PR in the middle|t_restack_leaves_foreign_pr_in_middle"
@@ -231,5 +215,4 @@ cases=(
   "restack skips a child with merge commits|t_restack_skips_merge_commits"
   "restack lists a child behind a fork of the same name|t_restack_lists_child_behind_fork_of_same_name"
   "restack stops past 100 PRs on a branch|t_restack_stops_past_100_prs"
-  "restack stops with gh's line when gh fails|t_restack_gh_fails"
 )

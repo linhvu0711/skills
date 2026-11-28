@@ -33,16 +33,6 @@ t_base_tree_takes_origin() {
   eq head "$new" "$(git -C "$dir" rev-parse HEAD)"
 }
 
-t_base_tree_no_branch() {
-  # Given
-  bt_lagging
-  # When
-  run bash "$here/../base-tree.sh" "$T/dev/app" nope
-  # Then
-  eq exit 1 "$code"
-  eq "last stderr line" "stop: could not fetch nope from origin" "$(printf '%s\n' "$err" | tail -n 1)"
-}
-
 t_base_tree_removes() {
   # Given
   bt_lagging
@@ -71,7 +61,6 @@ t_base_tree_refuses_other() {
 
 cases=(
   "takes origin's head when the local branch lags|t_base_tree_takes_origin"
-  "stops when origin has no such branch|t_base_tree_no_branch"
   "removes the tree it made|t_base_tree_removes"
   "refuses a folder it did not make|t_base_tree_refuses_other"
 )

@@ -41,7 +41,7 @@ Before it adds, it looks for dead code in the area the ticket touches: a functio
 
 The plan names the data shape before the logic: the type, the table, or the file format. A new need goes into that shape, not into a flag at the side. Each kind of ID gets its own type, data from outside is parsed into a type at the edge, and a type comes from a schema when one exists. A step that writes a file, a row, or a remote call is safe to run twice and after a crash, and a test runs it twice. Two writers get their own targets before the plan names any lock. When a target stays shared, or the code checks before it writes (a 300-item cap counted, then a row inserted), each way the two writes can cross gets its own `Race:` Proof row. Its test holds the first write open, with a database trigger or a hook, while the second runs, so it fails on the broken code. Two requests sent at once through a test server that answers one at a time run in turn, and that test passes on the broken code too.
 
-Two kinds of code lose the unhappy path most often, so the plan names their cases as tests. Each list a screen reads gets a test while it loads, one when the load fails, and one when it is empty while a filter or a pick is still set. Each save gets a test for a resend after a lost answer, one for a close or a cancel while it saves, and one for a second tab that already did it. A case that does not apply goes under Out of scope with the reason. Review bots used to find these cases after the PR opened.
+Two kinds of code lose the unhappy path most often, so the plan names their cases as tests. Each list a screen reads gets a test while it loads, one when the load fails, and one when it is empty while a filter or a pick is still set. Each save gets a test for a resend after a lost answer, one for a close or a cancel while it saves, and one for a second tab that already did it. A case that does not apply goes under Out of scope with the reason. A case the repo's own test rule gives no test is still built, with no test. Review bots used to find these cases after the PR opened.
 
 A `fix` plan proves the bug is gone. The type comes from the title's first word, and a repo that writes `bug:` for a fix counts too. The issue's repro is the first Proof row, and the first test runs it through code the base already has: on the base it fails on its assertion and shows the wrong result, never on a missing name. A bug you can see gets a walk whose before shot shows it. A `refactor` plan proves nothing changed: it names the tests that cover the code, or adds a lock test that passes before the change and after it. Every caller moves to the new form, the old form is deleted in the same PR, and a rename gets a search for the old name in strings, docs, and config, as a whole word or a call, scoped to the files it is about, and run on the base when the plan is written; only the hits of that run may stay.
 
@@ -71,6 +71,18 @@ A `perf` ticket's body now carries a `Baseline:` line (the number, its median, s
 
 Each step now reads only the section of the plan guide it needs, named by its heading, so a run no longer loads the whole 39 KB guide at the start. The probe and executor guides are short and still read whole, at the step that uses them.
 
+The page builder checks the plan before it writes the page:
+
+- A plan with a problem gets no page. The builder names each problem line, writes nothing, and leaves an existing page in place. The agent writes only the Markdown, never `DATA`.
+- A `[perf]` ticket or run layer needs a `## Perf` block with all four lines. The block shows on the Overview tab under the facts.
+- A plan with no issue ends with a `## Brief` block that holds a `Task:` line and a `Done when:` list, since the build prompt quotes them. A `## Plan check` block may follow it and leaves the page as it was.
+- A long dash or a curly quote outside backticks is refused, with its line.
+- A walk's `--viewport-size` is at most 795 px tall, the tallest page the linux Sandbox shows under its browser bars and taskbar, so the video shows the whole page. Plans use 1440x795 for laptop and 390x664 for phone.
+- A web walk opens its page with the `walk-browser` starter in place of `playwright open`. The starter logs the page's errors and failed requests, so a web walk's `Must not` can name `no console error` and `no failed request`; the walker reads both from the browser log each video saves.
+- A walk `Setup` is `none` or a seed or fixture command in backticks, so the walker never clicks in its test data.
+- A slice or a walk can prove several lines, joined by commas, `and`, or both, as in `#1, #2, and #3`. A video shows one walk, as in `shows walk 9`, or several, as in `shows walks 1, 3`. A quoted file location in the map stays whole, even when its path holds a comma.
+- Only the first slice of a layer may be headed `Slice 1, deletes dead code: <area>`, with the number 1. It proves no line, the page marks it so, and its Read this first note names slice 2 as where the build starts.
+
 ## Needs
 
 - `gh`, signed in, and `git`.
@@ -89,30 +101,6 @@ Each step now reads only the section of the plan guide it needs, named by its he
 - Its plan goes to [build-and-prove](../build-and-prove/), which builds it on your machine with proofbox, or to [dispatch](../dispatch/), which sends it to Devin or Cursor. [ship](../ship/) picks one.
 - [ship](../ship/) runs it as its first step: with its page and a wait in ship mode `review`, with no wait in `ready` or `merge`.
 - Reads [write-for-agents](../write-for-agents/) and [unslop](../unslop/) before it writes the plan's doc text.
-
-## Tests
-
-The cases for [claims.py](scripts/claims.py) are in [tests/claims.sh](tests/claims.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
-
-The cases for [base-copy.sh](scripts/base-copy.sh) are in [tests/base-copy.sh](tests/base-copy.sh), with a fake package tool on `PATH`: an install for each lockfile kind, no lockfile, a failed install, a missing tool, and removing a copy that holds `node_modules`.
-
-The cases for [prune.py](scripts/prune.py) are in [tests/prune.sh](tests/prune.sh). It deletes a plan once its issues are closed, and a plan with no issue 30 days after its file last changed. It reads each plan through [plan_reader.py](scripts/plan_reader.py), the same reader [build_page.py](scripts/build_page.py) uses.
-
-The cases for [build_page.py](scripts/build_page.py) are in [tests/build-page.sh](tests/build-page.sh), with Markdown inputs and expected page data in [tests/build-page/](tests/build-page/). It also runs each built page in node on a fake page and compares the map and file tree it draws with the fixture's `.page.txt`. Those files were written once, before the drawing code moved, so a move that changes what the page shows fails the test. Another case runs each built page with a watch on its page data, clicks every layer, and fails when the page reads a field that no fixture's page data has. A field the page reads and the builder never gives fails there, before it shows up as a blank on a page.
-
-The map's routes and labels and the Files tree are worked out in [assets/layout.js](assets/layout.js), which makes no page call; `build_page.py` puts it into the page. Its cases are in [tests/layout.sh](tests/layout.sh). They run on the page data of each fixture and check that no label covers a box, a group title, or another label, and that each flow keeps clear of every box but its two ends. `run-three.md` is a three-layer run whose flows must bend around boxes. Another case puts a wall of three boxes between two parts, so every curve hits a box, and checks that the flow runs along the lanes, the clear lines between rows and columns, crosses no box, and stays on the map. A case also builds the Files tree of `files.md` and checks each row.
-
-The cases for [plan_reader.py](scripts/plan_reader.py) are in [tests/plan_reader.sh](tests/plan_reader.sh): each field's good line and the parts it gives, and each bad line and the error that names it. `build_page.py` gives the whole verdict: the reader's problem lines, then each text in the page data with an odd number of backticks. It checks the page data, not the plan, so it checks each text as the page shows it: a Review part cut across two lines is one text, and the area of a None map, which the page never shows, is not checked.
-
-A perf plan's `## Perf` block shows on the Overview tab under the facts, and the builder refuses a Perf block that lacks one of its four lines, and a `[perf]` ticket or run layer with no Perf block.
-
-A plan with no issue must end with a `## Brief` block that holds a `Task:` line and a `Done when:` list; the builder refuses it without one, since the build prompt quotes them. A `## Plan check` block after it builds, and leaves the page as it was.
-
-The agent writes only the Markdown, never `DATA`. On an invalid block the builder names each problem, writes no page, and leaves an existing page in place. It also refuses a long dash or a curly quote outside backticks, and names the line. It refuses a `--viewport-size` taller than 795 px too: that is the tallest page the linux Sandbox shows under its browser bars and taskbar, so a walk's video shows the whole page. Plans use 1440x795 for laptop and 390x664 for phone. A web walk opens its page at that size with the `walk-browser` starter, in place of `playwright open`, and the starter logs the page's errors and failed requests. A web walk's `Must not` can name `no console error` and `no failed request`: the walker reads both from the browser log each video saves. It refuses a walk `Setup` with no backtick command that is not `none`: a Setup is a seed or fixture command, so the walker never clicks in its test data.
-
-A slice or a walk can prove several lines, joined by commas, `and`, or both, as in `#1, #2, and #3`. A video can show one walk, as in `shows walk 9`, or several, as in `shows walks 1, 3`. A map's quoted file locations stay whole, even when a path contains a comma.
-
-A slice headed `Slice 1, deletes dead code: <area>` proves no line and the page marks it so, and its Read this first note names slice 2 as where the build starts; the builder refuses that heading on any slice but the first of a layer, and with any number but 1.
 
 ## Credits
 

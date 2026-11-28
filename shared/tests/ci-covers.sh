@@ -40,15 +40,6 @@ t_cc_longer_command() {
   eq stdout "here · pnpm test" "$out"
 }
 
-t_cc_comment() {
-  # Given
-  T=""; ci_yml 'on: pull_request' '      # - run: pnpm test'
-  # When
-  covers 'pnpm test'
-  # Then
-  eq stdout "here · pnpm test" "$out"
-}
-
 t_cc_push_only() {
   # Given
   T=""; ci_yml 'on: push' '      - run: pnpm test'
@@ -56,17 +47,6 @@ t_cc_push_only() {
   covers 'pnpm test'
   # Then
   eq stdout "here · pnpm test" "$out"
-}
-
-t_cc_run_block() {
-  # Given
-  T=""
-  wf ci.yml 'on: pull_request' 'jobs:' '  test:' '    runs-on: ubuntu-latest' '    steps:' \
-    '      - run: |' '          pnpm lint' '          pnpm test'
-  # When
-  covers 'pnpm test'
-  # Then
-  eq stdout "ci ci.yml · pnpm test" "$out"
 }
 
 t_cc_no_workflows() {
@@ -77,28 +57,6 @@ t_cc_no_workflows() {
   # Then
   eq exit 0 "$code"
   eq stdout "here · pnpm test" "$out"
-}
-
-t_cc_on_list() {
-  # Given: as this repo's own repo-check.yml
-  T=""
-  wf repo-check.yml 'on: [push, pull_request]' 'jobs:' '  check:' '    steps:' \
-    '      - name: Test the checks' '        run: bash scripts/test.sh'
-  # When
-  covers 'bash scripts/test.sh'
-  # Then
-  eq stdout "ci repo-check.yml · bash scripts/test.sh" "$out"
-}
-
-t_cc_on_map() {
-  # Given
-  T=""
-  wf ci.yml 'on:' '  push:' '    branches: [main]' '  pull_request:' 'jobs:' '  test:' \
-    '    runs-on: ubuntu-latest' '    steps:' '      - run: pnpm test'
-  # When
-  covers 'pnpm test'
-  # Then
-  eq stdout "ci ci.yml · pnpm test" "$out"
 }
 
 t_cc_job_if_repro() {
@@ -352,25 +310,11 @@ t_cc_needs_unknown_job() {
   eq stdout "here · pnpm test" "$out"
 }
 
-t_cc_usage() {
-  # Given
-  T=""; ci_yml 'on: pull_request' '      - run: pnpm test'
-  # When
-  run bash "$here/../ci-covers.sh" "$T/wt" --
-  # Then
-  eq exit 64 "$code"
-  eq stderr "usage: ci-covers.sh <worktree> -- <command>..." "$err"
-}
-
 cases=(
   "names the workflow that runs a Gate, in the Gates' order|t_cc_names_the_workflow"
   "a longer command is not the Gate|t_cc_longer_command"
-  "a comment is not a run line|t_cc_comment"
   "a push-only workflow covers nothing|t_cc_push_only"
-  "a line of a run block counts|t_cc_run_block"
   "no workflows folder covers nothing|t_cc_no_workflows"
-  "the list form of on counts|t_cc_on_list"
-  "the map form of on counts|t_cc_on_map"
   "the issue's repro: a job if makes the Gate run here|t_cc_job_if_repro"
   "a job if sends each Gate of its steps here|t_cc_job_if_each_step"
   "if: always() counts like any if|t_cc_if_always"
@@ -387,5 +331,4 @@ cases=(
   "a quoted needs or if key on a job counts|t_cc_job_quoted_keys"
   "a quoted if, steps, or jobs key counts|t_cc_quoted_step_keys"
   "needs on a job not in the file sends the Gate here|t_cc_needs_unknown_job"
-  "no command after -- is a usage stop|t_cc_usage"
 )

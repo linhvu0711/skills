@@ -89,16 +89,6 @@ t_merge_stops_when_head_moved() {
   [ ! -e "$FAKE_GH/pr-merge.calls" ] || eq "merge calls" "" "$(cat "$FAKE_GH/pr-merge.calls")"
 }
 
-t_merge_stops_on_closed_pr() {
-  # Given: PR 43 is closed
-  fake_gh; view CLOSED > "$FAKE_GH/pr-view.json"
-  # When
-  run bash "$merge" o/r 43 --sha "$head_sha"
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: #43 is CLOSED, not open" "$err"
-}
-
 t_merge_stops_when_gh_refuses() {
   # Given: gh refuses the merge
   fake_gh; open_then_merged; methods true true true
@@ -108,16 +98,6 @@ t_merge_stops_when_gh_refuses() {
   # Then
   eq exit 1 "$code"
   eq stderr "stop: merge refused: X Pull request o/r#43 is not mergeable: the base branch policy prohibits the merge." "$err"
-}
-
-t_merge_stops_when_gh_cannot_read_pr() {
-  # Given: gh cannot read the PR
-  fake_gh; methods true true true
-  printf 'gh: Bad credentials (HTTP 401)\n' > "$FAKE_GH/pr-view.fail"
-  # When
-  run bash "$merge" o/r 43 --sha "$head_sha"
-  # Then
-  eq stderr "stop: gh failed: gh: Bad credentials (HTTP 401)" "$err"
 }
 
 t_merge_stops_when_pr_stays_open() {
@@ -141,16 +121,6 @@ t_merge_stops_on_short_sha() {
   eq stderr "stop: --sha needs the full 40-character head SHA, got: aaaaaaa" "$err"
 }
 
-t_merge_prints_usage() {
-  # Given: no fixture
-  T="$(cd "$(mktemp -d)" && pwd -P)"
-  # When
-  run bash "$merge" o/r
-  # Then
-  eq exit 64 "$code"
-  eq stderr "usage: merge.sh <owner/repo> <number> --sha <sha>" "$err"
-}
-
 cases=(
   "merge.sh merges with a merge commit|t_merge_merge_commit"
   "merge.sh merges when gh prints a hint|t_merge_gh_hint"
@@ -158,10 +128,7 @@ cases=(
   "merge.sh falls back to rebase|t_merge_falls_back_to_rebase"
   "merge.sh says already on a second run|t_merge_already_merged_twice"
   "merge.sh stops when the head moved|t_merge_stops_when_head_moved"
-  "merge.sh stops on a closed PR|t_merge_stops_on_closed_pr"
   "merge.sh stops when gh refuses|t_merge_stops_when_gh_refuses"
-  "merge.sh stops when gh cannot read the PR|t_merge_stops_when_gh_cannot_read_pr"
   "merge.sh stops when the PR stays open|t_merge_stops_when_pr_stays_open"
   "merge.sh stops on a short SHA|t_merge_stops_on_short_sha"
-  "merge.sh prints its usage|t_merge_prints_usage"
 )

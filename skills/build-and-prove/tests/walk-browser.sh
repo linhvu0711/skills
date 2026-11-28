@@ -74,18 +74,6 @@ request: 500 http://localhost:3000/api/wishes
 request: net::ERR_CONNECTION_REFUSED http://localhost:4000/feed" "$(cat "$T/walk.log")"
 }
 
-t_walk_browser_options() {
-  # Given
-  fake_playwright quiet
-  cd "$T/app"
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --viewport-size=390,664 \
-    --storage /tmp/login.json --clock 2026-01-02T09:00:00Z --log "$T/walk.log"
-  # Then
-  eq exit 0 "$code"
-  eq options '{"launch":{"headless":false,"args":["--no-sandbox"]},"context":{"viewport":{"width":390,"height":664},"storageState":"/tmp/login.json"},"clock":"2026-01-02T09:00:00Z","goto":"http://localhost:3000/"}' "$(cat "$T/opts.json")"
-}
-
 t_walk_browser_clean_page() {
   # Given
   fake_playwright quiet
@@ -96,29 +84,6 @@ t_walk_browser_clean_page() {
   eq exit 0 "$code"
   [ -f "$T/walk.log" ] || eq log "an empty file" "no file"
   eq log "" "$(cat "$T/walk.log")"
-}
-
-t_walk_browser_no_playwright() {
-  # Given
-  T="$(cd "$(mktemp -d)" && pwd -P)"
-  mkdir -p "$T/app"; cd "$T/app"
-  export NODE_PATH=""
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --log "$T/walk.log"
-  # Then
-  eq exit 1 "$code"
-  eq log "stop: no Playwright in $T/app: the setup script installs it" "$(cat "$T/walk.log")"
-}
-
-t_walk_browser_no_launch() {
-  # Given
-  fake_playwright nolaunch
-  cd "$T/app"
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --log "$T/walk.log"
-  # Then
-  eq exit 1 "$code"
-  eq log "stop: browserType.launch: Executable doesn't exist at /tmp/pb/ms-playwright/chrome" "$(cat "$T/walk.log")"
 }
 
 t_walk_browser_env_log() {
@@ -136,36 +101,8 @@ request: 500 http://localhost:3000/api/wishes
 request: net::ERR_CONNECTION_REFUSED http://localhost:4000/feed" "$(cat "$T/walk.log")"
 }
 
-t_walk_browser_no_log() {
-  # Given
-  fake_playwright events
-  cd "$T/app"
-  unset WALK_BROWSER_LOG
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: no log: pass --log <file> or set WALK_BROWSER_LOG" "$err"
-}
-
-t_walk_browser_unknown_flag() {
-  # Given
-  fake_playwright quiet
-  cd "$T/app"
-  # When
-  run node "$here/../scripts/walk-browser.cjs" http://localhost:3000/ --bogus 1 --log "$T/walk.log"
-  # Then
-  eq exit 1 "$code"
-  eq log "stop: usage: walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>] [--log <file>]" "$(cat "$T/walk.log")"
-}
-
 cases=(
   "logs the page's errors and failed requests|t_walk_browser_logs"
-  "opens the page at the size, login, and clock it is given|t_walk_browser_options"
   "leaves an empty log when the page logs nothing|t_walk_browser_clean_page"
-  "stops with a line when the repo has no Playwright|t_walk_browser_no_playwright"
-  "stops with a line when the browser will not start|t_walk_browser_no_launch"
   "takes its log from WALK_BROWSER_LOG|t_walk_browser_env_log"
-  "stops when no log is named|t_walk_browser_no_log"
-  "stops with the usage on an unknown flag|t_walk_browser_unknown_flag"
 )

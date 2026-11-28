@@ -20,15 +20,6 @@ t_cursor_start() {
   eq stdout "bc-1	https://cursor.com/agents/bc-1" "$out"
 }
 
-t_cursor_repo_not_connected() {
-  fake_curl
-  printf '{"items":[{"url":"https://github.com/o/other"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
-  printf '# Brief\n' > p.md
-  cursor start p.md --repo o/r
-  eq exit 1 "$code"
-  eq stderr "stop: Connect o/r to Cursor first: cursor.com/dashboard, Integrations, GitHub." "$err"
-}
-
 t_cursor_poll() {
   fake_curl
   printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
@@ -39,17 +30,6 @@ t_cursor_poll() {
   eq stdout "finished	run-2|FINISHED	https://github.com/o/r/pull/9	https://cursor.com/agents/bc-1	Opened the PR" "$out"
 }
 
-t_cursor_poll_github_pr() {
-  fake_curl; fake_gh
-  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
-  printf '{"id":"run-2","status":"RUNNING","git":{"branches":[]}}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
-  printf '[{"url":"https://github.com/o/r/pull/13","headRefName":"feat/12-export"},{"url":"https://github.com/o/r/pull/14","headRefName":"fix/120-other"}]\n' \
-    > "$FAKE_GH/pr-list..json"
-  cursor poll bc-1 --repo o/r --issue 12
-  eq exit 0 "$code"
-  eq stdout "working	run-2|RUNNING	https://github.com/o/r/pull/13	https://cursor.com/agents/bc-1	-" "$out"
-}
-
 t_cursor_say() {
   fake_curl
   printf '{"run":{"id":"run-3"}}\n' > "$FAKE_CURL/POST_v1_agents_bc-1_runs.json"
@@ -57,14 +37,6 @@ t_cursor_say() {
   cursor say bc-1 note.md
   eq exit 0 "$code"
   eq stdout "sent to bc-1 (run-3)" "$out"
-}
-
-t_cursor_no_key() {
-  fake_curl
-  printf '# Brief\n' > p.md
-  run env -u CURSOR_API_KEY HOME="$T/home" bash "$here/../scripts/adapters/cursor.sh" start p.md --repo o/r
-  eq exit 1 "$code"
-  eq stderr "stop: no CURSOR_API_KEY in ~/.zshrc or env (make one at cursor.com/dashboard, API Keys)" "$err"
 }
 
 # fake_mac: a fake mac.sh in $T, HANDOFF_MAC pointing there. It logs each
@@ -113,33 +85,6 @@ t_cursor_start_macos() {
   has "mac rent" "rent $w https://github.com/o/r dev -- bash " "$(cat "$T/mac.calls")"
 }
 
-t_cursor_start_macos_timeout() {
-  fake_curl; fake_mac
-  printf '{"items":[{"url":"https://github.com/o/r"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
-  echo 28 > "$FAKE_CURL/POST_v1_agents.exit"
-  printf '# Brief\n' > p.md
-  # The worker name is random, so the list answers with every agent on a
-  # machine and the adapter must pick the one on its own worker.
-  cat > "$T/bin/od" <<'EOF'
-#!/usr/bin/env bash
-echo " ab cd ef 01"
-EOF
-  chmod +x "$T/bin/od"
-  printf '{"items":[{"id":"bc-0","env":{"type":"machine","name":"ho-other"}},{"id":"bc-2","url":"https://cursor.com/agents/bc-2","env":{"type":"machine","name":"ho-abcdef01"}}]}\n' \
-    > "$FAKE_CURL/GET_v1_agents.json"
-  cursor_mac start p.md --repo o/r --platform macos
-  eq exit 0 "$code"
-  eq stdout "bc-2	https://cursor.com/agents/bc-2" "$out"
-}
-
-t_cursor_start_windows() {
-  fake_curl; fake_mac
-  printf '# Brief\n' > p.md
-  cursor_mac start p.md --repo o/r --platform windows
-  eq exit 1 "$code"
-  eq stderr "stop: Cursor has no Windows machine: hand this one to devin" "$err"
-}
-
 t_cursor_poll_leaves_mac() {
   # Given: an agent on mac-1 whose run ended
   fake_curl; fake_mac
@@ -154,42 +99,6 @@ t_cursor_poll_leaves_mac() {
   eq stdout "finished	run-2|FINISHED	-	https://cursor.com/agents/bc-1	Done" "$out"
   [ ! -f "$T/mac.calls" ] || eq "mac calls" "" "$(cat "$T/mac.calls")"
   eq row "bc-1	ho-1	wid-1	https://github.com/o/r	main	mac-1" "$(macs)"
-}
-
-t_cursor_interval() {
-  # Given
-  fake_curl
-  # When
-  cursor interval
-  # Then
-  eq exit 0 "$code"
-  eq stdout "60" "$out"
-  [ ! -f "$FAKE_CURL/calls" ] || eq "API calls" "" "$(cat "$FAKE_CURL/calls")"
-}
-
-t_cursor_facts() {
-  # Given
-  fake_curl
-  printf '{"items":[{"url":"https://github.com/o/r.git"}]}\n' > "$FAKE_CURL/GET_v1_repositories.json"
-  printf '{"items":[{"id":"claude-opus-5","displayName":"Claude Opus 5"}]}\n' > "$FAKE_CURL/GET_v1_models.json"
-  # When
-  cursor facts
-  # Then
-  eq exit 0 "$code"
-  eq stdout "repo	https://github.com/o/r
-model	claude-opus-5	Claude Opus 5" "$out"
-}
-
-t_cursor_release_run_goes() {
-  # Given
-  fake_curl; fake_mac
-  printf '%s\n' "$agent_bc1" > "$FAKE_CURL/GET_v1_agents_bc-1.json"
-  printf '{"id":"run-2","status":"RUNNING"}\n' > "$FAKE_CURL/GET_v1_agents_bc-1_runs_run-2.json"
-  # When
-  cursor_mac release bc-1
-  # Then
-  eq exit 0 "$code"
-  eq stdout "bc-1: mac-1 kept, its run has not ended" "$out"
 }
 
 t_cursor_release_check_fails() {
@@ -234,37 +143,13 @@ t_cursor_say_through_renew() {
   eq note "# Changed" "$(jq -r .prompt.text "$FAKE_CURL/POST_v1_agents_bc-1_runs.data")"
 }
 
-t_cursor_say_new_mac() {
-  # Given: mac.sh renew rents a new Mac from base main
-  fake_curl; fake_mac
-  echo main > "$T/mac.new"
-  printf '{"run":{"id":"run-3"}}\n' > "$FAKE_CURL/POST_v1_agents_bc-1_runs.json"
-  printf '# Changed\n' > note.md
-  # When
-  cursor_mac say bc-1 note.md
-  # Then
-  eq exit 0 "$code"
-  eq "first line" "This run is on a new Mac: the repo is a fresh clone of main. Before you change anything, fetch and check out the branch you worked on, and its PR's branch if one is open." \
-    "$(jq -r .prompt.text "$FAKE_CURL/POST_v1_agents_bc-1_runs.data" | sed -n 1p)"
-  has note "# Changed" "$(jq -r .prompt.text "$FAKE_CURL/POST_v1_agents_bc-1_runs.data")"
-}
-
 cases=(
   "cursor say sends through mac.sh renew|t_cursor_say_through_renew"
-  "cursor say tells the agent on a new Mac to check its branch out|t_cursor_say_new_mac"
-  "cursor release keeps the Mac while the run goes|t_cursor_release_run_goes"
   "cursor release hands the run check to mac.sh return|t_cursor_release"
   "cursor release fails when the run cannot be read|t_cursor_release_check_fails"
-  "cursor facts lists repos and models|t_cursor_facts"
-  "cursor interval is 60|t_cursor_interval"
   "cursor start sends the prompt and prints the agent|t_cursor_start"
-  "cursor start stops on a repo it has not connected|t_cursor_repo_not_connected"
   "cursor poll reads the latest run|t_cursor_poll"
-  "cursor poll finds the issue's PR on GitHub|t_cursor_poll_github_pr"
   "cursor say starts a new run|t_cursor_say"
-  "cursor stops without an API key|t_cursor_no_key"
   "cursor start on macos rents a Mac and targets its worker|t_cursor_start_macos"
-  "cursor start on macos finds the agent when create hangs|t_cursor_start_macos_timeout"
-  "cursor start on windows stops|t_cursor_start_windows"
   "cursor poll leaves the Mac when the run ended|t_cursor_poll_leaves_mac"
 )

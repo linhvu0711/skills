@@ -31,10 +31,6 @@ To remove a kept worktree, name it: "remove X". Its uncommitted files go with it
 - It removes what `../../shared/checkout.sh` makes for [ship](../ship/) and [ready-pr](../ready-pr/), and reads each repo's worktree list and GitHub repo through it, so an origin set through a git `insteadOf` alias, such as `gh:acme/app`, counts as GitHub.
 - Nothing calls this skill; you run it.
 
-## Tests
-
-The cases for [prune-worktrees.sh](scripts/prune-worktrees.sh) are in [tests/prune-worktrees.sh](tests/prune-worktrees.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
-
 ## Credits
 
 The idea came from the worktree-cleanup playbook and `worktree-audit.sh` in pstack, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.

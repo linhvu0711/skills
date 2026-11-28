@@ -43,10 +43,6 @@ Each PR and branch carries its live state from `gh` and `git`: merged, open, clo
 
 - [retrospect](../retrospect/) reads many sessions through the same adapters, to learn from how a build went.
 
-## Tests
-
-The cases for [find.py](scripts/find.py) are in [tests/find.sh](tests/find.sh), on the helpers in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
-
 ## Credits
 
 The idea came from the `recall` skill and the `session-pickup` playbook in pstack, by Lauren Tan, in [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack). Idea only; none of the text.
