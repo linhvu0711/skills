@@ -231,7 +231,7 @@ def cmd_latest(args):
     try:
         text = GH.run("api", f"repos/{args.home}/contents/{args.file}", "-H", "Accept: application/vnd.github.raw")
     except GH.GhError as e:
-        if "HTTP 404" not in str(e):
+        if e.status != 404:
             sys.exit(f"stop: gh could not read {args.file} on {args.home}: {e}")
         print(json.dumps({"file": args.file, "missing": True}))
         return
