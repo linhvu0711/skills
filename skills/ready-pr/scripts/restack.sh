@@ -147,7 +147,8 @@ case "$cmd" in
     wt="$1"; olds_b=("$2"); olds_s=("$3"); left=" "
     [ -f "$4" ] || die "no stack file $4"
     lines=(); while IFS= read -r l; do lines+=("$l"); done < "$4"
-    tmp="$(mktemp -d)"; pwt=""; trap 'drop_tmp; rm -rf "$tmp"' EXIT
+    # rmdir, not rm -rf: a worktree git could not remove stays where its WARN points.
+    tmp="$(mktemp -d)"; pwt=""; trap 'drop_tmp; rmdir "$tmp" 2>/dev/null || true' EXIT
     moved=0; stopped=0
     for line in ${lines[@]+"${lines[@]}"}; do
       case "$line" in ''|STACK=*) continue ;; esac
