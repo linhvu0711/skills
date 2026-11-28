@@ -137,9 +137,8 @@ upload() {
     local why; why=$(jq -r '.detail // .message // .error // empty' "$out" 2>/dev/null || true)
     die "HTTP $code on POST /attachments${why:+: $why}"
   fi
-  url=$(jq -r 'if type == "string" then . else (.url // empty) end' "$out" 2>/dev/null || true)
-  [[ -z "$url" ]] && url=$(tr -d '"[:space:]' <"$out")
-  [[ "$url" == http* ]] || die "no attachment URL in response"
+  url=$(jq -r '.url // empty' "$out")
+  [[ -n "$url" ]] || die "POST /attachments answered with no url; expected an AttachmentResponse with url (docs.devin.ai, Upload an attachment)"
   printf %s "$url"
 }
 
@@ -184,9 +183,9 @@ cmd_start() {
     + (if $m  != "" then {devin_mode: $m} else {} end)
     + (if $as != "" then {create_as_user_id: $as} else {} end)')
   res=$(api POST /sessions "$body")
-  id=$(jq -r '.session_id' <<<"$res")
+  id=$(jq -r '.session_id // empty' <<<"$res")
   surl=$(jq -r '.url // empty' <<<"$res")
-  [[ -z "$surl" ]] && surl="https://app.devin.ai/sessions/${id#devin-}"
+  [[ -n "$id" && -n "$surl" ]] || die "POST /sessions answered with no session_id or url; expected a SessionResponse with both (docs.devin.ai, Create a session)"
   printf '%s\t%s\n' "$id" "$surl"
 }
 

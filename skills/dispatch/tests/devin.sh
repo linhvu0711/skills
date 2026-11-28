@@ -10,12 +10,13 @@ devin() { run env -u DEVIN_USER_ID HOME="$T/home" DEVIN_API_URL=https://devin.te
 
 t_devin_start() {
   fake_curl
-  printf '"https://att.test/p.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
+  printf '{"attachment_id":"att-1","name":"p.md","url":"https://att.test/p.md"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
   printf '{"session_id":"devin-abc","url":"https://app.devin.ai/sessions/abc"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_sessions.json"
   printf 'Repo: o/r\n\n# Brief\n' > p.md
   devin start p.md --title "#12 Export"
   eq exit 0 "$code"
   eq stdout "devin-abc	https://app.devin.ai/sessions/abc" "$out"
+  has prompt 'ATTACHMENT:"https://att.test/p.md"' "$(jq -r .prompt "$FAKE_CURL/POST_v3_organizations_org1_sessions.data")"
 }
 
 t_devin_poll() {
@@ -41,7 +42,7 @@ t_devin_poll_every_pr() {
 
 t_devin_say() {
   fake_curl
-  printf '"https://att.test/note.md"\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
+  printf '{"attachment_id":"att-2","name":"note.md","url":"https://att.test/note.md"}\n' > "$FAKE_CURL/POST_v3_organizations_org1_attachments.json"
   printf '{}\n' > "$FAKE_CURL/POST_v3_organizations_org1_sessions_devin-abc_messages.json"
   printf '# Changed\n' > note.md
   devin say devin-abc note.md
