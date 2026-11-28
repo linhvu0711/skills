@@ -403,14 +403,14 @@ t_fs_dead_watcher_no_turn() {
   has stdout '"message":"/complete-task --ready #42"' "$out"
 }
 
-t_fs_broken_run_no_turn() {
+t_fs_broken_run_stops() {
   # Given: a run of #42, open and manual; another run's state file does not parse
   fs_setup; fs_issue 42 OPEN '["manual"]'; fs_start 42; fs_other_run broken
   # When
   fs_go check acme/app
   # Then
-  eq exit 0 "$code"
-  has stdout '"message":"/complete-task --ready #42"' "$out"
+  eq exit 1 "$code"
+  lacks stdout '/complete-task' "$out"
 }
 
 t_fs_failed_task_launch_frees_turn() {
@@ -1597,7 +1597,7 @@ cases=(
   "a second task waits for the turn|t_fs_second_task_waits"
   "a task in another live run holds the turn|t_fs_other_run_holds_turn"
   "a run whose watcher is gone holds no turn|t_fs_dead_watcher_no_turn"
-  "a broken state file in another run holds no turn|t_fs_broken_run_no_turn"
+  "a broken state file in another run stops the check|t_fs_broken_run_stops"
   "a failed task launch frees the turn|t_fs_failed_task_launch_frees_turn"
   "a closed task frees the turn|t_fs_closed_task_frees_turn"
   "an unlabeled issue waits|t_fs_unlabeled_waits"

@@ -374,12 +374,12 @@ turn_holders() {
 # restart, holds no turn: no check of its own would ever free it. `owners`
 # lists, per ref, each live run (running or paused) that holds it: its link,
 # its start, and whether it has a thread for it that did not fail to launch.
-# Another run's file that does not parse holds nothing, so it never fails
-# this check.
+# Another run's file that does not parse stops the check: the run it hides
+# could hold an issue this run would take.
 other_runs() {
   local f one pid turn="" owners="{}"
   while IFS= read -r -d '' f; do
-    one="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$f" 2>/dev/null)" || continue
+    one="$(jq -c "$to_refs_jq"'to_refs(.repo)' "$f")" || die "$f does not parse as JSON; fix it or remove it, then run check again"
     if [ -z "$turn" ]; then
       read -r turn pid < <(jq -r 'select(.status == "running" and ((.task_turn // []) != []))
         | "\(.task_turn[0]) \(.timer.watcher.pid // "")"' <<<"$one") || turn=""
