@@ -14,7 +14,8 @@
 # Any other failure is the tool's: its exit code and its stderr.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/die.sh"
 
 if command -v pbcopy >/dev/null; then
   exec pbcopy

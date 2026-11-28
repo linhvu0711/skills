@@ -34,7 +34,8 @@
 # wrong command line, its usage on stderr.
 set -euo pipefail
 
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/die.sh"
 
 usage='usage: ci-covers.sh <worktree> -- <command>...'
 [ $# -ge 3 ] && [ -d "$1" ] && [ "$2" = -- ] || die_usage "$usage"

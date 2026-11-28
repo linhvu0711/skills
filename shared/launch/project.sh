@@ -10,8 +10,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 
 [ $# -eq 1 ] && [ -n "$1" ] || die_usage 'usage: project.sh <path>'
 path="$1"

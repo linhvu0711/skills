@@ -19,9 +19,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
 . "$here/../gh.sh"
-
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 # gh reads --add-label and --remove-label as a CSV row, so a raw `Size, Small`
 # is two labels. The q variable keeps the replace safe on macOS Bash 3.2.
 csv_field() { local q='"'; printf '"%s"' "${1//$q/$q$q}"; }

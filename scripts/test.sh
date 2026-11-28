@@ -667,7 +667,7 @@ t_flags_harness_branch_in_skill() {
 
 t_flags_harness_branch_in_shared() {
   # Given: a shared core file that branches on one harness
-  repo; mkdir shared; printf 'Run it in Claude Code only.\n' > shared/notes.md; git add -A; git commit -qm files
+  repo; mkdir -p shared; printf 'Run it in Claude Code only.\n' > shared/notes.md; git add -A; git commit -qm files
   # When
   run bash scripts/check.sh
   # Then
@@ -737,7 +737,7 @@ t_flags_copy_without_license() {
 }
 
 t_flags_core_row_without_license() {
-  repo; mkdir shared; printf 'hi\n' > shared/x.md
+  repo; mkdir -p shared; printf 'hi\n' > shared/x.md
   notices shared/x.md "heavy adaptation"; git add -A; git commit -qm files
   run bash scripts/check.sh
   eq exit 1 "$code"

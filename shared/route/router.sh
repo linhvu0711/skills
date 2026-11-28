@@ -46,8 +46,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=labels.sh
 . "$here/labels.sh"
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 usage="usage: router.sh [--pick $pick_list] [--answer $route_list] [--size $size_list] [--model M] [--effort E] < <issue json>"
 
 command -v jq >/dev/null || die "jq is not installed"

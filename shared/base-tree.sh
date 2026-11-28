@@ -12,8 +12,8 @@
 # Exit 64: a wrong command line, its usage on stderr.
 set -euo pipefail
 
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$here/die.sh"
 usage='usage: base-tree.sh <checkout> <base> | --remove <dir>'
 
 case "${1:-}" in

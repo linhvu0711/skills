@@ -25,9 +25,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=../route/labels.sh
 . "$here/../route/labels.sh"
 . "$here/../gh.sh"
-
-die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
-die_usage() { local u="$1"; shift; [ $# -eq 0 ] || printf 'stop: %s\n' "$*" >&2; printf '%s\n' "$u" >&2; exit 64; }
+. "$here/../die.sh"
 step_list='ship|triage|grill|ready-pr|complete-task'
 usage="usage: line.sh <issue-url> $step_list [#n ...] [on <pr-url>] [--mode $ship_mode_list] [--pr <pr-url>]"
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }

@@ -29,7 +29,8 @@ fake_home() {
 # This scripts/ folder. A sourced skill test file sets its own `here`.
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# repo: a fresh repo in a temp folder with scripts/ committed; cd into it.
+# repo: a fresh repo in a temp folder with scripts/ and shared/die.sh, which
+# its scripts source, committed; cd into it.
 # Sets T (the temp folder) and R (the repo, a physical path).
 repo() {
   T="$(cd "$(mktemp -d)" && pwd -P)"; R="$T/repo"
@@ -38,7 +39,8 @@ repo() {
   git config user.email t@example.invalid; git config user.name t
   git config commit.gpgsign false; git config core.hooksPath .no-hooks
   cp -R "$scripts_dir" "$R/scripts"
-  git add scripts; git commit -qm init
+  mkdir -p "$R/shared"; cp "$scripts_dir/../shared/die.sh" "$R/shared/"
+  git add scripts shared; git commit -qm init
 }
 
 # run <cmd...>: run it, keep its exit code in `code`, stdout in `out`, stderr in `err`.
