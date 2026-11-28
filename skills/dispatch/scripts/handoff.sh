@@ -151,6 +151,12 @@ cmd_watch() {
       # session, or an outage the caller has to see.
       fails=$((fails + 1))
       if (( fails >= 3 )); then
+        # The poll can fail where the release does not, as when gh is signed
+        # out after the run ended. The release keeps a Mac whose run goes on.
+        adapter "$e" release "$id" >/dev/null 2>"$relf" || true
+        while IFS= read -r w; do
+          if [[ -n "$w" ]]; then echo "[$(date +%H:%M)] $w"; fi
+        done <"$relf"
         # A wrong command line prints its usage after the stop: line.
         why="$(sed -n 's/^stop: //p' "$errf" | tail -1)"
         [[ -n "$why" ]] || why="$(tail -1 "$errf")"

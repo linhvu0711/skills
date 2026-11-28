@@ -147,6 +147,18 @@ t_watch_stops_on_failing_polls() {
   eq "stderr last line" "stop: poll failed devin-abc :: HTTP 401 on GET /sessions/devin-abc: bad key" "$(printf '%s\n' "$err" | tail -n 1)"
 }
 
+t_watch_releases_before_it_stops() {
+  # Given: the poll fails each time, as when gh is signed out
+  fake_adapters
+  printf 'stop: gh failed: gh auth login\n' > "$FAKE_AD/cursor.poll.fail"
+  # When
+  handoff watch cursor bc-1 --interval 0
+  # Then
+  eq exit 1 "$code"
+  eq "release calls" 1 "$(cat "$FAKE_AD/cursor.release.calls" 2>/dev/null || echo 0)"
+  eq "stderr last line" "stop: poll failed bc-1 :: gh failed: gh auth login" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
 t_new_adapter_file() {
   # Given: a third adapter file, zed
   fake_adapters
@@ -232,4 +244,5 @@ cases=(
   "watch --once exits on a new PR|t_watch_once_on_pr"
   "watch goes on after one failed poll|t_watch_survives_a_failed_poll"
   "watch stops after three failed polls in a row|t_watch_stops_on_failing_polls"
+  "watch gives a finished run's Mac back before it stops|t_watch_releases_before_it_stops"
 )
