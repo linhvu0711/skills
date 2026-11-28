@@ -14,10 +14,13 @@ only untouched PRs). A PR is touched when a transcript holds its
     github.py latest <owner/repo> <file>
 
 `list` prints {"read_prs": [{"number", "url", "title", "date"}], "read_issues":
-[...], "touched": [{"kind", "number", "by"}], "skipped": [{"url", "why"}]}, a
-skipped PR being one gh could not read or one in another repo, and a date
-the day the PR was opened.
-`pr` and `issues` print one markdown bundle for a reader.
+[...], "touched": [{"kind", "number", "by"}], "skipped": [{"url", "why"}],
+"cut": [<what>]}, a skipped PR being one gh could not read or one in another
+repo, a date the day the PR was opened, and a cut entry a list GitHub had
+more of than the limit.
+`pr` and `issues` print one markdown bundle for a reader. A PR bundle whose
+lists GitHub cut has a `Cut:` line after its `Branch:` line, and `pr` prints
+`warn: PR #<n> is cut: <lists>` on stderr.
 `home` prints [{"path", "home", "file"}] per path, the GitHub repo that holds
 the path's real file (by the shared checkout resolver) and the file's path in
 it, or {"path", "unknown"} with "in no git repo" or "no GitHub remote".
@@ -39,6 +42,7 @@ import sys
 
 CHECKOUT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "checkout.sh")
 LOG_TAIL = 80  # the failing assert sits at the end of a failed log
+LIST_LIMIT = 200
 # Loaded by path: `python3 -I` leaves the script's folder off sys.path.
 _spec = importlib.util.spec_from_file_location("gh", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "shared", "gh.py"))
 GH = importlib.util.module_from_spec(_spec)
@@ -49,11 +53,11 @@ query($owner: String!, $name: String!, $n: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $n) {
       number title url body headRefName
-      closingIssuesReferences(first: 10) { nodes { number title body } }
-      reviews(first: 100) { nodes { author { login } state body } }
-      comments(first: 100) { nodes { author { login } body } }
-      reviewThreads(first: 100) { nodes { isResolved path line comments(first: 20) { nodes { author { login } body } } } }
-      commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes {
+      closingIssuesReferences(first: 10) { pageInfo { hasNextPage } nodes { number title body } }
+      reviews(first: 100) { pageInfo { hasNextPage } nodes { author { login } state body } }
+      comments(first: 100) { pageInfo { hasNextPage } nodes { author { login } body } }
+      reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { isResolved path line comments(first: 20) { pageInfo { hasNextPage } nodes { author { login } body } } } }
+      commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { pageInfo { hasNextPage } nodes {
         __typename
         ... on CheckRun { name conclusion detailsUrl }
         ... on StatusContext { context state targetUrl }
@@ -101,7 +105,7 @@ def pr_patterns(repo, pr):
 def cmd_list(args):
     repo = args.repo
     texts = transcripts(args.transcripts)
-    skipped = []
+    skipped, cut = [], []
     if args.issues:
         issues, prs = [], {}
         for n in args.issues:
@@ -126,9 +130,16 @@ def cmd_list(args):
         until = args.until or dt.date.today().isoformat()
         window = f"updated:{args.since}..{until}"
         prs = gh_json(f"list {repo}", "pr", "list", "--repo", repo, "--state", "all", "--search", window,
-                      "--json", "number,url,title,headRefName,createdAt,closingIssuesReferences", "--limit", "200")
+                      "--json", "number,url,title,headRefName,createdAt,closingIssuesReferences", "--limit", str(LIST_LIMIT + 1))
         issues = gh_json(f"list {repo}", "issue", "list", "--repo", repo, "--state", "all", "--search", window,
-                         "--json", "number,url,title", "--limit", "200")
+                         "--json", "number,url,title", "--limit", str(LIST_LIMIT + 1))
+        # One more than the limit tells a cut list from one of exactly LIST_LIMIT.
+        if len(prs) > LIST_LIMIT:
+            prs = prs[:LIST_LIMIT]
+            cut.append(f"pull requests: more than {LIST_LIMIT} in the window")
+        if len(issues) > LIST_LIMIT:
+            issues = issues[:LIST_LIMIT]
+            cut.append(f"issues: more than {LIST_LIMIT} in the window")
         closed = {i["number"] for pr in prs for i in pr.get("closingIssuesReferences") or []}
     read_prs, read_issues, touched = [], [], []
     for pr in prs:
@@ -146,7 +157,8 @@ def cmd_list(args):
             touched.append({"kind": "issue", "number": i["number"], "by": by})
         else:
             read_issues.append({k: i.get(k) for k in ("number", "url", "title")})
-    print(json.dumps({"read_prs": read_prs, "read_issues": read_issues, "touched": touched, "skipped": skipped}))
+    print(json.dumps({"read_prs": read_prs, "read_issues": read_issues, "touched": touched, "skipped": skipped,
+                      "cut": cut}))
 
 
 def who(node):
@@ -158,13 +170,34 @@ def run_id(url):
     return m.group(1) if m else None
 
 
+def more(conn):
+    return bool(((conn or {}).get("pageInfo") or {}).get("hasNextPage"))
+
+
+def cut_lists(pr):
+    contexts = [((n["commit"].get("statusCheckRollup") or {}).get("contexts")) for n in pr["commits"]["nodes"]]
+    checks = {
+        "closing issues": more(pr["closingIssuesReferences"]),
+        "reviews": more(pr["reviews"]),
+        "comments": more(pr["comments"]),
+        "review threads": more(pr["reviewThreads"]),
+        "thread comments": any(more(t["comments"]) for t in pr["reviewThreads"]["nodes"]),
+        "checks": any(more(c) for c in contexts),
+    }
+    return [name for name, cut in checks.items() if cut]
+
+
 def cmd_pr(args):
     owner, name = args.repo.split("/", 1)
     data = gh_json(f"read PR #{args.number} of {args.repo}", "api", "graphql", "-f", f"query={PR_QUERY}",
                    "-F", f"owner={owner}", "-F", f"name={name}", "-F", f"n={args.number}")
     pr = data["data"]["repository"]["pullRequest"]
-    out = [f"# PR #{pr['number']} {pr['title']}", pr["url"], f"Branch: {pr['headRefName']}", "",
-           "## Body", pr.get("body") or "(empty)", ""]
+    out = [f"# PR #{pr['number']} {pr['title']}", pr["url"], f"Branch: {pr['headRefName']}"]
+    cut = cut_lists(pr)
+    if cut:
+        out.append(f"Cut: {', '.join(cut)}: GitHub has more than this bundle holds")
+        print(f"warn: PR #{pr['number']} is cut: {', '.join(cut)}", file=sys.stderr)
+    out += ["", "## Body", pr.get("body") or "(empty)", ""]
     for i in pr["closingIssuesReferences"]["nodes"]:
         out += [f"## Closes #{i['number']} {i['title']}", i.get("body") or "(empty)", ""]
     out.append("## Reviews")
