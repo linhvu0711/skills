@@ -60,7 +60,7 @@ INDEX_PATHS = (
     os.path.join(os.path.expanduser("~"), ".cache", "skills-sessions", "codex-index.json"),
     os.path.join("/tmp", "skills-sessions", "codex-index.json"),  # Codex sandbox fallback
 )
-INDEX_VERSION = 8  # 8: prompts skip only Codex's injected text; 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
+INDEX_VERSION = 8  # 8: prompts skip only Codex's injected text, and an entry keeps its ctime; 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
@@ -230,7 +230,8 @@ def collect(paths, scope, idx: dict,
         except OSError:
             continue
         ent = files.get(key)
-        fresh = ent and ent["size"] == st.st_size and ent["mtime"] == st.st_mtime
+        # ctime too: a chmod changes only it, and a file that lost read permission must be read again.
+        fresh = ent and ent["size"] == st.st_size and ent["mtime"] == st.st_mtime and ent.get("ctime") == st.st_ctime
         if not fresh:
             try:
                 meta = read_meta(p)
@@ -240,7 +241,7 @@ def collect(paths, scope, idx: dict,
                 continue
             if not meta:
                 continue
-            ent = {"size": st.st_size, "mtime": st.st_mtime, **meta}
+            ent = {"size": st.st_size, "mtime": st.st_mtime, "ctime": st.st_ctime, **meta}
             files[key] = ent
             dirty = True
         if ent.get("parent"):
