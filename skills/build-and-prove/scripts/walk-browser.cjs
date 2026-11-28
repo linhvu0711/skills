@@ -4,11 +4,12 @@
 //   walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>]
 //
 // It opens Playwright's Chromium, headed, on a new, empty profile at the page
-// size (1432,795 by default, the biggest page the linux Sandbox shows whole),
-// with the saved login of --storage and a fixed
-// clock at --clock, then waits until the browser closes. It appends one line
-// per page error and failed request to the log, WALK_BROWSER_LOG, which
-// `box.sh open` sets and `box.sh close --out` copies next to the video:
+// size, with the saved login of --storage and a fixed clock at --clock, then
+// waits until the browser closes. The default size is the biggest page the
+// Sandbox it runs on shows whole: 1200,580 on macOS, 1432,795 on linux. It
+// appends one line per page error and failed request to the log,
+// WALK_BROWSER_LOG, which `box.sh open` sets and `box.sh close --out` copies
+// next to the video:
 //
 //   error: <console error text> · <its location url>
 //   error: Uncaught <name>: <message> · <page url>
@@ -34,7 +35,8 @@ const options = { 'viewport-size': { type: 'string' }, storage: { type: 'string'
 // Loose, so a wrong flag still reaches stop(), which says so in the log.
 const { values, positionals } = parseArgs({ options, allowPositionals: true, strict: false });
 const given = (name) => (typeof values[name] === 'string' ? values[name] : undefined);
-const opts = { size: given('viewport-size') ?? '1432,795', storage: given('storage'), clock: given('clock'), log: process.env.WALK_BROWSER_LOG || undefined };
+const DEFAULT_SIZE = process.platform === 'darwin' ? '1200,580' : '1432,795';
+const opts = { size: given('viewport-size') ?? DEFAULT_SIZE, storage: given('storage'), clock: given('clock'), log: process.env.WALK_BROWSER_LOG || undefined };
 
 const oneLine = (text) => String(text).replace(/\s*\n\s*/g, ' ');
 const write = (line) => fs.appendFileSync(opts.log, `${oneLine(line)}\n`);
