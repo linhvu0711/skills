@@ -13,7 +13,7 @@
 #   <number> <base> <head> <url> fork=<true|false>
 #
 # move: <stack-file> holds what list printed; <old-sha> is <branch>'s tip
-# before the push. Each PR, in order, is rebased in a temp worktree of
+# before the push. Each PR, in order, is rebased in its own temp worktree of
 # origin/<head> onto origin/<base>, dropping the commits its base had before
 # (`--onto`, from the merge base with the base's old tip), and pushed with
 # `--force-with-lease` against its own old tip. A local branch of that name
@@ -27,6 +27,8 @@
 #   SKIP <url>: push refused: <git's last line>
 # then `LEFT <url>` for each PR after a stop. Last line `RESTACK=moved <n>`
 # (exit 0) or `RESTACK=stopped` (exit 1). Nothing after a stop is pushed.
+# A temp worktree git cannot remove prints `WARN <path>: <git's last line>`,
+# and the move goes on.
 # --own: the numbers of the PRs the caller owns. Each other PR, and each PR
 # stacked on a left one, prints `LEFT <url>` and is not pushed; the move goes
 # on with the next PR, and this is no stop. Without it, every PR is owned.
@@ -78,7 +80,15 @@ old_of() {
   return 1
 }
 
-drop_tmp() { g worktree remove --force "$tmp/wt" >/dev/null 2>&1 || true; }
+# drop_tmp: remove the current PR's temp worktree, `pwt`, if one is held.
+drop_tmp() {
+  local err
+  [ -n "$pwt" ] || return 0
+  if ! err="$(g worktree remove --force "$pwt" 2>&1)"; then
+    printf 'WARN %s: %s\n' "$pwt" "$(printf '%s\n' "$err" | tail -1)"
+  fi
+  pwt=""
+}
 
 # move_one: move the PR in base, head, url, fork. Sets `result`; 1 is a stop.
 move_one() {
@@ -95,19 +105,21 @@ move_one() {
   if [ -n "$hold" ] && [ -n "$(git -C "$hold" status --porcelain)" ]; then
     result="SKIP $url: worktree $hold has uncommitted changes"; return 1
   fi
-  g worktree add -q --detach "$tmp/wt" "origin/$head" 2>/dev/null || { result="SKIP $url: cannot check out $head"; return 1; }
-  up="$(git -C "$tmp/wt" merge-base "$parent_old" HEAD)" || { drop_tmp; result="SKIP $url: no commit in common with $base"; return 1; }
+  pwt=""
+  g worktree add -q --detach "$tmp/wt-$num" "origin/$head" 2>/dev/null || { result="SKIP $url: cannot check out $head"; return 1; }
+  pwt="$tmp/wt-$num"
+  up="$(git -C "$pwt" merge-base "$parent_old" HEAD)" || { drop_tmp; result="SKIP $url: no commit in common with $base"; return 1; }
   # A rebase drops merge commits, and with them any resolution made there.
-  if [ "$(git -C "$tmp/wt" rev-list --merges --count "$up..HEAD")" -gt 0 ]; then
+  if [ "$(git -C "$pwt" rev-list --merges --count "$up..HEAD")" -gt 0 ]; then
     drop_tmp; result="SKIP $url: $head has merge commits; move it by hand"; return 1
   fi
-  if ! git -C "$tmp/wt" rebase -q --onto "origin/$base" "$up" >/dev/null 2>&1; then
-    files="$(git -C "$tmp/wt" diff --name-only --diff-filter=U | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
-    git -C "$tmp/wt" rebase --abort; drop_tmp
+  if ! git -C "$pwt" rebase -q --onto "origin/$base" "$up" >/dev/null 2>&1; then
+    files="$(git -C "$pwt" diff --name-only --diff-filter=U | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
+    git -C "$pwt" rebase --abort; drop_tmp
     result="CLASH $url: $files"; return 1
   fi
-  new="$(git -C "$tmp/wt" rev-parse HEAD)"
-  if ! err="$(git -C "$tmp/wt" push -q --force-with-lease="refs/heads/$head:$child_old" origin "HEAD:refs/heads/$head" 2>&1)"; then
+  new="$(git -C "$pwt" rev-parse HEAD)"
+  if ! err="$(git -C "$pwt" push -q --force-with-lease="refs/heads/$head:$child_old" origin "HEAD:refs/heads/$head" 2>&1)"; then
     drop_tmp; result="SKIP $url: push refused: $(printf '%s\n' "$err" | tail -1)"; return 1
   fi
   drop_tmp
@@ -135,7 +147,7 @@ case "$cmd" in
     wt="$1"; olds_b=("$2"); olds_s=("$3"); left=" "
     [ -f "$4" ] || die "no stack file $4"
     lines=(); while IFS= read -r l; do lines+=("$l"); done < "$4"
-    tmp="$(mktemp -d)"; trap 'drop_tmp; rm -rf "$tmp"' EXIT
+    tmp="$(mktemp -d)"; pwt=""; trap 'drop_tmp; rm -rf "$tmp"' EXIT
     moved=0; stopped=0
     for line in ${lines[@]+"${lines[@]}"}; do
       case "$line" in ''|STACK=*) continue ;; esac
