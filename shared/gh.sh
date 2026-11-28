@@ -8,7 +8,8 @@
 # gh_out <args>: runs `gh <args>`. Exit 0: its stdout in `out`, return 0.
 # Else the last non-empty line of its stderr in `err` (`gh exited <n>` when it
 # printed none), return 1. On a failure, status holds the HTTP status from the
-# error body gh api prints, or is empty.
+# error body gh api prints, or is empty. status needs jq: a caller that reads it
+# checks jq first, as route/edit-labels.sh does.
 gh_out() {
   # No EXIT trap, since this file is sourced, see docs/adr/0051-a-sourced-helper-sets-no-trap.md
   local f rc=0
