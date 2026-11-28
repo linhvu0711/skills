@@ -33,8 +33,8 @@
 # row's tier, and a claude or codex cell ends on that harness, since outside
 # T3 only the last try runs.
 #
-# `name` and `description` are check.sh's to check; the `description:` line
-# is copied as written, so it must be one line.
+# check.sh checks `name` and `description`. This script also rejects either
+# one on more than one line, since the `description:` line is copied as written.
 #
 # check: one `<line>: <problem>` line per problem on stdout, nothing for a
 # good file. A missing tier or checker line is named at the closing `---`.

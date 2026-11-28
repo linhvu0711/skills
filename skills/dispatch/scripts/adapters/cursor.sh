@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The Cursor adapter of the handoff module (scripts/handoff.sh). Thin Cursor
-# Cloud Agents v1 client, curl + jq only. The module keeps the ledger and runs
+# Cloud Agents v1 client, with curl, jq, and gh. The module keeps the ledger and runs
 # the watch.
 #
 #   cursor.sh start <prompt-file> --repo <owner/name or URL> [--base REF] [--title T] [--model ID]
@@ -27,16 +27,10 @@
 # event, so a follow-up's run is a new event.
 # Cursor's git snapshot tracks only the cursor/… branch it opened the
 # workspace on, so a PR the agent opens with gh on its own branch never
-# shows there. poll with --repo and --issue also asks GitHub for open
-# PRs whose head is `<type>/<issue>-…` and reports those.
-# --platform macos runs the agent on a Namespace Mac with a Cursor worker on
-# it, as a My Machines agent; Cursor's own machines are Ubuntu only. mac.sh
-# rents it, keeps its row, and gives it back: start rents it through mac.sh
-# rent, say through mac.sh renew, which keeps the worker's name and ID, since
-# Cursor sends an agent's runs to the worker ID it first ran on. The Mac lives
-# for one run: handoff.sh's watch, or its release, gives it back through
-# mac.sh return; poll never touches it. A worker refuses a grok_ key, so a Mac
-# needs a personal crsr_ key. --platform windows stops: Devin has one.
+# shows there. poll with --repo and --issue also asks GitHub for PRs in
+# any state whose head is `<type>/<issue>-…` and reports those.
+# --platform macos runs the agent on a rented Mac with a Cursor worker on it.
+# Why: see docs/adr/0047-cursor-macos-runs-use-a-rented-mac.md
 # Key: ~/.zshrc `export CURSOR_API_KEY=` wins over the env (a rotated key
 # leaves a stale value in a running shell). Never printed.
 # A wrong command line: `stop: <why>` when there is one, then the usage lines
@@ -82,8 +76,8 @@ key() {
 aid() {
   local s="${1:-}"
   [[ -n "$s" ]] || die_usage "$(usage_text)" "agent id required"
-  s="${s%%\?*}"                      # drop a query string
-  s="${s##*/}"                       # app URL -> id
+  s="${s%%\?*}"
+  s="${s##*/}"
   [[ "$s" == bc-* ]] || s="bc-$s"
   printf %s "$s"
 }
@@ -132,7 +126,7 @@ fetch() {
 # create_on_mac BODY WORKER -> the create response. The create call to a
 # machine agent blocks until its run ends (proven 2026-11-02), so it gets a
 # short timeout, and on that timeout the agent is found by its worker's
-# name, which no other agent has.
+# name, which no other agent has, see docs/adr/0052-cursor-create-stops-at-20s-and-polls.md
 create_on_mac() {
   local body="$1" worker="$2" out code rc=0 i found
   out=$(mktemp "$scratch/out.XXXXXX")

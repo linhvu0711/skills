@@ -238,7 +238,6 @@ const DATA = {};
   let cur = 0;
 
   document.title = `Plan · ${d.issue?.number ? '#' + d.issue.number + ' ' : ''}${d.title || ''}`;
-  // Header
   const kick = $('#kicker');
   if (d.issue?.number) kick.append(el('a', { href: d.issue.url, target: '_blank' }, `#${d.issue.number}`));
   if (d.issue?.size) kick.append(el('span', { class: 'badge size' }, d.issue.size));
@@ -247,7 +246,6 @@ const DATA = {};
   $('#title').textContent = d.title || 'Plan';
   $('#meta').append(R([d.facts?.repo && `repo ${code(d.facts.repo)}`, d.facts?.base && `base ${code(d.facts.base)}`, d.date].filter(Boolean).join('  ·  ')));
 
-  // Tabs
   const TABS = [
     { id: 'review', label: 'Review' },
     isRun && { id: 'stack', label: 'Stack' },
@@ -273,7 +271,6 @@ const DATA = {};
   tabs.append(el('button', { class: 'tool', onclick: () => toggleAll(false) }, 'Collapse all'));
   const toggleAll = (open) => { for (const x of panels.querySelectorAll('details')) x.open = open; };
 
-  // Layer switcher (runs only)
   const layerBar = $('#layers');
   if (isRun) {
     layerBar.hidden = false;
@@ -602,12 +599,10 @@ const DATA = {};
     return el('ul', { class: 'plain' }, items.map((x, i) => el('li', {}, el('span', { class: 'ref' }, `${prefix}${i + 1}`), ' ', R(x))));
   }
 
-  // Copy chips
   document.addEventListener('click', (e) => {
     const p = e.target.closest('.path'); if (!p) return;
     navigator.clipboard?.writeText(p.dataset.copy).then(() => { p.classList.add('copied'); setTimeout(() => p.classList.remove('copied'), 700); });
   });
-  // Keys
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input,textarea')) return;
     const n = parseInt(e.key, 10);

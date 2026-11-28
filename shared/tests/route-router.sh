@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The Router.
 RT="$here/../route/router.sh"
 
 # PR nodes as GitHub gives them.

@@ -42,7 +42,8 @@
 # watch starts the watcher, a background loop that runs one watcher check
 # every few minutes, with no chat turn, and wakes the orchestrator thread
 # only when the agent must act. watch --once is one watcher check: it reads
-# the run as check does, claims nothing, and records only the check time, so
+# the run as check does, claims no start, and records the check time, the
+# conflicts it claimed, and the task turn's holders, so
 # the agent's own check still claims the starts, joins the new issues, and
 # marks what changed.
 #
@@ -80,7 +81,6 @@ runs="$home/$owner-$repo"
 # outside T3.
 in_t3() { t3="$(bash "$core/t3-cli.sh")" || exit 1; }
 
-# ---------- refs ----------
 # A ref names one issue in any repo: owner/repo#n. The state keys every issue
 # by its ref, since a run can hold issues of several repos.
 #
@@ -140,7 +140,6 @@ run_repo_named() {
      | if length == 1 then .[0] else empty end' <<<"${S:-null}"
 }
 
-# ---------- state ----------
 # The run-id is the UTC start time, so the newest run sorts last.
 newest_run() {
   local d
@@ -202,7 +201,6 @@ copy_page() {
     "$here/../assets/board.html"
 }
 
-# ---------- GitHub ----------
 fields='number title state createdAt labels(first:50){nodes{name}} subIssues(first:100){nodes{number state repository{nameWithOwner}}} blockedBy(first:50){nodes{number state repository{nameWithOwner}}} closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{number url state createdAt body mergeable headRefOid}}'
 
 # read_issues <ref>...: one GraphQL call per repo, the run repo first,
@@ -303,7 +301,7 @@ route_for() {
 # that thread's work, so the PRs from after the run start go. Once one from
 # before is there, every open PR counts, so two of them still make the
 # issue wait. A ready-pr answer counts every PR, since the user named that
-# PR's step.
+# PR's step, see docs/adr/0055-a-pr-counts-as-the-runs-by-its-createdat.md
 run_prs() {
   jq -c --arg t "$(jq -r .started_at <<<"$S")" --arg a "${2:-}" '
     if $a == "ready-pr" or any(.closedByPullRequestsReferences.nodes[]; .state == "OPEN" and .createdAt < $t) then .
@@ -346,7 +344,6 @@ joins='
 # thread's link once the thread has the title `🧭 <name>`.
 thread_link() { printf '[🧭 %s](t3-thread://v1/%s)' "$1" "$2"; }
 
-# ---------- task turn ----------
 # The task turn: one task issue with a thread per Mac, since two tasks at
 # once can fight over the browser and the user. This run holds it for a
 # task whose task thread is pending or started; when it holds none, a
@@ -407,7 +404,6 @@ owner_jq='def owner_of($r): (.owners[$r] // []) as $o
     elif any($S.threads[]; .ref == $r and .status != "failed") then empty
     else ($o | map(select([.started_at, .repo] < [$S.started_at, $S.repo])) | sort_by([.started_at, .repo]) | first | .link // empty) end;'
 
-# ---------- board ----------
 # run_part($limit): what the board shows of the run itself, from a state.
 # shellcheck disable=SC2016 # the $ names are jq variables
 board_run_jq='def run_part($limit): {repo, name, status, timer: {fails: (.timer.fails // 0), why: .timer.why,
@@ -429,7 +425,8 @@ board='
   # gave no time. A /ship thread ends its turn each time it waits for its
   # helpers, so a short pause is not a stop; 10 minutes is two watcher checks
   # at the 5 minute default (#279). T3 writes milliseconds, which
-  # fromdateiso8601 refuses.
+  # fromdateiso8601 refuses. Why 10 minutes: see
+  # docs/adr/0048-a-thread-quiet-for-10-minutes-reads-as-stopped.md
   def quiet($t): $t.updatedAt == null
     or (($S.timer.checked_at | fromdateiso8601) - ($t.updatedAt | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) >= 600);
   # The first rule that holds names who has the ball and the one action.
@@ -499,7 +496,6 @@ write_board() {
   fi
 }
 
-# ---------- start ----------
 cmd_start() {
   local name="" thread="" env="" refs=() a
   while [ $# -gt 0 ]; do
@@ -537,7 +533,6 @@ cmd_start() {
   jq -cn --arg run "$run" --argjson set "$(jq -c .set <<<"$S")" '{run: $run, set: $set}'
 }
 
-# ---------- run read ----------
 # observe: the Run read: the run as it is now, from the state in S, GitHub,
 # and T3, for check and for a watcher check, so the two never read a run two
 # ways. Its callers run it in a subshell with set -e on, so nothing it sets
@@ -762,7 +757,6 @@ watch_at_limit() {
   fi
 }
 
-# ---------- check ----------
 cmd_check() {
   in_t3
   newest_run
@@ -810,7 +804,6 @@ cmd_check() {
       else {} end'
 }
 
-# ---------- started ----------
 # started <issue> <stage> <thread-id> <link>, or <issue> <stage> --failed <why>: the
 # claim of that stage becomes the thread the agent launched, or a failed
 # launch. A failed one is never started again; `restart` clears it. A failed
@@ -834,7 +827,6 @@ cmd_started() {
   save
 }
 
-# ---------- settled ----------
 # settled <thread-id> <run-id> [--kept <why>]: what the agent did with a
 # /grill or /triage thread a check listed in settles: settled it at that
 # turn, or kept it open for the user, with why.
@@ -853,7 +845,6 @@ cmd_settled() {
   save
 }
 
-# ---------- proposed ----------
 # proposed <n> <route> [--size S]: the route the agent proposed for unlabeled
 # #n, and the size it read from the code, kept with any answer the user
 # already gave. `unsure` is a proposal with no route. A ship needs the size;
@@ -959,7 +950,6 @@ label_answers() {
   done
 }
 
-# ---------- change ----------
 # change add <issue>... and remove <issue>...: the set. A removed issue keeps its
 # thread records and never joins again by itself.
 # change restart <n>: drop #n's newest thread record, so the next check
@@ -1080,7 +1070,6 @@ cmd_change() {
   save
 }
 
-# ---------- timer ----------
 # timer --every <min> | pause | resume | stop: how often the watcher checks,
 # and the run's status. Pause and stop end the watcher; the watcher reads the
 # interval before each wait. Prints the status and interval as one JSON line.
@@ -1100,7 +1089,6 @@ cmd_timer() {
   jq -c '{status, every: .timer.every}' <<<"$S"
 }
 
-# ---------- resume ----------
 # resume --thread <id> --env <id>: the newest run of the repo that is not done goes on
 # from that thread. Prints the run's name, which the thread takes as its
 # title, and the check interval.
@@ -1123,7 +1111,6 @@ cmd_resume() {
   jq -cn --arg run "$run" --argjson S "$S" '{run: $run, name: $S.name, every: $S.timer.every}'
 }
 
-# ---------- sync ----------
 # sync: the default branch of each main checkout the newest run worked in,
 # fast-forwarded to origin's, one line per repo, led by the repo's name, so clean-worktrees judges, and the retro reads, the merged
 # work. It only fast-forwards: the checkout is the user's, so their branch,
@@ -1168,7 +1155,6 @@ sync_one() {
   printf '%s fast-forwarded %s..%s\n' "$def" "$(git -C "$path" rev-parse --short=7 "$old")" "$(git -C "$path" rev-parse --short=7 "$new")"
 }
 
-# ---------- close-epics ----------
 # The last check's rows hold each open epic at stage epic; a closed one is at done.
 cmd_close_epics() {
   [ $# -eq 0 ] || die_usage "usage: orchestrate.sh close-epics <owner/repo>"
@@ -1218,7 +1204,6 @@ cmd_close_epics() {
   done
 }
 
-# ---------- watch ----------
 # wake <statuses>: send the orchestrator thread `/orchestrate check`, unless T3's statuses show it
 # busy: mid-turn, or waiting on the user, where a message would land as the
 # answer to its question. Prints true when it sent. A failed send is left on
@@ -1292,7 +1277,8 @@ watch_start() {
 # watch starts the watcher. watch --once is one watcher check; a run that is
 # not running, or a --token that is not the live watcher's, exits 3 with no
 # output. The board gets what this check read, the issues it joined too; the
-# state keeps only the time, so the agent's check still claims, joins, and
+# state keeps the time, the conflicts it claimed, and the task turn's holders,
+# so the agent's check still claims, joins, and
 # marks what changed. It wakes the orchestrator thread when the agent must
 # act: a thread to start, a proposal to make, or the run done. It sends
 # `/ready-pr` to each thread whose PR has conflicts. Prints what it woke and

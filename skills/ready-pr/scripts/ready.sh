@@ -32,7 +32,7 @@
 #   THREAD <thread line, as below>
 # A check is known by its URL, so a rerun's new attempt prints again; one with
 # no URL is known by its name. The failed step comes from the Actions job the
-# URL names; `-` for a check from outside Actions, an unknown workflow, or a
+# URL names; `-` for a check from outside Actions, or a
 # failed lookup. The watch polls an API, so it costs no model tokens; run it
 # as a line-by-line watch, so each line wakes the session.
 #
@@ -44,13 +44,14 @@
 #   <thread node id> <path>:<line> last=<login> :: <first comment, 120 chars>
 # A thread waits when it is not resolved and its last comment is not by --me
 # (default: the login `gh api user` prints). Devin resolves a thread itself
-# once a push fixes it, with a `✅ Resolved` reply, so those never wait.
+# once a push fixes it, with a `✅ **Resolved**` reply, so those never wait.
 # The verdict and its exit code:
 #   READY <url>                          0  the reason is `checks: <n> green on <sha7>
 #   READY <url> (waiting for approval)   0  · open threads: 0 · merge state: <state>`
 #   BLOCKED <url>                        1  the reason lists every reason, `; ` between;
-#   WAITING <url>                        2  (no blocked reason among them) red and pending
-#                                           checks are named, as in `1 check(s) red: test`
+#   WAITING <url>                        2  (no blocked reason among them) a red check
+#                                           blocks, a pending one waits; each is named,
+#                                           as in `1 check(s) red: test`
 # A gh call that fails is BLOCKED with the reason `gh failed: <its last error
 # line>`, on the first fail outside the watch. In the watch, a read that fails
 # is tried again every --poll-sec until the limit, then BLOCKED with

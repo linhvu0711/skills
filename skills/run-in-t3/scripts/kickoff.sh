@@ -209,7 +209,6 @@ if [ "$cmd" = route ]; then
   exit 0
 fi
 
-# ---------- label ----------
 if [ "$cmd" = label ]; then
   n="${nums[0]}"
   lab="$(answer_label "$slug" "$word" "$label_size")" || exit 1
@@ -231,7 +230,6 @@ if [ "$cmd" = label ]; then
   exit 0
 fi
 
-# ---------- thread ----------
 first="$(issue_of "$issues" "${nums[0]}")"
 title="$(jq -r .title <<<"$first")"
 epic=""

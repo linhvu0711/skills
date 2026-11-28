@@ -38,7 +38,6 @@
   button { font: inherit; color: inherit; }
   .mono { font-family: var(--mono); }
 
-  /* ---------- top bar ---------- */
   .top { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--card); flex-wrap: wrap; }
   .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
   .brand .run { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -63,7 +62,6 @@
   .needbtn:disabled { border-color: var(--line); background: transparent; color: var(--muted); cursor: default; }
   .needbtn:focus-visible, .card:focus-visible, .x:focus-visible { outline: 2px solid var(--agent); outline-offset: 2px; }
 
-  /* ---------- banner ---------- */
   .banner { display: none; gap: 10px; align-items: baseline; padding: 9px 20px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
   .banner.on { display: flex; }
   .banner b { white-space: nowrap; }
@@ -73,7 +71,6 @@
   .banner.done { background: var(--done-soft); color: var(--done); }
   .banner code { font-family: var(--mono); font-size: 12.5px; }
 
-  /* ---------- board ---------- */
   .board { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; padding: 16px 20px 24px; overflow-x: auto; min-height: 0; }
   .stale .board { opacity: .5; pointer-events: none; }
   .col { background: var(--col); border-radius: 12px; padding: 10px; min-height: 0; display: flex; flex-direction: column; }
@@ -83,7 +80,6 @@
   .colhint { color: var(--muted); font-size: 12px; padding: 0 4px 10px; }
   /* Each column scrolls on its own; the padding keeps a card's lift and focus ring in view. */
   .cards { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--thumb) transparent; padding: 4px; margin: -4px; }
-  /* A soft thumb with no track, darker while the pointer is on the column. */
   .cards:hover { --thumb: var(--faint); }
   .cards::-webkit-scrollbar { width: 6px; }
   .cards::-webkit-scrollbar-track { background: transparent; }
@@ -136,7 +132,6 @@
   .skel { height: 84px; border-radius: 8px; background: linear-gradient(90deg, var(--card) 0%, var(--col) 50%, var(--card) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; opacity: .8; }
   @keyframes shimmer { to { background-position: -200% 0; } }
 
-  /* ---------- drawer ---------- */
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
   .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100%; background: var(--card); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.12); transform: translateX(100%); transition: transform .22s ease; z-index: 21; display: flex; flex-direction: column; }
   .open .scrim { opacity: 1; pointer-events: auto; }
@@ -317,7 +312,6 @@
     if (openN != null) openDrawer(openN, true)
   }
 
-  // ---------- drawer ----------
   function openDrawer(n, quiet) {
     var x = B && B.issues.filter(function (i) { return i.ref === n })[0]
     if (!x) return closeDrawer()
@@ -361,7 +355,6 @@
     if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDrawer(c.getAttribute('data-n')) }
   })
 
-  // ---------- data ----------
   function get(name) {
     return fetch(name, { cache: 'no-store' }).then(function (r) {
       if (r.status === 404) return null

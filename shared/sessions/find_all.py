@@ -21,7 +21,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so it goes on it here.
 sys.path.insert(0, HERE)
-import adapter_lib as lib  # noqa: E402
+import adapter_lib as lib  # noqa: E402  # adapter_lib imports only after the sys.path line above
 
 
 def unread(args):

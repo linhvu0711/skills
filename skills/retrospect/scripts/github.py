@@ -15,7 +15,8 @@ only untouched PRs). A PR is touched when a transcript holds its
 
 `list` prints {"read_prs": [{"number", "url", "title", "date"}], "read_issues":
 [...], "touched": [{"kind", "number", "by"}], "skipped": [{"url", "why"}]}, a
-skipped PR being one gh could not read, and a date the day the PR was opened.
+skipped PR being one gh could not read or one in another repo, and a date
+the day the PR was opened.
 `pr` and `issues` print one markdown bundle for a reader.
 `home` prints [{"path", "home", "file"}] per path, the GitHub repo that holds
 the path's real file (by the shared checkout resolver) and the file's path in
@@ -23,7 +24,8 @@ it, or {"path", "unknown"} with "in no git repo" or "no GitHub remote".
 `latest` prints {"file", "text"}, the file on the repo's default branch, or
 {"file", "missing": true} when it is not there.
 A gh call that fails stops with `stop: gh could not <what>: <gh's last line>`
-on stderr and exit 1.
+on stderr and exit 1, except a PR view or a run log, whose failure is noted
+in the output.
 """
 
 import argparse

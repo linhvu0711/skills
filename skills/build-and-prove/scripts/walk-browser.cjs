@@ -99,6 +99,7 @@ async function main() {
   // A clean page logs no line, and close reads a missing log as a fault.
   fs.appendFileSync(opts.log, '');
   const { chromium } = loadPlaywright();
+  // Chromium's own sandbox cannot start in a proofbox Sandbox, see docs/adr/0053-the-walk-browser-runs-with-no-sandbox.md
   const browser = await chromium.launch({ headless: false, args: ['--no-sandbox'] });
   const closed = new Promise((resolve) => browser.on('disconnected', resolve));
   const context = await browser.newContext({ viewport, storageState: opts.storage });

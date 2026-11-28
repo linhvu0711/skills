@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The launch line.
 LL="$here/../launch/line.sh"
 
 # ll_setup [repo]: a fresh temp folder T with the test repo at $T/repo, and

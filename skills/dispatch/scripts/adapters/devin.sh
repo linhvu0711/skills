@@ -146,7 +146,7 @@ upload() {
 # pointer FILE KIND URL -> the short text Devin gets: head lines, a pointer, the ATTACHMENT line
 # The file is referenced once, by that line (docs.devin.ai, "Upload an attachment": Devin
 # recognizes attachments only as ATTACHMENT:"<url>" on its own line). The v3 body field
-# attachment_urls is not sent as well: sending both made Devin show the same file twice.
+# attachment_urls is not sent as well: sending both made Devin show the same file twice, see #455.
 pointer() {
   local file="$1" kind="$2" url="$3" head
   head=$(awk '/^# /{exit} {print}' "$file" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')

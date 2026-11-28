@@ -35,7 +35,7 @@ import sys
 here = os.path.dirname(os.path.abspath(__file__))
 # `python3 -I` leaves the script's folder off sys.path, so the sessions folder goes on it here.
 sys.path.insert(0, os.path.dirname(here))
-import adapter_lib  # noqa: E402
+import adapter_lib  # noqa: E402  # adapter_lib imports only after the sys.path line above
 
 rollout_io = adapter_lib.load("rollout_io", os.path.join(here, "rollout_io.py"))
 printer = adapter_lib.load("printer", os.path.join(here, "..", "printer.py"))

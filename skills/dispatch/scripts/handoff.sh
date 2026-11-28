@@ -21,8 +21,8 @@
 # time, executor, session, link, issue, title, tab separated.
 # route reads it: the issue's newest session, of the named executor when one
 # is named, is a follow-up; no session starts on the named executor, else
-# devin. status asks the adapter's poll, one line of state, event key, PRs,
-# link, and message, tab separated. watch polls until the session ends:
+# devin. status asks the adapter's poll and prints four lines, each with its
+# label: state, pr, link, and message. watch polls until the session ends:
 # `pr <url>` once per PR, and `<state> <link> :: <message>` when it blocks,
 # finishes, errors, is cancelled, expires, or is suspended. --once exits on
 # the first event, for a caller that only sees the process end; --follow

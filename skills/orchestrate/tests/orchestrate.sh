@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The orchestrator script.
 F="$here/../scripts/orchestrate.sh"
 
 # fs_setup: a fresh temp folder T, the fake gh (its `repo view` names main),

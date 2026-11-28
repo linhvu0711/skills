@@ -4,7 +4,6 @@
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# The shell helper.
 G="$here/../gh.sh"
 
 # gh_fails: the fake gh, whose `repo view` fails with a hint first, the error

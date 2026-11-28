@@ -12,7 +12,6 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 
-# The kinds each mode prints; user, assistant, note, and compact print in both.
 SHOWN = {
     "summary": {"user", "assistant", "note", "compact"},
     "balanced": {"user", "assistant", "note", "compact", "call", "result"},

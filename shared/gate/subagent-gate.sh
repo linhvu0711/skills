@@ -80,6 +80,7 @@ deny() {
 # opened it.
 in_t3() {
   [ -n "${T3CODE_THREAD_ID:-}" ] && return 0
+  # T3 starts Codex with no thread id, so the log's first originator names T3, see #455
   [ "$harness" = codex ] && [ -f "$log" ] && \
     [ "$(head -1 "$log" | jq -r '.payload.originator // ""' 2>/dev/null)" = "T3 Code" ]
 }
