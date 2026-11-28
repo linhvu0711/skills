@@ -112,7 +112,7 @@ fs_short() { git -C "$1" rev-parse --short=7 "$2"; }
 # open PRs: #43 from 2026-10-27T09:00:00Z and #44 from <created-at>.
 fs_two_prs() {
   local a='{"number":43,"url":"https://github.com/acme/app/pull/43","state":"OPEN","createdAt":"2026-10-27T09:00:00Z","body":""}'
-  local b='{"number":44,"url":"https://github.com/acme/app/pull/44","state":"OPEN","createdAt":"'"$1"'","body":""}'
+  local b; b="$(jq -nc --arg at "$1" '{number: 44, url: "https://github.com/acme/app/pull/44", state: "OPEN", createdAt: $at, body: ""}')"
   fs_setup; fs_issue 42 OPEN '["size/S"]' '[]' "[$a,$b]"; fs_prs "$a" "$b"; fs_start 42; fs_at 2026-10-28T12:00:00Z
 }
 
