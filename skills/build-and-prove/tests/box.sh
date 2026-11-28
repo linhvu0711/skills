@@ -644,6 +644,57 @@ request: 500 http://localhost:3000/api/wishes" "$(cat "$P/video-1-browser.txt")"
   [ ! -e "$FAKE_PB/tmp/walk-browser.log" ] || eq log gone "still there"
 }
 
+t_box_fit_macos_tall() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  echo "727 728 1224 1280" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 3 "$code"
+  eq stdout "TALL window bottom 727 · screen bottom 728" "$out"
+}
+
+t_box_fit_macos_fits() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  echo "713 726 1224 1280" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "FIT window bottom 713 · screen bottom 726" "$out"
+  has log "osascript -l JavaScript" "$(cat "$FAKE_PB/log")"
+}
+
+t_box_fit_macos_no_window() {
+  # Given
+  fake_proofbox
+  state ns:us:abc 0 "" "" macos
+  echo 1 > "$FAKE_PB/exec.1.code"
+  echo "execution error: Error: no front window (-2700)" > "$FAKE_PB/exec.err"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 1 "$code"
+  eq "last stderr line" "stop: cannot measure the window: execution error: Error: no front window (-2700)" "$(printf '%s\n' "$err" | tail -n 1)"
+}
+
+t_box_fit_linux_fits() {
+  # Given
+  fake_proofbox
+  state ns:us:abc
+  echo "880 880 1440 1440" > "$FAKE_PB/exec.1.out"
+  # When
+  box fit "$P"
+  # Then
+  eq exit 0 "$code"
+  eq stdout "FIT window bottom 880 · screen bottom 880" "$out"
+  has log "_NET_WORKAREA" "$(cat "$FAKE_PB/log")"
+}
+
 cases=(
   "gates runs an --on-local Gate on the local machine|t_box_gates_on_local"
   "gates writes a --not-run line|t_box_gates_not_run"
@@ -686,4 +737,8 @@ cases=(
   "close saves the browser log next to the video|t_box_close_out"
   "close writes none for an empty browser log|t_box_close_empty"
   "close names a missing browser log|t_box_close_missing"
+  "fit on macos reads a window that fills the free area as TALL|t_box_fit_macos_tall"
+  "fit on macos passes a window above the Dock|t_box_fit_macos_fits"
+  "fit on macos stops when it finds no front window|t_box_fit_macos_no_window"
+  "fit on linux passes a window inside the work area|t_box_fit_linux_fits"
 )

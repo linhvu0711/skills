@@ -74,13 +74,18 @@
 # exit code is proofbox's, so the walker sees the Sandbox died.
 #
 # fit is the walker's check before a recording: does the active window, the
-# browser, end above the taskbar? On linux it reads the window's bottom with
-# xdotool and the bottom of the screen's work area, the screen less fluxbox's
-# taskbar, with xprop, and prints `FIT window bottom <b> · screen bottom <s>`,
-# or `TALL ...` and exits 3 when the window runs past it. A page cannot tell:
-# Playwright makes its screen size the viewport's. On macos it checks nothing
-# and prints `FIT not checked on macos`. Like open, it neither uploads nor
-# makes a gone Sandbox again.
+# browser, end above the taskbar or the Dock? On linux it reads the window's
+# bottom with xdotool and the bottom of the screen's work area, the screen
+# less fluxbox's taskbar, with xprop. On macos it reads the front app's first
+# visible layer-0 window and the free area above the Dock with
+# `osascript -l JavaScript`, which needs no permission. It prints
+# `FIT window bottom <b> · screen bottom <s>`, or `TALL ...` and exits 3 when
+# the window runs past the free bottom; on macos also when it ends within
+# 2 px of it, since macOS shrinks a window that is too tall until it stops at
+# the Dock, while the page keeps its height. A page cannot tell: Playwright
+# makes its screen size the viewport's. A measure that fails, or finds no
+# front window, stops with `cannot measure the window: <why>`. Like open, it
+# neither uploads nor makes a gone Sandbox again.
 #
 # gates runs each command, in order, as `sh -c '<command>'`, through the same
 # upload and one remake as run. Each command's output goes to its own file in a
@@ -403,17 +408,30 @@ case "$verb" in
     [ $# -eq 1 ] || die_usage "$usage"
     dir="$1"
     load
-    if [ "$BOX_OS" = macos ]; then echo "FIT not checked on macos"; exit 0; fi
-    # The geometry goes in a variable first: eval of a failed command's empty
-    # output succeeds, and an unset Y reads as 0, a window that seems to fit.
-    measure='g=$(xdotool getactivewindow getwindowgeometry --shell) && eval "$g" && set -- $(xprop -root _NET_WORKAREA | sed "s/.*= //; s/,//g") && echo "$((Y + HEIGHT)) $(($2 + $4))"'
-    pb keep show exec "$BOX_ID" -- sh -c "$measure"
+    # Each measure prints: window bottom, free bottom, window right, screen right.
+    if [ "$BOX_OS" = macos ]; then
+      # The front app's first layer-0 window with alpha above 0: on a real
+      # desktop the first layer-0 window can be an invisible helper. Cocoa
+      # counts y from the bottom, so the free bottom is the screen height less
+      # the visible frame's origin.
+      measure='ObjC.import("AppKit"); ObjC.import("CoreGraphics"); const s = $.NSScreen.screens.objectAtIndex(0), f = s.frame, v = s.visibleFrame; const pid = $.NSWorkspace.sharedWorkspace.frontmostApplication.processIdentifier; const list = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly | $.kCGWindowListExcludeDesktopElements, $.kCGNullWindowID))); const w = list.find(x => x.kCGWindowOwnerPID === pid && x.kCGWindowLayer === 0 && x.kCGWindowAlpha > 0); if (!w) throw new Error("no front window"); const b = w.kCGWindowBounds; [b.Y + b.Height, f.size.height - v.origin.y, b.X + b.Width, f.size.width].map(Math.round).join(" ")'
+      pb keep show exec "$BOX_ID" -- osascript -l JavaScript -e "$measure"
+    else
+      # The geometry goes in a variable first: eval of a failed command's empty
+      # output succeeds, and an unset Y reads as 0, a window that seems to fit.
+      measure='g=$(xdotool getactivewindow getwindowgeometry --shell) && eval "$g" && set -- $(xprop -root _NET_WORKAREA | sed "s/.*= //; s/,//g") && echo "$((Y + HEIGHT)) $(($2 + $4)) $((X + WIDTH)) $(($1 + $3))"'
+      pb keep show exec "$BOX_ID" -- sh -c "$measure"
+    fi
     [ -z "$gone" ] || exit 125
-    read -r bottom area <<<"$got" || true
-    if [ "$rc" -ne 0 ] || ! [[ "${bottom:-}" =~ ^[0-9]+$ && "${area:-}" =~ ^[0-9]+$ ]]; then
+    read -r bottom area right edge <<<"$got" || true
+    if [ "$rc" -ne 0 ] || ! [[ "${bottom:-}" =~ ^[0-9]+$ && "${area:-}" =~ ^[0-9]+$ && "${right:-}" =~ ^[0-9]+$ && "${edge:-}" =~ ^[0-9]+$ ]]; then
       die "cannot measure the window: ${why:-no output}"
     fi
-    if [ "$bottom" -le "$area" ]; then
+    # macOS shrinks a window that is too tall until it stops at the Dock, while
+    # the page keeps its height, so a window that reaches within 2 px of the
+    # free bottom is too tall too.
+    limit="$area"; [ "$BOX_OS" != macos ] || limit=$((area - 3))
+    if [ "$bottom" -le "$limit" ]; then
       echo "FIT window bottom $bottom · screen bottom $area"
     else
       echo "TALL window bottom $bottom · screen bottom $area"; exit 3
