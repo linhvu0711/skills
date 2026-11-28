@@ -43,7 +43,7 @@
 # every few minutes, with no chat turn, and wakes the orchestrator thread
 # only when the agent must act. watch --once is one watcher check: it reads
 # the run as check does, claims no start, and records the check time, the
-# conflicts it sent, and the task turn's holders, so
+# conflicts it claimed, and the task turn's holders, so
 # the agent's own check still claims the starts, joins the new issues, and
 # marks what changed.
 #
@@ -1277,7 +1277,7 @@ watch_start() {
 # watch starts the watcher. watch --once is one watcher check; a run that is
 # not running, or a --token that is not the live watcher's, exits 3 with no
 # output. The board gets what this check read, the issues it joined too; the
-# state keeps the time, the conflicts it sent, and the task turn's holders,
+# state keeps the time, the conflicts it claimed, and the task turn's holders,
 # so the agent's check still claims, joins, and
 # marks what changed. It wakes the orchestrator thread when the agent must
 # act: a thread to start, a proposal to make, or the run done. It sends
