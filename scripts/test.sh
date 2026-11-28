@@ -1374,7 +1374,7 @@ run_cases() {
   for c in "${cases[@]}"; do
     name="${c%%|*}"; fn="${c##*|}"
     root="$(mktemp -d)"
-    rc=0; set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; "$fn" ) >"$log" 2>&1; rc=$?; set -e
+    rc=0; set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; fake_home; "$fn" ) >"$log" 2>&1; rc=$?; set -e
     rm -rf "$root"
     if [ "$rc" -eq 0 ]; then
       printf 'ok %s\n' "$name"; pass=$((pass + 1))
@@ -1388,7 +1388,7 @@ run_cases() {
 # the next file is sourced, so a helper name in one file never replaces
 # another file's.
 pass=0; fail=0
-case_bin="${SKILLS_HOME%/agents}/case-bin"; mkdir -p "$case_bin"
+run_tmp="$(mktemp -d)"; case_bin="$run_tmp/case-bin"; mkdir -p "$case_bin"
 # A case that links mktemp into a PATH of its own links this wrapper, so the
 # wrapper names the real mktemp by its full path.
 { printf '#!/bin/sh\nreal='\''%s'\''\n' "$(command -v mktemp)"; cat <<'EOF'
@@ -1401,7 +1401,7 @@ EOF
 } > "$case_bin/mktemp"
 chmod +x "$case_bin/mktemp"
 log="$(mktemp)"
-trap 'rm -rf "$log" "${SKILLS_HOME%/agents}"' EXIT
+trap 'rm -rf "$log" "$run_tmp"' EXIT
 run_cases
 for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases
