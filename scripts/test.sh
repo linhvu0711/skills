@@ -1416,8 +1416,17 @@ run_print() {
   done
 }
 
-# run_wait: wait for every case of the run, then print the rest.
-run_wait() { wait; run_print; }
+# run_wait: wait for every case of the run, then print the rest. A case whose
+# job ended with no exit code, as when its temp root could not be made, is a
+# FAIL, so a run never passes with a case that did not run.
+run_wait() {
+  wait; run_print
+  while [ "$printed" -lt "$started" ]; do
+    printed=$((printed + 1))
+    printf 'FAIL %s: no result\n' "${names[printed]}"; fail=$((fail + 1))
+    run_print
+  done
+}
 
 run_tmp="$(mktemp -d)"; case_bin="$run_tmp/case-bin"; mkdir -p "$case_bin"
 # A case that links mktemp into a PATH of its own links this wrapper, so the
