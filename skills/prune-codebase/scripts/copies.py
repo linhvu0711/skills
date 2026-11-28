@@ -16,6 +16,7 @@ sorted by its first place:
 `<n>` counts the compared lines; `<start>` and `<end>` are the file's own
 line numbers. Exits 0, with no line when there is no copy.
 """
+import os
 import sys
 from collections import defaultdict
 
@@ -24,10 +25,12 @@ MIN = 6
 
 
 def compared(path):
+    if not os.path.isfile(path):
+        return []
     try:
         with open(path, encoding="utf-8") as f:
             text = f.read()
-    except (OSError, UnicodeDecodeError):
+    except UnicodeDecodeError:
         return []
     lines = []
     for number, line in enumerate(text.splitlines(), 1):
