@@ -29,6 +29,7 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 tmps=(); trap 'rm -rf ${tmps[@]+"${tmps[@]}"}' EXIT
+die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
 
 if [[ "${EMBED_SOURCE_SKIP:-}" == "1" ]]; then
   echo "sync-repos: skipped (EMBED_SOURCE_SKIP=1)"
@@ -66,8 +67,7 @@ while IFS='|' read -r lib _package repo ref _vfile; do
       # exits 128 then, and 2 when the repo answers but lacks the tag.
       reach=0; git ls-remote --exit-code "$repo" "$ref" >/dev/null 2>&1 || reach=$?
       if [ "$reach" -ne 128 ]; then
-        echo "stop: could not fetch $lib at $ref, though $repo answers; check the tag in $EMBED_MANIFEST" >&2
-        exit 1
+        die "could not fetch $lib at $ref, though $repo answers; check the tag in $EMBED_MANIFEST"
       fi
       if [[ -d "$dir" ]]; then
         echo "sync-repos: could not fetch $lib at $ref (offline?), keeping the current copy"
