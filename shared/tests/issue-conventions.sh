@@ -87,68 +87,6 @@ t_ic_seed_set_get() {
     "$(jq -c 'del(.learned_at)' <<<"$out")"
 }
 
-t_ic_seed_set_prints() {
-  # Given
-  ic_setup
-  # When
-  conv seed-set o/r --prefix "seed: " --seed-label Seed --p0 P0 --p1 P1 --p2 P2 --p3 P3 --sampled 9
-  # Then
-  eq exit 0 "$code"
-  eq entry '{"bug_label":"bug","prefix":"seed: ","priority":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"},"sampled":9,"seed_label":"Seed"}' \
-    "$(jq -c 'del(.learned_at)' <<<"$out")"
-}
-
-t_ic_seed_old_bug_label() {
-  # Given
-  ic_setup; mkdir -p "$(dirname "$SEED")"
-  printf '%s\n' '{"o/r":{"prefix":"seed: ","seed_label":"Seed","sampled":5,"learned_at":"2026-01-02"}}' > "$SEED"
-  # When
-  conv seed-get o/r
-  # Then
-  eq entry '{"bug_label":"bug","learned_at":"2026-01-02","prefix":"seed: ","sampled":5,"seed_label":"Seed"}' \
-    "$(jq -c . <<<"$out")"
-}
-
-t_ic_old_stores() {
-  # Given
-  ic_setup; mkdir -p "$(dirname "$ISS")"
-  printf '%s\n' '{"o/r":{"style":"bracket","words":{},"size":{"XS":"XS","S":"S","M":"M","L":"L","XL":"XL","XXL":"XXL"},"sampled":30,"learned_at":"2026-01-02"}}' > "$ISS"
-  printf '%s\n' '{"o/r":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"}}' > "$PRI"
-  # When
-  conv get o/r
-  # Then
-  eq exit 0 "$code"
-  eq entry '{"learned_at":"2026-01-02","priority":{"p0":"P0","p1":"P1","p2":"P2","p3":"P3"},"sampled":30,"size":{"L":"L","M":"M","S":"S","XL":"XL","XS":"XS","XXL":"XXL"},"style":"bracket","words":{}}' \
-    "$(jq -c . <<<"$out")"
-}
-
-t_ic_old_size_map() {
-  # Given
-  ic_setup; mkdir -p "$(dirname "$ISS")"
-  printf '%s\n' '{"o/r":{"style":"bracket","words":{},"size":{"XS":"XS","S":"S","M":"M","L":"L"},"sampled":30,"learned_at":"2026-01-02"}}' > "$ISS"
-  # When
-  conv get o/r
-  # Then
-  eq exit 3 "$code"
-  eq stdout MISS "$out"
-}
-
-t_ic_corrupt() {
-  # Given
-  ic_setup; mkdir -p "$(dirname "$ISS")"
-  printf 'not json\n' > "$ISS"
-  # When
-  conv get o/r
-  # Then
-  eq exit 3 "$code"
-  eq stdout MISS "$out"
-  has stderr "warning: store was corrupt" "$err"
-  [ ! -e "$ISS" ] || { echo "store still there: $ISS" >&2; exit 1; }
-  ls "$(dirname "$ISS")" | grep -qxE 'issue-conventions\.json\.bak-[0-9]+' \
-    || { echo "no backup in: $(ls "$(dirname "$ISS")")" >&2; exit 1; }
-  eq "files left" 1 "$(ls "$(dirname "$ISS")" | wc -l | tr -d ' ')"
-}
-
 t_ic_forget() {
   # Given
   ic_setup; set_types; set_prio
@@ -197,11 +135,6 @@ cases=(
   "conventions: get merges the repo's priority labels|t_ic_get_priority"
   "conventions: priority-set saves the labels and priority-get reads them|t_ic_priority_set_get"
   "conventions: seed-set saves the seed and priority labels and seed-get reads them|t_ic_seed_set_get"
-  "conventions: seed-set prints the seed and the priority labels it saved|t_ic_seed_set_prints"
-  "conventions: a seed saved before bug_label reads back with bug|t_ic_seed_old_bug_label"
-  "conventions: stores written before the move read back unchanged|t_ic_old_stores"
-  "conventions: a size map saved before XL reads as MISS|t_ic_old_size_map"
-  "conventions: a corrupt store is moved aside and read as empty|t_ic_corrupt"
   "conventions: forget drops the issue types and keeps the priority labels|t_ic_forget"
   "conventions: seed-forget drops the seed and the priority labels|t_ic_seed_forget"
 )

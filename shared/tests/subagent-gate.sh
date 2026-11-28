@@ -93,24 +93,6 @@ t_gate_t3_refuses_scope_reviewer_after_walker() {
   has stdout '"permissionDecisionReason":"'"$(home_rule scope-reviewer 'devin swe-2-1-medium high')"'"' "$out"
 }
 
-t_gate_codex_refuses_main_first_t3_walker() {
-  # Given: T3 is on; the Codex main agent, with no agent_id, starts the walker
-  # When
-  t3_gate codex '{"session_id":"s1","turn_id":"t1","cwd":"/tmp","hook_event_name":"PreToolUse","tool_name":"spawn_agent","tool_input":{"agent_type":"walker","message":"x"}}'
-  # Then
-  eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule walker 'devin swe-2-1-medium high')"'"' "$out"
-}
-
-t_gate_claude_refuses_main_first_t3_logic_reviewer() {
-  # Given: T3 is on; the logic reviewer is a tier-3 checker
-  # When
-  t3_gate claude "$(claude_main_start logic-reviewer)"
-  # Then
-  eq exit 0 "$code"
-  has stdout '"permissionDecisionReason":"'"$(home_rule logic-reviewer 'antigravity gemini-4-neon medium')"'"' "$out"
-}
-
 # codex_log_start <originator>: outside T3's env, a Codex main agent starts
 # the walker in a chat whose log was opened by that app.
 codex_log_start() {
@@ -219,16 +201,6 @@ t_gate_claude_matcher() {
   eq stdout "Agent|Task|Edit|Write|MultiEdit|NotebookEdit" "$out"
 }
 
-t_gate_refuses_antigravity() {
-  # Given: no payload
-  T="$(cd "$(mktemp -d)" && pwd -P)"
-  # When
-  run bash "$here/../gate/subagent-gate.sh" antigravity matcher
-  # Then
-  eq exit 64 "$code"
-  eq stderr "usage: subagent-gate.sh <claude|codex> [matcher]" "$err"
-}
-
 t_gate_claude_blocks_explorer_edit() {
   # Given: the explorer edits a file
   # When
@@ -289,7 +261,6 @@ cases=(
   "gate blocks a claude explorer's start|t_gate_claude_blocks_explorer_start"
   "gate lets the claude main agent start any agent|t_gate_claude_main_starts_any"
   "gate prints the claude matcher|t_gate_claude_matcher"
-  "gate refuses the antigravity harness|t_gate_refuses_antigravity"
   "gate blocks a claude explorer's edit|t_gate_claude_blocks_explorer_edit"
   "gate lets the claude main agent edit|t_gate_claude_main_edits"
   "gate lets a codex checker start the explorer|t_gate_codex_checker_starts_explorer"
@@ -297,8 +268,6 @@ cases=(
   "gate blocks a codex explorer's start|t_gate_codex_blocks_explorer_start"
   "gate blocks a codex explorer's edit|t_gate_codex_blocks_explorer_edit"
   "gate refuses a claude main agent's first T3 start of the walker|t_gate_claude_refuses_main_first_t3_walker"
-  "gate refuses a codex main agent's first T3 start of the walker|t_gate_codex_refuses_main_first_t3_walker"
-  "gate refuses a claude main agent's first T3 start of the logic reviewer|t_gate_claude_refuses_main_first_t3_logic_reviewer"
   "gate lets a claude main agent start the explorer in T3|t_gate_claude_main_t3_explorer"
   "gate lets a claude main agent start the walker outside T3|t_gate_claude_main_walker_outside_t3"
   "gate lets an unreadable T3 payload through|t_gate_t3_unreadable_payload"

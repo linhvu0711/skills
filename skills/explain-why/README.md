@@ -45,10 +45,6 @@ It only reads: no change to the repo, no comment on GitHub.
 - [triage](../triage/) finds the root cause of a bug; `/explain-why` gives the reason for code that works.
 - [grill](../grill/): a reason `/explain-why` finds can settle a question in a grill.
 
-## Tests
-
-The cases for [trail.py](../../shared/trail.py), in the shared core since prune-codebase reads it too, are in [shared/tests/trail.sh](../../shared/tests/trail.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh). The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
-
 ## Credits
 
 The idea of `/explain-why` and of its sorted evidence takes an idea from the `why` skill and its `references/epistemics.md` in [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). No text was copied.

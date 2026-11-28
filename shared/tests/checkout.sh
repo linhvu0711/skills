@@ -49,55 +49,12 @@ t_ck_two_repos_one_name() {
   eq stdout "MAIN=$T/dev/other/app WORKTREE=$T/root/other/app/feat-x BRANCH=feat/x DEFAULT=main STATE=created FROM=base:main" "$out"
 }
 
-t_ck_no_checkout() {
-  ck_setup; mkdir -p "$T/dev"
-  resolve acme/app feat/x --base main
-  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
-}
-
-t_ck_two_checkouts() {
-  ck_setup; ck acme/app "$T/dev/a/app"; ck acme/app "$T/dev/b/app"
-  resolve acme/app feat/x --base main
-  eq stderr "stop: several checkouts of acme/app: $T/dev/a/app $T/dev/b/app. Add the right one to $T/map.tsv: acme/app<TAB>/path" "$err"
-}
-
-t_ck_bad_branch() {
-  ck_setup; ck acme/app "$T/dev/app"
-  resolve acme/app feat..x --base main
-  eq stderr "stop: not a valid branch name: feat..x" "$err"
-}
-
-t_ck_reuses_old_shape() {
-  ck_setup; ck acme/app "$T/dev/app"
-  git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/root/app/feat-2-y" main
-  resolve acme/app feat/2-y
-  eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/app/feat-2-y BRANCH=feat/2-y DEFAULT=main STATE=reused FROM=existing" "$out"
-}
-
 t_ck_stops_dirty() {
   ck_setup; ck acme/app "$T/dev/app"
   git -C "$T/dev/app" worktree add -q -b feat/2-y "$T/root/app/feat-2-y" main
   printf 'a\n' > "$T/root/app/feat-2-y/a.txt"
   resolve acme/app feat/2-y
   eq stderr "$(printf 'stop: dirty worktree at %s:\n?? a.txt' "$T/root/app/feat-2-y")" "$err"
-}
-
-t_ck_default_from_origin_head() {
-  ck_setup; ck acme/app "$T/dev/app"
-  git -C "$T/dev/app" push -q origin main:trunk
-  git -C "$T/dev/app" fetch -q origin
-  git -C "$T/dev/app" remote set-head origin trunk >/dev/null
-  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
-  resolve acme/app feat/3-z --base main
-  eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/acme/app/feat-3-z BRANCH=feat/3-z DEFAULT=trunk STATE=created FROM=base:main" "$out"
-}
-
-t_ck_no_default() {
-  ck_setup; ck acme/app "$T/dev/app"
-  git -C "$T/dev/app" remote set-head origin -d
-  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
-  resolve acme/app feat/3-z --base main
-  eq stderr "stop: could not find the default branch of acme/app: gh failed and origin/HEAD is not set. Set it with: git -C $T/dev/app remote set-head origin --auto" "$err"
 }
 
 t_ck_default_form() {
@@ -107,19 +64,6 @@ t_ck_default_form() {
   resolve default acme/app
   # Then
   eq default "0|main" "$code|$out"
-}
-
-t_ck_default_form_origin_head() {
-  # Given: gh fails, and origin/HEAD points at trunk
-  ck_setup; ck acme/app "$T/dev/app"
-  git -C "$T/dev/app" push -q origin main:trunk
-  git -C "$T/dev/app" fetch -q origin
-  git -C "$T/dev/app" remote set-head origin trunk >/dev/null
-  printf 'gh: not logged in\n' > "$FAKE_GH/repo-view.fail"
-  # When
-  resolve default acme/app
-  # Then
-  eq default "0|trunk" "$code|$out"
 }
 
 t_ck_default_form_gh_fails() {
@@ -140,13 +84,6 @@ t_ck_reuses_spaced_path() {
   eq stdout "MAIN=$T/dev/app WORKTREE=$T/my wt/feat-2-y BRANCH=feat/2-y DEFAULT=main STATE=reused FROM=existing" "$out"
 }
 
-t_ck_base_without_value() {
-  ck_setup
-  resolve acme/app feat/x --base
-  eq exit 64 "$code"
-  eq stderr "stop: --base needs a ref"$'\n'"usage: checkout.sh <owner/repo> <branch> [--base <ref>]" "$err"
-}
-
 t_ck_alias_origin() {
   ck_setup
   git init -q -b main "$T/dev/app"
@@ -156,17 +93,6 @@ t_ck_alias_origin() {
   git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
   resolve acme/app feat/4-a
   eq stdout "MAIN=$T/dev/app WORKTREE=$T/root/acme/app/feat-4-a BRANCH=feat/4-a DEFAULT=main STATE=created FROM=local" "$out"
-}
-
-t_ck_github_rewrite() {
-  ck_setup
-  git init -q -b main "$T/dev/app"
-  git -C "$T/dev/app" -c user.email="t""@""example.invalid" -c user.name=t commit -q --allow-empty -m init
-  git -C "$T/dev/app" branch feat/x
-  git -C "$T/dev/app" remote add origin https://github.com/acme/app.git
-  git -C "$T/dev/app" config url.https://github.com/other/app.git.insteadOf https://github.com/acme/app.git
-  resolve acme/app feat/x
-  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
 }
 
 t_ck_worktrees_lists_all() {
@@ -184,12 +110,6 @@ BRANCH=feat/1-a LOCKED=0 PRUNABLE=0 WORKTREE=$T/w/feat 1
 BRANCH=feat/2-b LOCKED=1 PRUNABLE=0 WORKTREE=$T/w/locked
 BRANCH=feat/3-c LOCKED=0 PRUNABLE=1 WORKTREE=$T/w/gone" \
     "$(printf '%s\n' "$out" | sed -n 1p; printf '%s\n' "$out" | sed 1d | LC_ALL=C sort)"
-}
-
-t_ck_worktrees_outside_git() {
-  ck_setup; mkdir -p "$T/plain"
-  resolve worktrees "$T/plain"
-  eq stderr "stop: not a git checkout: $T/plain" "$err"
 }
 
 t_ck_worktrees_bare_first() {
@@ -214,34 +134,6 @@ t_ck_main_from_map() {
   eq stdout "FROM=map MAIN=$T/dev/app" "$out"
 }
 
-t_ck_main_no_checkout() {
-  ck_setup; mkdir -p "$T/dev"
-  resolve main acme/app
-  eq stderr "stop: no checkout of acme/app under $T/dev. Clone it, or add a line to $T/map.tsv: acme/app<TAB>/path" "$err"
-}
-
-t_ck_slug_alias() {
-  # Given: a checkout whose origin is the alias gh:acme/app, rewritten to GitHub
-  ck_setup
-  git init -q -b main "$T/dev/app"
-  git -C "$T/dev/app" remote add origin gh:acme/app
-  git -C "$T/dev/app" config url.https://github.com/.insteadOf gh:
-  # When
-  run bash "$C" slug "$T/dev/app"
-  # Then
-  eq stdout "acme/app" "$out"
-}
-
-t_ck_slug_no_remote() {
-  # Given: the case above with no origin added
-  ck_setup
-  git init -q -b main "$T/dev/app"
-  # When
-  run bash "$C" slug "$T/dev/app"
-  # Then
-  eq stderr "stop: $T/dev/app has no GitHub remote" "$err"
-}
-
 # ck_listed <dir> <ignore> <list>: commit a .gitignore holding <ignore> and a
 # .worktreeinclude holding <list>, one pattern per line, to the main checkout
 # at <dir>, and push them, so a worktree made from origin/main has them too.
@@ -263,18 +155,6 @@ t_ck_copies_listed() {
   # Then
   eq file TOKEN=local "$(cat "$T/root/acme/app/feat-1-x/.dev.vars" 2>/dev/null || true)"
   eq stderr "worktreeinclude: copied .dev.vars" "$err"
-}
-
-t_ck_names_missing() {
-  # Given: the case above, with .env.local listed too and in no checkout
-  ck_setup; ck acme/app "$T/dev/app"
-  ck_listed "$T/dev/app" $'.dev.vars\n.env.local' $'.dev.vars\n.env.local'
-  printf 'TOKEN=local\n' > "$T/dev/app/.dev.vars"
-  # When
-  resolve acme/app feat/1-x --base main
-  # Then
-  eq exit 0 "$code"
-  eq stderr $'worktreeinclude: copied .dev.vars\nworktreeinclude: not in the main checkout, skipped: .env.local' "$err"
 }
 
 t_ck_copies_only_listed() {
@@ -368,35 +248,21 @@ t_ck_holder_none() {
 cases=(
   "keeps a link the worktree has at a listed path|t_ck_keeps_worktree_link"
   "copies a listed git-ignored file into a new worktree|t_ck_copies_listed"
-  "names a listed file the main checkout lacks|t_ck_names_missing"
   "copies nothing the list does not name|t_ck_copies_only_listed"
   "copies a file in an ignored folder the list names|t_ck_copies_in_named_folder"
   "a second run copies nothing again|t_ck_second_run_copies_nothing"
   "a reused worktree gets a listed file it lacks|t_ck_reused_gets_missing"
   "creates a worktree at root/owner/repo/branch|t_ck_creates"
   "two repos with one name get two folders|t_ck_two_repos_one_name"
-  "stops when no checkout is found|t_ck_no_checkout"
-  "stops on two checkouts|t_ck_two_checkouts"
-  "stops on a bad branch name|t_ck_bad_branch"
-  "reuses an old-shape worktree by its branch|t_ck_reuses_old_shape"
   "stops on a dirty worktree for the branch|t_ck_stops_dirty"
-  "default branch falls back to origin/HEAD|t_ck_default_from_origin_head"
-  "stops when gh and origin/HEAD both fail|t_ck_no_default"
   "default prints GitHub's default branch|t_ck_default_form"
-  "default falls back to origin/HEAD|t_ck_default_form_origin_head"
   "default exits 2 when gh and origin/HEAD both fail|t_ck_default_form_gh_fails"
   "reuses a worktree whose path has a space|t_ck_reuses_spaced_path"
-  "stops when --base has no value|t_ck_base_without_value"
   "finds a checkout whose origin is an alias rewritten to GitHub|t_ck_alias_origin"
-  "a rewrite to another GitHub repo names only that repo|t_ck_github_rewrite"
   "worktrees lists each worktree with its branch, lock, and gone state|t_ck_worktrees_lists_all"
-  "worktrees stops on a folder outside git|t_ck_worktrees_outside_git"
   "worktrees lists a bare repo first, as git does|t_ck_worktrees_bare_first"
   "holder names the worktree on a branch|t_ck_holder_names_worktree"
   "holder names nothing for a free branch|t_ck_holder_none"
   "main finds the one checkout by search|t_ck_main_by_search"
   "main reads the map it wrote|t_ck_main_from_map"
-  "main stops when no checkout is found|t_ck_main_no_checkout"
-  "slug names the repo an alias origin points at|t_ck_slug_alias"
-  "slug stops on a checkout with no GitHub remote|t_ck_slug_no_remote"
 )

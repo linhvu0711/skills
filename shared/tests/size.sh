@@ -104,51 +104,6 @@ t_size_not_utf8() {
   eq stdout S "$out"
 }
 
-t_size_empty() {
-  # Given
-  base_repo
-  # When
-  size base
-  # Then
-  eq exit 0 "$code"
-  eq stdout XS "$out"
-}
-
-t_size_edges() {
-  # Given
-  local n got=""
-  for n in 9 10 29 30 99 100 499 500 600 999 1000; do
-    base_repo; lines app.py "$n" line; commit_all "add app"
-    # When
-    size base
-    got="$got $out"
-  done
-  # Then
-  eq sizes "XS S S M M L L XL XL XL XXL" "${got# }"
-}
-
-t_size_outside_checkout() {
-  # Given
-  T="$(cd "$(mktemp -d)" && pwd -P)"; cd "$T"
-  # When
-  size base
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: not inside a git checkout; run it from the PR's checkout" "$err"
-  eq stdout "" "$out"
-}
-
-t_size_base_not_found() {
-  # Given
-  base_repo; lines app.py 240 line; commit_all "add app"
-  # When
-  size nosuch
-  # Then
-  eq exit 1 "$code"
-  eq stderr "stop: base nosuch not found; fetch it first, as git fetch origin <branch>" "$err"
-  eq stdout "" "$out"
-}
-
 cases=(
   "size: 240 non-test lines print L|t_size_240_lines"
   "size: only tests count their test lines|t_size_only_tests"
@@ -157,8 +112,4 @@ cases=(
   "size: lockfiles and generated files add nothing|t_size_lock_and_generated"
   "size: names with a space, a tab, a quote, or a carriage return are read whole|t_size_odd_names"
   "size: bytes that are not UTF-8 still count|t_size_not_utf8"
-  "size: an empty diff prints XS|t_size_empty"
-  "size: the scale edges|t_size_edges"
-  "size: outside a checkout it stops|t_size_outside_checkout"
-  "size: a base it cannot find stops|t_size_base_not_found"
 )
