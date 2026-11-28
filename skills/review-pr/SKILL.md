@@ -44,9 +44,9 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 
    The general block is always `../../shared/review/general-rules.md`, read now. Split it into its three `##` sections. That is the general text per axis.
 
-   Then the repo rules: the Standard, `CODING_STANDARDS.md` at the root with the `docs/standards/` files it links to, and the ADRs in `docs/adr/`. `git ls-files CODING_STANDARDS.md docs/adr` shows which exist. One explorer for each that exists, both in one message, each brief with the repo root and the read-only line from § Facts:
+   Then the repo rules, per `../../shared/repo-rules.md`, and the ADRs in `docs/adr/`. `git ls-files CLAUDE.md AGENTS.md CODING_STANDARDS.md docs/adr` shows which exist. One explorer for the repo rules and one for the ADRs, each when its files exist, both in one message, each brief with the repo root and the read-only line from § Facts:
 
-   - The Standard: `../../shared/coding-standards/standard.md` § Reading the Standard, pasted in full. Return one line per rule, `<path:line> | <the rule, verbatim>`.
+   - The repo rules: the changed files, from `git diff --name-status <base>...HEAD`, pasted. Read the agent files and each file they point to that touches the changed files; in them, a rule is a line that says what to do or not do. Then the Standard, per `../../shared/coding-standards/standard.md` § Reading the Standard, pasted in full. Return one line per rule, `<path:line> | <the rule, verbatim>`.
    - The ADRs: the changed files, from `git diff --name-status <base>...HEAD`, pasted. Read each `docs/adr/*.md`. Leave out one whose `status:` line starts with `proposed`, `deprecated`, or `superseded`: it is not in force. Keep one whose decision is about a changed file: it names the file, its folder, or the part the file belongs to. An ADR kept whose `status:` line says `amended by` another: read each amending ADR too, and give the decision as the newest amendment leaves it, with the clauses of the older one that still hold; that amending ADR gets no line of its own. Return one line per ADR kept, `<path>[, <amending path>…] | <the decision in force, one sentence>`.
 
    Each line that comes back is a repo rule. Sort each into the axis that checks it: does it work (Logic), does it match the task (Scope), does it fit how the repo writes code (Standards). A rule that fits none goes to Standards.
@@ -58,7 +58,7 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 4. **Dispatch.** Three skill agents, one per axis, all in one message: `logic-reviewer`, `scope-reviewer`, `standards-reviewer`. Each brief holds, inline and complete:
 
    - The repo root and the exact diff command from step 1.
-   - The PR title and, for Scope, the task text from step 2.
+   - The PR title and, for Logic and Scope, the task text from step 2.
    - The rule text for that axis from step 3, pasted in full.
    - For Standards, when step 3 found no `CODING_STANDARDS.md`: the sentence "no CODING_STANDARDS.md; the code next to the diff is the standard".
    - The instruction to read the whole diff once, read the surrounding code and callers as the rules require, run every check in the rule text against every hunk, and report findings for this axis only.

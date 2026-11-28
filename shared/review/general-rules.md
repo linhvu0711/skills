@@ -1,6 +1,6 @@
 # Review rules
 
-Every pull request in this repo is reviewed on three axes: **Logic**, **Scope**, **Standards**. The axes are independent. Run each one on its own, all three at once when you can. Keep their findings apart. A finding belongs to one axis, and no axis outranks another. How you hand findings back (inline comments, one summary comment, a review verdict) is your call. What you check is fixed here.
+Every pull request in this repo is reviewed on three axes: **Logic**, **Scope**, **Standards**. The axes are independent. Run each one on its own, all three at once when you can. Keep their findings apart. A finding belongs to one axis, and no axis outranks another. How you hand findings back (inline comments, one summary comment, a review verdict) is your call. What you check is fixed here, after the repo rules, which come first per `../repo-rules.md`.
 
 The diff is `git diff <base>...HEAD`, three-dot, against the merge base. Read the whole diff once per axis.
 
@@ -13,7 +13,7 @@ Does the change work, and does it break anything? Seven checks on every PR:
 3. **Regressions**: every caller of changed code still gets what it expects. Find the callers. Changed signatures, return shapes, and side effects are where regressions live. A grep for the changed name misses callers that write it as text: names in data formats (JSON or YAML keys, wire fields), database columns, and flags (command-line flags, feature flags, env vars). Search for those too.
 4. **Security**: injection, missing auth checks, secrets in the diff, unsafe deserialization, path traversal. Anything that touches user input or credentials gets read twice.
 5. **Data**: migrations run backwards, no write can half-complete, no path loses data.
-6. **Tests**: the change has a test that fails without it. A test edited so it passes is a finding. So is a test that would still pass if every function it imports returned `undefined` (or the language's empty value): it proves nothing. Ask too whether each test keeps passing when only the inside of the code changes and its behavior stays the same. A test that breaks then checks how the code works, not what it does: that is a finding. So is a test that checks which of the repo's own functions the code called, how many times, or in what order (`toHaveBeenCalledWith` on a module the repo owns), and a test that mocks a part the repo owns. When the repo's `CODING_STANDARDS.md` says which code gets a test, a change it gives no test needs none, and that is not a finding.
+6. **Tests**: the change has a test that fails without it. A test edited so it passes is a finding. So is a test that would still pass if every function it imports returned `undefined` (or the language's empty value): it proves nothing. Ask too whether each test keeps passing when only the inside of the code changes and its behavior stays the same. A test that breaks then checks how the code works, not what it does: that is a finding. So is a test that checks which of the repo's own functions the code called, how many times, or in what order (`toHaveBeenCalledWith` on a module the repo owns), and a test that mocks a part the repo owns. A change the repo rules give no test needs none, and that is not a finding; a test they rule out is a finding. A case counts as seen in real use only when the PR's task, any part of it, shows it happen.
 7. **Fix at the cause**: a new guard, null check, or catch whose only job is to hide a failure, with no cause named, is a finding. So is a new API or path added while the old one stays with only internal callers and no issue to remove it. That second part does not apply when outside users depend on the old API. For each new guard, ask whether the state it handles is legitimate: can a correct caller or a real input reach it? If it should never happen, the guard hides the bug that makes it happen; the fix belongs at that cause.
 
 Performance is a check only when the diff touches a hot path or a loop over data.
@@ -36,7 +36,7 @@ Done when every hunk is matched to a line of the task or flagged as creep, and e
 
 Does the change fit how this repo writes code?
 
-The repo's rules for this axis are under `## Repo rules` below, from the Standard and the ADRs about the change. Cite the rule for each finding. Skip anything a linter or formatter already enforces.
+The repo's rules for this axis are under `## Repo rules` below, from the repo rules and the ADRs about the change. Cite the rule for each finding. Skip anything a linter or formatter already enforces.
 
 When `CODING_STANDARDS.md` is missing, the code next to the diff is the standard and the smell list below is the floor. Say once in the review: "no CODING_STANDARDS.md; run /audit-coding-standards".
 

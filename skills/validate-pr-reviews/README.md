@@ -25,13 +25,13 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 - `git` and `gh`, signed in (it reads review comments with `gh api` and resolves threads with `gh api graphql`).
 - An agent that can start subagents: one `finding-judge` per group of files, in `agents/`, started per `../../shared/facts.md` § Skill agents on the try list its tier gives for your harness. The harness table, `../../shared/harness.md`, says how your harness starts it. [link.sh](../../scripts/link.sh) installs it into Claude Code and Codex.
 - The [commit](../commit/) skill for the fixes and the [capture](../capture/) skill for the `fix later` issues.
-- The shared core files `../../shared/facts.md` and `../../shared/coding-standards/standard.md`, which says which lines of the Standard are rules.
+- The shared core files `../../shared/facts.md`, `../../shared/repo-rules.md`, which says which files hold the repo rules, and `../../shared/coding-standards/standard.md`, which says which lines of the Standard are rules.
 
 ## Fits with
 
 - Calls [commit](../commit/) and [capture](../capture/) after go.
 - Called by [ready-pr](../ready-pr/), which runs it on every review round.
-- Reads the Standard that [audit-coding-standards](../audit-coding-standards/) writes, from the base branch.
+- Reads the repo rules from the base branch: your agent files, the files they point to, and the Standard that [audit-coding-standards](../audit-coding-standards/) writes.
 - [dispatch](../dispatch/) sorts a cloud agent's review questions with the same verdict table.
 
 ## Credits

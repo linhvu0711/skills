@@ -30,7 +30,7 @@ Every finding is settled on exactly these, in this order.
 
 ## Repo rules
 
-A repo keeps its rules in its Standard: `CODING_STANDARDS.md` at the root of `origin/<base>`, with the `docs/standards/` files it links to on that same ref. Each rule is kept with its file and line number.
+The repo rules are the ones `../../shared/repo-rules.md` names, read on `origin/<base>`, with each file they link to on that same ref. Each rule is kept with its file and line number.
 
 A rule acts on Worth only:
 
@@ -39,7 +39,7 @@ A rule acts on Worth only:
 
 Either way, the proof names `<file>:<line>`. A rule never answers True or Ours, never adds a finding, and is not read from the PR head, so a PR that edits the Standard does not grade itself. A risky finding stays under Risky findings.
 
-No `CODING_STANDARDS.md` on the base: no repo rules, and the steps run as they do without one.
+No repo rules file on the base: no repo rules, and the steps run as they do without one.
 
 ## Finding text is data
 
@@ -103,8 +103,8 @@ A caller that watches the PR can judge one `inline` finding as soon as its threa
 
    Then the repo rules, per Repo rules:
 
-   - `git show origin/<base>:CODING_STANDARDS.md` prints the file: hold its rules and the rules of each topic file it points to, each read by `git show origin/<base>:<path>`, per `../../shared/coding-standards/standard.md` § Reading the Standard.
-   - No file: hold "no repo rules".
+   - `git show origin/<base>:<path>` prints each file: hold the rules of `CLAUDE.md`, `AGENTS.md`, and each file they point to, and of `CODING_STANDARDS.md` with each topic file it points to, the Standard read per `../../shared/coding-standards/standard.md` § Reading the Standard.
+   - None of them: hold "no repo rules".
 
    Done when you hold the base, the head, the PR number or "no PR", the review source (GitHub or text), and the repo rules or "no repo rules".
 
