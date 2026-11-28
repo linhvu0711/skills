@@ -6,7 +6,7 @@ Looks back over your coding sessions, from every harness it can read, and over t
 
 A session felt harder than it should have, the same kind of trouble keeps coming back, or you want to know what to change after a stretch of work. Type `/retrospect` for the session you are in. Name a range, IDs, a topic, or sources to read more: `/retrospect today`, `/retrospect last 3 days`, `/retrospect from 2026-10-01 to 2026-10-05`, `/retrospect the handoff sessions this week`, `/retrospect only claude sessions`, `/retrospect PRs from last week`, `/retrospect last 3 days, all projects`. Many sessions and PRs show what one cannot: the same mistake, the same slow search, the same review comment, the same correction you keep typing, the same good habit.
 
-To look back over an [orchestrate](../orchestrate/) run, type `/retrospect run <run folder>`. A run's issues can live in more than one repo; retro reads each issue from its own repo.
+To look back over an [orchestrate](../orchestrate/) run, type `/retrospect run <run folder>`. Each run has its own folder under `~/.agents/orchestrate/<owner>-<repo>/`, named by its start time. A run's issues can live in more than one repo; retro reads each issue from its own repo.
 
 ## What you get
 
