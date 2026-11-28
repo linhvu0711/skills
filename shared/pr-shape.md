@@ -119,7 +119,7 @@ Write the body to a file kept out of every commit, and pass it with `--body-file
 
 ### Label
 
-One size label, the size the count script gives for the PR's own diff against its base. Put on the repo's label for that size and take off any other size label, in two calls, in this order: `gh pr edit <n> --add-label "<label>"`, then, when the PR has another size label, `gh pr edit <n> --remove-label "<old label>"`. The PR already has the right label: no call. A repo with no size labels gets none, and no label is created. A write GitHub refuses: a refused add changed nothing; a refused remove is undone with `gh pr edit <n> --remove-label "<label>"`, so the PR keeps the label it had. Say `size label not set: <gh's last error line>` in the report.
+One size label, the size the count script gives for the PR's own diff against its base. gh reads `--add-label` and `--remove-label` as a comma list, so the label name goes in double quotes, with a `"` inside it written twice; the single quotes around that are the shell's, so a `'` inside the name is written `'\''`. Put on the repo's label for that size and take off any other size label, in two calls, in this order: `gh pr edit <n> --add-label '"<label>"'`, then, when the PR has another size label, `gh pr edit <n> --remove-label '"<old label>"'`. The PR already has the right label: no call. A repo with no size labels gets none, and no label is created. A write GitHub refuses: a refused add changed nothing; a refused remove is undone with `gh pr edit <n> --remove-label '"<label>"'`, so the PR keeps the label it had. Say `size label not set: <gh's last error line>` in the report.
 
 ### A repo's own PR template
 

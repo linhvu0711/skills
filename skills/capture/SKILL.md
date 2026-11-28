@@ -170,7 +170,8 @@ Before step 6, read the body once as the stranger. It fails, and you fix it, whe
 f=$(mktemp) && cat > "$f" <<'EOF'
 <body>
 EOF
-gh issue create --repo owner/repo --title "<title>" --body-file "$f" --assignee @me --label "<seed_label or bug_label>" --label "<priority_label>"
+gh issue create --repo owner/repo --title "<title>" --body-file "$f" --assignee @me --label '"<seed_label or bug_label>"' --label '"<priority_label>"'
+# Each label name goes in double quotes, per ../../shared/issue-rules.md § Labels.
 # When the user gave no priority, drop the second --label and create with
 # the kind's label alone.
 ```
