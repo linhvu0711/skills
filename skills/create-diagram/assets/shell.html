@@ -680,9 +680,10 @@ const DATA = {};
     });
     (D.frames || []).forEach((f) => {
       const cols = (f.participants || parts.map((p) => p.id)).map((id) => known(seqX, id, 'frame participant'));
+      const from = step(f.from, 'frame from'), to = step(f.to, 'frame to');
       if (!cols.length) return;
       const x1 = Math.min.apply(null, cols) - L.colWidth / 2 + 14, x2 = Math.max.apply(null, cols) + L.colWidth / 2 - 14;
-      const y1 = seqTop + step(f.from, 'frame from') * L.rowHeight - L.rowHeight * 0.95, y2 = seqTop + step(f.to, 'frame to') * L.rowHeight + L.rowHeight * 0.4;
+      const y1 = seqTop + from * L.rowHeight - L.rowHeight * 0.95, y2 = seqTop + to * L.rowHeight + L.rowHeight * 0.4;
       const el = svgEl('g', { class: `frame${changeClass(f)}` }, fl);
       svgEl('rect', { x: x1, y: y1, width: x2 - x1, height: y2 - y1, rx: 4 }, el);
       const t = text(el, x1 + 8, y1 + 13, f.label || '', {});
