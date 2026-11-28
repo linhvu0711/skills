@@ -19,6 +19,7 @@ fs_setup() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   fake_gh
   printf '{"defaultBranchRef":{"name":"main"},"nameWithOwner":"acme/app"}\n' > "$FAKE_GH/repo-view.json"
+  echo '[]' > "$FAKE_GH/label-list.json"
   git init -q -b main "$T/dev/app"
   git -C "$T/dev/app" -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m init
   git -C "$T/dev/app" remote add origin https://github.com/acme/app.git

@@ -3,12 +3,15 @@
 # defines values and functions and runs nothing.
 
 route_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$route_dir/../gh.sh"
 
 #
 # size_of <label>: XS, S, M, L, XL, or XXL when the label names a size, matched
-# loosely (`size/S`, `Size: Medium`, `effort-large`), else nothing.
+# loosely (`size/S`, `Size: Medium`, `effort-large`, `Size: S (10-29)`),
+# else nothing. Only a line range such as `10-29` or `10–29` drops; every other digit
+# stays, so a severity label such as `S1` or `S-1` names no size.
 size_of() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[^a-z]//g')" in
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/(size|scope|effort)//g; s/[0-9]+ *(-|–) *[0-9]+//g; s/[^a-z0-9]//g')" in
     xs|xsmall|extrasmall) echo XS ;;
     s|small) echo S ;;
     m|med|medium) echo M ;;
@@ -34,24 +37,32 @@ analysis_effort=high
 
 # answer_label <owner/repo> <answer> [<size>]: the label an answer to a
 # proposal writes on the issue, so no skill guesses it again: bug for
-# triage, seed for grill, manual for task, and for ship the repo's own size
-# label, or size/<size> when the repo has none saved. Nothing for the rest.
-# Returns 1, with `stop:` on stderr, when python3 or jq is not installed, or
-# when the saved size labels cannot be read.
+# triage, seed for grill, manual for task, and for ship the repo's saved size
+# label. With no saved map, the first of the repo's GitHub labels that names
+# the size, or size/<size> when none does. Nothing for the rest.
+# Returns 1, with `stop:` on stderr, when python3, jq, or gh is not
+# installed, when the saved size labels cannot be read, or when the repo's
+# labels cannot be read.
 answer_label() {
-  local conv c rc
+  local conv c rc l out err status
   case "$2" in
     triage) echo bug ;;
     grill) echo seed ;;
     task) echo manual ;;
     ship)
-      for c in python3 jq; do
+      for c in python3 jq gh; do
         command -v "$c" >/dev/null || { printf 'stop: %s is not installed\n' "$c" >&2; return 1; }
       done
       rc=0; conv="$(python3 "$route_dir/../issue_conventions.py" get "$1")" || rc=$?
       case "$rc" in
         0) jq -r --arg z "$3" '.size[$z] // "size/\($z)"' <<<"$conv" ;;
-        3) echo "size/$3" ;;  # MISS: the repo has no size labels saved
+        3)  # MISS: the repo has no size labels saved
+          gh_out label list --repo "$1" --limit 200 --json name -q '.[].name' \
+            || { printf 'stop: could not read the labels of %s: %s\n' "$1" "$err" >&2; return 1; }
+          while IFS= read -r l; do
+            if [ "$(size_of "$l")" = "$3" ]; then echo "$l"; return 0; fi
+          done <<<"$out"
+          echo "size/$3" ;;
         *) printf 'stop: could not read the saved size labels of %s (exit %s)\n' "$1" "$rc" >&2; return 1 ;;
       esac ;;
   esac
