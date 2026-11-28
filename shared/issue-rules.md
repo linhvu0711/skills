@@ -86,6 +86,7 @@ XS and S get Steps when the steps can be written: every step names a file and li
 - **Manual**: `manual`, on every `task` and on nothing else. It is the one label a task carries: no size, no `ready-to-build`. `plan-up` skips tickets that carry it, and lists them before planning an epic or a run. Created on first use.
 - **Type**: no label. The prefix carries the type. Exceptions, both only when the repo already has them: pass `--type <Name>` when the repo (an org repo) has issue types matching ours; add the repo's existing type label when it keeps such labels. Never create a type label. The one group outside this rule is `discovery/*`, owned by `discover-path` and made only by it.
 - **Plain names**: labels are plain text, no icon. A name in a command or a convention (`ready-to-build`, `size/M`) means the repo's existing label of that name, matched case folded. Only a label the repo lacks is created, from the block below. A repo's labels are used as they are and are never renamed. One color per family (the block below) tells families apart at a glance; the text tells labels apart inside a family.
+- **In a gh command**: gh reads `--label`, `--add-label`, and `--remove-label` as a comma list, so each label name goes in double quotes, with a `"` inside it written twice. Example: `--add-label '"Size, Small"'`. `gh label create` takes the name as it is.
 
 | User says | Level |
 |---|---|
@@ -366,12 +367,12 @@ gh issue list --repo owner/repo --state closed --search "<2 or 3 keywords>" --li
 A `bug` label, or a bug issue the conversation named, like the one `/triage #42` read. `file-issue` does not create a new issue. It rewrites the bug into the ticket, so the number, the comments, and the links stay:
 
 ```bash
-gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label bug] \
-  --add-label "<size label>" [--add-label "<ready-to-build label>"] \
-  [--add-label "<priority label>"] [--type <Name>]
+gh issue edit --repo owner/repo <bug> --title "<title>" --body-file "$f" [--remove-label '"bug"'] \
+  --add-label '"<size label>"' [--add-label '"<ready-to-build label>"'] \
+  [--add-label '"<priority label>"'] [--type <Name>]
 ```
 
-The new body keeps the reporter's words: the old body goes at the end of Context, in `<details><summary>Original report</summary>…</details>`. Skip it when the old body only restates the new one, as a short `[bug]` from `capture` does. Remove `bug` only when the issue carries it.
+Each label name goes in double quotes, per § Labels. The new body keeps the reporter's words: the old body goes at the end of Context, in `<details><summary>Original report</summary>…</details>`. Skip it when the old body only restates the new one, as a short `[bug]` from `capture` does. Remove `bug` only when the issue carries it.
 
 ### Origin seed
 
@@ -379,10 +380,10 @@ A `seed` label, or a `discovery/map` issue the conversation named, like the one 
 
 ```bash
 gh issue edit --repo owner/repo <seed> --title "<title>" --body-file "$f" \
-  [--remove-label seed] [--remove-label discovery/map] [--add-label …] [--type <Name>]
+  [--remove-label '"seed"'] [--remove-label '"discovery/map"'] [--add-label '"<label>"' …] [--type <Name>]
 ```
 
-The labels are the ones a new issue of that kind gets. The old body goes at the end of Context, in `<details><summary>Original seed</summary>…</details>`; skip it when the new body restates it. From a map, leave its `## Docs to write` out of the kept body: each entry now lives on the ticket that writes it, and a second copy in an open issue would read as a decision still waiting. A map keeps its closed question tickets as sub-issues: they are the record of how the work was decided. A bug that grows into an epic becomes the parent the same way.
+The labels are the ones a new issue of that kind gets, each in double quotes per § Labels. The old body goes at the end of Context, in `<details><summary>Original seed</summary>…</details>`; skip it when the new body restates it. From a map, leave its `## Docs to write` out of the kept body: each entry now lives on the ticket that writes it, and a second copy in an open issue would read as a decision still waiting. A map keeps its closed question tickets as sub-issues: they are the record of how the work was decided. A bug that grows into an epic becomes the parent the same way.
 
 ## Report
 
