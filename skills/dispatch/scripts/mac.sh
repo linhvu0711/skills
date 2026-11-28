@@ -64,7 +64,7 @@
 set -euo pipefail
 
 HOURS="${HANDOFF_MAC_HOURS:-4}"
-MGMT=127.0.0.1:47199
+MAC_MGMT_ADDR=127.0.0.1:47199
 MACS="$HOME/.config/dispatch/cursor-macs.tsv"
 
 die() { printf 'stop: %s\n' "$*" >&2; exit 1; }
@@ -163,9 +163,9 @@ cmd_up() {
     mkdir -p ~/work && cd ~/work && rm -rf $(printf %q "$name")
     git clone -q --branch $(printf %q "$base") $(printf %q "$repo.git") $(printf %q "$name")
     cd $(printf %q "$name")
-    (. ~/.ho-env; ~/.local/bin/agent worker --management-addr $MGMT start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
+    (. ~/.ho-env; ~/.local/bin/agent worker --management-addr $MAC_MGMT_ADDR start --name $(printf %q "$worker") </dev/null >~/worker.log 2>&1 &)
     for i in \$(seq 1 45); do
-      if curl -fsS -o /dev/null http://$MGMT/readyz 2>/dev/null; then
+      if curl -fsS -o /dev/null http://$MAC_MGMT_ADDR/readyz 2>/dev/null; then
         w=\$(grep -o '\"$worker\": *\"[0-9a-f-]*\"' ~/.cursor/agent-cli-state.json 2>/dev/null | grep -o '[0-9a-f-]\{36\}' || true)
         if [ -n \"\$w\" ]; then echo \"\$w\"; exit 0; fi
       fi
@@ -187,7 +187,7 @@ worker_state() {
   local id="$1" out last
   if [[ "$id" == "-" ]]; then echo dead; return 0; fi
   need_tools
-  out=$(remote "$id" "if curl -fsS -o /dev/null --max-time 10 http://$MGMT/healthz; then echo alive; else c=\$?; if [ \$c -eq 7 ]; then echo dead; else echo \"curl exit \$c\"; fi; fi" 2>&1) || true
+  out=$(remote "$id" "if curl -fsS -o /dev/null --max-time 10 http://$MAC_MGMT_ADDR/healthz; then echo alive; else c=\$?; if [ \$c -eq 7 ]; then echo dead; else echo \"curl exit \$c\"; fi; fi" 2>&1) || true
   last=$(awk 'NF { l = $0 } END { print l }' <<<"$out")
   case "$last" in alive|dead) echo "$last"; return 0 ;; esac
   if grep -q 'does not exist\.' <<<"$out"; then echo dead; return 0; fi
