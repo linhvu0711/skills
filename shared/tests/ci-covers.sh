@@ -31,6 +31,15 @@ t_cc_names_the_workflow() {
 here · pnpm lint" "$out"
 }
 
+t_cc_longer_command() {
+  # Given
+  T=""; ci_yml 'on: pull_request' '      - run: pnpm test:e2e'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
 t_cc_push_only() {
   # Given
   T=""; ci_yml 'on: push' '      - run: pnpm test'
@@ -165,6 +174,18 @@ t_cc_needs_chain() {
   eq stdout "here · pnpm test" "$out"
 }
 
+t_cc_needs_chain_reversed() {
+  # Given: each job above the job it needs, so one pass down the file is not enough
+  T=""
+  wf ci.yml 'on: pull_request' 'jobs:' '  t:' '    needs: b' '    steps:' '      - run: pnpm test' \
+    '  b:' '    needs: a' '    steps:' '      - run: pnpm build' \
+    '  a:' '    if: false' '    steps:' '      - run: pnpm lint'
+  # When
+  covers 'pnpm test'
+  # Then
+  eq stdout "here · pnpm test" "$out"
+}
+
 # needs_yml <if line of job a, or empty> <needs line of job b, or empty>
 # <needs line>...: ci.yml with jobs a (step pnpm lint), b (step pnpm
 # build), and t (step pnpm test), t's needs given as one or more lines.
@@ -291,6 +312,7 @@ t_cc_needs_unknown_job() {
 
 cases=(
   "names the workflow that runs a Gate, in the Gates' order|t_cc_names_the_workflow"
+  "a longer command is not the Gate|t_cc_longer_command"
   "a push-only workflow covers nothing|t_cc_push_only"
   "no workflows folder covers nothing|t_cc_no_workflows"
   "the issue's repro: a job if makes the Gate run here|t_cc_job_if_repro"
@@ -302,6 +324,7 @@ cases=(
   "the issue's repro: a filter on the pull_request line sends the Gate here|t_cc_pr_inline_filter"
   "the issue's repro: needs on a job with an if sends the Gate here|t_cc_needs_if_repro"
   "needs through a chain to a job with an if sends the Gate here|t_cc_needs_chain"
+  "a chain whose jobs come before the jobs they need sends the Gate here|t_cc_needs_chain_reversed"
   "each form of needs is read|t_cc_needs_forms"
   "needs with no if in the chain leaves the Gate to CI|t_cc_needs_no_if"
   "a needs name on the line under the key, bare or after a bare dash, is read|t_cc_needs_next_line"
