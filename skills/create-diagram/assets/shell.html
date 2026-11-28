@@ -910,7 +910,7 @@ const DATA = {};
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 3) {
       drag.moved = true; canvas.classList.add('dragging');
-      try { canvas.setPointerCapture(drag.id); } catch (_) {}
+      canvas.setPointerCapture(drag.id);
     }
     if (!drag.moved) return;
     tx = drag.tx + dx; ty = drag.ty + dy; apply();

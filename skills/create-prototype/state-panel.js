@@ -130,7 +130,7 @@ window.StatePanel = (function () {
       if (!moving) return
       moving = false
       head.classList.remove('sp-dragging')
-      try { head.releasePointerCapture(e.pointerId) } catch (_) {}
+      if (head.hasPointerCapture(e.pointerId)) head.releasePointerCapture(e.pointerId)
       save(clamp())
     }
     head.addEventListener('pointerup', end)
