@@ -132,8 +132,22 @@ t_fa_unreadable_claude() {
 null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "claude") | "\(.id) \(.unreadable)"')"
 }
 
+t_fa_unreadable_codex() {
+  # Given: c1, and c2 that cannot be opened
+  fa_home
+  local f="$HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout-2026-10-01T10-00-00-c2.jsonl"
+  printf '{"type":"session_meta","payload":{"id":"c2","cwd":"/p/app","timestamp":"2026-10-01T10:00:00Z","source":"cli"}}\n' > "$f"
+  chmod 000 "$f"
+  # When
+  run python3 "$S" --root /p/app
+  # Then
+  eq codex "c1 null
+null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "codex") | "\(.id) \(.unreadable)"')"
+}
+
 cases=(
   "find-all lists an unreadable Claude session as an unreadable row|t_fa_unreadable_claude"
+  "find-all lists an unreadable Codex rollout as an unreadable row|t_fa_unreadable_codex"
   "find-all lists every harness and its sessions|t_fa_lists_harnesses"
   "find-all keeps to the window|t_fa_window"
   "find-all names a harness with data and no adapter|t_fa_names_no_adapter_harness"

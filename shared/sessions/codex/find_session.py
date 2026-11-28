@@ -23,8 +23,9 @@ once; later runs only parse files that are new or still growing. The cwd of
 every rollout is read from line 1, so rollouts of other projects cost one
 line each, never a full parse.
 
-Read-only: never modifies any rollout. A compressed rollout this machine
-cannot read (no Python 3.14+, no zstd) is listed under "unreadable".
+Read-only: never modifies any rollout. A rollout this machine cannot read, as
+one it may not open, or a compressed one with no Python 3.14+ and no zstd, is
+listed under "unreadable".
 
 Usage:
     find_session.py "rewrite the landing page hero"       # score + rank
@@ -82,7 +83,7 @@ def read_meta(path: str) -> dict | None:
         with rollout_io.open_rollout(path) as h:
             first = h.readline()
         o = json.loads(first)
-    except (OSError, ValueError):
+    except ValueError:
         return None
     if o.get("type") != "session_meta":
         return None
@@ -106,38 +107,35 @@ def parse_content(path: str) -> dict:
     n_user = 0
     prompts, plen = [], 0
     body, blen = [], 0
-    try:
-        with rollout_io.open_rollout(path) as h:
-            for o in chat_log.rows(h):
-                if o.get("type") != "response_item":
+    with rollout_io.open_rollout(path) as h:
+        for o in chat_log.rows(h):
+            if o.get("type") != "response_item":
+                continue
+            item = o.get("payload") or {}
+            kind = item.get("type")
+            if kind == "message":
+                role = item.get("role")
+                text = chat_log.text_of(item.get("content")).strip()
+                if not text:
                     continue
-                item = o.get("payload") or {}
-                kind = item.get("type")
-                if kind == "message":
-                    role = item.get("role")
-                    text = chat_log.text_of(item.get("content")).strip()
-                    if not text:
+                if role == "user":
+                    if is_blob(text):
                         continue
-                    if role == "user":
-                        if is_blob(text):
-                            continue
-                        n_user += 1
-                        if first is None:
-                            first = text
-                        last = text
-                        if plen < PROMPTS_CAP:
-                            prompts.append(text)
-                            plen += len(text)
-                    elif role == "assistant" and blen < BODY_CAP:
-                        body.append(text)
-                        blen += len(text)
-                elif kind == "agent_message" and blen < BODY_CAP:
-                    text = chat_log.text_of(item.get("content")) or str(item.get("message") or "")
-                    if text.strip():
-                        body.append(text)
-                        blen += len(text)
-    except OSError:
-        pass
+                    n_user += 1
+                    if first is None:
+                        first = text
+                    last = text
+                    if plen < PROMPTS_CAP:
+                        prompts.append(text)
+                        plen += len(text)
+                elif role == "assistant" and blen < BODY_CAP:
+                    body.append(text)
+                    blen += len(text)
+            elif kind == "agent_message" and blen < BODY_CAP:
+                text = chat_log.text_of(item.get("content")) or str(item.get("message") or "")
+                if text.strip():
+                    body.append(text)
+                    blen += len(text)
 
     return {
         "first_prompt": rank.cap(first),
@@ -217,6 +215,11 @@ def collect(paths, scope, idx: dict,
     be older than a resumed parent. Each session row lists the rollouts of its
     helper threads, and of their helpers, in "subagents"."""
     files = idx["files"]
+
+    def unread(key, st, e):
+        if skipped is not None and (not keep or keep(key, st)):
+            skipped.setdefault("unreadable", []).append({"path": key, "modified": st.st_mtime, "why": e.strerror or str(e)})
+
     out = []
     helpers = {}
     dirty = False
@@ -231,10 +234,9 @@ def collect(paths, scope, idx: dict,
         if not fresh:
             try:
                 meta = read_meta(p)
-            except rollout_io.NoZstd as e:
+            except OSError as e:
                 # Its cwd is inside the file, so only the window can filter it.
-                if skipped is not None and (not keep or keep(key, st)):
-                    skipped.setdefault("unreadable", []).append({"path": key, "modified": st.st_mtime, "why": str(e)})
+                unread(key, st, e)
                 continue
             if not meta:
                 continue
@@ -254,7 +256,12 @@ def collect(paths, scope, idx: dict,
                 skipped["exec"] = skipped.get("exec", 0) + 1
             continue
         if "prompts" not in ent:
-            ent.update(parse_content(p))
+            try:
+                ent.update(parse_content(p))
+            except OSError as e:
+                # Not cached, so the next run reads it again.
+                unread(key, st, e)
+                continue
             dirty = True
         out.append({"path": key, "modified": st.st_mtime, "size": st.st_size, **ent})
     if dirty:
