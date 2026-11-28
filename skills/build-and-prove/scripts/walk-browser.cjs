@@ -4,7 +4,8 @@
 //   walk-browser <url> [--viewport-size=<w>,<h>] [--storage <file>] [--clock <time>]
 //
 // It opens Playwright's Chromium, headed, on a new, empty profile at the page
-// size (1440,795 by default), with the saved login of --storage and a fixed
+// size (1432,795 by default, the biggest page the linux Sandbox shows whole),
+// with the saved login of --storage and a fixed
 // clock at --clock, then waits until the browser closes. It appends one line
 // per page error and failed request to the log, WALK_BROWSER_LOG, which
 // `box.sh open` sets and `box.sh close --out` copies next to the video:
@@ -33,7 +34,7 @@ const options = { 'viewport-size': { type: 'string' }, storage: { type: 'string'
 // Loose, so a wrong flag still reaches stop(), which says so in the log.
 const { values, positionals } = parseArgs({ options, allowPositionals: true, strict: false });
 const given = (name) => (typeof values[name] === 'string' ? values[name] : undefined);
-const opts = { size: given('viewport-size') ?? '1440,795', storage: given('storage'), clock: given('clock'), log: process.env.WALK_BROWSER_LOG || undefined };
+const opts = { size: given('viewport-size') ?? '1432,795', storage: given('storage'), clock: given('clock'), log: process.env.WALK_BROWSER_LOG || undefined };
 
 const oneLine = (text) => String(text).replace(/\s*\n\s*/g, ' ');
 const write = (line) => fs.appendFileSync(opts.log, `${oneLine(line)}\n`);
