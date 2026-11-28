@@ -80,7 +80,3 @@ The run lives in `~/.agents/orchestrate/<owner>-<repo>/<start time>/state.json`,
 - Writes your yes to a proposal as the issue's label through the shared label writer, `../../shared/route/edit-labels.sh`, which [run-in-t3](../run-in-t3/) uses too.
 - Its threads run [grill](../grill/), [triage](../triage/), [ship](../ship/), and [ready-pr](../ready-pr/). A `/ship` thread merges only in ship mode `merge`: one you set, or one its agent picked from the plan, per [ADR 0014](../../docs/adr/0014-the-agent-picks-the-ship-mode.md).
 - [capture](../capture/) makes the seeds and bugs it starts from; [file-epic](../file-epic/) makes the epics.
-
-## Tests
-
-The cases for [orchestrate.sh](scripts/orchestrate.sh), the route for each stage, the watcher check, the wake, the lock, the watcher's start and end, blockers, one thread per stage, `restart`, a conflicting PR, the threads to settle, the proposals and answers, a failed check, the done rule, the close of the done epics, and the board data (the run's status and failed checks, and each card's column, chip, mark, and action), are in [tests/orchestrate.sh](tests/orchestrate.sh), on the helpers and fake `gh` in the repo's [test-lib.sh](../../scripts/test-lib.sh) and a fake `t3` of its own. The repo's [test.sh](../../scripts/test.sh) runs them with the rest.
