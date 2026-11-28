@@ -112,7 +112,7 @@ def read(rows):
     messages = []
 
     def add_user_text(txt, is_compact):
-        if not txt or adapter_lib.injected(txt):
+        if not txt or adapter_lib.injected(txt, "claude"):
             return
         if is_compact:
             messages.append(printer.Message("compact", txt.strip()))

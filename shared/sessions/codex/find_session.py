@@ -60,7 +60,7 @@ INDEX_PATHS = (
     os.path.join(os.path.expanduser("~"), ".cache", "skills-sessions", "codex-index.json"),
     os.path.join("/tmp", "skills-sessions", "codex-index.json"),  # Codex sandbox fallback
 )
-INDEX_VERSION = 7  # 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
+INDEX_VERSION = 8  # 8: prompts skip only Codex's injected text; 7: prompts skip injected text by prefix; 6: body keeps 50k chars; 5: meta keeps the parent of a helper thread; 4: the source; 3: prompts is a list
 
 PROMPTS_CAP = 20_000       # chars of user prompts kept per session for scoring
 BODY_CAP = 50_000          # chars of assistant text kept per session: a chat another skill started holds its topic here
@@ -74,7 +74,7 @@ WEIGHTS = {"prompts": 2.0, "body": 1.0}
 
 
 def is_blob(text: str) -> bool:
-    return len(text) > BLOB_LEN or adapter_lib.injected(text)
+    return len(text) > BLOB_LEN or adapter_lib.injected(text, "codex")
 
 
 def read_meta(path: str) -> dict | None:

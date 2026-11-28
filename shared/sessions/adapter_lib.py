@@ -22,7 +22,7 @@ the whole session. The finders keep their own flags and keys; this hides
 those differences. find_all.py, next to
 this file, runs every adapter's find in one call through ``find`` and
 ``installed``. ``load`` loads a sibling module by its path, and ``injected`` says whether
-a user message is text a harness put there.
+a user message is text that harness put there.
 """
 
 from __future__ import annotations
@@ -124,30 +124,36 @@ def load(name, path):
     return module
 
 
-# What a harness puts at the start of a user message the user did not type:
-# Claude Code's command output and shell wrappers, then Codex's instructions
-# and context blocks.
-INJECTED = (
-    "<local-command-caveat>",
-    "<local-command-stdout>",
-    "<command-stdout>",
-    "<bash-stdout>",
-    "<bash-input>",
-    "# AGENTS.md instructions",
-    "AGENTS.md instructions for",
-    "<INSTRUCTIONS>",
-    "<environment_context>",
-    "<user_instructions>",
-    "# Collaboration Mode",
-    "<user_shell_environment>",
-    "<recommended_plugins>",
-    "========= MEMORY_SUMMARY BEGINS =========",
-)
+# What each harness puts at the start of a user message the user did not
+# type, by harness name. One harness's marker can open a real prompt in
+# another, so each reads only its own.
+INJECTED = {
+    # Claude Code's command output and shell wrappers.
+    "claude": (
+        "<local-command-caveat>",
+        "<local-command-stdout>",
+        "<command-stdout>",
+        "<bash-stdout>",
+        "<bash-input>",
+    ),
+    # Codex's instructions and context blocks.
+    "codex": (
+        "# AGENTS.md instructions",
+        "AGENTS.md instructions for",
+        "<INSTRUCTIONS>",
+        "<environment_context>",
+        "<user_instructions>",
+        "# Collaboration Mode",
+        "<user_shell_environment>",
+        "<recommended_plugins>",
+        "========= MEMORY_SUMMARY BEGINS =========",
+    ),
+}
 
 
-def injected(text: str) -> bool:
-    """True when a user message is text a harness injected, not a prompt."""
-    return text.lstrip().startswith(INJECTED)
+def injected(text: str, harness: str) -> bool:
+    """True when a user message is text this harness injected, not a prompt."""
+    return text.lstrip().startswith(INJECTED[harness])
 
 
 def _day(value: str) -> dt.date:

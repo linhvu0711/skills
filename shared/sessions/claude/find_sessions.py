@@ -100,7 +100,7 @@ def strip_wrappers(text):
         return ""
     stripped = text.strip()
     # Command, caveat, or reminder markup is not a human prompt, but a slash command is kept.
-    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped):
+    if stripped.startswith(COMMAND_TAGS) or adapter_lib.injected(stripped, "claude"):
         # A slash-command invocation: keep its name and arguments, as "/ship 237".
         m = re.search(r"<command-name>([^<]+)</command-name>", text)
         if not m:
