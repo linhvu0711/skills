@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 # test.sh: the tests for check.sh, the pre-commit and commit-msg hooks,
-# adopt.sh, link.sh and the hooks that run it. It sources test-lib.sh, the helpers, the
-# one fake gh, and the fake curl that every case shares, runs its own cases,
-# then sources each skills/*/tests/*.sh and shared/tests/*.sh in
-# turn and runs that file's cases.
+# adopt.sh, link.sh and the hooks that run it. It sources test-lib.sh, the
+# helpers, the one fake gh, and the fake curl that every case shares, starts
+# its own cases, then sources each skills/*/tests/*.sh and shared/tests/*.sh
+# in turn and starts that file's cases.
 #
 #   test.sh
 #
-# Each case starts in an empty temp folder with set -e on, builds its own git
+# Each case runs as a background job, one per CPU core at a time. It starts in
+# an empty temp folder with set -e on and its own fake home, builds its own git
 # repo in a temp folder, copies this scripts/ folder in, and runs the command
 # there. Each case's temp folders go when the case ends. Every leak string
-# below is joined
-# from two halves at runtime, so this file holds nothing check.sh flags.
+# below is joined from two halves at runtime, so this file holds nothing
+# check.sh flags.
 #
-# Prints `ok <case>` or `FAIL <case>: <why>` per case, then
+# Prints `ok <case>` or `FAIL <case>: <why>` per case, in case order, then
 # `<p> passed, <f> failed`. Exit 1 when any case failed.
 set -euo pipefail
 
@@ -1222,10 +1223,11 @@ t_readme_hook_asks_core_named_bare_staged_only() {
   eq commits 2 "$(git rev-list --count HEAD)"
 }
 
-# t_runner_keeps_cases_out_of_caller: from a caller repo with an origin,
-# run_cases runs two broken cases. One fails, then would write a marker. One
-# loses its cd behind `|| true`, then commits and pushes. Both report FAIL; the
-# caller and its origin are unchanged and no marker exists.
+# t_runner_keeps_cases_out_of_caller: from a caller repo with an origin, a
+# run of its own (run_init, run_cases, run_wait) runs two broken cases. One
+# fails, then would write a marker. One loses its cd behind `|| true`, then
+# commits and pushes. Both report FAIL; the caller and its origin are
+# unchanged and no marker exists.
 t_runner_keeps_cases_out_of_caller() {
   T="$(cd "$(mktemp -d)" && pwd -P)"
   git init -q --bare "$T/origin.git"; git init -q "$T/caller"; cd "$T/caller"
@@ -1236,17 +1238,17 @@ t_runner_keeps_cases_out_of_caller() {
   local head; head="$(git rev-parse HEAD)"
   t_stops_at_error() { false; touch "$T/marker"; }
   t_lost_cd() { cd "$T/missing" 2>/dev/null || true; git commit -q --allow-empty -m lost; git push -q origin HEAD:refs/heads/lost; }
-  cases=("stops|t_stops_at_error" "lost|t_lost_cd"); pass=0; fail=0; log="$T/log"
+  cases=("stops|t_stops_at_error" "lost|t_lost_cd")
   # Called directly: `run` uses `||`, which turns set -e off for all it calls.
-  run_cases >"$T/out" 2>&1
+  { run_init; run_cases; run_wait; } >"$T/out" 2>&1
   eq failed 2 "$fail"
   eq marker no "$([ -e "$T/marker" ] && echo yes || echo no)"
   eq "caller HEAD" "$head" "$(git -C "$T/caller" rev-parse HEAD)"
   eq "origin branches" refs/heads/main "$(git -C "$T/origin.git" for-each-ref --format='%(refname)' refs/heads)"
 }
 
-# t_runner_removes_case_temp_folders: run_cases runs one passing and one failing
-# case, each making a temp folder and a temp file with a bare mktemp. None of
+# t_runner_removes_case_temp_folders: a run of its own runs one passing and
+# one failing case, each making a temp folder and a temp file with a bare mktemp. None of
 # the four is left after either case.
 t_runner_removes_case_temp_folders() {
   # Given: a passing and a failing case that each note the temp paths they make
@@ -1254,9 +1256,9 @@ t_runner_removes_case_temp_folders() {
   t_temp_pass() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; }
   t_temp_fail() { mktemp -d >>"$T/made"; mktemp >>"$T/made"; false; }
   local -a cases=("pass|t_temp_pass" "fail|t_temp_fail")
-  local pass=0 fail=0 log="$T/log" p left=""
+  local p left=""
   # When
-  run_cases >"$T/out" 2>&1
+  { run_init; run_cases; run_wait; } >"$T/out" 2>&1
   # Then
   eq failed 1 "$fail"
   while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done <"$T/made"
@@ -1364,30 +1366,59 @@ cases=(
   "runner removes each case's temp folders|t_runner_removes_case_temp_folders"
 )
 
-# run_cases: run each case of `cases` in a subshell with set -e on, from a new
-# empty temp folder that git finds no repo above, print `ok <name>` or
-# `FAIL <name>: <why>`, and add to pass and fail. The folder sits in a root
-# that is the case's TMPDIR, with the mktemp wrapper first on PATH, and the
-# root is removed when the case ends, pass or fail.
+# run_init: a new run: an empty run folder, a pipe that holds one token per
+# CPU core, and the counters. A case starts only when it takes a token, and
+# its job gives the token back when the case ends, so at most one case per
+# core runs at once. A pipe, not `wait -n`: macOS ships Bash 3.2, which has
+# no `wait -n`.
+run_init() {
+  local n
+  run_dir="$(mktemp -d)"; mkfifo "$run_dir/slots"; exec 9<>"$run_dir/slots"
+  n="$(getconf _NPROCESSORS_ONLN)"
+  while [ "$n" -gt 0 ]; do printf '\n' >&9; n=$((n - 1)); done
+  names=(); started=0; printed=0; pass=0; fail=0
+}
+
+# run_cases: start each case of `cases` as a background job, in a subshell
+# with set -e on, from a new empty temp folder that git finds no repo above,
+# with its own fake home. The folder sits in a root that is the case's
+# TMPDIR, with the mktemp wrapper first on PATH, and the root is removed when
+# the case ends, pass or fail. The job keeps the case's output and exit code
+# in the run folder; the exit code is written under a temp name and renamed,
+# so run_print never reads half of it. Then print the cases that have ended.
 run_cases() {
-  local c name fn root
+  local c fn
   for c in "${cases[@]}"; do
-    name="${c%%|*}"; fn="${c##*|}"
-    root="$(mktemp -d)"
-    rc=0; set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; fake_home; "$fn" ) >"$log" 2>&1; rc=$?; set -e
-    rm -rf "$root"
-    if [ "$rc" -eq 0 ]; then
-      printf 'ok %s\n' "$name"; pass=$((pass + 1))
+    fn="${c##*|}"; started=$((started + 1)); names[started]="${c%%|*}"
+    read -r -u 9 _
+    (
+      root="$(mktemp -d)"
+      set +e; ( set -e; export TMPDIR="$root" PATH="$case_bin:$PATH"; cd "$(mktemp -d)"; export GIT_CEILING_DIRECTORIES="$(dirname "$PWD")"; fake_home; "$fn" ) >"$run_dir/$started.log" 2>&1; rc=$?
+      rm -rf "$root"
+      printf '%s' "$rc" > "$run_dir/$started.rc.tmp"; mv "$run_dir/$started.rc.tmp" "$run_dir/$started.rc"
+      printf '\n' >&9
+    ) &
+    run_print
+  done
+}
+
+# run_print: print each ended case in case order, up to the first that still
+# runs, as `ok <name>` or `FAIL <name>: <why>`, and add to pass and fail.
+run_print() {
+  local n
+  while [ -e "$run_dir/$((printed + 1)).rc" ]; do
+    n=$((printed + 1)); printed="$n"
+    if [ "$(cat "$run_dir/$n.rc")" -eq 0 ]; then
+      printf 'ok %s\n' "${names[n]}"; pass=$((pass + 1))
     else
-      printf 'FAIL %s: %s\n' "$name" "$(tail -1 "$log")"; fail=$((fail + 1))
+      printf 'FAIL %s: %s\n' "${names[n]}" "$(tail -1 "$run_dir/$n.log")"; fail=$((fail + 1))
     fi
   done
 }
 
-# Each skill's or shared core test file is sourced and its cases run before
-# the next file is sourced, so a helper name in one file never replaces
-# another file's.
-pass=0; fail=0
+# run_wait: wait for every case of the run, then print the rest.
+run_wait() { wait; run_print; }
+
 run_tmp="$(mktemp -d)"; case_bin="$run_tmp/case-bin"; mkdir -p "$case_bin"
 # A case that links mktemp into a PATH of its own links this wrapper, so the
 # wrapper names the real mktemp by its full path.
@@ -1400,11 +1431,15 @@ exec "$real" -p "$TMPDIR" "$@"
 EOF
 } > "$case_bin/mktemp"
 chmod +x "$case_bin/mktemp"
-log="$(mktemp)"
-trap 'rm -rf "$log" "$run_tmp"' EXIT
+# Each test file is sourced only after the jobs of the file before have
+# started, and a job keeps the functions it started with, so a helper name in
+# one file never replaces another file's.
+run_init
+trap 'rm -rf "$run_tmp" "$run_dir"' EXIT
 run_cases
 for f in "$here"/../skills/*/tests/*.sh "$here"/../shared/tests/*.sh; do
   cases=(); . "$f"; run_cases
 done
+run_wait
 printf '%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
