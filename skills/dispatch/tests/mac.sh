@@ -83,12 +83,29 @@ t_mac_renew_alive() {
   # Given: the Mac's worker runs
   fake_nsc
   row_with mac-1
+  echo alive > "$FAKE_NSC/1.out"
   # When
   mac renew bc-1 -- sh -c 'echo "sent ${MAC_NEW_BASE:-same}"'
   # Then
   eq exit 0 "$code"
   eq stdout "sent same" "$out"
   eq "nsc calls" 1 "$(wc -l < "$FAKE_NSC/calls" | tr -d ' ')"
+  has "health check" "http://127.0.0.1:47199/healthz" "$(sed -n 1p "$FAKE_NSC/calls")"
+  eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
+}
+
+t_mac_renew_check_fails() {
+  # Given: the ssh to the Mac times out
+  fake_nsc
+  row_with mac-1
+  echo 'ssh: connect to host mac-1 port 22: Operation timed out' > "$FAKE_NSC/1.out"
+  echo 255 > "$FAKE_NSC/1.exit"
+  # When
+  mac renew bc-1 -- sh -c 'echo sent'
+  # Then
+  eq exit 1 "$code"
+  eq "nsc calls" 1 "$(wc -l < "$FAKE_NSC/calls" | tr -d ' ')"
+  has stderr "stop: could not check the worker on mac-1 (ssh: connect to host mac-1 port 22: Operation timed out)" "$err"
   eq row "bc-1	ho-1	$wid	https://github.com/o/r	main	mac-1" "$(macs)"
 }
 
@@ -173,6 +190,7 @@ cases=(
   "mac renew runs the command as is for an agent with no Mac|t_mac_renew_no_row"
   "mac renew sends as is while the Mac runs|t_mac_renew_alive"
   "mac renew names the new Mac after the send|t_mac_renew_new_mac"
+  "mac renew rents no Mac when the worker check cannot run|t_mac_renew_check_fails"
   "mac return gives the Mac back once the run ended|t_mac_return"
   "mac return fails and keeps the Mac when the run check cannot run|t_mac_return_check_fails"
   "mac return keeps a Mac a renew named meanwhile|t_mac_return_keeps_newer_mac"

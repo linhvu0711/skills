@@ -11,8 +11,12 @@
 #                                             agent's row, prints the command's
 #                                             output; a failed command gives the
 #                                             Mac back and writes no row
-#   mac.sh renew <agent> -- <command>      -> the agent's Mac runs, or it has none:
-#                                             runs the command (the send). Else gives
+#   mac.sh renew <agent> -- <command>      -> the agent's worker answers /healthz, or
+#                                             it has no Mac: runs the command (the
+#                                             send). A check that cannot run stops,
+#                                             with no note sent and no Mac rented.
+#                                             Else, the worker does not answer or
+#                                             Namespace no longer holds the Mac: gives
 #                                             the old Mac back, rents a new one under
 #                                             the same worker name and ID, runs the
 #                                             command with MAC_NEW_BASE=<base>, and
@@ -175,11 +179,19 @@ cmd_up() {
   printf '%s\t%s\n' "$id" "$wid"
 }
 
-cmd_alive() {
-  local id="${1:-}"
-  [[ -n "$id" && "$id" != "-" ]] || return 1
+# worker_state MAC -> "alive" or "dead"; stops when the check cannot run.
+# nsc's own failure exits 1 as a failed remote command can, so the remote
+# check prints a word, and only that word counts. A Mac Namespace no longer
+# holds is dead: nsc prints "Failed: <id>: does not exist.".
+worker_state() {
+  local id="$1" out last
+  if [[ "$id" == "-" ]]; then echo dead; return 0; fi
   need_tools
-  remote "$id" 'pgrep -f "worker start" >/dev/null' >/dev/null 2>&1 || return 1
+  out=$(remote "$id" "if curl -fsS -o /dev/null --max-time 10 http://$MGMT/healthz; then echo alive; else c=\$?; if [ \$c -eq 7 ]; then echo dead; else echo \"curl exit \$c\"; fi; fi" 2>&1) || true
+  last=$(awk 'NF { l = $0 } END { print l }' <<<"$out")
+  case "$last" in alive|dead) echo "$last"; return 0 ;; esac
+  if grep -q 'does not exist\.' <<<"$out"; then echo dead; return 0; fi
+  die "could not check the worker on $id (${last:-no output}); no note sent and no Mac rented"
 }
 
 cmd_down() {
@@ -219,12 +231,13 @@ cmd_rent() {
 }
 
 cmd_renew() {
-  local agent="${1:-}" row w wid r b mac up new
+  local agent="${1:-}" row w wid r b mac up new st
   verb=renew; shift || true; after_dashes "$@"; shift
   row=$(row_get "$agent")
   if [[ -z "$row" ]]; then "$@"; return; fi
   IFS=$'\t' read -r w wid r b mac <<<"$row"
-  if cmd_alive "$mac" 2>/dev/null; then "$@"; return; fi
+  st=$(worker_state "$mac") || exit 1
+  if [[ "$st" == alive ]]; then "$@"; return; fi
   key_check
   # Renting now would replace the only row that names the old Mac.
   if [[ "$mac" != "-" ]] && ! cmd_down "$mac" >/dev/null; then
