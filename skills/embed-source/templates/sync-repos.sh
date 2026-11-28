@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fetch every library listed in repos/README.md into repos/<lib> at its pinned tag.
 # Safe to run twice: a folder already at the right tag is left alone.
-# Never fails the install: without network it warns and exits 0.
+# Without network it warns and exits 0; any other failure stops it.
 # Set EMBED_SOURCE_SKIP=1 to skip (for example in CI that only lints and tests).
 #
 # This file also defines the manifest and the marker for the skill's status
@@ -24,7 +24,7 @@ embed_rows() {
 
 [[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
-set -uo pipefail
+set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 tmps=(); trap 'rm -rf ${tmps[@]+"${tmps[@]}"}' EXIT
