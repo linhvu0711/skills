@@ -30,7 +30,7 @@ Every finding is settled on exactly these, in this order.
 
 ## Repo rules
 
-The repo rules are the ones `../../shared/repo-rules.md` names, read on `origin/<base>`, with each file they link to on that same ref. Each rule is kept with its file and line number.
+The repo rules are the ones `../../shared/repo-rules.md` names, read on `origin/<base>`, with each file they link to on that same ref, and the ADRs there in force about the changed files, picked as `../review-pr/SKILL.md` step 3 picks them. Each rule is kept with its file and line number.
 
 A rule acts on Worth only:
 
@@ -103,7 +103,7 @@ A caller that watches the PR can judge one `inline` finding as soon as its threa
 
    Then the repo rules, per Repo rules:
 
-   - `git show origin/<base>:<path>` prints each file: hold the rules of `CLAUDE.md`, `AGENTS.md`, and each file they point to, and of `CODING_STANDARDS.md` with each topic file it points to, the Standard read per `../../shared/coding-standards/standard.md` § Reading the Standard.
+   - `git show origin/<base>:<path>` prints each file: hold the rules of `CLAUDE.md`, `AGENTS.md`, and each file they point to, and of `CODING_STANDARDS.md` with each topic file it points to, the Standard read per `../../shared/coding-standards/standard.md` § Reading the Standard. Then the ADRs: each `docs/adr/*.md` on `origin/<base>`, kept and read as `../review-pr/SKILL.md` step 3 says.
    - None of them: hold "no repo rules".
 
    Done when you hold the base, the head, the PR number or "no PR", the review source (GitHub or text), and the repo rules or "no repo rules".

@@ -31,7 +31,7 @@ Each fact it states now carries an evidence label (Seen, Inferred, Guess, or Unk
 
 - Calls [commit](../commit/) and [capture](../capture/) after go.
 - Called by [ready-pr](../ready-pr/), which runs it on every review round.
-- Reads the repo rules from the base branch: your agent files, the files they point to, and the Standard that [audit-coding-standards](../audit-coding-standards/) writes.
+- Reads the repo rules from the base branch: your agent files, the files they point to, the Standard that [audit-coding-standards](../audit-coding-standards/) writes, and the ADRs in force about the changed files.
 - [dispatch](../dispatch/) sorts a cloud agent's review questions with the same verdict table.
 
 ## Credits
