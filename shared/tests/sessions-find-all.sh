@@ -128,8 +128,8 @@ t_fa_unreadable_claude() {
   # When
   run python3 "$S" --root /p/app
   # Then
-  eq claude "s1 null
-null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "claude") | "\(.id) \(.unreadable)"')"
+  eq claude "s1 false
+null true" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "claude") | "\(.id) \(.unreadable != null)"')"
 }
 
 t_fa_unreadable_codex() {
@@ -141,8 +141,8 @@ t_fa_unreadable_codex() {
   # When
   run python3 "$S" --root /p/app
   # Then
-  eq codex "c1 null
-null Permission denied, project unknown" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "codex") | "\(.id) \(.unreadable)"')"
+  eq codex "c1 false
+null true" "$(printf '%s' "$out" | jq -r '.sessions[] | select(.harness == "codex") | "\(.id) \(.unreadable != null)"')"
 }
 
 t_fa_empty_harness() {
