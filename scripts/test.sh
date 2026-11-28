@@ -1261,7 +1261,8 @@ t_runner_removes_case_temp_folders() {
   { run_init; run_cases; run_wait; } >"$T/out" 2>&1
   # Then
   eq failed 1 "$fail"
-  while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done < <(cat "$T/made.pass" "$T/made.fail")
+  cat "$T/made.pass" "$T/made.fail" >"$T/made"
+  while IFS= read -r p; do [ ! -e "$p" ] || left="$left $p"; done <"$T/made"
   eq "temp left" "" "$left"
 }
 
