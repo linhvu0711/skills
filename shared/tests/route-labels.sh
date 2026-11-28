@@ -51,9 +51,13 @@ t_kl_numbered_no_size() {
 t_kl_size_with_range() {
   # Given: labels.sh sourced
   # When
-  kl_size "Size: S (10-29)"
+  local l got="" sep=""
+  for l in "Size: S (10-29)" "Size: S (10–29)"; do
+    kl_size "$l"
+    got="$got$sep$out"; sep=,
+  done
   # Then
-  eq stdout S "$out"
+  eq sizes "S,S" "$got"
 }
 
 t_kl_size_xxl() {
