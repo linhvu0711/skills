@@ -58,7 +58,7 @@ You change nothing: no file edits, no commits, no gh writes (no comment, review,
 4. **Dispatch.** Three skill agents, one per axis, all in one message: `logic-reviewer`, `scope-reviewer`, `standards-reviewer`. Each brief holds, inline and complete:
 
    - The repo root and the exact diff command from step 1.
-   - The PR title and, for Scope, the task text from step 2.
+   - The PR title and, for Logic and Scope, the task text from step 2.
    - The rule text for that axis from step 3, pasted in full.
    - For Standards, when step 3 found no `CODING_STANDARDS.md`: the sentence "no CODING_STANDARDS.md; the code next to the diff is the standard".
    - The instruction to read the whole diff once, read the surrounding code and callers as the rules require, run every check in the rule text against every hunk, and report findings for this axis only.
