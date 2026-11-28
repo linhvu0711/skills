@@ -8,10 +8,16 @@ exits 0. Prints each problem on stderr and exits 1 without changing the old
 page when the rows file is bad.
 """
 import argparse
+import importlib.util
 import json
 import os
 import re
 import sys
+
+# page.py sits in the shared core, off sys.path, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("page", os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "page.py"))
+page = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(page)
 
 KEYS = ["skill", "repo", "commit", "date", "scope", "new", "kinds", "changes", "rows"]
 ADVICE = {"fix", "keep-and-mark", "fine"}
@@ -174,16 +180,7 @@ def main():
     with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "report.html"), encoding="utf-8") as f:
         shell = f.read()
     output = os.path.splitext(path)[0] + ".html"
-    tmp = output + ".tmp"
-    payload = json.dumps(page_data(report), ensure_ascii=False).replace("<", r"\u003c")
-    try:
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(shell.replace("const DATA = {};", "const DATA = " + payload + ";"))
-        os.replace(tmp, output)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-    print(f"page: {output}")
+    page.write(output, page.fill(shell, page_data(report)))
 
 
 if __name__ == "__main__":
