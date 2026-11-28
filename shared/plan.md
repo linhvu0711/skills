@@ -307,6 +307,8 @@ One line per probe, numbered `P1`, `P2`. The fact first, as exact as a `Then`: t
 
 One row per Done-when line, verbatim. A race row (§ One writer) follows them, its cell starting `Race:`. A row names a test, or says in the Test column why a test cannot see the line. A row on a screen also names its UI walk and the video step that shows its `See`, even when its test passes: the test proves the code gives the right output, the walk proves a person sees it right, at the real width, in the real colors, with the real dialog. A row with no test and no reason is a gap; a row on a screen with no walk is a gap, except a state under about 1 s with no hook to hold it (§ UI walks): its UI walk column says `none: under 1 s, no hook`, and its test is the proof.
 
+A repo whose `CODING_STANDARDS.md` says which code gets a test sets the test rules for its plans. A Done-when line that rule gives no test has a Proof row that names the rule and how else the line is shown, such as one run of the script. No lock test goes on code the rule leaves untested.
+
 ### Seams
 
 A seam is public: something a caller, a user, or a client reaches without knowing the inside. Prefer the seam the repo already tests. A new seam goes under `Decided`, with the seam it copies. A new seam that is a public API is hard to undo: sort it per `../skills/plan-up/SKILL.md` step 5. A new seam that swaps one thing for another (an interface, a port, a client passed in) needs two adapters, such as the real one and the test fake. One adapter is a hypothetical seam: the code calls that one thing direct.
